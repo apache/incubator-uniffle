@@ -1,0 +1,292 @@
+//
+// Tencent is pleased to support the open source community by making
+// Firestorm-Spark remote shuffle server available.
+//
+// Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+// this file except in compliance with the License. You may obtain a copy of the
+// License at
+//
+// https://opensource.org/licenses/Apache-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OF ANY KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations under the License.
+//
+
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+option java_package = "com.tencent.rss.proto";
+option java_outer_classname = "RssProtos";
+option java_generate_equals_and_hash = true;
+package rss.common;
+
+service ShuffleServer {
+  rpc registerShuffle (ShuffleRegisterRequest) returns (ShuffleRegisterResponse);
+  rpc sendShuffleData (SendShuffleDataRequest) returns (SendShuffleDataResponse);
+  rpc getShuffleData (GetShuffleDataRequest) returns (GetShuffleDataResponse);
+  rpc commitShuffleTask (ShuffleCommitRequest) returns (ShuffleCommitResponse);
+  rpc reportShuffleResult (ReportShuffleResultRequest) returns (ReportShuffleResultResponse);
+  rpc getShuffleResult (GetShuffleResultRequest) returns (GetShuffleResultResponse);
+  rpc finishShuffle (FinishShuffleRequest) returns (FinishShuffleResponse);
+  rpc requireBuffer (RequireBufferRequest) returns (RequireBufferResponse);
+  rpc appHeartbeat(AppHeartBeatRequest) returns (AppHeartBeatResponse);
+}
+
+message FinishShuffleRequest {
+  string appId = 1;
+  int32 shuffleId = 2;
+}
+
+message FinishShuffleResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
+}
+
+message RequireBufferRequest {
+  int32 requireSize = 1;
+}
+
+message RequireBufferResponse {
+  int64 requireBufferId = 1;
+  StatusCode status = 2;
+  string retMsg = 3;
+}
+
+message ShuffleDataBlockSegment {
+  int64 blockId = 1;
+  int64 offset = 2;
+  int32 length = 3;
+  int32 uncompressLength = 4;
+  int64 crc = 5;
+  int64 taskAttemptId = 6;
+}
+
+message GetShuffleDataRequest {
+  string appId = 1;
+  int32 shuffleId = 2;
+  int32 partitionId = 3;
+  int32 partitionNumPerRange = 4;
+  int32 partitionNum = 5;
+  int32 readBufferSize = 6;
+  int32 segmentIndex = 7;
+}
+
+message GetShuffleDataResponse {
+  bytes data = 1;
+  repeated ShuffleDataBlockSegment blockSegments = 2;
+  StatusCode status = 3;
+  string retMsg = 4;
+}
+
+message ReportShuffleResultRequest {
+  string appId = 1;
+  int32 shuffleId = 2;
+  int64 taskAttemptId = 3;
+  int32 bitmapNum = 4;
+  repeated PartitionToBlockIds partitionToBlockIds = 5;
+}
+
+message PartitionToBlockIds {
+  int32 partitionId = 1;
+  repeated int64 blockIds = 2;
+}
+
+message ReportShuffleResultResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
+}
+
+message GetShuffleResultRequest {
+  string appId = 1;
+  int32 shuffleId = 2;
+  int32 partitionId = 3;
+}
+
+message GetShuffleResultResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
+  bytes serializedBitmap = 3;
+}
+
+message ShufflePartitionRange {
+  int32 start = 1;
+  int32 end = 2;
+}
+
+message ShuffleRegisterRequest {
+  string appId = 1;
+  int32 shuffleId = 2;
+  repeated ShufflePartitionRange partitionRanges = 3;
+}
+
+message ShuffleRegisterResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
+}
+
+message SendShuffleDataRequest {
+  string appId = 1;
+  int32 shuffleId = 2;
+  int64 requireBufferId = 3;
+  repeated ShuffleData shuffleData = 4;
+}
+
+message SendShuffleDataResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
+}
+
+message ShuffleData {
+  int32 partitionId = 1;
+  repeated ShuffleBlock block = 2;
+}
+
+message ShuffleBlock {
+  int64 blockId = 1;
+  int32 length = 2;
+  int32 uncompressLength = 3;
+  int64 crc = 4;
+  bytes data = 5;
+  int64 taskAttemptId = 6;
+}
+
+message ShuffleCommitRequest {
+  string appId = 1;
+  int32 shuffleId = 2;
+}
+
+message ShuffleCommitResponse {
+  int32 commitCount = 1;
+  StatusCode status = 2;
+  string retMsg = 3;
+}
+
+message ShuffleServerHeartBeatRequest {
+  ShuffleServerId serverId = 1;
+  int64 usedMemory = 2;
+  int64 preAllocatedMemory = 3;
+  int64 availableMemory = 4;
+  int32 eventNumInFlush = 5;
+  repeated string tags = 6;
+}
+
+message ShuffleServerHeartBeatResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
+}
+
+message ShuffleServerId {
+  string id = 1;
+  string ip = 2;
+  int32 port = 3;
+}
+
+message ShuffleServerResult {
+  StatusCode status = 1;
+  string retMsg = 2;
+}
+
+/** Status code to identify the status of response */
+enum StatusCode {
+  SUCCESS = 0;
+  DOUBLE_REGISTER = 1;
+  NO_BUFFER = 2;
+  INVALID_STORAGE = 3;
+  NO_REGISTER = 4;
+  NO_PARTITION = 5;
+  INTERNAL_ERROR = 6;
+  TIMEOUT = 7;
+  // add more status
+}
+
+service CoordinatorServer {
+  // Get Shuffle Server list
+  rpc getShuffleServerList(google.protobuf.Empty) returns (GetShuffleServerListResponse);
+
+  // Count Shuffle Server number
+  rpc getShuffleServerNum(google.protobuf.Empty) returns (GetShuffleServerNumResponse);
+
+  // Ask for suitable Shuffle Servers with partitions
+  rpc getShuffleAssignments(GetShuffleServerRequest) returns (GetShuffleAssignmentsResponse);
+
+  // Heartbeat between Shuffle Server and Coordinator Server
+  rpc heartbeat(ShuffleServerHeartBeatRequest) returns (ShuffleServerHeartBeatResponse);
+
+  // Get the global configuration of this Rss-cluster, i.e., data storage info
+  rpc getShuffleDataStorageInfo(google.protobuf.Empty) returns (GetShuffleDataStorageInfoResponse);
+  rpc checkServiceAvailable(google.protobuf.Empty) returns (CheckServiceAvailableResponse);
+
+  // Report a client operation's result to coordinator server
+  rpc reportClientOperation(ReportShuffleClientOpRequest) returns (ReportShuffleClientOpResponse);
+
+  // Heartbeat between Shuffle Application and Coordinator Server
+  rpc appHeartbeat(AppHeartBeatRequest) returns (AppHeartBeatResponse);
+}
+
+message AppHeartBeatRequest {
+  string appId = 1;
+}
+
+message AppHeartBeatResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
+}
+
+message GetShuffleServerListResponse {
+  repeated ShuffleServerId servers = 1;
+}
+
+message GetShuffleServerNumResponse {
+  int32 num = 1;
+}
+
+message GetShuffleServerRequest {
+  string clientHost = 1;
+  string clientPort = 2;
+  string clientProperty = 3;
+  string applicationId = 4;
+  int32 shuffleId = 5;
+  int32 partitionNum = 6;
+  int32 partitionNumPerRange = 7;
+  int32 dataReplica = 8;
+  repeated string requireTags = 9;
+}
+
+message PartitionRangeAssignment {
+  int32 startPartition = 1;
+  int32 endPartition = 2;
+  // replica
+  repeated ShuffleServerId server = 3;
+}
+
+message GetShuffleAssignmentsResponse {
+  StatusCode status = 1;
+  repeated PartitionRangeAssignment assignments = 2;
+}
+
+message ReportShuffleClientOpRequest {
+  string clientHost = 1;
+  int32 clientPort = 2;
+  ShuffleServerId server = 3;
+  string operation = 4;
+}
+
+message ReportShuffleClientOpResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
+}
+
+message GetShuffleDataStorageInfoResponse {
+  string storage = 1;
+  string storagePath = 2;
+  string storagePattern = 3;
+}
+
+message CheckServiceAvailableResponse {
+  StatusCode status = 1;
+  bool available = 2;
+}
+
