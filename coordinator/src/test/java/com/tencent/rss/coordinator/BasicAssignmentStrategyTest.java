@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-
 import com.google.common.collect.Sets;
 import com.tencent.rss.common.PartitionRange;
 import java.util.Iterator;
@@ -52,22 +51,6 @@ public class BasicAssignmentStrategyTest {
   @After
   public void tearDown() {
     clusterManager.clear();
-  }
-
-  @Test
-  public void testNextId() {
-    assertEquals(1, strategy.nextIdx(0, 3));
-    assertEquals(2, strategy.nextIdx(1, 3));
-    assertEquals(0, strategy.nextIdx(2, 3));
-  }
-
-  @Test
-  public void testGenerateRanges() {
-    List<PartitionRange> ranges = strategy.generateRanges(16, 5);
-    assertEquals(new PartitionRange(0, 4), ranges.get(0));
-    assertEquals(new PartitionRange(5, 9), ranges.get(1));
-    assertEquals(new PartitionRange(10, 14), ranges.get(2));
-    assertEquals(new PartitionRange(15, 19), ranges.get(3));
   }
 
   @Test

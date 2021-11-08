@@ -50,7 +50,7 @@ public class CoordinatorConf extends RssBaseConf {
   public static final ConfigOption<String> COORDINATOR_ASSIGNMENT_STRATEGY = ConfigOptions
       .key("rss.coordinator.assignment.strategy")
       .stringType()
-      .defaultValue("BASIC")
+      .defaultValue("PARTITION_BALANCE")
       .withDescription("Strategy for assigning shuffle server to write partitions");
   public static final ConfigOption<Long> COORDINATOR_APP_EXPIRED = ConfigOptions
       .key("rss.coordinator.app.expired")

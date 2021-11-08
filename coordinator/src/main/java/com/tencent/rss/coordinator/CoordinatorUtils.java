@@ -18,9 +18,11 @@
 
 package com.tencent.rss.coordinator;
 
+import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.proto.RssProtos;
 import com.tencent.rss.proto.RssProtos.GetShuffleAssignmentsResponse;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CoordinatorUtils {
@@ -32,5 +34,28 @@ public class CoordinatorUtils {
     return GetShuffleAssignmentsResponse.newBuilder()
         .addAllAssignments(praList)
         .build();
+  }
+
+  public static int nextIdx(int idx, int size) {
+    ++idx;
+    if (idx >= size) {
+      idx = 0;
+    }
+    return idx;
+  }
+
+  public static List<PartitionRange> generateRanges(int totalPartitionNum, int partitionNumPerRange) {
+    List<PartitionRange> ranges = new ArrayList<>();
+    if (totalPartitionNum <= 0 || partitionNumPerRange <= 0) {
+      return ranges;
+    }
+
+    for (int start = 0; start < totalPartitionNum; start += partitionNumPerRange) {
+      int end = start + partitionNumPerRange - 1;
+      PartitionRange range = new PartitionRange(start, end);
+      ranges.add(range);
+    }
+
+    return ranges;
   }
 }

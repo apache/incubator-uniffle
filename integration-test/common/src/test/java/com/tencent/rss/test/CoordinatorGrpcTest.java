@@ -63,6 +63,7 @@ public class CoordinatorGrpcTest extends IntegrationTestBase {
   @BeforeClass
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
+    coordinatorConf.set(CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY, "BASIC");
     coordinatorConf.setLong("rss.coordinator.app.expired", 2000);
     coordinatorConf.setLong("rss.coordinator.server.heartbeat.timeout", 3000);
     createCoordinatorServer(coordinatorConf);
@@ -133,7 +134,7 @@ public class CoordinatorGrpcTest extends IntegrationTestBase {
   @Test
   public void getShuffleAssignmentsTest() throws Exception {
     String appId = "getShuffleAssignmentsTest";
-    waitForRegister(2);
+    CoordinatorTestUtils.waitForRegister(coordinatorClient,2);
     RssGetShuffleAssignmentsRequest request = new RssGetShuffleAssignmentsRequest(
         appId, 1, 10, 4, 1,
         Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
@@ -236,7 +237,7 @@ public class CoordinatorGrpcTest extends IntegrationTestBase {
 
   @Test
   public void shuffleServerHeartbeatTest() throws Exception {
-    waitForRegister(2);
+    CoordinatorTestUtils.waitForRegister(coordinatorClient, 2);
     shuffleServers.get(0).stopServer();
     Thread.sleep(5000);
     SimpleClusterManager scm = (SimpleClusterManager) coordinators.get(0).getClusterManager();
@@ -253,19 +254,6 @@ public class CoordinatorGrpcTest extends IntegrationTestBase {
     shuffleServers.set(0, ss);
     Thread.sleep(3000);
     assertEquals(2, coordinators.get(0).getClusterManager().getNodesNum());
-  }
-
-  private void waitForRegister(int expcetedServers) throws Exception {
-    GetShuffleServerListResponse response;
-    int count = 0;
-    do {
-      response = coordinatorClient.getShuffleServerList();
-      Thread.sleep(1000);
-      if (count > 10) {
-        throw new RuntimeException("No shuffle server connected");
-      }
-      count++;
-    } while (response.getServersCount() < expcetedServers);
   }
 
   private GetShuffleAssignmentsResponse generateShuffleAssignmentsResponse() {

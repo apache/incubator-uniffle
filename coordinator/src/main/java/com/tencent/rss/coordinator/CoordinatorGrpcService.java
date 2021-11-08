@@ -104,14 +104,21 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         + "], shuffleId[" + shuffleId + "], partitionNum[" + partitionNum
         + "], partitionNumPerRange[" + partitionNumPerRange + "], replica[" + replica + "]");
 
-    final PartitionRangeAssignment pra =
-        coordinatorServer.getAssignmentStrategy().assign(partitionNum, partitionNumPerRange, replica, requiredTags);
-    final GetShuffleAssignmentsResponse response =
-        CoordinatorUtils.toGetShuffleAssignmentsResponse(pra);
-    logAssignmentResult(appId, shuffleId, pra);
-
-    responseObserver.onNext(response);
-    responseObserver.onCompleted();
+    GetShuffleAssignmentsResponse response;
+    try {
+      final PartitionRangeAssignment pra =
+          coordinatorServer.getAssignmentStrategy().assign(partitionNum, partitionNumPerRange, replica, requiredTags);
+      response =
+          CoordinatorUtils.toGetShuffleAssignmentsResponse(pra);
+      logAssignmentResult(appId, shuffleId, pra);
+      responseObserver.onNext(response);
+    } catch (Exception e) {
+      LOG.error(e.getMessage());
+      response = GetShuffleAssignmentsResponse.newBuilder().setStatus(StatusCode.INTERNAL_ERROR).build();
+      responseObserver.onNext(response);
+    } finally {
+      responseObserver.onCompleted();
+    }
   }
 
   @Override
