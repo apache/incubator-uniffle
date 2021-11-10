@@ -38,16 +38,17 @@
   <properties>
     <error_prone_annotations.version>2.3.4</error_prone_annotations.version>
     <execution.root>${user.dir}</execution.root>
-    <fasterxml.jackson.version>2.9.8</fasterxml.jackson.version>
+    <fasterxml.jackson.version>2.10.0</fasterxml.jackson.version>
     <grpc.version>1.33.0</grpc.version>
-    <guava.version>29.0-jre</guava.version>
+    <guava.version>30.0-jre</guava.version>
     <hadoop.scope>provided</hadoop.scope>
     <hadoop.version>2.8.5</hadoop.version>
     <httpclient.version>4.5.3</httpclient.version>
     <httpcore.version>4.4.4</httpcore.version>
     <java.version>1.8</java.version>
     <jetty.version>9.3.24.v20180605</jetty.version>
-    <log4j.version>1.2.17</log4j.version>
+    <junit.version>4.13.1</junit.version>
+    <log4j.core.version>1.2.17</log4j.core.version>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <metrics.version>3.1.0</metrics.version>
@@ -116,6 +117,7 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -174,9 +176,9 @@
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
-        <groupId>log4j</groupId>
-        <artifactId>log4j</artifactId>
-        <version>${log4j.version}</version>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${log4j.core.version}</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
@@ -444,7 +446,7 @@
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
-        <version>4.12</version>
+        <version>${junit.version}</version>
         <scope>test</scope>
       </dependency>
 
@@ -459,7 +461,7 @@
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-minicluster</artifactId>
         <version>${hadoop.version}</version>
-        <scope>provided</scope>
+        <scope>test</scope>
         <exclusions>
           <exclusion>
             <groupId>io.netty</groupId>
@@ -484,6 +486,10 @@
           <exclusion>
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
