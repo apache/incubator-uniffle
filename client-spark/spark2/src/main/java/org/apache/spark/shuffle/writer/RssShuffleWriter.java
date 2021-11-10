@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.client.util.ClientUtils;
 import com.tencent.rss.common.ShuffleBlockInfo;
@@ -43,6 +44,7 @@ import org.apache.spark.scheduler.MapStatus$;
 import org.apache.spark.shuffle.RssClientConfig;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.RssShuffleManager;
+import com.tencent.rss.common.exception.RssException;
 import org.apache.spark.shuffle.ShuffleWriter;
 import org.apache.spark.storage.BlockManagerId;
 import org.slf4j.Logger;
@@ -224,18 +226,16 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     while (!future.isDone()) {
       LOG.info("Wait commit to shuffle server for task[" + taskAttemptId + "] cost "
           + (System.currentTimeMillis() - start) + " ms");
-      try {
-        Thread.sleep(currentWait);
-        currentWait = Math.min(currentWait * 2, maxWait);
-      } catch (Exception e) {
-        LOG.error("Exception happened when thread.sleep", e);
-      }
+      Uninterruptibles.sleepUninterruptibly(currentWait, TimeUnit.MICROSECONDS);
+      currentWait = Math.min(currentWait * 2, maxWait);
     }
     try {
       // check if commit/finish rpc is successful
       if (!future.get()) {
-        throw new RuntimeException("Failed to commit task to shuffle server");
+        throw new RssException("Failed to commit task to shuffle server");
       }
+    } catch (InterruptedException ie) {
+      LOG.warn("Ignore the InterruptedException which should be caused by internal killed");
     } catch (Exception e) {
       throw new RuntimeException("Exception happened when get commit status", e);
     }
@@ -253,7 +253,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             "Send failed: Task[" + taskId + "] failed because " + failedBlockIds.size()
                 + " blocks can't be sent to shuffle server.";
         LOG.error(errorMsg);
-        throw new RuntimeException(errorMsg);
+        throw new RssException(errorMsg);
       }
 
       // remove blockIds which was sent successfully, if there has none left, all data are sent
@@ -262,17 +262,13 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         break;
       }
       LOG.info("Wait " + blockIds.size() + " blocks sent to shuffle server");
-      try {
-        Thread.sleep(sendCheckInterval);
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
+      Uninterruptibles.sleepUninterruptibly(sendCheckInterval, TimeUnit.MICROSECONDS);
       if (System.currentTimeMillis() - start > sendCheckTimeout) {
         String errorMsg =
             "Timeout: Task[" + taskId + "] failed because " + blockIds.size()
                 + " blocks can't be sent to shuffle server in " + sendCheckTimeout + " ms.";
         LOG.error(errorMsg);
-        throw new RuntimeException(errorMsg);
+        throw new RssException(errorMsg);
       }
     }
   }

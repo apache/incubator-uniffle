@@ -22,6 +22,7 @@ import com.clearspring.analytics.util.Lists;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.tencent.rss.client.util.ClientUtils;
+import com.tencent.rss.common.exception.RssException;
 import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.util.ChecksumUtils;
@@ -206,7 +207,8 @@ public class WriteBufferManager extends MemoryConsumer {
     int retry = 0;
     while (allocatedBytes.get() - usedBytes.get() < leastMem) {
       LOG.info("Can't get memory for now, sleep and try[" + retry
-          + "] again, request[" + askExecutorMemory + "], got[" + gotMem + "] less than " + leastMem);
+          + "] again, request[" + askExecutorMemory + "], got[" + gotMem + "] less than "
+          + leastMem);
       try {
         Thread.sleep(requireMemoryInterval);
       } catch (InterruptedException ie) {
@@ -217,10 +219,12 @@ public class WriteBufferManager extends MemoryConsumer {
       retry++;
       if (retry > requireMemoryRetryMax) {
         String message = "Can't get memory to cache shuffle data, request[" + askExecutorMemory
-            + "], got[" + gotMem + "]," + " WriteBufferManager allocated[" + allocatedBytes + "] task used[" + used
-            + "], consider to optimize 'spark.executor.memory'," + " 'spark.rss.writer.buffer.spill.size'.";
+            + "], got[" + gotMem + "]," + " WriteBufferManager allocated[" + allocatedBytes
+            + "] task used[" + used + "]. It may be caused by shuffle server is full of data"
+            + " or consider to optimize 'spark.executor.memory',"
+            + " 'spark.rss.writer.buffer.spill.size'.";
         LOG.error(message);
-        throw new OutOfMemoryError(message);
+        throw new RssException(message);
       }
     }
   }

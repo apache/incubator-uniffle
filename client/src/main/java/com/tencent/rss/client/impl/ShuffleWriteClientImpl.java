@@ -47,6 +47,7 @@ import com.tencent.rss.client.response.RssReportShuffleResultResponse;
 import com.tencent.rss.client.response.RssSendCommitResponse;
 import com.tencent.rss.client.response.RssSendShuffleDataResponse;
 import com.tencent.rss.client.response.SendShuffleDataResult;
+import com.tencent.rss.common.exception.RssException;
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.common.ShuffleAssignmentsInfo;
 import com.tencent.rss.common.ShuffleBlockInfo;
@@ -57,6 +58,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -288,7 +290,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       }
     }
     if (!isSuccessful) {
-      throw new RuntimeException("Report shuffle result is failed for appId["
+      throw new RssException("Report shuffle result is failed for appId["
           + appId + "], shuffleId[" + shuffleId + "]");
     }
   }
@@ -315,7 +317,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       }
     }
     if (!isSuccessful) {
-      throw new RuntimeException("Get shuffle result is failed for appId["
+      throw new RssException("Get shuffle result is failed for appId["
           + appId + "], shuffleId[" + shuffleId + "]");
     }
     return blockIdBitmap;
@@ -362,7 +364,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private void throwExceptionIfNecessary(ClientResponse response, String errorMsg) {
     if (response != null && response.getStatusCode() != ResponseStatusCode.SUCCESS) {
       LOG.error(errorMsg);
-      throw new RuntimeException(errorMsg);
+      throw new RssException(errorMsg);
     }
   }
 

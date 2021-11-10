@@ -33,6 +33,7 @@ import com.tencent.rss.client.response.RssGetShuffleAssignmentsResponse;
 import com.tencent.rss.client.response.RssSendHeartBeatResponse;
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.common.ShuffleServerInfo;
+import com.tencent.rss.common.exception.RssException;
 import com.tencent.rss.proto.CoordinatorServerGrpc;
 import com.tencent.rss.proto.CoordinatorServerGrpc.CoordinatorServerBlockingStub;
 import com.tencent.rss.proto.RssProtos;
@@ -239,7 +240,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       }
     }
     if (partitionToServers.isEmpty()) {
-      throw new RuntimeException("Empty assignment to Shuffle Server");
+      throw new RssException("Empty assignment to Shuffle Server");
     }
     return partitionToServers;
   }

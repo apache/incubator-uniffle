@@ -26,6 +26,7 @@ import com.tencent.rss.client.response.CompressedShuffleBlock;
 import com.tencent.rss.common.BufferSegment;
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.ShuffleServerInfo;
+import com.tencent.rss.common.exception.RssException;
 import com.tencent.rss.common.util.ChecksumUtils;
 import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.common.util.RssUtils;
@@ -38,8 +39,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.tencent.rss.storage.util.StorageType;
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -161,7 +160,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
         LOG.warn("Can't read data for blockId[" + bs.getBlockId() + "]", e);
       }
       if (expectedCrc != actualCrc) {
-        throw new RuntimeException("Unexpected crc value for blockId[" + bs.getBlockId()
+        throw new RssException("Unexpected crc value for blockId[" + bs.getBlockId()
             + "], expected:" + expectedCrc + ", actual:" + actualCrc);
       }
       return new CompressedShuffleBlock(ByteBuffer.wrap(data), bs.getUncompressLength());
@@ -201,7 +200,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     }
     cloneBitmap.and(processedBlockIds);
     if (!blockIdBitmap.equals(cloneBitmap)) {
-      throw new RuntimeException("Blocks read inconsistent: expected " + blockIdBitmap.getLongCardinality()
+      throw new RssException("Blocks read inconsistent: expected " + blockIdBitmap.getLongCardinality()
           + " blocks, actual " + cloneBitmap.getLongCardinality() + " blocks");
     }
   }
