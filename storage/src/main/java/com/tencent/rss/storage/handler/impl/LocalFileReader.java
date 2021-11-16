@@ -49,7 +49,7 @@ public class LocalFileReader implements ShuffleReader, Closeable {
     } catch (Exception e) {
       LOG.warn("Can't read data for path:" + path + " with offset[" + offset + "], length[" + length + "]", e);
     }
-    return null;
+    return new byte[0];
   }
 
   public List<FileBasedShuffleSegment> readIndex(int limit) throws IOException, IllegalStateException {

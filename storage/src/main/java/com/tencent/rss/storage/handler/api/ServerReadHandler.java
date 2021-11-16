@@ -19,8 +19,12 @@
 package com.tencent.rss.storage.handler.api;
 
 import com.tencent.rss.common.ShuffleDataResult;
+import com.tencent.rss.common.ShuffleIndexResult;
 
 public interface ServerReadHandler {
 
-  ShuffleDataResult getShuffleData(int segmentIndex);
+  ShuffleDataResult getShuffleData(long offset, int length);
+
+  ShuffleIndexResult getShuffleIndex();
+
 }

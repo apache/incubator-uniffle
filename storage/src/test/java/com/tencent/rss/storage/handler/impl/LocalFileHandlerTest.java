@@ -18,7 +18,9 @@
 
 package com.tencent.rss.storage.handler.impl;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.Lists;
@@ -27,14 +29,16 @@ import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.tencent.rss.common.BufferSegment;
 import com.tencent.rss.common.ShuffleDataResult;
+import com.tencent.rss.common.ShuffleDataSegment;
+import com.tencent.rss.common.ShuffleIndexResult;
 import com.tencent.rss.common.ShufflePartitionedBlock;
 import com.tencent.rss.common.config.RssBaseConf;
 import com.tencent.rss.common.util.ChecksumUtils;
+import com.tencent.rss.common.util.RssUtils;
 import com.tencent.rss.storage.handler.api.ServerReadHandler;
 import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
 import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import java.io.File;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -82,9 +86,9 @@ public class LocalFileHandlerTest {
     RssBaseConf conf = new RssBaseConf();
     conf.setString("rss.storage.basePath", dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath());
     LocalFileServerReadHandler readHandler1 = new LocalFileServerReadHandler(
-        "appId", 0, 1, 1, 10, 1000, conf);
+        "appId", 0, 1, 1, 10, conf);
     LocalFileServerReadHandler readHandler2 = new LocalFileServerReadHandler(
-        "appId", 0, 2, 1, 10, 1000, conf);
+        "appId", 0, 2, 1, 10, conf);
 
     validateResult(readHandler1, expectedBlockIds1, expectedData);
     validateResult(readHandler2, expectedBlockIds2, expectedData);
@@ -93,6 +97,18 @@ public class LocalFileHandlerTest {
     writeTestData(writeHandler1, 1, 32, expectedData, expectedBlockIds1);
     // new data should be read
     validateResult(readHandler1, expectedBlockIds1, expectedData);
+
+    File targetDataFile = new File(possiblePath1, "pre.data");
+    ShuffleIndexResult shuffleIndexResult = readIndex(readHandler1);
+    assertFalse(shuffleIndexResult.isEmpty());
+    List<ShuffleDataResult> shuffleDataResults = readData(readHandler1, shuffleIndexResult);
+    assertFalse(shuffleDataResults.isEmpty());
+    targetDataFile.delete();
+    shuffleDataResults = readData(readHandler1, shuffleIndexResult);
+    for (ShuffleDataResult shuffleData : shuffleDataResults) {
+      assertEquals(0, shuffleData.getData().length);
+      assertTrue(shuffleData.isEmpty());
+    }
   }
 
 
@@ -116,17 +132,50 @@ public class LocalFileHandlerTest {
 
   protected void validateResult(ServerReadHandler readHandler, Set<Long> expectedBlockIds,
       Map<Long, byte[]> expectedData) {
-    ShuffleDataResult sdr = readHandler.getShuffleData(0);
-    byte[] buffer = sdr.getData();
-    List<BufferSegment> bufferSegments = sdr.getBufferSegments();
+    List<ShuffleDataResult> shuffleDataResults = readAll(readHandler);
     Set<Long> actualBlockIds = Sets.newHashSet();
-    for (BufferSegment bs : bufferSegments) {
-      byte[] data = new byte[bs.getLength()];
-      System.arraycopy(buffer, bs.getOffset(), data, 0, bs.getLength());
-      assertEquals(bs.getCrc(), ChecksumUtils.getCrc32(data));
-      assertTrue(Arrays.equals(data, expectedData.get(bs.getBlockId())));
-      actualBlockIds.add(bs.getBlockId());
+    for (ShuffleDataResult sdr : shuffleDataResults) {
+      byte[] buffer = sdr.getData();
+      List<BufferSegment> bufferSegments = sdr.getBufferSegments();
+
+      for (BufferSegment bs : bufferSegments) {
+        byte[] data = new byte[bs.getLength()];
+        System.arraycopy(buffer, bs.getOffset(), data, 0, bs.getLength());
+        assertEquals(bs.getCrc(), ChecksumUtils.getCrc32(data));
+        assertArrayEquals(expectedData.get(bs.getBlockId()), data);
+        actualBlockIds.add(bs.getBlockId());
+      }
     }
     assertEquals(expectedBlockIds, actualBlockIds);
   }
+
+  private List<ShuffleDataResult> readAll(ServerReadHandler readHandler) {
+    ShuffleIndexResult shuffleIndexResult = readIndex(readHandler);
+    return readData(readHandler, shuffleIndexResult);
+  }
+
+  private ShuffleIndexResult readIndex(ServerReadHandler readHandler) {
+    ShuffleIndexResult shuffleIndexResult = readHandler.getShuffleIndex();
+    return shuffleIndexResult;
+  }
+
+  private List<ShuffleDataResult> readData(ServerReadHandler readHandler, ShuffleIndexResult shuffleIndexResult) {
+    List<ShuffleDataResult> shuffleDataResults = Lists.newLinkedList();
+    if (shuffleIndexResult == null || shuffleIndexResult.isEmpty()) {
+      return shuffleDataResults;
+    }
+
+    List<ShuffleDataSegment> shuffleDataSegments =
+        RssUtils.transIndexDataToSegments(shuffleIndexResult, 32);
+
+    for (ShuffleDataSegment shuffleDataSegment : shuffleDataSegments) {
+      byte[] shuffleData =
+          readHandler.getShuffleData(shuffleDataSegment.getOffset(), shuffleDataSegment.getLength()).getData();
+      ShuffleDataResult sdr = new ShuffleDataResult(shuffleData, shuffleDataSegment.getBufferSegments());
+      shuffleDataResults.add(sdr);
+    }
+
+    return shuffleDataResults;
+  }
+
 }

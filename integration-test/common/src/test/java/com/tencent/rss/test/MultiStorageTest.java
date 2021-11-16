@@ -1,8 +1,8 @@
 /*
  * Tencent is pleased to support the open source community by making
- * Firestorm-Spark remote shuffle server available. 
+ * Firestorm-Spark remote shuffle server available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved. 
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use
  * this file except in compliance with the License. You may obtain a copy of the
@@ -21,24 +21,22 @@ package com.tencent.rss.test;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.io.Files;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.tencent.rss.client.impl.ShuffleReadClientImpl;
 import com.tencent.rss.client.impl.grpc.ShuffleServerGrpcClient;
 import com.tencent.rss.client.request.RssAppHeartBeatRequest;
 import com.tencent.rss.client.request.RssFinishShuffleRequest;
-import com.tencent.rss.client.request.RssGetShuffleDataRequest;
 import com.tencent.rss.client.request.RssGetShuffleResultRequest;
 import com.tencent.rss.client.request.RssRegisterShuffleRequest;
 import com.tencent.rss.client.request.RssReportShuffleResultRequest;
 import com.tencent.rss.client.request.RssSendCommitRequest;
 import com.tencent.rss.client.request.RssSendShuffleDataRequest;
 import com.tencent.rss.client.response.CompressedShuffleBlock;
-import com.tencent.rss.client.response.RssGetShuffleDataResponse;
 import com.tencent.rss.common.BufferSegment;
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleDataResult;
+import com.tencent.rss.common.ShuffleDataSegment;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.util.ChecksumUtils;
 import com.tencent.rss.coordinator.CoordinatorConf;
@@ -187,10 +185,9 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     RssGetShuffleResultRequest rg4 = new RssGetShuffleResultRequest(appId, 0, 4);
     shuffleServerClient.getShuffleResult(rg4);
 
-    RssGetShuffleDataRequest rd1 = new RssGetShuffleDataRequest(appId, 0, 0, 1, 10, 100, 0);
-    shuffleServerClient.getShuffleData(rd1);
-    RssGetShuffleDataRequest rd2 = new RssGetShuffleDataRequest(appId, 0, 1, 1, 10, 100, 0);
-    shuffleServerClient.getShuffleData(rd2);
+    readShuffleData(shuffleServerClient, appId, 0, 0, 1, 10, 100, 0);
+    readShuffleData(shuffleServerClient, appId, 0, 1, 1, 10, 100, 0);
+
 
     wait(appId);
 
@@ -202,16 +199,13 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     assertTrue(item.canWrite());
     assertEquals(0, item.getNotUploadedSize(appId + "/" + 0));
 
-    RssGetShuffleDataRequest req = new RssGetShuffleDataRequest(appId, 0, 0,
-        1, 10, 1000,  0);
     boolean isException = false;
     try {
-      RssGetShuffleDataResponse res = shuffleServerClient.getShuffleData(req);
-      ShuffleDataResult result = res.getShuffleDataResult();
-      result = res.getShuffleDataResult();
+      ShuffleDataResult result = readShuffleData(shuffleServerClient, appId, 0, 0,
+          1, 10, 1000,  0);
     } catch (RuntimeException re) {
       isException = true;
-      assertTrue(re.getMessage().contains("Can't get shuffle data"));
+      assertTrue(re.getMessage().contains("Can't get shuffle index"));
     }
     assertTrue(isException);
 
@@ -317,15 +311,13 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
     validateResult(appId, 1, 3, expectedData, getExpectBlockIds(blocks4));
     Uninterruptibles.sleepUninterruptibly(20, TimeUnit.SECONDS);
-    RssGetShuffleDataRequest req = new RssGetShuffleDataRequest(appId, 1, 0,
-        1, 10, 1000,  0);
     boolean isException = false;
     try {
-      RssGetShuffleDataResponse res = shuffleServerClient.getShuffleData(req);
-      res.getShuffleDataResult();
+      readShuffleData(shuffleServerClient, appId, 1, 0,
+          1, 10, 1000,  0);
     } catch (RuntimeException re) {
       isException = true;
-      assertTrue(re.getMessage().contains("Can't get shuffle data"));
+      assertTrue(re.getMessage().contains("Can't get shuffle index"));
     }
     assertTrue(isException);
   }
@@ -394,16 +386,13 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     }
     assertTrue(blockIdBitmap1.equals(matched));
 
-    RssGetShuffleDataRequest req = new RssGetShuffleDataRequest(appId, 0, 0,
-        1, 10, 1000,  0);
     boolean isException = false;
     try {
-      RssGetShuffleDataResponse res = shuffleServerClient.getShuffleData(req);
-      ShuffleDataResult result = res.getShuffleDataResult();
-      res.getShuffleDataResult();
+      readShuffleData(shuffleServerClient, appId, 0, 0,
+          1, 10, 1000, 0);
     } catch (RuntimeException re) {
       isException = true;
-      assertTrue(re.getMessage().contains("Can't get shuffle data"));
+      assertTrue(re.getMessage().contains("Can't get shuffle index"));
     }
     assertTrue(isException);
   }
@@ -559,6 +548,8 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     int matched = 0;
     int index = 0;
     ShuffleDataResult result = null;
+    List<ShuffleDataSegment> shuffleDataSegments = readShuffleIndexSegments(
+        shuffleServerClient, appId, shuffleId, partitionId, 1, 10, 1000);
     do {
       if (result != null) {
         byte[] buffer = result.getData();
@@ -573,10 +564,8 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
           assertTrue(expectBlockIds.contains(bs.getBlockId()));
         }
       }
-      RssGetShuffleDataRequest req = new RssGetShuffleDataRequest(appId, shuffleId, partitionId,
-        1, 10, 1000, index);
-      RssGetShuffleDataResponse res = shuffleServerClient.getShuffleData(req);
-      result = res.getShuffleDataResult();
+      result = readShuffleData(shuffleServerClient, appId, shuffleId, partitionId,
+          1, 10, index, shuffleDataSegments);
       ++index;
     } while(result != null && result.getData() != null
       && result.getBufferSegments() != null && !result.getBufferSegments().isEmpty());

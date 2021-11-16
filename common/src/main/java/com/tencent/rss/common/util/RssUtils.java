@@ -18,6 +18,10 @@
 
 package com.tencent.rss.common.util;
 
+import com.google.common.collect.Lists;
+import com.tencent.rss.common.BufferSegment;
+import com.tencent.rss.common.ShuffleDataSegment;
+import com.tencent.rss.common.ShuffleIndexResult;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -29,9 +33,11 @@ import java.io.InputStreamReader;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -134,5 +140,57 @@ public class RssUtils {
     DataInputStream dataInputStream = new DataInputStream(new ByteArrayInputStream(bytes));
     bitmap.deserialize(dataInputStream);
     return bitmap;
+  }
+
+  public static List<ShuffleDataSegment> transIndexDataToSegments(
+      ShuffleIndexResult shuffleIndexResult, int readBufferSize) {
+    if (shuffleIndexResult == null || shuffleIndexResult.isEmpty()) {
+      return Lists.newArrayList();
+    }
+
+    byte[] indexData = shuffleIndexResult.getIndexData();
+    return transIndexDataToSegments(indexData, readBufferSize);
+  }
+
+  private static List<ShuffleDataSegment> transIndexDataToSegments(byte[] indexData, int readBufferSize) {
+    ByteBuffer byteBuffer = ByteBuffer.wrap(indexData);
+    List<BufferSegment> bufferSegments = Lists.newArrayList();
+    List<ShuffleDataSegment> dataFileSegments = Lists.newArrayList();
+    int bufferOffset = 0;
+    long fileOffset = -1;
+
+    while (byteBuffer.hasRemaining()) {
+      long offset = byteBuffer.getLong();
+      int length = byteBuffer.getInt();
+      int uncompressLength = byteBuffer.getInt();
+      long crc = byteBuffer.getLong();
+      long blockId = byteBuffer.getLong();
+      long taskAttemptId = byteBuffer.getLong();
+
+      // The index file is written, read and parsed sequentially, so these parsed index segments
+      // index a continuous shuffle data in the corresponding data file and the first segment's
+      // offset field is the offset of these shuffle data in the data file.
+      if (fileOffset == -1) {
+        fileOffset = offset;
+      }
+
+      bufferSegments.add(new BufferSegment(blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
+      bufferOffset += length;
+
+      if (bufferOffset >= readBufferSize) {
+        ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
+        dataFileSegments.add(sds);
+        bufferSegments = Lists.newArrayList();
+        bufferOffset = 0;
+        fileOffset = -1;
+      }
+    }
+
+    if (bufferOffset > 0) {
+      ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
+      dataFileSegments.add(sds);
+    }
+
+    return dataFileSegments;
   }
 }

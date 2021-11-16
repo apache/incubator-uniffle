@@ -20,7 +20,6 @@ package com.tencent.rss.storage.handler.impl;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -92,7 +91,7 @@ public class HdfsFileReaderTest extends HdfsTestBase {
       assertEquals(crc11, crc22);
       // EOF exception is expected
       segment = new FileBasedShuffleSegment(23, offset * 2, length, length, 1, 1);
-      assertNull(reader.readData(segment.getOffset(), segment.getLength()));
+      assertEquals(0, reader.readData(segment.getOffset(), segment.getLength()).length);
     }
   }
 

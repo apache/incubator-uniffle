@@ -69,7 +69,7 @@ public class HdfsFileReader implements ShuffleReader, Closeable {
       LOG.warn("Can't read data for path:" + path + " with offset["
           + offset + "], length[" + length + "]", e);
     }
-    return null;
+    return new byte[0];
   }
 
   public void seek(long offset) throws Exception {

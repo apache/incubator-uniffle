@@ -26,6 +26,7 @@ package rss.common;
 service ShuffleServer {
   rpc registerShuffle (ShuffleRegisterRequest) returns (ShuffleRegisterResponse);
   rpc sendShuffleData (SendShuffleDataRequest) returns (SendShuffleDataResponse);
+  rpc getShuffleIndex (GetShuffleIndexRequest) returns (GetShuffleIndexResponse);
   rpc getShuffleData (GetShuffleDataRequest) returns (GetShuffleDataResponse);
   rpc commitShuffleTask (ShuffleCommitRequest) returns (ShuffleCommitResponse);
   rpc reportShuffleResult (ReportShuffleResultRequest) returns (ReportShuffleResultResponse);
@@ -70,15 +71,28 @@ message GetShuffleDataRequest {
   int32 partitionId = 3;
   int32 partitionNumPerRange = 4;
   int32 partitionNum = 5;
-  int32 readBufferSize = 6;
-  int32 segmentIndex = 7;
+  int64 offset = 6;
+  int32 length = 7;
 }
 
 message GetShuffleDataResponse {
   bytes data = 1;
-  repeated ShuffleDataBlockSegment blockSegments = 2;
-  StatusCode status = 3;
-  string retMsg = 4;
+  StatusCode status = 2;
+  string retMsg = 3;
+}
+
+message GetShuffleIndexRequest {
+  string appId = 1;
+  int32 shuffleId = 2;
+  int32 partitionId = 3;
+  int32 partitionNumPerRange = 4;
+  int32 partitionNum = 5;
+}
+
+message GetShuffleIndexResponse {
+  bytes indexData = 1;
+  StatusCode status = 2;
+  string retMsg = 3;
 }
 
 message ReportShuffleResultRequest {

@@ -239,6 +239,10 @@ public class ShuffleServer {
     return multiStorageManager;
   }
 
+  public boolean isMultiStorageEnabled() {
+    return multiStorageManager != null;
+  }
+
   public Set<String> getTags() {
     return tags;
   }

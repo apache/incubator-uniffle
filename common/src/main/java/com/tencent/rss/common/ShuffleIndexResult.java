@@ -16,12 +16,24 @@
  * specific language governing permissions and limitations under the License.
  */
 
+package com.tencent.rss.common;
 
-package com.tencent.rss.common.exception;
+public class ShuffleIndexResult {
+  private final byte[] indexData;
 
-public class RssException extends RuntimeException {
+  public ShuffleIndexResult() {
+    this(new byte[0]);
+  }
 
-  public RssException(String message) {
-    super(message);
+  public ShuffleIndexResult(byte[] bytes) {
+    this.indexData = bytes;
+  }
+
+  public byte[] getIndexData() {
+    return indexData;
+  }
+
+  public boolean isEmpty() {
+    return indexData == null || indexData.length == 0;
   }
 }

@@ -154,7 +154,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
       shuffleServerClient.getShuffleResult(req);
       fail("Exception should be thrown");
     } catch (Exception e) {
-      assertTrue(e.getMessage().contains("can't find shuffle data"));
+      assertTrue(e.getMessage().contains("Can't get shuffle result"));
     }
 
     RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest("shuffleResultTest", 100,
@@ -306,7 +306,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
       shuffleServerClient.getShuffleResult(req);
       fail("Exception should be thrown");
     } catch (Exception e) {
-      assertTrue(e.getMessage().contains("can't find shuffle data"));
+      assertTrue(e.getMessage().contains("Can't get shuffle result"));
     }
   }
 

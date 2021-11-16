@@ -252,6 +252,12 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(1024L * 1024L * 1024L)
       .withDescription("The max value of upload shuffle size");
 
+  public static final ConfigOption<Long> SERVER_SHUFFLE_INDEX_SIZE_HINT = ConfigOptions
+      .key("rss.server.index.size.hint")
+      .longType()
+      .defaultValue(2 * 1024L * 1024L)
+      .withDescription("The index file size hint");
+
   public ShuffleServerConf() {
   }
 

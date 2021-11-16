@@ -23,10 +23,17 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.tencent.rss.client.TestUtils;
 import com.tencent.rss.client.api.ShuffleReadClient;
+import com.tencent.rss.client.impl.grpc.ShuffleServerGrpcClient;
+import com.tencent.rss.client.request.RssGetShuffleDataRequest;
+import com.tencent.rss.client.request.RssGetShuffleIndexRequest;
 import com.tencent.rss.common.ShuffleBlockInfo;
+import com.tencent.rss.common.ShuffleDataResult;
+import com.tencent.rss.common.ShuffleDataSegment;
+import com.tencent.rss.common.ShuffleIndexResult;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.util.ChecksumUtils;
 import com.tencent.rss.common.util.Constants;
+import com.tencent.rss.common.util.RssUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import java.io.File;
@@ -106,5 +113,78 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
     tmpDir.deleteOnExit();
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
     return basePath;
+  }
+
+  protected List<ShuffleDataSegment> readShuffleIndexSegments(
+      ShuffleServerGrpcClient shuffleServerClient,
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int partitionNumPerRange,
+      int partitionNum,
+      int readBufferSize) {
+    // read index file
+    RssGetShuffleIndexRequest rgsir = new RssGetShuffleIndexRequest(
+        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
+    ShuffleIndexResult shuffleIndexResult = shuffleServerClient.getShuffleIndex(rgsir).getShuffleIndexResult();
+    return RssUtils.transIndexDataToSegments(shuffleIndexResult, readBufferSize);
+
+  }
+
+  protected ShuffleDataResult readShuffleData(
+      ShuffleServerGrpcClient shuffleServerClient,
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int partitionNumPerRange,
+      int partitionNum,
+      int segmentIndex,
+      List<ShuffleDataSegment> sds) {
+    if (segmentIndex >= sds.size()) {
+      return new ShuffleDataResult();
+    }
+
+    // read shuffle data
+    ShuffleDataSegment segment = sds.get(segmentIndex);
+    RssGetShuffleDataRequest rgsdr = new RssGetShuffleDataRequest(
+        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum,
+        segment.getOffset(), segment.getLength());
+
+    return new ShuffleDataResult(
+        shuffleServerClient.getShuffleData(rgsdr).getShuffleData(),
+        segment.getBufferSegments());
+  }
+
+  protected ShuffleDataResult readShuffleData(
+      ShuffleServerGrpcClient shuffleServerClient,
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int partitionNumPerRange,
+      int partitionNum,
+      int readBufferSize,
+      int segmentIndex) {
+    // read index file
+    RssGetShuffleIndexRequest rgsir = new RssGetShuffleIndexRequest(
+        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
+    ShuffleIndexResult shuffleIndexResult = shuffleServerClient.getShuffleIndex(rgsir).getShuffleIndexResult();
+    if (shuffleIndexResult == null) {
+      return new ShuffleDataResult();
+    }
+    List<ShuffleDataSegment> sds = RssUtils.transIndexDataToSegments(shuffleIndexResult, readBufferSize);
+
+    if (segmentIndex >= sds.size()) {
+      return new ShuffleDataResult();
+    }
+
+    // read shuffle data
+    ShuffleDataSegment segment = sds.get(segmentIndex);
+    RssGetShuffleDataRequest rgsdr = new RssGetShuffleDataRequest(
+        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum,
+        segment.getOffset(), segment.getLength());
+
+    return new ShuffleDataResult(
+        shuffleServerClient.getShuffleData(rgsdr).getShuffleData(),
+        segment.getBufferSegments());
   }
 }

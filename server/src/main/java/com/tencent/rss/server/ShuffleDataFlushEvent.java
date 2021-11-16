@@ -18,10 +18,8 @@
 
 package com.tencent.rss.server;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import com.tencent.rss.common.ShufflePartitionedBlock;
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ShuffleDataFlushEvent {

@@ -18,21 +18,17 @@
 
 package com.tencent.rss.client.response;
 
-import com.tencent.rss.common.ShuffleDataResult;
-
 public class RssGetShuffleDataResponse extends ClientResponse {
 
-  private ShuffleDataResult shuffleDataResult;
+  private final byte[] shuffleData;
 
-  public RssGetShuffleDataResponse(ResponseStatusCode statusCode) {
+  public RssGetShuffleDataResponse(ResponseStatusCode statusCode, byte[] data) {
     super(statusCode);
+    this.shuffleData = data;
   }
 
-  public ShuffleDataResult getShuffleDataResult() {
-    return shuffleDataResult;
+  public byte[] getShuffleData() {
+    return shuffleData;
   }
 
-  public void setShuffleDataResult(ShuffleDataResult shuffleDataResult) {
-    this.shuffleDataResult = shuffleDataResult;
-  }
 }

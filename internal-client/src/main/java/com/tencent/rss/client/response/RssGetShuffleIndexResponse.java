@@ -16,12 +16,20 @@
  * specific language governing permissions and limitations under the License.
  */
 
+package com.tencent.rss.client.response;
 
-package com.tencent.rss.common.exception;
+import com.tencent.rss.common.ShuffleIndexResult;
 
-public class RssException extends RuntimeException {
+public class RssGetShuffleIndexResponse extends ClientResponse  {
+  private final ShuffleIndexResult shuffleIndexResult;
 
-  public RssException(String message) {
-    super(message);
+  public RssGetShuffleIndexResponse(ResponseStatusCode statusCode, byte[] data) {
+    super(statusCode);
+    this.shuffleIndexResult = new ShuffleIndexResult(data);
   }
+
+  public ShuffleIndexResult getShuffleIndexResult() {
+    return shuffleIndexResult;
+  }
+
 }

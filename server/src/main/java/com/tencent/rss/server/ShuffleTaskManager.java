@@ -26,8 +26,10 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.common.ShuffleDataResult;
+import com.tencent.rss.common.ShuffleIndexResult;
 import com.tencent.rss.common.ShufflePartitionedBlock;
 import com.tencent.rss.common.ShufflePartitionedData;
+import com.tencent.rss.common.config.RssBaseConf;
 import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.common.util.RssUtils;
 import com.tencent.rss.storage.factory.ShuffleHandlerFactory;
@@ -312,15 +314,15 @@ public class ShuffleTaskManager {
 
   public ShuffleDataResult getShuffleData(
       String appId, Integer shuffleId, Integer partitionId, int partitionNumPerRange,
-      int partitionNum, int readBufferSize, String storageType, int segmentIndex) {
+      int partitionNum, String storageType, long offset, int length) {
     refreshAppId(appId);
+
     CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
     request.setAppId(appId);
     request.setShuffleId(shuffleId);
     request.setPartitionId(partitionId);
     request.setPartitionNumPerRange(partitionNumPerRange);
     request.setPartitionNum(partitionNum);
-    request.setReadBufferSize(readBufferSize);
     request.setStorageType(storageType);
     request.setRssBaseConf(conf);
 
@@ -328,8 +330,31 @@ public class ShuffleTaskManager {
     Map<String, ServerReadHandler> handlerMap = serverReadHandlers.get(appId);
     String key = "" + request.getShuffleId() + "_" + partitionId;
     handlerMap.putIfAbsent(key, ShuffleHandlerFactory.getInstance().createServerReadHandler(request));
-    ShuffleDataResult shuffleDataResult = handlerMap.get(key).getShuffleData(segmentIndex);
-    return shuffleDataResult;
+    return handlerMap.get(key).getShuffleData(offset, length);
+  }
+
+  public ShuffleIndexResult getShuffleIndex(
+      String appId,
+      Integer shuffleId,
+      Integer partitionId,
+      int partitionNumPerRange,
+      int partitionNum) {
+    refreshAppId(appId);
+    String storageType = conf.getString(RssBaseConf.RSS_STORAGE_TYPE);
+    CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
+    request.setAppId(appId);
+    request.setShuffleId(shuffleId);
+    request.setPartitionId(partitionId);
+    request.setPartitionNumPerRange(partitionNumPerRange);
+    request.setPartitionNum(partitionNum);
+    request.setStorageType(storageType);
+    request.setRssBaseConf(conf);
+
+    serverReadHandlers.putIfAbsent(appId, Maps.newConcurrentMap());
+    Map<String, ServerReadHandler> handlerMap = serverReadHandlers.get(appId);
+    String key = "" + request.getShuffleId() + "_" + partitionId;
+    handlerMap.putIfAbsent(key, ShuffleHandlerFactory.getInstance().createServerReadHandler(request));
+    return handlerMap.get(key).getShuffleIndex();
   }
 
   public void checkResourceStatus() {

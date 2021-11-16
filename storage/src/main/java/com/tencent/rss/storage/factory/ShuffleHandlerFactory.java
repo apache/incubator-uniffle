@@ -92,9 +92,13 @@ public class ShuffleHandlerFactory {
   public ServerReadHandler createServerReadHandler(CreateShuffleReadHandlerRequest request) {
     if (StorageType.LOCALFILE.name().equals(request.getStorageType())
       || StorageType.LOCALFILE_AND_HDFS.name().equals(request.getStorageType())) {
-      return new LocalFileServerReadHandler(request.getAppId(), request.getShuffleId(),
-          request.getPartitionId(), request.getPartitionNumPerRange(), request.getPartitionNum(),
-          request.getReadBufferSize(), request.getRssBaseConf());
+      return new LocalFileServerReadHandler(
+          request.getAppId(),
+          request.getShuffleId(),
+          request.getPartitionId(),
+          request.getPartitionNumPerRange(),
+          request.getPartitionNum(),
+          request.getRssBaseConf());
     } else {
       throw new UnsupportedOperationException(
           "Doesn't support storage type for server read handler:" + request.getStorageType());

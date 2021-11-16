@@ -157,7 +157,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
       readClient.readShuffleBlockData();
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
-      assertTrue(e.getMessage().contains("Failed to read shuffle data"));
+      assertTrue(e.getMessage().contains("Failed to read shuffle index"));
     }
     readClient.close();
   }
