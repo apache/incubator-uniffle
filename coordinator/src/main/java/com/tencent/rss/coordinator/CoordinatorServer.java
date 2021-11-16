@@ -21,7 +21,6 @@ package com.tencent.rss.coordinator;
 import com.tencent.rss.common.Arguments;
 import com.tencent.rss.common.metrics.JvmMetrics;
 import com.tencent.rss.common.rpc.ServerInterface;
-import com.tencent.rss.common.util.ExitUtils;
 import com.tencent.rss.common.web.CommonMetricsServlet;
 import com.tencent.rss.common.web.JettyServer;
 import io.prometheus.client.CollectorRegistry;

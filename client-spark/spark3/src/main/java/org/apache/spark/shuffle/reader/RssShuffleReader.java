@@ -180,7 +180,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     java.util.Iterator<RssShuffleDataIterator> iterator;
     RssShuffleDataIterator dataIterator;
 
-    public MultiPartitionIterator() {
+    MultiPartitionIterator() {
       List<RssShuffleDataIterator> iterators = Lists.newArrayList();
       for (int partition = startPartition; partition < endPartition; partition++) {
         if (partitionToExpectBlocks.get(partition).isEmpty()) {

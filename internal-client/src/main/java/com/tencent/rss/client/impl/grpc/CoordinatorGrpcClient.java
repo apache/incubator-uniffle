@@ -21,7 +21,6 @@ package com.tencent.rss.client.impl.grpc;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.protobuf.Empty;
 import com.tencent.rss.client.api.CoordinatorClient;
 import com.tencent.rss.client.request.RssAppHeartBeatRequest;

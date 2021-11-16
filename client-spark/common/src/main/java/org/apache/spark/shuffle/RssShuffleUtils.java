@@ -30,7 +30,6 @@ import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
-import org.apache.spark.SparkEnv;
 import org.apache.spark.deploy.SparkHadoopUtil;
 import org.apache.spark.io.CompressionCodec;
 import org.slf4j.Logger;

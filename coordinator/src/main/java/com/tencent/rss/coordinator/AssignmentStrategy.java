@@ -18,7 +18,6 @@
 
 package com.tencent.rss.coordinator;
 
-import java.util.List;
 import java.util.Set;
 
 public interface AssignmentStrategy {

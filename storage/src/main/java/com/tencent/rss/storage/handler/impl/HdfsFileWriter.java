@@ -22,10 +22,8 @@ import com.tencent.rss.common.util.ChecksumUtils;
 import com.tencent.rss.storage.common.FileBasedShuffleSegment;
 import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import java.io.Closeable;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.List;
 
@@ -148,16 +146,4 @@ public class HdfsFileWriter implements Closeable {
     IOUtils.copyBytes(inputStream, fsDataOutputStream, bufferSize);
     return fsDataOutputStream.getPos() - start;
   }
-
-//  private void flush() throws IOException {
-//    try {
-//      fsDataOutputStream.hflush();
-//      // Useful for local file system where hflush/sync does not work (HADOOP-7844)
-//      fsDataOutputStream.getWrappedStream().flush();
-//    } catch (IOException e) {
-//      logger.error("Fail to flush output stream of {}, {}", path, e.getCause());
-//      throw e;
-//    }
-//  }
-
 }
