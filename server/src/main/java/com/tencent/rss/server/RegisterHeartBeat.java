@@ -21,7 +21,6 @@ package com.tencent.rss.server;
 import com.google.common.annotations.VisibleForTesting;
 import com.tencent.rss.client.api.CoordinatorClient;
 import com.tencent.rss.client.factory.CoordinatorClientFactory;
-import com.tencent.rss.client.impl.grpc.CoordinatorGrpcClient;
 import com.tencent.rss.client.request.RssSendHeartBeatRequest;
 import com.tencent.rss.client.response.ResponseStatusCode;
 import com.tencent.rss.client.response.RssSendHeartBeatResponse;
@@ -49,7 +48,6 @@ public class RegisterHeartBeat {
   private final ExecutorService heartBeatExecutorService;
   private long heartBeatTimeout;
 
-
   public RegisterHeartBeat(ShuffleServer shuffleServer) {
     ShuffleServerConf conf = shuffleServer.getShuffleServerConf();
     this.heartBeatInitialDelay = conf.getLong(ShuffleServerConf.SERVER_HEARTBEAT_DELAY);
@@ -62,11 +60,6 @@ public class RegisterHeartBeat {
     this.shuffleServer = shuffleServer;
     this.heartBeatExecutorService = Executors.newFixedThreadPool(
         conf.getInteger(ShuffleServerConf.SERVER_HEARTBEAT_THREAD_NUM));
-  }
-
-  public RegisterHeartBeat(ShuffleServer shuffleServer, CoordinatorGrpcClient client) {
-    this(shuffleServer);
-    this.coordinatorClients.add(client);
   }
 
   public void startHeartBeat() {
@@ -82,7 +75,8 @@ public class RegisterHeartBeat {
             shuffleServer.getPreAllocatedMemory(),
             shuffleServer.getAvailableMemory(),
             shuffleServer.getEventNumInFlush(),
-            shuffleServer.getTags());
+            shuffleServer.getTags(),
+            shuffleServer.isHealthy());
       } catch (Exception e) {
         LOG.warn("Error happened when send heart beat to coordinator");
       }
@@ -91,11 +85,28 @@ public class RegisterHeartBeat {
   }
 
   @VisibleForTesting
-  boolean sendHeartBeat(String id, String ip, int port, long usedMemory,
-      long preAllocatedMemory, long availableMemory, int eventNumInFlush, Set<String> tags) {
+  boolean sendHeartBeat(
+      String id,
+      String ip,
+      int port,
+      long usedMemory,
+      long preAllocatedMemory,
+      long availableMemory,
+      int eventNumInFlush,
+      Set<String> tags,
+      boolean isHealthy) {
     boolean sendSuccessfully = false;
     RssSendHeartBeatRequest request = new RssSendHeartBeatRequest(
-        id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, heartBeatTimeout, tags);
+        id,
+        ip,
+        port,
+        usedMemory,
+        preAllocatedMemory,
+        availableMemory,
+        eventNumInFlush,
+        heartBeatTimeout,
+        tags,
+        isHealthy);
     List<Future<RssSendHeartBeatResponse>> respFutures = coordinatorClients
         .stream()
         .map(client -> heartBeatExecutorService.submit(() -> client.sendHeartBeat(request)))
@@ -124,10 +135,4 @@ public class RegisterHeartBeat {
     heartBeatExecutorService.shutdownNow();
     service.shutdownNow();
   }
-
-  @VisibleForTesting
-  void setHeartBeatTimeout(long timeout) {
-    this.heartBeatTimeout = timeout;
-  }
-
 }

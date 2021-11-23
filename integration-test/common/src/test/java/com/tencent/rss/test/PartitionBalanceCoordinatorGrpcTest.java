@@ -19,16 +19,12 @@
 package com.tencent.rss.test;
 
 import com.google.common.collect.Sets;
-import com.tencent.rss.client.factory.CoordinatorClientFactory;
-import com.tencent.rss.client.impl.grpc.CoordinatorGrpcClient;
 import com.tencent.rss.client.request.RssGetShuffleAssignmentsRequest;
 import com.tencent.rss.client.response.RssGetShuffleAssignmentsResponse;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.coordinator.CoordinatorConf;
 import com.tencent.rss.server.ShuffleServerConf;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,10 +33,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-public class PartitionBalanceCoordinatorGrpcTest extends IntegrationTestBase {
-
-  private CoordinatorClientFactory factory = new CoordinatorClientFactory("GRPC");
-  private CoordinatorGrpcClient coordinatorClient;
+public class PartitionBalanceCoordinatorGrpcTest extends CoordinatorTestBase {
 
   @BeforeClass
   public static void setupServers() throws Exception {
@@ -60,19 +53,6 @@ public class PartitionBalanceCoordinatorGrpcTest extends IntegrationTestBase {
     shuffleServerConf.setString("rss.server.buffer.capacity", "102400000");
     createShuffleServer(shuffleServerConf);
     startServers();
-  }
-
-  @Before
-  public void createClient() {
-    coordinatorClient =
-        (CoordinatorGrpcClient) factory.createCoordinatorClient(LOCALHOST, COORDINATOR_PORT_1);
-  }
-
-  @After
-  public void closeClient() {
-    if (coordinatorClient != null) {
-      coordinatorClient.close();
-    }
   }
 
   @Test

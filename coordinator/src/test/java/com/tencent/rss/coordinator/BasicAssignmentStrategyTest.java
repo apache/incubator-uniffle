@@ -57,7 +57,7 @@ public class BasicAssignmentStrategyTest {
   public void testAssign() {
     for (int i = 0; i < 20; ++i) {
       clusterManager.add(new ServerNode(String.valueOf(i), "", 0, 0, 0,
-          20 - i, 0, tags));
+          20 - i, 0, tags, true));
     }
 
     PartitionRangeAssignment pra = strategy.assign(100, 10, 2, tags);
@@ -84,7 +84,7 @@ public class BasicAssignmentStrategyTest {
   public void testRandomAssign() {
     for (int i = 0; i < 20; ++i) {
       clusterManager.add(new ServerNode(String.valueOf(i), "", 0, 0, 0,
-          0, 0, tags));
+          0, 0, tags, true));
     }
     PartitionRangeAssignment pra = strategy.assign(100, 10, 2, tags);
     SortedMap<PartitionRange, List<ServerNode>> assignments = pra.getAssignments();
@@ -107,11 +107,11 @@ public class BasicAssignmentStrategyTest {
   @Test
   public void testAssignWithDifferentNodeNum() {
     ServerNode sn1 = new ServerNode("sn1", "", 0, 0, 0,
-        20, 0, tags);
+        20, 0, tags, true);
     ServerNode sn2 = new ServerNode("sn2", "", 0, 0, 0,
-        10, 0, tags);
+        10, 0, tags, true);
     ServerNode sn3 = new ServerNode("sn3", "", 0, 0, 0,
-        0, 0, tags);
+        0, 0, tags, true);
 
     clusterManager.add(sn1);
     PartitionRangeAssignment pra = strategy.assign(100, 10, 2, tags);

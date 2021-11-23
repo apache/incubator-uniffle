@@ -147,7 +147,9 @@ public class SimpleClusterManager implements ClusterManager {
   public List<ServerNode> getServerList(Set<String> requiredTags) {
     List<ServerNode> availableNodes = Lists.newArrayList();
     for (ServerNode node : servers.values()) {
-      if (!excludeNodes.contains(node.getId()) && node.getTags().containsAll(requiredTags)) {
+      if (!excludeNodes.contains(node.getId())
+          && node.getTags().containsAll(requiredTags)
+          && node.isHealthy()) {
         availableNodes.add(node);
       }
     }

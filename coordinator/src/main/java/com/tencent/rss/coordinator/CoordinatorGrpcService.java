@@ -207,6 +207,10 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
   }
 
   private ServerNode toServerNode(ShuffleServerHeartBeatRequest request) {
+    boolean isHealthy = true;
+    if (request.hasIsHealthy()) {
+      isHealthy = request.getIsHealthy().getValue();
+    }
     return new ServerNode(request.getServerId().getId(),
         request.getServerId().getIp(),
         request.getServerId().getPort(),
@@ -214,6 +218,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         request.getPreAllocatedMemory(),
         request.getAvailableMemory(),
         request.getEventNumInFlush(),
-        Sets.newHashSet(request.getTagsList()));
+        Sets.newHashSet(request.getTagsList()),
+        isHealthy);
   }
 }

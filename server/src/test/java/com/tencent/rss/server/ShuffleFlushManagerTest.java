@@ -289,10 +289,10 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
       processEventsTmpdir.create();
       shuffleServerConf.set(RssBaseConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.toString());
       shuffleServerConf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, processEventsTmpdir.getRoot().getAbsolutePath());
-      shuffleServerConf.set(ShuffleServerConf.RSS_DISK_CAPACITY, 100L);
-      shuffleServerConf.set(ShuffleServerConf.RSS_PENDING_EVENT_TIMEOUT_SEC, 5L);
-      shuffleServerConf.set(ShuffleServerConf.RSS_HDFS_BASE_PATH, "test");
-      shuffleServerConf.set(ShuffleServerConf.RSS_USE_MULTI_STORAGE, true);
+      shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
+      shuffleServerConf.set(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 5L);
+      shuffleServerConf.set(ShuffleServerConf.HDFS_BASE_PATH, "test");
+      shuffleServerConf.set(ShuffleServerConf.USE_MULTI_STORAGE, true);
       MultiStorageManager storageManager = new MultiStorageManager(shuffleServerConf, "");
       ShuffleFlushManager manager =
           new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, storageManager);

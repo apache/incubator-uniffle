@@ -156,97 +156,97 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(10000000L)
       .withDescription("Threshold for event size");
 
-  public static final ConfigOption<Double> RSS_CLEANUP_THRESHOLD = ConfigOptions
+  public static final ConfigOption<Double> CLEANUP_THRESHOLD = ConfigOptions
       .key("rss.server.cleanup.threshold")
       .doubleType()
       .defaultValue(70.0)
       .withDescription("Threshold for disk cleanup");
 
-  public static final ConfigOption<Double> RSS_HIGH_WATER_MARK_OF_WRITE = ConfigOptions
+  public static final ConfigOption<Double> HIGH_WATER_MARK_OF_WRITE = ConfigOptions
       .key("rss.server.high.watermark.write")
       .doubleType()
       .defaultValue(95.0)
       .withDescription("If disk usage is bigger than this value, disk cannot been written");
 
-  public static final ConfigOption<Double> RSS_LOW_WATER_MARK_OF_WRITE = ConfigOptions
+  public static final ConfigOption<Double> LOW_WATER_MARK_OF_WRITE = ConfigOptions
       .key("rss.server.low.watermark.write")
       .doubleType()
       .defaultValue(85.0)
       .withDescription("If disk usage is smaller than this value, disk can been written again");
-  public static final ConfigOption<Long> RSS_PENDING_EVENT_TIMEOUT_SEC = ConfigOptions
+  public static final ConfigOption<Long> PENDING_EVENT_TIMEOUT_SEC = ConfigOptions
       .key("rss.server.pending.event.timeoutSec")
       .longType()
       .defaultValue(60L)
       .withDescription("If disk cannot be written for timeout seconds, the flush data event will fail");
 
-  public static final ConfigOption<Boolean> RSS_UPLOADER_ENABLE = ConfigOptions
+  public static final ConfigOption<Boolean> UPLOADER_ENABLE = ConfigOptions
       .key("rss.server.uploader.enable")
       .booleanType()
       .defaultValue(false)
       .withDescription("A switch of the uploader");
 
-  public static final ConfigOption<Integer> RSS_UPLOADER_THREAD_NUM = ConfigOptions
+  public static final ConfigOption<Integer> UPLOADER_THREAD_NUM = ConfigOptions
       .key("rss.server.uploader.thread.number")
       .intType()
       .defaultValue(4)
       .withDescription("The thread number of the uploader");
 
-  public static final ConfigOption<Long> RSS_UPLOADER_INTERVAL_MS = ConfigOptions
+  public static final ConfigOption<Long> UPLOADER_INTERVAL_MS = ConfigOptions
       .key("rss.server.uploader.interval.ms")
       .longType()
       .defaultValue(3000L)
       .withDescription("The interval for the uploader");
 
-  public static final ConfigOption<Long> RSS_UPLOAD_COMBINE_THRESHOLD_MB = ConfigOptions
+  public static final ConfigOption<Long> UPLOAD_COMBINE_THRESHOLD_MB = ConfigOptions
       .key("rss.server.uploader.combine.threshold.MB")
       .longType()
       .defaultValue(32L)
       .withDescription("The threshold of the combine mode");
 
-  public static final ConfigOption<String> RSS_HDFS_BASE_PATH = ConfigOptions
+  public static final ConfigOption<String> HDFS_BASE_PATH = ConfigOptions
       .key("rss.server.uploader.base.path")
       .stringType()
       .noDefaultValue()
       .withDescription("The base path of the uploader");
 
-  public static final ConfigOption<String> RSS_UPLOAD_STORAGE_TYPE = ConfigOptions
+  public static final ConfigOption<String> UPLOAD_STORAGE_TYPE = ConfigOptions
       .key("rss.server.uploader.remote.storage.type")
       .stringType()
       .defaultValue("HDFS")
       .withDescription("The remote storage type of the uploader");
 
-  public static final ConfigOption<Long> RSS_REFERENCE_UPLOAD_SPEED_MBS = ConfigOptions
+  public static final ConfigOption<Long> REFERENCE_UPLOAD_SPEED_MBS = ConfigOptions
       .key("rss.server.uploader.references.speed.mbps")
       .longType()
       .defaultValue(8L)
       .withDescription("The speed for the uploader");
 
-  public static final ConfigOption<Long> RSS_DISK_CAPACITY = ConfigOptions
+  public static final ConfigOption<Long> DISK_CAPACITY = ConfigOptions
       .key("rss.server.disk.capacity")
       .longType()
       .defaultValue(1024L * 1024L * 1024L * 1024L)
       .withDescription("Disk capacity that shuffle server can use");
 
-  public static final ConfigOption<Long> RSS_CLEANUP_INTERVAL_MS = ConfigOptions
+  public static final ConfigOption<Long> CLEANUP_INTERVAL_MS = ConfigOptions
       .key("rss.server.cleanup.interval.ms")
       .longType()
       .defaultValue(3000L)
       .withDescription("The interval for cleanup");
 
-  public static final ConfigOption<Long> RSS_SHUFFLE_EXPIRED_TIMEOUT_MS = ConfigOptions
+  public static final ConfigOption<Long> SHUFFLE_EXPIRED_TIMEOUT_MS = ConfigOptions
       .key("rss.server.shuffle.expired.timeout.ms")
       .longType()
       .defaultValue(60L * 1000 * 5)
       .withDescription("If the shuffle is not read for the long time, and shuffle is uploaded totally,"
           + " , we can delete the shuffle");
 
-  public static final ConfigOption<Boolean> RSS_USE_MULTI_STORAGE = ConfigOptions
+  public static final ConfigOption<Boolean> USE_MULTI_STORAGE = ConfigOptions
       .key("rss.server.use.multistorage")
       .booleanType()
       .defaultValue(false)
       .withDescription("The function switch for multiStorage");
 
-  public static final ConfigOption<Long> RSS_SHUFFLE_MAX_UPLOAD_SIZE = ConfigOptions
+  public static final ConfigOption<Long> SHUFFLE_MAX_UPLOAD_SIZE = ConfigOptions
       .key("rss.server.shuffle.max.upload.size")
       .longType()
       .defaultValue(1024L * 1024L * 1024L)
@@ -257,6 +257,50 @@ public class ShuffleServerConf extends RssBaseConf {
       .longType()
       .defaultValue(2 * 1024L * 1024L)
       .withDescription("The index file size hint");
+
+  public static final ConfigOption<Double> HEALTH_STORAGE_MAX_USAGE_PERCENTAGE = ConfigOptions
+      .key("rss.server.health.max.storage.usage.percentage")
+      .doubleType()
+      .checkValue(ConfigUtils.percentageDoubleValidator,
+          "The max usage percentage must be between 0.0 and 100.0")
+      .defaultValue(90.0)
+      .withDescription("The usage percentage of a storage exceed the value, the disk become unavailable");
+
+  public static final ConfigOption<Double> HEALTH_STORAGE_RECOVERY_USAGE_PERCENTAGE = ConfigOptions
+      .key("rss.server.health.storage.recovery.usage.percentage")
+      .doubleType()
+      .checkValue(ConfigUtils.percentageDoubleValidator,
+          "The recovery usage percentage must be between 0.0 and 100.0")
+      .defaultValue(80.0)
+      .withDescription("The usage percentage of an unavailable storage decline the value, the disk"
+          + " will become available");
+
+  public static final ConfigOption<Long> HEALTH_CHECK_INTERVAL = ConfigOptions
+      .key("rss.server.health.check.interval.ms")
+      .longType()
+      .checkValue(ConfigUtils.positiveLongValidator,  "The interval for health check must be positive")
+      .defaultValue(5000L)
+      .withDescription("The interval for health check");
+
+  public static final ConfigOption<Double> HEALTH_MIN_STORAGE_PERCENTAGE = ConfigOptions
+      .key("rss.server.health.min.storage.percentage")
+      .doubleType()
+      .checkValue(ConfigUtils.percentageDoubleValidator,
+          "The minimum for healthy storage percentage must be between 0.0 and 100.0")
+      .defaultValue(80.0)
+      .withDescription("The minimum fraction of storage that must pass the check mark the node as healthy");
+
+  public static final ConfigOption<Boolean> HEALTH_CHECK_ENABLE = ConfigOptions
+      .key("rss.server.health.check.enable")
+      .booleanType()
+      .defaultValue(true)
+      .withDescription("The switch for the health check");
+
+  public static final ConfigOption<String> HEALTH_CHECKER_CLASS_NAMES = ConfigOptions
+      .key("rss.server.health.checker.class.names")
+      .stringType()
+      .defaultValue("com.tencent.rss.server.LocalStorageChecker")
+      .withDescription("The list of the Checker's name");
 
   public ShuffleServerConf() {
   }

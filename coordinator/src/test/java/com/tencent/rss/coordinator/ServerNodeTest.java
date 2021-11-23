@@ -33,11 +33,11 @@ public class ServerNodeTest {
   public void compareTest() {
     Set<String> tags = Sets.newHashSet("test");
     ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-        10, tags);
+        10, tags, true);
     ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-        10, tags);
+        10, tags, true);
     ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-        11, tags);
+        11, tags, true);
     List<ServerNode> nodes = Lists.newArrayList(sn1, sn2, sn3);
     Collections.sort(nodes);
     assertEquals("sn2", nodes.get(0).getId());

@@ -30,6 +30,8 @@ import com.tencent.rss.common.web.JettyServer;
 import com.tencent.rss.storage.util.StorageType;
 import io.prometheus.client.CollectorRegistry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -51,7 +53,9 @@ public class ShuffleServer {
   private ShuffleFlushManager shuffleFlushManager;
   private ShuffleBufferManager shuffleBufferManager;
   private MultiStorageManager multiStorageManager;
+  private HealthCheck healthCheck;
   private Set<String> tags = Sets.newHashSet();
+  private AtomicBoolean isHealthy = new AtomicBoolean(true);
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -108,6 +112,10 @@ public class ShuffleServer {
       multiStorageManager.stop();
       LOG.info("MultiStorage Stopped!");
     }
+    if (healthCheck != null) {
+      healthCheck.stop();
+      LOG.info("HealthCheck stopped!");
+    }
     server.stop();
     LOG.info("RPC Server Stopped!");
   }
@@ -124,11 +132,11 @@ public class ShuffleServer {
     registerMetrics();
     addServlet(jettyServer);
 
-    boolean useMultiStorage = shuffleServerConf.getBoolean(ShuffleServerConf.RSS_USE_MULTI_STORAGE);
+    boolean useMultiStorage = shuffleServerConf.getBoolean(ShuffleServerConf.USE_MULTI_STORAGE);
     String storageType = shuffleServerConf.getString(RssBaseConf.RSS_STORAGE_TYPE);
     if (StorageType.LOCALFILE_AND_HDFS.name().equals(storageType)) {
       useMultiStorage = true;
-      shuffleServerConf.setBoolean(ShuffleServerConf.RSS_USE_MULTI_STORAGE, true);
+      shuffleServerConf.setBoolean(ShuffleServerConf.USE_MULTI_STORAGE, true);
       LOG.warn("StorageType LOCALFILE_HDFS will enable multistorage function");
     }
     if (useMultiStorage && !StorageType.LOCALFILE_AND_HDFS.name().equals(storageType)) {
@@ -138,6 +146,13 @@ public class ShuffleServer {
       multiStorageManager = new MultiStorageManager(shuffleServerConf, id);
       multiStorageManager.start();
     }
+
+    boolean healthCheckEnable = shuffleServerConf.getBoolean(ShuffleServerConf.HEALTH_CHECK_ENABLE);
+    if (healthCheckEnable) {
+      healthCheck = new HealthCheck(isHealthy, shuffleServerConf);
+      healthCheck.start();
+    }
+
     registerHeartBeat = new RegisterHeartBeat(this);
     shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, id, this, multiStorageManager);
     shuffleBufferManager = new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager);
@@ -245,5 +260,9 @@ public class ShuffleServer {
 
   public Set<String> getTags() {
     return tags;
+  }
+
+  public boolean isHealthy() {
+    return isHealthy.get();
   }
 }

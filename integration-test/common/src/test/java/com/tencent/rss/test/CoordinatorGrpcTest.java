@@ -25,8 +25,6 @@ import static org.junit.Assert.fail;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.tencent.rss.client.factory.CoordinatorClientFactory;
-import com.tencent.rss.client.impl.grpc.CoordinatorGrpcClient;
 import com.tencent.rss.client.request.RssAppHeartBeatRequest;
 import com.tencent.rss.client.request.RssGetShuffleAssignmentsRequest;
 import com.tencent.rss.client.response.ResponseStatusCode;
@@ -41,7 +39,6 @@ import com.tencent.rss.coordinator.ServerNode;
 import com.tencent.rss.coordinator.SimpleClusterManager;
 import com.tencent.rss.proto.RssProtos;
 import com.tencent.rss.proto.RssProtos.GetShuffleAssignmentsResponse;
-import com.tencent.rss.proto.RssProtos.GetShuffleServerListResponse;
 import com.tencent.rss.proto.RssProtos.PartitionRangeAssignment;
 import com.tencent.rss.proto.RssProtos.ShuffleServerId;
 import com.tencent.rss.server.ShuffleServer;
@@ -55,10 +52,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class CoordinatorGrpcTest extends IntegrationTestBase {
-
-  private CoordinatorClientFactory factory = new CoordinatorClientFactory("GRPC");
-  private CoordinatorGrpcClient coordinatorClient;
+public class CoordinatorGrpcTest extends CoordinatorTestBase {
 
   @BeforeClass
   public static void setupServers() throws Exception {
@@ -73,19 +67,6 @@ public class CoordinatorGrpcTest extends IntegrationTestBase {
     shuffleServerConf.setInteger("rss.jetty.http.port", 18081);
     createShuffleServer(shuffleServerConf);
     startServers();
-  }
-
-  @Before
-  public void createClient() {
-    coordinatorClient =
-        (CoordinatorGrpcClient) factory.createCoordinatorClient(LOCALHOST, COORDINATOR_PORT_1);
-  }
-
-  @After
-  public void closeClient() {
-    if (coordinatorClient != null) {
-      coordinatorClient.close();
-    }
   }
 
   @Test

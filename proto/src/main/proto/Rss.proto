@@ -18,6 +18,7 @@
 
 syntax = "proto3";
 import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
 option java_package = "com.tencent.rss.proto";
 option java_outer_classname = "RssProtos";
 option java_generate_equals_and_hash = true;
@@ -185,6 +186,7 @@ message ShuffleServerHeartBeatRequest {
   int64 availableMemory = 4;
   int32 eventNumInFlush = 5;
   repeated string tags = 6;
+  google.protobuf.BoolValue isHealthy = 7;
 }
 
 message ShuffleServerHeartBeatResponse {
@@ -303,4 +305,3 @@ message CheckServiceAvailableResponse {
   StatusCode status = 1;
   bool available = 2;
 }
-

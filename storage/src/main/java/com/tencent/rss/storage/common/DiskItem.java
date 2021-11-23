@@ -85,7 +85,6 @@ public class DiskItem {
         while (!isStopped) {
           try {
             clean();
-            // todo: get sleepInterval from configuration
             Uninterruptibles.sleepUninterruptibly(cleanIntervalMs, TimeUnit.MILLISECONDS);
           } catch (Exception e) {
             LOG.error(getName() + " happened exception: ", e);

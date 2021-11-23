@@ -44,7 +44,7 @@ public class MultiStorageManagerTest {
     TemporaryFolder tmp = new TemporaryFolder();
     tmp.create();
     conf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, tmp.getRoot().getAbsolutePath());
-    conf.set(ShuffleServerConf.RSS_DISK_CAPACITY, -1L);
+    conf.set(ShuffleServerConf.DISK_CAPACITY, -1L);
     try {
       new MultiStorageManager(conf, "");
     } catch (IllegalArgumentException ie) {
@@ -53,8 +53,8 @@ public class MultiStorageManagerTest {
     }
     assertTrue(isException);
 
-    conf.set(ShuffleServerConf.RSS_DISK_CAPACITY, 100L);
-    conf.set(ShuffleServerConf.RSS_CLEANUP_THRESHOLD, -1.0);
+    conf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
+    conf.set(ShuffleServerConf.CLEANUP_THRESHOLD, -1.0);
     isException = false;
     try {
       new MultiStorageManager(conf, "");
@@ -63,7 +63,7 @@ public class MultiStorageManagerTest {
       assertTrue(ie.getMessage().contains("cleanupThreshold must be between 0 and 100"));
     }
     assertTrue(isException);
-    conf.set(ShuffleServerConf.RSS_CLEANUP_THRESHOLD, 999.9);
+    conf.set(ShuffleServerConf.CLEANUP_THRESHOLD, 999.9);
     isException = false;
     try {
       new MultiStorageManager(conf, "");
@@ -72,9 +72,9 @@ public class MultiStorageManagerTest {
       assertTrue(ie.getMessage().contains("cleanupThreshold must be between 0 and 100"));
     }
     assertTrue(isException);
-    conf.set(ShuffleServerConf.RSS_CLEANUP_THRESHOLD, 85.1);
-    conf.set(ShuffleServerConf.RSS_HIGH_WATER_MARK_OF_WRITE, 10.0);
-    conf.set(ShuffleServerConf.RSS_LOW_WATER_MARK_OF_WRITE, 20.0);
+    conf.set(ShuffleServerConf.CLEANUP_THRESHOLD, 85.1);
+    conf.set(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE, 10.0);
+    conf.set(ShuffleServerConf.LOW_WATER_MARK_OF_WRITE, 20.0);
     isException = false;
     try {
       new MultiStorageManager(conf, "");
@@ -83,8 +83,8 @@ public class MultiStorageManagerTest {
       assertTrue(ie.getMessage().contains("highWaterMarkOfWrite must be larger than lowWaterMarkOfWrite"));
     }
     assertTrue(isException);
-    conf.set(ShuffleServerConf.RSS_HIGH_WATER_MARK_OF_WRITE, 120.0);
-    conf.set(ShuffleServerConf.RSS_LOW_WATER_MARK_OF_WRITE, -10.0);
+    conf.set(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE, 120.0);
+    conf.set(ShuffleServerConf.LOW_WATER_MARK_OF_WRITE, -10.0);
     isException = false;
     try {
       new MultiStorageManager(conf, "");
@@ -93,8 +93,8 @@ public class MultiStorageManagerTest {
       assertTrue(ie.getMessage().contains("lowWaterMarkOfWrite must be larger than zero"));
     }
     assertTrue(isException);
-    conf.set(ShuffleServerConf.RSS_HIGH_WATER_MARK_OF_WRITE, 120.0);
-    conf.set(ShuffleServerConf.RSS_LOW_WATER_MARK_OF_WRITE,  10.0);
+    conf.set(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE, 120.0);
+    conf.set(ShuffleServerConf.LOW_WATER_MARK_OF_WRITE,  10.0);
     isException = false;
     try {
       new MultiStorageManager(conf, "");
@@ -104,8 +104,8 @@ public class MultiStorageManagerTest {
     }
     assertTrue(isException);
 
-    conf.set(ShuffleServerConf.RSS_HIGH_WATER_MARK_OF_WRITE, 90.0);
-    conf.set(ShuffleServerConf.RSS_UPLOADER_THREAD_NUM, -1);
+    conf.set(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE, 90.0);
+    conf.set(ShuffleServerConf.UPLOADER_THREAD_NUM, -1);
     isException = false;
     try {
       new MultiStorageManager(conf, "");
@@ -115,8 +115,8 @@ public class MultiStorageManagerTest {
     }
     assertTrue(isException);
 
-    conf.set(ShuffleServerConf.RSS_UPLOADER_THREAD_NUM, 1);
-    conf.set(ShuffleServerConf.RSS_UPLOADER_INTERVAL_MS, -1L);
+    conf.set(ShuffleServerConf.UPLOADER_THREAD_NUM, 1);
+    conf.set(ShuffleServerConf.UPLOADER_INTERVAL_MS, -1L);
     isException = false;
     try {
       new MultiStorageManager(conf, "");
@@ -126,8 +126,8 @@ public class MultiStorageManagerTest {
     }
     assertTrue(isException);
 
-    conf.set(ShuffleServerConf.RSS_UPLOADER_INTERVAL_MS, 1L);
-    conf.set(ShuffleServerConf.RSS_UPLOAD_COMBINE_THRESHOLD_MB, -1L);
+    conf.set(ShuffleServerConf.UPLOADER_INTERVAL_MS, 1L);
+    conf.set(ShuffleServerConf.UPLOAD_COMBINE_THRESHOLD_MB, -1L);
     isException = false;
     try {
       new MultiStorageManager(conf, "");
@@ -137,8 +137,8 @@ public class MultiStorageManagerTest {
     }
     assertTrue(isException);
 
-    conf.set(ShuffleServerConf.RSS_UPLOAD_COMBINE_THRESHOLD_MB, 1L);
-    conf.set(ShuffleServerConf.RSS_REFERENCE_UPLOAD_SPEED_MBS, -1L);
+    conf.set(ShuffleServerConf.UPLOAD_COMBINE_THRESHOLD_MB, 1L);
+    conf.set(ShuffleServerConf.REFERENCE_UPLOAD_SPEED_MBS, -1L);
     isException = false;
     try {
       new MultiStorageManager(conf, "");
@@ -148,7 +148,7 @@ public class MultiStorageManagerTest {
     }
     assertTrue(isException);
 
-    conf.set(ShuffleServerConf.RSS_REFERENCE_UPLOAD_SPEED_MBS, 1L);
+    conf.set(ShuffleServerConf.REFERENCE_UPLOAD_SPEED_MBS, 1L);
     isException = false;
     try {
       new MultiStorageManager(conf, "");
@@ -158,8 +158,8 @@ public class MultiStorageManagerTest {
     }
     assertTrue(isException);
 
-    conf.set(ShuffleServerConf.RSS_HDFS_BASE_PATH, "testPath");
-    conf.set(ShuffleServerConf.RSS_UPLOAD_STORAGE_TYPE, "LOCALFILE");
+    conf.set(ShuffleServerConf.HDFS_BASE_PATH, "testPath");
+    conf.set(ShuffleServerConf.UPLOAD_STORAGE_TYPE, "LOCALFILE");
     isException = false;
     try {
       new MultiStorageManager(conf, "");
@@ -169,7 +169,7 @@ public class MultiStorageManagerTest {
     }
     assertTrue(isException);
 
-    conf.set(ShuffleServerConf.RSS_UPLOAD_STORAGE_TYPE, "XXXX");
+    conf.set(ShuffleServerConf.UPLOAD_STORAGE_TYPE, "XXXX");
     isException = false;
     try {
       new MultiStorageManager(conf, "");
@@ -179,9 +179,9 @@ public class MultiStorageManagerTest {
     }
     assertTrue(isException);
 
-    conf.set(ShuffleServerConf.RSS_UPLOAD_STORAGE_TYPE, "HDFS");
+    conf.set(ShuffleServerConf.UPLOAD_STORAGE_TYPE, "HDFS");
 
-    conf.set(ShuffleServerConf.RSS_DISK_CAPACITY, 1024L * 1024L * 1024L * 1024 * 1024L);
+    conf.set(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L * 1024 * 1024L);
     isException = false;
     try {
       new MultiStorageManager(conf, "");
@@ -190,9 +190,9 @@ public class MultiStorageManagerTest {
       isException = true;
     }
     assertTrue(isException);
-    conf.set(ShuffleServerConf.RSS_DISK_CAPACITY, 100L);
+    conf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
 
-    conf.set(ShuffleServerConf.RSS_CLEANUP_INTERVAL_MS, -1L);
+    conf.set(ShuffleServerConf.CLEANUP_INTERVAL_MS, -1L);
     isException = false;
     try {
       new MultiStorageManager(conf, "");
@@ -202,9 +202,9 @@ public class MultiStorageManagerTest {
     }
     assertTrue(isException);
 
-    conf.set(ShuffleServerConf.RSS_CLEANUP_INTERVAL_MS, 100L);
+    conf.set(ShuffleServerConf.CLEANUP_INTERVAL_MS, 100L);
 
-    conf.setLong(ShuffleServerConf.RSS_SHUFFLE_MAX_UPLOAD_SIZE, - 1);
+    conf.setLong(ShuffleServerConf.SHUFFLE_MAX_UPLOAD_SIZE, - 1);
     isException = false;
     try {
       new MultiStorageManager(conf, "");
@@ -213,7 +213,7 @@ public class MultiStorageManagerTest {
       isException = true;
     }
     assertTrue(isException);
-    conf.setLong(ShuffleServerConf.RSS_SHUFFLE_MAX_UPLOAD_SIZE, 100);
+    conf.setLong(ShuffleServerConf.SHUFFLE_MAX_UPLOAD_SIZE, 100);
     try {
       new MultiStorageManager(conf, "");
     } catch (IllegalArgumentException ie) {

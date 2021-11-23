@@ -32,9 +32,18 @@ public class ServerNode implements Comparable<ServerNode> {
   private int eventNumInFlush;
   private long timestamp;
   private Set<String> tags;
+  private boolean isHealthy;
 
-  public ServerNode(String id, String ip, int port, long usedMemory, long preAllocatedMemory, long availableMemory,
-      int eventNumInFlush, Set<String> tags) {
+  public ServerNode(
+      String id,
+      String ip,
+      int port,
+      long usedMemory,
+      long preAllocatedMemory,
+      long availableMemory,
+      int eventNumInFlush,
+      Set<String> tags,
+      boolean isHealthy) {
     this.id = id;
     this.ip = ip;
     this.port = port;
@@ -44,6 +53,7 @@ public class ServerNode implements Comparable<ServerNode> {
     this.eventNumInFlush = eventNumInFlush;
     this.timestamp = System.currentTimeMillis();
     this.tags = tags;
+    this.isHealthy = isHealthy;
   }
 
   public ShuffleServerId convertToGrpcProto() {
@@ -86,6 +96,10 @@ public class ServerNode implements Comparable<ServerNode> {
     return tags;
   }
 
+  public boolean isHealthy() {
+    return isHealthy;
+  }
+
   @Override
   public String toString() {
     return "ServerNode with id[" + id
@@ -96,7 +110,8 @@ public class ServerNode implements Comparable<ServerNode> {
         + "], availableMemory[" + availableMemory
         + "], eventNumInFlush[" + eventNumInFlush
         + "], timestamp[" + timestamp
-        + "], tags" + tags.toString() + "";
+        + "], tags" + tags.toString() + ""
+        + ", healthy[" + isHealthy + "]";
   }
 
   @Override

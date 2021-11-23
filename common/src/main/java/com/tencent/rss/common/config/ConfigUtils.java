@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.function.Function;
 
 import static java.lang.reflect.Modifier.isFinal;
 import static java.lang.reflect.Modifier.isPublic;
@@ -158,4 +159,10 @@ public class ConfigUtils {
     }
     return configOptionList;
   }
+
+  public static Function<Long, Boolean> positiveLongValidator = value -> value > 0;
+
+  public static Function<Double, Boolean> percentageDoubleValidator =
+      (Function<Double, Boolean>) value -> Double.compare(value, 100.0) <= 0 && Double.compare(value, 0.0) >= 0;
+  
 }

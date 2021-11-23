@@ -61,6 +61,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.setString("rss.storage.basePath", storageBasePath);
     conf.setString("rss.storage.type", "HDFS");
     conf.setString("rss.server.commit.timeout", "10000");
+    conf.setBoolean("rss.server.health.check.enable", false);
     ShuffleServer shuffleServer = new ShuffleServer(conf);
     ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf,
         shuffleServer.getShuffleFlushManager(), shuffleServer.getShuffleBufferManager(), null);
@@ -99,6 +100,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.setString("rss.storage.type", "HDFS");
     conf.setString("rss.server.commit.timeout", "10000");
     conf.setString("rss.server.preAllocation.expired", "3000");
+    conf.setBoolean("rss.server.health.check.enable", false);
     ShuffleServer shuffleServer = new ShuffleServer(conf);
     ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
     ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
@@ -221,6 +223,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.setString("rss.storage.type", "HDFS");
     conf.setString("rss.server.commit.timeout", "10000");
     conf.setString("rss.server.app.expired.withoutHeartbeat", "2000");
+    conf.setBoolean("rss.server.health.check.enable", false);
     ShuffleServer shuffleServer = new ShuffleServer(conf);
     ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
     ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();

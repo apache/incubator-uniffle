@@ -22,18 +22,28 @@ import java.util.Set;
 
 public class RssSendHeartBeatRequest {
 
-  private String shuffleServerId;
-  private String shuffleServerIp;
-  private int shuffleServerPort;
-  private long usedMemory;
-  private long preAllocatedMemory;
-  private long availableMemory;
-  private int eventNumInFlush;
-  private Set<String> tags;
-  private long timeout;
+  private final String shuffleServerId;
+  private final String shuffleServerIp;
+  private final int shuffleServerPort;
+  private final long usedMemory;
+  private final long preAllocatedMemory;
+  private final long availableMemory;
+  private final int eventNumInFlush;
+  private final Set<String> tags;
+  private final long timeout;
+  private final boolean isHealthy;
 
-  public RssSendHeartBeatRequest(String shuffleServerId, String shuffleServerIp, int shuffleServerPort, long usedMemory,
-      long preAllocatedMemory, long availableMemory, int eventNumInFlush, long timeout, Set<String> tags) {
+  public RssSendHeartBeatRequest(
+      String shuffleServerId,
+      String shuffleServerIp,
+      int shuffleServerPort,
+      long usedMemory,
+      long preAllocatedMemory,
+      long availableMemory,
+      int eventNumInFlush,
+      long timeout,
+      Set<String> tags,
+      boolean isHealthy) {
     this.shuffleServerId = shuffleServerId;
     this.shuffleServerIp = shuffleServerIp;
     this.shuffleServerPort = shuffleServerPort;
@@ -43,6 +53,7 @@ public class RssSendHeartBeatRequest {
     this.eventNumInFlush = eventNumInFlush;
     this.tags = tags;
     this.timeout = timeout;
+    this.isHealthy = isHealthy;
   }
 
   public String getShuffleServerId() {
@@ -79,5 +90,9 @@ public class RssSendHeartBeatRequest {
 
   public Set<String> getTags() {
     return tags;
+  }
+
+  public boolean isHealthy() {
+    return isHealthy;
   }
 }

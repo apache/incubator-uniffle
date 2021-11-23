@@ -96,8 +96,8 @@ public class ShuffleFlushManager {
     long keepAliveTime = shuffleServerConf.getLong(ShuffleServerConf.SERVER_FLUSH_THREAD_ALIVE);
     threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize, keepAliveTime, TimeUnit.SECONDS, waitQueue);
     storageBasePaths = shuffleServerConf.getString(ShuffleServerConf.RSS_STORAGE_BASE_PATH).split(",");
-    pendingEventTimeoutSec = shuffleServerConf.getLong(ShuffleServerConf.RSS_PENDING_EVENT_TIMEOUT_SEC);
-    useMultiStorage = shuffleServerConf.getBoolean(ShuffleServerConf.RSS_USE_MULTI_STORAGE);
+    pendingEventTimeoutSec = shuffleServerConf.getLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC);
+    useMultiStorage = shuffleServerConf.getBoolean(ShuffleServerConf.USE_MULTI_STORAGE);
     // the thread for flush data
     processEventThread = () -> {
       while (true) {

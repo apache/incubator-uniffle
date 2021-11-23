@@ -26,7 +26,7 @@ import com.tencent.rss.storage.handler.api.ShuffleDeleteHandler;
 import com.tencent.rss.storage.request.CreateShuffleDeleteHandlerRequest;
 import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import com.tencent.rss.storage.util.StorageType;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,23 +67,23 @@ public class MultiStorageManager {
       throw new IllegalArgumentException("Base path dirs must not be empty");
     }
     dirs = dirsFromConf.split(",");
-    long capacity = conf.get(ShuffleServerConf.RSS_DISK_CAPACITY);
+    long capacity = conf.get(ShuffleServerConf.DISK_CAPACITY);
     if (capacity <= 0) {
       throw new IllegalArgumentException("Capacity must be larger than zero");
     }
 
-    double cleanupThreshold = conf.get(ShuffleServerConf.RSS_CLEANUP_THRESHOLD);
+    double cleanupThreshold = conf.get(ShuffleServerConf.CLEANUP_THRESHOLD);
     if (cleanupThreshold < 0 || cleanupThreshold > 100) {
       throw new IllegalArgumentException("cleanupThreshold must be between 0 and 100");
     }
 
-    long cleanupIntervalMs  = conf.get(ShuffleServerConf.RSS_CLEANUP_INTERVAL_MS);
+    long cleanupIntervalMs  = conf.get(ShuffleServerConf.CLEANUP_INTERVAL_MS);
     if (cleanupIntervalMs < 0) {
       throw new IllegalArgumentException("cleanupInterval must be larger than zero");
     }
 
-    double highWaterMarkOfWrite = conf.get(ShuffleServerConf.RSS_HIGH_WATER_MARK_OF_WRITE);
-    double lowWaterMarkOfWrite = conf.get(ShuffleServerConf.RSS_LOW_WATER_MARK_OF_WRITE);
+    double highWaterMarkOfWrite = conf.get(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE);
+    double lowWaterMarkOfWrite = conf.get(ShuffleServerConf.LOW_WATER_MARK_OF_WRITE);
 
     if (highWaterMarkOfWrite < lowWaterMarkOfWrite) {
       throw new IllegalArgumentException("highWaterMarkOfWrite must be larger than lowWaterMarkOfWrite");
@@ -98,49 +98,49 @@ public class MultiStorageManager {
     }
 
     // todo: implement a method in class Config like `checkValue`
-    int uploadThreadNum = conf.get(ShuffleServerConf.RSS_UPLOADER_THREAD_NUM);
+    int uploadThreadNum = conf.get(ShuffleServerConf.UPLOADER_THREAD_NUM);
     if (uploadThreadNum <= 0) {
       throw new IllegalArgumentException("uploadThreadNum must be larger than 0");
     }
 
-    long uploadIntervalMS = conf.get(ShuffleServerConf.RSS_UPLOADER_INTERVAL_MS);
+    long uploadIntervalMS = conf.get(ShuffleServerConf.UPLOADER_INTERVAL_MS);
     if (uploadIntervalMS <= 0) {
       throw new IllegalArgumentException("uploadIntervalMs must be larger than 0");
     }
 
-    long uploadCombineThresholdMB = conf.get(ShuffleServerConf.RSS_UPLOAD_COMBINE_THRESHOLD_MB);
+    long uploadCombineThresholdMB = conf.get(ShuffleServerConf.UPLOAD_COMBINE_THRESHOLD_MB);
     if (uploadCombineThresholdMB <= 0) {
       throw new IllegalArgumentException("uploadCombineThresholdMB must be larger than 0");
     }
 
-    long referenceUploadSpeedMBS = conf.get(ShuffleServerConf.RSS_REFERENCE_UPLOAD_SPEED_MBS);
+    long referenceUploadSpeedMBS = conf.get(ShuffleServerConf.REFERENCE_UPLOAD_SPEED_MBS);
     if (referenceUploadSpeedMBS <= 0) {
       throw new IllegalArgumentException("referenceUploadSpeedMbps must be larger than 0");
     }
 
     // todo: better name
-    String hdfsBasePath = conf.get(ShuffleServerConf.RSS_HDFS_BASE_PATH);
+    String hdfsBasePath = conf.get(ShuffleServerConf.HDFS_BASE_PATH);
     if (StringUtils.isEmpty(hdfsBasePath)) {
       throw new IllegalArgumentException("hdfsBasePath couldn't be empty");
     }
 
-    StorageType remoteStorageType = StorageType.valueOf(conf.getString(ShuffleServerConf.RSS_UPLOAD_STORAGE_TYPE));
+    StorageType remoteStorageType = StorageType.valueOf(conf.getString(ShuffleServerConf.UPLOAD_STORAGE_TYPE));
 
     if (StorageType.LOCALFILE.equals(remoteStorageType) || StorageType.FILE.equals(remoteStorageType)) {
       throw new IllegalArgumentException("uploadRemoteStorageType couldn't be LOCALFILE or FILE");
     }
 
-    long shuffleExpiredTimeoutMs = conf.get(ShuffleServerConf.RSS_SHUFFLE_EXPIRED_TIMEOUT_MS);
+    long shuffleExpiredTimeoutMs = conf.get(ShuffleServerConf.SHUFFLE_EXPIRED_TIMEOUT_MS);
     if (shuffleExpiredTimeoutMs <= 0) {
       throw new IllegalArgumentException("The value of shuffleExpiredTimeMs must be positive");
     }
 
-    long maxShuffleSize = conf.get(ShuffleServerConf.RSS_SHUFFLE_MAX_UPLOAD_SIZE);
+    long maxShuffleSize = conf.get(ShuffleServerConf.SHUFFLE_MAX_UPLOAD_SIZE);
     if (maxShuffleSize <= 0) {
       throw new IllegalArgumentException("The value of maxShuffleSize must be positive");
     }
 
-    this.enableUploader = conf.get(ShuffleServerConf.RSS_UPLOADER_ENABLE);
+    this.enableUploader = conf.get(ShuffleServerConf.UPLOADER_ENABLE);
     this.capacity = capacity;
     this.cleanupThreshold = cleanupThreshold;
     this.cleanupIntervalMs = cleanupIntervalMs;

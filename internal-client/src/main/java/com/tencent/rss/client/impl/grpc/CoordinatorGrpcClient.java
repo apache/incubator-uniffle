@@ -21,6 +21,7 @@ package com.tencent.rss.client.impl.grpc;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.Empty;
 import com.tencent.rss.client.api.CoordinatorClient;
 import com.tencent.rss.client.request.RssAppHeartBeatRequest;
@@ -88,8 +89,16 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
   }
 
   public ShuffleServerHeartBeatResponse doSendHeartBeat(
-      String id, String ip, int port, long usedMemory, long preAllocatedMemory,
-      long availableMemory, int eventNumInFlush, long timeout, Set<String> tags) {
+      String id,
+      String ip,
+      int port,
+      long usedMemory,
+      long preAllocatedMemory,
+      long availableMemory,
+      int eventNumInFlush,
+      long timeout,
+      Set<String> tags,
+      boolean isHealthy) {
     ShuffleServerId serverId =
         ShuffleServerId.newBuilder().setId(id).setIp(ip).setPort(port).build();
     ShuffleServerHeartBeatRequest request =
@@ -100,6 +109,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             .setAvailableMemory(availableMemory)
             .setEventNumInFlush(eventNumInFlush)
             .addAllTags(tags)
+            .setIsHealthy(BoolValue.newBuilder().setValue(isHealthy).build())
             .build();
 
     StatusCode status;
@@ -153,7 +163,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         request.getAvailableMemory(),
         request.getEventNumInFlush(),
         request.getTimeout(),
-        request.getTags());
+        request.getTags(),
+        request.isHealthy());
 
     RssSendHeartBeatResponse response;
     StatusCode statusCode = rpcResponse.getStatus();
