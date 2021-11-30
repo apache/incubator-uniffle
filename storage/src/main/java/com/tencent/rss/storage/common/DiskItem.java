@@ -198,6 +198,18 @@ public class DiskItem {
     return diskMetaData;
   }
 
+  public long getCapacity() {
+    return capacity;
+  }
+
+  public double getHighWaterMarkOfWrite() {
+    return highWaterMarkOfWrite;
+  }
+
+  public double getLowWaterMarkOfWrite() {
+    return lowWaterMarkOfWrite;
+  }
+
   @VisibleForTesting
   void setDiskMetaData(DiskMetaData diskMetaData) {
     this.diskMetaData = diskMetaData;

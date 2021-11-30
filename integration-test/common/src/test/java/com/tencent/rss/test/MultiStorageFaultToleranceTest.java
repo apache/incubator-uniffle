@@ -69,7 +69,6 @@ public class MultiStorageFaultToleranceTest extends ShuffleReadWriteBase {
     shuffleServerConf.setLong(ShuffleServerConf.SHUFFLE_EXPIRED_TIMEOUT_MS, 5000L);
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60L * 1000L * 60L);
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 20L * 1000L);
-    shuffleServerConf.setLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 15);
     shuffleServerConf.setBoolean(ShuffleServerConf.USE_MULTI_STORAGE, true);
     shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE_AND_HDFS.name());
     shuffleServerConf.setString("rss.storage.basePath", basePath);

@@ -60,6 +60,7 @@ public class MultiStorageManager {
   private final List<DiskItem> diskItems = Lists.newArrayList();
   private final List<ShuffleUploader> uploaders = Lists.newArrayList();
   private final long shuffleExpiredTimeoutMs;
+  private final long maxForceUploadExpireTimeS;
 
   public MultiStorageManager(ShuffleServerConf conf, String shuffleServerId) {
     String dirsFromConf = conf.getString(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
@@ -140,6 +141,17 @@ public class MultiStorageManager {
       throw new IllegalArgumentException("The value of maxShuffleSize must be positive");
     }
 
+    long pendingEventTimeoutS = conf.get(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC);
+    if (pendingEventTimeoutS <= 0) {
+      throw new IllegalArgumentException("The value of pendingEventTimeoutS must be positive");
+    }
+
+    double maxShuffleForceUploadTimeRatio = conf.get(ShuffleServerConf.SHUFFLE_MAX_FORCE_UPLOAD_TIME_RATIO);
+    if (Double.compare(maxShuffleForceUploadTimeRatio, 0.0) <= 0
+        || Double.compare(maxShuffleForceUploadTimeRatio, 100.0) >= 0) {
+      throw new IllegalArgumentException("The value of maxShuffleForceUploadTimeRatio must be in (0, 100)");
+    }
+
     this.enableUploader = conf.get(ShuffleServerConf.UPLOADER_ENABLE);
     this.capacity = capacity;
     this.cleanupThreshold = cleanupThreshold;
@@ -156,6 +168,11 @@ public class MultiStorageManager {
     this.hadoopConf = new Configuration();
     this.shuffleExpiredTimeoutMs = shuffleExpiredTimeoutMs;
     this.maxShuffleSize = maxShuffleSize;
+
+    this.maxForceUploadExpireTimeS = (long) (pendingEventTimeoutS * (maxShuffleForceUploadTimeRatio / 100.0));
+    if (maxForceUploadExpireTimeS <= 0) {
+      throw new IllegalArgumentException("The value of maxForceUploadExpireTimeS must be positive");
+    }
 
     // todo: extract a method
     for (String key : conf.getKeySet()) {
@@ -200,6 +217,7 @@ public class MultiStorageManager {
             .serverId(shuffleServerId)
             .hadoopConf(hadoopConf)
             .maxShuffleSize(maxShuffleSize)
+            .maxForceUploadExpireTimeS(maxForceUploadExpireTimeS)
             .build();
         uploaders.add(shuffleUploader);
       }

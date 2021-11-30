@@ -74,6 +74,7 @@ public class ShuffleUploader {
   private final Configuration hadoopConf;
   private final Thread daemonThread;
   private final long maxShuffleSize;
+  private final long maxForceUploadExpireTimeS;
 
   private final ExecutorService executorService;
   private volatile boolean isStopped;
@@ -90,6 +91,8 @@ public class ShuffleUploader {
     this.serverId = builder.serverId;
     this.hadoopConf = builder.hadoopConf;
     this.maxShuffleSize = builder.maxShuffleSize;
+    this.maxForceUploadExpireTimeS = builder.maxForceUploadExpireTimeS;
+
     Runnable runnable = () -> {
       run();
     };
@@ -119,6 +122,7 @@ public class ShuffleUploader {
     private String serverId;
     private Configuration hadoopConf;
     private long maxShuffleSize = (long) ByteUnit.MiB.toBytes(256);
+    private long maxForceUploadExpireTimeS;
 
     public Builder() {
       // use HDFS and not force upload by default
@@ -172,6 +176,11 @@ public class ShuffleUploader {
 
     public Builder maxShuffleSize(long maxShuffleSize) {
       this.maxShuffleSize = maxShuffleSize;
+      return this;
+    }
+
+    public Builder maxForceUploadExpireTimeS(long maxForceUploadExpireTimeS) {
+      this.maxForceUploadExpireTimeS = maxForceUploadExpireTimeS;
       return this;
     }
 
@@ -320,7 +329,7 @@ public class ShuffleUploader {
       callableList.add(callable);
     }
 
-    long uploadTimeoutS = calculateUploadTime(maxSize, totalSize);
+    long uploadTimeoutS = calculateUploadTime(maxSize, totalSize, forceUpload);
     LOG.info("Start to upload {} shuffle info maxSize {} totalSize {} and timeout is {} Seconds and disk size is {}",
         callableList.size(), maxSize, totalSize, uploadTimeoutS, diskItem.getDiskSize());
     long startTimeMs = System.currentTimeMillis();
@@ -388,8 +397,8 @@ public class ShuffleUploader {
   }
 
   @VisibleForTesting
-  long calculateUploadTime(long maxSize, long totalSize) {
-    long uploadTimeoutS = 1L;
+  long calculateUploadTime(long maxSize, long totalSize, boolean forceUpload) {
+    long defaultUploadTimeoutS = 1L;
     long size = 0;
     if (maxSize > totalSize / uploadThreadNum) {
       size = maxSize;
@@ -397,12 +406,18 @@ public class ShuffleUploader {
       size = totalSize / uploadThreadNum;
     }
     long cur = ByteUnit.BYTE.toMiB(size) / referenceUploadSpeedMBS;
-
-    if (cur <= uploadTimeoutS) {
-      return uploadTimeoutS * 2;
+    if (cur <= defaultUploadTimeoutS) {
+      cur =  defaultUploadTimeoutS * 2;
     } else {
-      return cur * 2;
+      cur = cur * 2;
     }
+
+    // Use a hard upload limitation in force mode
+    if (forceUpload) {
+      cur = Math.min(cur, maxForceUploadExpireTimeS);
+    }
+
+    return cur;
   }
 
   @VisibleForTesting
@@ -428,12 +443,24 @@ public class ShuffleUploader {
         shuffleFileInfo.setSize(shuffleFileInfo.getSize() + size);
         if (shuffleFileInfo.getSize() > maxShuffleSize) {
           shuffleFileInfoList.add(shuffleFileInfo);
+
+          // Restrict the max upload segment to uploadThreadNum to make the
+          // uploading finish and release the disk space asap in force mode.
+          if (forceUpload && shuffleFileInfoList.size() >= uploadThreadNum) {
+            return shuffleFileInfoList;
+          }
+
           shuffleFileInfo = new ShuffleFileInfo();
           shuffleFileInfo.setKey(shuffleKey);
         }
       }
+
       if (!shuffleFileInfo.isEmpty()) {
         shuffleFileInfoList.add(shuffleFileInfo);
+      }
+
+      if (forceUpload && shuffleFileInfoList.size() >= uploadThreadNum) {
+        return shuffleFileInfoList;
       }
     }
     return shuffleFileInfoList;

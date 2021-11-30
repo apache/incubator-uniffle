@@ -173,26 +173,10 @@ public class ShuffleUploaderTest  {
       File indexFile5 = new File(partitionDir4.getAbsolutePath() + "/127.0.0.1-8080.index");
 
       List<File> dataFiles = Lists.newArrayList(dataFile1, dataFile2, dataFile3, dataFile4);
-      dataFiles.forEach(f -> {
-        byte[] data1 = new byte[10];
-        new Random().nextBytes(data1);
-        try (OutputStream out = new FileOutputStream(f)) {
-          out.write(data1);
-        } catch (IOException e) {
-          fail(e.getMessage());
-        }
-      });
+      dataFiles.forEach(f -> writeFile(f, 10));
 
       List<File> indexFiles = Lists.newArrayList(indexFile1, indexFile2, indexFile3, indexFile5);
-      indexFiles.forEach(f -> {
-        byte[] data1 = new byte[10];
-        new Random().nextBytes(data1);
-        try (OutputStream out = new FileOutputStream(f)) {
-          out.write(data1);
-        } catch (IOException e) {
-          fail(e.getMessage());
-        }
-      });
+      indexFiles.forEach(f -> writeFile(f, 10));
 
       DiskItem mockDiskItem = mock(DiskItem.class);
       when(mockDiskItem.getBasePath()).thenReturn(base.getAbsolutePath());
@@ -226,6 +210,9 @@ public class ShuffleUploaderTest  {
           .thenReturn(RoaringBitmap.bitmapOf(1, 2, 3));
       when(mockDiskItem.getNotUploadedPartitions("zeroPartitionShuffleKey"))
           .thenReturn(RoaringBitmap.bitmapOf());
+      when(mockDiskItem.getHighWaterMarkOfWrite()).thenReturn(100.0);
+      when(mockDiskItem.getLowWaterMarkOfWrite()).thenReturn(0.0);
+      when(mockDiskItem.getCapacity()).thenReturn(1024L);
 
       List<ShuffleFileInfo> shuffleFileInfos = shuffleUploader.selectShuffleFiles(4, false);
       assertEquals(1, shuffleFileInfos.size());
@@ -293,6 +280,106 @@ public class ShuffleUploaderTest  {
           .build();
       shuffleFileInfos = shuffleUploader.selectShuffleFiles(4, false);
       assertResult2(dataFiles, indexFiles, shuffleFileInfos);
+
+      when(mockDiskItem.getSortedShuffleKeys(false, 4))
+          .thenReturn(Lists.newArrayList(shuffleKey1, "zeroPartitionShuffleKey", "zeroSizeShuffleKey"));
+      when(mockDiskItem.getSortedShuffleKeys(false, 1))
+          .thenReturn(Lists.newArrayList(shuffleKey1));
+      shuffleUploader = new ShuffleUploader.Builder()
+          .diskItem(mockDiskItem)
+          .uploadThreadNum(2)
+          .uploadIntervalMS(3)
+          .uploadCombineThresholdMB(300)
+          .referenceUploadSpeedMBS(1)
+          .remoteStorageType(StorageType.HDFS)
+          .hdfsBathPath("hdfs://base")
+          .serverId("127.0.0.1-8080")
+          .maxShuffleSize(9)
+          .hadoopConf(new Configuration())
+          .build();
+      shuffleFileInfos = shuffleUploader.selectShuffleFiles(4, true);
+      assertEquals(2, shuffleFileInfos.size());
+      assertEquals(2, shuffleFileInfos.size());
+      assertEquals(10, shuffleFileInfos.get(0).getSize());
+      assertEquals(10, shuffleFileInfos.get(1).getSize());
+
+      when(mockDiskItem.getHighWaterMarkOfWrite()).thenReturn(95.0);
+      when(mockDiskItem.getLowWaterMarkOfWrite()).thenReturn(0.0);
+      when(mockDiskItem.getCapacity()).thenReturn(11L);
+      shuffleUploader = new ShuffleUploader.Builder()
+          .diskItem(mockDiskItem)
+          .uploadThreadNum(1)
+          .uploadIntervalMS(3)
+          .uploadCombineThresholdMB(300)
+          .referenceUploadSpeedMBS(1)
+          .remoteStorageType(StorageType.HDFS)
+          .hdfsBathPath("hdfs://base")
+          .serverId("127.0.0.1-8080")
+          .maxShuffleSize(9)
+          .hadoopConf(new Configuration())
+          .build();
+      shuffleFileInfos = shuffleUploader.selectShuffleFiles(4, true);
+      assertEquals(1, shuffleFileInfos.size());
+      assertResult4(dataFiles, indexFiles, shuffleFileInfos);
+    } catch (Exception e) {
+      e.printStackTrace();
+      fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void selectShuffleFilesRestrictionTest() {
+    try {
+      final int appNum = 4;
+      final int partitionNum = 5;
+      final List<String> shuffleKeys = Lists.newArrayList();
+      for (int i = 0; i < appNum; ++i) {
+        String appId = "app-" + i;
+        String shuffleId = "1";
+        String shuffleKey = String.join("/", appId, shuffleId);
+        shuffleKeys.add(shuffleKey);
+
+        for (int j = 0; j < partitionNum; ++j) {
+          File partitionDir = tmpDir.newFolder(base.getName(), appId, shuffleId, j + "-" + j);
+          File dataFile = new File(partitionDir.getAbsolutePath() + "/127.0.0.1-8080.data");
+          File indexFile = new File(partitionDir.getAbsolutePath() + "/127.0.0.1-8080.index");
+          writeFile(dataFile, 5 * (i + 1));
+          writeFile(indexFile, 5);
+        }
+      }
+
+      DiskItem mockDiskItem = mock(DiskItem.class);
+      when(mockDiskItem.getBasePath()).thenReturn(base.getAbsolutePath());
+      when(mockDiskItem.getSortedShuffleKeys(true, 4))
+          .thenReturn(shuffleKeys);
+      when(mockDiskItem.getNotUploadedSize(any()))
+          .thenReturn(partitionNum * 10L);
+      when(mockDiskItem.getNotUploadedPartitions(any()))
+          .thenReturn(RoaringBitmap.bitmapOf(0, 1, 2, 3, 4));
+      when(mockDiskItem.getHighWaterMarkOfWrite()).thenReturn(100.0);
+      when(mockDiskItem.getLowWaterMarkOfWrite()).thenReturn(0.0);
+      when(mockDiskItem.getCapacity()).thenReturn(1024L);
+      when(mockDiskItem.getSortedShuffleKeys(false, 4))
+          .thenReturn(shuffleKeys);
+      ShuffleUploader shuffleUploader = new ShuffleUploader.Builder()
+          .diskItem(mockDiskItem)
+          .uploadThreadNum(4)
+          .uploadIntervalMS(3)
+          .uploadCombineThresholdMB(300)
+          .referenceUploadSpeedMBS(10)
+          .maxShuffleSize(10)
+          .remoteStorageType(StorageType.HDFS)
+          .hdfsBathPath("hdfs://base")
+          .serverId("127.0.0.1-8080")
+          .hadoopConf(new Configuration())
+          .build();
+
+      List<ShuffleFileInfo> shuffleFileInfos = shuffleUploader.selectShuffleFiles(4, false);
+      assertEquals(15, shuffleFileInfos.size());
+      // huge shuffle's segment num limited to thread num
+      shuffleFileInfos = shuffleUploader.selectShuffleFiles(4, true);
+      assertEquals(4, shuffleFileInfos.size());
+
     } catch (Exception e) {
       e.printStackTrace();
       fail(e.getMessage());
@@ -326,6 +413,13 @@ public class ShuffleUploaderTest  {
     }
   }
 
+  private void assertResult4(List<File> dataFiles, List<File> indexFiles, List<ShuffleFileInfo> shuffleFileInfos) {
+    assertEquals(1, shuffleFileInfos.size());
+    assertEquals(10, shuffleFileInfos.get(0).getSize());
+    assertEquals(dataFiles.get(0).getAbsolutePath(), shuffleFileInfos.get(0).getDataFiles().get(0).getAbsolutePath());
+    assertEquals(indexFiles.get(0).getAbsolutePath(), shuffleFileInfos.get(0).getIndexFiles().get(0).getAbsolutePath());
+  }
+
   @Test
   public void calculateUploadTimeTest() {
     DiskItem mockDiskItem = mock(DiskItem.class);
@@ -335,35 +429,66 @@ public class ShuffleUploaderTest  {
         .uploadThreadNum(1)
         .uploadIntervalMS(3)
         .uploadCombineThresholdMB(300)
+        .maxForceUploadExpireTimeS(13)
         .referenceUploadSpeedMBS(128)
         .remoteStorageType(StorageType.HDFS)
         .hdfsBathPath("hdfs://base")
         .serverId("prefix")
         .hadoopConf(new Configuration())
         .build();
-    assertEquals(2, shuffleUploader.calculateUploadTime(0,0));
-    assertEquals(2, shuffleUploader.calculateUploadTime(0, 128 * 1024));
-    assertEquals(2, shuffleUploader.calculateUploadTime(0, 128 * 1024 * 1024));
-    assertEquals(6, shuffleUploader.calculateUploadTime(0,3 * 128 * 1024 * 1024));
+    assertEquals(2, shuffleUploader.calculateUploadTime(0,0, false));
+    assertEquals(2, shuffleUploader.calculateUploadTime(0, 128 * 1024, false));
+    assertEquals(2, shuffleUploader.calculateUploadTime(0, 128 * 1024 * 1024, false));
+    assertEquals(6, shuffleUploader.calculateUploadTime(0,3 * 128 * 1024 * 1024, false));
     assertEquals(12, shuffleUploader.calculateUploadTime(6 * 128 * 1024 * 1024,
-        3 * 128 * 1024 * 1024));
+        3 * 128 * 1024 * 1024, false));
     shuffleUploader = new ShuffleUploader.Builder()
         .diskItem(mockDiskItem)
         .uploadThreadNum(2)
         .uploadIntervalMS(3)
         .uploadCombineThresholdMB(300)
+        .maxForceUploadExpireTimeS(10)
         .referenceUploadSpeedMBS(128)
         .remoteStorageType(StorageType.HDFS)
         .hdfsBathPath("hdfs://base")
         .serverId("prefix")
         .hadoopConf(new Configuration())
         .build();
-    assertEquals(2, shuffleUploader.calculateUploadTime(0,0));
-    assertEquals(2, shuffleUploader.calculateUploadTime(0,128 * 1024));
-    assertEquals(2, shuffleUploader.calculateUploadTime(0,128 * 1024 * 1024));
-    assertEquals(6, shuffleUploader.calculateUploadTime(0, 6 * 128 * 1024 * 1024));
+    assertEquals(2, shuffleUploader.calculateUploadTime(0,0, false));
+    assertEquals(2, shuffleUploader.calculateUploadTime(0,128 * 1024, false));
+    assertEquals(2, shuffleUploader.calculateUploadTime(0,128 * 1024 * 1024, false));
+    assertEquals(6, shuffleUploader.calculateUploadTime(0, 6 * 128 * 1024 * 1024, false));
     assertEquals(8, shuffleUploader.calculateUploadTime(4 * 128 * 1024 * 1024,
-        6 * 128 * 1024 * 1024));
+        6 * 128 * 1024 * 1024, false));
+
+    shuffleUploader = new ShuffleUploader.Builder()
+        .diskItem(mockDiskItem)
+        .uploadThreadNum(2)
+        .uploadIntervalMS(3)
+        .uploadCombineThresholdMB(300)
+        .maxForceUploadExpireTimeS(7)
+        .referenceUploadSpeedMBS(128)
+        .remoteStorageType(StorageType.HDFS)
+        .hdfsBathPath("hdfs://base")
+        .serverId("prefix")
+        .hadoopConf(new Configuration())
+        .build();
+    assertEquals(7, shuffleUploader.calculateUploadTime(4 * 128 * 1024 * 1024,
+        6 * 128 * 1024 * 1024, true));
+
+    shuffleUploader = new ShuffleUploader.Builder()
+        .diskItem(mockDiskItem)
+        .uploadThreadNum(2)
+        .uploadIntervalMS(3)
+        .uploadCombineThresholdMB(300)
+        .maxForceUploadExpireTimeS(1)
+        .referenceUploadSpeedMBS(128)
+        .remoteStorageType(StorageType.HDFS)
+        .hdfsBathPath("hdfs://base")
+        .serverId("prefix")
+        .hadoopConf(new Configuration())
+        .build();
+    assertEquals(1, shuffleUploader.calculateUploadTime(0,0, true));
   }
 
   @Test
@@ -386,6 +511,7 @@ public class ShuffleUploaderTest  {
       builder.uploadCombineThresholdMB(1);
       builder.uploadThreadNum(1);
       builder.uploadIntervalMS(1000);
+      builder.maxForceUploadExpireTimeS(1);
       ShuffleUploadHandlerFactory mockFactory = mock(ShuffleUploadHandlerFactory.class);
       ShuffleUploadHandler mockHandler = mock(ShuffleUploadHandler.class);
       when(mockFactory.createShuffleUploadHandler(any())).thenReturn(mockHandler);
@@ -569,6 +695,16 @@ public class ShuffleUploaderTest  {
       }
     };
     checker.accept(c, f);
+  }
+
+  private void writeFile(File f, int size) {
+    byte[] data1 = new byte[size];
+    new Random().nextBytes(data1);
+    try (OutputStream out = new FileOutputStream(f)) {
+      out.write(data1);
+    } catch (IOException e) {
+      fail(e.getMessage());
+    }
   }
 
 }
