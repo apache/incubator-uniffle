@@ -16,25 +16,26 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.tencent.rss.server;
+package com.tencent.rss.coordinator;
 
 import com.tencent.rss.common.rpc.GrpcServer;
 import com.tencent.rss.common.rpc.ServerInterface;
 
-public class RemoteServerFactory {
+public class CoordinatorFactory {
 
-  private final ShuffleServer shuffleServer;
-  private final ShuffleServerConf conf;
+  private final CoordinatorServer coordinatorServer;
+  private final CoordinatorConf conf;
 
-  public RemoteServerFactory(ShuffleServer shuffleServer) {
-    this.shuffleServer = shuffleServer;
-    this.conf = shuffleServer.getShuffleServerConf();
+  public CoordinatorFactory(CoordinatorServer coordinatorServer) {
+    this.coordinatorServer = coordinatorServer;
+    this.conf = coordinatorServer.getCoordinatorConf();
   }
 
   public ServerInterface getServer() {
-    String type = conf.getString(ShuffleServerConf.RPC_SERVER_TYPE);
+    String type = conf.getString(CoordinatorConf.RPC_SERVER_TYPE);
     if (type.equals(ServerType.GRPC.name())) {
-      return new GrpcServer(conf, new ShuffleServerGrpcService(shuffleServer));
+      return new GrpcServer(conf, new CoordinatorGrpcService(coordinatorServer),
+          coordinatorServer.getGrpcMetrics());
     } else {
       throw new UnsupportedOperationException("Unsupported server type " + type);
     }

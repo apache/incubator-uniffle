@@ -21,6 +21,7 @@ package com.tencent.rss.server;
 import com.google.common.collect.Sets;
 import com.tencent.rss.common.Arguments;
 import com.tencent.rss.common.config.RssBaseConf;
+import com.tencent.rss.common.metrics.GRPCMetrics;
 import com.tencent.rss.common.metrics.JvmMetrics;
 import com.tencent.rss.common.rpc.ServerInterface;
 import com.tencent.rss.common.util.Constants;
@@ -29,12 +30,12 @@ import com.tencent.rss.common.web.CommonMetricsServlet;
 import com.tencent.rss.common.web.JettyServer;
 import com.tencent.rss.storage.util.StorageType;
 import io.prometheus.client.CollectorRegistry;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Server that manages startup/shutdown of a {@code Greeter} server.
@@ -56,6 +57,7 @@ public class ShuffleServer {
   private HealthCheck healthCheck;
   private Set<String> tags = Sets.newHashSet();
   private AtomicBoolean isHealthy = new AtomicBoolean(true);
+  private GRPCMetrics grpcMetrics;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -130,7 +132,6 @@ public class ShuffleServer {
     LOG.info("Start to initialize server {}", id);
     jettyServer = new JettyServer(shuffleServerConf);
     registerMetrics();
-    addServlet(jettyServer);
 
     boolean useMultiStorage = shuffleServerConf.getBoolean(ShuffleServerConf.USE_MULTI_STORAGE);
     String storageType = shuffleServerConf.getString(RssBaseConf.RSS_STORAGE_TYPE);
@@ -159,7 +160,7 @@ public class ShuffleServer {
     shuffleTaskManager = new ShuffleTaskManager(shuffleServerConf, shuffleFlushManager,
         shuffleBufferManager, multiStorageManager);
 
-    RemoteServerFactory shuffleServerFactory = new RemoteServerFactory(this);
+    ShuffleServerFactory shuffleServerFactory = new ShuffleServerFactory(this);
     server = shuffleServerFactory.getServer();
 
     // it's the system tag for server's version
@@ -170,22 +171,28 @@ public class ShuffleServer {
     LOG.info("Register metrics");
     CollectorRegistry shuffleServerCollectorRegistry = new CollectorRegistry(true);
     ShuffleServerMetrics.register(shuffleServerCollectorRegistry);
+    grpcMetrics = new ShuffleServerGrpcMetrics();
+    grpcMetrics.register(new CollectorRegistry(true));
     CollectorRegistry jvmCollectorRegistry = new CollectorRegistry(true);
     boolean verbose = shuffleServerConf.getBoolean(ShuffleServerConf.RSS_JVM_METRICS_VERBOSE_ENABLE);
     JvmMetrics.register(jvmCollectorRegistry, verbose);
-  }
 
-  private void addServlet(JettyServer jettyServer) {
     LOG.info("Add metrics servlet");
     jettyServer.addServlet(
         new CommonMetricsServlet(ShuffleServerMetrics.getCollectorRegistry()),
         "/metrics/server");
+    jettyServer.addServlet(
+        new CommonMetricsServlet(grpcMetrics.getCollectorRegistry()),
+        "/metrics/grpc");
     jettyServer.addServlet(
         new CommonMetricsServlet(JvmMetrics.getCollectorRegistry()),
         "/metrics/jvm");
     jettyServer.addServlet(
         new CommonMetricsServlet(ShuffleServerMetrics.getCollectorRegistry(), true),
         "/prometheus/metrics/server");
+    jettyServer.addServlet(
+        new CommonMetricsServlet(grpcMetrics.getCollectorRegistry(), true),
+        "/prometheus/metrics/grpc");
     jettyServer.addServlet(
         new CommonMetricsServlet(JvmMetrics.getCollectorRegistry(), true),
         "/prometheus/metrics/jvm");
@@ -264,5 +271,9 @@ public class ShuffleServer {
 
   public boolean isHealthy() {
     return isHealthy.get();
+  }
+
+  public GRPCMetrics getGrpcMetrics() {
+    return grpcMetrics;
   }
 }

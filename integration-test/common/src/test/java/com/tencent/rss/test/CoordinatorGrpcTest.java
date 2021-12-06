@@ -18,11 +18,6 @@
 
 package com.tencent.rss.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.tencent.rss.client.request.RssAppHeartBeatRequest;
@@ -33,8 +28,10 @@ import com.tencent.rss.client.response.RssGetShuffleAssignmentsResponse;
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.common.ShuffleRegisterInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
+import com.tencent.rss.common.config.RssBaseConf;
 import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.coordinator.CoordinatorConf;
+import com.tencent.rss.coordinator.CoordinatorGrpcMetrics;
 import com.tencent.rss.coordinator.ServerNode;
 import com.tencent.rss.coordinator.SimpleClusterManager;
 import com.tencent.rss.proto.RssProtos;
@@ -43,20 +40,25 @@ import com.tencent.rss.proto.RssProtos.PartitionRangeAssignment;
 import com.tencent.rss.proto.RssProtos.ShuffleServerId;
 import com.tencent.rss.server.ShuffleServer;
 import com.tencent.rss.server.ShuffleServerConf;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class CoordinatorGrpcTest extends CoordinatorTestBase {
 
   @BeforeClass
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
+    coordinatorConf.set(RssBaseConf.RPC_METRICS_ENABLED, true);
     coordinatorConf.set(CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY, "BASIC");
     coordinatorConf.setLong("rss.coordinator.app.expired", 2000);
     coordinatorConf.setLong("rss.coordinator.server.heartbeat.timeout", 3000);
@@ -235,6 +237,33 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     shuffleServers.set(0, ss);
     Thread.sleep(3000);
     assertEquals(2, coordinators.get(0).getClusterManager().getNodesNum());
+  }
+
+  @Test
+  public void rpcMetricsTest() throws Exception{
+    String appId = "rpcMetricsTest";
+    double oldValue = coordinators.get(0).getGrpcMetrics().getCounterMap()
+        .get(CoordinatorGrpcMetrics.HEARTBEAT_METHOD).get();
+    CoordinatorTestUtils.waitForRegister(coordinatorClient,2);
+    double newValue = coordinators.get(0).getGrpcMetrics().getCounterMap()
+        .get(CoordinatorGrpcMetrics.HEARTBEAT_METHOD).get();
+    assertTrue(newValue - oldValue > 1);
+    assertEquals(0,
+        coordinators.get(0).getGrpcMetrics().getGaugeMap()
+            .get(CoordinatorGrpcMetrics.HEARTBEAT_METHOD).get(), 0.5);
+
+    RssGetShuffleAssignmentsRequest request = new RssGetShuffleAssignmentsRequest(
+        appId, 1, 10, 4, 1,
+        Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+    oldValue = coordinators.get(0).getGrpcMetrics().getCounterMap()
+        .get(CoordinatorGrpcMetrics.GET_SHUFFLE_ASSIGNMENTS_METHOD).get();
+    coordinatorClient.getShuffleAssignments(request);
+    newValue = coordinators.get(0).getGrpcMetrics().getCounterMap()
+        .get(CoordinatorGrpcMetrics.GET_SHUFFLE_ASSIGNMENTS_METHOD).get();
+    assertEquals(oldValue + 1, newValue, 0.5);
+    assertEquals(0,
+        coordinators.get(0).getGrpcMetrics().getGaugeMap()
+            .get(CoordinatorGrpcMetrics.GET_SHUFFLE_ASSIGNMENTS_METHOD).get(), 0.5);
   }
 
   private GetShuffleAssignmentsResponse generateShuffleAssignmentsResponse() {

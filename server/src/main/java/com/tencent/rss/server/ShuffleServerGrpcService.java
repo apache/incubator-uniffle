@@ -57,10 +57,11 @@ import com.tencent.rss.proto.ShuffleServerGrpc.ShuffleServerImplBase;
 import io.grpc.Context;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Map;
 
 public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
@@ -95,8 +96,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void registerShuffle(ShuffleRegisterRequest req,
       StreamObserver<ShuffleRegisterResponse> responseObserver) {
-    ShuffleServerMetrics.counterTotalRequest.inc();
-    ShuffleServerMetrics.counterRegisterRequest.inc();
 
     ShuffleRegisterResponse reply;
     String appId = req.getAppId();
@@ -120,8 +119,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void sendShuffleData(SendShuffleDataRequest req,
       StreamObserver<SendShuffleDataResponse> responseObserver) {
-    ShuffleServerMetrics.counterTotalRequest.inc();
-    ShuffleServerMetrics.counterSendDataRequest.inc();
 
     SendShuffleDataResponse reply;
     String appId = req.getAppId();
@@ -189,8 +186,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void commitShuffleTask(ShuffleCommitRequest req,
       StreamObserver<ShuffleCommitResponse> responseObserver) {
-    ShuffleServerMetrics.counterTotalRequest.inc();
-    ShuffleServerMetrics.counterCommitRequest.inc();
 
     ShuffleCommitResponse reply;
     String appId = req.getAppId();
@@ -226,7 +221,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void finishShuffle(FinishShuffleRequest req,
       StreamObserver<FinishShuffleResponse> responseObserver) {
-    ShuffleServerMetrics.counterTotalRequest.inc();
     String appId = req.getAppId();
     int shuffleId = req.getShuffleId();
     StatusCode status;
@@ -258,7 +252,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void requireBuffer(RequireBufferRequest request,
       StreamObserver<RequireBufferResponse> responseObserver) {
-    ShuffleServerMetrics.counterTotalRequest.inc();
     long requireBufferId = shuffleServer.getShuffleTaskManager().requireBuffer(request.getRequireSize());
     StatusCode status = StatusCode.SUCCESS;
     if (requireBufferId == -1) {
@@ -299,7 +292,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void reportShuffleResult(ReportShuffleResultRequest request,
       StreamObserver<ReportShuffleResultResponse> responseObserver) {
-    ShuffleServerMetrics.counterTotalRequest.inc();
     String appId = request.getAppId();
     int shuffleId = request.getShuffleId();
     long taskAttemptId = request.getTaskAttemptId();
@@ -327,8 +319,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void getShuffleResult(GetShuffleResultRequest request,
       StreamObserver<GetShuffleResultResponse> responseObserver) {
-    ShuffleServerMetrics.counterTotalRequest.inc();
-
     String appId = request.getAppId();
     int shuffleId = request.getShuffleId();
     int partitionId = request.getPartitionId();
@@ -367,8 +357,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void getShuffleData(GetShuffleDataRequest request,
       StreamObserver<GetShuffleDataResponse> responseObserver) {
-    ShuffleServerMetrics.counterTotalRequest.inc();
-
     String appId = request.getAppId();
     int shuffleId = request.getShuffleId();
     int partitionId = request.getPartitionId();
@@ -430,8 +418,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void getShuffleIndex(GetShuffleIndexRequest request,
       StreamObserver<GetShuffleIndexResponse> responseObserver) {
-    ShuffleServerMetrics.counterTotalRequest.inc();
-
     String appId = request.getAppId();
     int shuffleId = request.getShuffleId();
     int partitionId = request.getPartitionId();

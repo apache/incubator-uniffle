@@ -41,6 +41,13 @@ public class RssBaseConf extends RssConf {
       .intType()
       .noDefaultValue()
       .withDescription("Shuffle server service port");
+
+  public static final ConfigOption<Boolean> RPC_METRICS_ENABLED = ConfigOptions
+      .key("rss.rpc.metrics.enabled")
+      .booleanType()
+      .defaultValue(true)
+      .withDescription("If enable metrics for rpc connection");
+
   public static final ConfigOption<Integer> JETTY_HTTP_PORT = ConfigOptions
       .key("rss.jetty.http.port")
       .intType()

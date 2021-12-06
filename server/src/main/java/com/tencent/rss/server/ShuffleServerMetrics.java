@@ -25,11 +25,6 @@ import io.prometheus.client.Gauge;
 
 public class ShuffleServerMetrics {
 
-  private static final String TOTAL_REQUEST = "total_request";
-  private static final String REGISTER_REQUEST = "register_request";
-  private static final String SEND_DATA_REQUEST = "send_data_request";
-  private static final String COMMIT_REQUEST = "commit_request";
-
   private static final String TOTAL_RECEIVED_DATA = "total_received_data";
   private static final String TOTAL_WRITE_DATA = "total_write_data";
   private static final String TOTAL_WRITE_BLOCK = "total_write_block";
@@ -58,10 +53,6 @@ public class ShuffleServerMetrics {
   private static final String TOTAL_UPLOAD_TIME_S = "total_upload_time_s";
   private static final String TOTAL_DROPPED_EVENT_NUM = "total_dropped_event_num";
 
-  static Counter counterTotalRequest;
-  static Counter counterRegisterRequest;
-  static Counter counterSendDataRequest;
-  static Counter counterCommitRequest;
   static Counter counterTotalReceivedDataSize;
   static Counter counterTotalWriteDataSize;
   static Counter counterTotalWriteBlockSize;
@@ -110,10 +101,6 @@ public class ShuffleServerMetrics {
   }
 
   private static void setUpMetrics() {
-    counterTotalRequest = metricsManager.addCounter(TOTAL_REQUEST);
-    counterRegisterRequest = metricsManager.addCounter(REGISTER_REQUEST);
-    counterSendDataRequest = metricsManager.addCounter(SEND_DATA_REQUEST);
-    counterCommitRequest = metricsManager.addCounter(COMMIT_REQUEST);
     counterTotalReceivedDataSize = metricsManager.addCounter(TOTAL_RECEIVED_DATA);
     counterTotalWriteDataSize = metricsManager.addCounter(TOTAL_WRITE_DATA);
     counterTotalWriteBlockSize = metricsManager.addCounter(TOTAL_WRITE_BLOCK);

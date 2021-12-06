@@ -18,52 +18,50 @@
 
 package com.tencent.rss.server;
 
-import static org.junit.Assert.assertEquals;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tencent.rss.common.metrics.JvmMetrics;
-import com.tencent.rss.common.web.CommonMetricsServlet;
-import com.tencent.rss.common.web.JettyServer;
 import com.tencent.rss.common.metrics.TestUtils;
-import io.prometheus.client.CollectorRegistry;
+import com.tencent.rss.storage.util.StorageType;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class ShuffleServerMetricsTest {
 
   private static final String SERVER_METRICS_URL = "http://127.0.0.1:12345/metrics/server";
   private static final String SERVER_JVM_URL = "http://127.0.0.1:12345/metrics/jvm";
-  private static JettyServer server;
+  private static final String SERVER_GRPC_URL = "http://127.0.0.1:12345/metrics/grpc";
+  private static ShuffleServer shuffleServer;
 
   @BeforeClass
   public static void setUp() throws Exception {
     ShuffleServerConf ssc = new ShuffleServerConf();
-    ssc.setString("rss.jetty.http.port", "12345");
-    ssc.setString("rss.jetty.corePool.size", "128");
-    server = new JettyServer(ssc);
-    CollectorRegistry shuffleServerCollectorRegistry = new CollectorRegistry(true);
-    ShuffleServerMetrics.register(shuffleServerCollectorRegistry);
-    CollectorRegistry jvmCollectorRegistry = new CollectorRegistry(true);
-    JvmMetrics.register(jvmCollectorRegistry);
-    server.addServlet(new CommonMetricsServlet(JvmMetrics.getCollectorRegistry()), "/metrics/jvm");
-    server.addServlet(new CommonMetricsServlet(ShuffleServerMetrics.getCollectorRegistry()), "/metrics/server");
-    server.start();
+    ssc.set(ShuffleServerConf.JETTY_HTTP_PORT, 12345);
+    ssc.set(ShuffleServerConf.JETTY_CORE_POOL_SIZE, 128);
+    ssc.set(ShuffleServerConf.RPC_SERVER_PORT, 12346);
+    ssc.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, "tmp");
+    ssc.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    ssc.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "fake.coordinator:123");
+    ssc.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 1000L);
+    ssc.set(ShuffleServerConf.SERVER_PARTITION_BUFFER_SIZE, 100);
+    ssc.set(ShuffleServerConf.SERVER_BUFFER_SPILL_THRESHOLD, 200L);
+    shuffleServer = new ShuffleServer(ssc);
+    shuffleServer.start();
   }
 
   @AfterClass
   public static void tearDown() throws Exception {
-    server.stop();
+    shuffleServer.stopServer();
   }
-
-
 
   @Test
   public void testJvmMetrics() throws Exception {
@@ -75,15 +73,20 @@ public class ShuffleServerMetricsTest {
 
   @Test
   public void testServerMetrics() throws Exception {
-    ShuffleServerMetrics.counterTotalRequest.inc();
-    ShuffleServerMetrics.counterTotalRequest.inc();
-    ShuffleServerMetrics.counterTotalReceivedDataSize.inc();
-
     String content = TestUtils.httpGetMetrics(SERVER_METRICS_URL);
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
-    assertEquals(30, actualObj.get("metrics").size());
+    assertEquals(26, actualObj.get("metrics").size());
+  }
+
+  @Test
+  public void testGrpcMetrics() throws Exception {
+    String content = TestUtils.httpGetMetrics(SERVER_GRPC_URL);
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode actualObj = mapper.readTree(content);
+    assertEquals(2, actualObj.size());
+    assertEquals(22, actualObj.get("metrics").size());
   }
 
   @Test

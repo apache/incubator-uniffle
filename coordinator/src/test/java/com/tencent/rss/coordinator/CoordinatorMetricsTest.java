@@ -18,54 +18,45 @@
 
 package com.tencent.rss.coordinator;
 
-import static org.junit.Assert.assertEquals;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tencent.rss.common.metrics.JvmMetrics;
+import com.tencent.rss.common.config.RssBaseConf;
 import com.tencent.rss.common.metrics.TestUtils;
-import com.tencent.rss.common.web.CommonMetricsServlet;
-import com.tencent.rss.common.web.JettyServer;
-import io.prometheus.client.CollectorRegistry;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class CoordinatorMetricsTest {
 
   private static final String SERVER_METRICS_URL = "http://127.0.0.1:12345/metrics/server";
   private static final String SERVER_JVM_URL = "http://127.0.0.1:12345/metrics/jvm";
-  private static JettyServer server;
+  private static final String SERVER_GRPC_URL = "http://127.0.0.1:12345/metrics/grpc";
+  private static CoordinatorServer coordinatorServer;
 
   @BeforeClass
   public static void setUp() throws Exception {
-    CoordinatorConf ssc = new CoordinatorConf();
-    ssc.setString("rss.jetty.http.port", "12345");
-    ssc.setString("rss.jetty.corePool.size", "128");
-    server = new JettyServer(ssc);
-    CollectorRegistry shuffleServerCollectorRegistry = new CollectorRegistry(true);
-    CoordinatorMetrics.register(shuffleServerCollectorRegistry);
-    CollectorRegistry jvmCollectorRegistry = new CollectorRegistry(true);
-    JvmMetrics.register(jvmCollectorRegistry);
-    server.addServlet(new CommonMetricsServlet(CoordinatorMetrics.getCollectorRegistry()), "/metrics/server");
-    server.addServlet(new CommonMetricsServlet(JvmMetrics.getCollectorRegistry()), "/metrics/jvm");
-    server.start();
+    CoordinatorConf coordinatorConf = new CoordinatorConf();
+    coordinatorConf.set(RssBaseConf.JETTY_HTTP_PORT, 12345);
+    coordinatorConf.set(RssBaseConf.JETTY_CORE_POOL_SIZE, 128);
+    coordinatorConf.set(RssBaseConf.RPC_SERVER_PORT, 12346);
+    coordinatorServer = new CoordinatorServer(coordinatorConf);
+    coordinatorServer.start();
   }
 
   @AfterClass
   public static void tearDown() throws Exception {
-    server.stop();
+    coordinatorServer.stopServer();
   }
 
   @Test
   public void testCoordinatorMetrics() throws Exception {
-    CoordinatorMetrics.gaugeTotalServerNum.inc();
-    CoordinatorMetrics.gaugeTotalServerNum.inc();
-
     String content = TestUtils.httpGetMetrics(SERVER_METRICS_URL);
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
+    assertEquals(4, actualObj.get("metrics").size());
   }
 
   @Test
@@ -76,4 +67,12 @@ public class CoordinatorMetricsTest {
     assertEquals(2, actualObj.size());
   }
 
+  @Test
+  public void testGrpcMetrics() throws Exception {
+    String content = TestUtils.httpGetMetrics(SERVER_GRPC_URL);
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode actualObj = mapper.readTree(content);
+    assertEquals(2, actualObj.size());
+    assertEquals(6, actualObj.get("metrics").size());
+  }
 }

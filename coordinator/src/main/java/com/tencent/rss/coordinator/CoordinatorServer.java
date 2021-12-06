@@ -19,15 +19,17 @@
 package com.tencent.rss.coordinator;
 
 import com.tencent.rss.common.Arguments;
+import com.tencent.rss.common.metrics.GRPCMetrics;
 import com.tencent.rss.common.metrics.JvmMetrics;
 import com.tencent.rss.common.rpc.ServerInterface;
 import com.tencent.rss.common.web.CommonMetricsServlet;
 import com.tencent.rss.common.web.JettyServer;
 import io.prometheus.client.CollectorRegistry;
-import java.io.FileNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+
+import java.io.FileNotFoundException;
 
 /**
  * The main entrance of coordinator service
@@ -42,6 +44,7 @@ public class CoordinatorServer {
   private ClusterManager clusterManager;
   private AssignmentStrategy assignmentStrategy;
   private ApplicationManager applicationManager;
+  private GRPCMetrics grpcMetrics;
 
   public CoordinatorServer(CoordinatorConf coordinatorConf) throws FileNotFoundException {
     this.coordinatorConf = coordinatorConf;
@@ -104,21 +107,42 @@ public class CoordinatorServer {
         new AssignmentStrategyFactory(coordinatorConf, clusterManager);
     this.assignmentStrategy = assignmentStrategyFactory.getAssignmentStrategy();
 
-    CoordinatorRpcServerFactory coordinatorRpcServerFactory = new CoordinatorRpcServerFactory(this);
-    server = coordinatorRpcServerFactory.getServer();
     jettyServer = new JettyServer(coordinatorConf);
-
     registerMetrics();
     addServlet(jettyServer);
+    CoordinatorFactory coordinatorFactory = new CoordinatorFactory(this);
+    server = coordinatorFactory.getServer();
   }
 
   private void registerMetrics() {
     LOG.info("Register metrics");
     CollectorRegistry coordinatorCollectorRegistry = new CollectorRegistry(true);
-    CollectorRegistry jvmCollectorRegistry = new CollectorRegistry(true);
     CoordinatorMetrics.register(coordinatorCollectorRegistry);
+    grpcMetrics = new CoordinatorGrpcMetrics();
+    grpcMetrics.register(new CollectorRegistry(true));
     boolean verbose = coordinatorConf.getBoolean(CoordinatorConf.RSS_JVM_METRICS_VERBOSE_ENABLE);
+    CollectorRegistry jvmCollectorRegistry = new CollectorRegistry(true);
     JvmMetrics.register(jvmCollectorRegistry, verbose);
+
+    LOG.info("Add metrics servlet");
+    jettyServer.addServlet(
+        new CommonMetricsServlet(CoordinatorMetrics.getCollectorRegistry()),
+        "/metrics/server");
+    jettyServer.addServlet(
+        new CommonMetricsServlet(grpcMetrics.getCollectorRegistry()),
+        "/metrics/grpc");
+    jettyServer.addServlet(
+        new CommonMetricsServlet(JvmMetrics.getCollectorRegistry()),
+        "/metrics/jvm");
+    jettyServer.addServlet(
+        new CommonMetricsServlet(CoordinatorMetrics.getCollectorRegistry(), true),
+        "/prometheus/metrics/server");
+    jettyServer.addServlet(
+        new CommonMetricsServlet(grpcMetrics.getCollectorRegistry(), true),
+        "/prometheus/metrics/grpc");
+    jettyServer.addServlet(
+        new CommonMetricsServlet(JvmMetrics.getCollectorRegistry(), true),
+        "/prometheus/metrics/jvm");
   }
 
   private void addServlet(JettyServer jettyServer) {
@@ -151,6 +175,10 @@ public class CoordinatorServer {
 
   public ApplicationManager getApplicationManager() {
     return applicationManager;
+  }
+
+  public GRPCMetrics getGrpcMetrics() {
+    return grpcMetrics;
   }
 
   /**
