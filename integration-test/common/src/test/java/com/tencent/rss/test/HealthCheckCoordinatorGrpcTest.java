@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
 
@@ -119,6 +120,8 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
       out.write(bytes);
     }
     Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
+
+    CoordinatorTestUtils.waitForRegister(coordinatorClient,2);
     nodes  = coordinators.get(0).getClusterManager()
         .getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     for (ServerNode node : nodes) {
@@ -129,9 +132,16 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
     assertEquals(ResponseStatusCode.INTERNAL_ERROR, response.getStatusCode());
 
     tempDataFile.delete();
-    Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
-    nodes  = coordinators.get(0).getClusterManager()
-        .getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+    int i = 0;
+    do {
+      Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
+      nodes = coordinators.get(0).getClusterManager()
+          .getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+      i++;
+      if (i == 10) {
+        fail();
+      }
+    } while(nodes.size() != 2);
     for (ServerNode node : nodes) {
       assertTrue(node.isHealthy());
     }
