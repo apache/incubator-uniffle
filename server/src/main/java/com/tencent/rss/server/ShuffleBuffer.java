@@ -26,12 +26,12 @@ import java.util.function.Supplier;
 
 public class ShuffleBuffer {
 
-  private final int capacity;
+  private final long capacity;
 
   private long size;
   private List<ShufflePartitionedBlock> blocks;
 
-  public ShuffleBuffer(int capacity) {
+  public ShuffleBuffer(long capacity) {
     this.capacity = capacity;
     this.size = 0;
     this.blocks = new LinkedList<>();

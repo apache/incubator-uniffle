@@ -19,6 +19,9 @@
 package com.tencent.rss.common.config;
 
 import com.google.common.collect.Sets;
+
+import com.tencent.rss.common.util.UnitConverter;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -414,6 +417,75 @@ public class RssConf {
   public void setDouble(ConfigOption<Double> key, double value) {
     setValueInternal(key.key(), value);
   }
+
+  /**
+   * Returns the value associated with the given key as size in bytes.
+   *
+   * @param key the key pointing to the associated value
+   * @param defaultValue the default value which is returned in case there is no value
+   *     associated with the given key
+   * @return the (default) value associated with the given key
+   */
+  public long getSizeInBytes(String key, long defaultValue) {
+    return getRawValue(key)
+      .map(ConfigUtils::convertToSizeInBytes)
+      .orElse(defaultValue);
+  }
+
+  /**
+   * Returns the value associated with the given key as size in bytes.
+   *
+   * @param key the key pointing to the associated value
+   * @param defaultValue the default value which is returned in case there is no value
+   *     associated with the given key
+   * @return the (default) value associated with the given key
+   */
+  public long getSizeAsBytes(String key, String defaultValue) {
+    return getSizeInBytes(key, UnitConverter.byteStringAsBytes(defaultValue));
+  }
+
+  /**
+   * Returns the value associated with the given config option as size in bytes.
+   *
+   * @param configOption The configuration option
+   * @return the (default) value associated with the given config option
+   */
+  public long getSizeAsBytes(ConfigOption<Long> configOption) {
+    return getOptional(configOption).orElseGet(configOption::defaultValue);
+  }
+
+  /**
+   * Adds the given key/value pair to the configuration object.
+   *
+   * @param key the key of the key/value pair to be added
+   * @param value the value of the key/value pair to be added
+   */
+  public void setSizeAsBytes(String key, long value) {
+    setValueInternal(key, value);
+  }
+
+  /**
+   * Adds the given value to the configuration object.
+   * The main key of the config option will be used to map the value.
+   *
+   * @param key the option specifying the key to be added
+   * @param value the value of the key/value pair to be added
+   */
+  public void setSizeAsBytes(ConfigOption<Long> key, long value) {
+    setValueInternal(key.key(), value);
+  }
+
+  /**
+   * Adds the given value to the configuration object.
+   * The main key of the config option will be used to map the value.
+   *
+   * @param key the option specifying the key to be added
+   * @param value the value of the key/value pair to be added
+   */
+  public void setSizeAsBytes(ConfigOption<Long> key, String value) {
+    setValueInternal(key.key(), UnitConverter.byteStringAsBytes(value));
+  }
+
 
   /**
    * Returns the value associated with the given key as a byte array.

@@ -85,10 +85,10 @@ public class ShuffleFlushManager {
     retryMax = shuffleServerConf.getInteger(ShuffleServerConf.SERVER_WRITE_RETRY_MAX);
     storageType = shuffleServerConf.get(RssBaseConf.RSS_STORAGE_TYPE);
     storageDataReplica = shuffleServerConf.get(RssBaseConf.RSS_STORAGE_DATA_REPLICA);
-    writeSlowThreshold = shuffleServerConf.getLong(ShuffleServerConf.SERVER_WRITE_SLOW_THRESHOLD);
-    eventSizeThresholdL1 = shuffleServerConf.getLong(ShuffleServerConf.SERVER_EVENT_SIZE_THRESHOLD_L1);
-    eventSizeThresholdL2 = shuffleServerConf.getLong(ShuffleServerConf.SERVER_EVENT_SIZE_THRESHOLD_L2);
-    eventSizeThresholdL3 = shuffleServerConf.getLong(ShuffleServerConf.SERVER_EVENT_SIZE_THRESHOLD_L3);
+    writeSlowThreshold = shuffleServerConf.getSizeAsBytes(ShuffleServerConf.SERVER_WRITE_SLOW_THRESHOLD);
+    eventSizeThresholdL1 = shuffleServerConf.getSizeAsBytes(ShuffleServerConf.SERVER_EVENT_SIZE_THRESHOLD_L1);
+    eventSizeThresholdL2 = shuffleServerConf.getSizeAsBytes(ShuffleServerConf.SERVER_EVENT_SIZE_THRESHOLD_L2);
+    eventSizeThresholdL3 = shuffleServerConf.getSizeAsBytes(ShuffleServerConf.SERVER_EVENT_SIZE_THRESHOLD_L3);
     int waitQueueSize = shuffleServerConf.getInteger(
         ShuffleServerConf.SERVER_FLUSH_THREAD_POOL_QUEUE_SIZE);
     BlockingQueue<Runnable> waitQueue = Queues.newLinkedBlockingQueue(waitQueueSize);

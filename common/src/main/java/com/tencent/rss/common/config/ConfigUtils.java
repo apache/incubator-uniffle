@@ -20,6 +20,8 @@ package com.tencent.rss.common.config;
 
 import com.google.common.collect.Lists;
 
+import com.tencent.rss.common.util.UnitConverter;
+
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.function.Function;
@@ -95,7 +97,23 @@ public class ConfigUtils {
     } else if (o.getClass() == Integer.class) {
       return ((Integer) o).longValue();
     }
-    return Long.parseLong(o.toString());
+    if (UnitConverter.isByteString(o.toString())) {
+      return UnitConverter.byteStringAsBytes(o.toString());
+    } else {
+      // intType only support the size that less than 4GB,
+      // sometimes it's dangerous.
+      // So we should use longType as mush as possible.
+      return Long.parseLong(o.toString());
+    }
+  }
+
+  static Long convertToSizeInBytes(Object o) {
+    if (o.getClass() == Long.class) {
+      return (Long) o;
+    } else if (o.getClass() == Integer.class) {
+      return ((Integer) o).longValue();
+    }
+    return UnitConverter.byteStringAsBytes(o.toString());
   }
 
   static Boolean convertToBoolean(Object o) {
@@ -161,6 +179,9 @@ public class ConfigUtils {
   }
 
   public static Function<Long, Boolean> positiveLongValidator = value -> value > 0;
+
+  public static Function<Long, Boolean> positiveIntegerValidator =
+    value -> value > 0L && value <= Integer.MAX_VALUE;
 
   public static Function<Double, Boolean> percentageDoubleValidator =
       (Function<Double, Boolean>) value -> Double.compare(value, 100.0) <= 0 && Double.compare(value, 0.0) >= 0;

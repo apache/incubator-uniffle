@@ -44,7 +44,7 @@ public class GrpcServer implements ServerInterface {
 
   public GrpcServer(RssBaseConf conf, BindableService service, GRPCMetrics grpcMetrics) {
     this.port = conf.getInteger(RssBaseConf.RPC_SERVER_PORT);
-    int maxInboundMessageSize = conf.getInteger(RssBaseConf.RPC_MESSAGE_MAX_SIZE);
+    long maxInboundMessageSize = conf.getLong(RssBaseConf.RPC_MESSAGE_MAX_SIZE);
     int rpcExecutorSize = conf.getInteger(RssBaseConf.RPC_EXECUTOR_SIZE);
     ExecutorService pool = new ThreadPoolExecutor(
         rpcExecutorSize,
@@ -63,14 +63,14 @@ public class GrpcServer implements ServerInterface {
           .forPort(port)
           .addService(ServerInterceptors.intercept(service, monitoringInterceptor))
           .executor(pool)
-          .maxInboundMessageSize(maxInboundMessageSize)
+          .maxInboundMessageSize((int)maxInboundMessageSize)
           .build();
     } else {
       this.server = ServerBuilder
           .forPort(port)
           .addService(service)
           .executor(pool)
-          .maxInboundMessageSize(maxInboundMessageSize)
+          .maxInboundMessageSize((int)maxInboundMessageSize)
           .build();
     }
   }

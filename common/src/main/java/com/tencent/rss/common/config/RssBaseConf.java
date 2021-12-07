@@ -114,10 +114,12 @@ public class RssBaseConf extends RssConf {
       .defaultValue(30 * 1000L)
       .withDescription("jetty http idle timeout (ms) ");
 
-  public static final ConfigOption<Integer> RPC_MESSAGE_MAX_SIZE = ConfigOptions
+  public static final ConfigOption<Long> RPC_MESSAGE_MAX_SIZE = ConfigOptions
       .key("rss.rpc.message.max.size")
-      .intType()
-      .defaultValue(Integer.MAX_VALUE)
+      .longType()
+      .checkValue(ConfigUtils.positiveIntegerValidator,
+        "The value must be positive integer")
+      .defaultValue(1024L * 1024L * 1024L)
       .withDescription("Max size of rpc message (byte)");
 
   public static final ConfigOption<String> RSS_CLIENT_TYPE = ConfigOptions

@@ -39,7 +39,7 @@ public class ShuffleBufferManager {
   private final ShuffleFlushManager shuffleFlushManager;
   private long capacity;
   private long spillThreshold;
-  private int bufferSize;
+  private long bufferSize;
   private long readCapacity;
   private int retryNum;
   private AtomicLong preAllocatedSize = new AtomicLong(0L);
@@ -51,10 +51,10 @@ public class ShuffleBufferManager {
 
 
   public ShuffleBufferManager(ShuffleServerConf conf, ShuffleFlushManager shuffleFlushManager) {
-    this.capacity = conf.getLong(ShuffleServerConf.SERVER_BUFFER_CAPACITY);
-    this.bufferSize = conf.getInteger(ShuffleServerConf.SERVER_PARTITION_BUFFER_SIZE);
-    this.spillThreshold = conf.getLong(ShuffleServerConf.SERVER_BUFFER_SPILL_THRESHOLD);
-    this.readCapacity = conf.getLong(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY);
+    this.capacity = conf.getSizeAsBytes(ShuffleServerConf.SERVER_BUFFER_CAPACITY);
+    this.bufferSize = conf.getSizeAsBytes(ShuffleServerConf.SERVER_PARTITION_BUFFER_SIZE);
+    this.spillThreshold = conf.getSizeAsBytes(ShuffleServerConf.SERVER_BUFFER_SPILL_THRESHOLD);
+    this.readCapacity = conf.getSizeAsBytes(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY);
     this.shuffleFlushManager = shuffleFlushManager;
     this.bufferPool = new ConcurrentHashMap<>();
     this.retryNum = conf.getInteger(ShuffleServerConf.SERVER_MEMORY_REQUEST_RETRY_MAX);

@@ -68,7 +68,7 @@ public class MultiStorageManager {
       throw new IllegalArgumentException("Base path dirs must not be empty");
     }
     dirs = dirsFromConf.split(",");
-    long capacity = conf.get(ShuffleServerConf.DISK_CAPACITY);
+    long capacity = conf.getSizeAsBytes(ShuffleServerConf.DISK_CAPACITY);
     if (capacity <= 0) {
       throw new IllegalArgumentException("Capacity must be larger than zero");
     }

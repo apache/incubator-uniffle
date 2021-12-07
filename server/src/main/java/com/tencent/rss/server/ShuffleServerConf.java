@@ -42,9 +42,9 @@ public class ShuffleServerConf extends RssBaseConf {
       .noDefaultValue()
       .withDescription("Spill threshold for buffer manager, it must be less than rss.server.buffer.capacity");
 
-  public static final ConfigOption<Integer> SERVER_PARTITION_BUFFER_SIZE = ConfigOptions
+  public static final ConfigOption<Long> SERVER_PARTITION_BUFFER_SIZE = ConfigOptions
       .key("rss.server.partition.buffer.size")
-      .intType()
+      .longType()
       .noDefaultValue()
       .withDescription("Max size of each buffer in buffer manager");
 

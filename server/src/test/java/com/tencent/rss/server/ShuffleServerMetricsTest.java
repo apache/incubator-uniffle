@@ -52,7 +52,7 @@ public class ShuffleServerMetricsTest {
     ssc.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     ssc.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "fake.coordinator:123");
     ssc.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 1000L);
-    ssc.set(ShuffleServerConf.SERVER_PARTITION_BUFFER_SIZE, 100);
+    ssc.set(ShuffleServerConf.SERVER_PARTITION_BUFFER_SIZE, 100L);
     ssc.set(ShuffleServerConf.SERVER_BUFFER_SPILL_THRESHOLD, 200L);
     shuffleServer = new ShuffleServer(ssc);
     shuffleServer.start();
