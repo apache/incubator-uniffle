@@ -4,7 +4,7 @@ Firestorm is a Remote Shuffle Service, and provides the capability for Apache Sp
 to store shuffle data on remote servers.
 
 ## Architecture
-![Rss Architecture](asset/rss_architecture.png)
+![Rss Architecture](docs/asset/rss_architecture.png)
 Firestorm contains coordinator cluster, shuffle server cluster and remote storage(eg, HDFS) if necessary.
 
 Coordinator will collect status of shuffle server and do the assignment for the job.
@@ -17,7 +17,7 @@ Depend on different situation, Firestorm supports Local only, Remote Storage onl
 
 * Spark driver ask coordinator to get shuffle server for shuffle process
 * Spark task write shuffle data to shuffle server with following step:
-![Rss Shuffle_Write](asset/rss_shuffle_write.png)
+![Rss Shuffle_Write](docs/asset/rss_shuffle_write.png)
    1. Send KV data to buffer
    2. Flush buffer to queue when buffer is full or buffer manager is full
    3. Thread pool get data from queue
@@ -33,7 +33,7 @@ Depend on different situation, Firestorm supports Local only, Remote Storage onl
 ## Shuffle file format
 The shuffle data is stored with index file and data file. Data file has all blocks for specific partition and index file has metadata for every block.
 
-![Rss Shuffle_Write](asset/rss_data_format.png)
+![Rss Shuffle_Write](docs/asset/rss_data_format.png)
 
 ## Supported Spark Version
 Current support Spark 2.3.x, Spark 2.4.x, Spark 3.1.x
