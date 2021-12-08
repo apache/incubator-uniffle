@@ -26,5 +26,7 @@ public interface ShuffleReader {
 
   byte[] readData(long offset, int length);
 
+  byte[] readIndex();
+
   List<FileBasedShuffleSegment> readIndex(int limit) throws IOException, IllegalStateException;
 }

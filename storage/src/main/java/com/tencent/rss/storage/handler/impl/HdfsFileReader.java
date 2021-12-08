@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -76,11 +77,20 @@ public class HdfsFileReader implements ShuffleReader, Closeable {
     fsDataInputStream.seek(offset);
   }
 
+  public byte[] readIndex() {
+    try {
+      return IOUtils.toByteArray(fsDataInputStream);
+    } catch (IOException e) {
+      LOG.error("Fail to read all data from {}", path, e);
+      return new byte[0];
+    }
+  }
+
   public List<FileBasedShuffleSegment> readIndex(int limit) throws IOException, IllegalStateException {
     List<FileBasedShuffleSegment> ret = new LinkedList<>();
 
     for (int i = 0; i < limit; ++i) {
-      FileBasedShuffleSegment segment = readIndex();
+      FileBasedShuffleSegment segment = readIndexSegment();
       if (segment == null) {
         break;
       }
@@ -90,7 +100,7 @@ public class HdfsFileReader implements ShuffleReader, Closeable {
     return ret;
   }
 
-  public FileBasedShuffleSegment readIndex() throws IOException, IllegalStateException {
+  public FileBasedShuffleSegment readIndexSegment() throws IOException, IllegalStateException {
     long offset;
     long pos = fsDataInputStream.getPos();
     try {

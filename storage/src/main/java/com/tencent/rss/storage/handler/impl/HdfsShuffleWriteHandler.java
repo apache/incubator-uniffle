@@ -18,6 +18,7 @@
 
 package com.tencent.rss.storage.handler.impl;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.tencent.rss.common.ShufflePartitionedBlock;
 import com.tencent.rss.storage.common.FileBasedShuffleSegment;
 import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
@@ -131,5 +132,10 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
     Path path = new Path(basePath, fileName);
     HdfsFileWriter writer = new HdfsFileWriter(path, hadoopConf);
     return writer;
+  }
+
+  @VisibleForTesting
+  public void setFailTimes(int failTimes) {
+    this.failTimes = failTimes;
   }
 }

@@ -214,14 +214,14 @@ public abstract class AbstractHdfsClientReadHandler extends AbstractFileClientRe
         path = indexSegment.getPath();
         HdfsFileReader reader = indexReaderMap.get(path);
         reader.seek(indexSegment.getOffset());
-        FileBasedShuffleSegment segment = reader.readIndex();
+        FileBasedShuffleSegment segment = reader.readIndexSegment();
         while (segment != null) {
           segments.add(segment);
           size += FileBasedShuffleSegment.SEGMENT_SIZE;
           if (size >= indexSegment.getLength()) {
             break;
           } else {
-            segment = reader.readIndex();
+            segment = reader.readIndexSegment();
           }
         }
       } catch (Exception e) {

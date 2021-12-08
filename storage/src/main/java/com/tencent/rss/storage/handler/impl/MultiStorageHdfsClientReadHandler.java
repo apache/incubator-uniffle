@@ -177,7 +177,7 @@ public class MultiStorageHdfsClientReadHandler extends AbstractHdfsClientReadHan
         path = indexSegment.getPath();
         HdfsFileReader reader = indexReaderMap.get(path);
         reader.seek(indexSegment.getOffset());
-        FileBasedShuffleSegment segment = reader.readIndex();
+        FileBasedShuffleSegment segment = reader.readIndexSegment();
         while (segment != null) {
           segment.setOffset(segment.getOffset() + indexSegment.getLastPos());
           segments.add(segment);
@@ -185,7 +185,7 @@ public class MultiStorageHdfsClientReadHandler extends AbstractHdfsClientReadHan
           if (size >= indexSegment.getLength()) {
             break;
           } else {
-            segment = reader.readIndex();
+            segment = reader.readIndexSegment();
           }
         }
       } catch (Exception e) {
