@@ -45,7 +45,7 @@ public class ShuffleServerConfTest {
     assertFalse(shuffleServerConf.loadConfFromFile(null));
     assertEquals("GRPC", shuffleServerConf.getString(ShuffleServerConf.RPC_SERVER_TYPE));
     assertEquals(256, shuffleServerConf.getInteger(ShuffleServerConf.JETTY_CORE_POOL_SIZE));
-    assertFalse(shuffleServerConf.getBoolean(ShuffleServerConf.USE_MULTI_STORAGE));
+    assertFalse(shuffleServerConf.getBoolean(ShuffleServerConf.MULTI_STORAGE_ENABLE));
     assertFalse(shuffleServerConf.getBoolean(ShuffleServerConf.UPLOADER_ENABLE));
   }
 
@@ -72,7 +72,7 @@ public class ShuffleServerConfTest {
     assertEquals("", shuffleServerConf.getString("rss.server.had.a.b", ""));
     assertEquals("COS", shuffleServerConf.getString(ShuffleServerConf.UPLOAD_STORAGE_TYPE));
     assertEquals("GRPC", shuffleServerConf.getString(ShuffleServerConf.RPC_SERVER_TYPE));
-    assertTrue(shuffleServerConf.getBoolean(ShuffleServerConf.USE_MULTI_STORAGE));
+    assertTrue(shuffleServerConf.getBoolean(ShuffleServerConf.MULTI_STORAGE_ENABLE));
     assertTrue(shuffleServerConf.getBoolean(ShuffleServerConf.UPLOADER_ENABLE));
     assertEquals(8L, shuffleServerConf.getLong(ShuffleServerConf.REFERENCE_UPLOAD_SPEED_MBS));
     assertEquals(

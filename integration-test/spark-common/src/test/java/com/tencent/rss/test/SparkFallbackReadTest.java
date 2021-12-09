@@ -67,7 +67,7 @@ public class SparkFallbackReadTest extends SparkIntegrationTestBase {
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 5L * 1000L);
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 20L * 1000L);
     shuffleServerConf.setLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 15);
-    shuffleServerConf.setBoolean(ShuffleServerConf.USE_MULTI_STORAGE, true);
+    shuffleServerConf.setBoolean(ShuffleServerConf.MULTI_STORAGE_ENABLE, true);
     createShuffleServer(shuffleServerConf);
     startServers();
   }

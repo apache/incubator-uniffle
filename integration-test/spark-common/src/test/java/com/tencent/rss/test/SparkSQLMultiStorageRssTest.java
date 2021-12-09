@@ -41,7 +41,7 @@ public class SparkSQLMultiStorageRssTest extends SparkSQLTest {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000);
     shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 4000);
-    shuffleServerConf.setBoolean(ShuffleServerConf.USE_MULTI_STORAGE, true);
+    shuffleServerConf.setBoolean(ShuffleServerConf.MULTI_STORAGE_ENABLE, true);
 
     // local storage config
     File tmpDir = Files.createTempDir();

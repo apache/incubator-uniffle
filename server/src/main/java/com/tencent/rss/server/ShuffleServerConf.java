@@ -75,7 +75,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Long> SERVER_HEARTBEAT_TIMEOUT = ConfigOptions
       .key("rss.server.heartbeat.timeout")
       .longType()
-      .defaultValue(10 * 1000L)
+      .defaultValue(60 * 1000L)
       .withDescription("rss heartbeat interval ms");
 
   public static final ConfigOption<Integer> SERVER_FLUSH_THREAD_POOL_SIZE = ConfigOptions
@@ -123,7 +123,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Long> SERVER_PRE_ALLOCATION_EXPIRED = ConfigOptions
       .key("rss.server.preAllocation.expired")
       .longType()
-      .defaultValue(10 * 1000L)
+      .defaultValue(20 * 1000L)
       .withDescription("Expired time (ms) for pre allocated buffer");
 
   public static final ConfigOption<Long> SERVER_COMMIT_CHECK_INTERVAL_MAX = ConfigOptions
@@ -159,7 +159,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Double> CLEANUP_THRESHOLD = ConfigOptions
       .key("rss.server.cleanup.threshold")
       .doubleType()
-      .defaultValue(70.0)
+      .defaultValue(10.0)
       .withDescription("Threshold for disk cleanup");
 
   public static final ConfigOption<Double> HIGH_WATER_MARK_OF_WRITE = ConfigOptions
@@ -174,9 +174,9 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(85.0)
       .withDescription("If disk usage is smaller than this value, disk can been written again");
   public static final ConfigOption<Long> PENDING_EVENT_TIMEOUT_SEC = ConfigOptions
-      .key("rss.server.pending.event.timeoutSec")
+      .key("rss.server.pending.event.timeout.sec")
       .longType()
-      .defaultValue(60L)
+      .defaultValue(600L)
       .withDescription("If disk cannot be written for timeout seconds, the flush data event will fail");
 
   public static final ConfigOption<Boolean> UPLOADER_ENABLE = ConfigOptions
@@ -198,7 +198,7 @@ public class ShuffleServerConf extends RssBaseConf {
       .withDescription("The interval for the uploader");
 
   public static final ConfigOption<Long> UPLOAD_COMBINE_THRESHOLD_MB = ConfigOptions
-      .key("rss.server.uploader.combine.threshold.MB")
+      .key("rss.server.uploader.combine.threshold.mb")
       .longType()
       .defaultValue(32L)
       .withDescription("The threshold of the combine mode");
@@ -236,12 +236,12 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Long> SHUFFLE_EXPIRED_TIMEOUT_MS = ConfigOptions
       .key("rss.server.shuffle.expired.timeout.ms")
       .longType()
-      .defaultValue(60L * 1000 * 5)
+      .defaultValue(60L * 1000 * 2)
       .withDescription("If the shuffle is not read for the long time, and shuffle is uploaded totally,"
           + " , we can delete the shuffle");
 
-  public static final ConfigOption<Boolean> USE_MULTI_STORAGE = ConfigOptions
-      .key("rss.server.use.multistorage")
+  public static final ConfigOption<Boolean> MULTI_STORAGE_ENABLE = ConfigOptions
+      .key("rss.server.multistorage.enable")
       .booleanType()
       .defaultValue(false)
       .withDescription("The function switch for multiStorage");

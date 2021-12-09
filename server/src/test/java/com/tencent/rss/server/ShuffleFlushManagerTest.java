@@ -292,7 +292,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
       shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
       shuffleServerConf.set(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 5L);
       shuffleServerConf.set(ShuffleServerConf.HDFS_BASE_PATH, "test");
-      shuffleServerConf.set(ShuffleServerConf.USE_MULTI_STORAGE, true);
+      shuffleServerConf.set(ShuffleServerConf.MULTI_STORAGE_ENABLE, true);
       MultiStorageManager storageManager = new MultiStorageManager(shuffleServerConf, "");
       ShuffleFlushManager manager =
           new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, storageManager);

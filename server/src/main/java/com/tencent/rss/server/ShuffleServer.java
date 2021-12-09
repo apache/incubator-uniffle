@@ -133,11 +133,11 @@ public class ShuffleServer {
     jettyServer = new JettyServer(shuffleServerConf);
     registerMetrics();
 
-    boolean useMultiStorage = shuffleServerConf.getBoolean(ShuffleServerConf.USE_MULTI_STORAGE);
+    boolean useMultiStorage = shuffleServerConf.getBoolean(ShuffleServerConf.MULTI_STORAGE_ENABLE);
     String storageType = shuffleServerConf.getString(RssBaseConf.RSS_STORAGE_TYPE);
     if (StorageType.LOCALFILE_AND_HDFS.name().equals(storageType)) {
       useMultiStorage = true;
-      shuffleServerConf.setBoolean(ShuffleServerConf.USE_MULTI_STORAGE, true);
+      shuffleServerConf.setBoolean(ShuffleServerConf.MULTI_STORAGE_ENABLE, true);
       LOG.warn("StorageType LOCALFILE_HDFS will enable multistorage function");
     }
     if (useMultiStorage && !StorageType.LOCALFILE_AND_HDFS.name().equals(storageType)) {
