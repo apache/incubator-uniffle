@@ -96,9 +96,6 @@ abstract public class IntegrationTestBase extends HdfsTestBase {
 
   protected static void createCoordinatorServer(CoordinatorConf coordinatorConf) throws Exception {
     coordinators.add(new CoordinatorServer(coordinatorConf));
-    coordinatorConf.setInteger("rss.rpc.server.port", COORDINATOR_PORT_2);
-    coordinatorConf.setInteger("rss.jetty.http.port", JETTY_PORT_2);
-    coordinators.add(new CoordinatorServer(coordinatorConf));
   }
 
   protected static void createShuffleServer(ShuffleServerConf serverConf) throws Exception {
