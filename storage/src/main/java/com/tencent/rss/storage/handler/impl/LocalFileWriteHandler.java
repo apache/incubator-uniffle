@@ -88,6 +88,15 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
   @Override
   public synchronized void write(
       List<ShufflePartitionedBlock> shuffleBlocks) throws IOException, IllegalStateException {
+
+    // Ignore this write, if the shuffle directory is deleted after being uploaded in multi mode
+    // or after its app heartbeat times out.
+    File baseFolder = new File(basePath);
+    if (!baseFolder.exists()) {
+      LOG.warn("{} don't exist, the app or shuffle may be deleted", baseFolder.getAbsolutePath());
+      return;
+    }
+
     long accessTime = System.currentTimeMillis();
     String dataFileName = ShuffleStorageUtils.generateDataFileName(fileNamePrefix);
     String indexFileName = ShuffleStorageUtils.generateIndexFileName(fileNamePrefix);

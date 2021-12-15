@@ -237,7 +237,7 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
         shuffleServerClient.sendHeartBeat(ra);
         boolean uploadFinished = true;
         for (int i = 0; i < 4; i++) {
-          DiskItem diskItem = shuffleServers.get(0).getMultiStorageManager().getDiskItem(appId, 0, 0);
+          DiskItem diskItem = shuffleServers.get(0).getMultiStorageManager().getDiskItem(appId, 0, i);
           String path = ShuffleStorageUtils.getFullShuffleDataFolder(diskItem.getBasePath(),
               ShuffleStorageUtils.getShuffleDataPath(appId, 0, i, i));
           File file = new File(path);
@@ -395,6 +395,28 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
       assertTrue(re.getMessage().contains("Can't get shuffle index"));
     }
     assertTrue(isException);
+
+    List<ShuffleBlockInfo> blocks5 = createShuffleBlockList(
+        0, 0, 1,15, 1024 * 1024, blockIdBitmap1, expectedData);
+    partitionToBlocks.clear();
+    shuffleToBlocks.clear();
+    partitionToBlocks.put(0, blocks5);
+    shuffleToBlocks.put(0, partitionToBlocks);
+    RssSendShuffleDataRequest rs5 = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
+    DiskItem diskItem = shuffleServers.get(0).getMultiStorageManager().getDiskItem(appId, 0, 0);
+    String path = ShuffleStorageUtils.getFullShuffleDataFolder(diskItem.getBasePath(),
+        ShuffleStorageUtils.getShuffleDataPath(appId, 0, 0, 0));
+    File file = new File(path);
+    assertFalse(file.exists());
+    try {
+      shuffleServerClient.sendShuffleData(rs5);
+      shuffleServerClient.sendCommit(rc1);
+      shuffleServerClient.finishShuffle(rf1);
+      shuffleServerClient.reportShuffleResult(rrp1);
+    } catch (Exception e) {
+      fail();
+    }
+    assertFalse(file.exists());
   }
 
   @Test

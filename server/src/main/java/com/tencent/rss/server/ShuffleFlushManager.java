@@ -157,6 +157,8 @@ public class ShuffleFlushManager {
       if (blocks == null || blocks.isEmpty()) {
         LOG.info("There is no block to be flushed: " + event);
       } else if (!event.isValid()) {
+        //  avoid printing error log
+        writeSuccess = true;
         LOG.warn("AppId {} was removed already, event {} should be dropped", event.getAppId(), event);
       } else {
         ShuffleWriteHandler handler = getHandler(event);
@@ -169,6 +171,8 @@ public class ShuffleFlushManager {
           if (!event.isValid()) {
             LOG.warn("AppId {} was removed already, event {} should be dropped, may leak one handler",
                 event.getAppId(), event);
+            //  avoid printing error log
+            writeSuccess = true;
             break;
           }
           ReadWriteLock lock = null;
