@@ -18,15 +18,10 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import com.tencent.rss.common.util.ChecksumUtils;
-import com.tencent.rss.storage.api.ShuffleReader;
-import com.tencent.rss.storage.common.FileBasedShuffleSegment;
+import com.tencent.rss.storage.api.FileReader;
 import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -35,7 +30,7 @@ import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HdfsFileReader implements ShuffleReader, Closeable {
+public class HdfsFileReader implements FileReader, Closeable {
 
   private static final Logger LOG = LoggerFactory.getLogger(HdfsFileReader.class);
   private Path path;
@@ -60,7 +55,7 @@ public class HdfsFileReader implements ShuffleReader, Closeable {
     fsDataInputStream = fileSystem.open(path);
   }
 
-  public byte[] readData(long offset, int length) {
+  public byte[] read(long offset, int length) {
     try {
       fsDataInputStream.seek(offset);
       byte[] buf = new byte[length];
@@ -73,80 +68,13 @@ public class HdfsFileReader implements ShuffleReader, Closeable {
     return new byte[0];
   }
 
-  public void seek(long offset) throws Exception {
-    fsDataInputStream.seek(offset);
-  }
-
-  public byte[] readIndex() {
+  public byte[] read() {
     try {
       return IOUtils.toByteArray(fsDataInputStream);
     } catch (IOException e) {
       LOG.error("Fail to read all data from {}", path, e);
       return new byte[0];
     }
-  }
-
-  public List<FileBasedShuffleSegment> readIndex(int limit) throws IOException, IllegalStateException {
-    List<FileBasedShuffleSegment> ret = new LinkedList<>();
-
-    for (int i = 0; i < limit; ++i) {
-      FileBasedShuffleSegment segment = readIndexSegment();
-      if (segment == null) {
-        break;
-      }
-      ret.add(segment);
-    }
-
-    return ret;
-  }
-
-  public FileBasedShuffleSegment readIndexSegment() throws IOException, IllegalStateException {
-    long offset;
-    long pos = fsDataInputStream.getPos();
-    try {
-      offset = fsDataInputStream.readLong();
-      int length = fsDataInputStream.readInt();
-      int uncompressLength = fsDataInputStream.readInt();
-      long crc = fsDataInputStream.readLong();
-      long blockId = fsDataInputStream.readLong();
-      long taskAttemptId = fsDataInputStream.readLong();
-      return new FileBasedShuffleSegment(blockId, offset, length, uncompressLength, crc, taskAttemptId);
-    } catch (Exception eof) {
-      if (fsDataInputStream.getPos() != pos) {
-        throw new IllegalStateException("Invalid index file " + path  + " start pos " + pos
-        + " end pos " + fsDataInputStream.getPos());
-      }
-      return null;
-    }
-  }
-
-  public ShuffleIndexHeader readHeader() throws IOException, IllegalStateException {
-    ShuffleIndexHeader header = new ShuffleIndexHeader();
-    header.setPartitionNum(fsDataInputStream.readInt());
-    ByteBuffer headerContentBuf = ByteBuffer.allocate(
-        (int)ShuffleStorageUtils.getIndexFileHeaderLen(header.getPartitionNum())
-            - ShuffleStorageUtils.getHeaderCrcLen());
-    headerContentBuf.putInt(header.getPartitionNum());
-    for (int i = 0; i < header.getPartitionNum(); i++) {
-      int partitionId = fsDataInputStream.readInt();
-      long partitionLength = fsDataInputStream.readLong();
-      long partitionDataFileLength = fsDataInputStream.readLong();
-      headerContentBuf.putInt(partitionId);
-      headerContentBuf.putLong(partitionLength);
-      headerContentBuf.putLong(partitionDataFileLength);
-
-      ShuffleIndexHeader.Entry entry
-          = new ShuffleIndexHeader.Entry(partitionId, partitionLength, partitionDataFileLength);
-      header.getIndexes().add(entry);
-    }
-    headerContentBuf.flip();
-    header.setCrc(fsDataInputStream.readLong());
-    long actualCrc = ChecksumUtils.getCrc32(headerContentBuf);
-    if (actualCrc != header.getCrc()) {
-      throw new IOException("read header exception: crc error expect: "
-          + header.getCrc() + " actualCrc " + actualCrc);
-    }
-    return header;
   }
 
   public long getOffset() throws IOException {
@@ -160,4 +88,7 @@ public class HdfsFileReader implements ShuffleReader, Closeable {
     }
   }
 
+  public Path getPath() {
+    return path;
+  }
 }

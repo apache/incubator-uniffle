@@ -19,7 +19,7 @@
 package com.tencent.rss.storage.handler.impl;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.Maps;
@@ -27,17 +27,18 @@ import com.google.common.collect.Sets;
 import com.tencent.rss.common.BufferSegment;
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.storage.HdfsShuffleHandlerTestBase;
+import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import org.junit.Test;
 
-public class HdfsClientReadHandlerTest extends HdfsShuffleHandlerTestBase {
+public class HdfsShuffleReadHandlerTest extends HdfsShuffleHandlerTestBase {
 
   @Test
   public void test() {
     try {
-      String basePath = HDFS_URI + "clientReadTest1";
+      String basePath = HDFS_URI + "HdfsShuffleFileReadHandlerTest";
       HdfsShuffleWriteHandler writeHandler =
           new HdfsShuffleWriteHandler(
               "appId",
@@ -51,31 +52,21 @@ public class HdfsClientReadHandlerTest extends HdfsShuffleHandlerTestBase {
       Map<Long, byte[]> expectedData = Maps.newHashMap();
 
       int readBufferSize = 13;
-      int total = 0;
       int totalBlockNum = 0;
-      int expectTotalBlockNum = 0;
-      for (int i = 0; i < 5; i++) {
-        writeHandler.setFailTimes(i);
-        int num = new Random().nextInt(17);
-        writeTestData(writeHandler,  num, 3, 0, expectedData);
-        total += calcExpectedSegmentNum(num, 3, readBufferSize);
-        expectTotalBlockNum += num;
-      }
+      int expectTotalBlockNum = new Random().nextInt(37);
+      int blockSize = new Random().nextInt(7) + 1;
+      writeTestData(writeHandler, expectTotalBlockNum, blockSize, 0, expectedData);
+      int total = calcExpectedSegmentNum(expectTotalBlockNum, blockSize, readBufferSize);
 
-      HdfsClientReadHandler handler = new HdfsClientReadHandler(
-          "appId",
-          0,
-          1,
-          1024 * 10214,
-          1,
-          10,
-          readBufferSize,
-          basePath,
-          conf);
+      String fileNamePrefix = ShuffleStorageUtils.getFullShuffleDataFolder(basePath,
+          ShuffleStorageUtils.getShuffleDataPathWithRange("appId",
+              0, 1, 1, 10)) + "/test_0";
+      HdfsShuffleReadHandler handler =
+          new HdfsShuffleReadHandler(fileNamePrefix, readBufferSize, conf);
+
       Set<Long> actualBlockIds = Sets.newHashSet();
-
       for (int i = 0; i < total; ++i) {
-        ShuffleDataResult shuffleDataResult = handler.readShuffleData(i);
+        ShuffleDataResult shuffleDataResult = handler.readShuffleData();
         totalBlockNum += shuffleDataResult.getBufferSegments().size();
         checkData(shuffleDataResult, expectedData);
         for (BufferSegment bufferSegment : shuffleDataResult.getBufferSegments()) {
@@ -83,17 +74,13 @@ public class HdfsClientReadHandlerTest extends HdfsShuffleHandlerTestBase {
         }
       }
 
-      assertTrue(handler.readShuffleData(total).isEmpty());
+      assertNull(handler.readShuffleData());
       assertEquals(
           total,
-          handler.getHdfsShuffleFileReadHandlers()
-              .stream()
-              .mapToInt(i -> i.getShuffleDataSegments().size())
-              .sum());
+          handler.getShuffleDataSegments().size());
       assertEquals(expectTotalBlockNum, totalBlockNum);
       assertEquals(expectedData.keySet(), actualBlockIds);
-      assertEquals(5, handler.getReadHandlerIndex());
-      handler.close();
+
     } catch (Exception e) {
       e.printStackTrace();
       fail(e.getMessage());

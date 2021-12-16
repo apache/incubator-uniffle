@@ -18,7 +18,6 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.Lists;
@@ -75,10 +74,6 @@ public class HdfsHandlerTest extends HdfsTestBase {
       pos += i * 8;
     }
     writeHandler.write(blocks);
-
-    // a data file and a index is created after writing
-    fs.isFile(new Path(basePath, "test.data"));
-    fs.isFile(new Path(basePath, "test.index"));
 
     compareDataAndIndex("appId", 1, 1, basePath, expectedData, expectedBlockId);
 

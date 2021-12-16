@@ -130,7 +130,7 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
     try {
       long start = System.currentTimeMillis();
       try (LocalFileReader reader = createFileReader(dataFileName)) {
-        readBuffer = reader.readData(offset, length);
+        readBuffer = reader.read(offset, length);
       }
       LOG.debug(
           "Read File segment: {}, offset[{}], length[{}], cost: {} ms, for appId[{}], shuffleId[{}], partitionId[{}]",
@@ -149,7 +149,7 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
     try (LocalFileReader reader = createFileReader(indexFileName)) {
       indexNum = (int)  (new File(indexFileName).length() / FileBasedShuffleSegment.SEGMENT_SIZE);
       len = indexNum * FileBasedShuffleSegment.SEGMENT_SIZE;
-      byte[] indexData = reader.readData(0, len);
+      byte[] indexData = reader.read(0, len);
       return new ShuffleIndexResult(indexData);
     } catch (Exception e) {
       LOG.error("Fail to read index file {} indexNum {} len {}",

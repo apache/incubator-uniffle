@@ -18,11 +18,22 @@
 
 package com.tencent.rss.storage;
 
+import com.google.common.collect.Lists;
+import com.tencent.rss.common.BufferSegment;
+import com.tencent.rss.common.ShuffleDataResult;
+import com.tencent.rss.common.ShufflePartitionedBlock;
+import com.tencent.rss.common.util.ChecksumUtils;
+import com.tencent.rss.common.util.Constants;
+import com.tencent.rss.storage.handler.impl.HdfsFileReader;
+import com.tencent.rss.storage.handler.impl.HdfsShuffleWriteHandler;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.List;
 
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -32,6 +43,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.rules.TemporaryFolder;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class HdfsTestBase implements Serializable {

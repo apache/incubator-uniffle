@@ -18,15 +18,9 @@
 
 package com.tencent.rss.storage.api;
 
-import com.tencent.rss.storage.common.FileBasedShuffleSegment;
-import java.io.IOException;
-import java.util.List;
+public interface FileReader {
 
-public interface ShuffleReader {
+  byte[] read(long offset, int length);
 
-  byte[] readData(long offset, int length);
-
-  byte[] readIndex();
-
-  List<FileBasedShuffleSegment> readIndex(int limit) throws IOException, IllegalStateException;
+  byte[] read();
 }

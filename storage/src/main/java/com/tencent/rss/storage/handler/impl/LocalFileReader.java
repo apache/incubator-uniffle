@@ -18,19 +18,16 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import com.tencent.rss.storage.api.ShuffleReader;
-import com.tencent.rss.storage.common.FileBasedShuffleSegment;
+import com.tencent.rss.storage.api.FileReader;
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LocalFileReader implements ShuffleReader, Closeable {
+public class LocalFileReader implements FileReader, Closeable {
 
   private static final Logger LOG = LoggerFactory.getLogger(HdfsFileReader.class);
   private String path;
@@ -41,7 +38,7 @@ public class LocalFileReader implements ShuffleReader, Closeable {
     dataInputStream = new DataInputStream(new FileInputStream(path));
   }
 
-  public byte[] readData(long offset, int length) {
+  public byte[] read(long offset, int length) {
     try {
       dataInputStream.skip(offset);
       byte[] buf = new byte[length];
@@ -53,45 +50,13 @@ public class LocalFileReader implements ShuffleReader, Closeable {
     return new byte[0];
   }
 
-  public byte[] readIndex() {
+  public byte[] read() {
     try {
       return IOUtils.toByteArray(dataInputStream);
     } catch (IOException e) {
       LOG.error("Fail to read all data from {}", path, e);
       return new byte[0];
     }
-  }
-
-  public List<FileBasedShuffleSegment> readIndex(int limit) throws IOException, IllegalStateException {
-    List<FileBasedShuffleSegment> ret = new LinkedList<>();
-
-    for (int i = 0; i < limit; ++i) {
-      FileBasedShuffleSegment segment = readIndexSegment();
-      if (segment == null) {
-        break;
-      }
-      ret.add(segment);
-    }
-
-    return ret;
-  }
-
-  public FileBasedShuffleSegment readIndexSegment() throws IOException, IllegalStateException {
-    if (dataInputStream.available() <= 0) {
-      return null;
-    }
-
-    long offset = dataInputStream.readLong();
-    int length = dataInputStream.readInt();
-    int uncompressLength = dataInputStream.readInt();
-    long crc = dataInputStream.readLong();
-    long blockId = dataInputStream.readLong();
-    long taskAttemptId = dataInputStream.readLong();
-    return new FileBasedShuffleSegment(blockId, offset, length, uncompressLength, crc, taskAttemptId);
-  }
-
-  public void skip(long offset) throws IOException {
-    dataInputStream.skip(offset);
   }
 
   @Override

@@ -158,8 +158,8 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
       Set<Long> expects = Sets.newHashSet();
       expects.add(2L);
       List<byte[]> expectData = Lists.newArrayList();
-      expectData.add(data1);
       expectData.add(data);
+      expectData.add(data1);
       compareDataAndIndex("app4", 0, 2, basePath, expectData, 2);
     } catch (Exception e) {
       e.printStackTrace();
@@ -325,7 +325,7 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
     int index = 0;
     do {
       sdr = handler.readShuffleData(index);
-      if (sdr == null || sdr.getData() == null) {
+      if (sdr == null || sdr.isEmpty()) {
         break;
       }
       List<BufferSegment> bufferSegments = sdr.getBufferSegments();
