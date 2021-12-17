@@ -102,7 +102,7 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
           1,
           1,
           Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
-    Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
+    Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
     assertEquals(2, coordinatorClient.getShuffleServerList().getServersCount());
     List<ServerNode> nodes  = coordinators.get(0).getClusterManager()
         .getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
@@ -119,7 +119,7 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
     try (FileOutputStream out = new FileOutputStream(tempDataFile)) {
       out.write(bytes);
     }
-    Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
+    Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
 
     CoordinatorTestUtils.waitForRegister(coordinatorClient,2);
     nodes  = coordinators.get(0).getClusterManager()
@@ -134,7 +134,7 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
     tempDataFile.delete();
     int i = 0;
     do {
-      Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
+      Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
       nodes = coordinators.get(0).getClusterManager()
           .getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
       i++;
