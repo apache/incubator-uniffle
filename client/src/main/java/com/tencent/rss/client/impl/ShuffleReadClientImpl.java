@@ -53,6 +53,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private byte[] readBuffer;
   private Roaring64NavigableMap blockIdBitmap;
   private Roaring64NavigableMap taskIdBitmap;
+  private Roaring64NavigableMap pendingBlockIds;
   private Roaring64NavigableMap processedBlockIds = Roaring64NavigableMap.bitmapOf();
   private Queue<BufferSegment> bufferSegmentQueue = Queues.newLinkedBlockingQueue();
   private AtomicLong readDataTime = new AtomicLong(0);
@@ -106,6 +107,13 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       blockIdBitmap.removeLong(rid);
     }
 
+    // copy blockIdBitmap to track all pending blocks
+    try {
+      pendingBlockIds = RssUtils.deserializeBitMap(RssUtils.serializeBitMap(blockIdBitmap));
+    } catch (IOException ioe) {
+      throw new RuntimeException("Can't create pending blockIds.", ioe);
+    }
+
     clientReadHandler = ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
   }
 
@@ -116,12 +124,18 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       return null;
     }
 
+    // All blocks are processed, so just return
+    if (pendingBlockIds.isEmpty()) {
+      return null;
+    }
+
     // if need request new data from shuffle server
     if (bufferSegmentQueue.isEmpty()) {
       if (read() <= 0) {
         return null;
       }
     }
+
     // get next buffer segment
     BufferSegment bs = null;
 
@@ -140,10 +154,12 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
           && taskIdBitmap.contains(bs.getTaskAttemptId())) {
         // mark block as processed
         processedBlockIds.addLong(bs.getBlockId());
+        pendingBlockIds.removeLong(bs.getBlockId());
         break;
       }
       // mark block as processed
       processedBlockIds.addLong(bs.getBlockId());
+      pendingBlockIds.removeLong(bs.getBlockId());
     }
 
     byte[] data = null;
