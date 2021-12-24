@@ -22,7 +22,7 @@ import com.tencent.rss.common.ShuffleDataResult;
 
 public interface ClientReadHandler {
 
-  ShuffleDataResult readShuffleData(int segmentIndex);
+  ShuffleDataResult readShuffleData();
 
   void close();
 }

@@ -25,9 +25,9 @@ import com.tencent.rss.server.ShuffleServer;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.storage.HdfsTestBase;
 import com.tencent.rss.storage.util.StorageType;
+import org.junit.AfterClass;
 
 import java.util.List;
-import org.junit.AfterClass;
 
 abstract public class IntegrationTestBase extends HdfsTestBase {
 
@@ -36,7 +36,6 @@ abstract public class IntegrationTestBase extends HdfsTestBase {
   protected static final int COORDINATOR_PORT_1 = 19999;
   protected static final int COORDINATOR_PORT_2 = 20030;
   protected static final int JETTY_PORT_1 = 19998;
-  protected static final int JETTY_PORT_2 = 20032;
   protected static final String COORDINATOR_QUORUM =
       LOCALHOST + ":" + COORDINATOR_PORT_1 + "," + LOCALHOST + ":" + COORDINATOR_PORT_2;
 
@@ -78,9 +77,9 @@ abstract public class IntegrationTestBase extends HdfsTestBase {
     serverConf.setString("rss.storage.type", StorageType.HDFS.name());
     serverConf.setString("rss.storage.basePath", HDFS_URI + "rss/test");
     serverConf.setString("rss.server.buffer.capacity", "671088640");
-    serverConf.setString("rss.server.buffer.spill.threshold", "335544320");
+    serverConf.setString("rss.server.memory.shuffle.highWaterMark", "50.0");
+    serverConf.setString("rss.server.memory.shuffle.lowWaterMark", "0.0");
     serverConf.setString("rss.server.read.buffer.capacity", "335544320");
-    serverConf.setString("rss.server.partition.buffer.size", "67108864");
     serverConf.setString("rss.coordinator.quorum", COORDINATOR_QUORUM);
     serverConf.setString("rss.server.heartbeat.delay", "1000");
     serverConf.setString("rss.server.heartbeat.interval", "1000");

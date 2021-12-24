@@ -28,18 +28,19 @@ import com.tencent.rss.common.ShuffleDataSegment;
 import com.tencent.rss.common.ShuffleIndexResult;
 import com.tencent.rss.common.exception.RssException;
 import com.tencent.rss.common.util.RssUtils;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LocalFileClientReadHandler extends AbstractFileClientReadHandler {
+import java.util.List;
+
+public class LocalFileClientReadHandler extends AbstractClientReadHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(LocalFileClientReadHandler.class);
   private int partitionNumPerRange;
   private int partitionNum;
-  private int readBufferSize;
   private List<ShuffleServerClient> shuffleServerClients;
   private List<ShuffleDataSegment> shuffleDataSegments = Lists.newLinkedList();
+  private int segmentIndex = 0;
 
   public LocalFileClientReadHandler(
       String appId,
@@ -53,7 +54,6 @@ public class LocalFileClientReadHandler extends AbstractFileClientReadHandler {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
-    this.indexReadLimit = indexReadLimit;
     this.partitionNumPerRange = partitionNumPerRange;
     this.partitionNum = partitionNum;
     this.readBufferSize = readBufferSize;
@@ -125,7 +125,7 @@ public class LocalFileClientReadHandler extends AbstractFileClientReadHandler {
   }
 
   @Override
-  public ShuffleDataResult readShuffleData(int segmentIndex) {
+  public ShuffleDataResult readShuffleData() {
     if (shuffleDataSegments.isEmpty()) {
       ShuffleIndexResult shuffleIndexResult = readShuffleIndex();
       if (shuffleIndexResult == null || shuffleIndexResult.isEmpty()) {
@@ -139,10 +139,8 @@ public class LocalFileClientReadHandler extends AbstractFileClientReadHandler {
       return null;
     }
 
-    return readShuffleData(shuffleDataSegments.get(segmentIndex));
-  }
-
-  @Override
-  public void close() {
+    ShuffleDataResult sdr = readShuffleData(shuffleDataSegments.get(segmentIndex));
+    segmentIndex++;
+    return sdr;
   }
 }

@@ -32,9 +32,16 @@ import com.tencent.rss.common.ShufflePartitionedData;
 import com.tencent.rss.common.config.RssBaseConf;
 import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.common.util.RssUtils;
+import com.tencent.rss.server.buffer.PreAllocatedBufferInfo;
+import com.tencent.rss.server.buffer.ShuffleBufferManager;
 import com.tencent.rss.storage.factory.ShuffleHandlerFactory;
 import com.tencent.rss.storage.handler.api.ServerReadHandler;
 import com.tencent.rss.storage.request.CreateShuffleReadHandlerRequest;
+import org.roaringbitmap.longlong.LongIterator;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -45,10 +52,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import org.roaringbitmap.longlong.LongIterator;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ShuffleTaskManager {
 
@@ -132,7 +135,8 @@ public class ShuffleTaskManager {
     return StatusCode.SUCCESS;
   }
 
-  public StatusCode cacheShuffleData(String appId, int shuffleId, boolean isPreAllocated, ShufflePartitionedData spd) {
+  public StatusCode cacheShuffleData(
+      String appId, int shuffleId, boolean isPreAllocated, ShufflePartitionedData spd) {
     refreshAppId(appId);
     return shuffleBufferManager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
   }
@@ -312,6 +316,12 @@ public class ShuffleTaskManager {
     return result;
   }
 
+  public ShuffleDataResult getInMemoryShuffleData(
+      String appId, Integer shuffleId, Integer partitionId, long blockId, int readBufferSize) {
+    return shuffleBufferManager.getShuffleData(appId,
+        shuffleId, partitionId, blockId, readBufferSize);
+  }
+
   public ShuffleDataResult getShuffleData(
       String appId, Integer shuffleId, Integer partitionId, int partitionNumPerRange,
       int partitionNum, String storageType, long offset, int length) {
@@ -329,7 +339,10 @@ public class ShuffleTaskManager {
     serverReadHandlers.putIfAbsent(appId, Maps.newConcurrentMap());
     Map<String, ServerReadHandler> handlerMap = serverReadHandlers.get(appId);
     String key = "" + request.getShuffleId() + "_" + partitionId;
-    handlerMap.putIfAbsent(key, ShuffleHandlerFactory.getInstance().createServerReadHandler(request));
+    if (!handlerMap.containsKey(key)) {
+      handlerMap.putIfAbsent(key, ShuffleHandlerFactory
+          .getInstance().createServerReadHandler(request));
+    }
     return handlerMap.get(key).getShuffleData(offset, length);
   }
 
@@ -353,7 +366,10 @@ public class ShuffleTaskManager {
     serverReadHandlers.putIfAbsent(appId, Maps.newConcurrentMap());
     Map<String, ServerReadHandler> handlerMap = serverReadHandlers.get(appId);
     String key = "" + request.getShuffleId() + "_" + partitionId;
-    handlerMap.putIfAbsent(key, ShuffleHandlerFactory.getInstance().createServerReadHandler(request));
+    if (!handlerMap.containsKey(key)) {
+      handlerMap.putIfAbsent(key, ShuffleHandlerFactory
+          .getInstance().createServerReadHandler(request));
+    }
     return handlerMap.get(key).getShuffleIndex();
   }
 

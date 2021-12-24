@@ -25,12 +25,12 @@ import com.tencent.rss.storage.handler.api.ClientReadHandler;
 import com.tencent.rss.storage.request.CreateShuffleReadHandlerRequest;
 import com.tencent.rss.storage.util.StorageType;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
-
-import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MultiStorageReadHandler extends AbstractFileClientReadHandler {
+import java.io.IOException;
+
+public class MultiStorageReadHandler extends AbstractClientReadHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(MultiStorageReadHandler.class);
 
@@ -56,10 +56,10 @@ public class MultiStorageReadHandler extends AbstractFileClientReadHandler {
   }
 
   @Override
-  public ShuffleDataResult readShuffleData(int segmentIndex) {
+  public ShuffleDataResult readShuffleData() {
     ShuffleDataResult result = null;
     try {
-      result = clientReadHandler.readShuffleData(segmentIndex - offsetIndex);
+      result = clientReadHandler.readShuffleData();
     } catch (Exception e) {
       LOG.info("Failed to read data from primary", e);
     }
@@ -70,9 +70,8 @@ public class MultiStorageReadHandler extends AbstractFileClientReadHandler {
         LOG.info("Fallback to read data from secondary {}", fallbackRequest.getStorageType());
         clientReadHandler.close();
         clientReadHandler = createShuffleRemoteStorageReadHandler(fallbackRequest);
-        offsetIndex = segmentIndex;
         fallbackRequest = null;
-        result = clientReadHandler.readShuffleData(0);
+        result = clientReadHandler.readShuffleData();
         if (result != null && !result.isEmpty()) {
           return result;
         }

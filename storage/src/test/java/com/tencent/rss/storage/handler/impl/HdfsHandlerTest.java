@@ -27,18 +27,19 @@ import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.ShufflePartitionedBlock;
 import com.tencent.rss.storage.HdfsTestBase;
 import com.tencent.rss.storage.common.FileBasedShuffleSegment;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 public class HdfsHandlerTest extends HdfsTestBase {
 
@@ -119,7 +120,7 @@ public class HdfsHandlerTest extends HdfsTestBase {
   }
 
   private List<ByteBuffer> readData(HdfsClientReadHandler handler, Set<Long> blockIds) throws IllegalStateException {
-    ShuffleDataResult sdr = handler.readShuffleData(0);
+    ShuffleDataResult sdr = handler.readShuffleData();
     List<BufferSegment> bufferSegments = sdr.getBufferSegments();
     List<ByteBuffer> result = Lists.newArrayList();
     for (BufferSegment bs : bufferSegments) {

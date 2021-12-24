@@ -322,9 +322,8 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
   private List<ByteBuffer> readData(MultiStorageHdfsClientReadHandler handler) throws IllegalStateException {
     ShuffleDataResult sdr;
     List<ByteBuffer> result = Lists.newArrayList();
-    int index = 0;
     do {
-      sdr = handler.readShuffleData(index);
+      sdr = handler.readShuffleData();
       if (sdr == null || sdr.isEmpty()) {
         break;
       }
@@ -334,7 +333,6 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
         System.arraycopy(sdr.getData(), bs.getOffset(), data, 0, bs.getLength());
         result.add(ByteBuffer.wrap(data));
       }
-      index++;
     } while(sdr.getData() != null);
     return result;
   }

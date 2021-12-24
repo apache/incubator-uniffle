@@ -19,6 +19,8 @@
 package com.tencent.rss.server;
 
 import com.tencent.rss.common.ShufflePartitionedBlock;
+import com.tencent.rss.server.buffer.ShuffleBuffer;
+
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -32,23 +34,7 @@ public class ShuffleDataFlushEvent {
   private long size;
   private List<ShufflePartitionedBlock> shuffleBlocks;
   private Supplier<Boolean> valid = null;
-
-  public ShuffleDataFlushEvent(
-      long eventId,
-      String appId,
-      int shuffleId,
-      int startPartition,
-      int endPartition,
-      long size,
-      List<ShufflePartitionedBlock> shuffleBlocks) {
-    this.eventId = eventId;
-    this.appId = appId;
-    this.shuffleId = shuffleId;
-    this.startPartition = startPartition;
-    this.endPartition = endPartition;
-    this.size = size;
-    this.shuffleBlocks = shuffleBlocks;
-  }
+  private ShuffleBuffer shuffleBuffer;
 
   public ShuffleDataFlushEvent(
       long eventId,
@@ -58,7 +44,8 @@ public class ShuffleDataFlushEvent {
       int endPartition,
       long size,
       List<ShufflePartitionedBlock> shuffleBlocks,
-      Supplier<Boolean> valid) {
+      Supplier<Boolean> valid,
+      ShuffleBuffer shuffleBuffer) {
     this.eventId = eventId;
     this.appId = appId;
     this.shuffleId = shuffleId;
@@ -67,6 +54,7 @@ public class ShuffleDataFlushEvent {
     this.size = size;
     this.shuffleBlocks = shuffleBlocks;
     this.valid = valid;
+    this.shuffleBuffer = shuffleBuffer;
   }
 
   public List<ShufflePartitionedBlock> getShuffleBlocks() {
@@ -95,6 +83,10 @@ public class ShuffleDataFlushEvent {
 
   public int getEndPartition() {
     return endPartition;
+  }
+
+  public ShuffleBuffer getShuffleBuffer() {
+    return shuffleBuffer;
   }
 
   public boolean isValid() {

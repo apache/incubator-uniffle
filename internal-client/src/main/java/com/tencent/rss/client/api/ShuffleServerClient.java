@@ -20,6 +20,7 @@ package com.tencent.rss.client.api;
 
 import com.tencent.rss.client.request.RssAppHeartBeatRequest;
 import com.tencent.rss.client.request.RssFinishShuffleRequest;
+import com.tencent.rss.client.request.RssGetInMemoryShuffleDataRequest;
 import com.tencent.rss.client.request.RssGetShuffleDataRequest;
 import com.tencent.rss.client.request.RssGetShuffleIndexRequest;
 import com.tencent.rss.client.request.RssGetShuffleResultRequest;
@@ -29,6 +30,7 @@ import com.tencent.rss.client.request.RssSendCommitRequest;
 import com.tencent.rss.client.request.RssSendShuffleDataRequest;
 import com.tencent.rss.client.response.RssAppHeartBeatResponse;
 import com.tencent.rss.client.response.RssFinishShuffleResponse;
+import com.tencent.rss.client.response.RssGetInMemoryShuffleDataResponse;
 import com.tencent.rss.client.response.RssGetShuffleDataResponse;
 import com.tencent.rss.client.response.RssGetShuffleIndexResponse;
 import com.tencent.rss.client.response.RssGetShuffleResultResponse;
@@ -56,6 +58,9 @@ public interface ShuffleServerClient {
   RssGetShuffleIndexResponse getShuffleIndex(RssGetShuffleIndexRequest request);
 
   RssGetShuffleDataResponse getShuffleData(RssGetShuffleDataRequest request);
+
+  RssGetInMemoryShuffleDataResponse getInMemoryShuffleData(
+      RssGetInMemoryShuffleDataRequest request);
 
   String getDesc();
 

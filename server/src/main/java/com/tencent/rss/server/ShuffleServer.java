@@ -28,6 +28,7 @@ import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.common.util.RssUtils;
 import com.tencent.rss.common.web.CommonMetricsServlet;
 import com.tencent.rss.common.web.JettyServer;
+import com.tencent.rss.server.buffer.ShuffleBufferManager;
 import com.tencent.rss.storage.util.StorageType;
 import io.prometheus.client.CollectorRegistry;
 import org.slf4j.Logger;

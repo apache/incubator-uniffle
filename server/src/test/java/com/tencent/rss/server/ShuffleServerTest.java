@@ -18,13 +18,13 @@
 
 package com.tencent.rss.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import com.tencent.rss.common.util.ExitUtils;
 import com.tencent.rss.common.util.ExitUtils.ExitException;
 import com.tencent.rss.storage.util.StorageType;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class ShuffleServerTest {
 
@@ -39,8 +39,6 @@ public class ShuffleServerTest {
       serverConf.setString("rss.storage.basePath", "/dev/null");
       serverConf.setString("rss.server.buffer.capacity", "100");
       serverConf.setString("rss.server.read.buffer.capacity", "10");
-      serverConf.setString("rss.server.partition.buffer.size", "5");
-      serverConf.setString("rss.server.buffer.spill.threshold", "2");
 
       ShuffleServer ss1 = new ShuffleServer(serverConf);
       ss1.start();

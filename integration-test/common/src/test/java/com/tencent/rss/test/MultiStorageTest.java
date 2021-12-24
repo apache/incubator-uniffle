@@ -199,15 +199,9 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     assertTrue(item.canWrite());
     assertEquals(0, item.getNotUploadedSize(appId + "/" + 0));
 
-    boolean isException = false;
-    try {
-      ShuffleDataResult result = readShuffleData(shuffleServerClient, appId, 0, 0,
-          1, 10, 1000,  0);
-    } catch (RuntimeException re) {
-      isException = true;
-      assertTrue(re.getMessage().contains("Can't get shuffle index"));
-    }
-    assertTrue(isException);
+    ShuffleDataResult result = readShuffleData(shuffleServerClient, appId, 0, 0,
+        1, 10, 1000,  0);
+    assertEquals(0, result.getData().length);
 
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl("LOCALFILE_AND_HDFS",
         appId, 0, 0, 100, 1, 10, 1000, HDFS_URI + "rss/multi_storage",
@@ -311,15 +305,9 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
     validateResult(appId, 1, 3, expectedData, getExpectBlockIds(blocks4));
     Uninterruptibles.sleepUninterruptibly(20, TimeUnit.SECONDS);
-    boolean isException = false;
-    try {
-      readShuffleData(shuffleServerClient, appId, 1, 0,
-          1, 10, 1000,  0);
-    } catch (RuntimeException re) {
-      isException = true;
-      assertTrue(re.getMessage().contains("Can't get shuffle index"));
-    }
-    assertTrue(isException);
+    ShuffleDataResult sdr = readShuffleData(shuffleServerClient, appId, 1, 0,
+        1, 10, 1000,  0);
+    assertEquals(0, sdr.getData().length);
   }
 
   @Test
@@ -386,15 +374,9 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     }
     assertTrue(blockIdBitmap1.equals(matched));
 
-    boolean isException = false;
-    try {
-      readShuffleData(shuffleServerClient, appId, 0, 0,
-          1, 10, 1000, 0);
-    } catch (RuntimeException re) {
-      isException = true;
-      assertTrue(re.getMessage().contains("Can't get shuffle index"));
-    }
-    assertTrue(isException);
+    ShuffleDataResult sdr = readShuffleData(shuffleServerClient, appId, 0, 0,
+        1, 10, 1000, 0);
+    assertEquals(0, sdr.getData().length);
 
     List<ShuffleBlockInfo> blocks5 = createShuffleBlockList(
         0, 0, 1,15, 1024 * 1024, blockIdBitmap1, expectedData);

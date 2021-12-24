@@ -231,7 +231,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
       String appId, int shuffleId, int startPartition, int endPartition, Supplier<Boolean> isValid) {
     List<ShufflePartitionedBlock> spbs = createBlock(5, 32);
     return new ShuffleDataFlushEvent(ATOMIC_LONG.getAndIncrement(),
-        appId, shuffleId, startPartition, endPartition, 1, spbs, isValid);
+        appId, shuffleId, startPartition, endPartition, 1, spbs, isValid, null);
   }
 
   private List<ShufflePartitionedBlock> createBlock(int num, int length) {
@@ -266,7 +266,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
         new Configuration());
     ShuffleDataResult sdr = null;
     int matchNum = 0;
-    sdr = handler.readShuffleData(0);
+    sdr = handler.readShuffleData();
     List<BufferSegment> bufferSegments = sdr.getBufferSegments();
     for (ShufflePartitionedBlock block : blocks) {
       for (BufferSegment bs : bufferSegments) {
@@ -296,7 +296,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
       MultiStorageManager storageManager = new MultiStorageManager(shuffleServerConf, "");
       ShuffleFlushManager manager =
           new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, storageManager);
-      ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(1, "1", 1, 1,1, 100, null);
+      ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(1, "1", 1, 1,1, 100, null, null, null);
       assertEquals(0, manager.getPendingEventsSize());
       manager.addPendingEvents(event);
       Thread.sleep(1000);
@@ -305,7 +305,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
         Thread.sleep(1 * 1000);
       } while(manager.getEventNumInFlush() != 0);
       List<ShufflePartitionedBlock> blocks = Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, null));
-      ShuffleDataFlushEvent bigEvent = new ShuffleDataFlushEvent(1, "1", 1, 1, 1, 100, blocks);
+      ShuffleDataFlushEvent bigEvent = new ShuffleDataFlushEvent(1, "1", 1, 1, 1, 100, blocks, null, null);
       storageManager.updateWriteEvent(bigEvent);
       manager.addPendingEvents(event);
       manager.addPendingEvents(event);

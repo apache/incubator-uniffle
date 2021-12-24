@@ -27,12 +27,18 @@ import com.google.common.collect.TreeRangeMap;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.tencent.rss.common.ShufflePartitionedBlock;
 import com.tencent.rss.common.config.RssBaseConf;
+import com.tencent.rss.server.buffer.ShuffleBuffer;
 import com.tencent.rss.storage.common.DiskItem;
 import com.tencent.rss.storage.factory.ShuffleHandlerFactory;
 import com.tencent.rss.storage.handler.api.ShuffleDeleteHandler;
 import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
 import com.tencent.rss.storage.request.CreateShuffleDeleteHandlerRequest;
 import com.tencent.rss.storage.request.CreateShuffleWriteHandlerRequest;
+import org.apache.hadoop.conf.Configuration;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -40,11 +46,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
-
-import org.apache.hadoop.conf.Configuration;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ShuffleFlushManager {
 
@@ -227,6 +228,10 @@ public class ShuffleFlushManager {
       // just log the error, don't throw the exception and stop the flush thread
       LOG.error("Exception happened when process flush shuffle data for " + event, e);
     } finally {
+      ShuffleBuffer shuffleBuffer = event.getShuffleBuffer();
+      if (shuffleBuffer != null) {
+        shuffleBuffer.clearInFlushBuffer(event.getEventId());
+      }
       if (shuffleServer != null) {
         shuffleServer.getShuffleBufferManager().releaseMemory(event.getSize(), true, false);
         long duration = System.currentTimeMillis() - start;

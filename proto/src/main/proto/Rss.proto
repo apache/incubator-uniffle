@@ -27,8 +27,9 @@ package rss.common;
 service ShuffleServer {
   rpc registerShuffle (ShuffleRegisterRequest) returns (ShuffleRegisterResponse);
   rpc sendShuffleData (SendShuffleDataRequest) returns (SendShuffleDataResponse);
-  rpc getShuffleIndex (GetShuffleIndexRequest) returns (GetShuffleIndexResponse);
-  rpc getShuffleData (GetShuffleDataRequest) returns (GetShuffleDataResponse);
+  rpc getLocalShuffleIndex (GetLocalShuffleIndexRequest) returns (GetLocalShuffleIndexResponse);
+  rpc getLocalShuffleData (GetLocalShuffleDataRequest) returns (GetLocalShuffleDataResponse);
+  rpc getMemoryShuffleData (GetMemoryShuffleDataRequest) returns (GetMemoryShuffleDataResponse);
   rpc commitShuffleTask (ShuffleCommitRequest) returns (ShuffleCommitResponse);
   rpc reportShuffleResult (ReportShuffleResultRequest) returns (ReportShuffleResultResponse);
   rpc getShuffleResult (GetShuffleResultRequest) returns (GetShuffleResultResponse);
@@ -66,7 +67,7 @@ message ShuffleDataBlockSegment {
   int64 taskAttemptId = 6;
 }
 
-message GetShuffleDataRequest {
+message GetLocalShuffleDataRequest {
   string appId = 1;
   int32 shuffleId = 2;
   int32 partitionId = 3;
@@ -76,13 +77,28 @@ message GetShuffleDataRequest {
   int32 length = 7;
 }
 
-message GetShuffleDataResponse {
+message GetLocalShuffleDataResponse {
   bytes data = 1;
   StatusCode status = 2;
   string retMsg = 3;
 }
 
-message GetShuffleIndexRequest {
+message GetMemoryShuffleDataRequest {
+  string appId = 1;
+  int32 shuffleId = 2;
+  int32 partitionId = 3;
+  int64 lastBlockId = 4;
+  int32 readBufferSize = 5;
+}
+
+message GetMemoryShuffleDataResponse {
+  repeated ShuffleDataBlockSegment shuffleDataBlockSegments = 1;
+  bytes data = 2;
+  StatusCode status = 3;
+  string retMsg = 4;
+}
+
+message GetLocalShuffleIndexRequest {
   string appId = 1;
   int32 shuffleId = 2;
   int32 partitionId = 3;
@@ -90,7 +106,7 @@ message GetShuffleIndexRequest {
   int32 partitionNum = 5;
 }
 
-message GetShuffleIndexResponse {
+message GetLocalShuffleIndexResponse {
   bytes indexData = 1;
   StatusCode status = 2;
   string retMsg = 3;

@@ -18,26 +18,13 @@
 
 package org.apache.spark.shuffle.writer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.tencent.rss.storage.util.StorageType;
 import org.apache.spark.Partitioner;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
@@ -60,6 +47,21 @@ import scala.Product2;
 import scala.Tuple2;
 import scala.collection.mutable.MutableList;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
+
 public class RssShuffleWriterTest {
 
   @Rule
@@ -73,6 +75,7 @@ public class RssShuffleWriterTest {
         .set(RssClientConfig.RSS_TEST_FLAG, "true")
         .set(RssClientConfig.RSS_WRITER_SEND_CHECK_TIMEOUT, "10000")
         .set(RssClientConfig.RSS_WRITER_SEND_CHECK_INTERVAL, "1000")
+        .set(RssClientConfig.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name())
         .set(RssClientConfig.RSS_COORDINATOR_QUORUM, "127.0.0.1:12345,127.0.0.1:12346");
     // init SparkContext
     SparkContext sc = SparkContext.getOrCreate(conf);
@@ -143,6 +146,7 @@ public class RssShuffleWriterTest {
         .set(RssClientConfig.RSS_WRITER_SEND_CHECK_TIMEOUT, "10000")
         .set(RssClientConfig.RSS_WRITER_SEND_CHECK_INTERVAL, "1000")
         .set(RssClientConfig.RSS_WRITER_BUFFER_SPILL_SIZE, "128")
+        .set(RssClientConfig.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name())
         .set(RssClientConfig.RSS_COORDINATOR_QUORUM, "127.0.0.1:12345,127.0.0.1:12346");
     // init SparkContext
     List<ShuffleBlockInfo> shuffleBlockInfos = Lists.newArrayList();
@@ -289,7 +293,8 @@ public class RssShuffleWriterTest {
     when(mockHandle.getDependency()).thenReturn(mockDependency);
     ShuffleWriteClient mockWriteClient = mock(ShuffleWriteClient.class);
     SparkConf conf = new SparkConf();
-    conf.set(RssClientConfig.RSS_CLIENT_SEND_SIZE_LIMIT, "64");
+    conf.set(RssClientConfig.RSS_CLIENT_SEND_SIZE_LIMIT, "64")
+        .set(RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE.name());
     List<ShuffleBlockInfo> shuffleBlockInfoList = createShuffleBlockList(1, 31);
     RssShuffleWriter writer = new RssShuffleWriter("appId", 0, "taskId", 1L,
         mockBufferManager, mockMetrics, mockShuffleManager, conf, mockWriteClient, mockHandle);

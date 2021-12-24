@@ -22,6 +22,10 @@ import com.google.common.collect.Lists;
 import com.tencent.rss.common.BufferSegment;
 import com.tencent.rss.common.ShuffleDataSegment;
 import com.tencent.rss.common.ShuffleIndexResult;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -40,10 +44,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RssUtils {
 
@@ -192,5 +192,9 @@ public class RssUtils {
     }
 
     return dataFileSegments;
+  }
+
+  public static String generateShuffleKey(String appId, int shuffleId) {
+    return String.join(Constants.KEY_SPLIT_CHAR, appId, String.valueOf(shuffleId));
   }
 }

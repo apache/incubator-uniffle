@@ -165,7 +165,7 @@ public class MultiStorageManagerTest {
       new MultiStorageManager(conf, "");
     } catch (IllegalArgumentException ie) {
       isException = true;
-      assertTrue(ie.getMessage().contains("ploadRemoteStorageType couldn't be LOCALFILE or FILE"));
+      assertTrue(ie.getMessage().contains("ploadRemoteStorageType couldn't be LOCALFILE"));
     }
     assertTrue(isException);
 

@@ -25,18 +25,10 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.client.util.ClientUtils;
-import com.tencent.rss.common.exception.RssException;
 import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import com.tencent.rss.common.exception.RssException;
+import com.tencent.rss.storage.util.StorageType;
 import org.apache.spark.Partitioner;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
@@ -53,6 +45,16 @@ import scala.Function1;
 import scala.Option;
 import scala.Product2;
 import scala.collection.Iterator;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
@@ -82,7 +84,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final Map<Integer, List<ShuffleServerInfo>> partitionToServers;
   private final Set shuffleServersForData;
   private final long[] partitionLengths;
-
+  private boolean isMemoryShuffleEnabled;
 
   public RssShuffleWriter(
       String appId,
@@ -124,6 +126,14 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.partitionLengths = new long[partitioner.numPartitions()];
     Arrays.fill(partitionLengths, 0);
     partitionToServers = rssHandle.getPartitionToServers();
+    this.isMemoryShuffleEnabled = isMemoryShuffleEnabled(
+        sparkConf.get(RssClientConfig.RSS_STORAGE_TYPE));
+  }
+
+  private boolean isMemoryShuffleEnabled(String storageType) {
+    return StorageType.MEMORY_LOCALFILE.name().equals(storageType)
+        || StorageType.MEMORY_HDFS.name().equals(storageType)
+        || StorageType.MEMORY_LOCALFILE_HDFS.name().equals(storageType);
   }
 
   @Override
@@ -155,7 +165,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     checkBlockSendResult(blockIds);
     long commitStartTs = System.currentTimeMillis();
     long checkDuration = commitStartTs - checkStartTs;
-    sendCommit();
+    if (!isMemoryShuffleEnabled) {
+      sendCommit();
+    }
     long writeDurationMs = bufferManager.getWriteTime() + (System.currentTimeMillis() - start);
     shuffleWriteMetrics.incWriteTime(TimeUnit.MILLISECONDS.toNanos(writeDurationMs));
     LOG.info("Finish write shuffle for appId[" + appId + "], shuffleId[" + shuffleId

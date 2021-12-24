@@ -16,21 +16,34 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.tencent.rss.server;
+package com.tencent.rss.server.buffer;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
+import com.google.common.collect.Sets;
 import com.google.common.collect.TreeRangeMap;
+import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.ShufflePartitionedData;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import com.tencent.rss.common.util.Constants;
+import com.tencent.rss.common.util.RssUtils;
+import com.tencent.rss.server.ShuffleDataFlushEvent;
+import com.tencent.rss.server.ShuffleFlushManager;
+import com.tencent.rss.server.ShuffleServerConf;
+import com.tencent.rss.server.ShuffleServerMetrics;
+import com.tencent.rss.server.StatusCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class ShuffleBufferManager {
 
@@ -38,26 +51,31 @@ public class ShuffleBufferManager {
 
   private final ShuffleFlushManager shuffleFlushManager;
   private long capacity;
-  private long spillThreshold;
-  private long bufferSize;
   private long readCapacity;
   private int retryNum;
-  private AtomicLong preAllocatedSize = new AtomicLong(0L);
-  private AtomicLong inFlushSize = new AtomicLong(0L);
-  private AtomicLong usedMemory = new AtomicLong(0L);
+  private long highWaterMark;
+  private long lowWaterMark;
+
+  protected long bufferSize = 0;
+  protected AtomicLong preAllocatedSize = new AtomicLong(0L);
+  protected AtomicLong inFlushSize = new AtomicLong(0L);
+  protected AtomicLong usedMemory = new AtomicLong(0L);
   private AtomicLong readDataMemory = new AtomicLong(0L);
   // appId -> shuffleId -> partitionId -> ShuffleBuffer to avoid too many appId
-  private Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool;
-
+  protected Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool;
+  // appId -> shuffleId -> shuffle size in buffer
+  protected Map<String, Map<Integer, AtomicLong>> shuffleSizeMap = Maps.newConcurrentMap();
 
   public ShuffleBufferManager(ShuffleServerConf conf, ShuffleFlushManager shuffleFlushManager) {
     this.capacity = conf.getSizeAsBytes(ShuffleServerConf.SERVER_BUFFER_CAPACITY);
-    this.bufferSize = conf.getSizeAsBytes(ShuffleServerConf.SERVER_PARTITION_BUFFER_SIZE);
-    this.spillThreshold = conf.getSizeAsBytes(ShuffleServerConf.SERVER_BUFFER_SPILL_THRESHOLD);
     this.readCapacity = conf.getSizeAsBytes(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY);
     this.shuffleFlushManager = shuffleFlushManager;
     this.bufferPool = new ConcurrentHashMap<>();
     this.retryNum = conf.getInteger(ShuffleServerConf.SERVER_MEMORY_REQUEST_RETRY_MAX);
+    this.highWaterMark = (long)(capacity / 100
+        * conf.get(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE));
+    this.lowWaterMark = (long)(capacity / 100
+        * conf.get(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE));
   }
 
   public StatusCode registerBuffer(String appId, int shuffleId, int startPartition, int endPartition) {
@@ -82,33 +100,71 @@ public class ShuffleBufferManager {
       LOG.warn("Got unexpect data, can't cache it because the space is full");
       return StatusCode.NO_BUFFER;
     }
-    Map<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers = bufferPool.get(appId);
-    if (shuffleIdToBuffers == null) {
-      return StatusCode.NO_REGISTER;
-    }
-    RangeMap<Integer, ShuffleBuffer> rangeToBuffers = shuffleIdToBuffers.get(shuffleId);
-    if (rangeToBuffers == null) {
-      return StatusCode.NO_REGISTER;
-    }
-    Entry<Range<Integer>, ShuffleBuffer> entry = rangeToBuffers.getEntry(spd.getPartitionId());
+
+    Entry<Range<Integer>, ShuffleBuffer> entry = getShuffleBufferEntry(
+        appId, shuffleId, spd.getPartitionId());
     if (entry == null) {
       return StatusCode.NO_REGISTER;
     }
+
     ShuffleBuffer buffer = entry.getValue();
-    Range<Integer> range = entry.getKey();
     int size = buffer.append(spd);
     updateSize(size, isPreAllocated);
+    updateShuffleSize(appId, shuffleId, size);
     synchronized (this) {
-      if (shouldFlush()) {
-        LOG.info("Buffer manager is full with usedMemory[" + usedMemory.get() + "], preAllocation["
-            + preAllocatedSize.get() + "], inFlush[" + inFlushSize.get() + "]");
-        flush();
-      } else if (buffer.isFull()) {
-        LOG.info("Single buff is full with " + buffer.getSize() + " bytes");
-        flushBuffer(buffer, appId, shuffleId, range.lowerEndpoint(), range.upperEndpoint());
-      }
+      flushIfNecessary();
     }
     return StatusCode.SUCCESS;
+  }
+
+  private void updateShuffleSize(String appId, int shuffleId, long size) {
+    shuffleSizeMap.putIfAbsent(appId, Maps.newConcurrentMap());
+    Map<Integer, AtomicLong> shuffleIdToSize = shuffleSizeMap.get(appId);
+    shuffleIdToSize.putIfAbsent(shuffleId, new AtomicLong(0));
+    shuffleIdToSize.get(shuffleId).addAndGet(size);
+  }
+
+  protected Entry<Range<Integer>, ShuffleBuffer> getShuffleBufferEntry(
+      String appId, int shuffleId, int partitionId) {
+    Map<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers = bufferPool.get(appId);
+    if (shuffleIdToBuffers == null) {
+      return null;
+    }
+    RangeMap<Integer, ShuffleBuffer> rangeToBuffers = shuffleIdToBuffers.get(shuffleId);
+    if (rangeToBuffers == null) {
+      return null;
+    }
+    Entry<Range<Integer>, ShuffleBuffer> entry = rangeToBuffers.getEntry(partitionId);
+    if (entry == null) {
+      return null;
+    }
+    return entry;
+  }
+
+  public ShuffleDataResult getShuffleData(
+      String appId, int shuffleId, int partitionId, long blockId,
+      int readBufferSize) {
+    Map.Entry<Range<Integer>, ShuffleBuffer> entry = getShuffleBufferEntry(
+        appId, shuffleId, partitionId);
+    if (entry == null) {
+      return null;
+    }
+
+    ShuffleBuffer buffer = entry.getValue();
+    if (buffer == null) {
+      return null;
+    }
+    return buffer.getShuffleData(blockId, readBufferSize);
+  }
+
+  void flushIfNecessary() {
+    // if data size in buffer > highWaterMark, do the flush
+    if (usedMemory.get() - preAllocatedSize.get() - inFlushSize.get() > highWaterMark) {
+      LOG.info("Start to flush with usedMemory[{}], preAllocatedSize[{}], inFlushSize[{}]",
+          usedMemory.get(), preAllocatedSize.get(), inFlushSize.get());
+      Map<String, Set<Integer>> pickedShuffle = pickFlushedShuffle();
+      flush(pickedShuffle);
+    }
   }
 
   public synchronized void commitShuffleTask(String appId, int shuffleId) {
@@ -120,28 +176,13 @@ public class ShuffleBufferManager {
     }
   }
 
-  // buffer pool is full, flush all buffers
-  public synchronized void flush() {
-    for (Entry<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> appIdToBuffers : bufferPool.entrySet()) {
-      String appId = appIdToBuffers.getKey();
-      for (Entry<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers :
-          appIdToBuffers.getValue().entrySet()) {
-        int shuffleId = shuffleIdToBuffers.getKey();
-        for (Entry<Range<Integer>, ShuffleBuffer> rangeEntry :
-            shuffleIdToBuffers.getValue().asMapOfRanges().entrySet()) {
-          Range<Integer> range = rangeEntry.getKey();
-          flushBuffer(rangeEntry.getValue(), appId, shuffleId,
-              range.lowerEndpoint(), range.upperEndpoint());
-        }
-      }
-    }
-  }
-
-  private void flushBuffer(ShuffleBuffer buffer, String appId,
+  protected void flushBuffer(ShuffleBuffer buffer, String appId,
       int shuffleId, int startPartition, int endPartition) {
     ShuffleDataFlushEvent event =
-        buffer.toFlushEvent(appId, shuffleId, startPartition, endPartition, () -> bufferPool.containsKey(appId));
+        buffer.toFlushEvent(appId, shuffleId, startPartition, endPartition,
+            () -> bufferPool.containsKey(appId));
     if (event != null) {
+      updateShuffleSize(appId, shuffleId, -event.getSize());
       inFlushSize.addAndGet(event.getSize());
       ShuffleServerMetrics.gaugeInFlushBufferSize.set(inFlushSize.get());
       shuffleFlushManager.addToFlushQueue(event);
@@ -168,6 +209,7 @@ public class ShuffleBufferManager {
     }
     // release memory
     releaseMemory(size, false, false);
+    shuffleSizeMap.remove(appId);
     bufferPool.remove(appId);
   }
 
@@ -246,6 +288,29 @@ public class ShuffleBufferManager {
     }
   }
 
+  // flush the buffer with required map which is <appId -> shuffleId>
+  public synchronized void flush(Map<String, Set<Integer>> requiredFlush) {
+    for (Map.Entry<String, Map<Integer, RangeMap<Integer,
+        ShuffleBuffer>>> appIdToBuffers : bufferPool.entrySet()) {
+      String appId = appIdToBuffers.getKey();
+      if (requiredFlush.containsKey(appId)) {
+        for (Map.Entry<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers :
+            appIdToBuffers.getValue().entrySet()) {
+          int shuffleId = shuffleIdToBuffers.getKey();
+          Set<Integer> requiredShuffleId = requiredFlush.get(appId);
+          if (requiredShuffleId != null && requiredShuffleId.contains(shuffleId)) {
+            for (Map.Entry<Range<Integer>, ShuffleBuffer> rangeEntry :
+                shuffleIdToBuffers.getValue().asMapOfRanges().entrySet()) {
+              Range<Integer> range = rangeEntry.getKey();
+              flushBuffer(rangeEntry.getValue(), appId, shuffleId,
+                  range.lowerEndpoint(), range.upperEndpoint());
+            }
+          }
+        }
+      }
+    }
+  }
+
   void updateSize(long delta, boolean isPreAllocated) {
     if (isPreAllocated) {
       releasePreAllocatedSize(delta);
@@ -266,11 +331,6 @@ public class ShuffleBufferManager {
     ShuffleServerMetrics.gaugeAllocatedBufferSize.set(preAllocatedSize.get());
   }
 
-  // if data size in buffer > spillThreshold, do the flush
-  boolean shouldFlush() {
-    return usedMemory.get() - preAllocatedSize.get() - inFlushSize.get() > spillThreshold;
-  }
-
   boolean isFull() {
     return usedMemory.get() >= capacity;
   }
@@ -278,6 +338,11 @@ public class ShuffleBufferManager {
   @VisibleForTesting
   public Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> getBufferPool() {
     return bufferPool;
+  }
+
+  @VisibleForTesting
+  public ShuffleBuffer getShuffleBuffer(String appId, int shuffleId, int partitionId) {
+    return getShuffleBufferEntry(appId, shuffleId, partitionId).getValue();
   }
 
   public long getUsedMemory() {
@@ -293,14 +358,87 @@ public class ShuffleBufferManager {
   }
 
   @VisibleForTesting
-  void resetSize() {
+  public void resetSize() {
     usedMemory = new AtomicLong(0L);
     preAllocatedSize = new AtomicLong(0L);
     inFlushSize = new AtomicLong(0L);
+  }
+
+  @VisibleForTesting
+  public Map<String, Map<Integer, AtomicLong>> getShuffleSizeMap() {
+    return shuffleSizeMap;
   }
 
   public long getPreAllocatedSize() {
     return preAllocatedSize.get();
   }
 
+  // sort for shuffle according to data size, then pick properly data which will be flushed
+  private Map<String, Set<Integer>> pickFlushedShuffle() {
+    // create list for sort
+    List<Entry<String, AtomicLong>> sizeList = generateSizeList();
+    sizeList.sort((entry1, entry2) -> {
+      if (entry1 == null && entry2 == null) {
+        return 0;
+      }
+      if (entry1 == null) {
+        return 1;
+      }
+      if (entry2 == null) {
+        return -1;
+      }
+      if (entry1.getValue().get() > entry2.getValue().get()) {
+        return -1;
+      } else if (entry1.getValue().get() == entry2.getValue().get()) {
+        return 0;
+      }
+      return 1;
+    });
+
+    Map<String, Set<Integer>> pickedShuffle = Maps.newHashMap();
+    // The algorithm here is to flush data size > highWaterMark - lowWaterMark
+    // the remain data in buffer maybe more than lowWaterMark
+    // because shuffle server is still receiving data, but it should be ok
+    long expectedFlushSize = highWaterMark - lowWaterMark;
+    long pickedFlushSize = 0L;
+    int printIndex = 0;
+    int printMax = 10;
+    for (Map.Entry<String, AtomicLong> entry : sizeList) {
+      long size = entry.getValue().get();
+      pickedFlushSize += size;
+      String appIdShuffleIdKey = entry.getKey();
+      addPickedShuffle(appIdShuffleIdKey, pickedShuffle);
+      // print detail picked info
+      if (printIndex < printMax) {
+        LOG.info("Pick application_shuffleId[{}] with {} bytes", appIdShuffleIdKey, size);
+        printIndex++;
+      }
+      if (pickedFlushSize > expectedFlushSize) {
+        LOG.info("Finish flush pick with {} bytes", pickedFlushSize);
+        break;
+      }
+    }
+    return pickedShuffle;
+  }
+
+  private List<Map.Entry<String, AtomicLong>> generateSizeList() {
+    Map<String, AtomicLong> sizeMap = Maps.newHashMap();
+    for (Map.Entry<String, Map<Integer, AtomicLong>> appEntry : shuffleSizeMap.entrySet()) {
+      String appId = appEntry.getKey();
+      for (Map.Entry<Integer, AtomicLong> shuffleEntry : appEntry.getValue().entrySet()) {
+        Integer shuffleId = shuffleEntry.getKey();
+        sizeMap.put(RssUtils.generateShuffleKey(appId, shuffleId), shuffleEntry.getValue());
+      }
+    }
+    return Lists.newArrayList(sizeMap.entrySet());
+  }
+
+  private void addPickedShuffle(String key, Map<String, Set<Integer>> pickedShuffle) {
+    String[] splits = key.split(Constants.KEY_SPLIT_CHAR);
+    String appId = splits[0];
+    Integer shuffleId = Integer.parseInt(splits[1]);
+    pickedShuffle.putIfAbsent(appId, Sets.newHashSet());
+    Set<Integer> shuffleIdSet = pickedShuffle.get(appId);
+    shuffleIdSet.add(shuffleId);
+  }
 }

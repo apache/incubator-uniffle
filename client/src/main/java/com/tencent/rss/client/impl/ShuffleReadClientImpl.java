@@ -33,16 +33,16 @@ import com.tencent.rss.common.util.RssUtils;
 import com.tencent.rss.storage.factory.ShuffleHandlerFactory;
 import com.tencent.rss.storage.handler.api.ClientReadHandler;
 import com.tencent.rss.storage.request.CreateShuffleReadHandlerRequest;
+import org.apache.hadoop.conf.Configuration;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.hadoop.conf.Configuration;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ShuffleReadClientImpl implements ShuffleReadClient {
 
@@ -60,7 +60,6 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private AtomicLong copyTime = new AtomicLong(0);
   private AtomicLong crcCheckTime = new AtomicLong(0);
   private ClientReadHandler clientReadHandler;
-  private int segmentIndex = 0;
 
   public ShuffleReadClientImpl(
       String storageType,
@@ -195,8 +194,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   private int read() {
     long start = System.currentTimeMillis();
-    ShuffleDataResult sdr = clientReadHandler.readShuffleData(segmentIndex);
-    segmentIndex++;
+    ShuffleDataResult sdr = clientReadHandler.readShuffleData();
     readDataTime.addAndGet(System.currentTimeMillis() - start);
     if (sdr == null) {
       return 0;

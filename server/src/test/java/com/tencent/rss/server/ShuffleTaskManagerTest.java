@@ -18,11 +18,6 @@
 
 package com.tencent.rss.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
@@ -33,18 +28,26 @@ import com.tencent.rss.common.ShufflePartitionedBlock;
 import com.tencent.rss.common.ShufflePartitionedData;
 import com.tencent.rss.common.util.ChecksumUtils;
 import com.tencent.rss.common.util.Constants;
+import com.tencent.rss.server.buffer.PreAllocatedBufferInfo;
+import com.tencent.rss.server.buffer.ShuffleBuffer;
+import com.tencent.rss.server.buffer.ShuffleBufferManager;
 import com.tencent.rss.storage.HdfsTestBase;
 import com.tencent.rss.storage.handler.impl.HdfsClientReadHandler;
+import com.tencent.rss.storage.util.StorageType;
+import org.apache.hadoop.conf.Configuration;
+import org.junit.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
-import org.apache.hadoop.conf.Configuration;
-import org.junit.Test;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ShuffleTaskManagerTest extends HdfsTestBase {
 
@@ -55,13 +58,13 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     String confFile = ClassLoader.getSystemResource("server.conf").getFile();
     ShuffleServerConf conf = new ShuffleServerConf(confFile);
     String storageBasePath = HDFS_URI + "rss/test";
-    conf.setString("rss.server.buffer.capacity", "128");
-    conf.setString("rss.server.buffer.spill.threshold", "64");
-    conf.setString("rss.server.partition.buffer.size", "64");
-    conf.setString("rss.storage.basePath", storageBasePath);
-    conf.setString("rss.storage.type", "HDFS");
-    conf.setString("rss.server.commit.timeout", "10000");
-    conf.setBoolean("rss.server.health.check.enable", false);
+    conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 128L);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, storageBasePath);
+    conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
+    conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
     ShuffleServer shuffleServer = new ShuffleServer(conf);
     ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf,
         shuffleServer.getShuffleFlushManager(), shuffleServer.getShuffleBufferManager(), null);
@@ -93,14 +96,14 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     String storageBasePath = HDFS_URI + "rss/test";
     String appId = "testAppId";
     int shuffleId = 1;
-    conf.setString("rss.server.buffer.capacity", "128");
-    conf.setString("rss.server.buffer.spill.threshold", "64");
-    conf.setString("rss.server.partition.buffer.size", "64");
-    conf.setString("rss.storage.basePath", storageBasePath);
-    conf.setString("rss.storage.type", "HDFS");
-    conf.setString("rss.server.commit.timeout", "10000");
-    conf.setString("rss.server.preAllocation.expired", "3000");
-    conf.setBoolean("rss.server.health.check.enable", false);
+    conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 128L);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, storageBasePath);
+    conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
+    conf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED, 3000L);
+    conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
     ShuffleServer shuffleServer = new ShuffleServer(conf);
     ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
     ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
@@ -212,18 +215,19 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     ShuffleServerConf conf = new ShuffleServerConf();
     String storageBasePath = HDFS_URI + "rss/clearTest";
     int shuffleId = 1;
-    conf.setString("rss.rpc.server.port", "1234");
-    conf.setString("rss.coordinator.quorum", "localhost:9527");
-    conf.setString("rss.jetty.http.port", "12345");
-    conf.setString("rss.jetty.corePool.size", "64");
-    conf.setString("rss.server.buffer.capacity", "128");
-    conf.setString("rss.server.buffer.spill.threshold", "64");
-    conf.setString("rss.server.partition.buffer.size", "64");
-    conf.setString("rss.storage.basePath", storageBasePath);
-    conf.setString("rss.storage.type", "HDFS");
-    conf.setString("rss.server.commit.timeout", "10000");
-    conf.setString("rss.server.app.expired.withoutHeartbeat", "2000");
-    conf.setBoolean("rss.server.health.check.enable", false);
+    conf.set(ShuffleServerConf.RPC_SERVER_PORT, 1234);
+    conf.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:9527");
+    conf.set(ShuffleServerConf.JETTY_HTTP_PORT, 12345);
+    conf.set(ShuffleServerConf.JETTY_CORE_POOL_SIZE, 64);
+    conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 128L);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, storageBasePath);
+    conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
+    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
+    conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
+
     ShuffleServer shuffleServer = new ShuffleServer(conf);
     ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
     ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
@@ -346,7 +350,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     HdfsClientReadHandler handler = new HdfsClientReadHandler(appId, shuffleId, partitionId,
         100, 1, 10, 1000, basePath, new Configuration());
 
-    ShuffleDataResult sdr = handler.readShuffleData(0);
+    ShuffleDataResult sdr = handler.readShuffleData();
     List<BufferSegment> bufferSegments = sdr.getBufferSegments();
     int matchNum = 0;
     for (ShufflePartitionedBlock block : blocks) {
