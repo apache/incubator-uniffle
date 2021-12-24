@@ -32,6 +32,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.deploy.SparkHadoopUtil;
 import org.apache.spark.io.CompressionCodec;
+import org.apache.spark.package$;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,5 +143,9 @@ public class RssShuffleUtils {
 
     return conf;
 
+  }
+
+  public static String getSparkVersion() {
+    return package$.MODULE$.SPARK_VERSION();
   }
 }

@@ -54,7 +54,7 @@ public class AQERepartitionTest extends SparkIntegrationTestBase {
   public void updateCommonSparkConf(SparkConf sparkConf) {
     sparkConf.set(SQLConf.ADAPTIVE_EXECUTION_ENABLED().key(), "true");
     sparkConf.set(SQLConf.COALESCE_PARTITIONS_ENABLED(), "true");
-    sparkConf.set(SQLConf.COALESCE_PARTITIONS_INITIAL_PARTITION_NUM().key(), "10");
+    sparkConf.set(SQLConf.COALESCE_PARTITIONS_INITIAL_PARTITION_NUM().key(), "6");
     sparkConf.set(SQLConf.SHUFFLE_PARTITIONS().key(), "10");
   }
 

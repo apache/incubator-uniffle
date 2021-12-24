@@ -32,16 +32,15 @@ import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.ShuffleReader;
 import org.apache.spark.util.CompletionIterator$;
 import org.apache.spark.util.collection.ExternalSorter;
+import org.apache.spark.util.TaskCompletionListener;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Function0;
-import scala.Function1;
 import scala.Option;
 import scala.Product2;
 import scala.collection.Iterator;
 import scala.runtime.AbstractFunction0;
-import scala.runtime.AbstractFunction1;
 import scala.runtime.BoxedUnit;
 
 public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
@@ -143,14 +142,14 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       context.taskMetrics().incMemoryBytesSpilled(sorter.memoryBytesSpilled());
       context.taskMetrics().incDiskBytesSpilled(sorter.diskBytesSpilled());
       context.taskMetrics().incPeakExecutionMemory(sorter.peakMemoryUsedBytes());
+
       // Use completion callback to stop sorter if task was finished/cancelled.
-      Function1<TaskContext, Void> fn1 = new AbstractFunction1<TaskContext, Void>() {
-        public Void apply(TaskContext context) {
+      context.addTaskCompletionListener(new TaskCompletionListener() {
+        public void onTaskCompletion(TaskContext context) {
           sorter.stop();
-          return (Void) null;
         }
-      };
-      context.addTaskCompletionListener(fn1);
+      });
+
       Function0<BoxedUnit> fn0 = new AbstractFunction0<BoxedUnit>() {
         @Override
         public BoxedUnit apply() {
