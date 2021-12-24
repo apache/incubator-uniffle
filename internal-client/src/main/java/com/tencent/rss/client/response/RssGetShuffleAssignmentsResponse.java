@@ -18,10 +18,11 @@
 
 package com.tencent.rss.client.response;
 
-import com.tencent.rss.common.PartitionRange;
-import com.tencent.rss.common.ShuffleServerInfo;
 import java.util.List;
 import java.util.Map;
+
+import com.tencent.rss.common.PartitionRange;
+import com.tencent.rss.common.ShuffleServerInfo;
 
 public class RssGetShuffleAssignmentsResponse extends ClientResponse {
 

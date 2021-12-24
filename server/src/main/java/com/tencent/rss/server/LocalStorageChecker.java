@@ -17,15 +17,16 @@
 
 package com.tencent.rss.server;
 
+import java.io.File;
+import java.util.List;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import com.tencent.rss.storage.util.StorageType;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.util.List;
+import com.tencent.rss.storage.util.StorageType;
 
 public class LocalStorageChecker extends Checker {
 

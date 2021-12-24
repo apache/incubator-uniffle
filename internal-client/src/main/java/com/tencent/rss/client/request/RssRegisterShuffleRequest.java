@@ -18,8 +18,9 @@
 
 package com.tencent.rss.client.request;
 
-import com.tencent.rss.common.PartitionRange;
 import java.util.List;
+
+import com.tencent.rss.common.PartitionRange;
 
 public class RssRegisterShuffleRequest {
 

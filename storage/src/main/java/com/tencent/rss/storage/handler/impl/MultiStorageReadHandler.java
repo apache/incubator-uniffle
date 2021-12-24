@@ -18,17 +18,18 @@
 
 package com.tencent.rss.storage.handler.impl;
 
+import java.io.IOException;
+
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.util.RssUtils;
 import com.tencent.rss.storage.factory.ShuffleHandlerFactory;
 import com.tencent.rss.storage.handler.api.ClientReadHandler;
 import com.tencent.rss.storage.request.CreateShuffleReadHandlerRequest;
 import com.tencent.rss.storage.util.StorageType;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
 
 public class MultiStorageReadHandler extends AbstractClientReadHandler {
 

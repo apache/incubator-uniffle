@@ -18,15 +18,17 @@
 
 package com.tencent.rss.coordinator;
 
-import com.tencent.rss.common.PartitionRange;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.common.PartitionRange;
 
 public class BasicAssignmentStrategy implements AssignmentStrategy {
 

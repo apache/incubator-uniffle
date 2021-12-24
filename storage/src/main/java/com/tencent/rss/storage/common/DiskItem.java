@@ -18,21 +18,23 @@
 
 package com.tencent.rss.storage.common;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReadWriteLock;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.Uninterruptibles;
-import com.tencent.rss.storage.util.ShuffleStorageUtils;
-import java.util.Queue;
-import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.roaringbitmap.RoaringBitmap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReadWriteLock;
+
+import com.tencent.rss.storage.util.ShuffleStorageUtils;
 
 public class DiskItem {
 

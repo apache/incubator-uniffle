@@ -18,8 +18,9 @@
 
 package org.apache.spark.shuffle.writer;
 
-import com.google.common.collect.Lists;
 import java.util.List;
+
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

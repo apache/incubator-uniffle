@@ -18,7 +18,16 @@
 
 package com.tencent.rss.server;
 
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.locks.ReadWriteLock;
+
 import com.google.common.collect.Lists;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tencent.rss.common.ShufflePartitionedBlock;
 import com.tencent.rss.common.util.RssUtils;
 import com.tencent.rss.storage.common.DiskItem;
@@ -27,14 +36,6 @@ import com.tencent.rss.storage.handler.api.ShuffleDeleteHandler;
 import com.tencent.rss.storage.request.CreateShuffleDeleteHandlerRequest;
 import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import com.tencent.rss.storage.util.StorageType;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.locks.ReadWriteLock;
 
 public class MultiStorageManager {
 

@@ -18,8 +18,20 @@
 
 package com.tencent.rss.coordinator;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.stream.Collectors;
+
 import com.google.common.collect.Sets;
 import com.google.protobuf.Empty;
+import io.grpc.Context;
+import io.grpc.Status;
+import io.grpc.stub.StreamObserver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.proto.CoordinatorServerGrpc;
 import com.tencent.rss.proto.RssProtos.AppHeartBeatRequest;
@@ -35,16 +47,7 @@ import com.tencent.rss.proto.RssProtos.ShuffleServerHeartBeatRequest;
 import com.tencent.rss.proto.RssProtos.ShuffleServerHeartBeatResponse;
 import com.tencent.rss.proto.RssProtos.ShuffleServerId;
 import com.tencent.rss.proto.RssProtos.StatusCode;
-import io.grpc.Context;
-import io.grpc.Status;
-import io.grpc.stub.StreamObserver;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 /**
  * Implementation class for services defined in protobuf

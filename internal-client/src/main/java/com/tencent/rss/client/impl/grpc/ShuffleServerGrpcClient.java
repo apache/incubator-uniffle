@@ -18,8 +18,16 @@
 
 package com.tencent.rss.client.impl.grpc;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tencent.rss.client.api.ShuffleServerClient;
 import com.tencent.rss.client.request.RssAppHeartBeatRequest;
 import com.tencent.rss.client.request.RssFinishShuffleRequest;
@@ -76,13 +84,6 @@ import com.tencent.rss.proto.RssProtos.ShuffleRegisterResponse;
 import com.tencent.rss.proto.RssProtos.StatusCode;
 import com.tencent.rss.proto.ShuffleServerGrpc;
 import com.tencent.rss.proto.ShuffleServerGrpc.ShuffleServerBlockingStub;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServerClient {
 

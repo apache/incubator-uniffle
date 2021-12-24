@@ -18,11 +18,6 @@
 
 package com.tencent.rss.common.web;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.prometheus.client.Collector;
-import io.prometheus.client.Collector.MetricFamilySamples.Sample;
-import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.exporter.MetricsServlet;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Writer;
@@ -36,6 +31,12 @@ import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.prometheus.client.Collector;
+import io.prometheus.client.Collector.MetricFamilySamples.Sample;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.exporter.MetricsServlet;
 
 public class CommonMetricsServlet extends MetricsServlet {
 

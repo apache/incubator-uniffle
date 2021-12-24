@@ -18,9 +18,6 @@
 
 package com.tencent.rss.common.web;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.tencent.rss.common.config.RssBaseConf;
-import com.tencent.rss.common.util.ExitUtils;
 import java.io.FileNotFoundException;
 import java.net.BindException;
 import java.nio.file.Files;
@@ -30,6 +27,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.Servlet;
+
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -44,6 +43,9 @@ import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.common.config.RssBaseConf;
+import com.tencent.rss.common.util.ExitUtils;
 
 public class JettyServer {
 

@@ -18,13 +18,13 @@
 
 package com.tencent.rss.common.util;
 
-import com.google.common.collect.ImmutableMap;
-
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.google.common.collect.ImmutableMap;
 
 // copy from org.apache.spark.network.util.JavaUtils
 public class UnitConverter {

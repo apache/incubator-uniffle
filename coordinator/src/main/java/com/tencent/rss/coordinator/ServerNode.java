@@ -18,8 +18,9 @@
 
 package com.tencent.rss.coordinator;
 
-import com.tencent.rss.proto.RssProtos.ShuffleServerId;
 import java.util.Set;
+
+import com.tencent.rss.proto.RssProtos.ShuffleServerId;
 
 public class ServerNode implements Comparable<ServerNode> {
 

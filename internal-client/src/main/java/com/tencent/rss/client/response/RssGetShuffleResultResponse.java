@@ -18,9 +18,11 @@
 
 package com.tencent.rss.client.response;
 
-import com.tencent.rss.common.util.RssUtils;
 import java.io.IOException;
+
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
+import com.tencent.rss.common.util.RssUtils;
 
 public class RssGetShuffleResultResponse extends ClientResponse {
 

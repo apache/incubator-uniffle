@@ -18,12 +18,14 @@
 
 package org.apache.spark.shuffle;
 
-import com.google.common.collect.Sets;
-import com.tencent.rss.common.ShuffleServerInfo;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.google.common.collect.Sets;
 import org.apache.spark.ShuffleDependency;
+
+import com.tencent.rss.common.ShuffleServerInfo;
 
 public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
 

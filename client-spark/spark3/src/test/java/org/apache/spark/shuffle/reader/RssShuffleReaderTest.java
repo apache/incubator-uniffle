@@ -18,15 +18,9 @@
 
 package org.apache.spark.shuffle.reader;
 
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import java.util.Map;
 
 import com.google.common.collect.Maps;
-import com.tencent.rss.storage.handler.impl.HdfsShuffleWriteHandler;
-import com.tencent.rss.storage.util.StorageType;
-import java.util.Map;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.TaskContext;
@@ -38,6 +32,15 @@ import org.apache.spark.shuffle.RssShuffleHandle;
 import org.junit.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import scala.Option;
+
+import com.tencent.rss.storage.handler.impl.HdfsShuffleWriteHandler;
+import com.tencent.rss.storage.util.StorageType;
+
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
+
 
 public class RssShuffleReaderTest extends AbstractRssReaderTest {
 

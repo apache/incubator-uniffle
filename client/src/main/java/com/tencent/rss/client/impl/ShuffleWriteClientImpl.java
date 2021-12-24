@@ -18,11 +18,22 @@
 
 package com.tencent.rss.client.impl;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tencent.rss.client.api.CoordinatorClient;
 import com.tencent.rss.client.api.ShuffleServerClient;
 import com.tencent.rss.client.api.ShuffleWriteClient;
@@ -47,21 +58,11 @@ import com.tencent.rss.client.response.RssReportShuffleResultResponse;
 import com.tencent.rss.client.response.RssSendCommitResponse;
 import com.tencent.rss.client.response.RssSendShuffleDataResponse;
 import com.tencent.rss.client.response.SendShuffleDataResult;
-import com.tencent.rss.common.exception.RssException;
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.common.ShuffleAssignmentsInfo;
 import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.tencent.rss.common.exception.RssException;
 
 public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 

@@ -18,11 +18,22 @@
 
 package com.tencent.rss.client.impl.grpc;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Empty;
+import io.grpc.ManagedChannel;
+import io.grpc.StatusRuntimeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tencent.rss.client.api.CoordinatorClient;
 import com.tencent.rss.client.request.RssAppHeartBeatRequest;
 import com.tencent.rss.client.request.RssGetShuffleAssignmentsRequest;
@@ -46,15 +57,6 @@ import com.tencent.rss.proto.RssProtos.ShuffleServerHeartBeatRequest;
 import com.tencent.rss.proto.RssProtos.ShuffleServerHeartBeatResponse;
 import com.tencent.rss.proto.RssProtos.ShuffleServerId;
 import com.tencent.rss.proto.RssProtos.StatusCode;
-import io.grpc.ManagedChannel;
-import io.grpc.StatusRuntimeException;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClient {
 

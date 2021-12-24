@@ -18,12 +18,13 @@
 
 package org.apache.spark.shuffle;
 
-import com.google.common.collect.Lists;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.List;
+
+import com.google.common.collect.Lists;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;

@@ -18,11 +18,12 @@
 
 package com.tencent.rss.storage.factory;
 
+import java.io.IOException;
+
 import com.tencent.rss.storage.handler.api.ShuffleUploadHandler;
 import com.tencent.rss.storage.handler.impl.HdfsShuffleUploadHandler;
 import com.tencent.rss.storage.request.CreateShuffleUploadHandlerRequest;
 import com.tencent.rss.storage.util.StorageType;
-import java.io.IOException;
 
 public class ShuffleUploadHandlerFactory {
 

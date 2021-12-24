@@ -18,12 +18,12 @@
 
 package com.tencent.rss.common.metrics;
 
+import java.util.Map;
+
 import com.google.common.collect.Maps;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
-
-import java.util.Map;
 
 public abstract class GRPCMetrics {
 

@@ -18,18 +18,19 @@
 
 package com.tencent.rss.coordinator;
 
+import java.io.FileNotFoundException;
+
+import io.prometheus.client.CollectorRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
+
 import com.tencent.rss.common.Arguments;
 import com.tencent.rss.common.metrics.GRPCMetrics;
 import com.tencent.rss.common.metrics.JvmMetrics;
 import com.tencent.rss.common.rpc.ServerInterface;
 import com.tencent.rss.common.web.CommonMetricsServlet;
 import com.tencent.rss.common.web.JettyServer;
-import io.prometheus.client.CollectorRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import picocli.CommandLine;
-
-import java.io.FileNotFoundException;
 
 /**
  * The main entrance of coordinator service

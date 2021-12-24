@@ -18,13 +18,14 @@
 
 package com.tencent.rss.storage.common;
 
-import com.google.common.collect.Lists;
 import java.io.File;
 import java.util.List;
 
-import com.tencent.rss.common.util.ByteUnit;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.common.util.ByteUnit;
 
 public class ShuffleFileInfo {
 

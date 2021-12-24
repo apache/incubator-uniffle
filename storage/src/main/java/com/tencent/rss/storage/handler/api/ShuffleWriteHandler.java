@@ -18,9 +18,10 @@
 
 package com.tencent.rss.storage.handler.api;
 
-import com.tencent.rss.common.ShufflePartitionedBlock;
 import java.io.IOException;
 import java.util.List;
+
+import com.tencent.rss.common.ShufflePartitionedBlock;
 
 public interface ShuffleWriteHandler {
 

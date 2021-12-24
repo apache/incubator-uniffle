@@ -18,7 +18,15 @@
 
 package com.tencent.rss.server;
 
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import com.google.common.collect.Sets;
+import io.prometheus.client.CollectorRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
+
 import com.tencent.rss.common.Arguments;
 import com.tencent.rss.common.config.RssBaseConf;
 import com.tencent.rss.common.metrics.GRPCMetrics;
@@ -30,13 +38,6 @@ import com.tencent.rss.common.web.CommonMetricsServlet;
 import com.tencent.rss.common.web.JettyServer;
 import com.tencent.rss.server.buffer.ShuffleBufferManager;
 import com.tencent.rss.storage.util.StorageType;
-import io.prometheus.client.CollectorRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import picocli.CommandLine;
-
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Server that manages startup/shutdown of a {@code Greeter} server.

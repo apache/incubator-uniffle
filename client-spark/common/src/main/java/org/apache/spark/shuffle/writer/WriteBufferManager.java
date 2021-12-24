@@ -18,18 +18,14 @@
 
 package org.apache.spark.shuffle.writer;
 
-import com.clearspring.analytics.util.Lists;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
-import com.tencent.rss.client.util.ClientUtils;
-import com.tencent.rss.common.exception.RssException;
-import com.tencent.rss.common.ShuffleBlockInfo;
-import com.tencent.rss.common.ShuffleServerInfo;
-import com.tencent.rss.common.util.ChecksumUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
+
+import com.clearspring.analytics.util.Lists;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Maps;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.memory.MemoryConsumer;
 import org.apache.spark.memory.TaskMemoryManager;
@@ -40,6 +36,12 @@ import org.apache.spark.shuffle.RssShuffleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.reflect.ClassTag$;
+
+import com.tencent.rss.client.util.ClientUtils;
+import com.tencent.rss.common.ShuffleBlockInfo;
+import com.tencent.rss.common.ShuffleServerInfo;
+import com.tencent.rss.common.exception.RssException;
+import com.tencent.rss.common.util.ChecksumUtils;
 
 public class WriteBufferManager extends MemoryConsumer {
 

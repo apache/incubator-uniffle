@@ -18,13 +18,13 @@
 
 package com.tencent.rss.common.config;
 
-import com.google.common.collect.Lists;
-
-import com.tencent.rss.common.util.UnitConverter;
-
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.function.Function;
+
+import com.google.common.collect.Lists;
+
+import com.tencent.rss.common.util.UnitConverter;
 
 import static java.lang.reflect.Modifier.isFinal;
 import static java.lang.reflect.Modifier.isPublic;

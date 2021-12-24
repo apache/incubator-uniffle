@@ -18,12 +18,28 @@
 
 package com.tencent.rss.server;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.roaringbitmap.longlong.LongIterator;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.ShuffleIndexResult;
@@ -37,21 +53,6 @@ import com.tencent.rss.server.buffer.ShuffleBufferManager;
 import com.tencent.rss.storage.factory.ShuffleHandlerFactory;
 import com.tencent.rss.storage.handler.api.ServerReadHandler;
 import com.tencent.rss.storage.request.CreateShuffleReadHandlerRequest;
-import org.roaringbitmap.longlong.LongIterator;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class ShuffleTaskManager {
 

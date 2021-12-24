@@ -18,14 +18,16 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import com.tencent.rss.storage.api.FileReader;
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.storage.api.FileReader;
 
 public class LocalFileReader implements FileReader, Closeable {
 

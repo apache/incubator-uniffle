@@ -18,9 +18,20 @@
 
 package com.tencent.rss.client.impl;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.atomic.AtomicLong;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+import org.apache.hadoop.conf.Configuration;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tencent.rss.client.api.ShuffleReadClient;
 import com.tencent.rss.client.response.CompressedShuffleBlock;
 import com.tencent.rss.common.BufferSegment;
@@ -33,16 +44,6 @@ import com.tencent.rss.common.util.RssUtils;
 import com.tencent.rss.storage.factory.ShuffleHandlerFactory;
 import com.tencent.rss.storage.handler.api.ClientReadHandler;
 import com.tencent.rss.storage.request.CreateShuffleReadHandlerRequest;
-import org.apache.hadoop.conf.Configuration;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class ShuffleReadClientImpl implements ShuffleReadClient {
 

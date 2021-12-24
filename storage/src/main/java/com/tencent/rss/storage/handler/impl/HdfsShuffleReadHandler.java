@@ -18,18 +18,20 @@
 
 package com.tencent.rss.storage.handler.impl;
 
+import java.io.IOException;
+import java.util.List;
+
 import com.google.common.collect.Lists;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.ShuffleDataSegment;
 import com.tencent.rss.common.ShuffleIndexResult;
 import com.tencent.rss.common.util.RssUtils;
 import com.tencent.rss.storage.util.ShuffleStorageUtils;
-import java.io.IOException;
-import java.util.List;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * HdfsShuffleFileReadHandler is a shuffle-specific file read handler, it contains two HdfsFileReader

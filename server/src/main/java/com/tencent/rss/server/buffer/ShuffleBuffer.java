@@ -18,9 +18,17 @@
 
 package com.tencent.rss.server.buffer;
 
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tencent.rss.common.BufferSegment;
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.ShufflePartitionedBlock;
@@ -28,13 +36,6 @@ import com.tencent.rss.common.ShufflePartitionedData;
 import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.server.ShuffleDataFlushEvent;
 import com.tencent.rss.server.ShuffleFlushManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
 
 public class ShuffleBuffer {
 

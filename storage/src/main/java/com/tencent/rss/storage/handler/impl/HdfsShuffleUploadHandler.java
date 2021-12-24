@@ -18,22 +18,23 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
-import com.tencent.rss.storage.handler.api.ShuffleUploadHandler;
-import com.tencent.rss.storage.util.ShuffleStorageUtils;
-import com.tencent.rss.storage.util.ShuffleUploadResult;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.storage.handler.api.ShuffleUploadHandler;
+import com.tencent.rss.storage.util.ShuffleStorageUtils;
+import com.tencent.rss.storage.util.ShuffleUploadResult;
 
 /**
  *  Handler to upload local files to hdfs, it has two mode combine and not combine,

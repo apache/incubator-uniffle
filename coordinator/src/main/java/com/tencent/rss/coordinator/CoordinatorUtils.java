@@ -18,12 +18,12 @@
 
 package com.tencent.rss.coordinator;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.proto.RssProtos;
 import com.tencent.rss.proto.RssProtos.GetShuffleAssignmentsResponse;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class CoordinatorUtils {
 

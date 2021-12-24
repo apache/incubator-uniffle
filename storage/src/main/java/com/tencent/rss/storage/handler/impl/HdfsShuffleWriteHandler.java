@@ -18,20 +18,22 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.tencent.rss.common.ShufflePartitionedBlock;
-import com.tencent.rss.storage.common.FileBasedShuffleSegment;
-import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
-import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.common.ShufflePartitionedBlock;
+import com.tencent.rss.storage.common.FileBasedShuffleSegment;
+import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
+import com.tencent.rss.storage.util.ShuffleStorageUtils;
 
 public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
 

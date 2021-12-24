@@ -18,14 +18,15 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import com.google.common.collect.Lists;
-import com.tencent.rss.common.util.ChecksumUtils;
-import com.tencent.rss.storage.util.ShuffleStorageUtils;
-
 import java.nio.ByteBuffer;
 import java.util.List;
+
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.common.util.ChecksumUtils;
+import com.tencent.rss.storage.util.ShuffleStorageUtils;
 
 public class ShuffleIndexHeader {
 

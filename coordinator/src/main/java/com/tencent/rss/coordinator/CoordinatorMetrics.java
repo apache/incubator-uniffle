@@ -18,10 +18,11 @@
 
 package com.tencent.rss.coordinator;
 
-import com.tencent.rss.common.metrics.MetricsManager;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
+
+import com.tencent.rss.common.metrics.MetricsManager;
 
 public class CoordinatorMetrics {
 

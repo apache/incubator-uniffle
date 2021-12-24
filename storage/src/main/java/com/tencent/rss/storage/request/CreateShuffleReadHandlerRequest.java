@@ -18,11 +18,13 @@
 
 package com.tencent.rss.storage.request;
 
-import com.tencent.rss.common.ShuffleServerInfo;
-import com.tencent.rss.common.config.RssBaseConf;
 import java.util.List;
+
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
+import com.tencent.rss.common.ShuffleServerInfo;
+import com.tencent.rss.common.config.RssBaseConf;
 
 public class CreateShuffleReadHandlerRequest {
 

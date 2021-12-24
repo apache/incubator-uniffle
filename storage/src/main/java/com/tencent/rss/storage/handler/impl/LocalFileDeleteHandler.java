@@ -18,12 +18,14 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import com.tencent.rss.storage.handler.api.ShuffleDeleteHandler;
-import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import java.io.File;
+
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.storage.handler.api.ShuffleDeleteHandler;
+import com.tencent.rss.storage.util.ShuffleStorageUtils;
 
 public class LocalFileDeleteHandler implements ShuffleDeleteHandler {
 

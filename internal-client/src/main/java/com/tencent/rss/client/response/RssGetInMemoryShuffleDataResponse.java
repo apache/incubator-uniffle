@@ -18,9 +18,9 @@
 
 package com.tencent.rss.client.response;
 
-import com.tencent.rss.common.BufferSegment;
-
 import java.util.List;
+
+import com.tencent.rss.common.BufferSegment;
 
 public class RssGetInMemoryShuffleDataResponse extends ClientResponse {
 

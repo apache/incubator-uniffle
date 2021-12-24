@@ -18,13 +18,14 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import com.tencent.rss.storage.handler.api.ShuffleDeleteHandler;
-import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.storage.handler.api.ShuffleDeleteHandler;
+import com.tencent.rss.storage.util.ShuffleStorageUtils;
 
 public class HdfsShuffleDeleteHandler implements ShuffleDeleteHandler {
 

@@ -18,11 +18,8 @@
 
 package org.apache.spark.shuffle.reader;
 
-import com.tencent.rss.client.api.ShuffleReadClient;
-import com.tencent.rss.client.factory.ShuffleClientFactory;
-import com.tencent.rss.client.request.CreateShuffleReadClientRequest;
-import com.tencent.rss.common.ShuffleServerInfo;
 import java.util.List;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.InterruptibleIterator;
 import org.apache.spark.ShuffleDependency;
@@ -31,8 +28,8 @@ import org.apache.spark.serializer.Serializer;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.ShuffleReader;
 import org.apache.spark.util.CompletionIterator$;
-import org.apache.spark.util.collection.ExternalSorter;
 import org.apache.spark.util.TaskCompletionListener;
+import org.apache.spark.util.collection.ExternalSorter;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +39,11 @@ import scala.Product2;
 import scala.collection.Iterator;
 import scala.runtime.AbstractFunction0;
 import scala.runtime.BoxedUnit;
+
+import com.tencent.rss.client.api.ShuffleReadClient;
+import com.tencent.rss.client.factory.ShuffleClientFactory;
+import com.tencent.rss.client.request.CreateShuffleReadClientRequest;
+import com.tencent.rss.common.ShuffleServerInfo;
 
 public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 

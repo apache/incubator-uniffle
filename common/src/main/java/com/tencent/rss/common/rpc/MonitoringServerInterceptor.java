@@ -18,12 +18,13 @@
 
 package com.tencent.rss.common.rpc;
 
-import com.tencent.rss.common.metrics.GRPCMetrics;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
+
+import com.tencent.rss.common.metrics.GRPCMetrics;
 
 public class MonitoringServerInterceptor implements ServerInterceptor {
 

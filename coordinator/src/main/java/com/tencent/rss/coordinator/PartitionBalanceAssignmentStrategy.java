@@ -18,19 +18,20 @@
 
 package com.tencent.rss.coordinator;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.tencent.rss.common.PartitionRange;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.common.PartitionRange;
 
 /**
  * PartitionBalanceAssignmentStrategy will consider allocating partitions from two aspects

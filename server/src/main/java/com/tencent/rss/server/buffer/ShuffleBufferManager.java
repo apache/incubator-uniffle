@@ -18,6 +18,14 @@
 
 package com.tencent.rss.server.buffer;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -25,6 +33,9 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.TreeRangeMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.ShufflePartitionedData;
 import com.tencent.rss.common.util.Constants;
@@ -34,16 +45,6 @@ import com.tencent.rss.server.ShuffleFlushManager;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.server.ShuffleServerMetrics;
 import com.tencent.rss.server.StatusCode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class ShuffleBufferManager {
 

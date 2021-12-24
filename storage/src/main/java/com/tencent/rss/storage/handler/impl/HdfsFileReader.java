@@ -18,10 +18,9 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import com.tencent.rss.storage.api.FileReader;
-import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import java.io.Closeable;
 import java.io.IOException;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -29,6 +28,9 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.storage.api.FileReader;
+import com.tencent.rss.storage.util.ShuffleStorageUtils;
 
 public class HdfsFileReader implements FileReader, Closeable {
 

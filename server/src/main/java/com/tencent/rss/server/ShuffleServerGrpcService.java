@@ -18,10 +18,19 @@
 
 package com.tencent.rss.server;
 
+import java.util.List;
+import java.util.Map;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
+import io.grpc.Context;
+import io.grpc.Status;
+import io.grpc.stub.StreamObserver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tencent.rss.common.BufferSegment;
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.common.ShuffleDataResult;
@@ -58,14 +67,6 @@ import com.tencent.rss.proto.RssProtos.ShufflePartitionRange;
 import com.tencent.rss.proto.RssProtos.ShuffleRegisterRequest;
 import com.tencent.rss.proto.RssProtos.ShuffleRegisterResponse;
 import com.tencent.rss.proto.ShuffleServerGrpc.ShuffleServerImplBase;
-import io.grpc.Context;
-import io.grpc.Status;
-import io.grpc.stub.StreamObserver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.Map;
 
 public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 

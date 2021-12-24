@@ -18,13 +18,15 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import com.tencent.rss.common.ShuffleIndexResult;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.common.ShuffleIndexResult;
 
 public class MultiStorageHdfsShuffleReadHandler extends HdfsShuffleReadHandler {
 

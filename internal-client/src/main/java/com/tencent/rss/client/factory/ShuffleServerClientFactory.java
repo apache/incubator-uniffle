@@ -18,12 +18,14 @@
 
 package com.tencent.rss.client.factory;
 
+import java.util.Map;
+
 import com.google.common.collect.Maps;
+
 import com.tencent.rss.client.api.ShuffleServerClient;
 import com.tencent.rss.client.impl.grpc.ShuffleServerGrpcClient;
 import com.tencent.rss.client.util.ClientType;
 import com.tencent.rss.common.ShuffleServerInfo;
-import java.util.Map;
 
 public class ShuffleServerClientFactory {
 

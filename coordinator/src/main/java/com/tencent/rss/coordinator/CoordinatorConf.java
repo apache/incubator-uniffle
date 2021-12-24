@@ -18,13 +18,14 @@
 
 package com.tencent.rss.coordinator;
 
+import java.util.List;
+import java.util.Map;
+
 import com.tencent.rss.common.config.ConfigOption;
 import com.tencent.rss.common.config.ConfigOptions;
 import com.tencent.rss.common.config.ConfigUtils;
 import com.tencent.rss.common.config.RssBaseConf;
 import com.tencent.rss.common.util.RssUtils;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Configuration for Coordinator Service and rss-cluster, including service port,

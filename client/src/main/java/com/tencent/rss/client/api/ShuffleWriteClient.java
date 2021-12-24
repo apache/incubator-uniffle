@@ -18,15 +18,17 @@
 
 package com.tencent.rss.client.api;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
 import com.tencent.rss.client.response.SendShuffleDataResult;
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.common.ShuffleAssignmentsInfo;
 import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 public interface ShuffleWriteClient {
 

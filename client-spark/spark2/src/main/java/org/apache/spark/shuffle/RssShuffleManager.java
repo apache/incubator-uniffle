@@ -18,19 +18,19 @@
 
 package org.apache.spark.shuffle;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.tencent.rss.client.api.ShuffleWriteClient;
-import com.tencent.rss.client.factory.ShuffleClientFactory;
-import com.tencent.rss.client.response.SendShuffleDataResult;
-import com.tencent.rss.common.PartitionRange;
-import com.tencent.rss.common.ShuffleAssignmentsInfo;
-import com.tencent.rss.common.ShuffleBlockInfo;
-import com.tencent.rss.common.ShuffleServerInfo;
-import com.tencent.rss.common.util.Constants;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkEnv;
@@ -52,13 +52,14 @@ import scala.Tuple2;
 import scala.collection.Iterator;
 import scala.collection.Seq;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import com.tencent.rss.client.api.ShuffleWriteClient;
+import com.tencent.rss.client.factory.ShuffleClientFactory;
+import com.tencent.rss.client.response.SendShuffleDataResult;
+import com.tencent.rss.common.PartitionRange;
+import com.tencent.rss.common.ShuffleAssignmentsInfo;
+import com.tencent.rss.common.ShuffleBlockInfo;
+import com.tencent.rss.common.ShuffleServerInfo;
+import com.tencent.rss.common.util.Constants;
 
 public class RssShuffleManager implements ShuffleManager {
 

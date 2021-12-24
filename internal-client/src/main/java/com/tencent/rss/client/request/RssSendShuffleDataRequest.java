@@ -18,9 +18,10 @@
 
 package com.tencent.rss.client.request;
 
-import com.tencent.rss.common.ShuffleBlockInfo;
 import java.util.List;
 import java.util.Map;
+
+import com.tencent.rss.common.ShuffleBlockInfo;
 
 public class RssSendShuffleDataRequest {
 

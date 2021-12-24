@@ -18,6 +18,11 @@
 
 package com.tencent.rss.storage.handler.impl;
 
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tencent.rss.client.api.ShuffleServerClient;
 import com.tencent.rss.client.request.RssGetInMemoryShuffleDataRequest;
 import com.tencent.rss.client.response.RssGetInMemoryShuffleDataResponse;
@@ -25,10 +30,6 @@ import com.tencent.rss.common.BufferSegment;
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.exception.RssException;
 import com.tencent.rss.common.util.Constants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 public class MemoryClientReadHandler extends AbstractClientReadHandler {
 

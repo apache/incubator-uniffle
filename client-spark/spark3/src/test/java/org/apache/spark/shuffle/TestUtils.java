@@ -18,11 +18,11 @@
 
 package org.apache.spark.shuffle;
 
-import org.apache.spark.SparkConf;
-import org.apache.spark.util.EventLoop;
-
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.spark.SparkConf;
+import org.apache.spark.util.EventLoop;
 
 public class TestUtils {
 

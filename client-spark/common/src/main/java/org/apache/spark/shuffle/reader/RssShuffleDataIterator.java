@@ -18,14 +18,13 @@
 
 package org.apache.spark.shuffle.reader;
 
-import com.esotericsoftware.kryo.io.Input;
-import com.google.common.annotations.VisibleForTesting;
-import com.tencent.rss.client.api.ShuffleReadClient;
-import com.tencent.rss.client.response.CompressedShuffleBlock;
-import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.Unpooled;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import com.esotericsoftware.kryo.io.Input;
+import com.google.common.annotations.VisibleForTesting;
+import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.Unpooled;
 import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.serializer.DeserializationStream;
 import org.apache.spark.serializer.Serializer;
@@ -37,6 +36,9 @@ import scala.Product2;
 import scala.Tuple2;
 import scala.collection.AbstractIterator;
 import scala.collection.Iterator;
+
+import com.tencent.rss.client.api.ShuffleReadClient;
+import com.tencent.rss.client.response.CompressedShuffleBlock;
 
 public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C>> {
 

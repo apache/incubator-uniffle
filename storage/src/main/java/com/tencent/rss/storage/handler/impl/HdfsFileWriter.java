@@ -18,9 +18,6 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import com.tencent.rss.common.util.ChecksumUtils;
-import com.tencent.rss.storage.common.FileBasedShuffleSegment;
-import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -34,6 +31,10 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.common.util.ChecksumUtils;
+import com.tencent.rss.storage.common.FileBasedShuffleSegment;
+import com.tencent.rss.storage.util.ShuffleStorageUtils;
 
 public class HdfsFileWriter implements Closeable {
 

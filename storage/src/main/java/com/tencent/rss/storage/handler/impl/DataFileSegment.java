@@ -18,10 +18,12 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import com.google.common.collect.Sets;
-import com.tencent.rss.common.BufferSegment;
 import java.util.List;
 import java.util.Set;
+
+import com.google.common.collect.Sets;
+
+import com.tencent.rss.common.BufferSegment;
 
 public class DataFileSegment extends FileSegment {
 

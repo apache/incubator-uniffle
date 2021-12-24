@@ -291,10 +291,12 @@
         <module name="VariableDeclarationUsageDistance"/>
         <module name="CustomImportOrder">
              <!-- new add -->
-            <property name="severity" value="ignore"/>
+            <property name="severity" value="WARNING"/>
             <property name="sortImportsInGroupAlphabetically" value="true"/>
+            <property name="specialImportsRegExp" value="^com\.tencent\."/>
+            <property name="standardPackageRegExp" value="^java\.|^javax\."/>
             <property name="separateLineBetweenGroups" value="true"/>
-            <property name="customImportOrderRules" value="STATIC###THIRD_PARTY_PACKAGE"/>
+            <property name="customImportOrderRules" value="STANDARD_JAVA_PACKAGE###THIRD_PARTY_PACKAGE###SPECIAL_IMPORTS###STATIC"/>
             <property name="tokens" value="IMPORT, STATIC_IMPORT, PACKAGE_DEF"/>
         </module>
         <module name="MethodParamPad">

@@ -18,6 +18,9 @@
 
 package com.tencent.rss.storage.factory;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import com.tencent.rss.client.api.ShuffleServerClient;
 import com.tencent.rss.client.factory.ShuffleServerClientFactory;
 import com.tencent.rss.client.util.ClientType;
@@ -40,9 +43,6 @@ import com.tencent.rss.storage.request.CreateShuffleDeleteHandlerRequest;
 import com.tencent.rss.storage.request.CreateShuffleReadHandlerRequest;
 import com.tencent.rss.storage.request.CreateShuffleWriteHandlerRequest;
 import com.tencent.rss.storage.util.StorageType;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class ShuffleHandlerFactory {
 

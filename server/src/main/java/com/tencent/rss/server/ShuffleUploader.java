@@ -18,19 +18,6 @@
 
 package com.tencent.rss.server;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.common.util.concurrent.Uninterruptibles;
-import com.tencent.rss.common.util.ByteUnit;
-import com.tencent.rss.storage.common.DiskItem;
-import com.tencent.rss.storage.common.ShuffleFileInfo;
-import com.tencent.rss.storage.factory.ShuffleUploadHandlerFactory;
-import com.tencent.rss.storage.handler.api.ShuffleUploadHandler;
-import com.tencent.rss.storage.request.CreateShuffleUploadHandlerRequest;
-import com.tencent.rss.storage.util.ShuffleStorageUtils;
-import com.tencent.rss.storage.util.ShuffleUploadResult;
-import com.tencent.rss.storage.util.StorageType;
 import java.io.File;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -40,12 +27,27 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.stream.Collectors;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.RoaringBitmap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.common.util.ByteUnit;
+import com.tencent.rss.storage.common.DiskItem;
+import com.tencent.rss.storage.common.ShuffleFileInfo;
+import com.tencent.rss.storage.factory.ShuffleUploadHandlerFactory;
+import com.tencent.rss.storage.handler.api.ShuffleUploadHandler;
+import com.tencent.rss.storage.request.CreateShuffleUploadHandlerRequest;
+import com.tencent.rss.storage.util.ShuffleStorageUtils;
+import com.tencent.rss.storage.util.ShuffleUploadResult;
+import com.tencent.rss.storage.util.StorageType;
 
 /**
  * ShuffleUploader contains force mode and normal mode, which is decided by the remain

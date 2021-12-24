@@ -18,15 +18,15 @@
 
 package com.tencent.rss.common.config;
 
-import com.google.common.collect.Sets;
-
-import com.tencent.rss.common.util.UnitConverter;
-
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.google.common.collect.Sets;
+
+import com.tencent.rss.common.util.UnitConverter;
 
 public class RssConf {
 

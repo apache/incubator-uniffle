@@ -18,16 +18,18 @@
 
 package com.tencent.rss.storage.handler.impl;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+
 import com.google.common.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tencent.rss.common.ShufflePartitionedBlock;
 import com.tencent.rss.storage.common.FileBasedShuffleSegment;
 import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
 import com.tencent.rss.storage.util.ShuffleStorageUtils;
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class LocalFileWriteHandler implements ShuffleWriteHandler {
 

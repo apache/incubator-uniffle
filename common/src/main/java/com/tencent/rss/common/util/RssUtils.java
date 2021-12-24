@@ -18,14 +18,6 @@
 
 package com.tencent.rss.common.util;
 
-import com.google.common.collect.Lists;
-import com.tencent.rss.common.BufferSegment;
-import com.tencent.rss.common.ShuffleDataSegment;
-import com.tencent.rss.common.ShuffleIndexResult;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -44,6 +36,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
+import com.google.common.collect.Lists;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.common.BufferSegment;
+import com.tencent.rss.common.ShuffleDataSegment;
+import com.tencent.rss.common.ShuffleIndexResult;
 
 public class RssUtils {
 

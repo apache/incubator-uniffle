@@ -18,11 +18,11 @@
 
 package com.tencent.rss.server;
 
-import com.tencent.rss.common.ShufflePartitionedBlock;
-import com.tencent.rss.server.buffer.ShuffleBuffer;
-
 import java.util.List;
 import java.util.function.Supplier;
+
+import com.tencent.rss.common.ShufflePartitionedBlock;
+import com.tencent.rss.server.buffer.ShuffleBuffer;
 
 public class ShuffleDataFlushEvent {
 

@@ -18,14 +18,16 @@
 
 package com.tencent.rss.coordinator;
 
-import com.google.common.base.Objects;
-import com.tencent.rss.common.PartitionRange;
-import com.tencent.rss.proto.RssProtos;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.stream.Collectors;
+
+import com.google.common.base.Objects;
+
+import com.tencent.rss.common.PartitionRange;
+import com.tencent.rss.proto.RssProtos;
 
 public class PartitionRangeAssignment {
 

@@ -18,6 +18,12 @@
 
 package com.tencent.rss.storage.handler.impl;
 
+import java.io.File;
+import java.io.FilenameFilter;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.ShuffleIndexResult;
 import com.tencent.rss.common.config.RssBaseConf;
@@ -25,11 +31,6 @@ import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.storage.common.FileBasedShuffleSegment;
 import com.tencent.rss.storage.handler.api.ServerReadHandler;
 import com.tencent.rss.storage.util.ShuffleStorageUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.FilenameFilter;
 
 public class LocalFileServerReadHandler implements ServerReadHandler {
 

@@ -18,8 +18,9 @@
 
 package com.tencent.rss.storage.request;
 
-import com.tencent.rss.storage.util.StorageType;
 import org.apache.hadoop.conf.Configuration;
+
+import com.tencent.rss.storage.util.StorageType;
 
 /**
  * CreateShuffleUploadHandlerRequest is used to hold the parameters to create remote storage for shuffle uploader.

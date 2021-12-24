@@ -18,19 +18,13 @@
 
 package com.tencent.rss.storage.util;
 
-import com.google.common.collect.Lists;
-import com.tencent.rss.common.BufferSegment;
-import com.tencent.rss.common.util.Constants;
-import com.tencent.rss.storage.common.FileBasedShuffleSegment;
-import com.tencent.rss.storage.handler.impl.DataFileSegment;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-import com.tencent.rss.storage.handler.impl.HdfsFileWriter;
+import com.google.common.collect.Lists;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -39,6 +33,12 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.hash.MurmurHash;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.common.BufferSegment;
+import com.tencent.rss.common.util.Constants;
+import com.tencent.rss.storage.common.FileBasedShuffleSegment;
+import com.tencent.rss.storage.handler.impl.DataFileSegment;
+import com.tencent.rss.storage.handler.impl.HdfsFileWriter;
 
 public class ShuffleStorageUtils {
 

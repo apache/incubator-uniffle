@@ -18,17 +18,21 @@
 
 package org.apache.spark.shuffle.writer;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
-import com.tencent.rss.client.api.ShuffleWriteClient;
-import com.tencent.rss.client.util.ClientUtils;
-import com.tencent.rss.common.ShuffleBlockInfo;
-import com.tencent.rss.common.ShuffleServerInfo;
-import com.tencent.rss.common.exception.RssException;
-import com.tencent.rss.storage.util.StorageType;
 import org.apache.spark.Partitioner;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
@@ -46,15 +50,12 @@ import scala.Option;
 import scala.Product2;
 import scala.collection.Iterator;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import com.tencent.rss.client.api.ShuffleWriteClient;
+import com.tencent.rss.client.util.ClientUtils;
+import com.tencent.rss.common.ShuffleBlockInfo;
+import com.tencent.rss.common.ShuffleServerInfo;
+import com.tencent.rss.common.exception.RssException;
+import com.tencent.rss.storage.util.StorageType;
 
 public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 

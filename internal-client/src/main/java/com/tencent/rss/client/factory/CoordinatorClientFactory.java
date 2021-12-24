@@ -18,14 +18,16 @@
 
 package com.tencent.rss.client.factory;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import com.google.common.collect.Lists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tencent.rss.client.api.CoordinatorClient;
 import com.tencent.rss.client.impl.grpc.CoordinatorGrpcClient;
 import com.tencent.rss.client.util.ClientType;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CoordinatorClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorClientFactory.class);

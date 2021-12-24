@@ -18,10 +18,11 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import com.tencent.rss.common.ShuffleDataResult;
-import com.tencent.rss.storage.handler.api.ClientReadHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.common.ShuffleDataResult;
+import com.tencent.rss.storage.handler.api.ClientReadHandler;
 
 public class ComposedClientReadHandler implements ClientReadHandler {
 

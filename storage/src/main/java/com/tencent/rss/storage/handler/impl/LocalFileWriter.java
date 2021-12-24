@@ -18,12 +18,13 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import com.tencent.rss.storage.common.FileBasedShuffleSegment;
 import java.io.Closeable;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+
+import com.tencent.rss.storage.common.FileBasedShuffleSegment;
 
 public class LocalFileWriter implements Closeable {
 

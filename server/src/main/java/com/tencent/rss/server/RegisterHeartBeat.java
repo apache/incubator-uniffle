@@ -18,12 +18,6 @@
 
 package com.tencent.rss.server;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.tencent.rss.client.api.CoordinatorClient;
-import com.tencent.rss.client.factory.CoordinatorClientFactory;
-import com.tencent.rss.client.request.RssSendHeartBeatRequest;
-import com.tencent.rss.client.response.ResponseStatusCode;
-import com.tencent.rss.client.response.RssSendHeartBeatResponse;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -32,8 +26,16 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.client.api.CoordinatorClient;
+import com.tencent.rss.client.factory.CoordinatorClientFactory;
+import com.tencent.rss.client.request.RssSendHeartBeatRequest;
+import com.tencent.rss.client.response.ResponseStatusCode;
+import com.tencent.rss.client.response.RssSendHeartBeatResponse;
 
 public class RegisterHeartBeat {
 

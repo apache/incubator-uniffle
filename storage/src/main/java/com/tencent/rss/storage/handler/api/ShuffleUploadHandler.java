@@ -18,9 +18,10 @@
 
 package com.tencent.rss.storage.handler.api;
 
-import com.tencent.rss.storage.util.ShuffleUploadResult;
 import java.io.File;
 import java.util.List;
+
+import com.tencent.rss.storage.util.ShuffleUploadResult;
 
 public interface ShuffleUploadHandler {
 

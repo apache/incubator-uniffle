@@ -18,9 +18,10 @@
 
 package com.tencent.rss.client.impl.grpc;
 
+import java.util.concurrent.TimeUnit;
+
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
