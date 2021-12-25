@@ -253,6 +253,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       LOG.warn("Ignore the InterruptedException which should be caused by internal killed");
     } catch (Exception e) {
       throw new RuntimeException("Exception happened when get commit status", e);
+    } finally {
+      executor.shutdown();
     }
   }
 
