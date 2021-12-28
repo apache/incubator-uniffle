@@ -18,17 +18,17 @@
 
 package com.tencent.rss.coordinator;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -88,7 +88,7 @@ public class PartitionBalanceAssignmentStrategyTest {
         15L, 20L, 20L, 20L, 20L, 20L, 0L, 0L, 0L, 0L, 0L);
     valid(expect);
 
-    Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MICROSECONDS);
+    Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
     list = Lists.newArrayList(7L, 18L, 7L, 3L, 19L, 15L, 11L, 10L, 16L, 11L,
         14L, 17L, 15L, 17L, 8L, 1L, 3L, 3L, 6L, 12L);
     updateServerResource(list);
@@ -106,7 +106,7 @@ public class PartitionBalanceAssignmentStrategyTest {
         25L, 20L, 25L, 20L, 0L, 0L, 0L, 0L, 0L, 10L);
     valid(expect);
 
-    Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MICROSECONDS);
+    Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
     list = Lists.newArrayList(7L, 18L, 7L, 3L, 19L, 15L, 11L, 10L, 16L, 11L,
         14L, 17L, 15L, 17L, 8L, 1L, 3L, 3L, 6L, 12L);
     updateServerResource(list);
@@ -132,7 +132,7 @@ public class PartitionBalanceAssignmentStrategyTest {
       }
     }
 
-    Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MICROSECONDS);
+    Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
     updateServerResource(list);
     strategy.assign(33, 1, 1, tags);
     expect = Lists.newArrayList(0L, 7L, 0L, 7L, 0L, 7L, 0L, 6L, 0L, 6L, 0L, 0L,

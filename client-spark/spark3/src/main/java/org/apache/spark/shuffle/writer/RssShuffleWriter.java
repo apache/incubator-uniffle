@@ -237,7 +237,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         break;
       }
       LOG.info("Wait " + blockIds.size() + " blocks sent to shuffle server");
-      Uninterruptibles.sleepUninterruptibly(sendCheckInterval, TimeUnit.MICROSECONDS);
+      Uninterruptibles.sleepUninterruptibly(sendCheckInterval, TimeUnit.MILLISECONDS);
       if (System.currentTimeMillis() - start > sendCheckTimeout) {
         String errorMsg = "Timeout: Task[" + taskId + "] failed because " + blockIds.size()
             + " blocks can't be sent to shuffle server in " + sendCheckTimeout + " ms.";
@@ -258,7 +258,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     while (!future.isDone()) {
       LOG.info("Wait commit to shuffle server for task[" + taskAttemptId + "] cost "
           + (System.currentTimeMillis() - start) + " ms");
-      Uninterruptibles.sleepUninterruptibly(currentWait, TimeUnit.MICROSECONDS);
+      Uninterruptibles.sleepUninterruptibly(currentWait, TimeUnit.MILLISECONDS);
       currentWait = Math.min(currentWait * 2, maxWait);
     }
     try {

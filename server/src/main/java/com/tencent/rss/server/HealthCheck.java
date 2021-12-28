@@ -67,7 +67,7 @@ public class HealthCheck {
       while (!isStop) {
         try {
           check();
-          Uninterruptibles.sleepUninterruptibly(checkIntervalMs, TimeUnit.MICROSECONDS);
+          Uninterruptibles.sleepUninterruptibly(checkIntervalMs, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
           LOG.error("HealthCheck encounter the exception", e);
         }
