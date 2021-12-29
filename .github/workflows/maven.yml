@@ -41,5 +41,15 @@ jobs:
         cache: maven
     - name: Build with Maven with Profile spark2
       run: mvn -B package --file pom.xml -Pspark2
+    - name: Upload spark2 test results to report
+      uses: actions/upload-artifact@v2
+      with:
+        name: test-results-of-rss-spark2
+        path: "**/target/surefire-reports/*.txt"
     - name: Build with Maven with Profile spark3
       run: mvn -B package --file pom.xml -Pspark3
+    - name: Upload spark3 test results to report
+      uses: actions/upload-artifact@v2
+      with:
+        name: test-results-of-rss-spark3
+        path: "**/target/surefire-reports/*.txt"
