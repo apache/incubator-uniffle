@@ -51,7 +51,6 @@ import scala.Product2;
 import scala.collection.Iterator;
 
 import com.tencent.rss.client.api.ShuffleWriteClient;
-import com.tencent.rss.client.util.ClientUtils;
 import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.exception.RssException;
@@ -72,14 +71,12 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final ShuffleDependency<K, V, C> shuffleDependency;
   private final ShuffleWriteMetrics shuffleWriteMetrics;
   private final Partitioner partitioner;
-  private final int numPartitions;
   private final RssShuffleManager shuffleManager;
   private final boolean shouldPartition;
   private final long sendCheckTimeout;
   private final long sendCheckInterval;
   private final long sendSizeLimit;
-  private final int blockNumPerTaskPartition;
-  private final long blockNumPerBitmap;
+  private final int bitmapSplitNum;
   private final Map<Integer, Set<Long>> partitionToBlockIds;
   private final ShuffleWriteClient shuffleWriteClient;
   private final Map<Integer, List<ShuffleServerInfo>> partitionToServers;
@@ -109,18 +106,15 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.shuffleWriteMetrics = shuffleWriteMetrics;
     this.shuffleDependency = rssHandle.getDependency();
     this.partitioner = shuffleDependency.partitioner();
-    this.numPartitions = partitioner.numPartitions();
     this.shouldPartition = partitioner.numPartitions() > 1;
     this.sendCheckInterval = sparkConf.getLong(RssClientConfig.RSS_WRITER_SEND_CHECK_INTERVAL,
         RssClientConfig.RSS_WRITER_SEND_CHECK_INTERVAL_DEFAULT_VALUE);
     this.sendCheckTimeout = sparkConf.getLong(RssClientConfig.RSS_WRITER_SEND_CHECK_TIMEOUT,
         RssClientConfig.RSS_WRITER_SEND_CHECK_TIMEOUT_DEFAULT_VALUE);
-    this.blockNumPerTaskPartition = sparkConf.getInt(RssClientConfig.RSS_CLIENT_BLOCK_NUM_PER_TASK_PARTITION,
-        RssClientConfig.RSS_CLIENT_BLOCK_NUM_PER_TASK_PARTITION_DEFAULT_VALUE);
     this.sendSizeLimit = sparkConf.getSizeAsBytes(RssClientConfig.RSS_CLIENT_SEND_SIZE_LIMIT,
         RssClientConfig.RSS_CLIENT_SEND_SIZE_LIMIT_DEFAULT_VALUE);
-    this.blockNumPerBitmap = sparkConf.getLong(RssClientConfig.RSS_CLIENT_BLOCK_NUM_PER_BITMAP,
-        RssClientConfig.RSS_CLIENT_BLOCK_NUM_PER_BITMAP_DEFAULT_VALUE);
+    this.bitmapSplitNum = sparkConf.getInt(RssClientConfig.RSS_CLIENT_BITMAP_SPLIT_NUM,
+        RssClientConfig.RSS_CLIENT_BITMAP_SPLIT_NUM_DEFAULT_VALUE);
     this.partitionToBlockIds = Maps.newConcurrentMap();
     this.shuffleWriteClient = shuffleWriteClient;
     this.shuffleServersForData = rssHandle.getShuffleServersForData();
@@ -288,16 +282,14 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     if (success) {
       try {
         Map<Integer, List<Long>> ptb = Maps.newHashMap();
-        int bitmapNum = ClientUtils.getBitmapNum(numMaps, numPartitions, blockNumPerTaskPartition, blockNumPerBitmap);
         for (Map.Entry<Integer, Set<Long>> entry : partitionToBlockIds.entrySet()) {
           ptb.put(entry.getKey(), Lists.newArrayList(entry.getValue()));
         }
         long start = System.currentTimeMillis();
-        shuffleWriteClient.reportShuffleResult(partitionToServers, appId, shuffleId, taskAttemptId, ptb,
-            bitmapNum);
-        LOG.info("Report application " + appId + "shuffle result for task[" + taskAttemptId
-            + "] with bitmapNum[" + bitmapNum + "] with partitionToBlocksSize[" + ptb.size() + "] cost "
-            + (System.currentTimeMillis() - start) + " ms");
+        shuffleWriteClient.reportShuffleResult(partitionToServers, appId, shuffleId,
+            taskAttemptId, ptb, bitmapSplitNum);
+        LOG.info("Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
+            taskAttemptId, bitmapSplitNum, (System.currentTimeMillis() - start));
         // todo: we can replace the dummy host and port with the real shuffle server which we prefer to read
         final BlockManagerId blockManagerId = BlockManagerId.apply(appId + "_" + taskId,
             DUMMY_HOST,

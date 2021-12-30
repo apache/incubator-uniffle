@@ -42,41 +42,4 @@ public class ClientUtils {
     return (atomicInt << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
         + (partitionId << Constants.TASK_ATTEMPT_ID_MAX_LENGTH) + taskAttemptId;
   }
-
-  // blockId will be stored in bitmap in shuffle server, more bitmap will cost more memory
-  // to reduce memory cost, merge blockId of different partition in one bitmap
-  public static int getBitmapNum(
-      int taskNum,
-      int partitionNum,
-      int blockNumPerTaskPerPartition,
-      long blockNumPerBitmap) {
-    // depend on performance test, spark.rss.block.per.bitmap should be great than 20000000
-    if (blockNumPerBitmap < 20000000) {
-      throw new IllegalArgumentException("blockNumPerBitmap should be greater than 20000000");
-    }
-    // depend on actual job, spark.rss.block.per.task.partition should be less than 1000000
-    // which maybe generate about 1T shuffle data/per task per partition
-    if (blockNumPerTaskPerPartition < 0 || blockNumPerTaskPerPartition > 1000000) {
-      throw new IllegalArgumentException("blockNumPerTaskPerPartition should be less than 1000000");
-    }
-    // to avoid overflow when do the calculation, reduce the data if possible
-    // it's ok the result is not accuracy
-    int processedTaskNum = taskNum;
-    int processedPartitionNum = partitionNum;
-    long processedBlockNumPerBitmap = blockNumPerBitmap;
-    if (taskNum > 1000) {
-      processedTaskNum = taskNum / 1000;
-      processedBlockNumPerBitmap = processedBlockNumPerBitmap / 1000;
-    }
-    if (partitionNum > 1000) {
-      processedPartitionNum = partitionNum / 1000;
-      processedBlockNumPerBitmap = processedBlockNumPerBitmap / 1000;
-    }
-    long bitmapNum = 1L * blockNumPerTaskPerPartition * processedTaskNum
-        * processedPartitionNum / processedBlockNumPerBitmap + 1;
-    if (bitmapNum > partitionNum || bitmapNum < 0) {
-      bitmapNum = partitionNum;
-    }
-    return (int) bitmapNum;
-  }
 }

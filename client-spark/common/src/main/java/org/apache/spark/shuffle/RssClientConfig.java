@@ -73,8 +73,10 @@ public class RssClientConfig {
   public static String RSS_OZONE_FS_HDFS_IMPL_DEFAULT_VALUE = "org.apache.hadoop.odfs.HdfsOdfsFilesystem";
   public static String RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL = "spark.rss.ozone.fs.AbstractFileSystem.hdfs.impl";
   public static String RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL_DEFAULT_VALUE = "org.apache.hadoop.odfs.HdfsOdfs";
-  public static String RSS_CLIENT_BLOCK_NUM_PER_TASK_PARTITION = "spark.rss.block.per.task.partition";
-  public static int RSS_CLIENT_BLOCK_NUM_PER_TASK_PARTITION_DEFAULT_VALUE = 20;
-  public static String RSS_CLIENT_BLOCK_NUM_PER_BITMAP = "spark.rss.block.per.bitmap";
-  public static long RSS_CLIENT_BLOCK_NUM_PER_BITMAP_DEFAULT_VALUE = 100000000;
+  // it is used in shuffle server to decide how many bitmap should be used to store blockId
+  // the target for this is to improve shuffle server's performance of report/get shuffle result
+  // currently, all blockIds are stored in multiple shuffle servers, update this config if there
+  // has huge amount blockIds, eg, 10B.
+  public static String RSS_CLIENT_BITMAP_SPLIT_NUM = "spark.rss.client.bitmap.splitNum";
+  public static int RSS_CLIENT_BITMAP_SPLIT_NUM_DEFAULT_VALUE = 1;
 }

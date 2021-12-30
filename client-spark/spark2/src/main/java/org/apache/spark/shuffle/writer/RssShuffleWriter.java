@@ -51,7 +51,6 @@ import scala.Product2;
 import scala.collection.Iterator;
 
 import com.tencent.rss.client.api.ShuffleWriteClient;
-import com.tencent.rss.client.util.ClientUtils;
 import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.exception.RssException;
@@ -70,10 +69,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final Map<Integer, List<ShuffleServerInfo>> partitionToServers;
   private String appId;
   private int numMaps;
-  private int numPartitions;
   private int shuffleId;
-  private int blockNumPerTaskPartition;
-  private long blockNumPerBitmap;
+  private int bitmapSplitNum;
   private String taskId;
   private long taskAttemptId;
   private ShuffleDependency<K, V, C> shuffleDependency;
@@ -107,7 +104,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.shuffleDependency = rssHandle.getDependency();
     this.shuffleWriteMetrics = shuffleWriteMetrics;
     this.partitioner = shuffleDependency.partitioner();
-    this.numPartitions = partitioner.numPartitions();
     this.shuffleManager = shuffleManager;
     this.shouldPartition = partitioner.numPartitions() > 1;
     this.sendCheckTimeout = sparkConf.getLong(RssClientConfig.RSS_WRITER_SEND_CHECK_TIMEOUT,
@@ -116,10 +112,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         RssClientConfig.RSS_WRITER_SEND_CHECK_INTERVAL_DEFAULT_VALUE);
     this.sendSizeLimit = sparkConf.getSizeAsBytes(RssClientConfig.RSS_CLIENT_SEND_SIZE_LIMIT,
         RssClientConfig.RSS_CLIENT_SEND_SIZE_LIMIT_DEFAULT_VALUE);
-    this.blockNumPerTaskPartition = sparkConf.getInt(RssClientConfig.RSS_CLIENT_BLOCK_NUM_PER_TASK_PARTITION,
-        RssClientConfig.RSS_CLIENT_BLOCK_NUM_PER_TASK_PARTITION_DEFAULT_VALUE);
-    this.blockNumPerBitmap = sparkConf.getLong(RssClientConfig.RSS_CLIENT_BLOCK_NUM_PER_BITMAP,
-        RssClientConfig.RSS_CLIENT_BLOCK_NUM_PER_BITMAP_DEFAULT_VALUE);
+    this.bitmapSplitNum = sparkConf.getInt(RssClientConfig.RSS_CLIENT_BITMAP_SPLIT_NUM,
+        RssClientConfig.RSS_CLIENT_BITMAP_SPLIT_NUM_DEFAULT_VALUE);
     this.partitionToBlockIds = Maps.newConcurrentMap();
     this.shuffleWriteClient = shuffleWriteClient;
     this.shuffleServersForData = rssHandle.getShuffleServersForData();
@@ -305,11 +299,10 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
           ptb.put(entry.getKey(), Lists.newArrayList(entry.getValue()));
         }
         long start = System.currentTimeMillis();
-        int bitmapNum = ClientUtils.getBitmapNum(numMaps, numPartitions, blockNumPerTaskPartition, blockNumPerBitmap);
-        shuffleWriteClient.reportShuffleResult(partitionToServers, appId, shuffleId, taskAttemptId, ptb,
-            bitmapNum);
-        LOG.info("Report shuffle result for task[" + taskAttemptId + "] with bitmapNum[" + bitmapNum + "] cost "
-            + (System.currentTimeMillis() - start) + " ms");
+        shuffleWriteClient.reportShuffleResult(partitionToServers, appId, shuffleId,
+            taskAttemptId, ptb, bitmapSplitNum);
+        LOG.info("Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
+            taskAttemptId, bitmapSplitNum, (System.currentTimeMillis() - start));
         MapStatus mapStatus = MapStatus$.MODULE$.apply(blockManagerId, partitionLengths);
         return Option.apply(mapStatus);
       } catch (Exception e) {
