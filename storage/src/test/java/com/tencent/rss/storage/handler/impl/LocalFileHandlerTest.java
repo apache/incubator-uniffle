@@ -58,9 +58,9 @@ public class LocalFileHandlerTest {
     String[] basePaths = new String[]{dataDir1.getAbsolutePath(),
         dataDir2.getAbsolutePath()};
     LocalFileWriteHandler writeHandler1 = new LocalFileWriteHandler("appId", 0, 1, 1,
-        basePaths, "pre");
+        basePaths[0], "pre");
     LocalFileWriteHandler writeHandler2 = new LocalFileWriteHandler("appId", 0, 2, 2,
-        basePaths, "pre");
+        basePaths[0], "pre");
 
     String possiblePath1 = ShuffleStorageUtils.getFullShuffleDataFolder(dataDir1.getAbsolutePath(),
         ShuffleStorageUtils.getShuffleDataPath("appId", 0, 1, 1));

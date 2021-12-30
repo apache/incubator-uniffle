@@ -40,9 +40,9 @@ import org.slf4j.LoggerFactory;
  *  Disk indicator data contains size, fileNum, shuffleNum, Shuffle indicator contains size, partition list,
  *  uploaded partition list and uploaded size.
  */
-public class DiskMetaData {
+public class LocalStorageMeta {
 
-  private static final Logger LOG = LoggerFactory.getLogger(DiskMetaData.class);
+  private static final Logger LOG = LoggerFactory.getLogger(LocalStorageMeta.class);
   private final AtomicLong size = new AtomicLong(0L);
   private final Map<String, ShuffleMeta> shuffleMetaMap = Maps.newConcurrentMap();
 

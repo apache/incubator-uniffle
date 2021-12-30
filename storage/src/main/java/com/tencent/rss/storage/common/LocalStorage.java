@@ -23,22 +23,23 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Queues;
-import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.commons.io.FileUtils;
 import org.roaringbitmap.RoaringBitmap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tencent.rss.storage.util.ShuffleStorageUtils;
+import com.tencent.rss.common.util.RssUtils;
+import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
+import com.tencent.rss.storage.handler.impl.LocalFileWriteHandler;
+import com.tencent.rss.storage.request.CreateShuffleWriteHandlerRequest;
 
-public class DiskItem {
+public class LocalStorage extends AbstractStorage {
 
-  private static final Logger LOG = LoggerFactory.getLogger(DiskMetaData.class);
+  private static final Logger LOG = LoggerFactory.getLogger(LocalStorage.class);
 
   private final long capacity;
   private final String basePath;
@@ -47,14 +48,12 @@ public class DiskItem {
   private final double highWaterMarkOfWrite;
   private final double lowWaterMarkOfWrite;
   private final long shuffleExpiredTimeoutMs;
-  private final Thread cleaner;
   private final Queue<String> expiredShuffleKeys = Queues.newLinkedBlockingQueue();
 
-  private DiskMetaData diskMetaData = new DiskMetaData();
+  private LocalStorageMeta metaData = new LocalStorageMeta();
   private boolean canWrite = true;
-  private volatile boolean isStopped = false;
 
-  private DiskItem(Builder builder) {
+  private LocalStorage(Builder builder) {
     this.basePath = builder.basePath;
     this.cleanupThreshold = builder.cleanupThreshold;
     this.cleanIntervalMs = builder.cleanIntervalMs;
@@ -76,41 +75,77 @@ public class DiskItem {
       throw new IllegalArgumentException("Disk Available Capacity " + freeSpace
           + " is smaller than configuration");
     }
-
-    // todo: extract a class named Service, and support stop method. Now
-    // we assume that it's enough for one thread per disk. If in testing mode
-    // the thread won't be started. cleanInterval should minus the execute time
-    // of the method clean.
-    cleaner = new Thread(basePath + "-Cleaner") {
-      @Override
-      public void run() {
-        while (!isStopped) {
-          try {
-            clean();
-            Uninterruptibles.sleepUninterruptibly(cleanIntervalMs, TimeUnit.MILLISECONDS);
-          } catch (Exception e) {
-            LOG.error(getName() + " happened exception: ", e);
-          }
-        }
-      }
-    };
-    cleaner.setDaemon(true);
   }
 
-  public void start() {
-    cleaner.start();
+  @Override
+  public boolean lockShuffleShared(String shuffleKey) {
+    ReadWriteLock lock = getLock(shuffleKey);
+    if (lock == null) {
+      return false;
+    }
+    lock.readLock().lock();
+    return true;
   }
 
-  public void stop() {
-    isStopped = true;
-    Uninterruptibles.joinUninterruptibly(cleaner, 10, TimeUnit.SECONDS);
+  @Override
+  public boolean unlockShuffleShared(String shuffleKey) {
+    ReadWriteLock lock = getLock(shuffleKey);
+    if (lock == null) {
+      return false;
+    }
+    lock.readLock().unlock();
+    return true;
   }
 
+  @Override
+  public boolean lockShuffleExcluded(String shuffleKey) {
+    ReadWriteLock lock = getLock(shuffleKey);
+    if (lock == null) {
+      return false;
+    }
+    return lock.writeLock().tryLock();
+  }
+
+  @Override
+  public boolean unlockShuffleExcluded(String shuffleKey) {
+    ReadWriteLock lock = getLock(shuffleKey);
+    if (lock == null) {
+      return false;
+    }
+    lock.writeLock().unlock();
+    return true;
+  }
+
+  @Override
+  public void updateWriteMetrics(StorageWriteMetrics metrics) {
+      updateWrite(RssUtils.generateShuffleKey(metrics.getAppId(), metrics.getShuffleId()),
+          metrics.getDataSize(),
+          metrics.getPartitions());
+  }
+
+  @Override
+  public void updateReadMetrics(StorageReadMetrics metrics) {
+      String shuffleKey = RssUtils.generateShuffleKey(metrics.getAppId(), metrics.getShuffleId());
+      prepareStartRead(shuffleKey);
+      updateShuffleLastReadTs(shuffleKey);
+  }
+
+  @Override
+  ShuffleWriteHandler newWriteHandler(CreateShuffleWriteHandlerRequest request) {
+    return new LocalFileWriteHandler(request.getAppId(),
+        request.getShuffleId(),
+        request.getStartPartition(),
+        request.getEndPartition(),
+        basePath,
+        request.getFileNamePrefix());
+  }
+
+  @Override
   public boolean canWrite() {
     if (canWrite) {
-      canWrite = diskMetaData.getDiskSize().doubleValue() * 100 / capacity < highWaterMarkOfWrite;
+      canWrite = metaData.getDiskSize().doubleValue() * 100 / capacity < highWaterMarkOfWrite;
     } else {
-      canWrite = diskMetaData.getDiskSize().doubleValue() * 100 / capacity < lowWaterMarkOfWrite;
+      canWrite = metaData.getDiskSize().doubleValue() * 100 / capacity < lowWaterMarkOfWrite;
     }
     return canWrite;
   }
@@ -120,84 +155,49 @@ public class DiskItem {
   }
 
   public void createMetadataIfNotExist(String shuffleKey) {
-    diskMetaData.createMetadataIfNotExist(shuffleKey);
+    metaData.createMetadataIfNotExist(shuffleKey);
   }
 
   public void updateWrite(String shuffleKey, long delta, List<Integer> partitionList) {
-    diskMetaData.updateDiskSize(delta);
-    diskMetaData.addShufflePartitionList(shuffleKey, partitionList);
-    diskMetaData.updateShuffleSize(shuffleKey, delta);
+    metaData.updateDiskSize(delta);
+    metaData.addShufflePartitionList(shuffleKey, partitionList);
+    metaData.updateShuffleSize(shuffleKey, delta);
   }
 
   public void prepareStartRead(String key) {
-    diskMetaData.prepareStartRead(key);
+    metaData.prepareStartRead(key);
   }
 
-  // todo: refactor DeleteHandler to support shuffleKey level deletion
-  @VisibleForTesting
-  void clean() {
-    for (String key = expiredShuffleKeys.poll(); key != null; key = expiredShuffleKeys.poll()) {
-      LOG.info("Remove expired shuffle {}", key);
-      removeResources(key);
-    }
-
-    if (diskMetaData.getDiskSize().doubleValue() * 100 / capacity < cleanupThreshold) {
-      return;
-    }
-
-    diskMetaData.getShuffleMetaSet().forEach((shuffleKey) -> {
-      // If shuffle data is started to read, shuffle data won't be appended. When shuffle is
-      // uploaded totally, the partitions which is not uploaded is empty.
-      if (diskMetaData.isShuffleStartRead(shuffleKey)
-          && diskMetaData.getNotUploadedPartitions(shuffleKey).isEmpty()
-          && isShuffleLongTimeNotRead(shuffleKey)) {
-        String shufflePath = ShuffleStorageUtils.getFullShuffleDataFolder(basePath, shuffleKey);
-        long start = System.currentTimeMillis();
-        try {
-          File baseFolder = new File(shufflePath);
-          FileUtils.deleteDirectory(baseFolder);
-          LOG.info("Clean shuffle {}", shuffleKey);
-          removeResources(shuffleKey);
-          LOG.info("Delete shuffle data for shuffle [" + shuffleKey + "] with " + shufflePath
-              + " cost " + (System.currentTimeMillis() - start) + " ms");
-        } catch (Exception e) {
-          LOG.warn("Can't delete shuffle data for shuffle [" + shuffleKey + "] with " + shufflePath, e);
-        }
-      }
-    });
-
-  }
-
-  private boolean isShuffleLongTimeNotRead(String shuffleKey) {
-    if (diskMetaData.getShuffleLastReadTs(shuffleKey) == -1) {
+  public boolean isShuffleLongTimeNotRead(String shuffleKey) {
+    if (metaData.getShuffleLastReadTs(shuffleKey) == -1) {
       return false;
     }
-    if (System.currentTimeMillis() - diskMetaData.getShuffleLastReadTs(shuffleKey) > shuffleExpiredTimeoutMs) {
+    if (System.currentTimeMillis() - metaData.getShuffleLastReadTs(shuffleKey) > shuffleExpiredTimeoutMs) {
       return true;
     }
     return false;
   }
 
   public void updateShuffleLastReadTs(String shuffleKey) {
-    diskMetaData.updateShuffleLastReadTs(shuffleKey);
+    metaData.updateShuffleLastReadTs(shuffleKey);
   }
 
   public RoaringBitmap getNotUploadedPartitions(String key) {
-    return diskMetaData.getNotUploadedPartitions(key);
+    return metaData.getNotUploadedPartitions(key);
   }
 
   public void updateUploadedShuffle(String shuffleKey, long size, List<Integer> partitions) {
-    diskMetaData.updateUploadedShuffleSize(shuffleKey, size);
-    diskMetaData.addUploadedShufflePartitionList(shuffleKey, partitions);
+    metaData.updateUploadedShuffleSize(shuffleKey, size);
+    metaData.addUploadedShufflePartitionList(shuffleKey, partitions);
   }
 
   public long getDiskSize() {
-    return diskMetaData.getDiskSize().longValue();
+    return metaData.getDiskSize().longValue();
   }
 
   @VisibleForTesting
-  DiskMetaData getDiskMetaData() {
-    return diskMetaData;
+  LocalStorageMeta getMetaData() {
+    return metaData;
   }
 
   public long getCapacity() {
@@ -212,11 +212,6 @@ public class DiskItem {
     return lowWaterMarkOfWrite;
   }
 
-  @VisibleForTesting
-  void setDiskMetaData(DiskMetaData diskMetaData) {
-    this.diskMetaData = diskMetaData;
-  }
-
   public void addExpiredShuffleKey(String shuffleKey) {
     expiredShuffleKeys.offer(shuffleKey);
   }
@@ -226,9 +221,9 @@ public class DiskItem {
   // shuffle size so gc thread must acquire write lock before updating disk size, and force
   // uploader thread will not get the lock if the shuffle is removed by gc thread, so
   // add the shuffle key back to the expiredShuffleKeys if get lock but fail to acquire write lock.
-  void removeResources(String shuffleKey) {
+  public void removeResources(String shuffleKey) {
     LOG.info("Start to remove resource of {}", shuffleKey);
-    ReadWriteLock lock = diskMetaData.getLock(shuffleKey);
+    ReadWriteLock lock = metaData.getLock(shuffleKey);
     if (lock == null) {
       LOG.info("Ignore shuffle {} for its resource was removed already", shuffleKey);
       return;
@@ -236,10 +231,10 @@ public class DiskItem {
 
     if (lock.writeLock().tryLock()) {
       try {
-        diskMetaData.updateDiskSize(-diskMetaData.getShuffleSize(shuffleKey));
-        diskMetaData.remoteShuffle(shuffleKey);
+        metaData.updateDiskSize(-metaData.getShuffleSize(shuffleKey));
+        metaData.remoteShuffle(shuffleKey);
         LOG.info("Finish remove resource of {}, disk size is {} and {} shuffle metadata",
-            shuffleKey, diskMetaData.getDiskSize(), diskMetaData.getShuffleMetaSet().size());
+            shuffleKey, metaData.getDiskSize(), metaData.getShuffleMetaSet().size());
       } catch (Exception e) {
         LOG.error("Fail to update disk size", e);
         expiredShuffleKeys.offer(shuffleKey);
@@ -253,25 +248,25 @@ public class DiskItem {
   }
 
   public ReadWriteLock getLock(String shuffleKey) {
-    return diskMetaData.getLock(shuffleKey);
+    return metaData.getLock(shuffleKey);
   }
 
   public long getNotUploadedSize(String key) {
-    return diskMetaData.getNotUploadedSize(key);
+    return metaData.getNotUploadedSize(key);
   }
 
   public List<String> getSortedShuffleKeys(boolean checkRead, int num) {
-    return diskMetaData.getSortedShuffleKeys(checkRead, num);
+    return metaData.getSortedShuffleKeys(checkRead, num);
   }
 
   public Set<String> getShuffleMetaSet() {
-    return diskMetaData.getShuffleMetaSet();
+    return metaData.getShuffleMetaSet();
   }
 
   public void removeShuffle(String shuffleKey, long size, List<Integer> partitions) {
-    diskMetaData.removeShufflePartitionList(shuffleKey, partitions);
-    diskMetaData.updateDiskSize(-size);
-    diskMetaData.updateShuffleSize(shuffleKey, -size);
+    metaData.removeShufflePartitionList(shuffleKey, partitions);
+    metaData.updateDiskSize(-size);
+    metaData.updateShuffleSize(shuffleKey, -size);
   }
 
   public Queue<String> getExpiredShuffleKeys() {
@@ -325,8 +320,8 @@ public class DiskItem {
       return this;
     }
 
-    public DiskItem build() {
-      return new DiskItem(this);
+    public LocalStorage build() {
+      return new LocalStorage(this);
     }
   }
 

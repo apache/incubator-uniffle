@@ -67,6 +67,7 @@ import com.tencent.rss.proto.RssProtos.ShufflePartitionRange;
 import com.tencent.rss.proto.RssProtos.ShuffleRegisterRequest;
 import com.tencent.rss.proto.RssProtos.ShuffleRegisterResponse;
 import com.tencent.rss.proto.ShuffleServerGrpc.ShuffleServerImplBase;
+import com.tencent.rss.storage.common.StorageReadMetrics;
 
 public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
@@ -377,9 +378,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String requestInfo = "appId[" + appId + "], shuffleId[" + shuffleId + "], partitionId["
         + partitionId + "]" + "offset[" + offset + "]" + "length[" + length + "]";
 
-    if (shuffleServer.getMultiStorageManager() != null) {
-      shuffleServer.getMultiStorageManager().updateLastReadTs(appId, shuffleId, partitionId);
-    }
+    shuffleServer.getStorageManager()
+        .selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId))
+        .updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
 
     if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(length)) {
       try {
@@ -435,9 +436,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String requestInfo = "appId[" + appId + "], shuffleId[" + shuffleId + "], partitionId["
         + partitionId + "]";
 
-    if (shuffleServer.isMultiStorageEnabled()) {
-      shuffleServer.getMultiStorageManager().updateLastReadTs(appId, shuffleId, partitionId);
-    }
+    shuffleServer.getStorageManager()
+        .selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId))
+        .updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
 
     // Index file is expected small size and won't cause oom problem with the assumed size. An index segment is 40B,
     // with the default size - 2MB, it can support 50k blocks for shuffle data.

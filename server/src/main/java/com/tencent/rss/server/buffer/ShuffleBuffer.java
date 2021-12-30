@@ -63,8 +63,8 @@ public class ShuffleBuffer {
       for (ShufflePartitionedBlock block : data.getBlockList()) {
         blocks.add(block);
         mSize += block.getSize();
-        size += mSize;
       }
+      size += mSize;
     }
 
     return mSize;

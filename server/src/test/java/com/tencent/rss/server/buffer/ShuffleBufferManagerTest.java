@@ -28,6 +28,8 @@ import com.tencent.rss.server.ShuffleServer;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.server.ShuffleServerMetrics;
 import com.tencent.rss.server.StatusCode;
+import com.tencent.rss.server.storage.StorageManager;
+import com.tencent.rss.server.storage.StorageManagerFactory;
 import com.tencent.rss.storage.util.StorageType;
 import org.junit.Before;
 import org.junit.Test;
@@ -62,6 +64,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 500L);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 80.0);
+    conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     mockShuffleFlushManager = mock(ShuffleFlushManager.class);
     shuffleBufferManager = new ShuffleBufferManager(conf, mockShuffleFlushManager);
   }
@@ -327,7 +330,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   @Test
   public void bufferSizeTest() throws Exception {
     ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
-    ShuffleFlushManager shuffleFlushManager = new ShuffleFlushManager(conf, "serverId", mockShuffleServer, null);
+    StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager("serverId", conf);
+    ShuffleFlushManager shuffleFlushManager = new ShuffleFlushManager(conf, "serverId", mockShuffleServer, storageManager);
     shuffleBufferManager = new ShuffleBufferManager(conf, shuffleFlushManager);
 
     when(mockShuffleServer

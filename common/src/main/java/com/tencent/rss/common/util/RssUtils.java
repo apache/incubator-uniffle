@@ -198,4 +198,8 @@ public class RssUtils {
   public static String generateShuffleKey(String appId, int shuffleId) {
     return String.join(Constants.KEY_SPLIT_CHAR, appId, String.valueOf(shuffleId));
   }
+
+  public static String generatePartitionKey(String appId, Integer shuffleId, Integer partition) {
+    return String.join(Constants.KEY_SPLIT_CHAR, appId, String.valueOf(shuffleId), String.valueOf(partition));
+  }
 }

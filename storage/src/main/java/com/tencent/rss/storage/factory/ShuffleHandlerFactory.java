@@ -28,20 +28,16 @@ import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.storage.handler.api.ClientReadHandler;
 import com.tencent.rss.storage.handler.api.ServerReadHandler;
 import com.tencent.rss.storage.handler.api.ShuffleDeleteHandler;
-import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
 import com.tencent.rss.storage.handler.impl.ComposedClientReadHandler;
 import com.tencent.rss.storage.handler.impl.HdfsClientReadHandler;
 import com.tencent.rss.storage.handler.impl.HdfsShuffleDeleteHandler;
-import com.tencent.rss.storage.handler.impl.HdfsShuffleWriteHandler;
 import com.tencent.rss.storage.handler.impl.LocalFileClientReadHandler;
 import com.tencent.rss.storage.handler.impl.LocalFileDeleteHandler;
 import com.tencent.rss.storage.handler.impl.LocalFileServerReadHandler;
-import com.tencent.rss.storage.handler.impl.LocalFileWriteHandler;
 import com.tencent.rss.storage.handler.impl.MemoryClientReadHandler;
 import com.tencent.rss.storage.handler.impl.MultiStorageReadHandler;
 import com.tencent.rss.storage.request.CreateShuffleDeleteHandlerRequest;
 import com.tencent.rss.storage.request.CreateShuffleReadHandlerRequest;
-import com.tencent.rss.storage.request.CreateShuffleWriteHandlerRequest;
 import com.tencent.rss.storage.util.StorageType;
 
 public class ShuffleHandlerFactory {
@@ -172,26 +168,6 @@ public class ShuffleHandlerFactory {
     } else {
       throw new UnsupportedOperationException(
           "Doesn't support storage type for server read handler:" + request.getStorageType());
-    }
-  }
-
-  public ShuffleWriteHandler createShuffleWriteHandler(CreateShuffleWriteHandlerRequest request) throws Exception {
-    if (StorageType.HDFS.name().equals(request.getStorageType())) {
-      return new HdfsShuffleWriteHandler(request.getAppId(), request.getShuffleId(),
-          request.getStartPartition(), request.getEndPartition(), request.getStorageBasePaths()[0],
-          request.getFileNamePrefix(), request.getConf());
-    } else if (StorageType.LOCALFILE.name().equals(request.getStorageType())
-      || StorageType.LOCALFILE_AND_HDFS.name().equals(request.getStorageType())) {
-      return new LocalFileWriteHandler(
-          request.getAppId(),
-          request.getShuffleId(),
-          request.getStartPartition(),
-          request.getEndPartition(),
-          request.getStorageBasePaths(),
-          request.getFileNamePrefix());
-    } else {
-      throw new UnsupportedOperationException("Doesn't support storage type for shuffle write handler:"
-          + request.getStorageType());
     }
   }
 

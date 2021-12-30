@@ -32,13 +32,14 @@ public class ShuffleServerTest {
   public void startTest() {
     try {
       ShuffleServerConf serverConf = new ShuffleServerConf();
-      serverConf.setInteger("rss.rpc.server.port", 9527);
-      serverConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
-      serverConf.setInteger("rss.jetty.http.port", 9528);
-      serverConf.setString("rss.coordinator.quorum", "localhost:0");
-      serverConf.setString("rss.storage.basePath", "/dev/null");
-      serverConf.setString("rss.server.buffer.capacity", "100");
-      serverConf.setString("rss.server.read.buffer.capacity", "10");
+      serverConf.setInteger(ShuffleServerConf.RPC_SERVER_PORT, 9527);
+      serverConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+      serverConf.setInteger(ShuffleServerConf.JETTY_HTTP_PORT, 9528);
+      serverConf.setString(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:0");
+      serverConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, "/tmp/null");
+      serverConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
+      serverConf.setLong(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 100);
+      serverConf.setLong(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY, 10);
 
       ShuffleServer ss1 = new ShuffleServer(serverConf);
       ss1.start();

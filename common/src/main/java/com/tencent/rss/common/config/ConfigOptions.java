@@ -167,6 +167,7 @@ public class ConfigOptions {
       this.converter = converter;
     }
 
+    // todo: errorMsg shouldn't contain key
     public TypedConfigOptionBuilder checkValue(Function<T, Boolean> checkValue, String errMsg) {
       Function<Object, T> newConverter = (v) -> {
         T newValue = this.converter.apply(v);

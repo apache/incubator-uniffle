@@ -25,7 +25,10 @@ import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.ShufflePartitionedBlock;
 import com.tencent.rss.common.config.RssBaseConf;
 import com.tencent.rss.common.util.ChecksumUtils;
+import com.tencent.rss.server.storage.StorageManager;
+import com.tencent.rss.server.storage.StorageManagerFactory;
 import com.tencent.rss.storage.HdfsTestBase;
+import com.tencent.rss.storage.common.AbstractStorage;
 import com.tencent.rss.storage.handler.impl.HdfsClientReadHandler;
 import com.tencent.rss.storage.util.StorageType;
 import org.apache.hadoop.conf.Configuration;
@@ -75,16 +78,20 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   public void hadoopConfTest() {
     shuffleServerConf.setString("rss.server.hadoop.dfs.replication", "2");
     shuffleServerConf.setString("rss.server.hadoop.a.b", "value");
+    StorageManager storageManager =
+        StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", shuffleServerConf);
     ShuffleFlushManager manager =
-        new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, null);
+        new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, storageManager);
     assertEquals("2", manager.getHadoopConf().get("dfs.replication"));
     assertEquals("value", manager.getHadoopConf().get("a.b"));
   }
 
   @Test
   public void writeTest() throws Exception {
+    StorageManager storageManager =
+        StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", shuffleServerConf);
     ShuffleFlushManager manager =
-        new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, null);
+        new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, storageManager);
     ShuffleDataFlushEvent event1 =
         createShuffleDataFlushEvent("appId1", 1, 1, 1, null);
     List<ShufflePartitionedBlock> blocks1 = event1.getShuffleBlocks();
@@ -111,10 +118,12 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   @Test
   public void complexWriteTest() throws Exception {
     shuffleServerConf.setString("rss.server.flush.handler.expired", "3");
+    StorageManager storageManager =
+        StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", shuffleServerConf);
     List<ShufflePartitionedBlock> expectedBlocks = Lists.newArrayList();
     List<ShuffleDataFlushEvent> flushEvents1 = Lists.newArrayList();
     List<ShuffleDataFlushEvent> flushEvents2 = Lists.newArrayList();
-    ShuffleFlushManager manager = new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, null);
+    ShuffleFlushManager manager = new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, storageManager);
     for (int i = 0; i < 30; i++) {
       ShuffleDataFlushEvent flushEvent1 = createShuffleDataFlushEvent("appId4", 1, 1, 1, null);
       ShuffleDataFlushEvent flushEvent2 = createShuffleDataFlushEvent("appId4", 1, 1, 1, null);
@@ -145,8 +154,10 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
 
   @Test
   public void clearTest() throws Exception {
+    StorageManager storageManager =
+        StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", shuffleServerConf);
     ShuffleFlushManager manager =
-        new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, null);
+        new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, storageManager);
     ShuffleDataFlushEvent event1 =
         createShuffleDataFlushEvent("appId1", 1, 0, 1, null);
     manager.addToFlushQueue(event1);
@@ -157,10 +168,13 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     waitForFlush(manager, "appId2", 1, 5);
     assertEquals(5, manager.getCommittedBlockIds("appId1", 1).getLongCardinality());
     assertEquals(5, manager.getCommittedBlockIds("appId2", 1).getLongCardinality());
-    assertEquals(2, manager.getHandlers().size());
+    assertEquals(storageManager.selectStorage(event1), storageManager.selectStorage(event2));
+    int size = getHandlerSize(storageManager, event1);
+    assertEquals(2, size);
     FileStatus[] fileStatus = fs.listStatus(new Path(storageBasePath + "/appId1/"));
     assertTrue(fileStatus.length > 0);
     manager.removeResources("appId1");
+    storageManager.removeResources("appId1", Sets.newHashSet(1));
     try {
       fs.listStatus(new Path(storageBasePath + "/appId1/"));
       fail("Exception should be thrown");
@@ -168,12 +182,16 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
       // expected exception
     }
 
+
     assertEquals(0, manager.getCommittedBlockIds("appId1", 1).getLongCardinality());
     assertEquals(5, manager.getCommittedBlockIds("appId2", 1).getLongCardinality());
-    assertEquals(1, manager.getHandlers().size());
+    size = getHandlerSize(storageManager, event1);
+    assertEquals(1, size);
     manager.removeResources("appId2");
+    storageManager.removeResources("appId2", Sets.newHashSet(1));
     assertEquals(0, manager.getCommittedBlockIds("appId2", 1).getLongCardinality());
-    assertEquals(0, manager.getHandlers().size());
+    size = getHandlerSize(storageManager, event1);
+    assertEquals(0, size);
   }
 
   @Test
@@ -181,23 +199,28 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     TemporaryFolder tmpDir = new TemporaryFolder();
     tmpDir.create();
     ShuffleServerConf serverConf = new ShuffleServerConf();
-    serverConf.setString("rss.storage.basePath", tmpDir.getRoot().getAbsolutePath());
-    serverConf.setString("rss.storage.type", "LOCALFILE");
+    serverConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, tmpDir.getRoot().getAbsolutePath());
+    serverConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    serverConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
+    StorageManager storageManager =
+        StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", serverConf);
     ShuffleFlushManager manager =
-        new ShuffleFlushManager(serverConf, "shuffleServerId", null, null);
+        new ShuffleFlushManager(serverConf, "shuffleServerId", null, storageManager);
     ShuffleDataFlushEvent event1 =
         createShuffleDataFlushEvent("appId1", 1, 0, 1, null);
     manager.addToFlushQueue(event1);
     ShuffleDataFlushEvent event2 =
         createShuffleDataFlushEvent("appId2", 1, 0, 1, null);
     manager.addToFlushQueue(event2);
+    assertEquals(storageManager.selectStorage(event1), storageManager.selectStorage(event2));
     waitForFlush(manager, "appId1", 1, 5);
     waitForFlush(manager, "appId2", 1, 5);
     assertEquals(5, manager.getCommittedBlockIds("appId1", 1).getLongCardinality());
     assertEquals(5, manager.getCommittedBlockIds("appId2", 1).getLongCardinality());
-    assertEquals(2, manager.getHandlers().size());
+    assertEquals(2, getHandlerSize(storageManager, event1));
     File file = new File(tmpDir.getRoot(), "appId1");
     assertTrue(file.exists());
+    storageManager.removeResources("appId1", Sets.newHashSet(1));
     manager.removeResources("appId1");
     assertFalse(file.exists());
     ShuffleDataFlushEvent event3 =
@@ -206,11 +229,16 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     Thread.sleep(1000);
     assertEquals(0, manager.getCommittedBlockIds("appId1", 1).getLongCardinality());
     assertEquals(5, manager.getCommittedBlockIds("appId2", 1).getLongCardinality());
-    assertEquals(1, manager.getHandlers().size());
+    assertEquals(1, getHandlerSize(storageManager, event2));
     manager.removeResources("appId2");
+    storageManager.removeResources("appId2", Sets.newHashSet(1));
     assertEquals(0, manager.getCommittedBlockIds("appId2", 1).getLongCardinality());
-    assertEquals(0, manager.getHandlers().size());
+    assertEquals(0, getHandlerSize(storageManager, event1) + getHandlerSize(storageManager, event2));
     tmpDir.delete();
+  }
+
+  private int getHandlerSize(StorageManager storageManager, ShuffleDataFlushEvent event) {
+    return ((AbstractStorage) storageManager.selectStorage(event)).getHandlerSize();
   }
 
   private void waitForFlush(ShuffleFlushManager manager,
@@ -291,9 +319,9 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
       shuffleServerConf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, processEventsTmpdir.getRoot().getAbsolutePath());
       shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
       shuffleServerConf.set(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 5L);
-      shuffleServerConf.set(ShuffleServerConf.HDFS_BASE_PATH, "test");
-      shuffleServerConf.set(ShuffleServerConf.MULTI_STORAGE_ENABLE, true);
-      MultiStorageManager storageManager = new MultiStorageManager(shuffleServerConf, "");
+      shuffleServerConf.set(ShuffleServerConf.UPLOADER_BASE_PATH, "test");
+      StorageManager storageManager =
+          StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", shuffleServerConf);
       ShuffleFlushManager manager =
           new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, storageManager);
       ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(1, "1", 1, 1,1, 100, null, null, null);
@@ -306,7 +334,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
       } while(manager.getEventNumInFlush() != 0);
       List<ShufflePartitionedBlock> blocks = Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, null));
       ShuffleDataFlushEvent bigEvent = new ShuffleDataFlushEvent(1, "1", 1, 1, 1, 100, blocks, null, null);
-      storageManager.updateWriteEvent(bigEvent);
+      storageManager.updateWriteMetrics(bigEvent, 0);
       manager.addPendingEvents(event);
       manager.addPendingEvents(event);
       manager.addPendingEvents(event);

@@ -36,8 +36,7 @@ abstract public class IntegrationTestBase extends HdfsTestBase {
   protected static final int COORDINATOR_PORT_1 = 19999;
   protected static final int COORDINATOR_PORT_2 = 20030;
   protected static final int JETTY_PORT_1 = 19998;
-  protected static final String COORDINATOR_QUORUM =
-      LOCALHOST + ":" + COORDINATOR_PORT_1 + "," + LOCALHOST + ":" + COORDINATOR_PORT_2;
+  protected static final String COORDINATOR_QUORUM = LOCALHOST + ":" + COORDINATOR_PORT_1;
 
   protected static List<ShuffleServer> shuffleServers = Lists.newArrayList();
   protected static List<CoordinatorServer> coordinators = Lists.newArrayList();

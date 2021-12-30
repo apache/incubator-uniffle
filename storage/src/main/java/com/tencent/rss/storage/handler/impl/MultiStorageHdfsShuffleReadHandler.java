@@ -78,7 +78,7 @@ public class MultiStorageHdfsShuffleReadHandler extends HdfsShuffleReadHandler {
           continue;
         }
 
-        if ((indexFileOffset + indexPartitionLen) >= indexData.length) {
+        if ((indexFileOffset + indexPartitionLen) > indexData.length) {
           LOG.error("Index of partition {} is invalid, offset = {}, length = {} in {}.index",
               partitionId, indexFileOffset, indexPartitionLen, filePrefix);
         }

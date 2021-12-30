@@ -57,6 +57,18 @@ public class ShuffleBufferTest extends BufferTestBase {
   }
 
   @Test
+  public void appendMultiBlocksTest() {
+    ShuffleBuffer shuffleBuffer = new ShuffleBuffer(100);
+    ShufflePartitionedData data1 = createData(10);
+    ShufflePartitionedData data2 = createData(10);
+    ShufflePartitionedBlock[] dataCombine = new ShufflePartitionedBlock[2];
+    dataCombine[0] = data1.getBlockList()[0];
+    dataCombine[1] = data2.getBlockList()[0];
+    shuffleBuffer.append(new ShufflePartitionedData(1, dataCombine));
+    assertEquals(84, shuffleBuffer.getSize());
+  }
+
+  @Test
   public void toFlushEventTest() {
     ShuffleBuffer shuffleBuffer = new ShuffleBuffer(100);
     ShuffleDataFlushEvent event = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);

@@ -183,6 +183,9 @@ public class ConfigUtils {
   public static Function<Long, Boolean> positiveIntegerValidator =
     value -> value > 0L && value <= Integer.MAX_VALUE;
 
+  public static Function<Integer, Boolean> positiveIntegerValidator2 =
+      value -> value > 0;
+
   public static Function<Double, Boolean> percentageDoubleValidator =
       (Function<Double, Boolean>) value -> Double.compare(value, 100.0) <= 0 && Double.compare(value, 0.0) >= 0;
   

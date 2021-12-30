@@ -64,14 +64,14 @@ public class MultiStorageFaultToleranceTest extends ShuffleReadWriteBase {
     shuffleServerConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 100);
     shuffleServerConf.setBoolean(ShuffleServerConf.UPLOADER_ENABLE, true);
     shuffleServerConf.setLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 30L);
-    shuffleServerConf.setString(ShuffleServerConf.HDFS_BASE_PATH,  HDFS_URI + "rss/multi_storage_fault");
+    shuffleServerConf.setString(ShuffleServerConf.UPLOADER_BASE_PATH,  HDFS_URI + "rss/multi_storage_fault");
     shuffleServerConf.setLong(ShuffleServerConf.UPLOAD_COMBINE_THRESHOLD_MB, 1L);
     shuffleServerConf.setLong(ShuffleServerConf.SHUFFLE_EXPIRED_TIMEOUT_MS, 5000L);
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60L * 1000L * 60L);
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 20L * 1000L);
-    shuffleServerConf.setBoolean(ShuffleServerConf.MULTI_STORAGE_ENABLE, true);
-    shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE_AND_HDFS.name());
-    shuffleServerConf.setString("rss.storage.basePath", basePath);
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_AND_HDFS.name());
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, basePath);
+    shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 1024L * 1024L * 1024L);
     createAndStartServers(shuffleServerConf, coordinatorConf);
   }
 

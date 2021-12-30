@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import com.tencent.rss.common.Arguments;
-import com.tencent.rss.common.config.RssBaseConf;
 import com.tencent.rss.common.metrics.GRPCMetrics;
 import com.tencent.rss.common.metrics.JvmMetrics;
 import com.tencent.rss.common.rpc.ServerInterface;
@@ -37,7 +36,8 @@ import com.tencent.rss.common.util.RssUtils;
 import com.tencent.rss.common.web.CommonMetricsServlet;
 import com.tencent.rss.common.web.JettyServer;
 import com.tencent.rss.server.buffer.ShuffleBufferManager;
-import com.tencent.rss.storage.util.StorageType;
+import com.tencent.rss.server.storage.StorageManager;
+import com.tencent.rss.server.storage.StorageManagerFactory;
 
 /**
  * Server that manages startup/shutdown of a {@code Greeter} server.
@@ -55,7 +55,7 @@ public class ShuffleServer {
   private ServerInterface server;
   private ShuffleFlushManager shuffleFlushManager;
   private ShuffleBufferManager shuffleBufferManager;
-  private MultiStorageManager multiStorageManager;
+  private StorageManager storageManager;
   private HealthCheck healthCheck;
   private Set<String> tags = Sets.newHashSet();
   private AtomicBoolean isHealthy = new AtomicBoolean(true);
@@ -112,8 +112,8 @@ public class ShuffleServer {
       registerHeartBeat.shutdown();
       LOG.info("HeartBeat Stopped!");
     }
-    if (multiStorageManager != null) {
-      multiStorageManager.stop();
+    if (storageManager != null) {
+      storageManager.stop();
       LOG.info("MultiStorage Stopped!");
     }
     if (healthCheck != null) {
@@ -135,20 +135,9 @@ public class ShuffleServer {
     jettyServer = new JettyServer(shuffleServerConf);
     registerMetrics();
 
-    boolean useMultiStorage = shuffleServerConf.getBoolean(ShuffleServerConf.MULTI_STORAGE_ENABLE);
-    String storageType = shuffleServerConf.getString(RssBaseConf.RSS_STORAGE_TYPE);
-    if (StorageType.LOCALFILE_AND_HDFS.name().equals(storageType)) {
-      useMultiStorage = true;
-      shuffleServerConf.setBoolean(ShuffleServerConf.MULTI_STORAGE_ENABLE, true);
-      LOG.warn("StorageType LOCALFILE_HDFS will enable multistorage function");
-    }
-    if (useMultiStorage && !StorageType.LOCALFILE_AND_HDFS.name().equals(storageType)) {
-      throw new IllegalArgumentException("Only StorageType LOCALFILE_AND_HDFS support multiStorage function");
-    }
-    if (useMultiStorage) {
-      multiStorageManager = new MultiStorageManager(shuffleServerConf, id);
-      multiStorageManager.start();
-    }
+    storageManager = StorageManagerFactory.getInstance().createStorageManager(id, shuffleServerConf);
+    storageManager.start();
+
 
     boolean healthCheckEnable = shuffleServerConf.getBoolean(ShuffleServerConf.HEALTH_CHECK_ENABLE);
     if (healthCheckEnable) {
@@ -157,10 +146,10 @@ public class ShuffleServer {
     }
 
     registerHeartBeat = new RegisterHeartBeat(this);
-    shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, id, this, multiStorageManager);
+    shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, id, this, storageManager);
     shuffleBufferManager = new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager);
     shuffleTaskManager = new ShuffleTaskManager(shuffleServerConf, shuffleFlushManager,
-        shuffleBufferManager, multiStorageManager);
+        shuffleBufferManager, storageManager);
 
     ShuffleServerFactory shuffleServerFactory = new ShuffleServerFactory(this);
     server = shuffleServerFactory.getServer();
@@ -259,12 +248,8 @@ public class ShuffleServer {
     return shuffleBufferManager;
   }
 
-  public MultiStorageManager getMultiStorageManager() {
-    return multiStorageManager;
-  }
-
-  public boolean isMultiStorageEnabled() {
-    return multiStorageManager != null;
+  public StorageManager getStorageManager() {
+    return storageManager;
   }
 
   public Set<String> getTags() {

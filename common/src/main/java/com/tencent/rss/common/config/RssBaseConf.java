@@ -146,12 +146,6 @@ public class RssBaseConf extends RssConf {
       .noDefaultValue()
       .withDescription("Common storage path for remote shuffle data");
 
-  public static final ConfigOption<Integer> RSS_STORAGE_INDEX_READ_LIMIT = ConfigOptions
-      .key("rss.storage.index.read.limit")
-      .intType()
-      .defaultValue(1000)
-      .withDescription("Read index entity number");
-
   public static final ConfigOption<Integer> RPC_EXECUTOR_SIZE = ConfigOptions
       .key("rss.rpc.executor.size")
       .intType()

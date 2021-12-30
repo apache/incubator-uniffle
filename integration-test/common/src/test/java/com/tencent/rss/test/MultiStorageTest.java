@@ -40,8 +40,9 @@ import com.tencent.rss.common.ShuffleDataSegment;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.util.ChecksumUtils;
 import com.tencent.rss.coordinator.CoordinatorConf;
+import com.tencent.rss.server.ShuffleDataReadEvent;
 import com.tencent.rss.server.ShuffleServerConf;
-import com.tencent.rss.storage.common.DiskItem;
+import com.tencent.rss.storage.common.LocalStorage;
 import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import com.tencent.rss.storage.util.StorageType;
 import org.junit.After;
@@ -74,7 +75,7 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE_AND_HDFS.name());
     shuffleServerConf.setString("rss.storage.basePath", basePath);
-    shuffleServerConf.setString(ShuffleServerConf.HDFS_BASE_PATH,  HDFS_URI + "rss/multi_storage");
+    shuffleServerConf.setString(ShuffleServerConf.UPLOADER_BASE_PATH,  HDFS_URI + "rss/multi_storage");
     shuffleServerConf.setDouble(ShuffleServerConf.CLEANUP_THRESHOLD, 0.0);
     shuffleServerConf.setLong(ShuffleServerConf.CLEANUP_INTERVAL_MS, 1000);
     shuffleServerConf.setDouble(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE, 100.0);
@@ -82,11 +83,11 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     shuffleServerConf.setBoolean(ShuffleServerConf.UPLOADER_ENABLE, true);
     shuffleServerConf.setLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 30L);
     shuffleServerConf.setLong(ShuffleServerConf.UPLOAD_COMBINE_THRESHOLD_MB, 1L);
-    shuffleServerConf.setLong(ShuffleServerConf.SHUFFLE_EXPIRED_TIMEOUT_MS, 5000L);
+    shuffleServerConf.setLong(ShuffleServerConf.SHUFFLE_EXPIRED_TIMEOUT_MS, 6000L);
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60L * 1000L * 60L);
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 20L * 1000L);
     shuffleServerConf.setLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 30);
-    shuffleServerConf.setBoolean(ShuffleServerConf.MULTI_STORAGE_ENABLE, true);
+    shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 1024L * 1024L * 1024L);
     createAndStartServers(shuffleServerConf, coordinatorConf);
   }
 
@@ -157,21 +158,25 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
         appId, 0, 1L, partitionToBlockIds, 2);
     shuffleServerClient.reportShuffleResult(rrp1);
 
-    DiskItem item = shuffleServers.get(0).getMultiStorageManager().getDiskItem(appId, 0, 0);
+    LocalStorage item = (LocalStorage) shuffleServers.get(0).getStorageManager()
+        .selectStorage(new ShuffleDataReadEvent(appId, 0, 0));
     assertTrue(item.canWrite());
     assertEquals(3 * 25, item.getNotUploadedSize(appId + "/" + 0));
-    item = shuffleServers.get(0).getMultiStorageManager().getDiskItem(appId, 0, 1);
+    item = (LocalStorage) shuffleServers.get(0).getStorageManager()
+        .selectStorage(new ShuffleDataReadEvent(appId, 0, 1));
     assertTrue(item.canWrite());
     assertEquals(5 * 1024 * 1024, item.getNotUploadedSize(appId + "/" + 0));
 
     sendSinglePartitionToShuffleServer(appId, 0,2, 2L, blocks3);
     sendSinglePartitionToShuffleServer(appId, 0, 4, 3L, blocks4);
 
-    item = shuffleServers.get(0).getMultiStorageManager().getDiskItem(appId, 0, 2);
+    item = (LocalStorage) shuffleServers.get(0).getStorageManager()
+        .selectStorage(new ShuffleDataReadEvent(appId, 0, 2));
     assertTrue(item.canWrite());
     assertEquals(3 * 25 + 4 * 25, item.getNotUploadedSize(appId + "/" + 0));
 
-    item = shuffleServers.get(0).getMultiStorageManager().getDiskItem(appId, 0, 4);
+    item = (LocalStorage) shuffleServers.get(0).getStorageManager()
+        .selectStorage(new ShuffleDataReadEvent(appId, 0, 4));
     assertTrue(item.canWrite());
     assertEquals(5 * 1024 * 1024 + 1024 * 1024, item.getNotUploadedSize(appId + "/" + 0));
 
@@ -191,11 +196,13 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
 
     wait(appId);
 
-    item = shuffleServers.get(0).getMultiStorageManager().getDiskItem(appId, 0, 0);
+    item = (LocalStorage) shuffleServers.get(0).getStorageManager()
+        .selectStorage(new ShuffleDataReadEvent(appId, 0, 0));
     assertTrue(item.canWrite());
     assertEquals(0, item.getNotUploadedSize(appId + "/" + 0));
 
-    item = shuffleServers.get(0).getMultiStorageManager().getDiskItem(appId, 0, 1);
+    item = (LocalStorage) shuffleServers.get(0).getStorageManager()
+        .selectStorage(new ShuffleDataReadEvent(appId, 0, 1));
     assertTrue(item.canWrite());
     assertEquals(0, item.getNotUploadedSize(appId + "/" + 0));
 
@@ -231,8 +238,9 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
         shuffleServerClient.sendHeartBeat(ra);
         boolean uploadFinished = true;
         for (int i = 0; i < 4; i++) {
-          DiskItem diskItem = shuffleServers.get(0).getMultiStorageManager().getDiskItem(appId, 0, i);
-          String path = ShuffleStorageUtils.getFullShuffleDataFolder(diskItem.getBasePath(),
+          LocalStorage localStorage = (LocalStorage) shuffleServers.get(0).getStorageManager()
+              .selectStorage(new ShuffleDataReadEvent(appId, 0, i));
+          String path = ShuffleStorageUtils.getFullShuffleDataFolder(localStorage.getBasePath(),
               ShuffleStorageUtils.getShuffleDataPath(appId, 0, i, i));
           File file = new File(path);
           if (file.exists()) {
@@ -385,8 +393,9 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     partitionToBlocks.put(0, blocks5);
     shuffleToBlocks.put(0, partitionToBlocks);
     RssSendShuffleDataRequest rs5 = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
-    DiskItem diskItem = shuffleServers.get(0).getMultiStorageManager().getDiskItem(appId, 0, 0);
-    String path = ShuffleStorageUtils.getFullShuffleDataFolder(diskItem.getBasePath(),
+    LocalStorage localStorage = (LocalStorage) shuffleServers.get(0).getStorageManager()
+        .selectStorage(new ShuffleDataReadEvent(appId, 0, 0));
+    String path = ShuffleStorageUtils.getFullShuffleDataFolder(localStorage.getBasePath(),
         ShuffleStorageUtils.getShuffleDataPath(appId, 0, 0, 0));
     File file = new File(path);
     assertFalse(file.exists());
@@ -432,7 +441,8 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     List<ShuffleBlockInfo> blocks3 = createShuffleBlockList(
         2, 1, 2,9, 10 * 1024 * 1024, blockIdBitmap3, expectedData);
 
-    DiskItem item = shuffleServers.get(0).getMultiStorageManager().getDiskItem(appId, 2, 0);
+    LocalStorage item = (LocalStorage) shuffleServers.get(0).getStorageManager()
+        .selectStorage(new ShuffleDataReadEvent(appId, 2, 0));
     item.createMetadataIfNotExist(appId + "/" + 2);
     item.getLock(appId + "/" + 2).readLock().lock();
     sendSinglePartitionToShuffleServer(appId, 2, 0, 1, blocks1);
@@ -492,12 +502,14 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     sendSinglePartitionToShuffleServerWithoutReport(appId, 2, 2, 2, blocks1);
     sendSinglePartitionToShuffleServerWithoutReport(appId, 3, 1,2, blocks2);
     shuffleServers.get(0).getShuffleTaskManager().removeResources(appId);
-    DiskItem item = shuffleServers.get(0).getMultiStorageManager().getDiskItem(appId, 2, 0);
+    LocalStorage storage = (LocalStorage) shuffleServers.get(0).getStorageManager()
+        .selectStorage(new ShuffleDataReadEvent(appId, 2, 0));
     Uninterruptibles.sleepUninterruptibly(1500, TimeUnit.MILLISECONDS);
-    Set<String> keys = item.getShuffleMetaSet();
+    Set<String> keys = storage.getShuffleMetaSet();
     assertTrue(keys.isEmpty());
-    item = shuffleServers.get(0).getMultiStorageManager().getDiskItem(appId, 3, 1);
-    keys = item.getShuffleMetaSet();
+    storage = (LocalStorage) shuffleServers.get(0).getStorageManager()
+        .selectStorage(new ShuffleDataReadEvent(appId, 3, 1));
+    keys = storage.getShuffleMetaSet();
     assertTrue(keys.isEmpty());
 
     appId = "app_read_diskusage_data_with_report";
@@ -507,9 +519,10 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
         0, 0, 1,30, 10 * 1024, blockIdBitmap1, expectedData);
     sendSinglePartitionToShuffleServer(appId, 0, 0, 2, blocks1);
     shuffleServers.get(0).getShuffleTaskManager().removeResources(appId);
-    item = shuffleServers.get(0).getMultiStorageManager().getDiskItem(appId, 0, 0);
+    storage = (LocalStorage) shuffleServers.get(0).getStorageManager()
+        .selectStorage(new ShuffleDataReadEvent(appId, 0, 0));
     Uninterruptibles.sleepUninterruptibly(1500, TimeUnit.MILLISECONDS);
-    keys = item.getShuffleMetaSet();
+    keys = storage.getShuffleMetaSet();
     assertTrue(keys.isEmpty());
   }
 

@@ -43,10 +43,9 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
       int shuffleId,
       int startPartition,
       int endPartition,
-      String[] storageBasePaths,
+      String storageBasePath,
       String fileNamePrefix) {
     this.fileNamePrefix = fileNamePrefix;
-    String storageBasePath = pickBasePath(storageBasePaths, appId, shuffleId, startPartition);
     this.basePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
         ShuffleStorageUtils.getShuffleDataPath(appId, shuffleId, startPartition, endPartition));
     createBasePath();
