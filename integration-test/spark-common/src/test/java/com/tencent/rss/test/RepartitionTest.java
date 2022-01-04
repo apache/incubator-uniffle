@@ -50,6 +50,7 @@ public abstract class RepartitionTest extends SparkIntegrationTestBase {
     SparkConf sparkConf = createSparkConf();
     updateSparkConfWithRss(sparkConf);
     sparkConf.set("spark.executor.memory", "500m");
+    sparkConf.set("spark.unsafe.exceptionOnMemoryLeak", "true");
     updateRssStorage(sparkConf);
 
     // oom if there has no memory release

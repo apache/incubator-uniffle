@@ -259,6 +259,13 @@ public class WriteBufferManager extends MemoryConsumer {
     inSendListBytes.addAndGet(-freeMemory);
   }
 
+  public void freeAllMemory() {
+    long memory = allocatedBytes.get();
+    if (memory > 0) {
+      freeMemory(memory);
+    }
+  }
+
   @VisibleForTesting
   protected Map<Integer, WriterBuffer> getBuffers() {
     return buffers;

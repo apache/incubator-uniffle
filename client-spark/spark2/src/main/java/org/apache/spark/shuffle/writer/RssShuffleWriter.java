@@ -286,6 +286,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   @Override
   public Option<MapStatus> stop(boolean success) {
+    // free all memory, or memory leak happen in executor
+    bufferManager.freeAllMemory();
     if (success) {
       try {
         // fill partitionLengths with non zero dummy value so map output tracker could work correctly
