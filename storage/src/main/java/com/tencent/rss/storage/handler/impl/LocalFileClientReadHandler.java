@@ -1,8 +1,8 @@
 /*
  * Tencent is pleased to support the open source community by making
- * Firestorm-Spark remote shuffle server available. 
+ * Firestorm-Spark remote shuffle server available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved. 
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use
  * this file except in compliance with the License. You may obtain a copy of the
@@ -18,9 +18,7 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import java.util.List;
-
-import com.google.common.collect.Lists;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,18 +30,15 @@ import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.ShuffleDataSegment;
 import com.tencent.rss.common.ShuffleIndexResult;
 import com.tencent.rss.common.exception.RssException;
-import com.tencent.rss.common.util.RssUtils;
 
-public class LocalFileClientReadHandler extends AbstractClientReadHandler {
+public class LocalFileClientReadHandler extends DataSkippableReadHandler {
+  private static final Logger LOG = LoggerFactory.getLogger(
+      LocalFileClientReadHandler.class);
+  private final int partitionNumPerRange;
+  private final int partitionNum;
+  private ShuffleServerClient shuffleServerClient;
 
-  private static final Logger LOG = LoggerFactory.getLogger(LocalFileClientReadHandler.class);
-  private int partitionNumPerRange;
-  private int partitionNum;
-  private List<ShuffleServerClient> shuffleServerClients;
-  private List<ShuffleDataSegment> shuffleDataSegments = Lists.newLinkedList();
-  private int segmentIndex = 0;
-
-  public LocalFileClientReadHandler(
+  LocalFileClientReadHandler(
       String appId,
       int shuffleId,
       int partitionId,
@@ -51,97 +46,52 @@ public class LocalFileClientReadHandler extends AbstractClientReadHandler {
       int partitionNumPerRange,
       int partitionNum,
       int readBufferSize,
-      List<ShuffleServerClient> shuffleServerClients) {
-    this.appId = appId;
-    this.shuffleId = shuffleId;
-    this.partitionId = partitionId;
+      Roaring64NavigableMap expectBlockIds,
+      Roaring64NavigableMap processBlockIds,
+      ShuffleServerClient shuffleServerClient) {
+    super(appId, shuffleId, partitionId, readBufferSize, expectBlockIds, processBlockIds);
+    this.shuffleServerClient = shuffleServerClient;
     this.partitionNumPerRange = partitionNumPerRange;
     this.partitionNum = partitionNum;
-    this.readBufferSize = readBufferSize;
-    this.shuffleServerClients = shuffleServerClients;
   }
 
+  @Override
   public ShuffleIndexResult readShuffleIndex() {
-    boolean readSuccessful = false;
     ShuffleIndexResult shuffleIndexResult = null;
     RssGetShuffleIndexRequest request = new RssGetShuffleIndexRequest(
         appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
-
-    for (ShuffleServerClient shuffleServerClient : shuffleServerClients) {
-      try {
-        shuffleIndexResult = shuffleServerClient.getShuffleIndex(request).getShuffleIndexResult();
-        readSuccessful = true;
-        break;
-      } catch (Exception e) {
-        LOG.warn("Failed to read shuffle index with " + shuffleServerClient.getClientInfo(), e);
-      }
-    }
-
-    if (!readSuccessful) {
+    try {
+      shuffleIndexResult = shuffleServerClient.getShuffleIndex(request).getShuffleIndexResult();
+    } catch (Exception e) {
       throw new RssException("Failed to read shuffle index for appId[" + appId + "], shuffleId["
-          + shuffleId + "], partitionId[" + partitionId + "]");
+        + shuffleId + "], partitionId[" + partitionId + "] due to " + e.getMessage());
     }
-
     return shuffleIndexResult;
   }
 
+  @Override
   public ShuffleDataResult readShuffleData(ShuffleDataSegment shuffleDataSegment) {
-    boolean readSuccessful = false;
     ShuffleDataResult result = null;
     int expectedLength = shuffleDataSegment.getLength();
-
     if (expectedLength <= 0) {
       throw new RssException("Failed to read shuffle data for appId[" + appId + "], shuffleId["
           + shuffleId + "], partitionId[" + partitionId + "], "
           + "the length field in the index segment is " + expectedLength + " <= 0!");
     }
-
     RssGetShuffleDataRequest request = new RssGetShuffleDataRequest(
-        appId,shuffleId, partitionId, partitionNumPerRange, partitionNum,
+        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum,
         shuffleDataSegment.getOffset(), expectedLength);
-
-    for (ShuffleServerClient shuffleServerClient : shuffleServerClients) {
-      try {
-        RssGetShuffleDataResponse response = shuffleServerClient.getShuffleData(request);
-        result = new ShuffleDataResult(response.getShuffleData(), shuffleDataSegment.getBufferSegments());
-
-        if (result.getData().length != expectedLength) {
-          throw new RssException("Wrong data length expect " + result.getData().length
-              + " but actual is " + expectedLength);
-        }
-
-        readSuccessful = true;
-        break;
-      } catch (Exception e) {
-        LOG.warn("Failed to read shuffle data with " + shuffleServerClient.getClientInfo(), e);
-      }
+    try {
+      RssGetShuffleDataResponse response = shuffleServerClient.getShuffleData(request);
+      result = new ShuffleDataResult(response.getShuffleData(), shuffleDataSegment.getBufferSegments());
+    } catch (Exception e) {
+      throw new RssException("Failed to read shuffle data with "
+          + shuffleServerClient.getClientInfo() + " due to " + e.getMessage());
     }
-
-    if (!readSuccessful) {
-      throw new RssException("Failed to read shuffle data for appId[" + appId + "], shuffleId["
-          + shuffleId + "], partitionId[" + partitionId + "]");
+    if (result.getData().length != expectedLength) {
+      throw new RssException("Wrong data length expect " + result.getData().length
+          + " but actual is " + expectedLength);
     }
-
     return result;
-  }
-
-  @Override
-  public ShuffleDataResult readShuffleData() {
-    if (shuffleDataSegments.isEmpty()) {
-      ShuffleIndexResult shuffleIndexResult = readShuffleIndex();
-      if (shuffleIndexResult == null || shuffleIndexResult.isEmpty()) {
-        return null;
-      }
-
-      shuffleDataSegments = RssUtils.transIndexDataToSegments(shuffleIndexResult, readBufferSize);
-    }
-
-    if (segmentIndex >= shuffleDataSegments.size()) {
-      return null;
-    }
-
-    ShuffleDataResult sdr = readShuffleData(shuffleDataSegments.get(segmentIndex));
-    segmentIndex++;
-    return sdr;
   }
 }

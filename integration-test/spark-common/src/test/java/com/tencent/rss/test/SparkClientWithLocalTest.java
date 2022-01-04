@@ -158,7 +158,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
       readClient.readShuffleBlockData();
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
-      assertTrue(e.getMessage().contains("Failed to read shuffle index"));
+      assertTrue(e.getMessage().contains("Failed to read all replicas for"));
     }
     readClient.close();
   }
@@ -334,6 +334,37 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(), testAppId, 0, 0, 100, 1,
         10, 1000, "", blockIdBitmap, taskIdBitmap,
         shuffleServerInfo, null);
+    validateResult(readClient, expectedData);
+    readClient.checkProcessedBlockIds();
+    readClient.close();
+  }
+
+  @Test
+  public void readTest10() throws Exception {
+    String testAppId = "localReadTest10";
+    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)));
+
+    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Roaring64NavigableMap expectedBlockIds = Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap unexpectedBlockIds = Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0, 1);
+    // send some expected data
+    List<ShuffleBlockInfo> blocks = createShuffleBlockList(
+      0, 0, 0, 2, 30, expectedBlockIds, expectedData, mockSSI);
+    sendTestData(testAppId, blocks);
+    // send some unexpected data
+    blocks = createShuffleBlockList(
+      0, 0, 0, 2, 30, unexpectedBlockIds,
+        Maps.newHashMap(), mockSSI);
+    sendTestData(testAppId, blocks);
+    // send some expected data
+    blocks = createShuffleBlockList(
+      0, 0, 1, 2, 30, expectedBlockIds, expectedData, mockSSI);
+    sendTestData(testAppId, blocks);
+    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(),
+      testAppId, 0, 0, 100, 1, 10, 1000,
+      "", expectedBlockIds, taskIdBitmap, shuffleServerInfo, null);
+
     validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
     readClient.close();

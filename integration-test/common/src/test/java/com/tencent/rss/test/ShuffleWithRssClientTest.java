@@ -228,7 +228,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
       readClient.readShuffleBlockData();
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
-      assertTrue(e.getMessage().contains("Failed to read shuffle index for"));
+      assertTrue(e.getMessage().contains("Failed to read all replicas for"));
     }
     readClient.close();
 
