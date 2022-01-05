@@ -48,7 +48,7 @@
     <java.version>1.8</java.version>
     <jetty.version>9.3.24.v20180605</jetty.version>
     <junit.version>4.13.1</junit.version>
-    <log4j.core.version>2.17.0</log4j.core.version>
+    <log4j.core.version>2.17.1</log4j.core.version>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <metrics.version>3.1.0</metrics.version>
