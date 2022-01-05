@@ -162,18 +162,15 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       pendingBlockIds.removeLong(bs.getBlockId());
     }
 
-    byte[] data = null;
     if (bs != null) {
-      data = new byte[bs.getLength()];
       long expectedCrc = -1;
       long actualCrc = -1;
       try {
         long start = System.currentTimeMillis();
-        System.arraycopy(readBuffer, bs.getOffset(), data, 0, bs.getLength());
         copyTime.addAndGet(System.currentTimeMillis() - start);
         start = System.currentTimeMillis();
         expectedCrc = bs.getCrc();
-        actualCrc = ChecksumUtils.getCrc32(data);
+        actualCrc = ChecksumUtils.getCrc32(readBuffer, bs.getOffset(), bs.getLength());
         crcCheckTime.addAndGet(System.currentTimeMillis() - start);
       } catch (Exception e) {
         LOG.warn("Can't read data for blockId[" + bs.getBlockId() + "]", e);
@@ -182,7 +179,8 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
         throw new RssException("Unexpected crc value for blockId[" + bs.getBlockId()
             + "], expected:" + expectedCrc + ", actual:" + actualCrc);
       }
-      return new CompressedShuffleBlock(ByteBuffer.wrap(data), bs.getUncompressLength());
+      return new CompressedShuffleBlock(ByteBuffer.wrap(readBuffer,
+          bs.getOffset(), bs.getLength()), bs.getUncompressLength());
     }
     // current segment hasn't data, try next segment
     return readShuffleBlockData();

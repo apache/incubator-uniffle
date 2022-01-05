@@ -119,7 +119,7 @@ public class RssShuffleUtils {
   public static ByteBuffer decompressData(ByteBuffer data, int uncompressLength) {
     LZ4FastDecompressor fastDecompressor = LZ4Factory.fastestInstance().fastDecompressor();
     ByteBuffer uncompressData = ByteBuffer.allocateDirect(uncompressLength);
-    fastDecompressor.decompress(data, 0, uncompressData, 0, uncompressLength);
+    fastDecompressor.decompress(data, data.position(), uncompressData, 0, uncompressLength);
     return uncompressData;
   }
 

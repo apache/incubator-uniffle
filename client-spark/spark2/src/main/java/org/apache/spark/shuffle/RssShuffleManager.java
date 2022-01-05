@@ -73,7 +73,7 @@ public class RssShuffleManager implements ShuffleManager {
   private ShuffleWriteClient shuffleWriteClient;
   private Map<String, Set<Long>> taskToSuccessBlockIds = Maps.newConcurrentMap();
   private Map<String, Set<Long>> taskToFailedBlockIds = Maps.newConcurrentMap();
-  private Map<String, WriteBufferManager> taskToBuffManager = Maps.newConcurrentMap();
+  private Map<String, WriteBufferManager> taskToBufferManager = Maps.newConcurrentMap();
   private boolean heartbeatStarted = false;
   private ThreadPoolExecutor threadPoolExecutor;
   private EventLoop eventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
@@ -94,7 +94,7 @@ public class RssShuffleManager implements ShuffleManager {
         for (ShuffleBlockInfo sbi : shuffleDataInfoList) {
           releaseSize += sbi.getFreeMemory();
         }
-        taskToBuffManager.get(taskId).freeAllocatedMemory(releaseSize);
+        taskToBufferManager.get(taskId).freeAllocatedMemory(releaseSize);
         LOG.debug("Finish send data and release " + releaseSize + " bytes");
       }
     }
@@ -245,7 +245,7 @@ public class RssShuffleManager implements ShuffleManager {
           shuffleId, context.taskAttemptId(), bufferOptions, rssHandle.getDependency().serializer(),
           rssHandle.getPartitionToServers(), context.taskMemoryManager(),
           writeMetrics);
-      taskToBuffManager.put(taskId, bufferManager);
+      taskToBufferManager.put(taskId, bufferManager);
 
       return new RssShuffleWriter(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(), bufferManager,
           writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle);
@@ -386,8 +386,13 @@ public class RssShuffleManager implements ShuffleManager {
   }
 
   @VisibleForTesting
-  public void clearCachedBlockIds() {
-    taskToSuccessBlockIds.clear();
-    taskToFailedBlockIds.clear();
+  public Map<String, WriteBufferManager> getTaskToBufferManager() {
+    return taskToBufferManager;
+  }
+
+  public void clearTaskMeta(String taskId) {
+    taskToSuccessBlockIds.remove(taskId);
+    taskToFailedBlockIds.remove(taskId);
+    taskToBufferManager.remove(taskId);
   }
 }

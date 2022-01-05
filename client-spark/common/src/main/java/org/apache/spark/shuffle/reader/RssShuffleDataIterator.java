@@ -106,7 +106,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       long fetchDuration = System.currentTimeMillis() - startFetch;
       shuffleReadMetrics.incFetchWaitTime(fetchDuration);
       if (compressedData != null) {
-        shuffleReadMetrics.incRemoteBytesRead(compressedData.capacity());
+        shuffleReadMetrics.incRemoteBytesRead(compressedData.limit() - compressedData.position());
         long startDecompress = System.currentTimeMillis();
         ByteBuffer uncompressedData = RssShuffleUtils.decompressData(
             compressedData, compressedBlock.getUncompressLength());

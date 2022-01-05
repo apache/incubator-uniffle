@@ -286,33 +286,36 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   @Override
   public Option<MapStatus> stop(boolean success) {
-    // free all memory, or memory leak happen in executor
-    bufferManager.freeAllMemory();
-    if (success) {
-      try {
-        // fill partitionLengths with non zero dummy value so map output tracker could work correctly
-        long[] partitionLengths = new long[partitioner.numPartitions()];
-        Arrays.fill(partitionLengths, 1);
-        final BlockManagerId blockManagerId =
-            createDummyBlockManagerId(appId + "_" + taskId, taskAttemptId);
+    try {
+      if (success) {
+          // fill partitionLengths with non zero dummy value so map output tracker could work correctly
+          long[] partitionLengths = new long[partitioner.numPartitions()];
+          Arrays.fill(partitionLengths, 1);
+          final BlockManagerId blockManagerId =
+              createDummyBlockManagerId(appId + "_" + taskId, taskAttemptId);
 
-        Map<Integer, List<Long>> ptb = Maps.newHashMap();
-        for (Map.Entry<Integer, Set<Long>> entry : partitionToBlockIds.entrySet()) {
-          ptb.put(entry.getKey(), Lists.newArrayList(entry.getValue()));
-        }
-        long start = System.currentTimeMillis();
-        shuffleWriteClient.reportShuffleResult(partitionToServers, appId, shuffleId,
-            taskAttemptId, ptb, bitmapSplitNum);
-        LOG.info("Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
-            taskAttemptId, bitmapSplitNum, (System.currentTimeMillis() - start));
-        MapStatus mapStatus = MapStatus$.MODULE$.apply(blockManagerId, partitionLengths);
-        return Option.apply(mapStatus);
-      } catch (Exception e) {
-        LOG.error("Error when stop task.", e);
-        throw new RuntimeException(e);
+          Map<Integer, List<Long>> ptb = Maps.newHashMap();
+          for (Map.Entry<Integer, Set<Long>> entry : partitionToBlockIds.entrySet()) {
+            ptb.put(entry.getKey(), Lists.newArrayList(entry.getValue()));
+          }
+          long start = System.currentTimeMillis();
+          shuffleWriteClient.reportShuffleResult(partitionToServers, appId, shuffleId,
+              taskAttemptId, ptb, bitmapSplitNum);
+          LOG.info("Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
+              taskAttemptId, bitmapSplitNum, (System.currentTimeMillis() - start));
+          MapStatus mapStatus = MapStatus$.MODULE$.apply(blockManagerId, partitionLengths);
+          return Option.apply(mapStatus);
+      } else {
+        return Option.empty();
       }
-    } else {
-      return Option.empty();
+    } finally {
+      // free all memory & metadata, or memory leak happen in executor
+      if (bufferManager != null) {
+        bufferManager.freeAllMemory();
+      }
+      if (shuffleManager != null) {
+        shuffleManager.clearTaskMeta(taskId);
+      }
     }
   }
 

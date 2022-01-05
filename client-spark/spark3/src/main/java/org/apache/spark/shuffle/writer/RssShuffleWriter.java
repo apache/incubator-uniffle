@@ -279,10 +279,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   @Override
   public Option<MapStatus> stop(boolean success) {
-    // free all memory, or memory leak happen in executor
-    bufferManager.freeAllMemory();
-    if (success) {
-      try {
+    try {
+      if (success) {
         Map<Integer, List<Long>> ptb = Maps.newHashMap();
         for (Map.Entry<Integer, Set<Long>> entry : partitionToBlockIds.entrySet()) {
           ptb.put(entry.getKey(), Lists.newArrayList(entry.getValue()));
@@ -299,12 +297,17 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             Option.apply(Long.toString(taskAttemptId)));
         MapStatus mapStatus = MapStatus.apply(blockManagerId, partitionLengths, taskAttemptId);
         return Option.apply(mapStatus);
-      } catch (Exception e) {
-        LOG.error("Error when stop task.", e);
-        throw new RuntimeException(e);
+      } else {
+        return Option.empty();
       }
-    } else {
-      return Option.empty();
+    } finally {
+      // free all memory & metadata, or memory leak happen in executor
+      if (bufferManager != null) {
+        bufferManager.freeAllMemory();
+      }
+      if (shuffleManager != null) {
+        shuffleManager.clearTaskMeta(taskId);
+      }
     }
   }
 

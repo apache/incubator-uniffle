@@ -18,13 +18,15 @@
 
 package org.apache.spark.shuffle.writer;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.tencent.rss.client.api.ShuffleWriteClient;
-import com.tencent.rss.common.ShuffleBlockInfo;
-import com.tencent.rss.common.ShuffleServerInfo;
-import com.tencent.rss.storage.util.StorageType;
 import org.apache.spark.Partitioner;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
@@ -46,13 +48,13 @@ import scala.Product2;
 import scala.Tuple2;
 import scala.collection.mutable.MutableList;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.tencent.rss.client.api.ShuffleWriteClient;
+import com.tencent.rss.common.ShuffleBlockInfo;
+import com.tencent.rss.common.ShuffleServerInfo;
+import com.tencent.rss.storage.util.StorageType;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
@@ -69,6 +71,7 @@ public class RssShuffleWriterTest {
   @Test
   public void checkBlockSendResultTest() {
     SparkConf conf = new SparkConf();
+    String taskId = "checkBlockSendResultTest_taskId";
     conf.setAppName("testApp")
         .setMaster("local[2]")
         .set(RssClientConfig.RSS_TEST_FLAG, "true")
@@ -98,31 +101,34 @@ public class RssShuffleWriterTest {
     WriteBufferManager bufferManagerSpy = spy(bufferManager);
     doReturn(1000000L).when(bufferManagerSpy).acquireMemory(anyLong());
 
-    RssShuffleWriter rssShuffleWriter = new RssShuffleWriter("appId", 0, "taskId", 1L,
+    RssShuffleWriter rssShuffleWriter = new RssShuffleWriter("appId", 0, taskId, 1L,
         bufferManagerSpy, (new TaskMetrics()).shuffleWriteMetrics(),
         manager, conf, mockShuffleWriteClient, mockHandle);
 
     // case 1: all blocks are sent successfully
-    manager.addSuccessBlockIds("taskId", Sets.newHashSet(1L, 2L, 3L));
+    manager.addSuccessBlockIds(taskId, Sets.newHashSet(1L, 2L, 3L));
     rssShuffleWriter.checkBlockSendResult(Sets.newHashSet(1L, 2L, 3L));
-    manager.clearCachedBlockIds();
+    manager.clearTaskMeta(taskId);
 
     // case 2: partial blocks aren't sent before spark.rss.writer.send.check.timeout,
     // Runtime exception will be thrown
-    manager.addSuccessBlockIds("taskId", Sets.newHashSet(1L, 2L));
+    manager.addSuccessBlockIds(taskId, Sets.newHashSet(1L, 2L));
     thrown.expect(RuntimeException.class);
     thrown.expectMessage(StringStartsWith.startsWith("Timeout:"));
     rssShuffleWriter.checkBlockSendResult(Sets.newHashSet(1L, 2L, 3L));
 
-    manager.clearCachedBlockIds();
+    manager.clearTaskMeta(taskId);
 
     // case 3: partial blocks are sent failed, Runtime exception will be thrown
-    manager.addSuccessBlockIds("taskId", Sets.newHashSet(1L, 2L));
-    manager.addFailedBlockIds("taskId", Sets.newHashSet(3L));
+    manager.addSuccessBlockIds(taskId, Sets.newHashSet(1L, 2L));
+    manager.addFailedBlockIds(taskId, Sets.newHashSet(3L));
     thrown.expect(RuntimeException.class);
     thrown.expectMessage(StringStartsWith.startsWith("Send failed:"));
     rssShuffleWriter.checkBlockSendResult(Sets.newHashSet(1L, 2L, 3L));
-    manager.clearCachedBlockIds();
+    manager.clearTaskMeta(taskId);
+    assertTrue(manager.getSuccessBlockIds(taskId).isEmpty());
+    assertTrue(manager.getFailedBlockIds(taskId).isEmpty());
+    assertNull(manager.getTaskToBufferManager().get(taskId));
 
     sc.stop();
   }

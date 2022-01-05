@@ -18,11 +18,11 @@
 
 package com.tencent.rss.client;
 
-import com.tencent.rss.client.api.ShuffleReadClient;
-import com.tencent.rss.client.response.CompressedShuffleBlock;
-
 import java.nio.ByteBuffer;
 import java.util.Map;
+
+import com.tencent.rss.client.api.ShuffleReadClient;
+import com.tencent.rss.client.response.CompressedShuffleBlock;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -57,8 +57,9 @@ public class TestUtils {
   }
 
   public static boolean compareByte(byte[] expected, ByteBuffer buffer) {
+    int start = buffer.position();
     for (int i = 0; i < expected.length; i++) {
-      if (expected[i] != buffer.get(i)) {
+      if (expected[i] != buffer.get(start + i)) {
         return false;
       }
     }

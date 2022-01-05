@@ -77,7 +77,7 @@ public class RssShuffleManager implements ShuffleManager {
   private ShuffleWriteClient shuffleWriteClient;
   private final Map<String, Set<Long>> taskToSuccessBlockIds;
   private final Map<String, Set<Long>> taskToFailedBlockIds;
-  private Map<String, WriteBufferManager> taskToBuffManager = Maps.newConcurrentMap();
+  private Map<String, WriteBufferManager> taskToBufferManager = Maps.newConcurrentMap();
   private final ScheduledExecutorService scheduledExecutorService;
   private boolean heartbeatStarted = false;
   private final EventLoop eventLoop;
@@ -106,7 +106,7 @@ public class RssShuffleManager implements ShuffleManager {
       } finally {
         final AtomicLong releaseSize = new AtomicLong(0);
         shuffleDataInfoList.forEach((sbi) -> releaseSize.addAndGet(sbi.getFreeMemory()));
-        taskToBuffManager.get(taskId).freeAllocatedMemory(releaseSize.get());
+        taskToBufferManager.get(taskId).freeAllocatedMemory(releaseSize.get());
         LOG.debug("Spark 3.0 finish send data and release " + releaseSize + " bytes");
       }
     }
@@ -255,7 +255,7 @@ public class RssShuffleManager implements ShuffleManager {
         shuffleId, context.taskAttemptId(), bufferOptions, rssHandle.getDependency().serializer(),
         rssHandle.getPartitionToServers(), context.taskMemoryManager(),
         writeMetrics);
-    taskToBuffManager.put(taskId, bufferManager);
+    taskToBufferManager.put(taskId, bufferManager);
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
     return new RssShuffleWriter(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(), bufferManager,
         writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle);
@@ -486,6 +486,12 @@ public class RssShuffleManager implements ShuffleManager {
     if (eventLoop != null) {
       eventLoop.stop();
     }
+  }
+
+  public void clearTaskMeta(String taskId) {
+    taskToSuccessBlockIds.remove(taskId);
+    taskToFailedBlockIds.remove(taskId);
+    taskToBufferManager.remove(taskId);
   }
 
   @VisibleForTesting
