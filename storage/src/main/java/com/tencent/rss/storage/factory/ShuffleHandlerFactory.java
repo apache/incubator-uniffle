@@ -35,7 +35,7 @@ import com.tencent.rss.storage.handler.impl.LocalFileDeleteHandler;
 import com.tencent.rss.storage.handler.impl.LocalFileQuorumClientReadHandler;
 import com.tencent.rss.storage.handler.impl.LocalFileServerReadHandler;
 import com.tencent.rss.storage.handler.impl.MemoryQuorumClientReadHandler;
-import com.tencent.rss.storage.handler.impl.MultiStorageReadHandler;
+import com.tencent.rss.storage.handler.impl.UploadedHdfsClientReadHandler;
 import com.tencent.rss.storage.request.CreateShuffleDeleteHandlerRequest;
 import com.tencent.rss.storage.request.CreateShuffleReadHandlerRequest;
 import com.tencent.rss.storage.util.StorageType;
@@ -76,12 +76,47 @@ public class ShuffleHandlerFactory {
           request.getReadBufferSize(), request.getExpectBlockIds(), request.getProcessBlockIds(),
           shuffleServerClients);
     } else if (StorageType.LOCALFILE_AND_HDFS.name().equals(request.getStorageType())) {
-      return new MultiStorageReadHandler(
-          StorageType.LOCALFILE,
-          StorageType.HDFS,
-          request,
+      List<ShuffleServerInfo> shuffleServerInfoList = request.getShuffleServerInfoList();
+      List<ShuffleServerClient> shuffleServerClients = shuffleServerInfoList.stream().map(
+          ssi -> ShuffleServerClientFactory.getInstance().getShuffleServerClient(
+              ClientType.GRPC.name(), ssi)).collect(
+          Collectors.toList());
+
+      return new ComposedClientReadHandler(() -> {
+        return new LocalFileQuorumClientReadHandler(
+          request.getAppId(),
+          request.getShuffleId(),
+          request.getPartitionId(),
+          request.getIndexReadLimit(),
+          request.getPartitionNumPerRange(),
+          request.getPartitionNum(),
+          request.getReadBufferSize(),
           request.getExpectBlockIds(),
-          request.getProcessBlockIds());
+          request.getProcessBlockIds(),
+          shuffleServerClients);
+      }, () -> {
+        return new HdfsClientReadHandler(
+            request.getAppId(),
+            request.getShuffleId(),
+            request.getPartitionId(),
+            request.getIndexReadLimit(),
+            request.getPartitionNumPerRange(),
+            request.getPartitionNum(),
+            request.getReadBufferSize(),
+            request.getStorageBasePath(),
+            request.getHadoopConf());
+      }, () -> {
+        return new UploadedHdfsClientReadHandler(
+            request.getAppId(),
+            request.getShuffleId(),
+            request.getPartitionId(),
+            request.getIndexReadLimit(),
+            request.getPartitionNumPerRange(),
+            request.getPartitionNum(),
+            request.getReadBufferSize(),
+            request.getStorageBasePath(),
+            request.getHadoopConf());
+      });
     } else if (StorageType.MEMORY_LOCALFILE.name().equals(request.getStorageType())) {
       List<ShuffleServerInfo> shuffleServerInfoList = request.getShuffleServerInfoList();
       List<ShuffleServerClient> shuffleServerClients = shuffleServerInfoList.stream().map(

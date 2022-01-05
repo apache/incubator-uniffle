@@ -76,6 +76,7 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE_AND_HDFS.name());
     shuffleServerConf.setString("rss.storage.basePath", basePath);
     shuffleServerConf.setString(ShuffleServerConf.UPLOADER_BASE_PATH,  HDFS_URI + "rss/multi_storage");
+    shuffleServerConf.setString(ShuffleServerConf.HDFS_BASE_PATH, HDFS_URI + "rss/multi_storage");
     shuffleServerConf.setDouble(ShuffleServerConf.CLEANUP_THRESHOLD, 0.0);
     shuffleServerConf.setLong(ShuffleServerConf.CLEANUP_INTERVAL_MS, 1000);
     shuffleServerConf.setDouble(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE, 100.0);
@@ -87,7 +88,7 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60L * 1000L * 60L);
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 20L * 1000L);
     shuffleServerConf.setLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 30);
-    shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 1024L * 1024L * 1024L);
+    shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 400L * 1024L * 1024L);
     createAndStartServers(shuffleServerConf, coordinatorConf);
   }
 
@@ -408,6 +409,78 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
       fail();
     }
     assertFalse(file.exists());
+  }
+
+  @Test
+  public void readDifferentStorageData() {
+    String appId = "app_read_diff_data";
+    RssRegisterShuffleRequest rr1 =  new RssRegisterShuffleRequest(appId, 0,
+        Lists.newArrayList(new PartitionRange(0, 0)));
+    shuffleServerClient.registerShuffle(rr1);
+    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Set<Long> expectedBlock1 = Sets.newHashSet();
+    Roaring64NavigableMap blockIdBitmap1 = Roaring64NavigableMap.bitmapOf();
+    List<ShuffleBlockInfo> blocks1 = createShuffleBlockList(
+        0, 0, 1, 40, 10 * 1024 * 1024, blockIdBitmap1, expectedData);
+    blocks1.forEach(b -> expectedBlock1.add(b.getBlockId()));
+    Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
+    partitionToBlocks.put(0, blocks1);
+    Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
+    shuffleToBlocks.put(0, partitionToBlocks);
+    RssSendShuffleDataRequest rs1 = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
+    shuffleServerClient.sendShuffleData(rs1);
+    RssSendCommitRequest rc1 = new RssSendCommitRequest(appId, 0);
+    shuffleServerClient.sendCommit(rc1);
+    RssFinishShuffleRequest rf1 = new RssFinishShuffleRequest(appId, 0);
+    shuffleServerClient.finishShuffle(rf1);
+    Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
+    partitionToBlockIds.put(0, new ArrayList<>(expectedBlock1));
+    RssReportShuffleResultRequest rrp1 = new RssReportShuffleResultRequest(
+        appId, 0, 1L, partitionToBlockIds, 1);
+    shuffleServerClient.reportShuffleResult(rrp1);
+    Set<Long> expectedBlock2 = Sets.newHashSet();
+    List<ShuffleBlockInfo> blocks2 = createShuffleBlockList(
+        0, 0, 2, 40, 1024, blockIdBitmap1, expectedData);
+    blocks2.forEach(b -> expectedBlock2.add(b.getBlockId()));
+    partitionToBlocks.put(0, blocks2);
+    RssSendShuffleDataRequest rs2 = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
+    shuffleServerClient.sendShuffleData(rs2);
+    shuffleServerClient.sendCommit(rc1);
+    shuffleServerClient.finishShuffle(rf1);
+    partitionToBlockIds.put(0, new ArrayList<>(expectedBlock1));
+    RssReportShuffleResultRequest rrp2 = new RssReportShuffleResultRequest(
+        appId, 0, 2L, partitionToBlockIds, 1);
+    shuffleServerClient.reportShuffleResult(rrp2);
+    shuffleServerClient.finishShuffle(rf1);
+    RssGetShuffleResultRequest rg1 = new RssGetShuffleResultRequest(appId, 0, 0);
+    shuffleServerClient.getShuffleResult(rg1);
+
+    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_AND_HDFS.name(),
+        appId, 0, 0, 100, 1, 10, 1000, HDFS_URI + "rss/multi_storage",
+        blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1, 2), Lists.newArrayList(new ShuffleServerInfo("test", LOCALHOST, SHUFFLE_SERVER_PORT)), conf);
+
+    CompressedShuffleBlock csb = readClient.readShuffleBlockData();
+    Roaring64NavigableMap matched = Roaring64NavigableMap.bitmapOf();
+    assertNotNull(csb);
+    assertNotNull(csb.getByteBuffer());
+    for (Map.Entry<Long, byte[]> entry : expectedData.entrySet()) {
+      if (compareByte(entry.getValue(), csb.getByteBuffer())) {
+        matched.addLong(entry.getKey());
+      }
+    }
+    wait(appId);
+
+    csb = readClient.readShuffleBlockData();
+    while (csb != null && csb.getByteBuffer() != null) {
+      for (Map.Entry<Long, byte[]> entry : expectedData.entrySet()) {
+        if (compareByte(entry.getValue(), csb.getByteBuffer())) {
+          matched.addLong(entry.getKey());
+          break;
+        }
+      }
+      csb = readClient.readShuffleBlockData();
+    }
+    assertTrue(blockIdBitmap1.equals(matched));
   }
 
   @Test

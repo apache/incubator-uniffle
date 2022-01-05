@@ -28,14 +28,14 @@ import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.common.ShuffleIndexResult;
 
-public class MultiStorageHdfsShuffleReadHandler extends HdfsShuffleReadHandler {
+public class UploadedStorageHdfsShuffleReadHandler extends HdfsShuffleReadHandler {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MultiStorageHdfsShuffleReadHandler.class);
+  private static final Logger LOG = LoggerFactory.getLogger(UploadedStorageHdfsShuffleReadHandler.class);
 
   private final int partitionId;
   private long dataFileOffset;
 
-  public MultiStorageHdfsShuffleReadHandler(
+  public UploadedStorageHdfsShuffleReadHandler(
       int partitionId,
       String filePrefix,
       int readBufferSize,

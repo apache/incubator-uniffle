@@ -115,7 +115,7 @@ public class MultiStorageHdfsShuffleReadHandlerTest extends HdfsShuffleHandlerTe
 
       for (int partitionId = 1; partitionId <= 9; partitionId += 2) {
         String fileNamePrefix = basePath + "/app1/0/test/1-3";
-        HdfsShuffleReadHandler handler = new MultiStorageHdfsShuffleReadHandler(
+        HdfsShuffleReadHandler handler = new UploadedStorageHdfsShuffleReadHandler(
             partitionId, fileNamePrefix, readBufferSize, conf);
 
         int sliceNum = partitionSliceNum.get(partitionId);
@@ -216,7 +216,7 @@ public class MultiStorageHdfsShuffleReadHandlerTest extends HdfsShuffleHandlerTe
 
       for (int partitionId = 1; partitionId <= 3; partitionId++) {
         String fileNamePrefix = basePath + "/app1/0/test/1-3";
-        HdfsShuffleReadHandler handler = new MultiStorageHdfsShuffleReadHandler(
+        HdfsShuffleReadHandler handler = new UploadedStorageHdfsShuffleReadHandler(
             partitionId, fileNamePrefix, readBufferSize, conf);
 
         int sliceNum = partitionSliceNum.get(partitionId);

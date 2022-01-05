@@ -31,11 +31,11 @@ import org.slf4j.LoggerFactory;
 import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.storage.util.ShuffleStorageUtils;
 
-public class MultiStorageHdfsClientReadHandler extends HdfsClientReadHandler {
+public class UploadedHdfsClientReadHandler extends HdfsClientReadHandler {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MultiStorageHdfsClientReadHandler.class);
+  private static final Logger LOG = LoggerFactory.getLogger(UploadedHdfsClientReadHandler.class);
 
-  public MultiStorageHdfsClientReadHandler(
+  public UploadedHdfsClientReadHandler(
       String appId,
       int shuffleId,
       int partitionId,
@@ -89,7 +89,7 @@ public class MultiStorageHdfsClientReadHandler extends HdfsClientReadHandler {
             + partitionId + "] " + status.getPath());
         String fileNamePrefix = getFileNamePrefix(status.getPath().toUri().toString());
         try {
-          HdfsShuffleReadHandler handler = new MultiStorageHdfsShuffleReadHandler(
+          HdfsShuffleReadHandler handler = new UploadedStorageHdfsShuffleReadHandler(
               partitionId, fileNamePrefix, readBufferSize, hadoopConf);
           readHandlers.add(handler);
         } catch (Exception e) {
