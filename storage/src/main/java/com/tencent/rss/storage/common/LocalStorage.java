@@ -137,7 +137,8 @@ public class LocalStorage extends AbstractStorage {
         request.getStartPartition(),
         request.getEndPartition(),
         basePath,
-        request.getFileNamePrefix());
+        request.getFileNamePrefix()
+    );
   }
 
   @Override

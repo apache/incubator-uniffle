@@ -42,6 +42,8 @@ public interface Storage {
 
   ShuffleWriteHandler getOrCreateWriteHandler(CreateShuffleWriteHandlerRequest request) throws IOException;
 
+  CreateShuffleWriteHandlerRequest getCreateWriterHandlerRequest(String appId, int shuffleId, int partition);
+
   void removeHandlers(String appId);
 
   void createMetadataIfNotExist(String shuffleKey);

@@ -30,13 +30,15 @@ import com.tencent.rss.storage.request.CreateShuffleWriteHandlerRequest;
 public abstract class AbstractStorage implements Storage {
 
   private Map<String, Map<String, ShuffleWriteHandler>> handlers = Maps.newConcurrentMap();
+  private Map<String, Map<String, CreateShuffleWriteHandlerRequest>> requests = Maps.newConcurrentMap();
 
   abstract ShuffleWriteHandler newWriteHandler(CreateShuffleWriteHandlerRequest request);
 
   @Override
   public ShuffleWriteHandler getOrCreateWriteHandler(CreateShuffleWriteHandlerRequest request) {
 
-    handlers.putIfAbsent(request.getAppId(), Maps.newConcurrentMap());
+    handlers.computeIfAbsent(request.getAppId(), key -> Maps.newConcurrentMap());
+    requests.computeIfAbsent(request.getAppId(), key -> Maps.newConcurrentMap());
     Map<String, ShuffleWriteHandler> map = handlers.get(request.getAppId());
     String partitionKey = RssUtils.generatePartitionKey(
         request.getAppId(),
@@ -44,12 +46,27 @@ public abstract class AbstractStorage implements Storage {
         request.getStartPartition()
     );
     map.computeIfAbsent(partitionKey, key -> newWriteHandler(request));
+    Map<String, CreateShuffleWriteHandlerRequest> requestMap = requests.get(request.getAppId());
+    requestMap.putIfAbsent(partitionKey, request);
     return map.get(partitionKey);
+  }
+
+  @Override
+  public CreateShuffleWriteHandlerRequest getCreateWriterHandlerRequest(
+      String appId,
+      int shuffleId,
+      int partition) {
+    Map<String, CreateShuffleWriteHandlerRequest> requestMap = requests.get(appId);
+    if (requestMap != null) {
+      return requestMap.get(RssUtils.generatePartitionKey(appId, shuffleId, partition));
+    }
+    return null;
   }
 
   @Override
   public void removeHandlers(String appId) {
     handlers.remove(appId);
+    requests.remove(appId);
   }
 
   @VisibleForTesting

@@ -62,8 +62,6 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     writeTestData(writeHandler, 2, 5, expectedData,
         blockIdBitmap, "key", KRYO_SERIALIZER, 0);
 
-
-
     TaskContext contextMock = mock(TaskContext.class);
     RssShuffleHandle handleMock = mock(RssShuffleHandle.class);
     ShuffleDependency dependencyMock = mock(ShuffleDependency.class);

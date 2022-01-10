@@ -180,8 +180,10 @@ public class ConfigUtils {
 
   public static Function<Long, Boolean> positiveLongValidator = value -> value > 0;
 
+  public static Function<Long, Boolean> non_negativeLongValidator = value -> value >= 0;
+
   public static Function<Long, Boolean> positiveIntegerValidator =
-    value -> value > 0L && value <= Integer.MAX_VALUE;
+      value -> value > 0L && value <= Integer.MAX_VALUE;
 
   public static Function<Integer, Boolean> positiveIntegerValidator2 =
       value -> value > 0;

@@ -71,7 +71,8 @@ public class MultiStorageFaultToleranceTest extends ShuffleReadWriteBase {
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 20L * 1000L);
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_AND_HDFS.name());
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, basePath);
-    shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 1024L * 1024L * 1024L);
+    shuffleServerConf.setString(ShuffleServerConf.HDFS_BASE_PATH, HDFS_URI + "rss/multi_storage_fault");
+    shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 400L * 1024L * 1024L);
     createAndStartServers(shuffleServerConf, coordinatorConf);
   }
 
@@ -139,6 +140,26 @@ public class MultiStorageFaultToleranceTest extends ShuffleReadWriteBase {
       e.printStackTrace();
       fail();
     }
+  }
+
+  @Test
+  public void hdfsFallbackTest() throws Exception {
+    String appId = "fallback_test";
+    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<Integer, List<Integer>> map = Maps.newHashMap();
+    map.put(0, Lists.newArrayList(0));
+    registerShuffle(appId, map);
+    Roaring64NavigableMap blockBitmap = Roaring64NavigableMap.bitmapOf();
+    List<ShuffleBlockInfo> blocks = createShuffleBlockList(
+        0, 0, 0, 40, 10 * 1024 * 1024, blockBitmap, expectedData);
+    assertEquals(1, cluster.getDataNodes().size());
+    cluster.stopDataNode(0);
+    assertEquals(0, cluster.getDataNodes().size());
+    sendSinglePartitionToShuffleServer(appId, 0, 0, 0, blocks);
+    validateResult(appId, 0, 0, blockBitmap, Roaring64NavigableMap.bitmapOf(0), expectedData);
+    cluster.startDataNodes(conf, 1, true, HdfsServerConstants.StartupOption.REGULAR,
+        null, null, null, false, true);
+    assertEquals(1, cluster.getDataNodes().size());
   }
 
   private void registerShuffle(String appId, Map<Integer, List<Integer>> registerMap) {

@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.common.ShufflePartitionedBlock;
 import com.tencent.rss.common.config.RssBaseConf;
-import com.tencent.rss.common.util.RssUtils;
 import com.tencent.rss.server.buffer.ShuffleBuffer;
 import com.tencent.rss.server.storage.StorageManager;
 import com.tencent.rss.storage.common.Storage;
@@ -161,9 +160,8 @@ public class ShuffleFlushManager {
             hadoopConf,
             storageDataReplica));
 
-        int retry = 0;
-        while (!writeSuccess) {
-          if (retry > retryMax) {
+        do {
+          if (event.getRetryTimes() > retryMax) {
             LOG.error("Failed to write data for " + event + " in " + retryMax + " times, shuffle data will be lost");
             break;
           }
@@ -175,33 +173,15 @@ public class ShuffleFlushManager {
             break;
           }
 
-          String shuffleKey = RssUtils.generateShuffleKey(
-              event.getAppId(), event.getShuffleId());
-          storage.createMetadataIfNotExist(shuffleKey);
-          boolean locked = storage.lockShuffleShared(shuffleKey);
-          if (!locked) {
-            writeSuccess = true;
-            LOG.warn("AppId {} shuffleId {} was removed already, lock don't exist {} should be dropped,"
-                + " may leak one handler", event.getAppId(), event.getShuffleId(), event);
-            break;
-          }
+          writeSuccess = storageManager.write(storage, handler, event);
 
-          try {
-            long startWrite = System.currentTimeMillis();
-            handler.write(blocks);
-            long writeTime = System.currentTimeMillis() - startWrite;
-            storageManager.updateWriteMetrics(event, writeTime);
+          if (writeSuccess) {
             updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), blocks);
-            writeSuccess = true;
-          } catch (Exception e) {
-            LOG.warn("Exception happened when write data for " + event + ", try again", e);
-            ShuffleServerMetrics.counterWriteException.inc();
-            Thread.sleep(1000);
-          } finally {
-            storage.unlockShuffleShared(RssUtils.generateShuffleKey(event.getAppId(), event.getShuffleId()));
+            break;
+          } else {
+            event.increaseRetryTimes();
           }
-          retry++;
-        }
+        } while (event.getRetryTimes() <= retryMax);
       }
     } catch (Exception e) {
       // just log the error, don't throw the exception and stop the flush thread

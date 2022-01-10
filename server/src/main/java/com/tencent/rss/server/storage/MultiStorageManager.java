@@ -18,6 +18,7 @@
 
 package com.tencent.rss.server.storage;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
@@ -31,6 +32,8 @@ import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.server.ShuffleUploader;
 import com.tencent.rss.storage.common.LocalStorage;
 import com.tencent.rss.storage.common.Storage;
+import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
+import com.tencent.rss.storage.request.CreateShuffleWriteHandlerRequest;
 
 public class MultiStorageManager implements StorageManager {
 
@@ -41,11 +44,13 @@ public class MultiStorageManager implements StorageManager {
   private final List<ShuffleUploader> uploaders  = Lists.newArrayList();
   private final boolean uploadShuffleEnable;
   private final long flushColdStorageThresholdSize;
+  private final long fallBackTimes;
 
   MultiStorageManager(ShuffleServerConf conf, String shuffleServerId) {
     warmStorageManager = new LocalStorageManager(conf);
     coldStorageManager = new HdfsStorageManager(conf);
     uploadShuffleEnable = conf.get(ShuffleServerConf.UPLOADER_ENABLE);
+    fallBackTimes = conf.get(ShuffleServerConf.FALLBACK_MAX_FAIL_TIMES);
     flushColdStorageThresholdSize = conf.getSizeAsBytes(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE);
     if (uploadShuffleEnable) {
       if (!(warmStorageManager instanceof LocalStorageManager)) {
@@ -75,6 +80,30 @@ public class MultiStorageManager implements StorageManager {
   @Override
   public void updateWriteMetrics(ShuffleDataFlushEvent event, long writeTime) {
     selectStorageManager(event).updateWriteMetrics(event, writeTime);
+  }
+
+  @Override
+  public boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event) {
+    StorageManager storageManager = selectStorageManager(event);
+    if (storageManager == coldStorageManager && event.getRetryTimes() > fallBackTimes) {
+      try {
+        CreateShuffleWriteHandlerRequest request = storage.getCreateWriterHandlerRequest(
+            event.getAppId(),
+            event.getShuffleId(),
+            event.getStartPartition());
+        if (request == null) {
+          return false;
+        }
+        storage = warmStorageManager.selectStorage(event);
+        handler = storage.getOrCreateWriteHandler(request);
+      } catch (IOException ioe) {
+        LOG.warn("Create fallback write handler failed ", ioe);
+        return false;
+      }
+      return warmStorageManager.write(storage, handler, event);
+    } else {
+      return storageManager.write(storage, handler, event);
+    }
   }
 
   private StorageManager selectStorageManager(ShuffleDataFlushEvent event) {

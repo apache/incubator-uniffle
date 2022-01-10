@@ -27,8 +27,6 @@ import static org.mockito.ArgumentMatchers.any;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.tencent.rss.client.TestUtils;
-import com.tencent.rss.client.api.ShuffleReadClient;
-import com.tencent.rss.client.response.CompressedShuffleBlock;
 import com.tencent.rss.common.ShufflePartitionedBlock;
 import com.tencent.rss.common.util.ChecksumUtils;
 import com.tencent.rss.common.util.Constants;
@@ -50,7 +48,6 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.roaringbitmap.longlong.LongIterator;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
-import com.tencent.rss.client.TestUtils;
 
 public class ShuffleReadClientImplTest extends HdfsTestBase {
 

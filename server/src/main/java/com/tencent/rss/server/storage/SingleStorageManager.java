@@ -19,18 +19,26 @@
 package com.tencent.rss.server.storage;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.Uninterruptibles;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.common.ShufflePartitionedBlock;
+import com.tencent.rss.common.util.RssUtils;
 import com.tencent.rss.server.ShuffleDataFlushEvent;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.server.ShuffleServerMetrics;
 import com.tencent.rss.storage.common.Storage;
 import com.tencent.rss.storage.common.StorageWriteMetrics;
+import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
 
 
 public abstract class SingleStorageManager implements StorageManager {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SingleStorageManager.class);
 
   private final long writeSlowThreshold;
   private final long eventSizeThresholdL1;
@@ -45,7 +53,39 @@ public abstract class SingleStorageManager implements StorageManager {
   }
 
   @Override
+  public boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event) {
+    String shuffleKey = RssUtils.generateShuffleKey(
+        event.getAppId(), event.getShuffleId());
+    storage.createMetadataIfNotExist(shuffleKey);
+
+    boolean locked = storage.lockShuffleShared(shuffleKey);
+    if (!locked) {
+      LOG.warn("AppId {} shuffleId {} was removed already, lock don't exist {} should be dropped,"
+          + " may leak one handler", event.getAppId(), event.getShuffleId(), event);
+      throw new IllegalStateException("AppId " + event.getAppId() + " ShuffleId " + event.getShuffleId()
+        + " was removed");
+    }
+
+    try {
+      long startWrite = System.currentTimeMillis();
+      handler.write(event.getShuffleBlocks());
+      long writeTime = System.currentTimeMillis() - startWrite;
+      updateWriteMetrics(event, writeTime);
+      return true;
+    } catch (Exception e) {
+      LOG.warn("Exception happened when write data for " + event + ", try again", e);
+      ShuffleServerMetrics.counterWriteException.inc();
+      Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
+    } finally {
+      storage.unlockShuffleShared(RssUtils.generateShuffleKey(event.getAppId(), event.getShuffleId()));
+    }
+    return false;
+  }
+
+  @Override
   public void updateWriteMetrics(ShuffleDataFlushEvent event, long writeTime) {
+    // update shuffle server metrics, these metrics belong to server module
+    // we can't update them in storage module
     StorageWriteMetrics metrics = createStorageWriteMetrics(event, writeTime);
     ShuffleServerMetrics.counterTotalWriteTime.inc(metrics.getWriteTime());
     ShuffleServerMetrics.counterWriteTotal.inc();

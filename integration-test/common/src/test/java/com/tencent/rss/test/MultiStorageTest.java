@@ -73,8 +73,8 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     String basePath = generateBasePath();
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE_AND_HDFS.name());
-    shuffleServerConf.setString("rss.storage.basePath", basePath);
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_AND_HDFS.name());
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, basePath);
     shuffleServerConf.setString(ShuffleServerConf.UPLOADER_BASE_PATH,  HDFS_URI + "rss/multi_storage");
     shuffleServerConf.setString(ShuffleServerConf.HDFS_BASE_PATH, HDFS_URI + "rss/multi_storage");
     shuffleServerConf.setDouble(ShuffleServerConf.CLEANUP_THRESHOLD, 0.0);

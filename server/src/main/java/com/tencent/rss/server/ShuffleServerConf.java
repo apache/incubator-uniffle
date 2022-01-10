@@ -336,6 +336,13 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(64L * 1024L * 1024L)
       .withDescription("For multistorage, the event size exceed this value, flush data  to cold storage");
 
+  public static final ConfigOption<Long> FALLBACK_MAX_FAIL_TIMES = ConfigOptions
+      .key("rss.server.multistorage.fallback.max.fail.times")
+      .longType()
+      .checkValue(ConfigUtils.non_negativeLongValidator, " fallback times must be non-negative")
+      .defaultValue(0L)
+      .withDescription("For multistorage, fail times exceed the number, will switch storage");
+
   public ShuffleServerConf() {
   }
 

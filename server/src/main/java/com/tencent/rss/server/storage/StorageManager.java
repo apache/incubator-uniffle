@@ -23,6 +23,7 @@ import java.util.Set;
 import com.tencent.rss.server.ShuffleDataFlushEvent;
 import com.tencent.rss.server.ShuffleDataReadEvent;
 import com.tencent.rss.storage.common.Storage;
+import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
 
 
 public interface StorageManager {
@@ -31,7 +32,11 @@ public interface StorageManager {
 
   Storage selectStorage(ShuffleDataReadEvent event);
 
+  boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event);
+
   void updateWriteMetrics(ShuffleDataFlushEvent event, long writeTime);
+
+  // todo: add an interface for updateReadMetrics
 
   void removeResources(String appId, Set<Integer> shuffleSet);
 

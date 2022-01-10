@@ -121,12 +121,12 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
     }
     Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
 
-    CoordinatorTestUtils.waitForRegister(coordinatorClient,2);
-    nodes  = coordinators.get(0).getClusterManager()
-        .getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+    nodes  = coordinators.get(0).getClusterManager().list();
+    assertEquals(2, nodes.size());
     for (ServerNode node : nodes) {
       assertFalse(node.isHealthy());
     }
+    nodes = coordinators.get(0).getClusterManager().getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     assertEquals(0, nodes.size());
     response = coordinatorClient.getShuffleAssignments(request);
     assertEquals(ResponseStatusCode.INTERNAL_ERROR, response.getStatusCode());
