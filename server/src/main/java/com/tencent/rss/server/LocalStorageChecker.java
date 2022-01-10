@@ -45,8 +45,9 @@ public class LocalStorageChecker extends Checker {
       throw new IllegalArgumentException("The base path cannot be empty");
     }
     String storageType = conf.getString(ShuffleServerConf.RSS_STORAGE_TYPE);
-    if (!StorageType.LOCALFILE_AND_HDFS.name().equals(storageType)
-        && !StorageType.LOCALFILE.name().equals(storageType)) {
+    if (!StorageType.LOCALFILE_HDFS_2.name().equals(storageType)
+        && !StorageType.LOCALFILE.name().equals(storageType)
+        && !StorageType.LOCALFILE_HDFS.name().equals(storageType)) {
       throw new IllegalArgumentException("Only StorageType LOCALFILE_AND_HDFS and LOCALFILE support storageChecker");
     }
     String[] storagePaths = basePathStr.split(",");

@@ -18,8 +18,6 @@
 
 package com.tencent.rss.test;
 
-import static org.junit.Assert.assertEquals;
-
 import com.google.common.io.Files;
 import com.tencent.rss.coordinator.CoordinatorConf;
 import com.tencent.rss.server.ShuffleServerConf;
@@ -29,27 +27,22 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssClientConfig;
 import org.junit.BeforeClass;
 
-public class SparkSQLMultiStorageRssTest extends SparkSQLTest {
-  private static String basePath;
-
+public class RepartitionWithUploadMultiStorageRssTest extends RepartitionTest {
   @BeforeClass
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
-    coordinatorConf.setLong("rss.coordinator.app.expired", 5000);
     createCoordinatorServer(coordinatorConf);
-
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000);
-    shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 4000);
 
     // local storage config
     File tmpDir = Files.createTempDir();
     tmpDir.deleteOnExit();
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
-    basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
-    shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE_HDFS_2.name());
-    shuffleServerConf.setString("rss.storage.basePath", basePath);
+    String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, basePath);
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS_2.name());
+    shuffleServerConf.set(ShuffleServerConf.HDFS_BASE_PATH, HDFS_URI + "rss/test");
 
     // uploader and remote storage config
     shuffleServerConf.setBoolean("rss.server.uploader.enable", true);
@@ -60,6 +53,8 @@ public class SparkSQLMultiStorageRssTest extends SparkSQLTest {
     shuffleServerConf.setLong("rss.server.uploader.interval.ms", 10);
     shuffleServerConf.setInteger("rss.server.uploader.thread.number", 4);
 
+    shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 1024L * 1024L);
+
     createShuffleServer(shuffleServerConf);
     startServers();
   }
@@ -68,15 +63,5 @@ public class SparkSQLMultiStorageRssTest extends SparkSQLTest {
   public void updateRssStorage(SparkConf sparkConf) {
     sparkConf.set(RssClientConfig.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS_2.name());
     sparkConf.set(RssClientConfig.RSS_BASE_PATH, HDFS_URI + "rss/test");
-  }
-
-  @Override
-  public void checkShuffleData() throws Exception {
-    Thread.sleep(12000);
-    String[] paths = basePath.split(",");
-    for (String path : paths) {
-      File f = new File(path);
-      assertEquals(0, f.list().length);
-    }
   }
 }

@@ -123,7 +123,7 @@ public class ComposedClientReadHandler implements ClientReadHandler {
 
   private ClientReadHandler createReadHandlerIfNotExist(Callable<ClientReadHandler> creator) throws Exception {
     if (creator == null) {
-      throw new IllegalStateException("create " + getCurrentHandlerName() + " fail");
+      throw new IllegalStateException("creator " + getCurrentHandlerName() + " handler doesn't exist");
     }
     return creator.call();
   }

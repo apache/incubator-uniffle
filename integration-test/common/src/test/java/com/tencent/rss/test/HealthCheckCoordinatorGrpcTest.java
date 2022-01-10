@@ -119,7 +119,7 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
     try (FileOutputStream out = new FileOutputStream(tempDataFile)) {
       out.write(bytes);
     }
-    Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
+    Uninterruptibles.sleepUninterruptibly(10, TimeUnit.SECONDS);
 
     nodes  = coordinators.get(0).getClusterManager().list();
     assertEquals(2, nodes.size());

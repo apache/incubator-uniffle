@@ -73,7 +73,7 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     String basePath = generateBasePath();
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_AND_HDFS.name());
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS_2.name());
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, basePath);
     shuffleServerConf.setString(ShuffleServerConf.UPLOADER_BASE_PATH,  HDFS_URI + "rss/multi_storage");
     shuffleServerConf.setString(ShuffleServerConf.HDFS_BASE_PATH, HDFS_URI + "rss/multi_storage");
@@ -84,7 +84,7 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     shuffleServerConf.setBoolean(ShuffleServerConf.UPLOADER_ENABLE, true);
     shuffleServerConf.setLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 30L);
     shuffleServerConf.setLong(ShuffleServerConf.UPLOAD_COMBINE_THRESHOLD_MB, 1L);
-    shuffleServerConf.setLong(ShuffleServerConf.SHUFFLE_EXPIRED_TIMEOUT_MS, 6000L);
+    shuffleServerConf.setLong(ShuffleServerConf.SHUFFLE_EXPIRED_TIMEOUT_MS, 4000L);
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60L * 1000L * 60L);
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 20L * 1000L);
     shuffleServerConf.setLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 30);
@@ -211,22 +211,22 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
         1, 10, 1000,  0);
     assertEquals(0, result.getData().length);
 
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl("LOCALFILE_AND_HDFS",
+    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
         appId, 0, 0, 100, 1, 10, 1000, HDFS_URI + "rss/multi_storage",
         blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1), Lists.newArrayList(), conf);
     validateResult(readClient, expectedData, blockIdBitmap1);
 
-    readClient = new ShuffleReadClientImpl("LOCALFILE_AND_HDFS",
+    readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
         appId, 0, 1, 100, 1, 10, 1000, HDFS_URI + "rss/multi_storage",
         blockIdBitmap2, Roaring64NavigableMap.bitmapOf(1), Lists.newArrayList(), conf);
     validateResult(readClient, expectedData, blockIdBitmap2);
 
-    readClient = new ShuffleReadClientImpl("LOCALFILE_AND_HDFS",
+    readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
         appId, 0, 2, 100, 1, 10, 1000, HDFS_URI + "rss/multi_storage",
         blockIdBitmap3, Roaring64NavigableMap.bitmapOf(2), Lists.newArrayList(), conf);
     validateResult(readClient, expectedData, blockIdBitmap3);
 
-    readClient = new ShuffleReadClientImpl("LOCALFILE_AND_HDFS",
+    readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
         appId, 0, 4, 100, 1, 10, 1000, HDFS_URI + "rss/multi_storage",
         blockIdBitmap4, Roaring64NavigableMap.bitmapOf(3), Lists.newArrayList(), conf);
     validateResult(readClient, expectedData, blockIdBitmap4);
@@ -306,11 +306,11 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     shuffleServerClient.getShuffleResult(rg4);
 
     Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+    validateResult(appId, 1, 2, expectedData, getExpectBlockIds(blocks3));
+    Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
     validateResult(appId, 1, 0, expectedData, getExpectBlockIds(blocks1));
     Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
     validateResult(appId, 1, 1, expectedData, getExpectBlockIds(blocks2));
-    Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
-    validateResult(appId, 1, 2, expectedData, getExpectBlockIds(blocks3));
     Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
     validateResult(appId, 1, 3, expectedData, getExpectBlockIds(blocks4));
     Uninterruptibles.sleepUninterruptibly(20, TimeUnit.SECONDS);
@@ -356,7 +356,7 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     RssGetShuffleResultRequest rg1 = new RssGetShuffleResultRequest(appId, 0, 0);
     shuffleServerClient.getShuffleResult(rg1);
 
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl("LOCALFILE_AND_HDFS",
+    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
         appId, 0, 0, 100, 1, 10, 1000, HDFS_URI + "rss/multi_storage",
         blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1), Lists.newArrayList(new ShuffleServerInfo("test", LOCALHOST, SHUFFLE_SERVER_PORT)), conf);
 
@@ -455,7 +455,7 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     RssGetShuffleResultRequest rg1 = new RssGetShuffleResultRequest(appId, 0, 0);
     shuffleServerClient.getShuffleResult(rg1);
 
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_AND_HDFS.name(),
+    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
         appId, 0, 0, 100, 1, 10, 1000, HDFS_URI + "rss/multi_storage",
         blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1, 2), Lists.newArrayList(new ShuffleServerInfo("test", LOCALHOST, SHUFFLE_SERVER_PORT)), conf);
 
@@ -536,7 +536,7 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     RssGetShuffleResultRequest rg1 = new RssGetShuffleResultRequest(appId, 2, 0);
     shuffleServerClient.getShuffleResult(rg1);
     validateResult(appId, 2, 0, expectedData, Sets.newHashSet());
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl("LOCALFILE_AND_HDFS",
+    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
         appId, 2, 0, 100, 1, 10, 1000, HDFS_URI + "rss/multi_storage",
         blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1), Lists.newArrayList(new ShuffleServerInfo("test", LOCALHOST, SHUFFLE_SERVER_PORT)), conf);
     validateResult(readClient, expectedData, blockIdBitmap1);

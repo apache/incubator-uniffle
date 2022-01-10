@@ -157,11 +157,6 @@ public class LocalStorageMeta {
     return shuffleMeta == null ? 0 : shuffleMeta.getSize().get();
   }
 
-  public boolean isShuffleStartRead(String shuffleKey) {
-    ShuffleMeta shuffleMeta = getShuffleMeta(shuffleKey);
-    return shuffleMeta != null && shuffleMeta.isStartRead();
-  }
-
   public Set<String> getShuffleMetaSet() {
     return shuffleMetaMap.keySet();
   }
@@ -193,7 +188,7 @@ public class LocalStorageMeta {
   private ShuffleMeta getShuffleMeta(String shuffleKey) {
     ShuffleMeta shuffleMeta = shuffleMetaMap.get(shuffleKey);
     if (shuffleMeta == null) {
-      LOG.info("Shuffle {} metadta has been removed!", shuffleKey);
+      LOG.debug("Shuffle {} metadata has been removed!", shuffleKey);
     }
     return shuffleMeta;
   }
