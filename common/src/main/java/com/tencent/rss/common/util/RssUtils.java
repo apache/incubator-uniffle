@@ -29,6 +29,7 @@ import java.io.InputStreamReader;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
@@ -161,29 +162,33 @@ public class RssUtils {
     long fileOffset = -1;
 
     while (byteBuffer.hasRemaining()) {
-      long offset = byteBuffer.getLong();
-      int length = byteBuffer.getInt();
-      int uncompressLength = byteBuffer.getInt();
-      long crc = byteBuffer.getLong();
-      long blockId = byteBuffer.getLong();
-      long taskAttemptId = byteBuffer.getLong();
+      try {
+        long offset = byteBuffer.getLong();
+        int length = byteBuffer.getInt();
+        int uncompressLength = byteBuffer.getInt();
+        long crc = byteBuffer.getLong();
+        long blockId = byteBuffer.getLong();
+        long taskAttemptId = byteBuffer.getLong();
+        // The index file is written, read and parsed sequentially, so these parsed index segments
+        // index a continuous shuffle data in the corresponding data file and the first segment's
+        // offset field is the offset of these shuffle data in the data file.
+        if (fileOffset == -1) {
+          fileOffset = offset;
+        }
 
-      // The index file is written, read and parsed sequentially, so these parsed index segments
-      // index a continuous shuffle data in the corresponding data file and the first segment's
-      // offset field is the offset of these shuffle data in the data file.
-      if (fileOffset == -1) {
-        fileOffset = offset;
-      }
+        bufferSegments.add(new BufferSegment(blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
+        bufferOffset += length;
 
-      bufferSegments.add(new BufferSegment(blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
-      bufferOffset += length;
-
-      if (bufferOffset >= readBufferSize) {
-        ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
-        dataFileSegments.add(sds);
-        bufferSegments = Lists.newArrayList();
-        bufferOffset = 0;
-        fileOffset = -1;
+        if (bufferOffset >= readBufferSize) {
+          ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
+          dataFileSegments.add(sds);
+          bufferSegments = Lists.newArrayList();
+          bufferOffset = 0;
+          fileOffset = -1;
+        }
+      } catch (BufferUnderflowException ue) {
+        LOGGER.warn("Read index data under flow", ue);
+        break;
       }
     }
 

@@ -120,5 +120,11 @@ public class RssUtilsTest {
     assertEquals(90, shuffleDataSegments.get(2).getOffset());
     assertEquals(6, shuffleDataSegments.get(2).getLength());
     assertEquals(1, shuffleDataSegments.get(2).getBufferSegments().size());
+
+    ByteBuffer incompleteByteBuffer = ByteBuffer.allocate(12);
+    incompleteByteBuffer.putLong(1L);
+    incompleteByteBuffer.putInt(2);
+    data = incompleteByteBuffer.array();
+    assertTrue(RssUtils.transIndexDataToSegments(new ShuffleIndexResult(data), readBufferSize).isEmpty());
   }
 }
