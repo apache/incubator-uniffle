@@ -38,6 +38,7 @@ import com.tencent.rss.storage.handler.impl.MemoryQuorumClientReadHandler;
 import com.tencent.rss.storage.handler.impl.UploadedHdfsClientReadHandler;
 import com.tencent.rss.storage.request.CreateShuffleDeleteHandlerRequest;
 import com.tencent.rss.storage.request.CreateShuffleReadHandlerRequest;
+import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import com.tencent.rss.storage.util.StorageType;
 
 public class ShuffleHandlerFactory {
@@ -228,11 +229,7 @@ public class ShuffleHandlerFactory {
   }
 
   public ServerReadHandler createServerReadHandler(CreateShuffleReadHandlerRequest request) {
-    if (StorageType.LOCALFILE.name().equals(request.getStorageType())
-      || StorageType.LOCALFILE_HDFS.name().equals(request.getStorageType())
-      || StorageType.LOCALFILE_HDFS_2.name().equals(request.getStorageType())
-      || StorageType.MEMORY_LOCALFILE.name().equals(request.getStorageType())
-      || StorageType.MEMORY_LOCALFILE_HDFS.name().equals(request.getStorageType())) {
+    if (ShuffleStorageUtils.containsLocalFile(request.getStorageType())) {
       return new LocalFileServerReadHandler(
           request.getAppId(),
           request.getShuffleId(),

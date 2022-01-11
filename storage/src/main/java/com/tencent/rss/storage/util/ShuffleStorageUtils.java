@@ -239,4 +239,12 @@ public class ShuffleStorageUtils {
       throw new IOException(e);
     }
   }
+
+  public static boolean containsLocalFile(String storageType) {
+    return StorageType.LOCALFILE.name().equals(storageType)
+        || StorageType.LOCALFILE_HDFS.name().equals(storageType)
+        || StorageType.LOCALFILE_HDFS_2.name().equals(storageType)
+        || StorageType.MEMORY_LOCALFILE.name().equals(storageType)
+        || StorageType.MEMORY_LOCALFILE_HDFS.name().equals(storageType);
+  }
 }
