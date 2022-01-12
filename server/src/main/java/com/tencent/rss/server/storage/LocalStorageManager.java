@@ -29,6 +29,7 @@ import com.tencent.rss.common.util.RssUtils;
 import com.tencent.rss.server.ShuffleDataFlushEvent;
 import com.tencent.rss.server.ShuffleDataReadEvent;
 import com.tencent.rss.server.ShuffleServerConf;
+import com.tencent.rss.server.ShuffleServerMetrics;
 import com.tencent.rss.storage.common.LocalStorage;
 import com.tencent.rss.storage.common.Storage;
 import com.tencent.rss.storage.factory.ShuffleHandlerFactory;
@@ -83,6 +84,12 @@ public class LocalStorageManager extends SingleStorageManager {
         event.getAppId(),
         event.getShuffleId(),
         event.getStartPartition()));
+  }
+
+  @Override
+  public void updateWriteMetrics(ShuffleDataFlushEvent event, long writeTime) {
+    super.updateWriteMetrics(event, writeTime);
+    ShuffleServerMetrics.counterTotalLocalFileWriteDataSize.inc(event.getSize());
   }
 
   @Override

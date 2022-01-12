@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import com.tencent.rss.server.ShuffleDataFlushEvent;
 import com.tencent.rss.server.ShuffleDataReadEvent;
 import com.tencent.rss.server.ShuffleServerConf;
+import com.tencent.rss.server.ShuffleServerMetrics;
 import com.tencent.rss.storage.common.HdfsStorage;
 import com.tencent.rss.storage.common.Storage;
 import com.tencent.rss.storage.factory.ShuffleHandlerFactory;
@@ -55,6 +56,12 @@ public class HdfsStorageManager extends SingleStorageManager {
     }
     hadoopConf = conf.getHadoopConf();
     storage = new HdfsStorage(storageBasePath, hadoopConf);
+  }
+
+  @Override
+  public void updateWriteMetrics(ShuffleDataFlushEvent event, long writeTime) {
+    super.updateWriteMetrics(event, writeTime);
+    ShuffleServerMetrics.counterTotalHdfsWriteDataSize.inc(event.getSize());
   }
 
   @Override
