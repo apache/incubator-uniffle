@@ -213,7 +213,7 @@ public class RssShuffleManager implements ShuffleManager {
     LOG.info("Start to register shuffleId[" + shuffleId + "]");
     long start = System.currentTimeMillis();
     serverToPartitionRanges.entrySet()
-        .parallelStream()
+        .stream()
         .forEach(entry -> {
           shuffleWriteClient.registerShuffle(
               entry.getKey(), appId, shuffleId, entry.getValue());
@@ -336,7 +336,7 @@ public class RssShuffleManager implements ShuffleManager {
   private Roaring64NavigableMap getExpectedTasks(int shuffleId, int startPartition, int endPartition) {
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf();
     // In 2.3, getMapSizesByExecutorId returns Seq, while it returns Iterator in 2.4,
-    // so we use toIterator() to supoort Spark 2.3 & 2.4
+    // so we use toIterator() to support Spark 2.3 & 2.4
     Iterator<Tuple2<BlockManagerId, Seq<Tuple2<BlockId, Object>>>> mapStatusIter =
         SparkEnv.get().mapOutputTracker().getMapSizesByExecutorId(shuffleId, startPartition, endPartition)
             .toIterator();

@@ -21,8 +21,11 @@ package com.tencent.rss.client.impl;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -164,7 +167,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   @Override
   public boolean sendCommit(Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps) {
     AtomicInteger successfulCommit = new AtomicInteger(0);
-    shuffleServerInfoSet.parallelStream().forEach(ssi -> {
+    shuffleServerInfoSet.stream().forEach(ssi -> {
       RssSendCommitRequest request = new RssSendCommitRequest(appId, shuffleId);
       String errorMsg = "Failed to commit shuffle data to " + ssi + " for shuffleId[" + shuffleId + "]";
       long startTime = System.currentTimeMillis();
@@ -327,33 +330,49 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   @Override
   public void sendAppHeartbeat(String appId, long timeoutMs) {
     RssAppHeartBeatRequest request = new RssAppHeartBeatRequest(appId, timeoutMs);
-    shuffleServerInfoSet.parallelStream().forEach(shuffleServerInfo -> {
-          try {
-            ShuffleServerClient client =
-                ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
-            RssAppHeartBeatResponse response = client.sendHeartBeat(request);
-            if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
-              LOG.warn("Failed to send heartbeat to " + shuffleServerInfo);
+    List<Callable<Void>> callableList = Lists.newArrayList();
+    shuffleServerInfoSet.stream().forEach(shuffleServerInfo -> {
+          callableList.add(() -> {
+            try {
+              ShuffleServerClient client =
+                  ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
+              RssAppHeartBeatResponse response = client.sendHeartBeat(request);
+              if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
+                LOG.warn("Failed to send heartbeat to " + shuffleServerInfo);
+              }
+            } catch (Exception e) {
+              LOG.warn("Error happened when send heartbeat to " + shuffleServerInfo, e);
             }
-          } catch (Exception e) {
-            LOG.warn("Error happened when send heartbeat to " + shuffleServerInfo, e);
-          }
+            return null;
+          });
         }
     );
 
-    coordinatorClients.parallelStream().forEach(coordinatorClient -> {
-          try {
-            RssAppHeartBeatResponse response = coordinatorClient.sendAppHeartBeat(request);
-            if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
-              LOG.warn("Failed to send heartbeat to " + coordinatorClient.getDesc());
-            } else {
-              LOG.info("Successfully send heartbeat to " + coordinatorClient.getDesc());
-            }
-          } catch (Exception e) {
-            LOG.warn("Error happened when send heartbeat to " + coordinatorClient.getDesc(), e);
+    coordinatorClients.stream().forEach(coordinatorClient -> {
+      callableList.add(() -> {
+        try {
+          RssAppHeartBeatResponse response = coordinatorClient.sendAppHeartBeat(request);
+          if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
+            LOG.warn("Failed to send heartbeat to " + coordinatorClient.getDesc());
+          } else {
+            LOG.info("Successfully send heartbeat to " + coordinatorClient.getDesc());
           }
+        } catch (Exception e) {
+          LOG.warn("Error happened when send heartbeat to " + coordinatorClient.getDesc(), e);
         }
-    );
+        return null;
+      });
+    });
+    try {
+      List<Future<Void>> futures = heartBeatExecutorService.invokeAll(callableList, timeoutMs, TimeUnit.MILLISECONDS);
+      for (Future<Void> future : futures) {
+        if (!future.isDone()) {
+          future.cancel(true);
+        }
+      }
+    } catch (InterruptedException ie) {
+      LOG.warn("heartbeat is interrupted", ie);
+    }
   }
 
   @Override

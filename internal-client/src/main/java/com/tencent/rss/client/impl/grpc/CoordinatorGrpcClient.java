@@ -244,7 +244,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       final int endPartition = partitionRangeAssignment.getEndPartition();
       final List<ShuffleServerInfo> shuffleServerInfos = partitionRangeAssignment
           .getServerList()
-          .parallelStream()
+          .stream()
           .map(ss -> new ShuffleServerInfo(ss.getId(), ss.getIp(), ss.getPort()))
           .collect(Collectors.toList());
       for (int i = startPartition; i <= endPartition; i++) {

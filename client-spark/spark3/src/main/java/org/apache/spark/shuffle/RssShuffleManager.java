@@ -503,7 +503,7 @@ public class RssShuffleManager implements ShuffleManager {
     LOG.info("Start to register shuffleId[" + shuffleId + "]");
     long start = System.currentTimeMillis();
     Set<Map.Entry<ShuffleServerInfo, List<PartitionRange>>> entries = serverToPartitionRanges.entrySet();
-    entries.parallelStream()
+    entries.stream()
         .forEach(entry -> {
           shuffleWriteClient.registerShuffle(
               entry.getKey(),

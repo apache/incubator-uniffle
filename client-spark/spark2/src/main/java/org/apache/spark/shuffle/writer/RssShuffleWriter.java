@@ -186,7 +186,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
    */
   private void processShuffleBlockInfos(List<ShuffleBlockInfo> shuffleBlockInfoList, Set<Long> blockIds) {
     if (shuffleBlockInfoList != null && !shuffleBlockInfoList.isEmpty()) {
-      shuffleBlockInfoList.parallelStream().forEach(sbi -> {
+      shuffleBlockInfoList.stream().forEach(sbi -> {
         long blockId = sbi.getBlockId();
         // add blockId to set, check if it is send later
         blockIds.add(blockId);
