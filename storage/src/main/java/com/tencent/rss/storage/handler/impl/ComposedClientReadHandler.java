@@ -44,35 +44,36 @@ public class ComposedClientReadHandler implements ClientReadHandler {
   private static final int COLD = 3;
   private static final int FROZEN = 4;
   private int currentHandler = HOT;
+  private final int topLevelOfHandler;
 
   public ComposedClientReadHandler(ClientReadHandler... handlers) {
-    int size = handlers.length;
-    if (size > 0) {
+    topLevelOfHandler = handlers.length;
+    if (topLevelOfHandler > 0) {
       this.hotDataReadHandler = handlers[0];
     }
-    if (size > 1) {
+    if (topLevelOfHandler > 1) {
       this.warmDataReadHandler = handlers[1];
     }
-    if (size > 2) {
+    if (topLevelOfHandler > 2) {
       this.coldDataReadHandler = handlers[2];
     }
-    if (size > 3) {
+    if (topLevelOfHandler > 3) {
       this.frozenDataReadHandler = handlers[3];
     }
   }
 
   public ComposedClientReadHandler(Callable<ClientReadHandler>... creators) {
-    int size = creators.length;
-    if (size > 0) {
+    topLevelOfHandler = creators.length;
+    if (topLevelOfHandler > 0) {
       this.hotHandlerCreator = creators[0];
     }
-    if (size > 1) {
+    if (topLevelOfHandler > 1) {
       this.warmHandlerCreator = creators[1];
     }
-    if (size > 2) {
+    if (topLevelOfHandler > 2) {
       this.coldHandlerCreator = creators[2];
     }
-    if (size > 3) {
+    if (topLevelOfHandler > 3) {
       this.frozenHandlerCreator = creators[3];
     }
   }
@@ -112,9 +113,14 @@ public class ComposedClientReadHandler implements ClientReadHandler {
     } catch (Exception e) {
       LOG.error("Failed to read shuffle data from " + getCurrentHandlerName() + " handler", e);
     }
-    // there is no data for current handler, try next one if there has
+    // when is no data for current handler, and the upmostLevel is not reached,
+    // then try next one if there has
     if (shuffleDataResult == null || shuffleDataResult.isEmpty()) {
-      currentHandler++;
+      if (currentHandler < topLevelOfHandler) {
+        currentHandler++;
+      } else {
+        return null;
+      }
       return readShuffleData();
     }
 

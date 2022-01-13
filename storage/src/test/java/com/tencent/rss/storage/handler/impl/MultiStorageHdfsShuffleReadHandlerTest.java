@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Random;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 public class MultiStorageHdfsShuffleReadHandlerTest extends HdfsShuffleHandlerTestBase {
 
@@ -115,13 +116,17 @@ public class MultiStorageHdfsShuffleReadHandlerTest extends HdfsShuffleHandlerTe
 
       for (int partitionId = 1; partitionId <= 9; partitionId += 2) {
         String fileNamePrefix = basePath + "/app1/0/test/1-3";
+        Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
+        Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
         HdfsShuffleReadHandler handler = new UploadedStorageHdfsShuffleReadHandler(
-            partitionId, fileNamePrefix, readBufferSize, conf);
+            "app1", 0, partitionId, fileNamePrefix, readBufferSize,
+            expectBlockIds, processBlockIds, conf);
 
         int sliceNum = partitionSliceNum.get(partitionId);
         byte[] expectedDataBuf = new byte[0];
         for (ShufflePartitionedBlock spb : expectedBlocks.get(partitionId)) {
           Bytes.concat(expectedDataBuf, spb.getData());
+          expectBlockIds.addLong(spb.getBlockId());
         }
 
         if (partitionId <= 5) {
@@ -216,13 +221,17 @@ public class MultiStorageHdfsShuffleReadHandlerTest extends HdfsShuffleHandlerTe
 
       for (int partitionId = 1; partitionId <= 3; partitionId++) {
         String fileNamePrefix = basePath + "/app1/0/test/1-3";
+        Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
+        Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
         HdfsShuffleReadHandler handler = new UploadedStorageHdfsShuffleReadHandler(
-            partitionId, fileNamePrefix, readBufferSize, conf);
+          "app1", 0, partitionId, fileNamePrefix, readBufferSize,
+            expectBlockIds, processBlockIds, conf);
 
         int sliceNum = partitionSliceNum.get(partitionId);
         byte[] expectedDataBuf = new byte[0];
         for (ShufflePartitionedBlock spb : expectedBlocks.get(partitionId)) {
           Bytes.concat(expectedDataBuf, spb.getData());
+          expectBlockIds.addLong(spb.getBlockId());
         }
 
         if (partitionId <= 3) {

@@ -103,14 +103,15 @@ public class HdfsHandlerTest extends HdfsTestBase {
       String basePath,
       List<byte[]> expectedData,
       List<Long> expectedBlockId) throws IllegalStateException {
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     for (long blockId : expectedBlockId) {
-      blockIdBitmap.addLong(blockId);
+      expectBlockIds.addLong(blockId);
     }
     // read directly and compare
     HdfsClientReadHandler readHandler = new HdfsClientReadHandler(
         appId, shuffleId, partitionId, 100, 1, 10,
-        10000, basePath, new Configuration());
+        10000, expectBlockIds, processBlockIds, basePath, new Configuration());
     try {
       List<ByteBuffer> actual = readData(readHandler, Sets.newHashSet(expectedBlockId));
       compareBytes(expectedData, actual);

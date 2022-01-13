@@ -199,7 +199,7 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
         "appId", 0, 1, 100, 2, 10, 1000,
         basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(), new Configuration());
     // index file is deleted after iterator initialization, it should be ok, all index infos are read already
-    Path indexFile = new Path(basePath + "/appId/0/0-1/test.index");
+    Path indexFile = new Path(basePath + "/appId/0/0-1/test_0.index");
     fs.delete(indexFile, true);
     readClient.close();
 

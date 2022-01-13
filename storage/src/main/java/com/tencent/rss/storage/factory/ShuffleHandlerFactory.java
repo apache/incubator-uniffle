@@ -65,6 +65,8 @@ public class ShuffleHandlerFactory {
           request.getPartitionNumPerRange(),
           request.getPartitionNum(),
           request.getReadBufferSize(),
+          request.getExpectBlockIds(),
+          request.getProcessBlockIds(),
           request.getStorageBasePath(),
           request.getHadoopConf());
     } else if (StorageType.LOCALFILE.name().equals(request.getStorageType())) {
@@ -103,6 +105,8 @@ public class ShuffleHandlerFactory {
             request.getPartitionNumPerRange(),
             request.getPartitionNum(),
             request.getReadBufferSize(),
+            request.getExpectBlockIds(),
+            request.getProcessBlockIds(),
             request.getStorageBasePath(),
             request.getHadoopConf());
       });
@@ -134,6 +138,8 @@ public class ShuffleHandlerFactory {
             request.getPartitionNumPerRange(),
             request.getPartitionNum(),
             request.getReadBufferSize(),
+            request.getExpectBlockIds(),
+            request.getProcessBlockIds(),
             request.getStorageBasePath(),
             request.getHadoopConf());
       }, () -> {
@@ -145,6 +151,8 @@ public class ShuffleHandlerFactory {
             request.getPartitionNumPerRange(),
             request.getPartitionNum(),
             request.getReadBufferSize(),
+            request.getExpectBlockIds(),
+            request.getProcessBlockIds(),
             request.getStorageBasePath(),
             request.getHadoopConf());
       });
@@ -188,6 +196,8 @@ public class ShuffleHandlerFactory {
             request.getPartitionNumPerRange(),
             request.getPartitionNum(),
             request.getReadBufferSize(),
+            request.getExpectBlockIds(),
+            request.getProcessBlockIds(),
             request.getStorageBasePath(),
             request.getHadoopConf());
       });
@@ -219,6 +229,8 @@ public class ShuffleHandlerFactory {
             request.getPartitionNumPerRange(),
             request.getPartitionNum(),
             request.getReadBufferSize(),
+            request.getExpectBlockIds(),
+            request.getProcessBlockIds(),
             request.getStorageBasePath(),
             request.getHadoopConf());
       });

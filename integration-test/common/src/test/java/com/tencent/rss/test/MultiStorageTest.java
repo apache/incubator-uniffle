@@ -43,6 +43,8 @@ import com.tencent.rss.coordinator.CoordinatorConf;
 import com.tencent.rss.server.ShuffleDataReadEvent;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.storage.common.LocalStorage;
+import com.tencent.rss.storage.handler.api.ClientReadHandler;
+import com.tencent.rss.storage.handler.impl.*;
 import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import com.tencent.rss.storage.util.StorageType;
 import org.junit.After;
@@ -481,6 +483,122 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
       csb = readClient.readShuffleBlockData();
     }
     assertTrue(blockIdBitmap1.equals(matched));
+  }
+
+  @Test
+  public void readDifferentStorageDataWithFilter() {
+    String appId = "app_read_diff_data_filter";
+    RssRegisterShuffleRequest rr1 =  new RssRegisterShuffleRequest(appId, 0,
+      Lists.newArrayList(new PartitionRange(0, 0)));
+    shuffleServerClient.registerShuffle(rr1);
+    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Set<Long> expectedBlock1 = Sets.newHashSet();
+    Set<Long> expectedBlock2 = Sets.newHashSet();
+    Set<Long> actualBlock1 = Sets.newHashSet();
+    Set<Long> actualBlock2 = Sets.newHashSet();
+
+    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap processBitmap = Roaring64NavigableMap.bitmapOf();
+
+    // send large blocks to HDFS
+    List<ShuffleBlockInfo> blocks1 = createShuffleBlockList(
+      0, 0, 1, 40, 10 * 1024 * 1024, blockIdBitmap, expectedData);
+    blocks1.forEach(b -> expectedBlock1.add(b.getBlockId()));
+    Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
+    partitionToBlocks.put(0, blocks1);
+    Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
+    shuffleToBlocks.put(0, partitionToBlocks);
+    RssSendShuffleDataRequest rs1 = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
+    shuffleServerClient.sendShuffleData(rs1);
+    RssSendCommitRequest rc1 = new RssSendCommitRequest(appId, 0);
+    shuffleServerClient.sendCommit(rc1);
+    RssFinishShuffleRequest rf1 = new RssFinishShuffleRequest(appId, 0);
+    shuffleServerClient.finishShuffle(rf1);
+    Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
+    partitionToBlockIds.put(0, new ArrayList<>(expectedBlock1));
+    RssReportShuffleResultRequest rrp1 = new RssReportShuffleResultRequest(
+      appId, 0, 1L, partitionToBlockIds, 1);
+    shuffleServerClient.reportShuffleResult(rrp1);
+
+    // send small blocks to local file
+    List<ShuffleBlockInfo> blocks2 = createShuffleBlockList(
+      0, 0, 2, 40, 1024, blockIdBitmap, expectedData);
+    blocks2.forEach(b -> expectedBlock2.add(b.getBlockId()));
+    partitionToBlocks.put(0, blocks2);
+    RssSendShuffleDataRequest rs2 = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
+    shuffleServerClient.sendShuffleData(rs2);
+    shuffleServerClient.sendCommit(rc1);
+    shuffleServerClient.finishShuffle(rf1);
+    partitionToBlockIds.put(0, new ArrayList<>(expectedBlock1));
+    RssReportShuffleResultRequest rrp2 = new RssReportShuffleResultRequest(
+      appId, 0, 2L, partitionToBlockIds, 1);
+    shuffleServerClient.reportShuffleResult(rrp2);
+    shuffleServerClient.finishShuffle(rf1);
+    RssGetShuffleResultRequest rg1 = new RssGetShuffleResultRequest(appId, 0, 0);
+    shuffleServerClient.getShuffleResult(rg1);
+
+    LocalFileQuorumClientReadHandler localFileQuorumClientReadHandler = new LocalFileQuorumClientReadHandler(
+      appId, 0, 0, 0, 1, 3,
+      20 * 1024 , blockIdBitmap, processBitmap, Lists.newArrayList(shuffleServerClient));
+    HdfsClientReadHandler hdfsClientReadHandler = new HdfsClientReadHandler(
+      appId, 0, 0, 0, 1, 3,
+      100 * 1024 * 1024, blockIdBitmap, processBitmap, HDFS_URI + "rss/multi_storage", conf);
+    UploadedHdfsClientReadHandler uploadedHdfsClientReadHandler = new UploadedHdfsClientReadHandler(
+      appId, 0, 0, 0, 1, 3,
+      20 * 1024, blockIdBitmap, processBitmap, HDFS_URI + "rss/multi_storage", conf);
+    ClientReadHandler[] handlers = new ClientReadHandler[3];
+    handlers[0] = localFileQuorumClientReadHandler;
+    handlers[1] = hdfsClientReadHandler;
+    handlers[2] = uploadedHdfsClientReadHandler;
+    ComposedClientReadHandler handler = new ComposedClientReadHandler(handlers);
+
+    // read the 1-th segment from localfile
+    ShuffleDataResult result = null;
+    result = handler.readShuffleData();
+    result.getBufferSegments().forEach(b -> actualBlock1.add(b.getBlockId()));
+    result.getBufferSegments().forEach(b -> processBitmap.add(b.getBlockId()));
+
+    // flush the localfile to uploaded HDFS
+    wait(appId);
+
+    // read the 2-th segment from uploaded HDFS and other segments from HDFS
+    while(result != null) {
+      result = handler.readShuffleData();
+      if (result != null) {
+        result.getBufferSegments().forEach(b -> actualBlock2.add(b.getBlockId()));
+        result.getBufferSegments().forEach(b -> processBitmap.add(b.getBlockId()));
+      }
+    }
+
+    assertEquals(expectedBlock1.size() + expectedBlock2.size(),
+      actualBlock1.size() + actualBlock2.size());
+
+    expectedBlock2.forEach(b -> expectedBlock1.add(b));
+    actualBlock2.forEach(b -> actualBlock1.add(b));
+    assert (expectedBlock1.equals(actualBlock1));
+  }
+
+  protected void validateResult(
+    Map<Long, byte[]> expectedData,
+    ShuffleDataResult sdr) {
+    byte[] buffer = sdr.getData();
+    List<BufferSegment> bufferSegments = sdr.getBufferSegments();
+    assertEquals(expectedData.size(), bufferSegments.size());
+    for (Map.Entry<Long, byte[]> entry : expectedData.entrySet()) {
+      BufferSegment bs = findBufferSegment(entry.getKey(), bufferSegments);
+      assertNotNull(bs);
+      byte[] data = new byte[bs.getLength()];
+      System.arraycopy(buffer, bs.getOffset(), data, 0, bs.getLength());
+    }
+  }
+
+  private BufferSegment findBufferSegment(long blockId, List<BufferSegment> bufferSegments) {
+    for (BufferSegment bs : bufferSegments) {
+      if (bs.getBlockId() == blockId) {
+        return bs;
+      }
+    }
+    return null;
   }
 
   @Test

@@ -24,6 +24,7 @@ import com.tencent.rss.common.BufferSegment;
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.storage.HdfsShuffleHandlerTestBase;
 import org.junit.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import java.util.Map;
 import java.util.Random;
@@ -50,6 +51,8 @@ public class HdfsClientReadHandlerTest extends HdfsShuffleHandlerTestBase {
               conf);
 
       Map<Long, byte[]> expectedData = Maps.newHashMap();
+      Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
+      Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
 
       int readBufferSize = 13;
       int total = 0;
@@ -61,6 +64,7 @@ public class HdfsClientReadHandlerTest extends HdfsShuffleHandlerTestBase {
         writeTestData(writeHandler,  num, 3, 0, expectedData);
         total += calcExpectedSegmentNum(num, 3, readBufferSize);
         expectTotalBlockNum += num;
+        expectedData.forEach((id, block) -> expectBlockIds.addLong(id));
       }
 
       HdfsClientReadHandler handler = new HdfsClientReadHandler(
@@ -71,6 +75,8 @@ public class HdfsClientReadHandlerTest extends HdfsShuffleHandlerTestBase {
           1,
           10,
           readBufferSize,
+          expectBlockIds,
+          processBlockIds,
           basePath,
           conf);
       Set<Long> actualBlockIds = Sets.newHashSet();

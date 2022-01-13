@@ -26,6 +26,7 @@ import com.tencent.rss.storage.HdfsTestBase;
 import com.tencent.rss.storage.common.FileBasedShuffleSegment;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -40,6 +41,9 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
   @Test
   public void handlerReadUnCombinedDataTest() {
     try {
+      Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
+      Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
+
       String basePath = HDFS_URI + "test_backup_read";
       Path combinePath = new Path(basePath + "/app1/0/combine");
       fs.mkdirs(combinePath);
@@ -51,7 +55,7 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
       byte[] data = writeData(writer);
       writer.close();
 
-      writeIndexData(basePath, "/app1/0/1/2.index", Lists.newArrayList());
+      writeIndexData(basePath, "/app1/0/1/2.index", Lists.newArrayList(), expectBlockIds);
       List<Long> dataSizes;
 
       Path combineDataPath = new Path(basePath + "/app1/0/combine/1.data");
@@ -62,7 +66,7 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
       writeData(combineWriter);
       writeData(combineWriter);
 
-      writePartition2(combineWriter, combineIndexWriter);
+      writePartition2(combineWriter, combineIndexWriter, expectBlockIds);
       combineIndexWriter.close();
       combineWriter.close();
 
@@ -70,7 +74,8 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
       expects.add(1L);
       List<byte[]> expectData = Lists.newArrayList();
       expectData.add(data);
-      compareDataAndIndex("app1", 0, 1, basePath, expectData, 2);
+      compareDataAndIndex("app1", 0, 1, basePath, expectData,
+          expectBlockIds, processBlockIds, 2);
     } catch (Exception e) {
       e.printStackTrace();
       fail();
@@ -80,6 +85,9 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
   @Test
   public void handlerReadCombinedDataTest() {
     try {
+      Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
+      Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
+
       String basePath = HDFS_URI + "test_backup_read";
       Path combinePath = new Path(basePath + "/app2/0/combine");
       fs.mkdirs(combinePath);
@@ -91,7 +99,7 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
       writeData(writer);
       writer.close();
       List<Long> dataSizes = Lists.newArrayList();
-      writeIndexData(basePath,  "/app2/0/1/1.index", dataSizes);
+      writeIndexData(basePath,  "/app2/0/1/1.index", dataSizes, expectBlockIds);
 
       Path combineDataPath = new Path(basePath + "/app2/0/combine/1.data");
       Path combineIndexPath = new Path(basePath + "/app2/0/combine/1.index");
@@ -101,7 +109,7 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
       byte[] data1 = writeData(combineWriter);
 
       writeData(combineWriter);
-      writePartition(dataSizes, combineIndexWriter);
+      writePartition(dataSizes, combineIndexWriter, expectBlockIds);
       combineIndexWriter.close();
       combineWriter.close();
 
@@ -109,7 +117,8 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
       expects.add(2L);
       List<byte[]> expectData = Lists.newArrayList();
       expectData.add(data1);
-      compareDataAndIndex("app2", 0, 2, basePath, expectData, 2);
+      compareDataAndIndex("app2", 0, 2, basePath, expectData,
+          expectBlockIds, processBlockIds, 2);
     } catch (Exception e) {
       e.printStackTrace();
       fail();
@@ -120,6 +129,9 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
   @Test
   public void handlerReadTwoKindsDataTest() {
     try {
+      Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
+      Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
+
       String basePath = HDFS_URI + "test_backup_read";
       Path combinePath = new Path(basePath + "/app4/0/combine");
       fs.mkdirs(combinePath);
@@ -143,15 +155,16 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
           1, 0, 256, 256, 1, 1);
       iWriter.writeIndex(segment);
       iWriter.close();
-
+      expectBlockIds.addLong(1);
       Path combineDataPath = new Path(basePath + "/app4/0/combine/1.data");
       Path combineIndexPath = new Path(basePath + "/app4/0/combine/1.index");
       HdfsFileWriter combineWriter = new HdfsFileWriter(combineDataPath, conf);
       HdfsFileWriter combineIndexWriter = new HdfsFileWriter(combineIndexPath, conf);
 
+
       byte[] data1 = writeData(combineWriter);
       writeData(combineWriter);
-      writePartition(dataSizes, combineIndexWriter);
+      writePartition(dataSizes, combineIndexWriter, expectBlockIds);
       combineIndexWriter.close();
       combineWriter.close();
 
@@ -160,7 +173,8 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
       List<byte[]> expectData = Lists.newArrayList();
       expectData.add(data);
       expectData.add(data1);
-      compareDataAndIndex("app4", 0, 2, basePath, expectData, 2);
+      compareDataAndIndex("app4", 0, 2, basePath, expectData,
+          expectBlockIds, processBlockIds, 2);
     } catch (Exception e) {
       e.printStackTrace();
       fail();
@@ -194,13 +208,19 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
       writer.writeData(buffer);
       writer.close();
 
+      Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
+      Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
+
       Path indexPath = new Path(basePath + "/app3/0/combine/1.index");
       HdfsFileWriter iWriter = new HdfsFileWriter(indexPath, conf);
-      writePartition3(iWriter);
+      writePartition3(iWriter, expectBlockIds);
       iWriter.close();
-      compareDataAndIndex("app3", 0, 1, basePath, expectData, 1);
-      compareDataAndIndex("app3", 0, 1, basePath, expectData, 2);
-      compareDataAndIndex("app3", 0, 1, basePath, expectData, 3);
+      compareDataAndIndex("app3", 0, 1, basePath, expectData,
+          expectBlockIds, processBlockIds,1);
+      compareDataAndIndex("app3", 0, 1, basePath, expectData,
+          expectBlockIds, processBlockIds,2);
+      compareDataAndIndex("app3", 0, 1, basePath, expectData,
+          expectBlockIds, processBlockIds,3);
     } catch (Exception e) {
       e.printStackTrace();
       fail();
@@ -210,7 +230,8 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
   private void writeIndexData(
       String basePath,
       String file,
-      List<Long> dataSizes) throws IOException {
+      List<Long> dataSizes,
+      Roaring64NavigableMap expectBlockIds) throws IOException {
     Path indexPath = new Path(basePath + file);
     HdfsFileWriter iWriter = new HdfsFileWriter(indexPath, conf);
     List<Integer> somePartitions = Lists.newArrayList();
@@ -224,11 +245,13 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
         1, 0, 256, 256, 1, 1);
     iWriter.writeIndex(segment);
     iWriter.close();
+    expectBlockIds.addLong(1);
   }
 
   private void writePartition(
       List<Long> dataSizes,
-      HdfsFileWriter combineIndexWriter) throws IOException {
+      HdfsFileWriter combineIndexWriter,
+      Roaring64NavigableMap expectBlockIds) throws IOException {
     List<Integer> partitions = Lists.newArrayList();
     partitions.add(2);
     partitions.add(3);
@@ -241,12 +264,16 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
     FileBasedShuffleSegment segment1 = new FileBasedShuffleSegment(
         2, 0, 256, 256, 2, 1);
     combineIndexWriter.writeIndex(segment1);
+    expectBlockIds.addLong(2);
+
     FileBasedShuffleSegment segment2 = new FileBasedShuffleSegment(
         3, 256, 256, 256, 3, 1);
     combineIndexWriter.writeIndex(segment2);
+    expectBlockIds.addLong(3);
   }
 
-  private void writePartition2(HdfsFileWriter combineWriter, HdfsFileWriter combineIndexWriter) throws IOException {
+  private void writePartition2(HdfsFileWriter combineWriter, HdfsFileWriter combineIndexWriter,
+                               Roaring64NavigableMap expectBlockIds) throws IOException {
     List<Long> dataSizes;
     List<Integer> partitions = Lists.newArrayList();
     partitions.add(2);
@@ -264,9 +291,11 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
     FileBasedShuffleSegment segment2 = new FileBasedShuffleSegment(
         3, 256, 256, 256, 1, 1);
     combineIndexWriter.writeIndex(segment2);
+    expectBlockIds.addLong(2);
+    expectBlockIds.addLong(3);
   }
 
-  private void writePartition3(HdfsFileWriter iWriter) throws IOException {
+  private void writePartition3(HdfsFileWriter iWriter, Roaring64NavigableMap expectBlockIds) throws IOException {
     List<Integer> somePartitions = Lists.newArrayList();
     somePartitions.add(0);
     somePartitions.add(1);
@@ -282,12 +311,16 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
     iWriter.writeHeader(somePartitions, someSizes, dataSizes);
     FileBasedShuffleSegment segment = new FileBasedShuffleSegment(1, 0, 256, 256, 1, 1L);
     iWriter.writeIndex(segment);
+    expectBlockIds.addLong(1);
+
     for (int i = 0; i < 5; i++) {
       segment = new FileBasedShuffleSegment(i + 2, i * 256, 256, 256, 1, 1L);
       iWriter.writeIndex(segment);
+      expectBlockIds.addLong(i + 2);
     }
     segment = new FileBasedShuffleSegment(7, 0, 256, 256, 1, 1L);
     iWriter.writeIndex(segment);
+    expectBlockIds.addLong(7);
   }
 
   private void compareDataAndIndex(
@@ -296,11 +329,13 @@ public class MultiStorageHdfsClientReadHandlerTest extends HdfsTestBase {
       int partitionId,
       String basePath,
       List<byte[]> expectedData,
+      Roaring64NavigableMap expectBlockIds,
+      Roaring64NavigableMap processBlockIds,
       int limit) throws IllegalStateException {
     // read directly and compare
     UploadedHdfsClientReadHandler handler = new UploadedHdfsClientReadHandler(appId,
         shuffleId, partitionId, limit, 1, 3, 1024,
-        basePath, conf);
+        expectBlockIds, processBlockIds, basePath, conf);
     try {
       List<ByteBuffer> actual = readData(handler);
       compareBytes(expectedData, actual);

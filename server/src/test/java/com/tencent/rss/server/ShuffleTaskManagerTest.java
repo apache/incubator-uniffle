@@ -344,14 +344,15 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
 
   private void validate(String appId, int shuffleId, int partitionId, List<ShufflePartitionedBlock> blocks,
       String basePath) {
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     Set<Long> remainIds = Sets.newHashSet();
     for (ShufflePartitionedBlock spb : blocks) {
-      blockIdBitmap.addLong(spb.getBlockId());
+      expectBlockIds.addLong(spb.getBlockId());
       remainIds.add(spb.getBlockId());
     }
     HdfsClientReadHandler handler = new HdfsClientReadHandler(appId, shuffleId, partitionId,
-        100, 1, 10, 1000, basePath, new Configuration());
+        100, 1, 10, 1000, expectBlockIds, processBlockIds, basePath, new Configuration());
 
     ShuffleDataResult sdr = handler.readShuffleData();
     List<BufferSegment> bufferSegments = sdr.getBufferSegments();

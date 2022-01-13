@@ -27,6 +27,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +42,8 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
   protected final int partitionNumPerRange;
   protected final int partitionNum;
   protected final int readBufferSize;
+  protected Roaring64NavigableMap expectBlockIds;
+  protected Roaring64NavigableMap processBlockIds;
   protected final String storageBasePath;
   protected final Configuration hadoopConf;
   protected final List<HdfsShuffleReadHandler> readHandlers = Lists.newArrayList();
@@ -54,6 +57,8 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       int partitionNumPerRange,
       int partitionNum,
       int readBufferSize,
+      Roaring64NavigableMap expectBlockIds,
+      Roaring64NavigableMap processBlockIds,
       String storageBasePath,
       Configuration hadoopConf) {
     this.appId = appId;
@@ -62,13 +67,11 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
     this.partitionNumPerRange = partitionNumPerRange;
     this.partitionNum = partitionNum;
     this.readBufferSize = readBufferSize;
+    this.expectBlockIds = expectBlockIds;
+    this.processBlockIds = processBlockIds;
     this.storageBasePath = storageBasePath;
     this.hadoopConf = hadoopConf;
     this.readHandlerIndex = 0;
-    String fullShufflePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
-        ShuffleStorageUtils.getShuffleDataPathWithRange(appId,
-            shuffleId, partitionId, partitionNumPerRange, partitionNum));
-    init(fullShufflePath);
   }
 
   protected void init(String fullShufflePath) {
@@ -98,7 +101,9 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
             + partitionId + "] " + status.getPath());
         String filePrefix = getFileNamePrefix(status.getPath().toUri().toString());
         try {
-          HdfsShuffleReadHandler handler = new HdfsShuffleReadHandler(filePrefix, readBufferSize, hadoopConf);
+          HdfsShuffleReadHandler handler = new HdfsShuffleReadHandler(
+              appId, shuffleId, partitionId, filePrefix,
+              readBufferSize, expectBlockIds, processBlockIds, hadoopConf);
           readHandlers.add(handler);
         } catch (Exception e) {
           LOG.warn("Can't create ShuffleReaderHandler for " + filePrefix, e);
@@ -110,6 +115,14 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
 
   @Override
   public ShuffleDataResult readShuffleData() {
+    // init lazily like LocalFileClientRead
+    if (readHandlers.isEmpty()) {
+      String fullShufflePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
+        ShuffleStorageUtils.getShuffleDataPathWithRange(appId,
+          shuffleId, partitionId, partitionNumPerRange, partitionNum));
+      init(fullShufflePath);
+    }
+
     if (readHandlerIndex >= readHandlers.size()) {
       return new ShuffleDataResult();
     }
