@@ -87,12 +87,12 @@ rss-xxx.tgz will be generated for deployment
      HADOOP_HOME=<hadoop home>
      XMX_SIZE="80g"
    ```
-3. update RSS_HOME/conf/server.conf, the following demo is for local storage only, eg,
+3. update RSS_HOME/conf/server.conf, the following demo is for memory + local storage only, eg,
    ```
      rss.rpc.server.port 19999
      rss.jetty.http.port 19998
      rss.rpc.executor.size 2000
-     rss.storage.type LOCALFILE
+     rss.storage.type MEMORY_LOCALFILE
      rss.coordinator.quorum <coordinatorIp1>:19999,<coordinatorIp2>:19999
      rss.storage.basePath /data1/rssdata,/data2/rssdata....
      rss.server.flush.thread.alive 5
@@ -144,7 +144,7 @@ The important configuration is listed as following.
 
 ### Coordinator
 
-|Property Name|Default|	Meaning|
+|Property Name|Default|	Description|
 |---|---|---|
 |rss.coordinator.server.heartbeat.timeout|30000|Timeout if can't get heartbeat from shuffle server|
 |rss.coordinator.assignment.strategy|BASIC|Strategy for assigning shuffle server, only BASIC support|
@@ -157,7 +157,7 @@ The important configuration is listed as following.
 
 ### Shuffle Server
 
-|Property Name|Default|	Meaning|
+|Property Name|Default|Description|
 |---|---|---|
 |rss.coordinator.quorum|-|Coordinator quorum|
 |rss.rpc.server.port|-|RPC port for Shuffle server|
@@ -169,16 +169,18 @@ The important configuration is listed as following.
 |rss.server.heartbeat.interval|10000|Heartbeat interval to Coordinator (ms)|
 |rss.server.flush.threadPool.size|10|Thread pool for flush data to file|
 |rss.server.commit.timeout|600000|Timeout when commit shuffle data (ms)|
-|rss.storage.type|-|Supports LOCALFILE, HDFS, LOCALFILE_AND_HDFS|
+|rss.storage.type|-|Supports MEMORY_LOCALFILE, MEMORY_HDFS, MEMORY_LOCALFILE_HDFS|
+|rss.server.flush.cold.storage.threshold.size|64M| The threshold of data size for LOACALFILE and HDFS if MEMORY_LOCALFILE_HDFS is used|
+
 
 ### Spark Client
 
-|Property Name|Default|	Meaning|
+|Property Name|Default|Description|
 |---|---|---|
 |spark.rss.writer.buffer.size|3m|Buffer size for single partition data|
 |spark.rss.writer.buffer.spill.size|128m|Buffer size for total partition data|
 |spark.rss.coordinator.quorum|-|Coordinator quorum|
-|spark.rss.storage.type|-|Supports MEMORY_LOCAL, MEMORY_HDFS, LOCALFILE, HDFS, LOCALFILE_AND_HDFS|
+|spark.rss.storage.type|-|Supports MEMORY_LOCAL, MEMORY_HDFS, LOCALFILE, HDFS, LOCALFILE_HDFS|
 |spark.rss.client.send.size.limit|16m|The max data size sent to shuffle server|
 |spark.rss.client.read.buffer.size|32m|The max data size read from storage|
 |spark.rss.client.send.threadPool.size|10|The thread size for send shuffle data to shuffle server|
