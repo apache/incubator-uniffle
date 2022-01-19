@@ -179,8 +179,8 @@ public class RssShuffleManager implements ShuffleManager {
         partitionNumPerRange, dataReplica, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = response.getPartitionToServers();
 
-    registerShuffleServers(appId, shuffleId, response.getServerToPartitionRanges());
     startHeartbeat();
+    registerShuffleServers(appId, shuffleId, response.getServerToPartitionRanges());
 
     LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum[" + partitionToServers.size() + "]");
     return new RssShuffleHandle(shuffleId, appId, numMaps, dependency, partitionToServers);
