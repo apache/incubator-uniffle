@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Constructor;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -206,5 +207,35 @@ public class RssUtils {
 
   public static String generatePartitionKey(String appId, Integer shuffleId, Integer partition) {
     return String.join(Constants.KEY_SPLIT_CHAR, appId, String.valueOf(shuffleId), String.valueOf(partition));
+  }
+
+  public static <T> List<T> loadExtensions(
+      Class<T> extClass, List<String> classes, Object obj) throws RuntimeException {
+    if (classes == null || classes.isEmpty()) {
+      throw new RuntimeException("Empty classes");
+    }
+
+    List<T> extensions = Lists.newArrayList();
+    for (String name : classes) {
+      try {
+        Class<?> klass = Class.forName(name);
+        if (!extClass.isAssignableFrom(klass)) {
+          throw new RuntimeException(name + " is not subclass of " + extClass.getName());
+        }
+
+        Constructor<?> constructor;
+        T instance;
+        try {
+          constructor = klass.getConstructor(obj.getClass());
+          instance = (T) constructor.newInstance(obj);
+        } catch (Exception e) {
+          instance = (T) klass.getConstructor().newInstance();
+        }
+        extensions.add(instance);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+    return extensions;
   }
 }

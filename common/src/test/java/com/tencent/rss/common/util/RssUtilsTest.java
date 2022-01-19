@@ -29,9 +29,11 @@ import com.tencent.rss.common.ShuffleDataSegment;
 import com.tencent.rss.common.ShuffleIndexResult;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import org.junit.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -127,4 +129,64 @@ public class RssUtilsTest {
     data = incompleteByteBuffer.array();
     assertTrue(RssUtils.transIndexDataToSegments(new ShuffleIndexResult(data), readBufferSize).isEmpty());
   }
+
+  @Test
+  public void testLoadExtentions() {
+    List<String> exts = Arrays.asList("Dummy");
+    try {
+      RssUtils.loadExtensions(RssUtilTestDummy.class, exts, 1);
+    } catch (RuntimeException e) {
+      assertTrue(e.getMessage().startsWith("java.lang.ClassNotFoundException: Dummy"));
+    }
+    exts = Arrays.asList("com.tencent.rss.common.util.RssUtilsTest$RssUtilTestDummyFailNotSub");
+    try {
+      RssUtils.loadExtensions(RssUtilTestDummy.class, exts, 1);
+    } catch (RuntimeException e) {
+      assertTrue(e.getMessage().contains("RssUtilTestDummyFailNotSub is not subclass of "
+          + "com.tencent.rss.common.util.RssUtilsTest$RssUtilTestDummy"));
+    }
+    exts = Arrays.asList("com.tencent.rss.common.util.RssUtilsTest$RssUtilTestDummyNoConstructor");
+    try {
+      RssUtils.loadExtensions(RssUtilTestDummy.class, exts, "Test");
+    } catch (RuntimeException e) {
+      assertTrue(e.getMessage().contains("RssUtilTestDummyNoConstructor.<init>()"));
+    }
+    exts = Arrays.asList("com.tencent.rss.common.util.RssUtilsTest$RssUtilTestDummySuccess");
+    String testStr = String.valueOf(new Random().nextInt());
+    List<RssUtilTestDummy> extsObjs = RssUtils.loadExtensions(RssUtilTestDummy.class, exts, testStr);
+    assertEquals(1, extsObjs.size());
+    assertEquals(testStr, extsObjs.get(0).get());
+  }
+
+  interface RssUtilTestDummy {
+    String get();
+  }
+
+  public static class RssUtilTestDummyFailNotSub {
+    public RssUtilTestDummyFailNotSub() {
+    }
+  }
+
+  public static class RssUtilTestDummyNoConstructor implements RssUtilTestDummy {
+    public RssUtilTestDummyNoConstructor(int a) {
+    }
+
+    public String get() {
+      return null;
+    }
+  }
+
+  public static class RssUtilTestDummySuccess implements RssUtilTestDummy {
+    private final String s;
+
+    public RssUtilTestDummySuccess(String s) {
+      this.s = s;
+    }
+
+    public String get() {
+      return s;
+    }
+  }
+
+
 }

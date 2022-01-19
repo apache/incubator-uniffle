@@ -34,6 +34,8 @@ import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.proto.CoordinatorServerGrpc;
+import com.tencent.rss.proto.RssProtos.AccessClusterRequest;
+import com.tencent.rss.proto.RssProtos.AccessClusterResponse;
 import com.tencent.rss.proto.RssProtos.AppHeartBeatRequest;
 import com.tencent.rss.proto.RssProtos.AppHeartBeatResponse;
 import com.tencent.rss.proto.RssProtos.CheckServiceAvailableResponse;
@@ -47,7 +49,6 @@ import com.tencent.rss.proto.RssProtos.ShuffleServerHeartBeatRequest;
 import com.tencent.rss.proto.RssProtos.ShuffleServerHeartBeatResponse;
 import com.tencent.rss.proto.RssProtos.ShuffleServerId;
 import com.tencent.rss.proto.RssProtos.StatusCode;
-
 
 /**
  * Implementation class for services defined in protobuf
@@ -186,6 +187,33 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     if (Context.current().isCancelled()) {
       responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
       LOG.warn("Cancelled by client {} for after deadline.", appId);
+      return;
+    }
+
+    responseObserver.onNext(response);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void accessCluster(AccessClusterRequest request, StreamObserver<AccessClusterResponse> responseObserver) {
+    StatusCode statusCode = StatusCode.SUCCESS;
+    AccessClusterResponse response;
+    AccessManager accessManager = coordinatorServer.getAccessManager();
+
+    AccessInfo accessInfo = new AccessInfo(request.getAccessId(), Sets.newHashSet(request.getTagsList()));
+    AccessCheckResult result = accessManager.handleAccessRequest(accessInfo);
+    if (!result.isSuccess()) {
+      statusCode = StatusCode.ACCESS_DENIED;
+    }
+    response = AccessClusterResponse
+        .newBuilder()
+        .setStatus(statusCode)
+        .setRetMsg(result.getMsg())
+        .build();
+
+    if (Context.current().isCancelled()) {
+      responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
+      LOG.warn("Cancelled by client {} for after deadline.", accessInfo);
       return;
     }
 

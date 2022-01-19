@@ -44,6 +44,7 @@ public class CoordinatorServer {
   private ServerInterface server;
   private ClusterManager clusterManager;
   private AssignmentStrategy assignmentStrategy;
+  private AccessManager accessManager;
   private ApplicationManager applicationManager;
   private GRPCMetrics grpcMetrics;
 
@@ -95,6 +96,9 @@ public class CoordinatorServer {
     if (clusterManager != null) {
       clusterManager.shutdown();
     }
+    if (accessManager != null) {
+      accessManager.close();
+    }
     server.stop();
   }
 
@@ -107,6 +111,7 @@ public class CoordinatorServer {
     AssignmentStrategyFactory assignmentStrategyFactory =
         new AssignmentStrategyFactory(coordinatorConf, clusterManager);
     this.assignmentStrategy = assignmentStrategyFactory.getAssignmentStrategy();
+    this.accessManager = new AccessManager(coordinatorConf, clusterManager);
 
     jettyServer = new JettyServer(coordinatorConf);
     registerMetrics();
@@ -176,6 +181,10 @@ public class CoordinatorServer {
 
   public ApplicationManager getApplicationManager() {
     return applicationManager;
+  }
+
+  public AccessManager getAccessManager() {
+    return accessManager;
   }
 
   public GRPCMetrics getGrpcMetrics() {

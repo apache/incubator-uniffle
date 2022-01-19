@@ -231,6 +231,7 @@ enum StatusCode {
   NO_PARTITION = 5;
   INTERNAL_ERROR = 6;
   TIMEOUT = 7;
+  ACCESS_DENIED = 8;
   // add more status
 }
 
@@ -256,6 +257,9 @@ service CoordinatorServer {
 
   // Heartbeat between Shuffle Application and Coordinator Server
   rpc appHeartbeat(AppHeartBeatRequest) returns (AppHeartBeatResponse);
+
+  // Access to the remote shuffle service cluster
+  rpc accessCluster(AccessClusterRequest) returns (AccessClusterResponse);
 }
 
 message AppHeartBeatRequest {
@@ -320,4 +324,14 @@ message GetShuffleDataStorageInfoResponse {
 message CheckServiceAvailableResponse {
   StatusCode status = 1;
   bool available = 2;
+}
+
+message AccessClusterRequest {
+  string accessId = 1;
+  repeated string tags = 2;
+}
+
+message AccessClusterResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
 }

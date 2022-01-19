@@ -63,6 +63,35 @@ public class CoordinatorConf extends RssBaseConf {
       .intType()
       .defaultValue(9)
       .withDescription("The max number of shuffle server when do the assignment");
+  public static final ConfigOption<String> COORDINATOR_ACCESS_CHECKERS = ConfigOptions
+      .key("rss.coordinator.access.checkers")
+      .stringType()
+      .noDefaultValue()
+      .withDescription("Access checkers");
+  public static final ConfigOption<Integer> COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC = ConfigOptions
+      .key("rss.coordinator.access.candidates.update.interval.sec")
+      .intType()
+      .checkValue(ConfigUtils.positiveIntegerValidator2, "access candidates update interval must be positive")
+      .defaultValue(60)
+      .withDescription("Accessed candidates update interval in seconds");
+  public static final ConfigOption<String> COORDINATOR_ACCESS_CANDIDATES_PATH = ConfigOptions
+      .key("rss.coordinator.access.candidates.path")
+      .stringType()
+      .noDefaultValue()
+      .withDescription("Accessed candidates file path");
+  public static final ConfigOption<Double> COORDINATOR_ACCESS_LOADCHECKER_MEMORY_PERCENTAGE = ConfigOptions
+      .key("rss.coordinator.access.loadChecker.memory.percentage")
+      .doubleType()
+      .checkValue(ConfigUtils.percentageDoubleValidator,
+          "The recovery usage percentage must be between 0.0 and 100.0")
+      .defaultValue(15.0)
+      .withDescription("The minimal percentage of available memory percentage of a server");
+  public static final ConfigOption<Integer> COORDINATOR_ACCESS_LOADCHECKER_SERVER_NUM_THRESHOLD = ConfigOptions
+      .key("rss.coordinator.access.loadChecker.serverNum.threshold")
+      .intType()
+      .checkValue(ConfigUtils.positiveIntegerValidator2, "load checker serverNum threshold must be positive")
+      .noDefaultValue()
+      .withDescription("Accessed candidates file path");
 
   public CoordinatorConf() {
   }
