@@ -18,6 +18,7 @@
 
 package com.tencent.rss.storage.handler.api;
 
+import com.tencent.rss.common.BufferSegment;
 import com.tencent.rss.common.ShuffleDataResult;
 
 public interface ClientReadHandler {
@@ -25,4 +26,14 @@ public interface ClientReadHandler {
   ShuffleDataResult readShuffleData();
 
   void close();
+
+  // The handler only returns the segment,
+  // but does not know the actually consumed blocks,
+  // so the consumer should let the handler update statistics.
+  // Each type of handler can design their rules.
+  void updateConsumedBlockInfo(BufferSegment bs);
+
+  // Display the statistics of consumed blocks
+  void logConsumedBlockInfo();
+
 }

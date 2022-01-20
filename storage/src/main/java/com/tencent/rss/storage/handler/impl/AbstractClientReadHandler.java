@@ -18,6 +18,7 @@
 
 package com.tencent.rss.storage.handler.impl;
 
+import com.tencent.rss.common.BufferSegment;
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.storage.handler.api.ClientReadHandler;
 
@@ -35,5 +36,13 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
 
   @Override
   public void close() {
+  }
+
+  @Override
+  public void updateConsumedBlockInfo(BufferSegment bs) {
+  }
+
+  @Override
+  public void logConsumedBlockInfo() {
   }
 }

@@ -20,9 +20,11 @@ package com.tencent.rss.storage.handler.impl;
 
 import java.util.concurrent.Callable;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tencent.rss.common.BufferSegment;
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.storage.handler.api.ClientReadHandler;
 
@@ -45,6 +47,21 @@ public class ComposedClientReadHandler implements ClientReadHandler {
   private static final int FROZEN = 4;
   private int currentHandler = HOT;
   private final int topLevelOfHandler;
+
+  private long hotReadBlockNum = 0L;
+  private long warmReadBlockNum = 0L;
+  private long coldReadBlockNum = 0L;
+  private long frozenReadBlockNum = 0L;
+
+  private long hotReadLength = 0L;
+  private long warmReadLength = 0L;
+  private long coldReadLength = 0L;
+  private long frozenReadLength = 0L;
+
+  private long hotReadUncompressLength = 0L;
+  private long warmReadUncompressLength = 0L;
+  private long coldReadUncompressLength = 0L;
+  private long frozenReadUncompressLength = 0L;
 
   public ComposedClientReadHandler(ClientReadHandler... handlers) {
     topLevelOfHandler = handlers.length;
@@ -173,4 +190,72 @@ public class ComposedClientReadHandler implements ClientReadHandler {
       frozenDataReadHandler.close();
     }
   }
+
+  @Override
+  public void updateConsumedBlockInfo(BufferSegment bs) {
+    if (bs == null) {
+      return;
+    }
+    switch (currentHandler) {
+      case HOT:
+        hotReadBlockNum++;
+        hotReadLength += bs.getLength();
+        hotReadUncompressLength += bs.getUncompressLength();
+        break;
+      case WARM:
+        warmReadBlockNum++;
+        warmReadLength += bs.getLength();
+        warmReadUncompressLength += bs.getUncompressLength();
+        break;
+      case COLD:
+        coldReadBlockNum++;
+        coldReadLength += bs.getLength();
+        coldReadUncompressLength += bs.getUncompressLength();
+        break;
+      case FROZEN:
+        frozenReadBlockNum++;
+        frozenReadLength += bs.getLength();
+        frozenReadUncompressLength += bs.getUncompressLength();
+        break;
+      default:
+        break;
+    }
+  }
+
+  @Override
+  public void logConsumedBlockInfo() {
+    LOG.info(getReadBlokNumInfo());
+    LOG.info(getReadLengthInfo());
+    LOG.info(getReadUncompressLengthInfo());
+  }
+
+  @VisibleForTesting
+  public String getReadBlokNumInfo() {
+    long totalBlockNum = hotReadBlockNum + warmReadBlockNum
+      + coldReadBlockNum + frozenReadBlockNum;
+    return "Client read " + totalBlockNum + " blocks ["
+      + " hot:" + hotReadBlockNum + " warm:" + warmReadBlockNum
+      + " cold:" + coldReadBlockNum + " frozen:" + frozenReadBlockNum + " ]";
+  }
+
+  @VisibleForTesting
+  public String getReadLengthInfo() {
+    long totalReadLength = hotReadLength + warmReadLength
+      + coldReadLength + frozenReadLength;
+    return "Client read " + totalReadLength + " bytes ["
+      + " hot:" + hotReadLength + " warm:" + warmReadLength
+      + " cold:" + coldReadLength + " frozen:" + frozenReadLength + " ]";
+  }
+
+  @VisibleForTesting
+  public String getReadUncompressLengthInfo() {
+    long totalReadUncompressLength = hotReadUncompressLength + warmReadUncompressLength
+      + coldReadUncompressLength + frozenReadUncompressLength;
+    return "Client read " + totalReadUncompressLength + " uncompressed bytes ["
+      + " hot:" + hotReadUncompressLength
+      + " warm:" + warmReadUncompressLength
+      + " cold:" + coldReadUncompressLength
+      + " frozen:" + frozenReadUncompressLength + " ]";
+  }
+
 }

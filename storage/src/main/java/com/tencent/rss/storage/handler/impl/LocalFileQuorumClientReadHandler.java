@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.client.api.ShuffleServerClient;
+import com.tencent.rss.common.BufferSegment;
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.exception.RssException;
 
@@ -34,6 +35,10 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
   private static final Logger LOG = LoggerFactory.getLogger(LocalFileQuorumClientReadHandler.class);
 
   private List<LocalFileClientReadHandler> handlers = Lists.newLinkedList();
+
+  private long readBlockNum = 0L;
+  private long readLength = 0L;
+  private long readUncompressLength = 0L;
 
   public LocalFileQuorumClientReadHandler(
     String appId,
@@ -84,5 +89,21 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
         + shuffleId + "], partitionId[" + partitionId + "]");
     }
     return result;
+  }
+
+  @Override
+  public void updateConsumedBlockInfo(BufferSegment bs) {
+    if (bs == null) {
+      return;
+    }
+    readBlockNum++;
+    readLength += bs.getLength();
+    readUncompressLength += bs.getUncompressLength();
+  }
+
+  @Override
+  public void logConsumedBlockInfo() {
+    LOG.info("Client read " + readBlockNum + " blocks,"
+        + " bytes:" +  readLength + " uncompressed bytes:" + readUncompressLength);
   }
 }
