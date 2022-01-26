@@ -34,4 +34,6 @@ public class Constants {
   public static long MAX_TASK_ATTEMPT_ID = (1 << Constants.TASK_ATTEMPT_ID_MAX_LENGTH) - 1;
   public static long INVALID_BLOCK_ID = -1L;
   public static final String KEY_SPLIT_CHAR = "/";
+  public static final String COMMON_SUCCESS_MESSAGE = "SUCCESS";
+  public static final String SORT_SHUFFLE_MANAGER_NAME = "org.apache.spark.shuffle.sort.SortShuffleManager";
 }

@@ -35,10 +35,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.client.api.CoordinatorClient;
+import com.tencent.rss.client.request.RssAccessClusterRequest;
 import com.tencent.rss.client.request.RssAppHeartBeatRequest;
 import com.tencent.rss.client.request.RssGetShuffleAssignmentsRequest;
 import com.tencent.rss.client.request.RssSendHeartBeatRequest;
 import com.tencent.rss.client.response.ResponseStatusCode;
+import com.tencent.rss.client.response.RssAccessClusterResponse;
 import com.tencent.rss.client.response.RssAppHeartBeatResponse;
 import com.tencent.rss.client.response.RssGetShuffleAssignmentsResponse;
 import com.tencent.rss.client.response.RssSendHeartBeatResponse;
@@ -48,6 +50,8 @@ import com.tencent.rss.common.exception.RssException;
 import com.tencent.rss.proto.CoordinatorServerGrpc;
 import com.tencent.rss.proto.CoordinatorServerGrpc.CoordinatorServerBlockingStub;
 import com.tencent.rss.proto.RssProtos;
+import com.tencent.rss.proto.RssProtos.AccessClusterRequest;
+import com.tencent.rss.proto.RssProtos.AccessClusterResponse;
 import com.tencent.rss.proto.RssProtos.AppHeartBeatRequest;
 import com.tencent.rss.proto.RssProtos.AppHeartBeatResponse;
 import com.tencent.rss.proto.RssProtos.GetShuffleAssignmentsResponse;
@@ -188,7 +192,6 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
     AppHeartBeatRequest rpcRequest = AppHeartBeatRequest.newBuilder().setAppId(request.getAppId()).build();
     AppHeartBeatResponse rpcResponse = blockingStub
         .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS).appHeartbeat(rpcRequest);
-
     RssAppHeartBeatResponse response;
     StatusCode statusCode = rpcResponse.getStatus();
     switch (statusCode) {
@@ -227,6 +230,34 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         break;
       default:
         response = new RssGetShuffleAssignmentsResponse(ResponseStatusCode.INTERNAL_ERROR);
+    }
+
+    return response;
+  }
+
+  @Override
+  public RssAccessClusterResponse accessCluster(RssAccessClusterRequest request) {
+    AccessClusterRequest rpcRequest = AccessClusterRequest
+        .newBuilder()
+        .setAccessId(request.getAccessId())
+        .addAllTags(request.getTags())
+        .build();
+    AccessClusterResponse rpcResponse;
+    try {
+      rpcResponse = blockingStub
+          .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS).accessCluster(rpcRequest);
+    } catch (Exception e) {
+      return new RssAccessClusterResponse(ResponseStatusCode.INTERNAL_ERROR, e.getMessage());
+    }
+
+    RssAccessClusterResponse response;
+    StatusCode statusCode = rpcResponse.getStatus();
+    switch (statusCode) {
+      case SUCCESS:
+        response = new RssAccessClusterResponse(ResponseStatusCode.SUCCESS, rpcResponse.getRetMsg());
+        break;
+      default:
+        response = new RssAccessClusterResponse(ResponseStatusCode.ACCESS_DENIED, rpcResponse.getRetMsg());
     }
 
     return response;

@@ -21,6 +21,7 @@ package org.apache.spark.shuffle;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 import java.util.List;
 
@@ -36,6 +37,9 @@ import org.apache.spark.io.CompressionCodec;
 import org.apache.spark.package$;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tencent.rss.client.api.CoordinatorClient;
+import com.tencent.rss.client.factory.CoordinatorClientFactory;
 
 public class RssShuffleUtils {
 
@@ -148,5 +152,27 @@ public class RssShuffleUtils {
 
   public static String getSparkVersion() {
     return package$.MODULE$.SPARK_VERSION();
+  }
+
+  public static ShuffleManager loadShuffleManager(String name, SparkConf conf, boolean isDriver) throws Exception {
+    Class<?> klass = Class.forName(name);
+    Constructor<?> constructor;
+    ShuffleManager instance;
+    try {
+      constructor = klass.getConstructor(conf.getClass(), Boolean.TYPE);
+      instance = (ShuffleManager) constructor.newInstance(conf, isDriver);
+    } catch (NoSuchMethodException e) {
+      constructor = klass.getConstructor(conf.getClass());
+      instance = (ShuffleManager) constructor.newInstance(conf);
+    }
+    return instance;
+  }
+
+  public static List<CoordinatorClient> createCoordinatorClients(SparkConf sparkConf) throws RuntimeException {
+    String clientType = sparkConf.get(RssClientConfig.RSS_CLIENT_TYPE,
+        RssClientConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
+    String coordinators = sparkConf.get(RssClientConfig.RSS_COORDINATOR_QUORUM);
+    CoordinatorClientFactory coordinatorClientFactory = new CoordinatorClientFactory(clientType);
+    return coordinatorClientFactory.createCoordinatorClient(coordinators);
   }
 }

@@ -26,5 +26,6 @@ public enum ResponseStatusCode {
   NO_REGISTER,
   NO_PARTITION,
   INTERNAL_ERROR,
-  TIMEOUT
+  TIMEOUT,
+  ACCESS_DENIED
 }

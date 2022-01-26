@@ -27,6 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.common.util.RssUtils;
 
 public class AccessManager {
@@ -62,7 +63,7 @@ public class AccessManager {
       }
     }
 
-    return new AccessCheckResult(true, "");
+    return new AccessCheckResult(true, Constants.COMMON_SUCCESS_MESSAGE);
   }
 
   public CoordinatorConf getCoordinatorConf() {

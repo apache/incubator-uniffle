@@ -18,9 +18,11 @@
 
 package com.tencent.rss.client.api;
 
+import com.tencent.rss.client.request.RssAccessClusterRequest;
 import com.tencent.rss.client.request.RssAppHeartBeatRequest;
 import com.tencent.rss.client.request.RssGetShuffleAssignmentsRequest;
 import com.tencent.rss.client.request.RssSendHeartBeatRequest;
+import com.tencent.rss.client.response.RssAccessClusterResponse;
 import com.tencent.rss.client.response.RssAppHeartBeatResponse;
 import com.tencent.rss.client.response.RssGetShuffleAssignmentsResponse;
 import com.tencent.rss.client.response.RssSendHeartBeatResponse;
@@ -32,6 +34,8 @@ public interface CoordinatorClient {
   RssSendHeartBeatResponse sendHeartBeat(RssSendHeartBeatRequest request);
 
   RssGetShuffleAssignmentsResponse getShuffleAssignments(RssGetShuffleAssignmentsRequest request);
+
+  RssAccessClusterResponse accessCluster(RssAccessClusterRequest request);
 
   String getDesc();
 

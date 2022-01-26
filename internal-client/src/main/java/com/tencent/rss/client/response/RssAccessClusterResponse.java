@@ -1,8 +1,8 @@
 /*
  * Tencent is pleased to support the open source community by making
- * Firestorm-Spark remote shuffle server available. 
+ * Firestorm-Spark remote shuffle server available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved. 
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use
  * this file except in compliance with the License. You may obtain a copy of the
@@ -18,26 +18,9 @@
 
 package com.tencent.rss.client.response;
 
-public class ClientResponse {
+public class RssAccessClusterResponse extends ClientResponse {
 
-  private final ResponseStatusCode statusCode;
-  private final String message;
-
-  public ClientResponse(ResponseStatusCode statusCode) {
-    this.statusCode = statusCode;
-    this.message = "";
-  }
-
-  public ClientResponse(ResponseStatusCode statusCode, String message) {
-    this.statusCode = statusCode;
-    this.message = message;
-  }
-
-  public ResponseStatusCode getStatusCode() {
-    return statusCode;
-  }
-
-  public String getMessage() {
-    return message;
+  public RssAccessClusterResponse(ResponseStatusCode statusCode, String messge) {
+    super(statusCode, messge);
   }
 }

@@ -24,6 +24,8 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tencent.rss.common.util.Constants;
+
 /**
  * AccessClusterLoadChecker use the cluster load metrics including memory and healthy to
  * filter and count available nodes numbers and reject if the number do not reach the threshold.
@@ -50,9 +52,10 @@ public class AccessClusterLoadChecker implements AccessChecker {
     List<ServerNode> servers = clusterManager.getServerList(tags);
     int size = (int) servers.stream().filter(ServerNode::isHealthy).filter(this::checkMemory).count();
     if (size >= availableServerNumThreshold) {
-      return new AccessCheckResult(true, "SUCCESS");
+      return new AccessCheckResult(true, Constants.COMMON_SUCCESS_MESSAGE);
     } else {
-      String msg = String.format("%s cluster load check failed total %s nodes, %s available nodes, "
+      String msg = String.format("Denied by AccessClusterLoadChecker accessInfo[%s], "
+              + "total %s nodes, %s available nodes, "
               + "memory percent threshold %s, available num threshold %s.",
           accessInfo, servers.size(), size, memoryPercentThreshold, availableServerNumThreshold);
       LOG.warn(msg);

@@ -34,6 +34,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tencent.rss.common.util.Constants;
+
 /**
  * AccessCandidatesChecker maintain a list of candidate access id and update it periodically,
  * it checks the access id in the access request and reject if the id is not in the candidate list.
@@ -59,12 +61,12 @@ public class AccessCandidatesChecker implements AccessChecker {
   public AccessCheckResult check(AccessInfo accessInfo) {
     String accessId = accessInfo.getAccessId().trim();
     if (!candidates.get().contains(accessId)) {
-      String msg = String.format("Reject accessInfo[%s] accessId[%s] access request.", accessInfo, accessId);
-      LOG.debug(msg);
+      String msg = String.format("Denied by AccessCandidatesChecker, accessInfo[%s].", accessInfo);
+      LOG.debug("Candidates is {}, {}", candidates.get(), msg);
       return new AccessCheckResult(false, msg);
     }
 
-    return new AccessCheckResult(true, "");
+    return new AccessCheckResult(true, Constants.COMMON_SUCCESS_MESSAGE);
   }
 
   public void close() {

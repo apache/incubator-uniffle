@@ -79,4 +79,9 @@ public class RssClientConfig {
   // has huge amount blockIds, eg, 10B.
   public static String RSS_CLIENT_BITMAP_SPLIT_NUM = "spark.rss.client.bitmap.splitNum";
   public static int RSS_CLIENT_BITMAP_SPLIT_NUM_DEFAULT_VALUE = 1;
+  public static String RSS_ACCESS_ID = "spark.rss.access.id";
+  public static String RSS_ACCESS_TIMEOUT_MS = "spark.rss.access.timeout.ms";
+  public static int RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE = 10000;
+  public static String RSS_ENABLED = "spark.rss.enabled";
+  public static boolean RSS_USE_RSS_SHUFFLE_MANAGER_DEFAULT_VALUE = false;
 }
