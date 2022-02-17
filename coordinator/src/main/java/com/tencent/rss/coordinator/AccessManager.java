@@ -24,6 +24,7 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,19 +37,22 @@ public class AccessManager {
 
   private final CoordinatorConf coordinatorConf;
   private final ClusterManager clusterManager;
+  private final Configuration hadoopConf;
   private List<AccessChecker> accessCheckers = Lists.newArrayList();
 
-  public AccessManager(CoordinatorConf conf, ClusterManager clusterManager) throws RuntimeException {
+  public AccessManager(
+      CoordinatorConf conf, ClusterManager clusterManager, Configuration hadoopConf) throws RuntimeException {
     this.coordinatorConf = conf;
     this.clusterManager = clusterManager;
+    this.hadoopConf = hadoopConf;
     init();
   }
 
   private void init() throws RuntimeException {
     String checkers = coordinatorConf.get(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS);
     if (StringUtils.isEmpty(checkers)) {
-     LOG.warn("Access checkers is empty, will not init any checkers.");
-     return;
+      LOG.warn("Access checkers is empty, will not init any checkers.");
+      return;
     }
 
     String[] names = checkers.trim().split(",");
@@ -76,6 +80,10 @@ public class AccessManager {
 
   public List<AccessChecker> getAccessCheckers() {
     return accessCheckers;
+  }
+
+  public Configuration getHadoopConf() {
+    return hadoopConf;
   }
 
   public void close() throws IOException {

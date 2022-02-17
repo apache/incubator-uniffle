@@ -28,13 +28,16 @@ COORDINATOR_HOME="$(
 CONF_FILE="./conf/coordinator.conf "
 MAIN_CLASS="com.tencent.rss.coordinator.CoordinatorServer"
 
+cd $COORDINATOR_HOME
+
 source "${COORDINATOR_HOME}/bin/rss-env.sh"
 source "${COORDINATOR_HOME}/bin/utils.sh"
 
+HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
+HADOOP_DEPENDENCY=$HADOOP_HOME/etc/hadoop:$HADOOP_HOME/share/hadoop/common/lib/*:$HADOOP_HOME/share/hadoop/common/*:$HADOOP_HOME/share/hadoop/hdfs:$HADOOP_HOME/share/hadoop/hdfs/lib/*:$HADOOP_HOME/share/hadoop/hdfs/*:$HADOOP_HOME/share/hadoop/yarn/lib/*:$HADOOP_HOME/share/hadoop/yarn/*:$HADOOP_HOME/share/hadoop/mapreduce/lib/*:$HADOOP_HOME/share/hadoop/mapreduce/*
+
 echo "Check process existence"
 is_jvm_process_running $JPS $MAIN_CLASS
-
-cd $COORDINATOR_HOME
 
 JAR_DIR="./jars"
 CLASSPATH=""
@@ -42,6 +45,21 @@ CLASSPATH=""
 for file in $(ls ${JAR_DIR}/coordinator/*.jar 2>/dev/null); do
   CLASSPATH=$CLASSPATH:$file
 done
+
+if [ -z "$HADOOP_HOME" ]; then
+  echo "No env HADOOP_HOME."
+  exit 1
+fi
+
+if [ -z "$HADOOP_CONF_DIR" ]; then
+  echo "No env HADOOP_CONF_DIR."
+  exit 1
+fi
+
+echo "Using Hadoop from $HADOOP_HOME"
+
+CLASSPATH=$CLASSPATH:$HADOOP_CONF_DIR:$HADOOP_DEPENDENCY
+JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native"
 
 echo "class path is $CLASSPATH"
 

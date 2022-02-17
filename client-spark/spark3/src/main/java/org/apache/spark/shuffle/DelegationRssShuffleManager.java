@@ -71,16 +71,18 @@ public class DelegationRssShuffleManager implements ShuffleManager {
       try {
         shuffleManager = new RssShuffleManager(sparkConf, true);
         sparkConf.set(RssClientConfig.RSS_ENABLED, "true");
+        sparkConf.set("spark.shuffle.manager", RssShuffleManager.class.getCanonicalName());
         LOG.info("Use RssShuffleManager");
         return shuffleManager;
       } catch (Exception exception) {
-        LOG.warn("Fail to create RssShuffleManager, fallback to SortShuffleManager");
+        LOG.warn("Fail to create RssShuffleManager, fallback to SortShuffleManager {}", exception.getMessage());
       }
     }
 
     try {
       shuffleManager = RssShuffleUtils.loadShuffleManager(Constants.SORT_SHUFFLE_MANAGER_NAME, sparkConf, true);
       sparkConf.set(RssClientConfig.RSS_ENABLED, "false");
+      sparkConf.set("spark.shuffle.manager", "sort");
       LOG.info("Use SortShuffleManager");
     } catch (Exception e) {
       throw new RssException(e.getMessage());

@@ -18,17 +18,19 @@
 
 package com.tencent.rss.coordinator;
 
+import java.util.List;
+import java.util.Objects;
+
+import com.google.common.collect.Lists;
+import org.apache.hadoop.conf.Configuration;
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import com.google.common.collect.Lists;
-import java.util.List;
-import java.util.Objects;
-import org.junit.Test;
 
 public class AccessClusterLoadCheckerTest {
 
@@ -52,7 +54,7 @@ public class AccessClusterLoadCheckerTest {
     CoordinatorConf conf = new CoordinatorConf(filePath);
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
         "com.tencent.rss.coordinator.AccessClusterLoadChecker");
-    AccessManager accessManager = new AccessManager(conf, clusterManager);
+    AccessManager accessManager = new AccessManager(conf, clusterManager, new Configuration());
     AccessClusterLoadChecker accessClusterLoadChecker =
         (AccessClusterLoadChecker) accessManager.getAccessCheckers().get(0);
     when(clusterManager.getServerList(any())).thenReturn(serverNodeList);

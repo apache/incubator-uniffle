@@ -21,6 +21,7 @@ package com.tencent.rss.coordinator;
 import java.io.FileNotFoundException;
 
 import io.prometheus.client.CollectorRegistry;
+import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -111,7 +112,7 @@ public class CoordinatorServer {
     AssignmentStrategyFactory assignmentStrategyFactory =
         new AssignmentStrategyFactory(coordinatorConf, clusterManager);
     this.assignmentStrategy = assignmentStrategyFactory.getAssignmentStrategy();
-    this.accessManager = new AccessManager(coordinatorConf, clusterManager);
+    this.accessManager = new AccessManager(coordinatorConf, clusterManager, new Configuration());
 
     jettyServer = new JettyServer(coordinatorConf);
     registerMetrics();

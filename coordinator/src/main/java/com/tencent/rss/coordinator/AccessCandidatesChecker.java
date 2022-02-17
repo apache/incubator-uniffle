@@ -18,19 +18,24 @@
 
 package com.tencent.rss.coordinator;
 
-import java.io.File;
-import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,12 +50,21 @@ public class AccessCandidatesChecker implements AccessChecker {
 
   private final AtomicReference<Set<String>> candidates = new AtomicReference<>();
   private final AtomicLong lastCandidatesUpdateMS = new AtomicLong(0L);
-  private final String path;
+  private final Path path;
   private final ScheduledExecutorService updateAccessCandidatesSES;
+  private final FileSystem fileSystem;
 
-  public AccessCandidatesChecker(AccessManager accessManager) {
+  public AccessCandidatesChecker(AccessManager accessManager) throws Exception {
     CoordinatorConf conf = accessManager.getCoordinatorConf();
-    this.path = conf.get(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH);
+    String pathStr = conf.get(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH);
+    this.path = new Path(pathStr);
+    Configuration hadoopConf = accessManager.getHadoopConf();
+    this.fileSystem = CoordinatorUtils.getFileSystemForPath(path, hadoopConf);
+    if (!fileSystem.isFile(path)) {
+      String msg = String.format("Fail to init AccessCandidatesChecker, %s is not a file", path.toUri());
+      LOG.error(msg);
+      throw new IllegalStateException(msg);
+    }
     int updateIntervalS = conf.getInteger(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC);
     updateAccessCandidatesSES = Executors.newSingleThreadScheduledExecutor(
         new ThreadFactoryBuilder().setDaemon(true).setNameFormat("UpdateAccessCandidates-%d").build());
@@ -77,11 +91,11 @@ public class AccessCandidatesChecker implements AccessChecker {
 
   private void updateAccessCandidates() {
     try {
-      File candidatesFile = new File(path);
-      if (candidatesFile.exists()) {
-        long lastModifiedMS = candidatesFile.lastModified();
+      FileStatus[] fileStatus = fileSystem.listStatus(path);
+      if (!ArrayUtils.isEmpty(fileStatus)) {
+        long lastModifiedMS = fileStatus[0].getModificationTime();
         if (lastCandidatesUpdateMS.get() != lastModifiedMS) {
-          updateAccessCandidates(candidatesFile);
+          updateAccessCandidatesInternal();
           lastCandidatesUpdateMS.set(lastModifiedMS);
         }
       } else {
@@ -93,19 +107,37 @@ public class AccessCandidatesChecker implements AccessChecker {
     }
   }
 
-  private void updateAccessCandidates(File candidatesFile) {
+  private void updateAccessCandidatesInternal() {
     Set<String> newCandidates = Sets.newHashSet();
-    try (Stream<String> lines = Files.lines(candidatesFile.toPath())) {
-      lines.forEach(line -> {
-        String taskId = line.trim();
-        if (!StringUtils.isEmpty(taskId)) {
-          newCandidates.add(taskId);
-        }
-      });
-    } catch (Exception e) {
-      LOG.warn("Error when parse file {}", candidatesFile.getAbsolutePath(), e);
+    String content = loadFileContent();
+    if (StringUtils.isEmpty(content)) {
+      LOG.warn("Load empty content from {}", path.toUri().toString());
+      candidates.set(newCandidates);
+      return;
     }
+
+    for (String item : content.split(IOUtils.LINE_SEPARATOR_UNIX)) {
+      String accessId = item.trim();
+      if (!StringUtils.isEmpty(accessId)) {
+        newCandidates.add(accessId);
+      }
+    }
+
+    if (newCandidates.isEmpty()) {
+      LOG.warn("Empty content in {}", path.toUri().toString());
+    }
+
     candidates.set(newCandidates);
+  }
+
+  private String loadFileContent() {
+    String content = null;
+    try (FSDataInputStream in = fileSystem.open(path)) {
+      content = IOUtils.toString(in, StandardCharsets.UTF_8);
+    } catch (Exception e) {
+      LOG.error("Fail to load content from {}", path.toUri().toString());
+    }
+    return content;
   }
 
   public AtomicReference<Set<String>> getCandidates() {

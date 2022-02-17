@@ -16,51 +16,45 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.tencent.rss.coordinator;
+package com.tencent.rss.test;
 
-import java.io.File;
-import java.io.FileWriter;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.util.Objects;
 
 import com.google.common.collect.Sets;
-import org.apache.hadoop.conf.Configuration;
-import org.junit.Before;
-import org.junit.ClassRule;
+import com.tencent.rss.coordinator.AccessCandidatesChecker;
+import com.tencent.rss.coordinator.AccessInfo;
+import com.tencent.rss.coordinator.AccessManager;
+import com.tencent.rss.coordinator.CoordinatorConf;
+import com.tencent.rss.storage.HdfsTestBase;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.Path;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class AccessCandidatesCheckerTest {
-  @ClassRule
-  public static final TemporaryFolder tmpDir = new TemporaryFolder();
-
-  @Before
-  public void setUp() {
-    CoordinatorMetrics.register();
-  }
-
+public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
   @Test
-  public void testLocal() throws Exception {
-    File cfgFile = tmpDir.newFile();
-    FileWriter fileWriter = new FileWriter(cfgFile);
-    PrintWriter printWriter = new PrintWriter(fileWriter);
+  public void test() throws Exception {
+    String candidatesFile = HDFS_URI + "/test/access_checker_candidates";
+    Path path = new Path(candidatesFile);
+    FSDataOutputStream out = fs.create(path);
+    PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(out));
     printWriter.println("9527");
     printWriter.println(" 135 ");
     printWriter.println("2 ");
     printWriter.flush();
     printWriter.close();
-    final String filePath = Objects.requireNonNull(
-        getClass().getClassLoader().getResource("coordinator.conf")).getFile();
-    CoordinatorConf conf = new CoordinatorConf(filePath);
-    conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, cfgFile.toURI().toString());
+
+    CoordinatorConf conf = new CoordinatorConf();
+    conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC, 1);
+    conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, candidatesFile);
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
         "com.tencent.rss.coordinator.AccessCandidatesChecker");
-    AccessManager accessManager = new AccessManager(conf, null, new Configuration());
+    AccessManager accessManager = new AccessManager(conf, null, HdfsTestBase.conf);
     AccessCandidatesChecker checker = (AccessCandidatesChecker) accessManager.getAccessCheckers().get(0);
     sleep(1200);
     assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
@@ -69,15 +63,18 @@ public class AccessCandidatesCheckerTest {
     assertFalse(checker.check(new AccessInfo("1")).isSuccess());
     assertFalse(checker.check(new AccessInfo("1_2")).isSuccess());
     sleep(1100);
-    fileWriter = new FileWriter(cfgFile);
-    printWriter = new PrintWriter(fileWriter);
-    printWriter.println("13");
-    printWriter.println("57");
+
+    out = fs.create(path);
+    printWriter = new PrintWriter(new OutputStreamWriter(out));
+    printWriter.println("9527");
+    printWriter.println(" 135 ");
+    printWriter.flush();
     printWriter.close();
+
     sleep(1200);
-    assertEquals(Sets.newHashSet("13", "57"), checker.getCandidates().get());
-    assertTrue(checker.check(new AccessInfo("13")).isSuccess());
-    assertTrue(checker.check(new AccessInfo("57")).isSuccess());
+    assertEquals(Sets.newHashSet("135", "9527"), checker.getCandidates().get());
+    assertTrue(checker.check(new AccessInfo("135")).isSuccess());
+    assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
     checker.close();
   }
 }

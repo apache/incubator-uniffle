@@ -69,10 +69,10 @@ public class CoordinatorConf extends RssBaseConf {
       .defaultValue("com.tencent.rss.coordinator.AccessClusterLoadChecker")
       .withDescription("Access checkers");
   public static final ConfigOption<Integer> COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC = ConfigOptions
-      .key("rss.coordinator.access.candidates.update.interval.sec")
+      .key("rss.coordinator.access.candidates.updateIntervalSec")
       .intType()
       .checkValue(ConfigUtils.positiveIntegerValidator2, "access candidates update interval must be positive")
-      .defaultValue(60)
+      .defaultValue(120)
       .withDescription("Accessed candidates update interval in seconds");
   public static final ConfigOption<String> COORDINATOR_ACCESS_CANDIDATES_PATH = ConfigOptions
       .key("rss.coordinator.access.candidates.path")
