@@ -57,7 +57,9 @@ public class RssClientConfig {
   public static String RSS_CLIENT_SEND_SIZE_LIMIT = "spark.rss.client.send.size.limit";
   public static String RSS_CLIENT_SEND_SIZE_LIMIT_DEFAULT_VALUE = "16m";
   public static String RSS_CLIENT_READ_BUFFER_SIZE = "spark.rss.client.read.buffer.size";
-  public static String RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE = "32m";
+  // When the size of read buffer reaches the half of JVM region (i.e., 32m),
+  // it will incur humongous allocation, so we set it to 14m.
+  public static String RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE = "14m";
   public static String RSS_HEARTBEAT_INTERVAL = "spark.rss.heartbeat.interval";
   public static long RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE = 10 * 1000L;
   public static String RSS_HEARTBEAT_TIMEOUT = "spark.rss.heartbeat.timeout";
