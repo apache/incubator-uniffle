@@ -262,6 +262,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     StatusCode status = StatusCode.SUCCESS;
     if (requireBufferId == -1) {
       status = StatusCode.NO_BUFFER;
+      ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
     }
     RequireBufferResponse response =
         RequireBufferResponse

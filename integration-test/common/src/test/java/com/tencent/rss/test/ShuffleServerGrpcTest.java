@@ -46,6 +46,7 @@ import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.coordinator.CoordinatorConf;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.server.ShuffleServerGrpcMetrics;
+import com.tencent.rss.server.ShuffleServerMetrics;
 import com.tencent.rss.storage.util.StorageType;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -59,6 +60,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -569,6 +571,17 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     // require buffer will be called one more time when send data
     assertEquals(oldGrpcTotal + 11, newGrpcTotal, 0.5);
     assertEquals(0, shuffleServers.get(0).getGrpcMetrics().getGaugeGrpcOpen().get(), 0.5);
+
+    oldValue = ShuffleServerMetrics.counterTotalRequireBufferFailed.get();
+    int GB = 1024 * 1024 * 1024;
+    // the next two allocations will fail
+    assertEquals(shuffleServerClient.requirePreAllocation(GB, 0, 10), -1);
+    assertEquals(shuffleServerClient.requirePreAllocation(GB, 0, 10), -1);
+    // the next two allocations will success
+    assertNotEquals(shuffleServerClient.requirePreAllocation(10, 0, 10), -1);
+    assertNotEquals(shuffleServerClient.requirePreAllocation(10, 0, 10), -1);
+    newValue = ShuffleServerMetrics.counterTotalRequireBufferFailed.get();
+    assertEquals((int)newValue, (int)oldValue + 2);
   }
 
   private List<Long> getBlockIdList(int partitionId, int blockNum) {
