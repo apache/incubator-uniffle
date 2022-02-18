@@ -33,12 +33,12 @@ public class RssClientConfig {
   public static String RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE = "spark.rss.writer.pre.allocated.buffer.size";
   public static String RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE_DEFAULT_VALUE = "16m";
   public static String RSS_WRITER_REQUIRE_MEMORY_RETRY_MAX = "spark.rss.writer.require.memory.retryMax";
-  public static int RSS_WRITER_REQUIRE_MEMORY_RETRY_MAX_DEFAULT_VALUE = 600;
+  public static int RSS_WRITER_REQUIRE_MEMORY_RETRY_MAX_DEFAULT_VALUE = 1200;
   public static String RSS_WRITER_REQUIRE_MEMORY_INTERVAL = "spark.rss.writer.require.memory.interval";
   public static long RSS_WRITER_REQUIRE_MEMORY_INTERVAL_DEFAULT_VALUE = 1000; // 1s
   public static String RSS_COORDINATOR_QUORUM = "spark.rss.coordinator.quorum";
   public static String RSS_WRITER_SEND_CHECK_TIMEOUT = "spark.rss.writer.send.check.timeout";
-  public static long RSS_WRITER_SEND_CHECK_TIMEOUT_DEFAULT_VALUE = 5 * 60 * 1000; // 5 min
+  public static long RSS_WRITER_SEND_CHECK_TIMEOUT_DEFAULT_VALUE = 10 * 60 * 1000; // 10 min
   public static String RSS_WRITER_SEND_CHECK_INTERVAL = "spark.rss.writer.send.check.interval";
   public static long RSS_WRITER_SEND_CHECK_INTERVAL_DEFAULT_VALUE = 500;
   public static String RSS_TEST_FLAG = "spark.rss.test";
@@ -49,7 +49,7 @@ public class RssClientConfig {
   public static String RSS_CLIENT_TYPE_DEFAULT_VALUE = "GRPC";
   public static String RSS_STORAGE_TYPE = "spark.rss.storage.type";
   public static String RSS_CLIENT_RETRY_MAX = "spark.rss.client.retry.max";
-  public static int RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE = 50;
+  public static int RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE = 100;
   public static String RSS_CLIENT_RETRY_INTERVAL_MAX = "spark.rss.client.retry.interval.max";
   public static long RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE = 10000;
   public static String RSS_CLIENT_HEARTBEAT_THREAD_NUM = "spark.rss.client.heartBeat.threadNum";
