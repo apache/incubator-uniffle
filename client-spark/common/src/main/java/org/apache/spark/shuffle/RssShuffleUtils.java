@@ -24,8 +24,11 @@ import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
@@ -40,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.client.api.CoordinatorClient;
 import com.tencent.rss.client.factory.CoordinatorClientFactory;
+import com.tencent.rss.storage.util.StorageType;
 
 public class RssShuffleUtils {
 
@@ -174,5 +178,46 @@ public class RssShuffleUtils {
     String coordinators = sparkConf.get(RssClientConfig.RSS_COORDINATOR_QUORUM);
     CoordinatorClientFactory coordinatorClientFactory = new CoordinatorClientFactory(clientType);
     return coordinatorClientFactory.createCoordinatorClient(coordinators);
+  }
+
+  public static void applyDynamicClientConf(SparkConf sparkConf, Map<String, String> confItems) {
+    if (sparkConf == null) {
+      LOG.warn("Spark conf is null");
+      return;
+    }
+
+    if (confItems == null || confItems.isEmpty()) {
+      LOG.warn("Empty conf items");
+      return;
+    }
+
+    for (Map.Entry<String, String> kv : confItems.entrySet()) {
+      String confKey = kv.getKey();
+      String confVal = kv.getValue();
+      if (!sparkConf.contains(confKey) || RssClientConfig.RSS_MANDATORY_CLUSTER_CONF.contains(confKey)) {
+        LOG.warn("Use conf dynamic conf {} = {}", confKey, confVal);
+        sparkConf.set(confKey, confVal);
+      }
+    }
+  }
+
+  public static final Set<StorageType> getStorageTypeWithoutPath() {
+    return Sets.newHashSet(StorageType.LOCALFILE, StorageType.MEMORY_LOCALFILE);
+  }
+
+  public static void validateRssClientConf(SparkConf sparkConf) {
+    String msgFormat = "%s must be set by the client or fetched from coordinators.";
+    if (!sparkConf.contains(RssClientConfig.RSS_STORAGE_TYPE)) {
+      String msg = String.format(msgFormat, "Storage type");
+      LOG.error(msg);
+      throw new IllegalArgumentException(msg);
+    }
+
+    StorageType storageType = StorageType.valueOf(sparkConf.get(RssClientConfig.RSS_STORAGE_TYPE));
+    if (!sparkConf.contains(RssClientConfig.RSS_BASE_PATH) && !getStorageTypeWithoutPath().contains(storageType)) {
+      String msg = String.format(msgFormat, "Storage path");
+      LOG.error(msg);
+      throw new IllegalArgumentException(msg);
+    }
   }
 }

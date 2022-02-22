@@ -1,8 +1,8 @@
 /*
  * Tencent is pleased to support the open source community by making
- * Firestorm-Spark remote shuffle server available. 
+ * Firestorm-Spark remote shuffle server available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved. 
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use
  * this file except in compliance with the License. You may obtain a copy of the
@@ -17,6 +17,10 @@
  */
 
 package org.apache.spark.shuffle;
+
+import java.util.Set;
+
+import com.google.common.collect.Sets;
 
 public class RssClientConfig {
 
@@ -86,4 +90,8 @@ public class RssClientConfig {
   public static int RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE = 10000;
   public static String RSS_ENABLED = "spark.rss.enabled";
   public static boolean RSS_USE_RSS_SHUFFLE_MANAGER_DEFAULT_VALUE = false;
+  public static String RSS_DYNAMIC_CLIENT_CONF_ENABLED = "spark.rss.dynamicClientConf.enabled";
+  public static boolean RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE = true;
+
+  public static Set<String> RSS_MANDATORY_CLUSTER_CONF = Sets.newHashSet(RSS_STORAGE_TYPE, RSS_BASE_PATH);
 }

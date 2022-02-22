@@ -43,6 +43,8 @@ public interface ShuffleWriteClient {
 
   void registerCoordinators(String coordinators);
 
+  Map<String, String> fetchClientConf(int timeoutMs);
+
   void reportShuffleResult(
       Map<Integer, List<ShuffleServerInfo>> partitionToServers,
       String appId,

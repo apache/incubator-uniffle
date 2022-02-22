@@ -138,6 +138,19 @@ public class RssShuffleManager implements ShuffleManager {
         .getInstance()
         .createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum);
     registerCoordinator();
+    // fetch client conf and apply them if necessary and disable ESS
+    if (isDriver && sparkConf.getBoolean(
+        RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
+        RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE)) {
+      Map<String, String> clusterClientConf = shuffleWriteClient.fetchClientConf(
+          sparkConf.getInt(RssClientConfig.RSS_ACCESS_TIMEOUT_MS,
+              RssClientConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
+      RssShuffleUtils.applyDynamicClientConf(sparkConf, clusterClientConf);
+    }
+    RssShuffleUtils.validateRssClientConf(sparkConf);
+    // External shuffle service is not supported when using remote shuffle service
+    sparkConf.set("spark.shuffle.service.enabled", "false");
+    LOG.info("Disable external shuffle service in RssShuffleManager.");
     if (!sparkConf.getBoolean(RssClientConfig.RSS_TEST_FLAG, false)) {
       // for non-driver executor, start a thread for sending shuffle data to shuffle server
       LOG.info("RSS data send thread is starting");
@@ -394,5 +407,10 @@ public class RssShuffleManager implements ShuffleManager {
     taskToSuccessBlockIds.remove(taskId);
     taskToFailedBlockIds.remove(taskId);
     taskToBufferManager.remove(taskId);
+  }
+
+  @VisibleForTesting
+  public SparkConf getSparkConf() {
+    return sparkConf;
   }
 }

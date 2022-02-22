@@ -92,6 +92,22 @@ public class CoordinatorConf extends RssBaseConf {
       .checkValue(ConfigUtils.positiveIntegerValidator2, "load checker serverNum threshold must be positive")
       .noDefaultValue()
       .withDescription("Accessed candidates file path");
+  public static final ConfigOption<Boolean> COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED = ConfigOptions
+      .key("rss.coordinator.dynamicClientConf.enabled")
+      .booleanType()
+      .defaultValue(false)
+      .withDescription("enable dynamic client conf");
+  public static final ConfigOption<String> COORDINATOR_DYNAMIC_CLIENT_CONF_PATH = ConfigOptions
+      .key("rss.coordinator.dynamicClientConf.path")
+      .stringType()
+      .noDefaultValue()
+      .withDescription("dynamic client conf of this cluster");
+  public static final ConfigOption<Integer> COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC = ConfigOptions
+      .key("rss.coordinator.dynamicClientConf.updateIntervalSec")
+      .intType()
+      .checkValue(ConfigUtils.positiveIntegerValidator2, "dynamic client conf update interval in seconds")
+      .defaultValue(120)
+      .withDescription("Accessed candidates update interval in seconds");
 
   public CoordinatorConf() {
   }

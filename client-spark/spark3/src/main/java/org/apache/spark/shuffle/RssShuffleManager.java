@@ -142,6 +142,19 @@ public class RssShuffleManager implements ShuffleManager {
         .getInstance()
         .createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum);
     registerCoordinator();
+    // fetch client conf and apply them if necessary and disable ESS
+    if (isDriver && sparkConf.getBoolean(
+        RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
+        RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE)) {
+      Map<String, String> clusterClientConf = shuffleWriteClient.fetchClientConf(
+          sparkConf.getInt(RssClientConfig.RSS_ACCESS_TIMEOUT_MS,
+              RssClientConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
+      RssShuffleUtils.applyDynamicClientConf(sparkConf, clusterClientConf);
+    }
+    RssShuffleUtils.validateRssClientConf(sparkConf);
+    // External shuffle service is not supported when using remote shuffle service
+    sparkConf.set("spark.shuffle.service.enabled", "false");
+    LOG.info("Disable external shuffle service in RssShuffleManager.");
     taskToSuccessBlockIds = Maps.newConcurrentMap();
     taskToFailedBlockIds = Maps.newConcurrentMap();
     // for non-driver executor, start a thread for sending shuffle data to shuffle server
@@ -519,6 +532,11 @@ public class RssShuffleManager implements ShuffleManager {
     String coordinators = sparkConf.get(RssClientConfig.RSS_COORDINATOR_QUORUM);
     LOG.info("Start Registering coordinators {}", coordinators);
     shuffleWriteClient.registerCoordinators(coordinators);
+  }
+
+  @VisibleForTesting
+  public SparkConf getSparkConf() {
+    return sparkConf;
   }
 
   private synchronized void startHeartbeat() {

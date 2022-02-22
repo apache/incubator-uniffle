@@ -1,8 +1,8 @@
 /*
  * Tencent is pleased to support the open source community by making
- * Firestorm-Spark remote shuffle server available. 
+ * Firestorm-Spark remote shuffle server available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved. 
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use
  * this file except in compliance with the License. You may obtain a copy of the
@@ -43,6 +43,7 @@ import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.client.factory.CoordinatorClientFactory;
 import com.tencent.rss.client.factory.ShuffleServerClientFactory;
 import com.tencent.rss.client.request.RssAppHeartBeatRequest;
+import com.tencent.rss.client.request.RssFetchClientConfRequest;
 import com.tencent.rss.client.request.RssFinishShuffleRequest;
 import com.tencent.rss.client.request.RssGetShuffleAssignmentsRequest;
 import com.tencent.rss.client.request.RssGetShuffleResultRequest;
@@ -53,6 +54,7 @@ import com.tencent.rss.client.request.RssSendShuffleDataRequest;
 import com.tencent.rss.client.response.ClientResponse;
 import com.tencent.rss.client.response.ResponseStatusCode;
 import com.tencent.rss.client.response.RssAppHeartBeatResponse;
+import com.tencent.rss.client.response.RssFetchClientConfResponse;
 import com.tencent.rss.client.response.RssFinishShuffleResponse;
 import com.tencent.rss.client.response.RssGetShuffleAssignmentsResponse;
 import com.tencent.rss.client.response.RssGetShuffleResultResponse;
@@ -221,6 +223,22 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   public void registerCoordinators(String coordinators) {
     List<CoordinatorClient> clients = coordinatorClientFactory.createCoordinatorClient(coordinators);
     coordinatorClients.addAll(clients);
+  }
+
+  @Override
+  public Map<String, String> fetchClientConf(int timeoutMs) {
+    RssFetchClientConfResponse response =
+        new RssFetchClientConfResponse(ResponseStatusCode.INTERNAL_ERROR, "Empty coordinator clients");
+    for (CoordinatorClient coordinatorClient : coordinatorClients) {
+      response = coordinatorClient.fetchClientConf(new RssFetchClientConfRequest(timeoutMs));
+      if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+        LOG.info("Success to get conf from {}", coordinatorClient.getDesc());
+        break;
+      } else {
+        LOG.warn("Fail to get conf from {}", coordinatorClient.getDesc());
+      }
+    }
+    return response.getClientConf();
   }
 
   @Override

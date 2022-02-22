@@ -229,10 +229,12 @@ public class RssUtils {
           constructor = klass.getConstructor(obj.getClass());
           instance = (T) constructor.newInstance(obj);
         } catch (Exception e) {
+          LOGGER.error("Fail to new instance.", e);
           instance = (T) klass.getConstructor().newInstance();
         }
         extensions.add(instance);
       } catch (Exception e) {
+        LOGGER.error("Fail to new instance using default constructor.", e);
         throw new RuntimeException(e);
       }
     }

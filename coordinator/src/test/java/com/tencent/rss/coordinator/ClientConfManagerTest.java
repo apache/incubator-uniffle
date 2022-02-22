@@ -21,9 +21,9 @@ package com.tencent.rss.coordinator;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
+import java.util.Map;
 import java.util.Objects;
 
-import com.google.common.collect.Sets;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Before;
@@ -37,7 +37,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class AccessCandidatesCheckerTest {
+public class ClientConfManagerTest {
   @ClassRule
   public static final TemporaryFolder tmpDir = new TemporaryFolder();
 
@@ -53,47 +53,46 @@ public class AccessCandidatesCheckerTest {
     final String filePath = Objects.requireNonNull(
         getClass().getClassLoader().getResource("coordinator.conf")).getFile();
     CoordinatorConf conf = new CoordinatorConf(filePath);
-    conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, tmpDir.getRoot().toURI().toString());
-    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
-        "com.tencent.rss.coordinator.AccessCandidatesChecker");
+    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, tmpDir.getRoot().toURI().toString());
+    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
 
     // file load checking at startup
     Exception expectedException = null;
     try {
-      new AccessManager(conf, null, new Configuration());
+      new ClientConfManager(conf, new Configuration());
     } catch (RuntimeException e) {
       expectedException = e;
     }
     assertNotNull(expectedException);
-    assertTrue(expectedException.getMessage().contains(
-        "NoSuchMethodException: com.tencent.rss.coordinator.AccessCandidatesChecker.<init>()"));
-    conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, cfgFile.toURI().toString());
+    assertTrue(expectedException.getMessage().endsWith("is not a file."));
+
+    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
     expectedException = null;
     try {
-      new AccessManager(conf, null, new Configuration());
+      new ClientConfManager(conf, new Configuration());
     } catch (RuntimeException e) {
       expectedException = e;
     }
     assertNotNull(expectedException);
-    assertTrue(expectedException.getMessage().contains(
-        "NoSuchMethodException: com.tencent.rss.coordinator.AccessCandidatesChecker.<init>()"));
+    assertEquals(
+        "Client conf file must be non-empty and can be loaded successfully at coordinator startup.",
+        expectedException.getMessage());
 
-    // load the config at the beginning
     FileWriter fileWriter = new FileWriter(cfgFile);
     PrintWriter printWriter = new PrintWriter(fileWriter);
-    printWriter.println("9527");
-    printWriter.println(" 135 ");
-    printWriter.println("2 ");
+    printWriter.println("spark.mock.1 abc");
+    printWriter.println(" spark.mock.2   123 ");
+    printWriter.println("spark.mock.3 true  ");
     printWriter.flush();
     printWriter.close();
-    AccessManager accessManager = new AccessManager(conf, null, new Configuration());
-    AccessCandidatesChecker checker = (AccessCandidatesChecker) accessManager.getAccessCheckers().get(0);
+    // load config at the beginning
+    ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration());
     sleep(1200);
-    assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
-    assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
-    assertTrue(checker.check(new AccessInfo("135")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1_2")).isSuccess());
+    Map<String, String> clientConf = clientConfManager.getClientConf();
+    assertEquals("abc", clientConf.get("spark.mock.1"));
+    assertEquals("123", clientConf.get("spark.mock.2"));
+    assertEquals("true", clientConf.get("spark.mock.3"));
+    assertEquals(3, clientConf.size());
 
     // ignore empty or wrong content
     printWriter.println("");
@@ -101,33 +100,39 @@ public class AccessCandidatesCheckerTest {
     printWriter.close();
     sleep(1300);
     assertTrue(cfgFile.exists());
-    assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
-    assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
-    assertTrue(checker.check(new AccessInfo("135")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1_2")).isSuccess());
+    clientConf = clientConfManager.getClientConf();
+    assertEquals("abc", clientConf.get("spark.mock.1"));
+    assertEquals("123", clientConf.get("spark.mock.2"));
+    assertEquals("true", clientConf.get("spark.mock.3"));
+    assertEquals(3, clientConf.size());
 
     // the config will not be changed when the conf file is deleted
     assertTrue(cfgFile.delete());
-    sleep(1200);
-    assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
-    assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
-    assertTrue(checker.check(new AccessInfo("135")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1_2")).isSuccess());
+    sleep(1300);
+    assertFalse(cfgFile.exists());
+    clientConf = clientConfManager.getClientConf();
+    assertEquals("abc", clientConf.get("spark.mock.1"));
+    assertEquals("123", clientConf.get("spark.mock.2"));
+    assertEquals("true", clientConf.get("spark.mock.3"));
+    assertEquals(3, clientConf.size());
 
     // the normal update config process, move the new conf file to the old one
     File cfgFileTmp = new File(cfgFileName + ".tmp");
     fileWriter = new FileWriter(cfgFileTmp);
     printWriter = new PrintWriter(fileWriter);
-    printWriter.println("13");
-    printWriter.println("57");
+    printWriter.println("spark.mock.4 deadbeaf");
+    printWriter.println("spark.mock.5 9527");
+    printWriter.println("spark.mock.6 9527 3423");
+    printWriter.println("spark.mock.7");
     printWriter.close();
     FileUtils.moveFile(cfgFileTmp, cfgFile);
     sleep(1200);
-    assertEquals(Sets.newHashSet("13", "57"), checker.getCandidates().get());
-    assertTrue(checker.check(new AccessInfo("13")).isSuccess());
-    assertTrue(checker.check(new AccessInfo("57")).isSuccess());
-    checker.close();
+    clientConf = clientConfManager.getClientConf();
+    assertEquals("deadbeaf", clientConf.get("spark.mock.4"));
+    assertEquals("9527", clientConf.get("spark.mock.5"));
+    assertEquals(2, clientConf.size());
+    assertFalse(clientConf.containsKey("spark.mock.6"));
+    assertFalse(clientConf.containsKey("spark.mock.7"));
+    clientConfManager.close();
   }
 }

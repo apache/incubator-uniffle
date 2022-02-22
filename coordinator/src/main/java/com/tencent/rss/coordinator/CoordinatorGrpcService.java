@@ -1,8 +1,8 @@
 /*
  * Tencent is pleased to support the open source community by making
- * Firestorm-Spark remote shuffle server available. 
+ * Firestorm-Spark remote shuffle server available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved. 
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use
  * this file except in compliance with the License. You may obtain a copy of the
@@ -39,6 +39,8 @@ import com.tencent.rss.proto.RssProtos.AccessClusterResponse;
 import com.tencent.rss.proto.RssProtos.AppHeartBeatRequest;
 import com.tencent.rss.proto.RssProtos.AppHeartBeatResponse;
 import com.tencent.rss.proto.RssProtos.CheckServiceAvailableResponse;
+import com.tencent.rss.proto.RssProtos.ClientConfItem;
+import com.tencent.rss.proto.RssProtos.FetchClientConfResponse;
 import com.tencent.rss.proto.RssProtos.GetShuffleAssignmentsResponse;
 import com.tencent.rss.proto.RssProtos.GetShuffleServerListResponse;
 import com.tencent.rss.proto.RssProtos.GetShuffleServerNumResponse;
@@ -205,6 +207,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     if (!result.isSuccess()) {
       statusCode = StatusCode.ACCESS_DENIED;
     }
+
     response = AccessClusterResponse
         .newBuilder()
         .setStatus(statusCode)
@@ -214,6 +217,31 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     if (Context.current().isCancelled()) {
       responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
       LOG.warn("Cancelled by client {} for after deadline.", accessInfo);
+      return;
+    }
+
+    responseObserver.onNext(response);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void fetchClientConf(Empty empty, StreamObserver<FetchClientConfResponse> responseObserver) {
+    FetchClientConfResponse response;
+    FetchClientConfResponse.Builder builder = FetchClientConfResponse.newBuilder().setStatus(StatusCode.SUCCESS);
+    boolean dynamicConfEnabled = coordinatorServer.getCoordinatorConf().getBoolean(
+        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, false);
+    if (dynamicConfEnabled) {
+      ClientConfManager clientConfManager = coordinatorServer.getClientConfManager();
+      for (Map.Entry<String, String> kv : clientConfManager.getClientConf().entrySet()) {
+        builder.addClientConf(
+            ClientConfItem.newBuilder().setKey(kv.getKey()).setValue(kv.getValue()).build());
+      }
+    }
+    response = builder.build();
+
+    if (Context.current().isCancelled()) {
+      responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
+      LOG.warn("Fetch client conf cancelled by client for after deadline.");
       return;
     }
 

@@ -23,6 +23,7 @@ import java.util.NoSuchElementException;
 
 import com.google.common.collect.Lists;
 import com.tencent.rss.common.util.Constants;
+import com.tencent.rss.storage.util.StorageType;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.sort.SortShuffleManager;
 import org.junit.AfterClass;
@@ -66,6 +67,7 @@ public class DelegationRssShuffleManagerTest {
     mockedStaticRssShuffleUtils.when(() ->
         RssShuffleUtils.createCoordinatorClients(any())).thenReturn(coordinatorClients);
     SparkConf conf = new SparkConf();
+    conf.set(RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED, "false");
     assertCreateSortShuffleManager(conf);
   }
 
@@ -81,9 +83,11 @@ public class DelegationRssShuffleManagerTest {
 
     SparkConf conf = new SparkConf();
     assertCreateSortShuffleManager(conf);
+    conf.set(RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED, "false");
     conf.set(RssClientConfig.RSS_ACCESS_ID, "mockId");
     assertCreateSortShuffleManager(conf);
     conf.set(RssClientConfig.RSS_COORDINATOR_QUORUM, "m1:8001,m2:8002");
+    conf.set("spark.rss.storage.type", StorageType.LOCALFILE.name());
     assertCreateRssShuffleManager(conf);
 
     conf = new SparkConf();
@@ -111,9 +115,9 @@ public class DelegationRssShuffleManagerTest {
     coordinatorClients.add(mockCoordinatorClient);
     mockedStaticRssShuffleUtils.when(() ->
         RssShuffleUtils.createCoordinatorClients(any())).thenReturn(coordinatorClients);
-    DelegationRssShuffleManager delegationRssShuffleManager;
 
     SparkConf conf = new SparkConf();
+    conf.set(RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED, "false");
     conf.set(RssClientConfig.RSS_ACCESS_ID, "mockId");
     conf.set(RssClientConfig.RSS_ENABLED, "true");
 
@@ -138,7 +142,6 @@ public class DelegationRssShuffleManagerTest {
     assertFalse(delegationRssShuffleManager.getDelegate() instanceof RssShuffleManager);
     assertFalse(conf.getBoolean(RssClientConfig.RSS_ENABLED, false));
     assertEquals("sort", conf.get("spark.shuffle.manager"));
-
     return delegationRssShuffleManager;
   }
 

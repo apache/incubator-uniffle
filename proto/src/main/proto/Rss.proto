@@ -260,6 +260,9 @@ service CoordinatorServer {
 
   // Access to the remote shuffle service cluster
   rpc accessCluster(AccessClusterRequest) returns (AccessClusterResponse);
+
+  // Get basic client conf from coordinator
+  rpc fetchClientConf(google.protobuf.Empty) returns (FetchClientConfResponse);
 }
 
 message AppHeartBeatRequest {
@@ -334,4 +337,15 @@ message AccessClusterRequest {
 message AccessClusterResponse {
   StatusCode status = 1;
   string retMsg = 2;
+}
+
+message FetchClientConfResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
+  repeated ClientConfItem clientConf = 3;
+}
+
+message ClientConfItem {
+  string key = 1;
+  string value = 2;
 }
