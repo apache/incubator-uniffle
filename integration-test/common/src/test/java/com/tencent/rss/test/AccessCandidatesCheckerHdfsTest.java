@@ -26,10 +26,12 @@ import com.tencent.rss.coordinator.AccessCandidatesChecker;
 import com.tencent.rss.coordinator.AccessInfo;
 import com.tencent.rss.coordinator.AccessManager;
 import com.tencent.rss.coordinator.CoordinatorConf;
+import com.tencent.rss.coordinator.CoordinatorMetrics;
 import com.tencent.rss.storage.HdfsTestBase;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
+import org.junit.Before;
 import org.junit.Test;
 
 import static java.lang.Thread.sleep;
@@ -39,6 +41,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
+  @Before
+  public void setUp() {
+    CoordinatorMetrics.register();
+  }
+
   @Test
   public void test() throws Exception {
     String candidatesFile = HDFS_URI + "/test/access_checker_candidates";

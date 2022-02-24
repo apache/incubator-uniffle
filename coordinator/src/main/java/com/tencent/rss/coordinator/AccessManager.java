@@ -60,6 +60,7 @@ public class AccessManager {
   }
 
   public AccessCheckResult handleAccessRequest(AccessInfo accessInfo) {
+    CoordinatorMetrics.counterTotalAccessRequest.inc();
     for (AccessChecker checker : accessCheckers) {
       AccessCheckResult accessCheckResult = checker.check(accessInfo);
       if (!accessCheckResult.isSuccess()) {

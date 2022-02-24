@@ -86,6 +86,7 @@ public class AccessCandidatesChecker implements AccessChecker {
     if (!candidates.get().contains(accessId)) {
       String msg = String.format("Denied by AccessCandidatesChecker, accessInfo[%s].", accessInfo);
       LOG.debug("Candidates is {}, {}", candidates.get(), msg);
+      CoordinatorMetrics.counterTotalCandidatesDeniedRequest.inc();
       return new AccessCheckResult(false, msg);
     }
 

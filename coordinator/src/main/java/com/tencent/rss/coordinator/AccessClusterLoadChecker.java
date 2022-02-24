@@ -59,6 +59,7 @@ public class AccessClusterLoadChecker implements AccessChecker {
               + "memory percent threshold %s, available num threshold %s.",
           accessInfo, servers.size(), size, memoryPercentThreshold, availableServerNumThreshold);
       LOG.warn(msg);
+      CoordinatorMetrics.counterTotalLoadDeniedRequest.inc();
       return new AccessCheckResult(false, msg);
     }
   }
