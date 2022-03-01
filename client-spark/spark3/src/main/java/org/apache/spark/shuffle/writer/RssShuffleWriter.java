@@ -171,6 +171,11 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         + bufferManager.getManagerCostInfo());
   }
 
+  // only push-based shuffle use this interface, but rss won't be used when push-based shuffle is enabled.
+  public long[] getPartitionLengths() {
+    return new long[0];
+  }
+
   private void processShuffleBlockInfos(List<ShuffleBlockInfo> shuffleBlockInfoList, Set<Long> blockIds) {
     if (shuffleBlockInfoList != null && !shuffleBlockInfoList.isEmpty()) {
       shuffleBlockInfoList.forEach(sbi -> {
