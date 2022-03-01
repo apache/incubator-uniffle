@@ -21,6 +21,9 @@ package com.tencent.rss.test;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssClientConfig;
 import org.apache.spark.sql.SparkSession;
@@ -50,6 +53,7 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
     Map resultWithoutRss = runSparkApp(sparkConf, fileName);
     long durationWithoutRss = System.currentTimeMillis() - start;
 
+    Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
     updateSparkConfWithRss(sparkConf);
     updateSparkConfCustomer(sparkConf);
     start = System.currentTimeMillis();

@@ -28,6 +28,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.memory.MemoryConsumer;
+import org.apache.spark.memory.MemoryMode;
 import org.apache.spark.memory.TaskMemoryManager;
 import org.apache.spark.serializer.SerializationStream;
 import org.apache.spark.serializer.Serializer;
@@ -86,7 +87,7 @@ public class WriteBufferManager extends MemoryConsumer {
       Map<Integer, List<ShuffleServerInfo>> partitionToServers,
       TaskMemoryManager taskMemoryManager,
       ShuffleWriteMetrics shuffleWriteMetrics) {
-    super(taskMemoryManager);
+    super(taskMemoryManager, taskMemoryManager.pageSizeBytes(), MemoryMode.ON_HEAP);
     this.bufferSize = bufferManagerOptions.getBufferSize();
     this.spillSize = bufferManagerOptions.getBufferSpillThreshold();
     this.instance = serializer.newInstance();
