@@ -20,8 +20,10 @@ package com.tencent.rss.storage.common;
 
 import org.apache.hadoop.conf.Configuration;
 
+import com.tencent.rss.storage.handler.api.ServerReadHandler;
 import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
 import com.tencent.rss.storage.handler.impl.HdfsShuffleWriteHandler;
+import com.tencent.rss.storage.request.CreateShuffleReadHandlerRequest;
 import com.tencent.rss.storage.request.CreateShuffleWriteHandlerRequest;
 
 public class HdfsStorage extends AbstractStorage {
@@ -84,6 +86,11 @@ public class HdfsStorage extends AbstractStorage {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  protected ServerReadHandler newReadHandler(CreateShuffleReadHandlerRequest request) {
+    throw new RuntimeException("Hdfs storage don't support to read from sever");
   }
 
   @Override

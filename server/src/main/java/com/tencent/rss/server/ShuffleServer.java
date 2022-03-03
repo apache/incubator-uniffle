@@ -18,9 +18,11 @@
 
 package com.tencent.rss.server;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.prometheus.client.CollectorRegistry;
 import org.slf4j.Logger;
@@ -141,7 +143,9 @@ public class ShuffleServer {
 
     boolean healthCheckEnable = shuffleServerConf.getBoolean(ShuffleServerConf.HEALTH_CHECK_ENABLE);
     if (healthCheckEnable) {
-      healthCheck = new HealthCheck(isHealthy, shuffleServerConf);
+      List<Checker> buildInCheckers = Lists.newArrayList();
+      buildInCheckers.add(storageManager.getStorageChecker());
+      healthCheck = new HealthCheck(isHealthy, shuffleServerConf, buildInCheckers);
       healthCheck.start();
     }
 

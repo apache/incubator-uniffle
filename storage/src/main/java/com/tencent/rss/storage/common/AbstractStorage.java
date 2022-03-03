@@ -24,22 +24,25 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 
 import com.tencent.rss.common.util.RssUtils;
+import com.tencent.rss.storage.handler.api.ServerReadHandler;
 import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
+import com.tencent.rss.storage.request.CreateShuffleReadHandlerRequest;
 import com.tencent.rss.storage.request.CreateShuffleWriteHandlerRequest;
+import com.tencent.rss.storage.util.ShuffleStorageUtils;
 
 public abstract class AbstractStorage implements Storage {
 
-  private Map<String, Map<String, ShuffleWriteHandler>> handlers = Maps.newConcurrentMap();
+  private Map<String, Map<String, ShuffleWriteHandler>> writerHandlers = Maps.newConcurrentMap();
   private Map<String, Map<String, CreateShuffleWriteHandlerRequest>> requests = Maps.newConcurrentMap();
+  private Map<String, Map<String, ServerReadHandler>> readerHandlers = Maps.newConcurrentMap();
 
   abstract ShuffleWriteHandler newWriteHandler(CreateShuffleWriteHandlerRequest request);
 
   @Override
   public ShuffleWriteHandler getOrCreateWriteHandler(CreateShuffleWriteHandlerRequest request) {
-
-    handlers.computeIfAbsent(request.getAppId(), key -> Maps.newConcurrentMap());
+    writerHandlers.computeIfAbsent(request.getAppId(), key -> Maps.newConcurrentMap());
     requests.computeIfAbsent(request.getAppId(), key -> Maps.newConcurrentMap());
-    Map<String, ShuffleWriteHandler> map = handlers.get(request.getAppId());
+    Map<String, ShuffleWriteHandler> map = writerHandlers.get(request.getAppId());
     String partitionKey = RssUtils.generatePartitionKey(
         request.getAppId(),
         request.getShuffleId(),
@@ -49,6 +52,30 @@ public abstract class AbstractStorage implements Storage {
     Map<String, CreateShuffleWriteHandlerRequest> requestMap = requests.get(request.getAppId());
     requestMap.putIfAbsent(partitionKey, request);
     return map.get(partitionKey);
+  }
+
+  @Override
+  public ServerReadHandler getOrCreateReadHandler(CreateShuffleReadHandlerRequest request) {
+    readerHandlers.computeIfAbsent(request.getAppId(), key -> Maps.newConcurrentMap());
+    Map<String, ServerReadHandler> map = readerHandlers.get(request.getAppId());
+    int[] range = ShuffleStorageUtils.getPartitionRange(
+        request.getPartitionId(),
+        request.getPartitionNumPerRange(),
+        request.getPartitionNum());
+    String partitionKey = RssUtils.generatePartitionKey(
+        request.getAppId(),
+        request.getShuffleId(),
+        range[0]
+    );
+    map.computeIfAbsent(partitionKey, key -> newReadHandler(request));
+    return map.get(partitionKey);
+  }
+
+  protected abstract ServerReadHandler newReadHandler(CreateShuffleReadHandlerRequest request);
+
+  public boolean containsWriteHandler(String appId, int shuffleId, int partition) {
+    String partitionKey = RssUtils.generatePartitionKey(appId, shuffleId, partition);
+    return writerHandlers.containsKey(partitionKey);
   }
 
   @Override
@@ -65,12 +92,13 @@ public abstract class AbstractStorage implements Storage {
 
   @Override
   public void removeHandlers(String appId) {
-    handlers.remove(appId);
+    writerHandlers.remove(appId);
+    readerHandlers.remove(appId);
     requests.remove(appId);
   }
 
   @VisibleForTesting
   public int getHandlerSize() {
-    return handlers.size();
+    return writerHandlers.size();
   }
 }

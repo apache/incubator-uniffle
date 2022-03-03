@@ -131,12 +131,9 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
         10, 1000, 0);
     validateResult(sdr, expectedBlockIds4, expectedData, 3);
 
-    assertEquals(4, shuffleServers.get(0).getShuffleTaskManager()
-        .getServerReadHandlers().get(testAppId).size());
     assertNotNull(shuffleServers.get(0).getShuffleTaskManager()
         .getPartitionsToBlockIds().get(testAppId));
     Thread.sleep(8000);
-    assertNull(shuffleServers.get(0).getShuffleTaskManager().getServerReadHandlers().get(testAppId));
     assertNull(shuffleServers.get(0).getShuffleTaskManager().getPartitionsToBlockIds().get(testAppId));
   }
 

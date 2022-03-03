@@ -17,10 +17,14 @@
 
 package com.tencent.rss.server;
 
+import com.google.common.collect.Lists;
+import com.tencent.rss.storage.common.LocalStorage;
 import com.tencent.rss.storage.util.StorageType;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.List;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -32,10 +36,15 @@ public class StorageCheckerTest {
   @Test
   public void checkTest() throws Exception {
     ShuffleServerConf conf = new ShuffleServerConf();
+    conf.setBoolean(ShuffleServerConf.HEALTH_CHECK_ENABLE, true);
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, "st1,st2,st3");
     conf.set(ShuffleServerConf.HEALTH_MIN_STORAGE_PERCENTAGE, 55.0);
-    LocalStorageChecker checker = new MockStorageChecker(conf);
+    List<LocalStorage> storages = Lists.newArrayList();
+    storages.add(LocalStorage.newBuilder().basePath("st1").build());
+    storages.add(LocalStorage.newBuilder().basePath("st2").build());
+    storages.add(LocalStorage.newBuilder().basePath("st3").build());
+    LocalStorageChecker checker = new MockStorageChecker(conf, storages);
 
     assertTrue(checker.checkIsHealthy());
 
@@ -48,7 +57,7 @@ public class StorageCheckerTest {
     callTimes++;
     assertTrue(checker.checkIsHealthy());
     conf.set(ShuffleServerConf.HEALTH_MIN_STORAGE_PERCENTAGE, 80.0);
-    checker = new MockStorageChecker(conf);
+    checker = new MockStorageChecker(conf, storages);
     assertFalse(checker.checkIsHealthy());
 
     callTimes++;
@@ -57,8 +66,8 @@ public class StorageCheckerTest {
   }
 
   private class MockStorageChecker extends LocalStorageChecker {
-    public MockStorageChecker(ShuffleServerConf conf) {
-      super(conf);
+    public MockStorageChecker(ShuffleServerConf conf, List<LocalStorage> storages) {
+      super(conf, storages);
     }
 
     @Override

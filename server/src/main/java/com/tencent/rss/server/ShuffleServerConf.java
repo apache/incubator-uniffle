@@ -304,13 +304,13 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Boolean> HEALTH_CHECK_ENABLE = ConfigOptions
       .key("rss.server.health.check.enable")
       .booleanType()
-      .defaultValue(true)
+      .defaultValue(false)
       .withDescription("The switch for the health check");
 
   public static final ConfigOption<String> HEALTH_CHECKER_CLASS_NAMES = ConfigOptions
       .key("rss.server.health.checker.class.names")
       .stringType()
-      .defaultValue("com.tencent.rss.server.LocalStorageChecker")
+      .noDefaultValue()
       .withDescription("The list of the Checker's name");
 
   public static final ConfigOption<Double> SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE = ConfigOptions

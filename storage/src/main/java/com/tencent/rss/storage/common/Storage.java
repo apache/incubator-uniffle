@@ -20,7 +20,9 @@ package com.tencent.rss.storage.common;
 
 import java.io.IOException;
 
+import com.tencent.rss.storage.handler.api.ServerReadHandler;
 import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
+import com.tencent.rss.storage.request.CreateShuffleReadHandlerRequest;
 import com.tencent.rss.storage.request.CreateShuffleWriteHandlerRequest;
 
 
@@ -41,6 +43,8 @@ public interface Storage {
   void updateReadMetrics(StorageReadMetrics metrics);
 
   ShuffleWriteHandler getOrCreateWriteHandler(CreateShuffleWriteHandlerRequest request) throws IOException;
+
+  ServerReadHandler getOrCreateReadHandler(CreateShuffleReadHandlerRequest request);
 
   CreateShuffleWriteHandlerRequest getCreateWriterHandlerRequest(String appId, int shuffleId, int partition);
 

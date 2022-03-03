@@ -25,6 +25,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tencent.rss.server.Checker;
 import com.tencent.rss.server.ShuffleDataFlushEvent;
 import com.tencent.rss.server.ShuffleDataReadEvent;
 import com.tencent.rss.server.ShuffleServerConf;
@@ -80,5 +81,10 @@ public class HdfsStorageManager extends SingleStorageManager {
    ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
        .createShuffleDeleteHandler(new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), hadoopConf));
    deleteHandler.delete(new String[] {storageBasePath}, appId);
+  }
+
+  @Override
+  public Checker getStorageChecker() {
+    throw new RuntimeException("Not support storage checker");
   }
 }

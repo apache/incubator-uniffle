@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.ShuffleIndexResult;
-import com.tencent.rss.common.config.RssBaseConf;
 import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.storage.common.FileBasedShuffleSegment;
 import com.tencent.rss.storage.handler.api.ServerReadHandler;
@@ -47,11 +46,11 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
       int partitionId,
       int partitionNumPerRange,
       int partitionNum,
-      RssBaseConf rssBaseConf) {
+      String path) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
-    init(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, rssBaseConf);
+    init(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, path);
   }
 
   private void init(
@@ -60,18 +59,10 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
       int partitionId,
       int partitionNumPerRange,
       int partitionNum,
-      RssBaseConf rssBaseConf) {
-    String allLocalPath = rssBaseConf.get(RssBaseConf.RSS_STORAGE_BASE_PATH);
-    String[] storageBasePaths = allLocalPath.split(",");
+      String path) {
 
     long start = System.currentTimeMillis();
-    if (storageBasePaths.length > 0) {
-      int[] range = ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
-      int index = ShuffleStorageUtils.getStorageIndex(storageBasePaths.length, appId, shuffleId, range[0]);
-      prepareFilePath(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, storageBasePaths[index]);
-    } else {
-      throw new RuntimeException("Can't get base path, please check rss.storage.localFile.basePaths.");
-    }
+    prepareFilePath(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, path);
     LOG.debug("Prepare for appId[" + appId + "], shuffleId[" + shuffleId + "], partitionId[" + partitionId
         + "] cost " + (System.currentTimeMillis() - start) + " ms");
   }

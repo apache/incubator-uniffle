@@ -45,23 +45,26 @@ public class HealthCheck {
   private volatile boolean isStop = false;
   private List<Checker> checkers = Lists.newArrayList();
 
-  public HealthCheck(AtomicBoolean isHealthy, ShuffleServerConf conf) {
+  public HealthCheck(AtomicBoolean isHealthy, ShuffleServerConf conf, List<Checker> buildInCheckers) {
     this.isHealthy = isHealthy;
     this.checkIntervalMs = conf.getLong(ShuffleServerConf.HEALTH_CHECK_INTERVAL);
     String checkersStr = conf.getString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES);
-    if (StringUtils.isEmpty(checkersStr)) {
+    if (StringUtils.isEmpty(checkersStr) && buildInCheckers.isEmpty()) {
       throw new IllegalArgumentException("The checkers cannot be empty");
     }
-    String[] checkerNames = checkersStr.split(",");
-    try {
-      for (String name : checkerNames) {
-        Class<?> cls = Class.forName(name);
-        Constructor<?> cons = cls.getConstructor(ShuffleServerConf.class);
-        checkers.add((Checker)cons.newInstance(conf));
+    checkers.addAll(buildInCheckers);
+    if (!StringUtils.isEmpty(checkersStr)) {
+      String[] checkerNames = checkersStr.split(",");
+      try {
+        for (String name : checkerNames) {
+          Class<?> cls = Class.forName(name);
+          Constructor<?> cons = cls.getConstructor(ShuffleServerConf.class);
+          checkers.add((Checker) cons.newInstance(conf));
+        }
+      } catch (Exception e) {
+        LOG.error("HealthCheck fail to init checkers", e);
+        throw new IllegalArgumentException("The checkers init fail");
       }
-    } catch (Exception e) {
-      LOG.error("HealthCheck fail to init checkers", e);
-      throw new IllegalArgumentException("The checkers init fail");
     }
     this.thread = new Thread(() -> {
       while (!isStop) {

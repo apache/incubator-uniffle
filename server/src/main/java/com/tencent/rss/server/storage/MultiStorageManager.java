@@ -26,6 +26,7 @@ import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tencent.rss.server.Checker;
 import com.tencent.rss.server.ShuffleDataFlushEvent;
 import com.tencent.rss.server.ShuffleDataReadEvent;
 import com.tencent.rss.server.ShuffleServerConf;
@@ -128,6 +129,11 @@ public class MultiStorageManager implements StorageManager {
         uploader.stop();
       }
     }
+  }
+
+  @Override
+  public Checker getStorageChecker() {
+    return warmStorageManager.getStorageChecker();
   }
 
   @Override

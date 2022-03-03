@@ -20,6 +20,7 @@ package com.tencent.rss.server.storage;
 
 import java.util.Set;
 
+import com.tencent.rss.server.Checker;
 import com.tencent.rss.server.ShuffleDataFlushEvent;
 import com.tencent.rss.server.ShuffleDataReadEvent;
 import com.tencent.rss.storage.common.Storage;
@@ -43,6 +44,8 @@ public interface StorageManager {
   void start();
 
   void stop();
+
+  Checker getStorageChecker();
 
   // todo: add an interface that check storage isHealthy
 }

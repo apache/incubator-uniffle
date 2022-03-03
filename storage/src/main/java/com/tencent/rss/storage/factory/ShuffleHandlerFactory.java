@@ -26,19 +26,16 @@ import com.tencent.rss.client.factory.ShuffleServerClientFactory;
 import com.tencent.rss.client.util.ClientType;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.storage.handler.api.ClientReadHandler;
-import com.tencent.rss.storage.handler.api.ServerReadHandler;
 import com.tencent.rss.storage.handler.api.ShuffleDeleteHandler;
 import com.tencent.rss.storage.handler.impl.ComposedClientReadHandler;
 import com.tencent.rss.storage.handler.impl.HdfsClientReadHandler;
 import com.tencent.rss.storage.handler.impl.HdfsShuffleDeleteHandler;
 import com.tencent.rss.storage.handler.impl.LocalFileDeleteHandler;
 import com.tencent.rss.storage.handler.impl.LocalFileQuorumClientReadHandler;
-import com.tencent.rss.storage.handler.impl.LocalFileServerReadHandler;
 import com.tencent.rss.storage.handler.impl.MemoryQuorumClientReadHandler;
 import com.tencent.rss.storage.handler.impl.UploadedHdfsClientReadHandler;
 import com.tencent.rss.storage.request.CreateShuffleDeleteHandlerRequest;
 import com.tencent.rss.storage.request.CreateShuffleReadHandlerRequest;
-import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import com.tencent.rss.storage.util.StorageType;
 
 public class ShuffleHandlerFactory {
@@ -237,21 +234,6 @@ public class ShuffleHandlerFactory {
     } else {
       throw new UnsupportedOperationException(
           "Doesn't support storage type for client read handler:" + request.getStorageType());
-    }
-  }
-
-  public ServerReadHandler createServerReadHandler(CreateShuffleReadHandlerRequest request) {
-    if (ShuffleStorageUtils.containsLocalFile(request.getStorageType())) {
-      return new LocalFileServerReadHandler(
-          request.getAppId(),
-          request.getShuffleId(),
-          request.getPartitionId(),
-          request.getPartitionNumPerRange(),
-          request.getPartitionNum(),
-          request.getRssBaseConf());
-    } else {
-      throw new UnsupportedOperationException(
-          "Doesn't support storage type for server read handler:" + request.getStorageType());
     }
   }
 

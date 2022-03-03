@@ -1,5 +1,3 @@
-package com.tencent.rss.server.storage;
-
 /*
  * Tencent is pleased to support the open source community by making
  * Firestorm-Spark remote shuffle server available.
@@ -18,12 +16,15 @@ package com.tencent.rss.server.storage;
  * specific language governing permissions and limitations under the License.
  */
 
+package com.tencent.rss.server.storage;
+
 import com.google.common.collect.Lists;
 import com.tencent.rss.common.ShufflePartitionedBlock;
 import com.tencent.rss.server.ShuffleDataFlushEvent;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.storage.common.HdfsStorage;
 import com.tencent.rss.storage.common.LocalStorage;
+import com.tencent.rss.storage.util.StorageType;
 import org.junit.Test;
 
 import java.util.List;
@@ -38,6 +39,7 @@ public class MultiStorageManagerTest {
     conf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 2000L);
     conf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, "test");
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
     MultiStorageManager manager = new MultiStorageManager(conf, "test");
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, null));
     ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(

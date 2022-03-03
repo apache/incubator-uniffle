@@ -33,8 +33,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.common.util.RssUtils;
+import com.tencent.rss.storage.handler.api.ServerReadHandler;
 import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
+import com.tencent.rss.storage.handler.impl.LocalFileServerReadHandler;
 import com.tencent.rss.storage.handler.impl.LocalFileWriteHandler;
+import com.tencent.rss.storage.request.CreateShuffleReadHandlerRequest;
 import com.tencent.rss.storage.request.CreateShuffleWriteHandlerRequest;
 
 public class LocalStorage extends AbstractStorage {
@@ -51,7 +54,9 @@ public class LocalStorage extends AbstractStorage {
   private final Queue<String> expiredShuffleKeys = Queues.newLinkedBlockingQueue();
 
   private LocalStorageMeta metaData = new LocalStorageMeta();
-  private boolean canWrite = true;
+  private boolean isSpaceEnough = true;
+  private volatile boolean isCorrupted = false;
+
 
   private LocalStorage(Builder builder) {
     this.basePath = builder.basePath;
@@ -142,13 +147,24 @@ public class LocalStorage extends AbstractStorage {
   }
 
   @Override
+  protected ServerReadHandler newReadHandler(CreateShuffleReadHandlerRequest request) {
+    return new LocalFileServerReadHandler(
+        request.getAppId(),
+        request.getShuffleId(),
+        request.getPartitionId(),
+        request.getPartitionNumPerRange(),
+        request.getPartitionNum(),
+        basePath);
+  }
+
+  @Override
   public boolean canWrite() {
-    if (canWrite) {
-      canWrite = metaData.getDiskSize().doubleValue() * 100 / capacity < highWaterMarkOfWrite;
+    if (isSpaceEnough) {
+      isSpaceEnough = metaData.getDiskSize().doubleValue() * 100 / capacity < highWaterMarkOfWrite;
     } else {
-      canWrite = metaData.getDiskSize().doubleValue() * 100 / capacity < lowWaterMarkOfWrite;
+      isSpaceEnough = metaData.getDiskSize().doubleValue() * 100 / capacity < lowWaterMarkOfWrite;
     }
-    return canWrite;
+    return isSpaceEnough && !isCorrupted;
   }
 
   public String getBasePath() {
@@ -272,6 +288,14 @@ public class LocalStorage extends AbstractStorage {
 
   public Queue<String> getExpiredShuffleKeys() {
     return expiredShuffleKeys;
+  }
+
+  public boolean isCorrupted() {
+    return isCorrupted;
+  }
+
+  public void markCorrupted() {
+    isCorrupted = true;
   }
 
   public static class Builder {

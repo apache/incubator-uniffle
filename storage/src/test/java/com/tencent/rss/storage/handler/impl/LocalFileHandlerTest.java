@@ -86,9 +86,9 @@ public class LocalFileHandlerTest {
     RssBaseConf conf = new RssBaseConf();
     conf.setString("rss.storage.basePath", dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath());
     LocalFileServerReadHandler readHandler1 = new LocalFileServerReadHandler(
-        "appId", 0, 1, 1, 10, conf);
+        "appId", 0, 1, 1, 10, dataDir1.getAbsolutePath());
     LocalFileServerReadHandler readHandler2 = new LocalFileServerReadHandler(
-        "appId", 0, 2, 1, 10, conf);
+        "appId", 0, 2, 1, 10, dataDir1.getAbsolutePath());
 
     validateResult(readHandler1, expectedBlockIds1, expectedData);
     validateResult(readHandler2, expectedBlockIds2, expectedData);

@@ -53,8 +53,6 @@ import com.tencent.rss.server.buffer.ShuffleBufferManager;
 import com.tencent.rss.server.storage.StorageManager;
 import com.tencent.rss.storage.common.Storage;
 import com.tencent.rss.storage.common.StorageReadMetrics;
-import com.tencent.rss.storage.factory.ShuffleHandlerFactory;
-import com.tencent.rss.storage.handler.api.ServerReadHandler;
 import com.tencent.rss.storage.request.CreateShuffleReadHandlerRequest;
 
 public class ShuffleTaskManager {
@@ -86,7 +84,6 @@ public class ShuffleTaskManager {
   private Runnable clearResourceThread;
   private BlockingQueue<String> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
   // appId -> shuffleId -> serverReadHandler
-  private Map<String, Map<String, ServerReadHandler>> serverReadHandlers = Maps.newConcurrentMap();
 
   public ShuffleTaskManager(
       ShuffleServerConf conf,
@@ -338,15 +335,9 @@ public class ShuffleTaskManager {
     request.setPartitionNum(partitionNum);
     request.setStorageType(storageType);
     request.setRssBaseConf(conf);
+    Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId));
 
-    serverReadHandlers.putIfAbsent(appId, Maps.newConcurrentMap());
-    Map<String, ServerReadHandler> handlerMap = serverReadHandlers.get(appId);
-    String key = "" + request.getShuffleId() + "_" + partitionId;
-    if (!handlerMap.containsKey(key)) {
-      handlerMap.putIfAbsent(key, ShuffleHandlerFactory
-          .getInstance().createServerReadHandler(request));
-    }
-    return handlerMap.get(key).getShuffleData(offset, length);
+    return storage.getOrCreateReadHandler(request).getShuffleData(offset, length);
   }
 
   public ShuffleIndexResult getShuffleIndex(
@@ -366,14 +357,8 @@ public class ShuffleTaskManager {
     request.setStorageType(storageType);
     request.setRssBaseConf(conf);
 
-    serverReadHandlers.putIfAbsent(appId, Maps.newConcurrentMap());
-    Map<String, ServerReadHandler> handlerMap = serverReadHandlers.get(appId);
-    String key = "" + request.getShuffleId() + "_" + partitionId;
-    if (!handlerMap.containsKey(key)) {
-      handlerMap.putIfAbsent(key, ShuffleHandlerFactory
-          .getInstance().createServerReadHandler(request));
-    }
-    return handlerMap.get(key).getShuffleIndex();
+    Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId));
+    return storage.getOrCreateReadHandler(request).getShuffleIndex();
   }
 
   public void checkResourceStatus() {
@@ -399,7 +384,6 @@ public class ShuffleTaskManager {
     final long start = System.currentTimeMillis();
     final Map<Integer, Roaring64NavigableMap> shuffleToCachedBlockIds = cachedBlockIds.get(appId);
     appIds.remove(appId);
-    serverReadHandlers.remove(appId);
     partitionsToBlockIds.remove(appId);
     cachedBlockIds.remove(appId);
     commitCounts.remove(appId);
@@ -452,11 +436,6 @@ public class ShuffleTaskManager {
   @VisibleForTesting
   Map<Long, PreAllocatedBufferInfo> getRequireBufferIds() {
     return requireBufferIds;
-  }
-
-  @VisibleForTesting
-  public Map<String, Map<String, ServerReadHandler>> getServerReadHandlers() {
-    return serverReadHandlers;
   }
 
   @VisibleForTesting
