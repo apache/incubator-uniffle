@@ -23,14 +23,14 @@
   <parent>
     <artifactId>rss-main</artifactId>
     <groupId>com.tencent.rss</groupId>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.tencent.rss</groupId>
   <artifactId>rss-integration-spark-common-test</artifactId>
-  <version>0.2.0</version>
+  <version>0.3.0</version>
   <packaging>jar</packaging>
 
   <dependencies>

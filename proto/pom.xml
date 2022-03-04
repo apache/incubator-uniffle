@@ -22,7 +22,7 @@
   <parent>
     <artifactId>rss-main</artifactId>
     <groupId>com.tencent.rss</groupId>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
   </parent>
 
   <artifactId>rss-proto</artifactId>
