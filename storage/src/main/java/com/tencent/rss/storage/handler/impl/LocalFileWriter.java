@@ -30,21 +30,19 @@ public class LocalFileWriter implements Closeable {
 
   private DataOutputStream dataOutputStream;
   private FileOutputStream fileOutputStream;
-  private long initSize;
   private long nextOffset;
 
   public LocalFileWriter(File file) throws IOException {
     fileOutputStream = new FileOutputStream(file, true);
     // init fsDataOutputStream
     dataOutputStream = new DataOutputStream(fileOutputStream);
-    initSize = file.length();
-    nextOffset = initSize;
+    nextOffset = file.length();
   }
 
   public void writeData(byte[] data) throws IOException {
     if (data != null && data.length > 0) {
       dataOutputStream.write(data);
-      nextOffset = initSize + dataOutputStream.size();
+      nextOffset = nextOffset + data.length;
     }
   }
 
