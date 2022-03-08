@@ -39,6 +39,7 @@ import com.tencent.rss.storage.handler.api.ServerReadHandler;
 import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
 import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -53,6 +54,7 @@ public class LocalFileHandlerTest {
   @Test
   public void writeTest() throws Exception {
     File tmpDir = Files.createTempDir();
+    tmpDir.deleteOnExit();
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
     String[] basePaths = new String[]{dataDir1.getAbsolutePath(),
@@ -109,6 +111,21 @@ public class LocalFileHandlerTest {
       assertEquals(0, shuffleData.getData().length);
       assertTrue(shuffleData.isEmpty());
     }
+  }
+
+  @Test
+  public void writeBigDataTest() throws IOException  {
+    File tmpDir = Files.createTempDir();
+    tmpDir.deleteOnExit();
+    File writeFile = new File(tmpDir, "writetest");
+    LocalFileWriter writer = new LocalFileWriter(writeFile);
+    int  size = Integer.MAX_VALUE / 100;
+    byte[] data = new byte[size];
+    for (int i = 0; i < 200; i++) {
+      writer.writeData(data);
+    }
+    long totalSize = 200L * size;
+    assertEquals(writer.nextOffset(), totalSize);
   }
 
 
