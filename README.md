@@ -192,3 +192,8 @@ Firestorm is under the Apache License Version 2.0. See the [LICENSE](https://git
 
 ## Contributing
 For more information about contributing issues or pull requests, see [Firestorm Contributing Guide](https://github.com/Tencent/Firestorm/blob/master/CONTRIBUTING.md).
+
+## Support 
+We provide free support for users using this project. If you want to join user wechat group for further help and collaboration. You can scan the following QR code or search wechatID `xinghuojihua_01`, add our assistant on wechat, and remark `Firestorm`. The assistant will help you join our wechat group.
+
+![Wechat](docs/asset/wechat.png)
