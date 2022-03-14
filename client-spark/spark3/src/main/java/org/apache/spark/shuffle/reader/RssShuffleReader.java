@@ -201,6 +201,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       iterator = iterators.iterator();
       if (iterator.hasNext()) {
         dataIterator = iterator.next();
+        iterator.remove();
       }
     }
 
@@ -214,6 +215,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
           return false;
         }
         dataIterator = iterator.next();
+        iterator.remove();
       }
       return dataIterator.hasNext();
     }

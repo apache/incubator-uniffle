@@ -303,7 +303,7 @@ public class RssShuffleManager implements ShuffleManager {
       endMapIndex);
     LOG.info("Get taskId cost " + (System.currentTimeMillis() - start) + " ms, and request expected blockIds from "
       + taskIdBitmap.getLongCardinality() + " tasks for shuffleId[" + handle.shuffleId() + "], partitionId["
-      + startPartition + "]");
+      + startPartition + ", " + endPartition + "]");
     return getReaderImpl(handle, startMapIndex, endMapIndex, startPartition, endPartition,
         context, metrics, taskIdBitmap);
   }
@@ -326,7 +326,7 @@ public class RssShuffleManager implements ShuffleManager {
       endMapIndex);
     LOG.info("Get taskId cost " + (System.currentTimeMillis() - start) + " ms, and request expected blockIds from "
       + taskIdBitmap.getLongCardinality() + " tasks for shuffleId[" + handle.shuffleId() + "], partitionId["
-      + startPartition + "]");
+      + startPartition + ", " + endPartition + "]");
     return getReaderImpl(handle, startMapIndex, endMapIndex, startPartition, endPartition,
         context, metrics, taskIdBitmap);
   }
@@ -366,7 +366,7 @@ public class RssShuffleManager implements ShuffleManager {
       partitionToExpectBlocks.put(partition, blockIdBitmap);
       LOG.info("Get shuffle blockId cost " + (System.currentTimeMillis() - start) + " ms, and get "
           + blockIdBitmap.getLongCardinality() + " blockIds for shuffleId[" + shuffleId + "], partitionId["
-          + startPartition + "]");
+          + partition + "]");
     }
 
     ShuffleReadMetrics readMetrics;
