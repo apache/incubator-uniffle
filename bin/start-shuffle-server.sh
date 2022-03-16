@@ -83,7 +83,7 @@ JVM_ARGS=" -server \
           -XX:+PrintGCDateStamps \
           -XX:+PrintGCTimeStamps \
           -XX:+PrintGCDetails \
-          -Xloggc:./logs/gc.log"
+          -Xloggc:./logs/gc-%t.log"
 
 ARGS=""
 if [ -f ./conf/log4j.properties ]; then
