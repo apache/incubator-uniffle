@@ -21,6 +21,7 @@ package com.tencent.rss.test;
 import com.google.common.collect.Lists;
 import com.tencent.rss.coordinator.CoordinatorConf;
 import com.tencent.rss.coordinator.CoordinatorServer;
+import com.tencent.rss.server.MockedShuffleServer;
 import com.tencent.rss.server.ShuffleServer;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.storage.HdfsTestBase;
@@ -98,6 +99,10 @@ abstract public class IntegrationTestBase extends HdfsTestBase {
 
   protected static void createShuffleServer(ShuffleServerConf serverConf) throws Exception {
     shuffleServers.add(new ShuffleServer(serverConf));
+  }
+
+  protected static void createMockedShuffleServer(ShuffleServerConf serverConf) throws Exception {
+    shuffleServers.add(new MockedShuffleServer(serverConf));
   }
 
   protected static void createAndStartServers(

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.prometheus.client.CollectorRegistry;
@@ -155,8 +156,7 @@ public class ShuffleServer {
     shuffleTaskManager = new ShuffleTaskManager(shuffleServerConf, shuffleFlushManager,
         shuffleBufferManager, storageManager);
 
-    ShuffleServerFactory shuffleServerFactory = new ShuffleServerFactory(this);
-    server = shuffleServerFactory.getServer();
+    setServer();
 
     // it's the system tag for server's version
     tags.add(Constants.SHUFFLE_SERVER_VERSION);
@@ -218,6 +218,12 @@ public class ShuffleServer {
 
   public ServerInterface getServer() {
     return server;
+  }
+
+  @VisibleForTesting
+  public void setServer() {
+    ShuffleServerFactory shuffleServerFactory = new ShuffleServerFactory(this);
+    server = shuffleServerFactory.getServer();
   }
 
   public void setServer(ServerInterface server) {

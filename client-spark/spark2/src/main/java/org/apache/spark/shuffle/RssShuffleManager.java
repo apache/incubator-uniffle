@@ -60,6 +60,7 @@ import com.tencent.rss.common.ShuffleAssignmentsInfo;
 import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.util.Constants;
+import com.tencent.rss.common.util.RssUtils;
 
 public class RssShuffleManager implements ShuffleManager {
 
@@ -74,6 +75,9 @@ public class RssShuffleManager implements ShuffleManager {
   private Map<String, Set<Long>> taskToSuccessBlockIds = Maps.newConcurrentMap();
   private Map<String, Set<Long>> taskToFailedBlockIds = Maps.newConcurrentMap();
   private Map<String, WriteBufferManager> taskToBufferManager = Maps.newConcurrentMap();
+  private final int dataReplica;
+  private final int dataReplicaWrite;
+  private final int dataReplicaRead;
   private boolean heartbeatStarted = false;
   private ThreadPoolExecutor threadPoolExecutor;
   private EventLoop eventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
@@ -123,6 +127,18 @@ public class RssShuffleManager implements ShuffleManager {
 
   public RssShuffleManager(SparkConf sparkConf, boolean isDriver) {
     this.sparkConf = sparkConf;
+
+    // set & check replica config
+    this.dataReplica = sparkConf.getInt(RssClientConfig.RSS_DATA_REPLICA,
+      RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
+    this.dataReplicaWrite =  sparkConf.getInt(RssClientConfig.RSS_DATA_REPLICA_WRITE,
+      RssClientConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE);
+    this.dataReplicaRead =  sparkConf.getInt(RssClientConfig.RSS_DATA_REPLICA_READ,
+      RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE);
+    LOG.info("Check quorum config ["
+      + dataReplica + ":" + dataReplicaWrite + ":" + dataReplicaRead + "]");
+    RssUtils.checkQuorumSetting(dataReplica, dataReplicaWrite, dataReplicaRead);
+
     this.clientType = sparkConf.get(RssClientConfig.RSS_CLIENT_TYPE,
         RssClientConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
     this.heartbeatInterval = sparkConf.getLong(RssClientConfig.RSS_HEARTBEAT_INTERVAL,
@@ -136,7 +152,8 @@ public class RssShuffleManager implements ShuffleManager {
         RssClientConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM_DEFAULT_VALUE);
     shuffleWriteClient = ShuffleClientFactory
         .getInstance()
-        .createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum);
+        .createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum,
+          dataReplica, dataReplicaWrite, dataReplicaRead);
     registerCoordinator();
     // fetch client conf and apply them if necessary and disable ESS
     if (isDriver && sparkConf.getBoolean(
@@ -184,12 +201,11 @@ public class RssShuffleManager implements ShuffleManager {
 
     int partitionNumPerRange = sparkConf.getInt(RssClientConfig.RSS_PARTITION_NUM_PER_RANGE,
         RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
-    int dataReplica = sparkConf.getInt(RssClientConfig.RSS_DATA_REPLICA,
-        RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
+
     // get all register info according to coordinator's response
     ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
         appId, shuffleId, dependency.partitioner().numPartitions(),
-        partitionNumPerRange, dataReplica, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+        partitionNumPerRange, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = response.getPartitionToServers();
 
     startHeartbeat();

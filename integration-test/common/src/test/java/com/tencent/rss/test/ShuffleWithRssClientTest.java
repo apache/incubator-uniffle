@@ -85,7 +85,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
 
   @Before
   public void createClient() {
-    shuffleWriteClientImpl = new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1);
+    shuffleWriteClientImpl = new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1,
+      1, 1, 1);
   }
 
   @After
@@ -116,24 +117,25 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     for (Long blockId : result.getSuccessBlockIds()) {
       succBlockIdBitmap.addLong(blockId);
     }
-    assertEquals(blockIdBitmap, failedBlockIdBitmap);
+    // There will no failed blocks when replica=2
+    assertEquals(failedBlockIdBitmap.getLongCardinality(), 0);
     assertEquals(blockIdBitmap, succBlockIdBitmap);
 
     boolean commitResult = shuffleWriteClientImpl.sendCommit(Sets.newHashSet(
         shuffleServerInfo1, fakeShuffleServerInfo), testAppId, 0, 2);
     assertFalse(commitResult);
 
+    // Report will success when replica=2
     Map<Integer, List<Long>> ptb = Maps.newHashMap();
-    ptb.put(1, Lists.newArrayList(1L));
-    try {
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
-      partitionToServers.put(1, Lists.newArrayList(
-          shuffleServerInfo1, fakeShuffleServerInfo));
-      shuffleWriteClientImpl.reportShuffleResult(partitionToServers, testAppId, 0, 0, ptb, 2);
-      fail(EXPECTED_EXCEPTION_MESSAGE);
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("Report shuffle result is failed for"));
-    }
+    ptb.put(0, Lists.newArrayList(blockIdBitmap.stream().iterator()));
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
+    partitionToServers.put(0, Lists.newArrayList(
+        shuffleServerInfo1, fakeShuffleServerInfo));
+    shuffleWriteClientImpl.reportShuffleResult(partitionToServers, testAppId, 0, 0, ptb, 2);
+    Roaring64NavigableMap report = shuffleWriteClientImpl.getShuffleResult("GRPC",
+      Sets.newHashSet(shuffleServerInfo1, fakeShuffleServerInfo),
+      testAppId, 0, 0);
+    assertEquals(blockIdBitmap, report);
   }
 
   @Test

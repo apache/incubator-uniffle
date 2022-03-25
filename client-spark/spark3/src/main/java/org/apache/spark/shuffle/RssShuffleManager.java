@@ -63,6 +63,7 @@ import com.tencent.rss.common.ShuffleAssignmentsInfo;
 import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.util.Constants;
+import com.tencent.rss.common.util.RssUtils;
 
 public class RssShuffleManager implements ShuffleManager {
 
@@ -73,7 +74,9 @@ public class RssShuffleManager implements ShuffleManager {
   private final ThreadPoolExecutor threadPoolExecutor;
   private AtomicReference<String> id = new AtomicReference<>();
   private SparkConf sparkConf;
-  private int dataReplica;
+  private final int dataReplica;
+  private final int dataReplicaWrite;
+  private final int dataReplicaRead;
   private ShuffleWriteClient shuffleWriteClient;
   private final Map<String, Set<Long>> taskToSuccessBlockIds;
   private final Map<String, Set<Long>> taskToFailedBlockIds;
@@ -125,6 +128,18 @@ public class RssShuffleManager implements ShuffleManager {
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
+
+    // set & check replica config
+    this.dataReplica = sparkConf.getInt(RssClientConfig.RSS_DATA_REPLICA,
+      RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
+    this.dataReplicaWrite =  sparkConf.getInt(RssClientConfig.RSS_DATA_REPLICA_WRITE,
+      RssClientConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE);
+    this.dataReplicaRead =  sparkConf.getInt(RssClientConfig.RSS_DATA_REPLICA_READ,
+      RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE);
+    LOG.info("Check quorum config ["
+      + dataReplica + ":" + dataReplicaWrite + ":" + dataReplicaRead + "]");
+    RssUtils.checkQuorumSetting(dataReplica, dataReplicaWrite, dataReplicaRead);
+
     this.heartbeatInterval = sparkConf.getLong(RssClientConfig.RSS_HEARTBEAT_INTERVAL,
         RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
     this.heartbeatTimeout = sparkConf.getLong(RssClientConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
@@ -132,15 +147,15 @@ public class RssShuffleManager implements ShuffleManager {
         RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
     this.clientType = sparkConf.get(RssClientConfig.RSS_CLIENT_TYPE,
         RssClientConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
-    dataReplica = sparkConf.getInt(RssClientConfig.RSS_DATA_REPLICA,
-        RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
+
     long retryIntervalMax = sparkConf.getLong(RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
         RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
     int heartBeatThreadNum = sparkConf.getInt(RssClientConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM,
         RssClientConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM_DEFAULT_VALUE);
     shuffleWriteClient = ShuffleClientFactory
         .getInstance()
-        .createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum);
+        .createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum,
+          dataReplica, dataReplicaWrite, dataReplicaRead);
     registerCoordinator();
     // fetch client conf and apply them if necessary and disable ESS
     if (isDriver && sparkConf.getBoolean(
@@ -184,17 +199,26 @@ public class RssShuffleManager implements ShuffleManager {
     this.heartbeatInterval = sparkConf.getLong(RssClientConfig.RSS_HEARTBEAT_INTERVAL,
         RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
     this.heartbeatTimeout = sparkConf.getLong(RssClientConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
-    int retryMax = sparkConf.getInt(RssClientConfig.RSS_CLIENT_RETRY_MAX,
-        RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
-    long retryIntervalMax = sparkConf.getLong(RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
-        RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
-    int heartBeatThreadNum = sparkConf.getInt(RssClientConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM,
-        RssClientConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM_DEFAULT_VALUE);
-    dataReplica = sparkConf.getInt(RssClientConfig.RSS_DATA_REPLICA,
+    this.dataReplica = sparkConf.getInt(RssClientConfig.RSS_DATA_REPLICA,
         RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
-    shuffleWriteClient = ShuffleClientFactory
+    this.dataReplicaWrite =  sparkConf.getInt(RssClientConfig.RSS_DATA_REPLICA_WRITE,
+      RssClientConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE);
+    this.dataReplicaRead =  sparkConf.getInt(RssClientConfig.RSS_DATA_REPLICA_READ,
+      RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE);
+    LOG.info("Check quorum config ["
+      + dataReplica + ":" + dataReplicaWrite + ":" + dataReplicaRead + "]");
+    RssUtils.checkQuorumSetting(dataReplica, dataReplicaWrite, dataReplicaRead);
+
+    int retryMax = sparkConf.getInt(RssClientConfig.RSS_CLIENT_RETRY_MAX,
+      RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
+    long retryIntervalMax = sparkConf.getLong(RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
+      RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
+    int heartBeatThreadNum = sparkConf.getInt(RssClientConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM,
+      RssClientConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM_DEFAULT_VALUE);
+     shuffleWriteClient = ShuffleClientFactory
         .getInstance()
-        .createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum);
+        .createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum,
+          dataReplica, dataReplicaWrite, dataReplicaRead);
     this.taskToSuccessBlockIds = taskToSuccessBlockIds;
     this.taskToFailedBlockIds = taskToFailedBlockIds;
     if (loop != null) {
@@ -225,7 +249,6 @@ public class RssShuffleManager implements ShuffleManager {
         shuffleId,
         dependency.partitioner().numPartitions(),
         1,
-        dataReplica,
         Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = response.getPartitionToServers();
 

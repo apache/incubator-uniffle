@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import org.slf4j.Logger;
@@ -90,6 +91,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerGrpcClient.class);
   private static final long FAILED_REQUIRE_ID = -1;
   private static final long RPC_TIMEOUT_DEFAULT_MS = 60000;
+  private long rpcTimeout = RPC_TIMEOUT_DEFAULT_MS;
   private ShuffleServerBlockingStub blockingStub;
 
   public ShuffleServerGrpcClient(String host, int port) {
@@ -267,7 +269,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     while (retryNum < maxRetryAttempts) {
       try {
         SendShuffleDataResponse response = blockingStub.withDeadlineAfter(
-            RPC_TIMEOUT_DEFAULT_MS, TimeUnit.MILLISECONDS).sendShuffleData(rpcRequest);
+            rpcTimeout, TimeUnit.MILLISECONDS).sendShuffleData(rpcRequest);
         return response;
       } catch (Exception e) {
         retryNum++;
@@ -373,7 +375,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     while (retryNum < maxRetryAttempts) {
       try {
         ReportShuffleResultResponse response = blockingStub.withDeadlineAfter(
-            RPC_TIMEOUT_DEFAULT_MS, TimeUnit.MILLISECONDS).reportShuffleResult(rpcRequest);
+            rpcTimeout, TimeUnit.MILLISECONDS).reportShuffleResult(rpcRequest);
         return response;
       } catch (Exception e) {
         retryNum++;
@@ -392,7 +394,9 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setShuffleId(request.getShuffleId())
         .setPartitionId(request.getPartitionId())
         .build();
-    GetShuffleResultResponse rpcResponse = blockingStub.getShuffleResult(rpcRequest);
+    GetShuffleResultResponse rpcResponse = blockingStub
+      .withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS)
+      .getShuffleResult(rpcRequest);
     StatusCode statusCode = rpcResponse.getStatus();
 
     RssGetShuffleResultResponse response;
@@ -546,5 +550,10 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
           sdbs.getUncompressLength(), sdbs.getCrc(), sdbs.getTaskAttemptId()));
     }
     return ret;
+  }
+
+  @VisibleForTesting
+  public void adjustTimeout(long timeout) {
+    rpcTimeout = timeout;
   }
 }

@@ -240,4 +240,13 @@ public class RssUtils {
     }
     return extensions;
   }
+
+  public static void checkQuorumSetting(int replica, int replicaWrite, int replicaRead) {
+    if (replica < 1 || replicaWrite > replica || replicaRead > replica) {
+      throw new RuntimeException("Replica config is invalid, recommend replica.write + replica.read > replica");
+    }
+    if (replicaWrite + replicaRead <= replica) {
+      throw new RuntimeException("Replica config is unsafe, recommend replica.write + replica.read > replica");
+    }
+  }
 }

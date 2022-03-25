@@ -73,6 +73,10 @@ public class RssClientConfig {
   public static int RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE_DEFAULT_VALUE = 60;
   public static String RSS_DATA_REPLICA = "spark.rss.data.replica";
   public static int RSS_DATA_REPLICA_DEFAULT_VALUE = 1;
+  public static String RSS_DATA_REPLICA_WRITE = "spark.rss.data.replica.write";
+  public static int RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE = 1;
+  public static String RSS_DATA_REPLICA_READ = "spark.rss.data.replica.read";
+  public static int RSS_DATA_REPLICA_READ_DEFAULT_VALUE = 1;
   public static String RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE = "spark.rss.ozone.dfs.namenode.odfs.enable";
   public static boolean RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE_DEFAULT_VALUE = false;
   public static String RSS_OZONE_FS_HDFS_IMPL = "spark.rss.ozone.fs.hdfs.impl";
