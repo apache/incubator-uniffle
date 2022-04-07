@@ -24,7 +24,7 @@
 
   <groupId>com.tencent.rss</groupId>
   <artifactId>rss-main</artifactId>
-  <version>0.3.0</version>
+  <version>0.4.0</version>
   <packaging>pom</packaging>
   <name>Remote Shuffle Service Project Parent POM</name>
   <description>Remote Shuffle Service Project</description>

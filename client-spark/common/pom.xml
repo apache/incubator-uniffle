@@ -25,12 +25,12 @@
     <parent>
         <artifactId>rss-main</artifactId>
         <groupId>com.tencent.rss</groupId>
-        <version>0.3.0</version>
+        <version>0.4.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>rss-client-spark-common</artifactId>
-    <version>0.3.0</version>
+    <version>0.4.0</version>
     <packaging>jar</packaging>
 
     <dependencies>
