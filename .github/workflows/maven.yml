@@ -55,3 +55,11 @@ jobs:
       with:
         name: test-results-of-rss-spark3
         path: "**/target/surefire-reports/*.txt"
+    - name: Build with Maven with Profile mr
+      run: mvn -B package --file pom.xml -Pmr
+    - name: Upload mr test results to report
+      if: failure()
+      uses: actions/upload-artifact@v2
+      with:
+        name: test-results-of-rss-mr
+        path: "**/target/surefire-reports/*.txt"
