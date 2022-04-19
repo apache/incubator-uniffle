@@ -301,8 +301,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       long taskAttemptId,
       Map<Integer, List<Long>> partitionToBlockIds,
       int bitmapNum) {
-    boolean isSuccessful = true;
     Map<ShuffleServerInfo, List<Integer>> groupedPartitions = Maps.newConcurrentMap();
+    Map<Integer, Integer> partitionReportTracker = Maps.newConcurrentMap();
     for (Map.Entry<Integer, List<ShuffleServerInfo>> entry : partitionToServers.entrySet()) {
       for (ShuffleServerInfo ssi : entry.getValue()) {
         if (!groupedPartitions.containsKey(ssi)) {
@@ -310,8 +310,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         }
         groupedPartitions.get(ssi).add(entry.getKey());
       }
+      partitionReportTracker.putIfAbsent(entry.getKey(), 0);
     }
-    int successCnt = 0;
     for (Map.Entry<ShuffleServerInfo, List<Integer>> entry : groupedPartitions.entrySet()) {
       Map<Integer, List<Long>> requestBlockIds = Maps.newHashMap();
       for (Integer partitionId : entry.getValue()) {
@@ -325,7 +325,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
           LOG.info("Report shuffle result to " + ssi + " for appId[" + appId
               + "], shuffleId[" + shuffleId + "] successfully");
-          successCnt++;
+          for (Integer partitionId : entry.getValue()) {
+            partitionReportTracker.put(partitionId, partitionReportTracker.get(partitionId) + 1);
+          }
         } else {
           LOG.warn("Report shuffle result to " + ssi + " for appId[" + appId
               + "], shuffleId[" + shuffleId + "] failed with " + response.getStatusCode());
@@ -335,9 +337,12 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             + " for appId[" + appId + "], shuffleId[" + shuffleId + "]");
       }
     }
-    if (successCnt < replicaWrite) {
-      throw new RssException("Report shuffle result is failed for appId["
+    // quorum check
+    for (Map.Entry<Integer, Integer> entry: partitionReportTracker.entrySet()) {
+      if (entry.getValue() < replicaWrite) {
+        throw new RssException("Quorum check of report shuffle result is failed for appId["
           + appId + "], shuffleId[" + shuffleId + "]");
+      }
     }
   }
 

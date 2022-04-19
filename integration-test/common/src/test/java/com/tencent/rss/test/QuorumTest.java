@@ -58,11 +58,12 @@ public class QuorumTest extends ShuffleReadWriteBase {
   private static ShuffleServerInfo shuffleServerInfo0;
   private static ShuffleServerInfo shuffleServerInfo1;
   private static ShuffleServerInfo shuffleServerInfo2;
+  private static ShuffleServerInfo shuffleServerInfo3;
+  private static ShuffleServerInfo shuffleServerInfo4;
   private static ShuffleServerInfo fakedShuffleServerInfo0;
   private static ShuffleServerInfo fakedShuffleServerInfo1;
   private static ShuffleServerInfo fakedShuffleServerInfo2;
   private ShuffleWriteClientImpl shuffleWriteClientImpl;
-
 
   public static MockedShuffleServer createServer(int id) throws Exception {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
@@ -94,13 +95,19 @@ public class QuorumTest extends ShuffleReadWriteBase {
     shuffleServers.add(createServer(0));
     shuffleServers.add(createServer(1));
     shuffleServers.add(createServer(2));
+    shuffleServers.add(createServer(3));
+    shuffleServers.add(createServer(4));
 
     shuffleServerInfo0 =
-      new ShuffleServerInfo("127.0.0.1-20001", shuffleServers.get(0).getIp(), SHUFFLE_SERVER_PORT);
+      new ShuffleServerInfo("127.0.0.1-20001", shuffleServers.get(0).getIp(), SHUFFLE_SERVER_PORT + 0);
     shuffleServerInfo1 =
       new ShuffleServerInfo("127.0.0.1-20002", shuffleServers.get(1).getIp(), SHUFFLE_SERVER_PORT + 1);
     shuffleServerInfo2 =
-      new ShuffleServerInfo("127.0.0.1-20003", shuffleServers.get(1).getIp(), SHUFFLE_SERVER_PORT + 2);
+      new ShuffleServerInfo("127.0.0.1-20003", shuffleServers.get(2).getIp(), SHUFFLE_SERVER_PORT + 2);
+    shuffleServerInfo3 =
+      new ShuffleServerInfo("127.0.0.1-20004", shuffleServers.get(3).getIp(), SHUFFLE_SERVER_PORT + 3);
+    shuffleServerInfo4 =
+      new ShuffleServerInfo("127.0.0.1-20005", shuffleServers.get(4).getIp(), SHUFFLE_SERVER_PORT + 4);
     for (CoordinatorServer coordinator : coordinators) {
       coordinator.start();
     }
@@ -325,7 +332,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
         partitionToBlockIds, 1);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e){
-      assertTrue(e.getMessage().startsWith("Report shuffle result is failed"));
+      assertTrue(e.getMessage().startsWith("Quorum check of report shuffle result is failed"));
     }
     //  get result should also fail
     try {
@@ -479,6 +486,49 @@ public class QuorumTest extends ShuffleReadWriteBase {
       assertTrue(e.getMessage().startsWith("Get shuffle result is failed"));
     }
    }
+
+  @Test
+  public void case6() throws Exception {
+    String testAppId = "case6";
+    registerShuffleServer(testAppId);
+    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Roaring64NavigableMap blockIdBitmap0 = Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap blockIdBitmap1 = Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap blockIdBitmap2 = Roaring64NavigableMap.bitmapOf();
+
+    List<ShuffleBlockInfo> partition0 = createShuffleBlockList(
+     0, 0, 0, 3, 25, blockIdBitmap0,
+     expectedData, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    List<ShuffleBlockInfo> partition1 = createShuffleBlockList(
+     0, 0, 0, 3, 25, blockIdBitmap1,
+     expectedData, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    List<ShuffleBlockInfo> partition2 = createShuffleBlockList(
+     0, 0, 0, 3, 25, blockIdBitmap2,
+     expectedData, Lists.newArrayList(shuffleServerInfo2, shuffleServerInfo3, shuffleServerInfo4));
+
+    // server 0,1,2 are ok, server 3,4 are timout
+    enableTimeout((MockedShuffleServer)shuffleServers.get(3), 100);
+    enableTimeout((MockedShuffleServer)shuffleServers.get(4), 100);
+
+    Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
+    partitionToBlockIds.put(0, Lists.newArrayList(blockIdBitmap0.stream().iterator()));
+    partitionToBlockIds.put(1, Lists.newArrayList(blockIdBitmap1.stream().iterator()));
+    partitionToBlockIds.put(2, Lists.newArrayList(blockIdBitmap2.stream().iterator()));
+
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
+    partitionToServers.put(0, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    partitionToServers.put(1, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    partitionToServers.put(2, Lists.newArrayList(shuffleServerInfo2, shuffleServerInfo3, shuffleServerInfo4));
+
+    // report result should fail because partition2 is failed to report server 3,4
+    try {
+     shuffleWriteClientImpl.reportShuffleResult(partitionToServers, testAppId, 0, 0L,
+       partitionToBlockIds, 1);
+     fail(EXPECTED_EXCEPTION_MESSAGE);
+    } catch (Exception e) {
+     assertTrue(e.getMessage().startsWith("Quorum check of report shuffle result is failed"));
+    }
+  }
 
   protected void validateResult(ShuffleReadClientImpl readClient, Map<Long, byte[]> expectedData,
                                 Roaring64NavigableMap blockIdBitmap) {
