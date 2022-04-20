@@ -134,11 +134,11 @@ public class QuorumTest extends ShuffleReadWriteBase {
     // spark.rss.data.replica.write=2
     // spark.rss.data.replica.read=2
     ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo0)).adjustTimeout(10);
+      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo0)).adjustTimeout(100);
     ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo1)).adjustTimeout(10);
+      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo1)).adjustTimeout(100);
     ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(10);
+      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(100);
   }
 
   @After
@@ -264,7 +264,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
 
     // only 1 server is timout, the block sending should success
-    enableTimeout((MockedShuffleServer)shuffleServers.get(2), 100);
+    enableTimeout((MockedShuffleServer)shuffleServers.get(2), 500);
 
     List<ShuffleBlockInfo> blocks = createShuffleBlockList(
       0, 0, 0, 3, 25, blockIdBitmap,
@@ -308,8 +308,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     // When 2 servers are timeout, the block sending should fail
-    enableTimeout((MockedShuffleServer)shuffleServers.get(1), 100);
-    enableTimeout((MockedShuffleServer)shuffleServers.get(2), 100);
+    enableTimeout((MockedShuffleServer)shuffleServers.get(1), 500);
+    enableTimeout((MockedShuffleServer)shuffleServers.get(2), 500);
 
     List<ShuffleBlockInfo> blocks = createShuffleBlockList(
       0, 0, 0, 3, 25, blockIdBitmap,
@@ -354,7 +354,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     disableTimeout((MockedShuffleServer)shuffleServers.get(2));
 
     // When 1 server is timeout and 1 server is failed after sending, the block sending should fail
-    enableTimeout((MockedShuffleServer)shuffleServers.get(2), 100);
+    enableTimeout((MockedShuffleServer)shuffleServers.get(2), 500);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -409,7 +409,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     String testAppId = "case4";
     registerShuffleServer(testAppId);
     // when 1 server is timeout, the sending multiple blocks should success
-    enableTimeout((MockedShuffleServer)shuffleServers.get(2), 100);
+    enableTimeout((MockedShuffleServer)shuffleServers.get(2), 500);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -507,8 +507,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
      expectedData, Lists.newArrayList(shuffleServerInfo2, shuffleServerInfo3, shuffleServerInfo4));
 
     // server 0,1,2 are ok, server 3,4 are timout
-    enableTimeout((MockedShuffleServer)shuffleServers.get(3), 100);
-    enableTimeout((MockedShuffleServer)shuffleServers.get(4), 100);
+    enableTimeout((MockedShuffleServer)shuffleServers.get(3), 500);
+    enableTimeout((MockedShuffleServer)shuffleServers.get(4), 500);
 
     Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
     partitionToBlockIds.put(0, Lists.newArrayList(blockIdBitmap0.stream().iterator()));
