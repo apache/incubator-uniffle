@@ -39,4 +39,17 @@ public class RssMRConfig {
   public static final long RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE = 10 * 1000L;
   public static final String RSS_HEARTBEAT_TIMEOUT = "mapreduce.rss.heartbeat.timeout";
   public static final String RSS_ASSIGNMENT_PREFIX = "mapreduce.rss.assignment.partition.";
+  public static final String RSS_CLIENT_BATCH_TRIGGER_NUM = "mapreduce.rss.client.batch.trigger.num";
+  public static final int RSS_CLIENT_DEFAULT_BATCH_TRIGGER_NUM = 50;
+  public static final String RSS_CLIENT_MEMORY_THRESHOLD = "mapreduce.rss.client.memory.threshold";
+  public static final double RSS_CLIENT_DEFAULT_MEMORY_THRESHOLD = 0.8f;
+  public static final String RSS_CLIENT_SEND_CHECK_INTERVAL_MS = "mapreduce.rss.client.send.check.interval.ms";
+  public static final long RSS_CLIENT_DEFAULT_SEND_CHECK_INTERVAL_MS = 500;
+  public static final String RSS_CLIENT_SEND_CHECK_TIMEOUT_MS = "mapreduce.rss.client.send.check.timeout.ms";
+  public static final long RSS_CLIENT_DEFAULT_CHECK_TIMEOUT_MS = 60 * 1000 * 10;
+  public static final String RSS_CLIENT_BITMAP_NUM = "mapreduce.rss.client.bitmap.num";
+  public static final int RSS_CLIENT_DEFAULT_BITMAP_NUM = 1;
+  public static final String RSS_CLIENT_MAX_SEGMENT_SIZE = "mapreduce.rss.client.max.buffer.size";
+  public static final long RSS_CLIENT_DEFAULT_MAX_SEGMENT_SIZE = 3 * 1024;
+  public static final String RSS_STORAGE_TYPE = "mapreduce.rss.storage.type";
 }

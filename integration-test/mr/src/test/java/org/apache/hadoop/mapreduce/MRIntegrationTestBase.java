@@ -18,17 +18,28 @@
 
 package org.apache.hadoop.mapreduce;
 
-import com.tencent.rss.test.IntegrationTestBase;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.mapreduce.filecache.DistributedCache;
 import org.apache.hadoop.mapreduce.v2.MiniMRYarnCluster;
 import org.apache.hadoop.mapreduce.v2.TestMRJobs;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import java.io.IOException;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import com.tencent.rss.test.IntegrationTestBase;
 
 public class MRIntegrationTestBase extends IntegrationTestBase {
 
@@ -72,5 +83,86 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
       // clean up resource directory
       localFs.delete(TEST_RESOURCES_DIR, true);
     }
+  }
+
+  public void run() throws Exception {
+    Configuration appConf = new Configuration(mrYarnCluster.getConfig());
+    updateCommonConfiguration(appConf);
+    runOriginApp(appConf);
+    appConf.get("mapreduce.output.fileoutputformat.outputdir");
+    appConf = new Configuration(mrYarnCluster.getConfig());
+    updateCommonConfiguration(appConf);
+    runRssApp(appConf);
+    verifyResults();
+  }
+
+  private void updateCommonConfiguration(Configuration jobConf) {
+
+  }
+
+  private void runOriginApp(Configuration jobConf) throws Exception {
+    runMRApp(jobConf, getTestTool(), getTestArgs());
+  }
+
+  private void runRssApp(Configuration jobConf) throws Exception {
+    URL url = MRIntegrationTestBase.class.getResource("/");
+    String parentPath = new Path(url.getPath()).getParent()
+        .getParent().getParent().getParent().toString();
+    if (System.getenv("JAVA_HOME") == null) {
+      throw new RuntimeException("We must set JAVA_HOME");
+    }
+    jobConf.set(MRJobConfig.MR_AM_COMMAND_OPTS, "-XX:+TraceClassLoading org.apache.hadoop.mapreduce.v2.app.RssMRAppMaster");
+    jobConf.setInt(MRJobConfig.MAP_MEMORY_MB, 2048);
+    jobConf.setInt(MRJobConfig.IO_SORT_MB, 128);
+    File file = new File(parentPath, "client-mr/target/shaded");
+    File[] jars = file.listFiles();
+    File localFile = null;
+    for (File jar : jars) {
+      if (jar.getName().startsWith("rss-client-mr")) {
+        localFile = jar;
+        break;
+      }
+    }
+    assertNotNull(localFile);
+    String props = System.getProperty("java.class.path");
+    String newProps = "";
+    String[] splittedProps = props.split(":");
+    for (String prop : splittedProps)  {
+      if (!prop.contains("classes") && !prop.contains("grpc") && !prop.contains("rss-")) {
+        newProps = newProps + ":" + prop;
+      }
+    }
+    System.setProperty("java.class.path", newProps);
+    Path newPath = new Path(HDFS_URI + "/rss.jar");
+    FileUtil.copy(file, fs, newPath, false, jobConf);
+    DistributedCache.addFileToClassPath(
+        new Path(newPath.toUri().getPath()), jobConf, fs);
+    jobConf.set(MRJobConfig.MAPREDUCE_APPLICATION_CLASSPATH,
+        "$PWD/rss.jar/" + localFile.getName() + "," + MRJobConfig.DEFAULT_MAPREDUCE_APPLICATION_CLASSPATH);
+    jobConf.set("mapreduce.rss.coordinator.quorum", COORDINATOR_QUORUM);
+    updateRssConfiguration(jobConf);
+    runMRApp(jobConf, getTestTool(), getTestArgs());
+
+  }
+
+  protected String[] getTestArgs() {
+    return new String[0];
+  }
+
+  protected void updateRssConfiguration(Configuration jobConf) {
+
+  }
+
+  private void runMRApp(Configuration conf, Tool tool, String[] args) throws Exception {
+    assertEquals(tool.getClass().getName() + " failed", 0,
+        ToolRunner.run(conf, tool, args));
+  }
+
+  protected Tool getTestTool() {
+    return null;
+  }
+
+  private void verifyResults() {
+
   }
 }
