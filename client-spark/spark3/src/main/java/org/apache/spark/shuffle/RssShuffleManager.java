@@ -109,7 +109,10 @@ public class RssShuffleManager implements ShuffleManager {
       } finally {
         final AtomicLong releaseSize = new AtomicLong(0);
         shuffleDataInfoList.forEach((sbi) -> releaseSize.addAndGet(sbi.getFreeMemory()));
-        taskToBufferManager.get(taskId).freeAllocatedMemory(releaseSize.get());
+        WriteBufferManager bufferManager = taskToBufferManager.get(taskId);
+        if (bufferManager != null) {
+          bufferManager.freeAllocatedMemory(releaseSize.get());
+        }
         LOG.debug("Spark 3.0 finish send data and release " + releaseSize + " bytes");
       }
     }

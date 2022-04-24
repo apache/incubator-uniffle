@@ -98,7 +98,10 @@ public class RssShuffleManager implements ShuffleManager {
         for (ShuffleBlockInfo sbi : shuffleDataInfoList) {
           releaseSize += sbi.getFreeMemory();
         }
-        taskToBufferManager.get(taskId).freeAllocatedMemory(releaseSize);
+        WriteBufferManager bufferManager = taskToBufferManager.get(taskId);
+        if (bufferManager != null) {
+          bufferManager.freeAllocatedMemory(releaseSize);
+        }
         LOG.debug("Finish send data and release " + releaseSize + " bytes");
       }
     }
