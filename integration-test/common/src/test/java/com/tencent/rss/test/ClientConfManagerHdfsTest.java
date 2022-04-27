@@ -22,13 +22,14 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.Map;
 
-import com.tencent.rss.coordinator.ClientConfManager;
-import com.tencent.rss.coordinator.CoordinatorConf;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 
+import com.tencent.rss.coordinator.ApplicationManager;
+import com.tencent.rss.coordinator.ClientConfManager;
+import com.tencent.rss.coordinator.CoordinatorConf;
 import com.tencent.rss.storage.HdfsTestBase;
 
 import static java.lang.Thread.sleep;
@@ -53,7 +54,7 @@ public class ClientConfManagerHdfsTest extends HdfsTestBase {
     // file load checking at startup
     Exception expectedException = null;
     try {
-      new ClientConfManager(conf, new Configuration());
+      new ClientConfManager(conf, new Configuration(), new ApplicationManager(conf));
     } catch (RuntimeException e) {
       expectedException = e;
     }
@@ -61,16 +62,9 @@ public class ClientConfManagerHdfsTest extends HdfsTestBase {
     assertTrue(expectedException.getMessage().endsWith("is not a file."));
 
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile);
-    expectedException = null;
-    try {
-      new ClientConfManager(conf, new Configuration());
-    } catch (RuntimeException e) {
-      expectedException = e;
-    }
-    assertNotNull(expectedException);
-    assertEquals(
-        "Client conf file must be non-empty and can be loaded successfully at coordinator startup.",
-        expectedException.getMessage());
+    ClientConfManager clientConfManager = new ClientConfManager(
+        conf, new Configuration(), new ApplicationManager(conf));
+    assertEquals(0, clientConfManager.getClientConf().size());
 
     PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(out));
     printWriter.println("spark.mock.1 abc");
@@ -78,7 +72,7 @@ public class ClientConfManagerHdfsTest extends HdfsTestBase {
     printWriter.println("spark.mock.3 true  ");
     printWriter.flush();
     printWriter.close();
-    ClientConfManager clientConfManager = new ClientConfManager(conf, HdfsTestBase.conf);
+    clientConfManager = new ClientConfManager(conf, HdfsTestBase.conf, new ApplicationManager(conf));
     sleep(1200);
     Map<String, String> clientConf = clientConfManager.getClientConf();
     assertEquals("abc", clientConf.get("spark.mock.1"));

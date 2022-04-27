@@ -35,18 +35,22 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
   // shuffle servers which is for store shuffle data
   private Set<ShuffleServerInfo> shuffleServersForData;
+  // remoteStorage used for this job
+  private String remoteStorage;
 
   public RssShuffleHandle(
       int shuffleId,
       String appId,
       int numMaps,
       ShuffleDependency<K, V, C> dependency,
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers) {
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+      String remoteStorage) {
     super(shuffleId);
     this.appId = appId;
     this.numMaps = numMaps;
     this.dependency = dependency;
     this.partitionToServers = partitionToServers;
+    this.remoteStorage = remoteStorage;
     shuffleServersForData = Sets.newHashSet();
     for (List<ShuffleServerInfo> ssis : partitionToServers.values()) {
       shuffleServersForData.addAll(ssis);
@@ -75,5 +79,9 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
 
   public Set<ShuffleServerInfo> getShuffleServersForData() {
     return shuffleServersForData;
+  }
+
+  public String getRemoteStorage() {
+    return remoteStorage;
   }
 }

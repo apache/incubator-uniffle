@@ -34,6 +34,12 @@ public class Constants {
   public static long MAX_TASK_ATTEMPT_ID = (1 << Constants.TASK_ATTEMPT_ID_MAX_LENGTH) - 1;
   public static long INVALID_BLOCK_ID = -1L;
   public static final String KEY_SPLIT_CHAR = "/";
+  public static final String COMMA_SPLIT_CHAR = ",";
   public static final String COMMON_SUCCESS_MESSAGE = "SUCCESS";
   public static final String SORT_SHUFFLE_MANAGER_NAME = "org.apache.spark.shuffle.sort.SortShuffleManager";
+
+  public static final String RSS_CLIENT_CONF_COMMON_PREFIX = "rss.client";
+  public static final String CONF_REMOTE_STORAGE_PATH = ".remote.storage.path";
+  public static final String RSS_CLIENT_CONF_REMOTE_STORAGE_PATH =
+          RSS_CLIENT_CONF_COMMON_PREFIX + CONF_REMOTE_STORAGE_PATH;
 }

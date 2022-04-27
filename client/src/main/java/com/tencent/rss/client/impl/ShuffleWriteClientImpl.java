@@ -44,6 +44,7 @@ import com.tencent.rss.client.factory.CoordinatorClientFactory;
 import com.tencent.rss.client.factory.ShuffleServerClientFactory;
 import com.tencent.rss.client.request.RssAppHeartBeatRequest;
 import com.tencent.rss.client.request.RssFetchClientConfRequest;
+import com.tencent.rss.client.request.RssFetchRemoteStorageRequest;
 import com.tencent.rss.client.request.RssFinishShuffleRequest;
 import com.tencent.rss.client.request.RssGetShuffleAssignmentsRequest;
 import com.tencent.rss.client.request.RssGetShuffleResultRequest;
@@ -55,6 +56,7 @@ import com.tencent.rss.client.response.ClientResponse;
 import com.tencent.rss.client.response.ResponseStatusCode;
 import com.tencent.rss.client.response.RssAppHeartBeatResponse;
 import com.tencent.rss.client.response.RssFetchClientConfResponse;
+import com.tencent.rss.client.response.RssFetchRemoteStorageResponse;
 import com.tencent.rss.client.response.RssFinishShuffleResponse;
 import com.tencent.rss.client.response.RssGetShuffleAssignmentsResponse;
 import com.tencent.rss.client.response.RssGetShuffleResultResponse;
@@ -265,6 +267,23 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       }
     }
     return response.getClientConf();
+  }
+
+  @Override
+  public String fetchRemoteStorage(String appId) {
+    String remoteStorage = "";
+    for (CoordinatorClient coordinatorClient : coordinatorClients) {
+      RssFetchRemoteStorageResponse response =
+          coordinatorClient.fetchRemoteStorage(new RssFetchRemoteStorageRequest(appId));
+      if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+        remoteStorage = response.getRemoteStorage();
+        LOG.info("Success to get storage {} from {}", remoteStorage, coordinatorClient.getDesc());
+        break;
+      } else {
+        LOG.warn("Fail to get conf from {}", coordinatorClient.getDesc());
+      }
+    }
+    return remoteStorage;
   }
 
   @Override

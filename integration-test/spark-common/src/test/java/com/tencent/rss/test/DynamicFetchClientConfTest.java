@@ -18,22 +18,22 @@
 
 package com.tencent.rss.test;
 
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.util.concurrent.TimeUnit;
+
 import com.google.common.util.concurrent.Uninterruptibles;
-import com.tencent.rss.coordinator.CoordinatorConf;
-import com.tencent.rss.storage.util.StorageType;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssClientConfig;
 import org.apache.spark.shuffle.RssShuffleManager;
-import org.apache.spark.shuffle.RssShuffleUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.util.concurrent.TimeUnit;
+import com.tencent.rss.coordinator.CoordinatorConf;
+import com.tencent.rss.storage.util.StorageType;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -124,24 +124,5 @@ public class DynamicFetchClientConfTest extends IntegrationTestBase {
     assertEquals(
         "Storage type must be set by the client or fetched from coordinators.",
         expectException.getMessage());
-
-    for (StorageType storageType : StorageType.values()) {
-      if (RssShuffleUtils.getStorageTypeWithoutPath().contains(storageType)) {
-        sparkConf.set("spark.rss.storage.type", storageType.name());
-        RssShuffleManager rsm = new RssShuffleManager(sparkConf, true);
-        assertFalse(rsm.getSparkConf().contains("spark.rss.base.path"));
-      } else {
-        sparkConf.set("spark.rss.storage.type", storageType.name());
-        expectException = null;
-        try {
-          new RssShuffleManager(sparkConf, true);
-        } catch (IllegalArgumentException e) {
-          expectException = e;
-        }
-        assertEquals(
-            "Storage path must be set by the client or fetched from coordinators.",
-            expectException.getMessage());
-      }
-    }
   }
 }

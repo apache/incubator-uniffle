@@ -38,12 +38,14 @@ import com.tencent.rss.client.api.CoordinatorClient;
 import com.tencent.rss.client.request.RssAccessClusterRequest;
 import com.tencent.rss.client.request.RssAppHeartBeatRequest;
 import com.tencent.rss.client.request.RssFetchClientConfRequest;
+import com.tencent.rss.client.request.RssFetchRemoteStorageRequest;
 import com.tencent.rss.client.request.RssGetShuffleAssignmentsRequest;
 import com.tencent.rss.client.request.RssSendHeartBeatRequest;
 import com.tencent.rss.client.response.ResponseStatusCode;
 import com.tencent.rss.client.response.RssAccessClusterResponse;
 import com.tencent.rss.client.response.RssAppHeartBeatResponse;
 import com.tencent.rss.client.response.RssFetchClientConfResponse;
+import com.tencent.rss.client.response.RssFetchRemoteStorageResponse;
 import com.tencent.rss.client.response.RssGetShuffleAssignmentsResponse;
 import com.tencent.rss.client.response.RssSendHeartBeatResponse;
 import com.tencent.rss.common.PartitionRange;
@@ -58,6 +60,8 @@ import com.tencent.rss.proto.RssProtos.AppHeartBeatRequest;
 import com.tencent.rss.proto.RssProtos.AppHeartBeatResponse;
 import com.tencent.rss.proto.RssProtos.ClientConfItem;
 import com.tencent.rss.proto.RssProtos.FetchClientConfResponse;
+import com.tencent.rss.proto.RssProtos.FetchRemoteStorageRequest;
+import com.tencent.rss.proto.RssProtos.FetchRemoteStorageResponse;
 import com.tencent.rss.proto.RssProtos.GetShuffleAssignmentsResponse;
 import com.tencent.rss.proto.RssProtos.GetShuffleServerListResponse;
 import com.tencent.rss.proto.RssProtos.PartitionRangeAssignment;
@@ -283,7 +287,25 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
           rpcResponse.getRetMsg(),
           clientConf);
     } catch (Exception e) {
+      LOG.info(e.getMessage(), e);
       return new RssFetchClientConfResponse(ResponseStatusCode.INTERNAL_ERROR, e.getMessage());
+    }
+  }
+
+  @Override
+  public RssFetchRemoteStorageResponse fetchRemoteStorage(RssFetchRemoteStorageRequest request) {
+    FetchRemoteStorageResponse rpcResponse;
+    FetchRemoteStorageRequest rpcRequest =
+        FetchRemoteStorageRequest.newBuilder().setAppId(request.getAppId()).build();
+    try {
+      rpcResponse = blockingStub.fetchRemoteStorage(rpcRequest);
+      RssFetchRemoteStorageResponse tt = new RssFetchRemoteStorageResponse(
+          ResponseStatusCode.SUCCESS,
+          rpcResponse.getRemoteStorage());
+      return tt;
+    } catch (Exception e) {
+      LOG.info("Failed to fetch remote storage from coordinator, " + e.getMessage(), e);
+      return new RssFetchRemoteStorageResponse(ResponseStatusCode.INTERNAL_ERROR, "");
     }
   }
 

@@ -21,9 +21,12 @@ package com.tencent.rss.coordinator;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
+import com.google.common.collect.Sets;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Before;
@@ -31,7 +34,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import static java.lang.Thread.sleep;
+import com.tencent.rss.common.util.Constants;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -55,11 +59,12 @@ public class ClientConfManagerTest {
     CoordinatorConf conf = new CoordinatorConf(filePath);
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, tmpDir.getRoot().toURI().toString());
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
+    ApplicationManager applicationManager = new ApplicationManager(conf);
 
     // file load checking at startup
     Exception expectedException = null;
     try {
-      new ClientConfManager(conf, new Configuration());
+      new ClientConfManager(conf, new Configuration(), applicationManager);
     } catch (RuntimeException e) {
       expectedException = e;
     }
@@ -67,16 +72,8 @@ public class ClientConfManagerTest {
     assertTrue(expectedException.getMessage().endsWith("is not a file."));
 
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
-    expectedException = null;
-    try {
-      new ClientConfManager(conf, new Configuration());
-    } catch (RuntimeException e) {
-      expectedException = e;
-    }
-    assertNotNull(expectedException);
-    assertEquals(
-        "Client conf file must be non-empty and can be loaded successfully at coordinator startup.",
-        expectedException.getMessage());
+    ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
+    assertEquals(0, clientConfManager.getClientConf().size());
 
     FileWriter fileWriter = new FileWriter(cfgFile);
     PrintWriter printWriter = new PrintWriter(fileWriter);
@@ -86,8 +83,8 @@ public class ClientConfManagerTest {
     printWriter.flush();
     printWriter.close();
     // load config at the beginning
-    ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration());
-    sleep(1200);
+    clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
+    Thread.sleep(1200);
     Map<String, String> clientConf = clientConfManager.getClientConf();
     assertEquals("abc", clientConf.get("spark.mock.1"));
     assertEquals("123", clientConf.get("spark.mock.2"));
@@ -98,7 +95,7 @@ public class ClientConfManagerTest {
     printWriter.println("");
     printWriter.flush();
     printWriter.close();
-    sleep(1300);
+    Thread.sleep(1300);
     assertTrue(cfgFile.exists());
     clientConf = clientConfManager.getClientConf();
     assertEquals("abc", clientConf.get("spark.mock.1"));
@@ -108,7 +105,7 @@ public class ClientConfManagerTest {
 
     // the config will not be changed when the conf file is deleted
     assertTrue(cfgFile.delete());
-    sleep(1300);
+    Thread.sleep(1300);
     assertFalse(cfgFile.exists());
     clientConf = clientConfManager.getClientConf();
     assertEquals("abc", clientConf.get("spark.mock.1"));
@@ -126,7 +123,7 @@ public class ClientConfManagerTest {
     printWriter.println("spark.mock.7");
     printWriter.close();
     FileUtils.moveFile(cfgFileTmp, cfgFile);
-    sleep(1200);
+    Thread.sleep(1200);
     clientConf = clientConfManager.getClientConf();
     assertEquals("deadbeaf", clientConf.get("spark.mock.4"));
     assertEquals("9527", clientConf.get("spark.mock.5"));
@@ -134,5 +131,76 @@ public class ClientConfManagerTest {
     assertFalse(clientConf.containsKey("spark.mock.6"));
     assertFalse(clientConf.containsKey("spark.mock.7"));
     clientConfManager.close();
+  }
+
+  @Test
+  public void dynamicRemoteStorageTest() throws Exception {
+    int updateIntervalSec = 2;
+    String remotePath1 = "hdfs://path1";
+    String remotePath2 = "hdfs://path2";
+    String remotePath3 = "hdfs://path3";
+    File cfgFile = Files.createTempFile("dynamicConf", ".conf").toFile();
+    writeRemoteStorageConf(cfgFile, remotePath1);
+
+    CoordinatorConf conf = new CoordinatorConf();
+    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, updateIntervalSec);
+    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
+    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
+    ApplicationManager applicationManager = new ApplicationManager(conf);
+
+    ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
+    Thread.sleep(500);
+    Set<String> expectedAvailablePath = Sets.newHashSet(remotePath1);
+    assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStoragePath());
+    assertEquals(remotePath1, applicationManager.pickRemoteStoragePath("testAppId1"));
+
+    writeRemoteStorageConf(cfgFile, remotePath3);
+    expectedAvailablePath = Sets.newHashSet(remotePath3);
+    waitForUpdate(expectedAvailablePath, applicationManager);
+    assertEquals(remotePath3, applicationManager.pickRemoteStoragePath("testAppId2"));
+
+    writeRemoteStorageConf(cfgFile, remotePath2 + Constants.COMMA_SPLIT_CHAR + remotePath3);
+    expectedAvailablePath = Sets.newHashSet(remotePath2, remotePath3);
+    waitForUpdate(expectedAvailablePath, applicationManager);
+    assertEquals(remotePath2, applicationManager.pickRemoteStoragePath("testAppId3"));
+
+    writeRemoteStorageConf(cfgFile, remotePath1 + Constants.COMMA_SPLIT_CHAR + remotePath2);
+    expectedAvailablePath = Sets.newHashSet(remotePath1, remotePath2);
+    waitForUpdate(expectedAvailablePath, applicationManager);
+    String remoteStorage = applicationManager.pickRemoteStoragePath("testAppId4");
+    // one of remote storage will be chosen
+    assertTrue(remotePath1.equals(remoteStorage) || remotePath2.equals(remoteStorage));
+
+    clientConfManager.close();
+  }
+
+  private void writeRemoteStorageConf(File cfgFile, String value) throws Exception {
+    // sleep 2 secs to make sure the modified time will be updated
+    Thread.sleep(2000);
+    FileWriter fileWriter = new FileWriter(cfgFile);
+    PrintWriter printWriter = new PrintWriter(fileWriter);
+    printWriter.println(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key() + " " + value);
+    printWriter.flush();
+    printWriter.close();
+  }
+
+  private void waitForUpdate(
+      Set<String> expectedAvailablePath,
+      ApplicationManager applicationManager) throws Exception {
+    int maxAttempt = 10;
+    int attempt = 0;
+    while (true) {
+      if (attempt > maxAttempt) {
+        throw new RuntimeException("Timeout when update configuration");
+      }
+      Thread.sleep(1000);
+      try {
+        assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStoragePath());
+        break;
+      } catch (Throwable e) {
+        // ignore
+      }
+      attempt++;
+    }
   }
 }

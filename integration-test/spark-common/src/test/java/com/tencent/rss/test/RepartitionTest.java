@@ -44,19 +44,6 @@ public abstract class RepartitionTest extends SparkIntegrationTestBase {
     run();
   }
 
-  @Test
-  public void testMemoryRelease() throws Exception {
-    String fileName = generateTextFile(10000, 10000);
-    SparkConf sparkConf = createSparkConf();
-    updateSparkConfWithRss(sparkConf);
-    sparkConf.set("spark.executor.memory", "500m");
-    sparkConf.set("spark.unsafe.exceptionOnMemoryLeak", "true");
-    updateRssStorage(sparkConf);
-
-    // oom if there has no memory release
-    runSparkApp(sparkConf, fileName);
-  }
-
   @Override
   public Map runTest(SparkSession spark, String fileName) {
     return repartitionApp(spark, fileName);
@@ -74,7 +61,7 @@ public abstract class RepartitionTest extends SparkIntegrationTestBase {
 
   public abstract void updateRssStorage(SparkConf sparkConf);
 
-  private String generateTextFile(int wordsPerRow, int rows) throws Exception {
+  protected String generateTextFile(int wordsPerRow, int rows) throws Exception {
     String tempDir = Files.createTempDirectory("rss").toString();
     File file = new File(tempDir, "wordcount.txt");
     file.createNewFile();

@@ -83,6 +83,8 @@ public class RssShuffleManager implements ShuffleManager {
   private Map<String, WriteBufferManager> taskToBufferManager = Maps.newConcurrentMap();
   private final ScheduledExecutorService scheduledExecutorService;
   private boolean heartbeatStarted = false;
+  private boolean dynamicConfEnabled = false;
+  private String remoteStorage = "";
   private final EventLoop eventLoop;
   private final EventLoop defaultEventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
 
@@ -150,6 +152,9 @@ public class RssShuffleManager implements ShuffleManager {
         RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
     this.clientType = sparkConf.get(RssClientConfig.RSS_CLIENT_TYPE,
         RssClientConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
+    this.dynamicConfEnabled = sparkConf.getBoolean(
+        RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
+        RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
 
     long retryIntervalMax = sparkConf.getLong(RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
         RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
@@ -161,9 +166,7 @@ public class RssShuffleManager implements ShuffleManager {
           dataReplica, dataReplicaWrite, dataReplicaRead);
     registerCoordinator();
     // fetch client conf and apply them if necessary and disable ESS
-    if (isDriver && sparkConf.getBoolean(
-        RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
-        RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE)) {
+    if (isDriver && dynamicConfEnabled) {
       Map<String, String> clusterClientConf = shuffleWriteClient.fetchClientConf(
           sparkConf.getInt(RssClientConfig.RSS_ACCESS_TIMEOUT_MS,
               RssClientConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
@@ -247,6 +250,10 @@ public class RssShuffleManager implements ShuffleManager {
       id.compareAndSet(null, SparkEnv.get().conf().getAppId() + System.currentTimeMillis());
     }
     LOG.info("Generate application id used in rss: " + id.get());
+
+    remoteStorage = RssShuffleUtils.fetchRemoteStorage(
+        id.get(), remoteStorage, dynamicConfEnabled, sparkConf, shuffleWriteClient);
+
     ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
         id.get(),
         shuffleId,
@@ -264,7 +271,8 @@ public class RssShuffleManager implements ShuffleManager {
         id.get(),
         dependency.rdd().getNumPartitions(),
         dependency,
-        partitionToServers);
+        partitionToServers,
+        remoteStorage);
   }
 
   @Override
@@ -369,11 +377,11 @@ public class RssShuffleManager implements ShuffleManager {
     if (!(handle instanceof RssShuffleHandle)) {
       throw new RuntimeException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
-    final String shuffleDataBasePath = sparkConf.get(RssClientConfig.RSS_BASE_PATH, "");
     final String storageType = sparkConf.get(RssClientConfig.RSS_STORAGE_TYPE);
     final int indexReadLimit = sparkConf.getInt(RssClientConfig.RSS_INDEX_READ_LIMIT,
         RssClientConfig.RSS_INDEX_READ_LIMIT_DEFAULT_VALUE);
     RssShuffleHandle rssShuffleHandle = (RssShuffleHandle) handle;
+    final String shuffleRemoteStoragePath = rssShuffleHandle.getRemoteStorage();
     final int partitionNum = rssShuffleHandle.getDependency().partitioner().numPartitions();
     long readBufferSize = sparkConf.getSizeAsBytes(RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE,
         RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE);
@@ -408,7 +416,7 @@ public class RssShuffleManager implements ShuffleManager {
         endMapIndex,
         context,
         rssShuffleHandle,
-        shuffleDataBasePath,
+        shuffleRemoteStoragePath,
         indexReadLimit,
         RssShuffleUtils.newHadoopConfiguration(sparkConf),
         storageType,

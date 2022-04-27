@@ -102,6 +102,11 @@ public class CoordinatorConf extends RssBaseConf {
       .stringType()
       .noDefaultValue()
       .withDescription("dynamic client conf of this cluster");
+  public static final ConfigOption<String> COORDINATOR_REMOTE_STORAGE_PATH = ConfigOptions
+          .key("rss.coordinator.remote.storage.path")
+          .stringType()
+          .noDefaultValue()
+          .withDescription("all supported remote paths for RSS cluster, seperated by ','");
   public static final ConfigOption<Integer> COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC = ConfigOptions
       .key("rss.coordinator.dynamicClientConf.updateIntervalSec")
       .intType()

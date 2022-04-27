@@ -263,6 +263,9 @@ service CoordinatorServer {
 
   // Get basic client conf from coordinator
   rpc fetchClientConf(google.protobuf.Empty) returns (FetchClientConfResponse);
+
+  // Get remote storage from coordinator
+  rpc fetchRemoteStorage(FetchRemoteStorageRequest) returns (FetchRemoteStorageResponse);
 }
 
 message AppHeartBeatRequest {
@@ -348,4 +351,13 @@ message FetchClientConfResponse {
 message ClientConfItem {
   string key = 1;
   string value = 2;
+}
+
+message FetchRemoteStorageRequest {
+  string appId = 1;
+}
+
+message FetchRemoteStorageResponse {
+  StatusCode status = 1;
+  string remoteStorage = 2;
 }

@@ -110,7 +110,7 @@ public class CoordinatorServer {
 
     ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(coordinatorConf);
     this.clusterManager = clusterManagerFactory.getClusterManager();
-    this.clientConfManager = new ClientConfManager(coordinatorConf, new Configuration());
+    this.clientConfManager = new ClientConfManager(coordinatorConf, new Configuration(), applicationManager);
     AssignmentStrategyFactory assignmentStrategyFactory =
         new AssignmentStrategyFactory(coordinatorConf, clusterManager);
     this.assignmentStrategy = assignmentStrategyFactory.getAssignmentStrategy();

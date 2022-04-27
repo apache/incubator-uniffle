@@ -18,15 +18,13 @@
 
 package org.apache.hadoop.mapred;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.tencent.rss.client.api.ShuffleWriteClient;
-import com.tencent.rss.client.response.SendShuffleDataResult;
-import com.tencent.rss.common.PartitionRange;
-import com.tencent.rss.common.ShuffleAssignmentsInfo;
-import com.tencent.rss.common.ShuffleBlockInfo;
-import com.tencent.rss.common.ShuffleServerInfo;
-import com.tencent.rss.common.exception.RssException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.WritableComparator;
@@ -34,10 +32,13 @@ import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.junit.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import com.tencent.rss.client.api.ShuffleWriteClient;
+import com.tencent.rss.client.response.SendShuffleDataResult;
+import com.tencent.rss.common.PartitionRange;
+import com.tencent.rss.common.ShuffleAssignmentsInfo;
+import com.tencent.rss.common.ShuffleBlockInfo;
+import com.tencent.rss.common.ShuffleServerInfo;
+import com.tencent.rss.common.exception.RssException;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -222,6 +223,11 @@ public class SortWriteBufferManagerTest {
 
     @Override
     public Map<String, String> fetchClientConf(int timeoutMs) {
+      return null;
+    }
+
+    @Override
+    public String fetchRemoteStorage(String appId) {
       return null;
     }
 

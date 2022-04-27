@@ -25,9 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.io.IOUtils;
@@ -44,15 +42,18 @@ import org.slf4j.LoggerFactory;
 public class ClientConfManager implements Closeable {
   private static final Logger LOG = LoggerFactory.getLogger(ClientConfManager.class);
 
-  private final AtomicReference<Map<String, String>> clientConf = new AtomicReference<>();
+  private Map<String, String> clientConf = Maps.newConcurrentMap();
   private final AtomicLong lastCandidatesUpdateMS = new AtomicLong(0L);
   private Path path;
   private ScheduledExecutorService updateClientConfSES = null;
   private FileSystem fileSystem;
   private static final String WHITESPACE_REGEX = "\\s+";
+  private ApplicationManager applicationManager;
 
-  public ClientConfManager(CoordinatorConf conf, Configuration hadoopConf) throws Exception {
+  public ClientConfManager(CoordinatorConf conf, Configuration hadoopConf,
+      ApplicationManager applicationManager) throws Exception {
     if (conf.getBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED)) {
+      this.applicationManager = applicationManager;
       init(conf, hadoopConf);
     }
   }
@@ -69,12 +70,7 @@ public class ClientConfManager implements Closeable {
       throw new IllegalStateException(msg);
     }
     updateClientConfInternal();
-    if (clientConf.get() == null || clientConf.get().isEmpty()) {
-      String msg = "Client conf file must be non-empty and can be loaded successfully at coordinator startup.";
-      LOG.error(msg);
-      throw new RuntimeException(msg);
-    }
-    LOG.info("Load client conf: {}", Joiner.on(";").withKeyValueSeparator("=").join(clientConf.get()));
+    LOG.info("Load client conf from " + pathStr + " successfully");
 
     int updateIntervalS = conf.getInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC);
     updateClientConfSES = Executors.newSingleThreadScheduledExecutor(
@@ -87,25 +83,25 @@ public class ClientConfManager implements Closeable {
     try {
       FileStatus[] fileStatus = fileSystem.listStatus(path);
       if (!ArrayUtils.isEmpty(fileStatus)) {
-        long lastModifiedMS = fileStatus[0].getModificationTime();
-        if (lastCandidatesUpdateMS.get() != lastModifiedMS) {
+        long modifiedMS = fileStatus[0].getModificationTime();
+        if (lastCandidatesUpdateMS.get() != modifiedMS) {
           updateClientConfInternal();
-          lastCandidatesUpdateMS.set(lastModifiedMS);
-          LOG.info("Update client conf to: {}",
-              Joiner.on(";").withKeyValueSeparator("=").join(clientConf.get()));
+          lastCandidatesUpdateMS.set(modifiedMS);
+          LOG.info("Update client conf from {} successfully.", path);
         }
       } else {
-        LOG.warn("Client conf file not found.");
+        LOG.warn("Client conf file not found with {}", path);
       }
     } catch (Exception e) {
-      LOG.warn("Error when update client conf, ignore this updating.", e);
+      LOG.warn("Error when update client conf with " + path, e);
     }
   }
 
   private void updateClientConfInternal() {
-    Map<String, String> newClientConf = Maps.newHashMap();
+    Map<String, String> newClientConf = Maps.newConcurrentMap();
     String content = loadClientConfContent();
     if (StringUtils.isEmpty(content)) {
+      clientConf = newClientConf;
       LOG.warn("Load empty content from {}, ignore this updating.", path.toUri().toString());
       return;
     }
@@ -115,17 +111,16 @@ public class ClientConfManager implements Closeable {
       if (!StringUtils.isEmpty(confItem)) {
         String[] confKV = confItem.split(WHITESPACE_REGEX);
         if (confKV.length == 2) {
-          newClientConf.put(confKV[0], confKV[1]);
+          if (CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key().equals(confKV[0])) {
+            applicationManager.refreshRemoteStorage(confKV[1]);
+          } else {
+            newClientConf.put(confKV[0], confKV[1]);
+          }
         }
       }
     }
 
-    if (newClientConf.isEmpty()) {
-      LOG.warn("Empty or wrong content in {}, ignore this updating.", path.toUri().toString());
-      return;
-    }
-
-    clientConf.set(newClientConf);
+    clientConf = newClientConf;
   }
 
   private String loadClientConfContent() {
@@ -139,7 +134,7 @@ public class ClientConfManager implements Closeable {
   }
 
   public Map<String, String> getClientConf() {
-    return clientConf.get();
+    return clientConf;
   }
 
   @Override

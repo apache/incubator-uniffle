@@ -79,6 +79,8 @@ public class RssShuffleManager implements ShuffleManager {
   private final int dataReplicaWrite;
   private final int dataReplicaRead;
   private boolean heartbeatStarted = false;
+  private boolean dynamicConfEnabled = false;
+  private String remoteStorage = "";
   private ThreadPoolExecutor threadPoolExecutor;
   private EventLoop eventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
 
@@ -147,6 +149,9 @@ public class RssShuffleManager implements ShuffleManager {
     this.heartbeatInterval = sparkConf.getLong(RssClientConfig.RSS_HEARTBEAT_INTERVAL,
         RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
     this.heartbeatTimeout = sparkConf.getLong(RssClientConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
+    this.dynamicConfEnabled = sparkConf.getBoolean(
+        RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
+        RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
     int retryMax = sparkConf.getInt(RssClientConfig.RSS_CLIENT_RETRY_MAX,
         RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
     long retryIntervalMax = sparkConf.getLong(RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
@@ -159,9 +164,7 @@ public class RssShuffleManager implements ShuffleManager {
           dataReplica, dataReplicaWrite, dataReplicaRead);
     registerCoordinator();
     // fetch client conf and apply them if necessary and disable ESS
-    if (isDriver && sparkConf.getBoolean(
-        RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
-        RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE)) {
+    if (isDriver && dynamicConfEnabled) {
       Map<String, String> clusterClientConf = shuffleWriteClient.fetchClientConf(
           sparkConf.getInt(RssClientConfig.RSS_ACCESS_TIMEOUT_MS,
               RssClientConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
@@ -202,6 +205,9 @@ public class RssShuffleManager implements ShuffleManager {
       LOG.info("Generate application id used in rss: " + appId);
     }
 
+    remoteStorage = RssShuffleUtils.fetchRemoteStorage(
+        appId, remoteStorage, dynamicConfEnabled, sparkConf, shuffleWriteClient);
+
     int partitionNumPerRange = sparkConf.getInt(RssClientConfig.RSS_PARTITION_NUM_PER_RANGE,
         RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
 
@@ -215,7 +221,7 @@ public class RssShuffleManager implements ShuffleManager {
     registerShuffleServers(appId, shuffleId, response.getServerToPartitionRanges());
 
     LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum[" + partitionToServers.size() + "]");
-    return new RssShuffleHandle(shuffleId, appId, numMaps, dependency, partitionToServers);
+    return new RssShuffleHandle(shuffleId, appId, numMaps, dependency, partitionToServers, remoteStorage);
   }
 
   private void startHeartbeat() {
@@ -292,12 +298,11 @@ public class RssShuffleManager implements ShuffleManager {
   public <K, C> ShuffleReader<K, C> getReader(ShuffleHandle handle,
       int startPartition, int endPartition, TaskContext context) {
     if (handle instanceof RssShuffleHandle) {
-      // spark.rss.base.path is not necessary for every storage type, eg, hdfs need but localfile doesn't
-      final String shuffleDataBasePath = sparkConf.get(RssClientConfig.RSS_BASE_PATH, "");
       final String storageType = sparkConf.get(RssClientConfig.RSS_STORAGE_TYPE);
       final int indexReadLimit = sparkConf.getInt(RssClientConfig.RSS_INDEX_READ_LIMIT,
           RssClientConfig.RSS_INDEX_READ_LIMIT_DEFAULT_VALUE);
       RssShuffleHandle rssShuffleHandle = (RssShuffleHandle) handle;
+      final String shuffleRemoteStoragePath = rssShuffleHandle.getRemoteStorage();
       final int partitionNumPerRange = sparkConf.getInt(RssClientConfig.RSS_PARTITION_NUM_PER_RANGE,
           RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
       final int partitionNum = rssShuffleHandle.getDependency().partitioner().numPartitions();
@@ -323,7 +328,7 @@ public class RssShuffleManager implements ShuffleManager {
           + startPartition + "]");
 
       return new RssShuffleReader<K, C>(startPartition, endPartition, context,
-          rssShuffleHandle, shuffleDataBasePath, indexReadLimit,
+          rssShuffleHandle, shuffleRemoteStoragePath, indexReadLimit,
           RssShuffleUtils.newHadoopConfiguration(sparkConf),
           storageType, (int) readBufferSize, partitionNumPerRange, partitionNum,
           blockIdBitmap, taskIdBitmap);

@@ -41,6 +41,8 @@ import com.tencent.rss.proto.RssProtos.AppHeartBeatResponse;
 import com.tencent.rss.proto.RssProtos.CheckServiceAvailableResponse;
 import com.tencent.rss.proto.RssProtos.ClientConfItem;
 import com.tencent.rss.proto.RssProtos.FetchClientConfResponse;
+import com.tencent.rss.proto.RssProtos.FetchRemoteStorageRequest;
+import com.tencent.rss.proto.RssProtos.FetchRemoteStorageResponse;
 import com.tencent.rss.proto.RssProtos.GetShuffleAssignmentsResponse;
 import com.tencent.rss.proto.RssProtos.GetShuffleServerListResponse;
 import com.tencent.rss.proto.RssProtos.GetShuffleServerNumResponse;
@@ -229,7 +231,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     FetchClientConfResponse response;
     FetchClientConfResponse.Builder builder = FetchClientConfResponse.newBuilder().setStatus(StatusCode.SUCCESS);
     boolean dynamicConfEnabled = coordinatorServer.getCoordinatorConf().getBoolean(
-        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, false);
+        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED);
     if (dynamicConfEnabled) {
       ClientConfManager clientConfManager = coordinatorServer.getClientConfManager();
       for (Map.Entry<String, String> kv : clientConfManager.getClientConf().entrySet()) {
@@ -238,6 +240,36 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       }
     }
     response = builder.build();
+
+    if (Context.current().isCancelled()) {
+      responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
+      LOG.warn("Fetch client conf cancelled by client for after deadline.");
+      return;
+    }
+
+    responseObserver.onNext(response);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void fetchRemoteStorage(
+      FetchRemoteStorageRequest request,
+      StreamObserver<FetchRemoteStorageResponse> responseObserver) {
+    FetchRemoteStorageResponse response;
+    StatusCode status = StatusCode.SUCCESS;
+    String remoteStorage = "";
+    String appId = request.getAppId();
+    try {
+      remoteStorage = coordinatorServer.getApplicationManager().pickRemoteStoragePath(appId);
+    } catch (Exception e) {
+      status = StatusCode.INTERNAL_ERROR;
+      LOG.error("Error happened when get remote storage for appId[" + appId + "]", e);
+    }
+
+    response = FetchRemoteStorageResponse.newBuilder()
+        .setRemoteStorage(remoteStorage)
+        .setStatus(status)
+        .build();
 
     if (Context.current().isCancelled()) {
       responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());

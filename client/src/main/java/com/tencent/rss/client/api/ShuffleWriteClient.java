@@ -45,6 +45,8 @@ public interface ShuffleWriteClient {
 
   Map<String, String> fetchClientConf(int timeoutMs);
 
+  String fetchRemoteStorage(String appId);
+
   void reportShuffleResult(
       Map<Integer, List<ShuffleServerInfo>> partitionToServers,
       String appId,

@@ -18,14 +18,16 @@
 
 package com.tencent.rss.test;
 
-import com.google.common.io.Files;
-import com.tencent.rss.coordinator.CoordinatorConf;
-import com.tencent.rss.server.ShuffleServerConf;
-import com.tencent.rss.storage.util.StorageType;
 import java.io.File;
+
+import com.google.common.io.Files;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssClientConfig;
 import org.junit.BeforeClass;
+
+import com.tencent.rss.coordinator.CoordinatorConf;
+import com.tencent.rss.server.ShuffleServerConf;
+import com.tencent.rss.storage.util.StorageType;
 
 public class RepartitionWithLocalFileRssTest extends RepartitionTest {
 

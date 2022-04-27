@@ -18,15 +18,17 @@
 
 package com.tencent.rss.test;
 
+import java.io.File;
+
 import com.google.common.io.Files;
-import com.tencent.rss.coordinator.CoordinatorConf;
-import com.tencent.rss.server.ShuffleServerConf;
-import com.tencent.rss.storage.util.StorageType;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssClientConfig;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
-import java.io.File;
+import com.tencent.rss.coordinator.CoordinatorConf;
+import com.tencent.rss.server.ShuffleServerConf;
+import com.tencent.rss.storage.util.StorageType;
 
 public class RepartitionWithMemoryRssTest extends RepartitionTest {
 
@@ -48,6 +50,19 @@ public class RepartitionWithMemoryRssTest extends RepartitionTest {
     shuffleServerConf.setString(ShuffleServerConf.SERVER_BUFFER_CAPACITY.key(), "512mb");
     createShuffleServer(shuffleServerConf);
     startServers();
+  }
+
+  @Test
+  public void testMemoryRelease() throws Exception {
+    String fileName = generateTextFile(10000, 10000);
+    SparkConf sparkConf = createSparkConf();
+    updateSparkConfWithRss(sparkConf);
+    sparkConf.set("spark.executor.memory", "500m");
+    sparkConf.set("spark.unsafe.exceptionOnMemoryLeak", "true");
+    updateRssStorage(sparkConf);
+
+    // oom if there has no memory release
+    runSparkApp(sparkConf, fileName);
   }
 
   @Override
