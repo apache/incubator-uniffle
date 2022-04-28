@@ -37,9 +37,8 @@ import org.apache.hadoop.mapreduce.Cluster;
 import org.apache.hadoop.mapreduce.JobSubmissionFiles;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.RssMRConfig;
-import org.apache.hadoop.yarn.api.ApplicationConstants;
+import org.apache.hadoop.mapreduce.RssMRUtils;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
-import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,8 +49,6 @@ import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.common.ShuffleAssignmentsInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.util.Constants;
-
-
 
 public class RssMRAppMaster {
 
@@ -83,11 +80,7 @@ public class RssMRAppMaster {
     LOG.info("Registering coordinators {}", coordinators);
     client.registerCoordinators(coordinators);
 
-    String containerIdStr =
-        System.getenv(ApplicationConstants.Environment.CONTAINER_ID.name());
-    ContainerId containerId = ContainerId.fromString(containerIdStr);
-    ApplicationAttemptId applicationAttemptId =
-        containerId.getApplicationAttemptId();
+    ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
     ShuffleAssignmentsInfo response = client.getShuffleAssignments(
         applicationAttemptId.toString(), 0, numReduceTasks,
         1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
@@ -134,6 +127,13 @@ public class RssMRAppMaster {
       }
       conf.set(RssMRConfig.RSS_ASSIGNMENT_PREFIX + entry.getKey(), StringUtils.join(servers, ","));
     });
+
+    // close slow start
+    if (conf.getFloat(MRJobConfig.COMPLETED_MAPS_FOR_REDUCE_SLOWSTART, 0.05f) != 1) {
+      conf.set(MRJobConfig.COMPLETED_MAPS_FOR_REDUCE_SLOWSTART, "1");
+      LOG.warn("close slow start, because RSS does not support it yet");
+    }
+
     String jobDirStr = conf.get(MRJobConfig.MAPREDUCE_JOB_DIR);
     if (jobDirStr == null) {
       throw new RuntimeException("jobDir is empty");

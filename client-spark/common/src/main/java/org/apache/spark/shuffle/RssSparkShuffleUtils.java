@@ -22,14 +22,10 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
-import net.jpountz.lz4.LZ4Compressor;
-import net.jpountz.lz4.LZ4Factory;
-import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -45,9 +41,9 @@ import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.client.factory.CoordinatorClientFactory;
 import com.tencent.rss.storage.util.StorageType;
 
-public class RssShuffleUtils {
+public class RssSparkShuffleUtils {
 
-  private static final Logger LOG = LoggerFactory.getLogger(RssShuffleUtils.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RssSparkShuffleUtils.class);
 
   public static byte[] compressDataOrigin(CompressionCodec compressionCodec, byte[] data) {
     ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length);
@@ -109,25 +105,6 @@ public class RssShuffleUtils {
     byte[] lastBlock = dataBlocks.get(dataBlocks.size() - 1);
     System.arraycopy(lastBlock, 0,
         uncompressData, (dataBlocks.size() - 1) * compressionBlockSize, lastReadSize);
-    return uncompressData;
-  }
-
-  public static byte[] compressData(byte[] data) {
-    LZ4Compressor compressor = LZ4Factory.fastestInstance().fastCompressor();
-    return compressor.compress(data);
-  }
-
-  public static byte[] decompressData(byte[] data, int uncompressLength) {
-    LZ4FastDecompressor fastDecompressor = LZ4Factory.fastestInstance().fastDecompressor();
-    byte[] uncompressData = new byte[uncompressLength];
-    fastDecompressor.decompress(data, 0, uncompressData, 0, uncompressLength);
-    return uncompressData;
-  }
-
-  public static ByteBuffer decompressData(ByteBuffer data, int uncompressLength) {
-    LZ4FastDecompressor fastDecompressor = LZ4Factory.fastestInstance().fastDecompressor();
-    ByteBuffer uncompressData = ByteBuffer.allocateDirect(uncompressLength);
-    fastDecompressor.decompress(data, data.position(), uncompressData, 0, uncompressLength);
     return uncompressData;
   }
 
@@ -226,7 +203,7 @@ public class RssShuffleUtils {
       ShuffleWriteClient shuffleWriteClient) {
     String remoteStorage = currentRemoteStorage;
     String storageType = sparkConf.get(RssClientConfig.RSS_STORAGE_TYPE);
-    if (StringUtils.isEmpty(remoteStorage) && RssShuffleUtils.requireRemoteStorage(storageType)) {
+    if (StringUtils.isEmpty(remoteStorage) && RssSparkShuffleUtils.requireRemoteStorage(storageType)) {
       if (dynamicConfEnabled) {
         // get from coordinator first
         remoteStorage = shuffleWriteClient.fetchRemoteStorage(appId);

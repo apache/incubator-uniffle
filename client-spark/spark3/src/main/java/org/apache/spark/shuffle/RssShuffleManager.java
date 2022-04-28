@@ -170,9 +170,9 @@ public class RssShuffleManager implements ShuffleManager {
       Map<String, String> clusterClientConf = shuffleWriteClient.fetchClientConf(
           sparkConf.getInt(RssClientConfig.RSS_ACCESS_TIMEOUT_MS,
               RssClientConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
-      RssShuffleUtils.applyDynamicClientConf(sparkConf, clusterClientConf);
+      RssSparkShuffleUtils.applyDynamicClientConf(sparkConf, clusterClientConf);
     }
-    RssShuffleUtils.validateRssClientConf(sparkConf);
+    RssSparkShuffleUtils.validateRssClientConf(sparkConf);
     // External shuffle service is not supported when using remote shuffle service
     sparkConf.set("spark.shuffle.service.enabled", "false");
     LOG.info("Disable external shuffle service in RssShuffleManager.");
@@ -251,7 +251,7 @@ public class RssShuffleManager implements ShuffleManager {
     }
     LOG.info("Generate application id used in rss: " + id.get());
 
-    remoteStorage = RssShuffleUtils.fetchRemoteStorage(
+    remoteStorage = RssSparkShuffleUtils.fetchRemoteStorage(
         id.get(), remoteStorage, dynamicConfEnabled, sparkConf, shuffleWriteClient);
 
     ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
@@ -418,7 +418,7 @@ public class RssShuffleManager implements ShuffleManager {
         rssShuffleHandle,
         shuffleRemoteStoragePath,
         indexReadLimit,
-        RssShuffleUtils.newHadoopConfiguration(sparkConf),
+        RssSparkShuffleUtils.newHadoopConfiguration(sparkConf),
         storageType,
         (int) readBufferSize,
         partitionNum,

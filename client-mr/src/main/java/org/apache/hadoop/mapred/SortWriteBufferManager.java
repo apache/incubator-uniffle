@@ -37,8 +37,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.common.util.concurrent.Uninterruptibles;
-import net.jpountz.lz4.LZ4Compressor;
-import net.jpountz.lz4.LZ4Factory;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.serializer.Serializer;
 import org.slf4j.Logger;
@@ -47,11 +45,11 @@ import org.slf4j.LoggerFactory;
 import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.client.response.SendShuffleDataResult;
 import com.tencent.rss.client.util.ClientUtils;
+import com.tencent.rss.common.RssShuffleUtils;
 import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.exception.RssException;
 import com.tencent.rss.common.util.ChecksumUtils;
-
 
 public class SortWriteBufferManager<K, V> {
 
@@ -293,7 +291,7 @@ public class SortWriteBufferManager<K, V> {
     int partitionId = wb.getPartitionId();
     final int uncompressLength = data.length;
     long start = System.currentTimeMillis();
-    final byte[] compressed = compressData(data);
+    final byte[] compressed = RssShuffleUtils.compressData(data);
     final long crc32 = ChecksumUtils.getCrc32(compressed);
     compressTime += System.currentTimeMillis() - start;
     final long blockId = ClientUtils.getBlockId(partitionId, taskAttemptId, getNextSeqNo(partitionId));
@@ -343,11 +341,6 @@ public class SortWriteBufferManager<K, V> {
     int seqNo = partitionToSeqNo.get(partitionId);
     partitionToSeqNo.put(partitionId, seqNo + 1);
     return seqNo;
-  }
-
-  private byte[] compressData(byte[] data) {
-    LZ4Compressor compressor = LZ4Factory.fastestInstance().fastCompressor();
-    return compressor.compress(data);
   }
 
   public void freeAllResources() {

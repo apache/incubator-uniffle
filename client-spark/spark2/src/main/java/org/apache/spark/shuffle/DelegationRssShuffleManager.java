@@ -51,7 +51,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
         RssClientConfig.RSS_ACCESS_TIMEOUT_MS,
         RssClientConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE);
     if (isDriver) {
-      coordinatorClients = RssShuffleUtils.createCoordinatorClients(sparkConf);
+      coordinatorClients = RssSparkShuffleUtils.createCoordinatorClients(sparkConf);
       delegate = createShuffleManagerInDriver();
     } else {
       coordinatorClients = Lists.newArrayList();
@@ -80,7 +80,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     }
 
     try {
-      shuffleManager = RssShuffleUtils.loadShuffleManager(Constants.SORT_SHUFFLE_MANAGER_NAME, sparkConf, true);
+      shuffleManager = RssSparkShuffleUtils.loadShuffleManager(Constants.SORT_SHUFFLE_MANAGER_NAME, sparkConf, true);
       sparkConf.set(RssClientConfig.RSS_ENABLED, "false");
       sparkConf.set("spark.shuffle.manager", "sort");
       LOG.info("Use SortShuffleManager");
@@ -135,7 +135,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
       LOG.info("Use RssShuffleManager");
     } else {
       try {
-        shuffleManager = RssShuffleUtils.loadShuffleManager(
+        shuffleManager = RssSparkShuffleUtils.loadShuffleManager(
             Constants.SORT_SHUFFLE_MANAGER_NAME, sparkConf, false);
         LOG.info("Use SortShuffleManager");
       } catch (Exception e) {

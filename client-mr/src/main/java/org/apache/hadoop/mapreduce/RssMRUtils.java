@@ -18,10 +18,19 @@
 
 package org.apache.hadoop.mapreduce;
 
+import java.util.Set;
+
+import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.yarn.api.ApplicationConstants;
+import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
+import org.apache.hadoop.yarn.api.records.ContainerId;
 
 import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.client.factory.ShuffleClientFactory;
+import com.tencent.rss.common.ShuffleServerInfo;
+import com.tencent.rss.common.exception.RssException;
 
 public class RssMRUtils {
 
@@ -33,8 +42,9 @@ public class RssMRUtils {
     return highBytes + lowBytes;
   }
 
-  public static TaskAttemptID createMRTaskAttemptId(JobID jobID, TaskType taskType, long rssTaskAttemptId) {
-    TaskID taskID = new TaskID(jobID,taskType, (int)rssTaskAttemptId);
+  public static TaskAttemptID createMRTaskAttemptId(JobID jobID, TaskType taskType,
+                                                    long rssTaskAttemptId) {
+    TaskID taskID = new TaskID(jobID, taskType, (int)rssTaskAttemptId);
     return new TaskAttemptID(taskID, (int)(rssTaskAttemptId >> 32));
   }
 
@@ -60,4 +70,27 @@ public class RssMRUtils {
     return client;
   }
 
+  public static Set<ShuffleServerInfo> getAssignedServers(JobConf jobConf, int reduceID) {
+    String servers = jobConf.get(RssMRConfig.RSS_ASSIGNMENT_PREFIX
+      + String.valueOf(reduceID));
+    String[] splitServers = servers.split(",");
+    Set<ShuffleServerInfo> assignServers = Sets.newHashSet();
+    for (String splitServer : splitServers) {
+      String[] serverInfo = splitServer.split(":");
+      if (serverInfo.length != 2) {
+        throw new RssException("partition " + reduceID + " server info isn't right");
+      }
+      ShuffleServerInfo sever = new ShuffleServerInfo(StringUtils.join(serverInfo, "-"),
+        serverInfo[0], Integer.parseInt(serverInfo[1]));
+      assignServers.add(sever);
+    }
+    return assignServers;
+  }
+
+  public static ApplicationAttemptId getApplicationAttemptId() {
+    String containerIdStr =
+      System.getenv(ApplicationConstants.Environment.CONTAINER_ID.name());
+    ContainerId containerId = ContainerId.fromString(containerIdStr);
+    return containerId.getApplicationAttemptId();
+  }
 }

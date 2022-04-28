@@ -33,12 +33,12 @@ import org.apache.spark.memory.TaskMemoryManager;
 import org.apache.spark.serializer.SerializationStream;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.serializer.SerializerInstance;
-import org.apache.spark.shuffle.RssShuffleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.reflect.ClassTag$;
 
 import com.tencent.rss.client.util.ClientUtils;
+import com.tencent.rss.common.RssShuffleUtils;
 import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.exception.RssException;

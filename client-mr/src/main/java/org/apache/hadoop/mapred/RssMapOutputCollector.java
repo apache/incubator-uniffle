@@ -33,9 +33,6 @@ import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RssMRConfig;
 import org.apache.hadoop.mapreduce.RssMRUtils;
 import org.apache.hadoop.mapreduce.TaskCounter;
-import org.apache.hadoop.yarn.api.ApplicationConstants;
-import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
-import org.apache.hadoop.yarn.api.records.ContainerId;
 
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.exception.RssException;
@@ -72,13 +69,7 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     RawComparator<K> comparator = jobConf.getOutputKeyComparator();
     double memoryThreshold = jobConf.getDouble(RssMRConfig.RSS_CLIENT_MEMORY_THRESHOLD,
         RssMRConfig.RSS_CLIENT_DEFAULT_MEMORY_THRESHOLD);
-    String containerIdStr =
-        System.getenv(ApplicationConstants.Environment.CONTAINER_ID.name());
-    ContainerId containerId = ContainerId.fromString(containerIdStr);
-    ApplicationAttemptId applicationAttemptId =
-        containerId.getApplicationAttemptId();
-    String appId = applicationAttemptId.toString();
-
+    String appId = RssMRUtils.getApplicationAttemptId().toString();
 
     long sendCheckInterval = jobConf.getLong(RssMRConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS,
         RssMRConfig.RSS_CLIENT_DEFAULT_SEND_CHECK_INTERVAL_MS);

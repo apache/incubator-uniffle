@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import com.google.common.collect.Lists;
-import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.storage.util.StorageType;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.sort.SortShuffleManager;
@@ -46,11 +45,11 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 public class DelegationRssShuffleManagerTest {
-  private static MockedStatic<RssShuffleUtils> mockedStaticRssShuffleUtils;
+  private static MockedStatic<RssSparkShuffleUtils> mockedStaticRssShuffleUtils;
 
   @BeforeClass
   public static void setUp() {
-    mockedStaticRssShuffleUtils = mockStatic(RssShuffleUtils.class, Mockito.CALLS_REAL_METHODS);
+    mockedStaticRssShuffleUtils = mockStatic(RssSparkShuffleUtils.class, Mockito.CALLS_REAL_METHODS);
   }
 
   @AfterClass
@@ -65,7 +64,7 @@ public class DelegationRssShuffleManagerTest {
     List<CoordinatorClient> coordinatorClients = Lists.newArrayList();
     coordinatorClients.add(mockCoordinatorClient);
     mockedStaticRssShuffleUtils.when(() ->
-        RssShuffleUtils.createCoordinatorClients(any())).thenReturn(coordinatorClients);
+        RssSparkShuffleUtils.createCoordinatorClients(any())).thenReturn(coordinatorClients);
     SparkConf conf = new SparkConf();
     conf.set(RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED, "false");
     assertCreateSortShuffleManager(conf);
@@ -79,7 +78,7 @@ public class DelegationRssShuffleManagerTest {
     List<CoordinatorClient> coordinatorClients = Lists.newArrayList();
     coordinatorClients.add(mockCoordinatorClient);
     mockedStaticRssShuffleUtils.when(() ->
-        RssShuffleUtils.createCoordinatorClients(any())).thenReturn(coordinatorClients);
+        RssSparkShuffleUtils.createCoordinatorClients(any())).thenReturn(coordinatorClients);
 
     SparkConf conf = new SparkConf();
     assertCreateSortShuffleManager(conf);
@@ -114,7 +113,7 @@ public class DelegationRssShuffleManagerTest {
     List<CoordinatorClient> coordinatorClients = Lists.newArrayList();
     coordinatorClients.add(mockCoordinatorClient);
     mockedStaticRssShuffleUtils.when(() ->
-        RssShuffleUtils.createCoordinatorClients(any())).thenReturn(coordinatorClients);
+        RssSparkShuffleUtils.createCoordinatorClients(any())).thenReturn(coordinatorClients);
 
     SparkConf conf = new SparkConf();
     conf.set(RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED, "false");

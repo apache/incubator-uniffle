@@ -29,7 +29,6 @@ import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.serializer.DeserializationStream;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.serializer.SerializerInstance;
-import org.apache.spark.shuffle.RssShuffleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Product2;
@@ -39,6 +38,7 @@ import scala.collection.Iterator;
 
 import com.tencent.rss.client.api.ShuffleReadClient;
 import com.tencent.rss.client.response.CompressedShuffleBlock;
+import com.tencent.rss.common.RssShuffleUtils;
 
 public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C>> {
 

@@ -141,6 +141,11 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>net.jpountz.lz4</groupId>
+      <artifactId>lz4</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

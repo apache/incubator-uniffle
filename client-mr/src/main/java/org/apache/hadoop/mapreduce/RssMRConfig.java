@@ -52,4 +52,14 @@ public class RssMRConfig {
   public static final String RSS_CLIENT_MAX_SEGMENT_SIZE = "mapreduce.rss.client.max.buffer.size";
   public static final long RSS_CLIENT_DEFAULT_MAX_SEGMENT_SIZE = 3 * 1024;
   public static final String RSS_STORAGE_TYPE = "mapreduce.rss.storage.type";
+
+  public static final String RSS_PARTITION_NUM_PER_RANGE = "mapreduce.rss.partitionNum.per.range";
+  public static final int RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE = 1;
+  public static final String RSS_BASE_PATH = "mapreduce.rss.remote.storage.path";
+  public static final String RSS_INDEX_READ_LIMIT = "mapreduce.rss.index.read.limit";
+  public static final int RSS_INDEX_READ_LIMIT_DEFAULT_VALUE = 500;
+  public static String RSS_CLIENT_READ_BUFFER_SIZE = "mapreduce.rss.client.read.buffer.size";
+  // When the size of read buffer reaches the half of JVM region (i.e., 32m),
+  // it will incur humongous allocation, so we set it to 14m.
+  public static String RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE = "14m";
 }
