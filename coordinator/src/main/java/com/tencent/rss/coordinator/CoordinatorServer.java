@@ -118,7 +118,6 @@ public class CoordinatorServer {
 
     jettyServer = new JettyServer(coordinatorConf);
     registerMetrics();
-    addServlet(jettyServer);
     CoordinatorFactory coordinatorFactory = new CoordinatorFactory(this);
     server = coordinatorFactory.getServer();
   }
@@ -149,22 +148,6 @@ public class CoordinatorServer {
     jettyServer.addServlet(
         new CommonMetricsServlet(grpcMetrics.getCollectorRegistry(), true),
         "/prometheus/metrics/grpc");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(JvmMetrics.getCollectorRegistry(), true),
-        "/prometheus/metrics/jvm");
-  }
-
-  private void addServlet(JettyServer jettyServer) {
-    LOG.info("Add metrics servlet");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(CoordinatorMetrics.getCollectorRegistry()),
-        "/metrics/server");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(JvmMetrics.getCollectorRegistry()),
-        "/metrics/jvm");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(CoordinatorMetrics.getCollectorRegistry(), true),
-        "/prometheus/metrics/server");
     jettyServer.addServlet(
         new CommonMetricsServlet(JvmMetrics.getCollectorRegistry(), true),
         "/prometheus/metrics/jvm");
