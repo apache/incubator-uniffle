@@ -18,23 +18,30 @@
 
 package com.tencent.rss.test;
 
+import java.io.File;
+import java.util.Map;
+
+import com.google.common.collect.Maps;
 import com.google.common.io.Files;
-import com.tencent.rss.coordinator.CoordinatorConf;
-import com.tencent.rss.server.ShuffleServerConf;
-import com.tencent.rss.storage.util.StorageType;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssClientConfig;
 import org.junit.BeforeClass;
 
-import java.io.File;
+import com.tencent.rss.coordinator.CoordinatorConf;
+import com.tencent.rss.server.ShuffleServerConf;
+import com.tencent.rss.storage.util.StorageType;
 
 public class RepartitionWithHdfsMultiStorageRssTest extends RepartitionTest {
   @BeforeClass
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
+    Map<String, String> dynamicConf = Maps.newHashMap();
+    dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
+    dynamicConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS.name());
+    addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
 
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     // local storage config
     File tmpDir = Files.createTempDir();
     tmpDir.deleteOnExit();
@@ -43,7 +50,6 @@ public class RepartitionWithHdfsMultiStorageRssTest extends RepartitionTest {
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, basePath);
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS.name());
-    shuffleServerConf.set(ShuffleServerConf.HDFS_BASE_PATH, HDFS_URI + "rss/test");
     shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 1024L * 1024L);
 
     createShuffleServer(shuffleServerConf);
@@ -52,7 +58,5 @@ public class RepartitionWithHdfsMultiStorageRssTest extends RepartitionTest {
 
   @Override
   public void updateRssStorage(SparkConf sparkConf) {
-    sparkConf.set(RssClientConfig.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS.name());
-    sparkConf.set(RssClientConfig.RSS_BASE_PATH, HDFS_URI + "rss/test");
   }
 }

@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.client.factory.ShuffleClientFactory;
+import com.tencent.rss.client.util.ClientUtils;
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.common.ShuffleAssignmentsInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
@@ -81,8 +82,9 @@ public class RssMRAppMaster {
     client.registerCoordinators(coordinators);
 
     ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
+    String appId = applicationAttemptId.toString();
     ShuffleAssignmentsInfo response = client.getShuffleAssignments(
-        applicationAttemptId.toString(), 0, numReduceTasks,
+        appId, 0, numReduceTasks,
         1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges = response.getServerToPartitionRanges();
     final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
@@ -96,7 +98,7 @@ public class RssMRAppMaster {
     scheduledExecutorService.scheduleAtFixedRate(
         () -> {
           try {
-            client.sendAppHeartbeat(applicationAttemptId.toString(), heartbeatTimeout);
+            client.sendAppHeartbeat(appId, heartbeatTimeout);
             LOG.info("Finish send heartbeat to coordinator and servers");
           } catch (Exception e) {
             LOG.warn("Fail to send heartbeat to coordinator and servers", e);
@@ -106,11 +108,21 @@ public class RssMRAppMaster {
         heartbeatInterval,
         TimeUnit.MILLISECONDS);
 
+    // get remote storage from coordinator if necessary
+    boolean dynamicConfEnabled = conf.getBoolean(RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
+        RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
+    String storageType = conf.get(RssMRConfig.RSS_STORAGE_TYPE);
+    String defaultRemoteStorage = conf.get(RssMRConfig.RSS_BASE_PATH, "");
+    String remoteStorage = ClientUtils.fetchRemoteStorage(
+        appId, defaultRemoteStorage, dynamicConfEnabled, storageType, client);
+    // set the remote storage with actual value
+    conf.set(RssMRConfig.RSS_BASE_PATH, remoteStorage);
+
     LOG.info("Start to register shuffle");
     long start = System.currentTimeMillis();
     serverToPartitionRanges.entrySet().forEach(entry -> {
       client.registerShuffle(
-          entry.getKey(), applicationAttemptId.toString(), 0, entry.getValue());
+          entry.getKey(), appId, 0, entry.getValue(), remoteStorage);
     });
     LOG.info("Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
 

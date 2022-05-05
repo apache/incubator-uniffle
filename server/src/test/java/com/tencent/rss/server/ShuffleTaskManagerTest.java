@@ -18,9 +18,19 @@
 
 package com.tencent.rss.server;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
+import org.apache.hadoop.conf.Configuration;
+import org.junit.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
 import com.tencent.rss.common.BufferSegment;
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.common.ShuffleDataResult;
@@ -35,15 +45,6 @@ import com.tencent.rss.server.storage.StorageManager;
 import com.tencent.rss.storage.HdfsTestBase;
 import com.tencent.rss.storage.handler.impl.HdfsClientReadHandler;
 import com.tencent.rss.storage.util.StorageType;
-import org.apache.hadoop.conf.Configuration;
-import org.junit.Test;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -58,11 +59,9 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
   public void registerShuffleTest() throws Exception {
     String confFile = ClassLoader.getSystemResource("server.conf").getFile();
     ShuffleServerConf conf = new ShuffleServerConf(confFile);
-    String storageBasePath = HDFS_URI + "rss/test";
     conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 128L);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
-    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, storageBasePath);
     conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
@@ -73,8 +72,8 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     String appId = "registerTest1";
     int shuffleId = 1;
 
-    shuffleTaskManager.registerShuffle(appId, shuffleId, Lists.newArrayList(new PartitionRange(0, 1)));
-    shuffleTaskManager.registerShuffle(appId, shuffleId, Lists.newArrayList(new PartitionRange(2, 3)));
+    shuffleTaskManager.registerShuffle(appId, shuffleId, Lists.newArrayList(new PartitionRange(0, 1)), "");
+    shuffleTaskManager.registerShuffle(appId, shuffleId, Lists.newArrayList(new PartitionRange(2, 3)), "");
 
     Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool =
         shuffleServer.getShuffleBufferManager().getBufferPool();
@@ -86,7 +85,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     assertEquals(bufferPool.get(appId).get(shuffleId).get(2), bufferPool.get(appId).get(shuffleId).get(3));
 
     // register again
-    shuffleTaskManager.registerShuffle(appId, shuffleId, Lists.newArrayList(new PartitionRange(0, 1)));
+    shuffleTaskManager.registerShuffle(appId, shuffleId, Lists.newArrayList(new PartitionRange(0, 1)), "");
     assertEquals(buffer, bufferPool.get(appId).get(shuffleId).get(0));
   }
 
@@ -94,13 +93,12 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
   public void writeProcessTest() throws Exception {
     String confFile = ClassLoader.getSystemResource("server.conf").getFile();
     ShuffleServerConf conf = new ShuffleServerConf(confFile);
-    String storageBasePath = HDFS_URI + "rss/test";
+    String remoteStorage = HDFS_URI + "rss/test";
     String appId = "testAppId";
     int shuffleId = 1;
     conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 128L);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
-    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, storageBasePath);
     conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED, 3000L);
@@ -109,9 +107,12 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
     ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
     StorageManager storageManager = shuffleServer.getStorageManager();
-    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf, shuffleFlushManager, shuffleBufferManager, storageManager);
-    shuffleTaskManager.registerShuffle(appId, shuffleId, Lists.newArrayList(new PartitionRange(1, 1)));
-    shuffleTaskManager.registerShuffle(appId, shuffleId, Lists.newArrayList(new PartitionRange(2, 2)));
+    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(
+        conf, shuffleFlushManager, shuffleBufferManager, storageManager);
+    shuffleTaskManager.registerShuffle(
+        appId, shuffleId, Lists.newArrayList(new PartitionRange(1, 1)), remoteStorage);
+    shuffleTaskManager.registerShuffle(
+        appId, shuffleId, Lists.newArrayList(new PartitionRange(2, 2)), remoteStorage);
     List<ShufflePartitionedBlock> expectedBlocks1 = Lists.newArrayList();
     List<ShufflePartitionedBlock> expectedBlocks2 = Lists.newArrayList();
     Map<Long, PreAllocatedBufferInfo> bufferIds = shuffleTaskManager.getRequireBufferIds();
@@ -191,8 +192,8 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     shuffleTaskManager.commitShuffle(appId, shuffleId);
     shuffleTaskManager.commitShuffle(appId, shuffleId);
 
-    validate(appId, shuffleId, 1, expectedBlocks1, storageBasePath);
-    validate(appId, shuffleId, 2, expectedBlocks2, storageBasePath);
+    validate(appId, shuffleId, 1, expectedBlocks1, remoteStorage);
+    validate(appId, shuffleId, 2, expectedBlocks2, remoteStorage);
 
     // flush for partition 0-1
     ShufflePartitionedData partitionedData7 = createPartitionedData(1, 2, 35);
@@ -235,8 +236,8 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
     StorageManager storageManager = shuffleServer.getStorageManager();
     ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf, shuffleFlushManager, shuffleBufferManager, storageManager);
-    shuffleTaskManager.registerShuffle("clearTest1", shuffleId, Lists.newArrayList(new PartitionRange(0, 1)));
-    shuffleTaskManager.registerShuffle("clearTest2", shuffleId, Lists.newArrayList(new PartitionRange(0, 1)));
+    shuffleTaskManager.registerShuffle("clearTest1", shuffleId, Lists.newArrayList(new PartitionRange(0, 1)), "");
+    shuffleTaskManager.registerShuffle("clearTest2", shuffleId, Lists.newArrayList(new PartitionRange(0, 1)), "");
     shuffleTaskManager.refreshAppId("clearTest1");
     shuffleTaskManager.refreshAppId("clearTest2");
     assertEquals(2, shuffleTaskManager.getAppIds().size());
@@ -257,7 +258,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     assertEquals(1, shuffleTaskManager.getCachedBlockIds("clearTest1", shuffleId).getLongCardinality());
 
     // register again
-    shuffleTaskManager.registerShuffle("clearTest2", shuffleId, Lists.newArrayList(new PartitionRange(0, 1)));
+    shuffleTaskManager.registerShuffle("clearTest2", shuffleId, Lists.newArrayList(new PartitionRange(0, 1)), "");
     shuffleTaskManager.refreshAppId("clearTest2");
     shuffleTaskManager.checkResourceStatus();
     assertEquals(Sets.newHashSet("clearTest1", "clearTest2"), shuffleTaskManager.getAppIds().keySet());

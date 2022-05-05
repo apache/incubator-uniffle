@@ -112,9 +112,18 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     return "Shuffle server grpc client ref " + host + ":" + port;
   }
 
-  private ShuffleRegisterResponse doRegisterShuffle(String appId, int shuffleId, List<PartitionRange> partitionRanges) {
-    ShuffleRegisterRequest request = ShuffleRegisterRequest.newBuilder().setAppId(appId)
-        .setShuffleId(shuffleId).addAllPartitionRanges(toShufflePartitionRanges(partitionRanges)).build();
+  private ShuffleRegisterResponse doRegisterShuffle(
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      String remoteStorage) {
+    ShuffleRegisterRequest request = ShuffleRegisterRequest
+        .newBuilder()
+        .setAppId(appId)
+        .setShuffleId(shuffleId)
+        .setRemoteStorage(remoteStorage)
+        .addAllPartitionRanges(toShufflePartitionRanges(partitionRanges))
+        .build();
     return blockingStub.registerShuffle(request);
   }
 
@@ -177,7 +186,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     ShuffleRegisterResponse rpcResponse = doRegisterShuffle(
         request.getAppId(),
         request.getShuffleId(),
-        request.getPartitionRanges());
+        request.getPartitionRanges(),
+        request.getRemoteStorage());
 
     RssRegisterShuffleResponse response;
     StatusCode statusCode = rpcResponse.getStatus();

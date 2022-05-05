@@ -18,10 +18,20 @@
 
 package com.tencent.rss.test;
 
+import java.io.File;
+import java.util.List;
+import java.util.Map;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
 import com.tencent.rss.client.factory.ShuffleServerClientFactory;
 import com.tencent.rss.client.impl.ShuffleReadClientImpl;
 import com.tencent.rss.client.impl.ShuffleWriteClientImpl;
@@ -40,17 +50,10 @@ import com.tencent.rss.server.MockedShuffleServer;
 import com.tencent.rss.server.ShuffleServer;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.storage.util.StorageType;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import java.io.File;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class QuorumTest extends ShuffleReadWriteBase {
 
@@ -249,11 +252,11 @@ public class QuorumTest extends ShuffleReadWriteBase {
     shuffleWriteClientImpl = new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1,
       3, 2, 2);
     shuffleWriteClientImpl.registerShuffle(shuffleServerInfo0,
-      testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)));
+      testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), "");
     shuffleWriteClientImpl.registerShuffle(shuffleServerInfo1,
-      testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)));
+      testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), "");
     shuffleWriteClientImpl.registerShuffle(shuffleServerInfo2,
-      testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)));
+      testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), "");
   }
 
   @Test

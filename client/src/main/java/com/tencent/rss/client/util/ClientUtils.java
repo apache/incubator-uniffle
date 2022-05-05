@@ -18,7 +18,11 @@
 
 package com.tencent.rss.client.util;
 
+import org.apache.commons.lang.StringUtils;
+
+import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.common.util.Constants;
+import com.tencent.rss.storage.util.StorageType;
 
 public class ClientUtils {
 
@@ -41,5 +45,38 @@ public class ClientUtils {
     }
     return (atomicInt << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
         + (partitionId << Constants.TASK_ATTEMPT_ID_MAX_LENGTH) + taskAttemptId;
+  }
+
+  public static String fetchRemoteStorage(
+      String appId,
+      String defaultRemoteStorage,
+      boolean dynamicConfEnabled,
+      String storageType,
+      ShuffleWriteClient shuffleWriteClient) {
+    String remoteStorage = defaultRemoteStorage;
+    if (StringUtils.isEmpty(remoteStorage) && requireRemoteStorage(storageType)) {
+      if (dynamicConfEnabled) {
+        // get from coordinator first
+        remoteStorage = shuffleWriteClient.fetchRemoteStorage(appId);
+        if (StringUtils.isEmpty(remoteStorage)) {
+          // empty from coordinator, use default remote storage
+          remoteStorage = defaultRemoteStorage;
+        }
+      } else {
+        remoteStorage = defaultRemoteStorage;
+      }
+      if (StringUtils.isEmpty(remoteStorage)) {
+        throw new RuntimeException("Can't find remoteStorage: with storageType[" + storageType + "]");
+      }
+    }
+    return remoteStorage;
+  }
+
+  private static boolean requireRemoteStorage(String storageType) {
+    return StorageType.MEMORY_HDFS.name().equals(storageType)
+        || StorageType.MEMORY_LOCALFILE_HDFS.name().equals(storageType)
+        || StorageType.HDFS.name().equals(storageType)
+        || StorageType.LOCALFILE_HDFS.name().equals(storageType)
+        || StorageType.LOCALFILE_HDFS_2.name().equals(storageType);
   }
 }

@@ -18,9 +18,11 @@
 
 package com.tencent.rss.server.storage;
 
+import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,22 +43,13 @@ public class HdfsStorageManager extends SingleStorageManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(HdfsStorageManager.class);
 
-  private final String storageBasePath;
-  private final HdfsStorage storage;
   private final Configuration hadoopConf;
+  private Map<String, HdfsStorage> appIdToStorages = Maps.newConcurrentMap();
+  private Map<String, HdfsStorage> pathToStorages = Maps.newConcurrentMap();
 
   HdfsStorageManager(ShuffleServerConf conf) {
     super(conf);
-    if (StringUtils.isEmpty(conf.getString(ShuffleServerConf.HDFS_BASE_PATH))) {
-      storageBasePath = conf.getString(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
-    } else {
-      storageBasePath = conf.getString(ShuffleServerConf.HDFS_BASE_PATH);
-    }
-    if (StringUtils.isEmpty(storageBasePath)) {
-      throw new IllegalArgumentException("hdfs base path is empty");
-    }
     hadoopConf = conf.getHadoopConf();
-    storage = new HdfsStorage(storageBasePath, hadoopConf);
   }
 
   @Override
@@ -67,24 +60,48 @@ public class HdfsStorageManager extends SingleStorageManager {
 
   @Override
   public Storage selectStorage(ShuffleDataFlushEvent event) {
-    return storage;
+    return getStorageByAppId(event.getAppId());
   }
 
   @Override
   public Storage selectStorage(ShuffleDataReadEvent event) {
-    return storage;
+    return getStorageByAppId(event.getAppId());
   }
 
   @Override
   public void removeResources(String appId, Set<Integer> shuffleSet) {
-   storage.removeHandlers(appId);
-   ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
-       .createShuffleDeleteHandler(new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), hadoopConf));
-   deleteHandler.delete(new String[] {storageBasePath}, appId);
+    Storage storage = getStorageByAppId(appId);
+    storage.removeHandlers(appId);
+    appIdToStorages.remove(appId);
+    ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
+        .createShuffleDeleteHandler(new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), hadoopConf));
+    deleteHandler.delete(new String[] {storage.getStoragePath()}, appId);
   }
 
   @Override
   public Checker getStorageChecker() {
     throw new RuntimeException("Not support storage checker");
+  }
+
+  @Override
+  public void registerRemoteStorage(String appId, String remoteStorage) {
+    if (!pathToStorages.containsKey(remoteStorage)) {
+      pathToStorages.putIfAbsent(remoteStorage, new HdfsStorage(remoteStorage, hadoopConf));
+    }
+    appIdToStorages.putIfAbsent(appId, pathToStorages.get(remoteStorage));
+  }
+
+  private Storage getStorageByAppId(String appId) {
+    if (!appIdToStorages.containsKey(appId)) {
+      String msg = "Can't find HDFS storage for appId[" + appId + "]";
+      LOG.error(msg);
+      throw new RuntimeException(msg);
+    }
+    return appIdToStorages.get(appId);
+  }
+
+  @VisibleForTesting
+  public Map<String, HdfsStorage> getAppIdToStorages() {
+    return appIdToStorages;
   }
 }

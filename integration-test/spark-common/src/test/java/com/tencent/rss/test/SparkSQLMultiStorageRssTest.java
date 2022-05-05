@@ -18,16 +18,20 @@
 
 package com.tencent.rss.test;
 
-import static org.junit.Assert.assertEquals;
-
-import com.google.common.io.Files;
-import com.tencent.rss.coordinator.CoordinatorConf;
-import com.tencent.rss.server.ShuffleServerConf;
-import com.tencent.rss.storage.util.StorageType;
 import java.io.File;
+import java.util.Map;
+
+import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssClientConfig;
 import org.junit.BeforeClass;
+
+import com.tencent.rss.coordinator.CoordinatorConf;
+import com.tencent.rss.server.ShuffleServerConf;
+import com.tencent.rss.storage.util.StorageType;
+
+import static org.junit.Assert.assertEquals;
 
 public class SparkSQLMultiStorageRssTest extends SparkSQLTest {
   private static String basePath;
@@ -36,6 +40,10 @@ public class SparkSQLMultiStorageRssTest extends SparkSQLTest {
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setLong("rss.coordinator.app.expired", 5000);
+    Map<String, String> dynamicConf = Maps.newHashMap();
+    dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
+    dynamicConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS_2.name());
+    addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
@@ -66,8 +74,6 @@ public class SparkSQLMultiStorageRssTest extends SparkSQLTest {
 
   @Override
   public void updateRssStorage(SparkConf sparkConf) {
-    sparkConf.set(RssClientConfig.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS_2.name());
-    sparkConf.set(RssClientConfig.RSS_BASE_PATH, HDFS_URI + "rss/test");
   }
 
   @Override

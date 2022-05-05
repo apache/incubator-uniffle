@@ -62,4 +62,7 @@ public class RssMRConfig {
   // When the size of read buffer reaches the half of JVM region (i.e., 32m),
   // it will incur humongous allocation, so we set it to 14m.
   public static String RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE = "14m";
+
+  public static String RSS_DYNAMIC_CLIENT_CONF_ENABLED = "mapreduce.rss.dynamicClientConf.enabled";
+  public static boolean RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE = true;
 }

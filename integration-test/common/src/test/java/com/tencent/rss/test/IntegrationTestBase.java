@@ -18,7 +18,16 @@
 
 package com.tencent.rss.test;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.util.List;
+import java.util.Map;
+
 import com.google.common.collect.Lists;
+import org.junit.AfterClass;
+
 import com.tencent.rss.coordinator.CoordinatorConf;
 import com.tencent.rss.coordinator.CoordinatorServer;
 import com.tencent.rss.server.MockedShuffleServer;
@@ -26,9 +35,6 @@ import com.tencent.rss.server.ShuffleServer;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.storage.HdfsTestBase;
 import com.tencent.rss.storage.util.StorageType;
-import org.junit.AfterClass;
-
-import java.util.List;
 
 abstract public class IntegrationTestBase extends HdfsTestBase {
 
@@ -65,17 +71,28 @@ abstract public class IntegrationTestBase extends HdfsTestBase {
 
   protected static CoordinatorConf getCoordinatorConf() {
     CoordinatorConf coordinatorConf = new CoordinatorConf();
-    coordinatorConf.setInteger("rss.rpc.server.port", COORDINATOR_PORT_1);
-    coordinatorConf.setInteger("rss.jetty.http.port", JETTY_PORT_1);
-    coordinatorConf.setInteger("rss.rpc.executor.size", 10);
+    coordinatorConf.setInteger(CoordinatorConf.RPC_SERVER_PORT, COORDINATOR_PORT_1);
+    coordinatorConf.setInteger(CoordinatorConf.JETTY_HTTP_PORT, JETTY_PORT_1);
+    coordinatorConf.setInteger(CoordinatorConf.RPC_EXECUTOR_SIZE, 10);
     return coordinatorConf;
   }
 
-  protected static ShuffleServerConf getShuffleServerConf() {
+  protected static void addDynamicConf(
+      CoordinatorConf coordinatorConf, Map<String, String> dynamicConf) throws Exception {
+    File file = createDynamicConfFile(dynamicConf);
+    coordinatorConf.setBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
+    coordinatorConf.setString(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH,
+        file.getAbsolutePath());
+    coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 5);
+  }
+
+  protected static ShuffleServerConf getShuffleServerConf() throws Exception {
+    File dataFolder = Files.createTempDirectory("rssdata").toFile();
     ShuffleServerConf serverConf = new ShuffleServerConf();
+    dataFolder.deleteOnExit();
     serverConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT);
-    serverConf.setString("rss.storage.type", StorageType.HDFS.name());
-    serverConf.setString("rss.storage.basePath", HDFS_URI + "rss/test");
+    serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
+    serverConf.setString("rss.storage.basePath", dataFolder.getAbsolutePath());
     serverConf.setString("rss.server.buffer.capacity", "671088640");
     serverConf.setString("rss.server.memory.shuffle.highWaterMark", "50.0");
     serverConf.setString("rss.server.memory.shuffle.lowWaterMark", "0.0");
@@ -111,5 +128,24 @@ abstract public class IntegrationTestBase extends HdfsTestBase {
     createCoordinatorServer(coordinatorConf);
     createShuffleServer(shuffleServerConf);
     startServers();
+  }
+
+  protected static File createDynamicConfFile(Map<String, String> dynamicConf) throws Exception {
+    File dynamicConfFile = Files.createTempFile("dynamicConf", "conf").toFile();
+    writeRemoteStorageConf(dynamicConfFile, dynamicConf);
+    return dynamicConfFile;
+  }
+
+  protected static void writeRemoteStorageConf(
+      File cfgFile, Map<String, String> dynamicConf) throws Exception {
+    // sleep 2 secs to make sure the modified time will be updated
+    Thread.sleep(2000);
+    FileWriter fileWriter = new FileWriter(cfgFile);
+    PrintWriter printWriter = new PrintWriter(fileWriter);
+    for (Map.Entry<String, String> entry : dynamicConf.entrySet()) {
+      printWriter.println(entry.getKey() + " " + entry.getValue());
+    }
+    printWriter.flush();
+    printWriter.close();
   }
 }

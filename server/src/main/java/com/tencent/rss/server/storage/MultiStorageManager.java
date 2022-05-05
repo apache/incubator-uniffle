@@ -69,6 +69,11 @@ public class MultiStorageManager implements StorageManager {
   }
 
   @Override
+  public void registerRemoteStorage(String appId, String remoteStorage) {
+    coldStorageManager.registerRemoteStorage(appId, remoteStorage);
+  }
+
+  @Override
   public Storage selectStorage(ShuffleDataFlushEvent event) {
     return selectStorageManager(event).selectStorage(event);
   }

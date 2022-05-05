@@ -18,9 +18,18 @@
 
 package com.tencent.rss.test;
 
+import java.io.File;
+import java.util.List;
+import java.util.Map;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import com.tencent.rss.client.impl.grpc.ShuffleServerGrpcClient;
 import com.tencent.rss.client.request.RssRegisterShuffleRequest;
@@ -39,21 +48,15 @@ import com.tencent.rss.storage.handler.impl.LocalFileQuorumClientReadHandler;
 import com.tencent.rss.storage.handler.impl.MemoryQuorumClientReadHandler;
 import com.tencent.rss.storage.util.StorageType;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
-
-import java.io.File;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
 
   private ShuffleServerGrpcClient shuffleServerClient;
+  private static String REMOTE_STORAGE = HDFS_URI + "rss/test";
 
   @BeforeClass
   public static void setupServers() throws Exception {
@@ -66,7 +69,6 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     String basePath = dataDir.getAbsolutePath();
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, basePath);
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
-    shuffleServerConf.set(ShuffleServerConf.HDFS_BASE_PATH, HDFS_URI + "rss/test");
     shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 450L);
     shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 5000L);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);
@@ -92,7 +94,7 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     int shuffleId = 0;
     int partitionId = 0;
     RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest(testAppId, 0,
-      Lists.newArrayList(new PartitionRange(0, 0)));
+      Lists.newArrayList(new PartitionRange(0, 0)), REMOTE_STORAGE);
     shuffleServerClient.registerShuffle(rrsr);
     Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
@@ -120,7 +122,7 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
       75, expectBlockIds, processBlockIds, Lists.newArrayList(shuffleServerClient));
     HdfsClientReadHandler hdfsClientReadHandler = new HdfsClientReadHandler(
       testAppId, shuffleId, partitionId, 0, 1, 3,
-      500, expectBlockIds, processBlockIds, HDFS_URI + "rss/test", conf);
+      500, expectBlockIds, processBlockIds, REMOTE_STORAGE, conf);
     ClientReadHandler[] handlers = new ClientReadHandler[3];
     handlers[0] = memoryQuorumClientReadHandler;
     handlers[1] = localFileQuorumClientReadHandler;

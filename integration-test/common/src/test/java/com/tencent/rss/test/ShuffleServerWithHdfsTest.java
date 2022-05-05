@@ -18,12 +18,19 @@
 
 package com.tencent.rss.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.hadoop.conf.Configuration;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
 import com.tencent.rss.client.impl.ShuffleReadClientImpl;
 import com.tencent.rss.client.impl.grpc.ShuffleServerGrpcClient;
 import com.tencent.rss.client.request.RssFinishShuffleRequest;
@@ -36,15 +43,10 @@ import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.coordinator.CoordinatorConf;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.storage.util.StorageType;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import org.apache.hadoop.conf.Configuration;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class ShuffleServerWithHdfsTest extends ShuffleReadWriteBase {
 
@@ -55,6 +57,7 @@ public class ShuffleServerWithHdfsTest extends ShuffleReadWriteBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     createShuffleServer(shuffleServerConf);
     startServers();
   }
@@ -74,9 +77,9 @@ public class ShuffleServerWithHdfsTest extends ShuffleReadWriteBase {
     String appId = "app_hdfs_read_write";
     String dataBasePath = HDFS_URI + "rss/test";
     RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest(appId, 0,
-        Lists.newArrayList(new PartitionRange(0, 1)));
+        Lists.newArrayList(new PartitionRange(0, 1)), dataBasePath);
     shuffleServerClient.registerShuffle(rrsr);
-    rrsr = new RssRegisterShuffleRequest(appId, 0, Lists.newArrayList(new PartitionRange(2, 3)));
+    rrsr = new RssRegisterShuffleRequest(appId, 0, Lists.newArrayList(new PartitionRange(2, 3)), dataBasePath);
     shuffleServerClient.registerShuffle(rrsr);
 
     Roaring64NavigableMap[] bitmaps = new Roaring64NavigableMap[4];

@@ -55,6 +55,7 @@ import scala.collection.Seq;
 import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.client.factory.ShuffleClientFactory;
 import com.tencent.rss.client.response.SendShuffleDataResult;
+import com.tencent.rss.client.util.ClientUtils;
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.common.ShuffleAssignmentsInfo;
 import com.tencent.rss.common.ShuffleBlockInfo;
@@ -205,8 +206,10 @@ public class RssShuffleManager implements ShuffleManager {
       LOG.info("Generate application id used in rss: " + appId);
     }
 
-    remoteStorage = RssSparkShuffleUtils.fetchRemoteStorage(
-        appId, remoteStorage, dynamicConfEnabled, sparkConf, shuffleWriteClient);
+    String storageType = sparkConf.get(RssClientConfig.RSS_STORAGE_TYPE);
+    remoteStorage = sparkConf.get(RssClientConfig.RSS_BASE_PATH, "");
+    remoteStorage = ClientUtils.fetchRemoteStorage(
+        appId, remoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
 
     int partitionNumPerRange = sparkConf.getInt(RssClientConfig.RSS_PARTITION_NUM_PER_RANGE,
         RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
@@ -218,7 +221,7 @@ public class RssShuffleManager implements ShuffleManager {
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = response.getPartitionToServers();
 
     startHeartbeat();
-    registerShuffleServers(appId, shuffleId, response.getServerToPartitionRanges());
+    registerShuffleServers(appId, shuffleId, response.getServerToPartitionRanges(), remoteStorage);
 
     LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum[" + partitionToServers.size() + "]");
     return new RssShuffleHandle(shuffleId, appId, numMaps, dependency, partitionToServers, remoteStorage);
@@ -243,8 +246,11 @@ public class RssShuffleManager implements ShuffleManager {
   }
 
   @VisibleForTesting
-  protected void registerShuffleServers(String appId, int shuffleId,
-      Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges) {
+  protected void registerShuffleServers(
+      String appId,
+      int shuffleId,
+      Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges,
+      String remoteStorage) {
     if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
       return;
     }
@@ -254,7 +260,7 @@ public class RssShuffleManager implements ShuffleManager {
         .stream()
         .forEach(entry -> {
           shuffleWriteClient.registerShuffle(
-              entry.getKey(), appId, shuffleId, entry.getValue());
+              entry.getKey(), appId, shuffleId, entry.getValue(), remoteStorage);
         });
     LOG.info("Finish register shuffleId[" + shuffleId + "] with " + (System.currentTimeMillis() - start) + " ms");
   }

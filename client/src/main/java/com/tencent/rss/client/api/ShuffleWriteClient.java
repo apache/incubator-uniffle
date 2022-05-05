@@ -36,8 +36,12 @@ public interface ShuffleWriteClient {
 
   void sendAppHeartbeat(String appId, long timeoutMs);
 
-  void registerShuffle(ShuffleServerInfo shuffleServerInfo,
-      String appId, int shuffleId, List<PartitionRange> partitionRanges);
+  void registerShuffle(
+      ShuffleServerInfo shuffleServerInfo,
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      String remoteStorage);
 
   boolean sendCommit(Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);
 

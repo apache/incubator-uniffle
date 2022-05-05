@@ -58,6 +58,7 @@ import scala.collection.Seq;
 import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.client.factory.ShuffleClientFactory;
 import com.tencent.rss.client.response.SendShuffleDataResult;
+import com.tencent.rss.client.util.ClientUtils;
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.common.ShuffleAssignmentsInfo;
 import com.tencent.rss.common.ShuffleBlockInfo;
@@ -251,8 +252,10 @@ public class RssShuffleManager implements ShuffleManager {
     }
     LOG.info("Generate application id used in rss: " + id.get());
 
-    remoteStorage = RssSparkShuffleUtils.fetchRemoteStorage(
-        id.get(), remoteStorage, dynamicConfEnabled, sparkConf, shuffleWriteClient);
+    String storageType = sparkConf.get(RssClientConfig.RSS_STORAGE_TYPE);
+    remoteStorage = sparkConf.get(RssClientConfig.RSS_BASE_PATH, "");
+    remoteStorage = ClientUtils.fetchRemoteStorage(
+        id.get(), remoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
 
     ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
         id.get(),
@@ -556,7 +559,8 @@ public class RssShuffleManager implements ShuffleManager {
               entry.getKey(),
               appId,
               shuffleId,
-              entry.getValue());
+              entry.getValue(),
+              remoteStorage);
         });
     LOG.info("Finish register shuffleId[" + shuffleId + "] with " + (System.currentTimeMillis() - start) + " ms");
   }

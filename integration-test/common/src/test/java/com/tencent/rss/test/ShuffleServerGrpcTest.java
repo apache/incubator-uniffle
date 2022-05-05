@@ -18,10 +18,21 @@
 
 package com.tencent.rss.test;
 
+import java.io.File;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
 import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.client.factory.ShuffleClientFactory;
 import com.tencent.rss.client.impl.grpc.ShuffleServerGrpcClient;
@@ -44,20 +55,11 @@ import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.config.RssBaseConf;
 import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.coordinator.CoordinatorConf;
+import com.tencent.rss.server.ShuffleDataFlushEvent;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.server.ShuffleServerGrpcMetrics;
 import com.tencent.rss.server.ShuffleServerMetrics;
 import com.tencent.rss.storage.util.StorageType;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
-
-import java.io.File;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -68,17 +70,19 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
 
   private ShuffleServerGrpcClient shuffleServerClient;
   private AtomicInteger atomicInteger = new AtomicInteger(0);
+  private static Long EVENT_THRESHOLD_SIZE = 2048L;
 
   @BeforeClass
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
-    coordinatorConf.setLong("rss.coordinator.app.expired", 2000);
+    coordinatorConf.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2000);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     File tmpDir = Files.createTempDir();
     File dataDir1 = new File(tmpDir, "data1");
     String basePath = dataDir1.getAbsolutePath();
-    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    shuffleServerConf.set(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, EVENT_THRESHOLD_SIZE);
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, basePath);
     shuffleServerConf.set(RssBaseConf.RPC_METRICS_ENABLED, true);
     shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
@@ -102,16 +106,16 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
         new ShuffleServerInfo("127.0.0.1-20001", "127.0.0.1", 20001),
         "clearResourceTest1",
         0,
-        Lists.newArrayList(new PartitionRange(0, 1)));
+        Lists.newArrayList(new PartitionRange(0, 1)), "");
 
     shuffleWriteClient.sendAppHeartbeat("clearResourceTest1", 1000L);
     shuffleWriteClient.sendAppHeartbeat("clearResourceTest2", 1000L);
 
     RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest("clearResourceTest1", 0,
-        Lists.newArrayList(new PartitionRange(0, 1)));
+        Lists.newArrayList(new PartitionRange(0, 1)), "");
     shuffleServerClient.registerShuffle(rrsr);
     rrsr = new RssRegisterShuffleRequest("clearResourceTest2", 0,
-        Lists.newArrayList(new PartitionRange(0, 1)));
+        Lists.newArrayList(new PartitionRange(0, 1)), "");
     shuffleServerClient.registerShuffle(rrsr);
     assertEquals(Sets.newHashSet("clearResourceTest1", "clearResourceTest2"),
         shuffleServers.get(0).getShuffleTaskManager().getAppIds().keySet());
@@ -134,7 +138,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     // Heartbeat is sent to coordinator too]
     Thread.sleep(3000);
     shuffleServerClient.registerShuffle(new RssRegisterShuffleRequest("clearResourceTest1", 0,
-        Lists.newArrayList(new PartitionRange(0, 1))));
+        Lists.newArrayList(new PartitionRange(0, 1)), ""));
     assertEquals(Sets.newHashSet("clearResourceTest1"),
         coordinators.get(0).getApplicationManager().getAppIds());
     // clearResourceTest2 will be removed because of rss.server.app.expired.withoutHeartbeat
@@ -177,7 +181,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     }
 
     RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest("shuffleResultTest", 100,
-        Lists.newArrayList(new PartitionRange(0, 1)));
+        Lists.newArrayList(new PartitionRange(0, 1)), "");
     shuffleServerClient.registerShuffle(rrsr);
 
     req = new RssGetShuffleResultRequest("shuffleResultTest", 0, 1);
@@ -332,20 +336,43 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
   @Test
   public void registerTest() {
     shuffleServerClient.registerShuffle(new RssRegisterShuffleRequest("registerTest", 0,
-        Lists.newArrayList(new PartitionRange(0, 1))));
+        Lists.newArrayList(new PartitionRange(0, 1)), ""));
     RssGetShuffleResultRequest req = new RssGetShuffleResultRequest("registerTest", 0, 0);
     // no exception with getShuffleResult means register successfully
     shuffleServerClient.getShuffleResult(req);
     req = new RssGetShuffleResultRequest("registerTest", 0, 1);
     shuffleServerClient.getShuffleResult(req);
     shuffleServerClient.registerShuffle(new RssRegisterShuffleRequest("registerTest", 1,
-        Lists.newArrayList(new PartitionRange(0, 0), new PartitionRange(1, 1), new PartitionRange(2, 2))));
+        Lists.newArrayList(new PartitionRange(0, 0), new PartitionRange(1, 1), new PartitionRange(2, 2)), ""));
     req = new RssGetShuffleResultRequest("registerTest", 1, 0);
     shuffleServerClient.getShuffleResult(req);
     req = new RssGetShuffleResultRequest("registerTest", 1, 1);
     shuffleServerClient.getShuffleResult(req);
     req = new RssGetShuffleResultRequest("registerTest", 1, 2);
     shuffleServerClient.getShuffleResult(req);
+
+    // registerShuffle with remote storage
+    String appId1 = "remote_storage_register_app1";
+    String appId2 = "remote_storage_register_app2";
+    String remoteStorage = "hdfs://cluster1";
+    shuffleServerClient.registerShuffle(new RssRegisterShuffleRequest(appId1, 0,
+        Lists.newArrayList(new PartitionRange(0, 1)), remoteStorage));
+    ShuffleDataFlushEvent event1 = new ShuffleDataFlushEvent(1, appId1, 1, 1,1,
+        EVENT_THRESHOLD_SIZE + 1, null, null, null);
+    assertEquals(remoteStorage, shuffleServers.get(0).getStorageManager().selectStorage(event1).getStoragePath());
+    ShuffleDataFlushEvent event2 = new ShuffleDataFlushEvent(1, appId2, 1, 1,1,
+        EVENT_THRESHOLD_SIZE + 1, null, null, null);
+    try {
+      // can't find storage info with appId2
+      shuffleServers.get(0).getStorageManager().selectStorage(event2).getStoragePath();
+      fail("Exception should be thrown with un-register appId");
+    } catch (Exception e) {
+      // expected exception, ignore
+    }
+    // appId -> remote storage won't change if register again with the different remote storage
+    shuffleServerClient.registerShuffle(new RssRegisterShuffleRequest(appId1, 0,
+        Lists.newArrayList(new PartitionRange(0, 1)), remoteStorage + "another"));
+    assertEquals(remoteStorage, shuffleServers.get(0).getStorageManager().selectStorage(event1).getStoragePath());
   }
 
   @Test
@@ -369,7 +396,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
   public void multipleShuffleResultTest() throws Exception {
     Set<Long> expectedBlockIds = Sets.newConcurrentHashSet();
     RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest("multipleShuffleResultTest", 100,
-        Lists.newArrayList(new PartitionRange(0, 1)));
+        Lists.newArrayList(new PartitionRange(0, 1)), "");
     shuffleServerClient.registerShuffle(rrsr);
 
     Runnable r1 = () -> {
@@ -441,7 +468,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     double oldValue = shuffleServers.get(0).getGrpcMetrics().getCounterMap().
         get(ShuffleServerGrpcMetrics.REGISTER_SHUFFLE_METHOD).get();
     shuffleServerClient.registerShuffle(new RssRegisterShuffleRequest(appId, shuffleId,
-        Lists.newArrayList(new PartitionRange(0, 1))));
+        Lists.newArrayList(new PartitionRange(0, 1)), ""));
     double newValue = shuffleServers.get(0).getGrpcMetrics().getCounterMap()
         .get(ShuffleServerGrpcMetrics.REGISTER_SHUFFLE_METHOD).get();
     assertEquals(oldValue + 1, newValue, 0.5);

@@ -18,18 +18,22 @@
 
 package com.tencent.rss.test;
 
-import static org.junit.Assert.assertEquals;
-
-import com.google.common.io.Files;
-import com.tencent.rss.coordinator.CoordinatorConf;
-import com.tencent.rss.server.ShuffleServerConf;
-import com.tencent.rss.storage.util.StorageType;
 import java.io.File;
+import java.util.Map;
+
+import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssClientConfig;
 import org.junit.BeforeClass;
 
-public class SparkSQLWithLocalFileRssTest extends SparkSQLTest {
+import com.tencent.rss.coordinator.CoordinatorConf;
+import com.tencent.rss.server.ShuffleServerConf;
+import com.tencent.rss.storage.util.StorageType;
+
+import static org.junit.Assert.assertEquals;
+
+public class SparkSQLWithMemoryLocalTest extends SparkSQLTest {
 
   private static String basePath;
 
@@ -37,6 +41,9 @@ public class SparkSQLWithLocalFileRssTest extends SparkSQLTest {
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setLong("rss.coordinator.app.expired", 5000);
+    Map<String, String> dynamicConf = Maps.newHashMap();
+    dynamicConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE.name());
+    addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000);
@@ -46,7 +53,6 @@ public class SparkSQLWithLocalFileRssTest extends SparkSQLTest {
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
     basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
-    shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
     shuffleServerConf.setString("rss.storage.basePath", basePath);
     createShuffleServer(shuffleServerConf);
     startServers();
@@ -54,7 +60,6 @@ public class SparkSQLWithLocalFileRssTest extends SparkSQLTest {
 
   @Override
   public void updateRssStorage(SparkConf sparkConf) {
-    sparkConf.set(RssClientConfig.RSS_STORAGE_TYPE, "LOCALFILE");
   }
 
   @Override

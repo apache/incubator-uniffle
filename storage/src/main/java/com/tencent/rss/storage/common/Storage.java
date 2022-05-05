@@ -51,4 +51,6 @@ public interface Storage {
   void removeHandlers(String appId);
 
   void createMetadataIfNotExist(String shuffleKey);
+
+  String getStoragePath();
 }

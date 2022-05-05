@@ -83,6 +83,11 @@ public class LocalStorage extends AbstractStorage {
   }
 
   @Override
+  public String getStoragePath() {
+    return basePath;
+  }
+
+  @Override
   public boolean lockShuffleShared(String shuffleKey) {
     ReadWriteLock lock = getLock(shuffleKey);
     if (lock == null) {

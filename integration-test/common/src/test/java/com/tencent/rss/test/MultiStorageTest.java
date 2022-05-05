@@ -18,10 +18,24 @@
 
 package com.tencent.rss.test;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
 import com.tencent.rss.client.impl.ShuffleReadClientImpl;
 import com.tencent.rss.client.impl.grpc.ShuffleServerGrpcClient;
 import com.tencent.rss.client.request.RssAppHeartBeatRequest;
@@ -44,22 +58,12 @@ import com.tencent.rss.server.ShuffleDataReadEvent;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.storage.common.LocalStorage;
 import com.tencent.rss.storage.handler.api.ClientReadHandler;
-import com.tencent.rss.storage.handler.impl.*;
+import com.tencent.rss.storage.handler.impl.ComposedClientReadHandler;
+import com.tencent.rss.storage.handler.impl.HdfsClientReadHandler;
+import com.tencent.rss.storage.handler.impl.LocalFileQuorumClientReadHandler;
+import com.tencent.rss.storage.handler.impl.UploadedHdfsClientReadHandler;
 import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import com.tencent.rss.storage.util.StorageType;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -69,16 +73,19 @@ import static org.junit.Assert.fail;
 
 public class MultiStorageTest extends ShuffleReadWriteBase {
   private ShuffleServerGrpcClient shuffleServerClient;
+  private static String REMOTE_STORAGE = HDFS_URI + "rss/multi_storage";
 
   @BeforeClass
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
+    Map<String, String> dynamicConf = Maps.newHashMap();
+    dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), REMOTE_STORAGE);
+    addDynamicConf(coordinatorConf, dynamicConf);
     String basePath = generateBasePath();
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS_2.name());
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, basePath);
-    shuffleServerConf.setString(ShuffleServerConf.UPLOADER_BASE_PATH,  HDFS_URI + "rss/multi_storage");
-    shuffleServerConf.setString(ShuffleServerConf.HDFS_BASE_PATH, HDFS_URI + "rss/multi_storage");
+    shuffleServerConf.setString(ShuffleServerConf.UPLOADER_BASE_PATH,  REMOTE_STORAGE);
     shuffleServerConf.setDouble(ShuffleServerConf.CLEANUP_THRESHOLD, 0.0);
     shuffleServerConf.setLong(ShuffleServerConf.CLEANUP_INTERVAL_MS, 1000);
     shuffleServerConf.setDouble(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE, 100.0);
@@ -108,13 +115,13 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
   public void readUploadedDataTest() {
     String appId = "ap_read_uploaded_data";
     RssRegisterShuffleRequest rr1 =  new RssRegisterShuffleRequest(appId, 0,
-        Lists.newArrayList(new PartitionRange(0, 0)));
+        Lists.newArrayList(new PartitionRange(0, 0)), REMOTE_STORAGE);
     RssRegisterShuffleRequest rr2 =  new RssRegisterShuffleRequest(appId, 0,
-        Lists.newArrayList(new PartitionRange(1, 1)));
+        Lists.newArrayList(new PartitionRange(1, 1)), REMOTE_STORAGE);
     RssRegisterShuffleRequest rr3 =  new RssRegisterShuffleRequest(appId, 0,
-        Lists.newArrayList(new PartitionRange(2, 2)));
+        Lists.newArrayList(new PartitionRange(2, 2)), REMOTE_STORAGE);
     RssRegisterShuffleRequest rr4 =  new RssRegisterShuffleRequest(appId, 0,
-        Lists.newArrayList(new PartitionRange(4, 4)));
+        Lists.newArrayList(new PartitionRange(4, 4)), REMOTE_STORAGE);
     shuffleServerClient.registerShuffle(rr1);
     shuffleServerClient.registerShuffle(rr2);
     shuffleServerClient.registerShuffle(rr3);
@@ -214,22 +221,22 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     assertEquals(0, result.getData().length);
 
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
-        appId, 0, 0, 100, 1, 10, 1000, HDFS_URI + "rss/multi_storage",
+        appId, 0, 0, 100, 1, 10, 1000, REMOTE_STORAGE,
         blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1), Lists.newArrayList(), conf);
     validateResult(readClient, expectedData, blockIdBitmap1);
 
     readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
-        appId, 0, 1, 100, 1, 10, 1000, HDFS_URI + "rss/multi_storage",
+        appId, 0, 1, 100, 1, 10, 1000, REMOTE_STORAGE,
         blockIdBitmap2, Roaring64NavigableMap.bitmapOf(1), Lists.newArrayList(), conf);
     validateResult(readClient, expectedData, blockIdBitmap2);
 
     readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
-        appId, 0, 2, 100, 1, 10, 1000, HDFS_URI + "rss/multi_storage",
+        appId, 0, 2, 100, 1, 10, 1000, REMOTE_STORAGE,
         blockIdBitmap3, Roaring64NavigableMap.bitmapOf(2), Lists.newArrayList(), conf);
     validateResult(readClient, expectedData, blockIdBitmap3);
 
     readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
-        appId, 0, 4, 100, 1, 10, 1000, HDFS_URI + "rss/multi_storage",
+        appId, 0, 4, 100, 1, 10, 1000, REMOTE_STORAGE,
         blockIdBitmap4, Roaring64NavigableMap.bitmapOf(3), Lists.newArrayList(), conf);
     validateResult(readClient, expectedData, blockIdBitmap4);
   }
@@ -267,13 +274,13 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     String appId = "app_read_not_uploaded_data";
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     RssRegisterShuffleRequest rr1 =  new RssRegisterShuffleRequest(appId, 1,
-        Lists.newArrayList(new PartitionRange(0, 0)));
+        Lists.newArrayList(new PartitionRange(0, 0)), REMOTE_STORAGE);
     RssRegisterShuffleRequest rr2 =  new RssRegisterShuffleRequest(appId, 1,
-        Lists.newArrayList(new PartitionRange(1, 1)));
+        Lists.newArrayList(new PartitionRange(1, 1)), REMOTE_STORAGE);
     RssRegisterShuffleRequest rr3 =  new RssRegisterShuffleRequest(appId, 1,
-        Lists.newArrayList(new PartitionRange(2, 2)));
+        Lists.newArrayList(new PartitionRange(2, 2)), REMOTE_STORAGE);
     RssRegisterShuffleRequest rr4 =  new RssRegisterShuffleRequest(appId, 1,
-        Lists.newArrayList(new PartitionRange(3, 3)));
+        Lists.newArrayList(new PartitionRange(3, 3)), REMOTE_STORAGE);
     shuffleServerClient.registerShuffle(rr1);
     shuffleServerClient.registerShuffle(rr2);
     shuffleServerClient.registerShuffle(rr3);
@@ -325,7 +332,7 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
   public void readMixedDataTest() {
     String appId = "app_read_mix_data";
     RssRegisterShuffleRequest rr1 =  new RssRegisterShuffleRequest(appId, 0,
-        Lists.newArrayList(new PartitionRange(0, 0)));
+        Lists.newArrayList(new PartitionRange(0, 0)), REMOTE_STORAGE);
     shuffleServerClient.registerShuffle(rr1);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
@@ -359,8 +366,9 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     shuffleServerClient.getShuffleResult(rg1);
 
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
-        appId, 0, 0, 100, 1, 10, 1000, HDFS_URI + "rss/multi_storage",
-        blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1), Lists.newArrayList(new ShuffleServerInfo("test", LOCALHOST, SHUFFLE_SERVER_PORT)), conf);
+        appId, 0, 0, 100, 1, 10, 1000, REMOTE_STORAGE,
+        blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1),
+        Lists.newArrayList(new ShuffleServerInfo("test", LOCALHOST, SHUFFLE_SERVER_PORT)), conf);
 
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();
     Roaring64NavigableMap matched = Roaring64NavigableMap.bitmapOf();
@@ -417,7 +425,7 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
   public void readDifferentStorageData() {
     String appId = "app_read_diff_data";
     RssRegisterShuffleRequest rr1 =  new RssRegisterShuffleRequest(appId, 0,
-        Lists.newArrayList(new PartitionRange(0, 0)));
+        Lists.newArrayList(new PartitionRange(0, 0)), REMOTE_STORAGE);
     shuffleServerClient.registerShuffle(rr1);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Set<Long> expectedBlock1 = Sets.newHashSet();
@@ -458,8 +466,9 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     shuffleServerClient.getShuffleResult(rg1);
 
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
-        appId, 0, 0, 100, 1, 10, 1000, HDFS_URI + "rss/multi_storage",
-        blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1, 2), Lists.newArrayList(new ShuffleServerInfo("test", LOCALHOST, SHUFFLE_SERVER_PORT)), conf);
+        appId, 0, 0, 100, 1, 10, 1000, REMOTE_STORAGE,
+        blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1, 2),
+        Lists.newArrayList(new ShuffleServerInfo("test", LOCALHOST, SHUFFLE_SERVER_PORT)), conf);
 
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();
     Roaring64NavigableMap matched = Roaring64NavigableMap.bitmapOf();
@@ -489,7 +498,7 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
   public void readDifferentStorageDataWithFilter() {
     String appId = "app_read_diff_data_filter";
     RssRegisterShuffleRequest rr1 =  new RssRegisterShuffleRequest(appId, 0,
-      Lists.newArrayList(new PartitionRange(0, 0)));
+      Lists.newArrayList(new PartitionRange(0, 0)), REMOTE_STORAGE);
     shuffleServerClient.registerShuffle(rr1);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Set<Long> expectedBlock1 = Sets.newHashSet();
@@ -542,10 +551,10 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
       20 * 1024 , blockIdBitmap, processBitmap, Lists.newArrayList(shuffleServerClient));
     HdfsClientReadHandler hdfsClientReadHandler = new HdfsClientReadHandler(
       appId, 0, 0, 0, 1, 3,
-      100 * 1024 * 1024, blockIdBitmap, processBitmap, HDFS_URI + "rss/multi_storage", conf);
+      100 * 1024 * 1024, blockIdBitmap, processBitmap, REMOTE_STORAGE, conf);
     UploadedHdfsClientReadHandler uploadedHdfsClientReadHandler = new UploadedHdfsClientReadHandler(
       appId, 0, 0, 0, 1, 3,
-      20 * 1024, blockIdBitmap, processBitmap, HDFS_URI + "rss/multi_storage", conf);
+      20 * 1024, blockIdBitmap, processBitmap, REMOTE_STORAGE, conf);
     ClientReadHandler[] handlers = new ClientReadHandler[3];
     handlers[0] = localFileQuorumClientReadHandler;
     handlers[1] = hdfsClientReadHandler;
@@ -608,15 +617,15 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     Map<Long, byte[]> expectedData = Maps.newHashMap();
 
     RssRegisterShuffleRequest rr1 =  new RssRegisterShuffleRequest(appId, 2,
-        Lists.newArrayList(new PartitionRange(0, 0)));
+        Lists.newArrayList(new PartitionRange(0, 0)), REMOTE_STORAGE);
     shuffleServerClient.registerShuffle(rr1);
 
     RssRegisterShuffleRequest rr2 =  new RssRegisterShuffleRequest(appId, 3,
-        Lists.newArrayList(new PartitionRange(1, 1)));
+        Lists.newArrayList(new PartitionRange(1, 1)), REMOTE_STORAGE);
     shuffleServerClient.registerShuffle(rr2);
 
     RssRegisterShuffleRequest rr3 =  new RssRegisterShuffleRequest(appId, 2,
-        Lists.newArrayList(new PartitionRange(1, 1)));
+        Lists.newArrayList(new PartitionRange(1, 1)), REMOTE_STORAGE);
     shuffleServerClient.registerShuffle(rr3);
 
     Roaring64NavigableMap blockIdBitmap1 = Roaring64NavigableMap.bitmapOf();
@@ -655,8 +664,9 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     shuffleServerClient.getShuffleResult(rg1);
     validateResult(appId, 2, 0, expectedData, Sets.newHashSet());
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
-        appId, 2, 0, 100, 1, 10, 1000, HDFS_URI + "rss/multi_storage",
-        blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1), Lists.newArrayList(new ShuffleServerInfo("test", LOCALHOST, SHUFFLE_SERVER_PORT)), conf);
+        appId, 2, 0, 100, 1, 10, 1000, REMOTE_STORAGE,
+        blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1),
+        Lists.newArrayList(new ShuffleServerInfo("test", LOCALHOST, SHUFFLE_SERVER_PORT)), conf);
     validateResult(readClient, expectedData, blockIdBitmap1);
     try {
       sendSinglePartitionToShuffleServer(appId, 3, 1,2, blocks2);
@@ -676,10 +686,10 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     String appId = "app_read_diskusage_data_without_report";
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     RssRegisterShuffleRequest rr1 =  new RssRegisterShuffleRequest(appId, 2,
-        Lists.newArrayList(new PartitionRange(0, 0)));
+        Lists.newArrayList(new PartitionRange(0, 0)), REMOTE_STORAGE);
     shuffleServerClient.registerShuffle(rr1);
     RssRegisterShuffleRequest rr2 =  new RssRegisterShuffleRequest(appId, 3,
-        Lists.newArrayList(new PartitionRange(1, 1)));
+        Lists.newArrayList(new PartitionRange(1, 1)), REMOTE_STORAGE);
     shuffleServerClient.registerShuffle(rr2);
 
     Roaring64NavigableMap blockIdBitmap1 = Roaring64NavigableMap.bitmapOf();
@@ -704,7 +714,8 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     assertTrue(keys.isEmpty());
 
     appId = "app_read_diskusage_data_with_report";
-    rr1 =  new RssRegisterShuffleRequest(appId, 0, Lists.newArrayList(new PartitionRange(0, 0)));
+    rr1 =  new RssRegisterShuffleRequest(appId, 0,
+        Lists.newArrayList(new PartitionRange(0, 0)), REMOTE_STORAGE);
     shuffleServerClient.registerShuffle(rr1);
     blocks1 = createShuffleBlockList(
         0, 0, 1,30, 10 * 1024, blockIdBitmap1, expectedData);

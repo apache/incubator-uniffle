@@ -207,8 +207,12 @@ public class SortWriteBufferManagerTest {
     }
 
     @Override
-    public void registerShuffle(ShuffleServerInfo shuffleServerInfo, String appId, int shuffleId, List<PartitionRange> partitionRanges) {
-
+    public void registerShuffle(
+        ShuffleServerInfo shuffleServerInfo,
+        String appId,
+        int shuffleId,
+        List<PartitionRange> partitionRanges,
+        String remoteStorage) {
     }
 
     @Override

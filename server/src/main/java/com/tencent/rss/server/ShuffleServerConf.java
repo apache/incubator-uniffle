@@ -202,12 +202,6 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(32L)
       .withDescription("The threshold of the combine mode");
 
-  public static final ConfigOption<String> HDFS_BASE_PATH = ConfigOptions
-      .key("rss.server.hdfs.base.path")
-      .stringType()
-      .noDefaultValue()
-      .withDescription("The base path of the hdfs storage");
-
   public static final ConfigOption<String> UPLOADER_BASE_PATH = ConfigOptions
       .key("rss.server.uploader.base.path")
       .stringType()

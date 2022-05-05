@@ -27,11 +27,17 @@ public class RssRegisterShuffleRequest {
   private String appId;
   private int shuffleId;
   private List<PartitionRange> partitionRanges;
+  private String remoteStorage;
 
-  public RssRegisterShuffleRequest(String appId, int shuffleId, List<PartitionRange> partitionRanges) {
+  public RssRegisterShuffleRequest(
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      String remoteStorage) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionRanges = partitionRanges;
+    this.remoteStorage = remoteStorage;
   }
 
   public String getAppId() {
@@ -40,6 +46,10 @@ public class RssRegisterShuffleRequest {
 
   public int getShuffleId() {
     return shuffleId;
+  }
+
+  public String getRemoteStorage() {
+    return remoteStorage;
   }
 
   public List<PartitionRange> getPartitionRanges() {

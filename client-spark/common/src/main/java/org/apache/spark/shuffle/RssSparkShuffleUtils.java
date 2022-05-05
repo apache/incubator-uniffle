@@ -27,7 +27,6 @@ import java.util.Map;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.deploy.SparkHadoopUtil;
@@ -37,9 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.client.api.CoordinatorClient;
-import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.client.factory.CoordinatorClientFactory;
-import com.tencent.rss.storage.util.StorageType;
 
 public class RssSparkShuffleUtils {
 
@@ -178,14 +175,6 @@ public class RssSparkShuffleUtils {
     }
   }
 
-  public static boolean requireRemoteStorage(String storageType) {
-    return StorageType.MEMORY_HDFS.name().equals(storageType)
-        || StorageType.MEMORY_LOCALFILE_HDFS.name().equals(storageType)
-        || StorageType.HDFS.name().equals(storageType)
-        || StorageType.LOCALFILE_HDFS.name().equals(storageType)
-        || StorageType.LOCALFILE_HDFS_2.name().equals(storageType);
-  }
-
   public static void validateRssClientConf(SparkConf sparkConf) {
     String msgFormat = "%s must be set by the client or fetched from coordinators.";
     if (!sparkConf.contains(RssClientConfig.RSS_STORAGE_TYPE)) {
@@ -193,31 +182,5 @@ public class RssSparkShuffleUtils {
       LOG.error(msg);
       throw new IllegalArgumentException(msg);
     }
-  }
-
-  public static String fetchRemoteStorage(
-      String appId,
-      String currentRemoteStorage,
-      boolean dynamicConfEnabled,
-      SparkConf sparkConf,
-      ShuffleWriteClient shuffleWriteClient) {
-    String remoteStorage = currentRemoteStorage;
-    String storageType = sparkConf.get(RssClientConfig.RSS_STORAGE_TYPE);
-    if (StringUtils.isEmpty(remoteStorage) && RssSparkShuffleUtils.requireRemoteStorage(storageType)) {
-      if (dynamicConfEnabled) {
-        // get from coordinator first
-        remoteStorage = shuffleWriteClient.fetchRemoteStorage(appId);
-        if (StringUtils.isEmpty(remoteStorage)) {
-          // empty from coordinator, try local config
-          remoteStorage = sparkConf.get(RssClientConfig.RSS_BASE_PATH, "");
-        }
-      } else {
-        remoteStorage = sparkConf.get(RssClientConfig.RSS_BASE_PATH, "");
-      }
-      if (StringUtils.isEmpty(remoteStorage)) {
-        throw new RuntimeException("Can't find remoteStorage: with storageType[" + storageType + "]");
-      }
-    }
-    return remoteStorage;
   }
 }

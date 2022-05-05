@@ -37,6 +37,11 @@ public class HdfsStorage extends AbstractStorage {
   }
 
   @Override
+  public String getStoragePath() {
+    return storagePath;
+  }
+
+  @Override
   public boolean canWrite() {
     return true;
   }

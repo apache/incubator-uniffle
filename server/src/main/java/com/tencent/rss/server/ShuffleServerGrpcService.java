@@ -106,13 +106,15 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     ShuffleRegisterResponse reply;
     String appId = req.getAppId();
     int shuffleId = req.getShuffleId();
+    String remoteStorage = req.getRemoteStorage();
     List<PartitionRange> partitionRanges = toPartitionRanges(req.getPartitionRangesList());
-    LOG.info("Get register request for appId[" + appId + "], shuffleId[" + shuffleId + "] with "
+    LOG.info("Get register request for appId[" + appId + "], shuffleId[" + shuffleId
+        + "], remoteStorage[" + remoteStorage + "] with "
         + partitionRanges.size() + " partition ranges");
 
     StatusCode result = shuffleServer
         .getShuffleTaskManager()
-        .registerShuffle(appId, shuffleId, partitionRanges);
+        .registerShuffle(appId, shuffleId, partitionRanges, remoteStorage);
 
     reply = ShuffleRegisterResponse
         .newBuilder()

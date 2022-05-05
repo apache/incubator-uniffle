@@ -133,6 +133,10 @@ public class LocalStorageManager extends SingleStorageManager {
     deleteHandler.delete(storageBasePaths, appId);
   }
 
+  @Override
+  public void registerRemoteStorage(String appId, String remoteStorage) {
+    // ignore
+  }
 
   void repair() {
     boolean hasNewCorruptedStorage = false;

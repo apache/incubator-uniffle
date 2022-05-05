@@ -236,9 +236,14 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   @Override
-  public void registerShuffle(ShuffleServerInfo shuffleServerInfo,
-      String appId, int shuffleId, List<PartitionRange> partitionRanges) {
-    RssRegisterShuffleRequest request = new RssRegisterShuffleRequest(appId, shuffleId, partitionRanges);
+  public void registerShuffle(
+      ShuffleServerInfo shuffleServerInfo,
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      String remoteStorage) {
+    RssRegisterShuffleRequest request =
+        new RssRegisterShuffleRequest(appId, shuffleId, partitionRanges, remoteStorage);
     RssRegisterShuffleResponse response = getShuffleServerClient(shuffleServerInfo).registerShuffle(request);
 
     String msg = "Error happened when registerShuffle with appId[" + appId + "], shuffleId[" + shuffleId

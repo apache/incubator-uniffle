@@ -20,16 +20,16 @@ package com.tencent.rss.test;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.client.request.RssFetchClientConfRequest;
 import com.tencent.rss.client.request.RssFetchRemoteStorageRequest;
@@ -43,8 +43,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 public class FetchClientConfTest extends CoordinatorTestBase {
-
-  private static final Logger LOG = LoggerFactory.getLogger(FetchClientConfTest.class);
 
   @Rule
   public TemporaryFolder tmpFolder = new TemporaryFolder();
@@ -103,7 +101,9 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     String remotePath1 = "hdfs://path1";
     String remotePath2 = "hdfs://path2";
     File cfgFile = tmpFolder.newFile();
-    writeRemoteStorageConf(cfgFile, remotePath1);
+    Map<String, String> dynamicConf = Maps.newHashMap();
+    dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), remotePath1);
+    writeRemoteStorageConf(cfgFile, dynamicConf);
 
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
@@ -119,7 +119,8 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     assertEquals(remotePath1, response.getRemoteStorage());
 
     // update remote storage info
-    writeRemoteStorageConf(cfgFile, remotePath2);
+    dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), remotePath2);
+    writeRemoteStorageConf(cfgFile, dynamicConf);
     waitForUpdate(Sets.newHashSet(remotePath2), coordinators.get(0).getApplicationManager());
     request = new RssFetchRemoteStorageRequest(appId);
     response = coordinatorClient.fetchRemoteStorage(request);
@@ -150,15 +151,5 @@ public class FetchClientConfTest extends CoordinatorTestBase {
       }
       attempt++;
     }
-  }
-
-  private void writeRemoteStorageConf(File cfgFile, String value) throws Exception {
-    // sleep 2 secs to make sure the modified time will be updated
-    Thread.sleep(2000);
-    FileWriter fileWriter = new FileWriter(cfgFile);
-    PrintWriter printWriter = new PrintWriter(fileWriter);
-    printWriter.println(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key() + " " + value);
-    printWriter.flush();
-    printWriter.close();
   }
 }

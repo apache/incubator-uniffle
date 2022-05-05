@@ -35,6 +35,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.commons.lang3.StringUtils;
 import org.roaringbitmap.longlong.LongIterator;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -125,11 +126,18 @@ public class ShuffleTaskManager {
     thread.start();
   }
 
-  public StatusCode registerShuffle(String appId, int shuffleId, List<PartitionRange> partitionRanges) {
+  public StatusCode registerShuffle(
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      String remoteStorage) {
     refreshAppId(appId);
     partitionsToBlockIds.putIfAbsent(appId, Maps.newConcurrentMap());
     for (PartitionRange partitionRange : partitionRanges) {
       shuffleBufferManager.registerBuffer(appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
+    }
+    if (!StringUtils.isEmpty(remoteStorage)) {
+      storageManager.registerRemoteStorage(appId, remoteStorage);
     }
     return StatusCode.SUCCESS;
   }
