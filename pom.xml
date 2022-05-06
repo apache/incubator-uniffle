@@ -1335,6 +1335,12 @@
             <artifactId>jol-core</artifactId>
             <version>0.16</version>
           </dependency>
+          <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-mapreduce-examples</artifactId>
+            <version>${hadoop.version}</version>
+            <scope>test</scope>
+          </dependency>
         </dependencies>
       </dependencyManagement>
     </profile>

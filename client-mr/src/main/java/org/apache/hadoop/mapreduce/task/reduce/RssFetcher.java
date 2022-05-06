@@ -143,7 +143,7 @@ public class RssFetcher<K,V> {
     if (compressedData != null) {
       final long startDecompress = System.currentTimeMillis();
       byte[] uncompressedData = RssShuffleUtils.decompressData(
-        compressedData.array(), compressedBlock.getUncompressLength());
+        compressedData, compressedBlock.getUncompressLength(), false).array();
       unCompressionLength += compressedBlock.getUncompressLength();
       long decompressDuration = System.currentTimeMillis() - startDecompress;
       decompressTime += decompressDuration;

@@ -16,17 +16,25 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package org.apache.hadoop.mapreduce;
+package com.tencent.rss.test;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 
+import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapreduce.MRConfig;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.filecache.DistributedCache;
 import org.apache.hadoop.mapreduce.v2.MiniMRYarnCluster;
 import org.apache.hadoop.mapreduce.v2.TestMRJobs;
@@ -36,10 +44,10 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+import com.tencent.rss.storage.util.StorageType;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
-import com.tencent.rss.test.IntegrationTestBase;
 
 public class MRIntegrationTestBase extends IntegrationTestBase {
 
@@ -86,18 +94,20 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
   }
 
   public void run() throws Exception {
-    Configuration appConf = new Configuration(mrYarnCluster.getConfig());
+    JobConf appConf = new JobConf(mrYarnCluster.getConfig());
     updateCommonConfiguration(appConf);
     runOriginApp(appConf);
-    appConf.get("mapreduce.output.fileoutputformat.outputdir");
-    appConf = new Configuration(mrYarnCluster.getConfig());
+    String originPath = appConf.get("mapreduce.output.fileoutputformat.outputdir");
+    appConf = new JobConf(mrYarnCluster.getConfig());
     updateCommonConfiguration(appConf);
     runRssApp(appConf);
-    verifyResults();
+    String rssPath = appConf.get("mapreduce.output.fileoutputformat.outputdir");
+    verifyResults(originPath, rssPath);
   }
 
   private void updateCommonConfiguration(Configuration jobConf) {
-
+    long mapMb = MRJobConfig.DEFAULT_MAP_MEMORY_MB;
+    jobConf.set(MRJobConfig.MAP_JAVA_OPTS, "-Xmx" + mapMb + "m");
   }
 
   private void runOriginApp(Configuration jobConf) throws Exception {
@@ -112,8 +122,16 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
       throw new RuntimeException("We must set JAVA_HOME");
     }
     jobConf.set(MRJobConfig.MR_AM_COMMAND_OPTS, "-XX:+TraceClassLoading org.apache.hadoop.mapreduce.v2.app.RssMRAppMaster");
+    // jobConf.set(MRJobConfig.REDUCE_JAVA_OPTS, "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp");
+    // jobConf.set(MRJobConfig.REDUCE_JAVA_OPTS, "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
+    jobConf.set(MRJobConfig.REDUCE_JAVA_OPTS, "-XX:+TraceClassLoading -XX:MaxDirectMemorySize=419430400");
     jobConf.setInt(MRJobConfig.MAP_MEMORY_MB, 2048);
+    jobConf.setInt(MRJobConfig.REDUCE_MEMORY_MB, 2048);
     jobConf.setInt(MRJobConfig.IO_SORT_MB, 128);
+    jobConf.set("mapreduce.rss.storage.type", StorageType.MEMORY_HDFS.name());
+    jobConf.set(MRJobConfig.MAP_OUTPUT_COLLECTOR_CLASS_ATTR, "org.apache.hadoop.mapred.RssMapOutputCollector");
+    jobConf.set(MRConfig.SHUFFLE_CONSUMER_PLUGIN, "org.apache.hadoop.mapreduce.task.reduce.RssShuffle");
+    jobConf.set("mapreduce.rss.base.path", HDFS_URI + "rss/test");
     File file = new File(parentPath, "client-mr/target/shaded");
     File[] jars = file.listFiles();
     File localFile = null;
@@ -128,7 +146,8 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     String newProps = "";
     String[] splittedProps = props.split(":");
     for (String prop : splittedProps)  {
-      if (!prop.contains("classes") && !prop.contains("grpc") && !prop.contains("rss-")) {
+      if (!prop.contains("classes") && !prop.contains("grpc") && !prop.contains("rss-")
+        && !prop.contains("shuffle-storage")) {
         newProps = newProps + ":" + prop;
       }
     }
@@ -162,7 +181,59 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     return null;
   }
 
-  private void verifyResults() {
+  private void verifyResults(String originPath, String rssPath) throws Exception {
+    if (originPath == null && rssPath == null) {
+      return;
+    }
+    Path originPathFs = new Path(originPath);
+    Path rssPathFs = new Path(rssPath);
+    FileStatus[] originFiles = fs.listStatus(originPathFs);
+    FileStatus[] rssFiles = fs.listStatus(rssPathFs);
+    long originLen = 0;
+    long rssLen = 0;
+    List<String> originFileList = Lists.newArrayList();
+    List<String> rssFileList = Lists.newArrayList();
+    for (FileStatus file : originFiles) {
+      originLen += file.getLen();
+      String name = file.getPath().getName();
+      if (!name.equals("_SUCCESS")) {
+        originFileList.add(name);
+      }
+    }
+    for (FileStatus file : rssFiles) {
+      rssLen += file.getLen();
+      String name = file.getPath().getName();
+      if (!name.equals("_SUCCESS")) {
+        rssFileList.add(name);
+      }
+    }
+    assertEquals(originFileList.size(), rssFileList.size());
+    for (int i = 0; i < originFileList.size(); i++) {
+      assertEquals(originFileList.get(i), rssFileList.get(i));
+      Path p1 = new Path(originPath, originFileList.get(i));
+      FSDataInputStream f1 = fs.open(p1);
+      Path p2 = new Path(rssPath, rssFileList.get(i));
+      FSDataInputStream f2 = fs.open(p2);
+      boolean isNotEof1 = true;
+      boolean isNotEof2 = true;
+      while (isNotEof1 && isNotEof2) {
+        byte b1 = 1;
+        byte b2 = 1;
+        try {
+          b1 = f1.readByte();
+        } catch (EOFException ee) {
+          isNotEof1 = false;
+        }
+        try {
+          b2 = f2.readByte();
+        } catch (EOFException ee) {
+          isNotEof2 = false;
+        }
+        assertEquals(b1, b2);
+      }
+      assertEquals(isNotEof1, isNotEof2);
+    }
+    assertEquals(originLen, rssLen);
 
   }
 }

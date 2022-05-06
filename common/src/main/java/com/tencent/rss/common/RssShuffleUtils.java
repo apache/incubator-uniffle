@@ -43,8 +43,17 @@ public class RssShuffleUtils {
   }
 
   public static ByteBuffer decompressData(ByteBuffer data, int uncompressLength) {
+    return decompressData(data, uncompressLength, true);
+  }
+
+  public static ByteBuffer decompressData(ByteBuffer data, int uncompressLength, boolean useDirectMem) {
     LZ4FastDecompressor fastDecompressor = LZ4Factory.fastestInstance().fastDecompressor();
-    ByteBuffer uncompressData = ByteBuffer.allocateDirect(uncompressLength);
+    ByteBuffer uncompressData;
+    if (useDirectMem) {
+      uncompressData = ByteBuffer.allocateDirect(uncompressLength);
+    } else {
+      uncompressData = ByteBuffer.allocate(uncompressLength);
+    }
     fastDecompressor.decompress(data, data.position(), uncompressData, 0, uncompressLength);
     return uncompressData;
   }

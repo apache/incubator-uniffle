@@ -55,7 +55,7 @@ public class RssMRConfig {
 
   public static final String RSS_PARTITION_NUM_PER_RANGE = "mapreduce.rss.partitionNum.per.range";
   public static final int RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE = 1;
-  public static final String RSS_BASE_PATH = "mapreduce.rss.remote.storage.path";
+  public static final String RSS_BASE_PATH = "mapreduce.rss.base.path";
   public static final String RSS_INDEX_READ_LIMIT = "mapreduce.rss.index.read.limit";
   public static final int RSS_INDEX_READ_LIMIT_DEFAULT_VALUE = 500;
   public static String RSS_CLIENT_READ_BUFFER_SIZE = "mapreduce.rss.client.read.buffer.size";

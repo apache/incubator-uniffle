@@ -380,8 +380,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     int successCnt = 0;
     for (ShuffleServerInfo ssi : shuffleServerInfoSet) {
       try {
-        RssGetShuffleResultResponse response = ShuffleServerClientFactory
-            .getInstance().getShuffleServerClient(clientType, ssi).getShuffleResult(request);
+        RssGetShuffleResultResponse response = getShuffleServerClient(ssi).getShuffleResult(request);
         if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
           // merge into blockIds from multiple servers.
           Roaring64NavigableMap blockIdBitmapOfServer = response.getBlockIdBitmap();

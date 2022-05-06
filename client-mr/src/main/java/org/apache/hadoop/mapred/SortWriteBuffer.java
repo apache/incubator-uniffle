@@ -25,7 +25,8 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import org.apache.hadoop.io.RawComparator;
-import org.openjdk.jol.info.GraphLayout;
+import org.apache.hadoop.io.WritableUtils;
+import org.apache.hadoop.io.serializer.Serializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,56 +42,152 @@ public class SortWriteBuffer<K, V> extends OutputStream  {
   private final RawComparator<K> comparator;
   private long maxSegmentSize;
   private int partitionId;
+  private Serializer<K> keySerializer;
+  private Serializer<V> valSerializer;
+  private int currentOffset = 0;
+  private int currentIndex = 0;
 
-  public SortWriteBuffer(int partitionId, RawComparator<K> comparator, long maxSegmentSize) {
+  public SortWriteBuffer(
+      int partitionId,
+      RawComparator<K> comparator,
+      long maxSegmentSize,
+      Serializer<K> keySerializer,
+      Serializer<V> valueSerializer) {
     this.partitionId = partitionId;
     this.comparator = comparator;
     this.maxSegmentSize = maxSegmentSize;
+    this.keySerializer = keySerializer;
+    this.valSerializer = valueSerializer;
   }
 
-  public synchronized long addRecord(K key, long start, long end) {
-    long keyLength = GraphLayout.parseInstance(key).totalSize();
-    records.add(new Record<K>(key, start, end));
-    totalKeyLength += keyLength;
-    return keyLength;
+  public int  addRecord(K key, V value) throws IOException {
+    keySerializer.open(this);
+    valSerializer.open(this);
+    int lastOffSet = currentOffset;
+    int lastIndex = currentIndex;
+    int lastDataLength = dataLength;
+    int keyIndex = lastIndex;
+    keySerializer.serialize(key);
+    int keyLength = dataLength - lastDataLength;
+    int keyOffset = lastOffSet;
+    if (compact(lastIndex, lastOffSet, keyLength)) {
+      keyOffset = lastOffSet;
+      keyIndex = lastIndex;
+    }
+    lastDataLength = dataLength;
+    valSerializer.serialize(value);
+    int valueLength = dataLength - lastDataLength;
+    records.add(new Record<K>(keyIndex, keyOffset, keyLength, valueLength));
+    return keyLength + valueLength;
   }
 
   public synchronized byte[] getData() {
-    byte[] data = new byte[dataLength];
+    int extraSize = 0;
+    for (Record<K> record : records) {
+      extraSize += WritableUtils.getVIntSize(record.getKeyLength());
+      extraSize += WritableUtils.getVIntSize(record.getValueLength());
+    }
+
+    extraSize += WritableUtils.getVIntSize(-1);
+    extraSize += WritableUtils.getVIntSize(-1);
+    byte[] data = new byte[dataLength + extraSize];
     int offset = 0;
     long startSort = System.currentTimeMillis();
     records.sort(new Comparator<Record<K>>() {
       @Override
       public int compare(Record<K> o1, Record<K> o2) {
-        return comparator.compare(o1.getKey(), o2.getKey());
+        return comparator.compare(
+            buffers.get(o1.getKeyIndex()).getBuffer(),
+            o1.getKeyOffSet(),
+            o1.getKeyLength(),
+            buffers.get(o2.getKeyIndex()).getBuffer(),
+            o2.getKeyOffSet(),
+            o2.getKeyLength());
       }
     });
-
     long startCopy =  System.currentTimeMillis();
     sortTime += startCopy - startSort;
+
     for (Record<K> record : records) {
-      int beginIndex = (int) (record.getStart() / maxSegmentSize);
-      int beginOffSet = (int) (record.getStart() % maxSegmentSize);
-      int endIndex = (int) (record.getEnd() / maxSegmentSize);
-      int endOffset = (int) (record.getEnd() % maxSegmentSize);
-      if (beginIndex == endIndex) {
-        int length = endOffset - beginOffSet;
-        System.arraycopy(buffers.get(beginIndex).getBuffer(), beginOffSet, data, offset, length);
-        offset += length;
-      } else {
-        int finalBeginOffset = beginOffSet;
-        for (int j = beginIndex; j <= endIndex; j++) {
-          int finalEndOffset = (int) ((j == endIndex) ? endOffset : maxSegmentSize);
-          int length = finalEndOffset - finalBeginOffset;
-          System.arraycopy(buffers.get(j).getBuffer(), finalBeginOffset, data, offset, length);
-          offset += length;
-          finalBeginOffset = 0;
+      offset = writeDataInt(data, offset, record.getKeyLength());
+      offset = writeDataInt(data, offset, record.getValueLength());
+      int recordLength = record.getKeyLength() + record.getValueLength();
+      int copyOffset = record.getKeyOffSet();
+      int copyIndex = record.getKeyIndex();
+      while (recordLength > 0) {
+        byte[] srcBytes = buffers.get(copyIndex).getBuffer();
+        int length = copyOffset + recordLength;
+        int copyLength = recordLength;
+        if (length > srcBytes.length) {
+          copyLength = srcBytes.length - copyOffset;
         }
+        System.arraycopy(srcBytes, copyOffset, data, offset, copyLength);
+        copyOffset = 0;
+        copyIndex++;
+        recordLength -= copyLength;
+        offset += copyLength;
       }
     }
-
+    offset = writeDataInt(data, offset, -1);
+    writeDataInt(data, offset, -1);
     copyTime += System.currentTimeMillis() - startCopy;
     return data;
+  }
+
+  private boolean compact(int lastIndex, int lastOffset, int dataLength) {
+    if (lastIndex != currentIndex) {
+      LOG.info("compact lastIndex {}, currentIndex {}, lastOffset {} currentOffset {} dataLength {}",
+          lastIndex, currentIndex, lastOffset, currentOffset, dataLength);
+      WrappedBuffer buffer = new WrappedBuffer(lastOffset + dataLength);
+      // copy data
+      int offset = 0;
+      for (int i = lastIndex; i < currentIndex; i++) {
+        byte[] sourceBuffer = buffers.get(i).getBuffer();
+        System.arraycopy(sourceBuffer, 0, buffer.getBuffer(), offset, sourceBuffer.length);
+        offset += sourceBuffer.length;
+      }
+      System.arraycopy(buffers.get(currentIndex).getBuffer(), 0, buffer.getBuffer(), offset, currentOffset);
+      // remove data
+      for (int i = currentIndex; i >= lastIndex; i--) {
+        buffers.remove(i);
+      }
+      buffers.add(buffer);
+      currentOffset = 0;
+      WrappedBuffer anotherBuffer = new WrappedBuffer((int)maxSegmentSize);
+      buffers.add(anotherBuffer);
+      currentIndex = buffers.size() - 1;
+      return true;
+    }
+    return false;
+  }
+
+  private int writeDataInt(byte[] data, int offset, long dataInt) {
+    if (dataInt >= -112L && dataInt <= 127L) {
+      data[offset] = (byte)((int)dataInt);
+      offset++;
+    } else {
+      int len = -112;
+      if (dataInt < 0L) {
+        dataInt = ~dataInt;
+        len = -120;
+      }
+
+      for (long tmp = dataInt; tmp != 0L; --len) {
+        tmp >>= 8;
+      }
+
+      data[offset] = (byte)len;
+      offset++;
+      len = len < -120 ? -(len + 120) : -(len + 112);
+
+      for (int idx = len; idx != 0; --idx) {
+        int shiftBits = (idx - 1) * 8;
+        long mask = 255L << shiftBits;
+        data[offset] = ((byte)((int)((dataInt & mask) >> shiftBits)));
+        offset++;
+      }
+    }
+    return offset;
   }
 
   public int getDataLength() {
@@ -115,13 +212,17 @@ public class SortWriteBuffer<K, V> extends OutputStream  {
 
   @Override
   public void write(int b) throws IOException {
-    if (dataLength + 4 > buffers.size() * maxSegmentSize) {
+    if (buffers.isEmpty()) {
       buffers.add(new WrappedBuffer((int) maxSegmentSize));
     }
-    int index = (int) (dataLength / maxSegmentSize);
-    int offset = (int) (dataLength % maxSegmentSize);
-    WrappedBuffer buffer = buffers.get(index);
-    buffer.getBuffer()[offset] = (byte) b;
+    if (1 + currentOffset > maxSegmentSize) {
+      currentIndex++;
+      currentOffset = 0;
+      buffers.add(new WrappedBuffer((int) maxSegmentSize));
+    }
+    WrappedBuffer buffer = buffers.get(currentIndex);
+    buffer.getBuffer()[currentOffset] = (byte) b;
+    currentOffset++;
     dataLength++;
   }
 
@@ -135,19 +236,24 @@ public class SortWriteBuffer<K, V> extends OutputStream  {
     } else if (len == 0) {
       return;
     }
-    int bufferNum = (int)((dataLength + len) / maxSegmentSize) + 1 - buffers.size();
+    if (buffers.isEmpty()) {
+      buffers.add(new WrappedBuffer((int) maxSegmentSize));
+    }
+    int bufferNum = (int)((currentOffset + len) / maxSegmentSize);
     for (int i = 0; i < bufferNum; i++) {
       buffers.add(new WrappedBuffer((int) maxSegmentSize));
     }
-    int index = (int) (dataLength / maxSegmentSize);
-    int offset = (int) (dataLength % maxSegmentSize);
+    int index = currentIndex;
+    int offset = currentOffset;
     int srcPos = 0;
     while (len > 0) {
       int copyLength = 0;
-      if (offset + len > maxSegmentSize) {
+      if (offset + len >= maxSegmentSize) {
         copyLength = (int) (maxSegmentSize - offset);
+        currentOffset = 0;
       } else {
         copyLength = len;
+        currentOffset += len;
       }
       System.arraycopy(b, srcPos, buffers.get(index).getBuffer(), offset, copyLength);
       offset = 0;
@@ -156,30 +262,40 @@ public class SortWriteBuffer<K, V> extends OutputStream  {
       len -= copyLength;
       dataLength += copyLength;
     }
+    currentIndex += bufferNum;
   }
 
   private static final class Record<K> {
 
-    private K key;
-    private long start;
-    private long end;
+    private final int keyIndex;
+    private final int keyOffSet;
+    private final int keyLength;
+    private final int valueLength;
 
-    Record(K key, long start, long end) {
-      this.key = key;
-      this.start = start;
-      this.end = end;
+    Record(int keyIndex,
+           int keyOffset,
+           int keyLength,
+           int valueLength) {
+      this.keyIndex = keyIndex;
+      this.keyOffSet = keyOffset;
+      this.keyLength = keyLength;
+      this.valueLength = valueLength;
     }
 
-    public K getKey() {
-      return key;
+    public int getKeyIndex() {
+      return keyIndex;
     }
 
-    public long getStart() {
-      return start;
+    public int getKeyOffSet() {
+      return keyOffSet;
     }
 
-    public long getEnd() {
-      return end;
+    public int getKeyLength() {
+      return keyLength;
+    }
+
+    public int getValueLength() {
+      return valueLength;
     }
   }
 

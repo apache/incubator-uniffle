@@ -150,18 +150,13 @@ public class SortWriteBufferManager<K, V> {
     }
 
     if (!buffers.containsKey(partitionId)) {
-      SortWriteBuffer<K, V> sortWriterBuffer = new SortWriteBuffer(partitionId, comparator, maxSegmentSize);
+      SortWriteBuffer<K, V> sortWriterBuffer = new SortWriteBuffer(
+          partitionId, comparator, maxSegmentSize, keySerializer, valSerializer);
       buffers.putIfAbsent(partitionId, sortWriterBuffer);
       waitSendBuffers.add(sortWriterBuffer);
     }
     SortWriteBuffer<K, V> buffer = buffers.get(partitionId);
-    keySerializer.open(buffer);
-    valSerializer.open(buffer);
-    long start = buffer.getDataLength();
-    valSerializer.serialize(value);
-    long end = buffer.getDataLength();
-    long keyLength = buffer.addRecord(key, start, end);
-    long length = end - start + keyLength;
+    long length = buffer.addRecord(key, value);
     if (length > maxMemSize) {
       throw new RssException("record is too big");
     }
@@ -278,8 +273,8 @@ public class SortWriteBufferManager<K, V> {
         taskAttemptId, partitionToBlocks, bitmapSplitNum);
     LOG.info("Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
         taskAttemptId, bitmapSplitNum, (System.currentTimeMillis() - start));
-    LOG.info("Task uncompressed data length {} compress time cost {}, commit time cost {},"
-            + " copy time cost{}, sort time cost{}",
+    LOG.info("Task uncompressed data length {} compress time cost {} ms, commit time cost {} ms,"
+            + " copy time cost {} ms, sort time cost {} ms",
         uncompressedDataLen, compressTime, commitDuration, copyTime, sortTime);
   }
 
