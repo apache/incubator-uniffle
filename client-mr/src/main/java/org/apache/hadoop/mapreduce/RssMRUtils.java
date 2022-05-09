@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.mapreduce;
 
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
@@ -26,6 +27,8 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.client.factory.ShuffleClientFactory;
@@ -33,6 +36,8 @@ import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.exception.RssException;
 
 public class RssMRUtils {
+
+  private static final Logger LOG = LoggerFactory.getLogger(RssMRUtils.class);
 
   // Class TaskAttemptId have two field id and mapId, mapId is 4 low byte,
   // id is high 4 byte.
@@ -92,5 +97,30 @@ public class RssMRUtils {
       System.getenv(ApplicationConstants.Environment.CONTAINER_ID.name());
     ContainerId containerId = ContainerId.fromString(containerIdStr);
     return containerId.getApplicationAttemptId();
+  }
+
+  public static void applyDynamicClientConf(JobConf jobConf, Map<String, String> confItems) {
+    if (jobConf == null) {
+      LOG.warn("Job conf is null");
+      return;
+    }
+
+    if (confItems == null || confItems.isEmpty()) {
+      LOG.warn("Empty conf items");
+      return;
+    }
+
+    for (Map.Entry<String, String> kv : confItems.entrySet()) {
+      String mrConfKey = kv.getKey();
+      if (!mrConfKey.startsWith(RssMRConfig.MR_RSS_CONFIG_PREFIX)) {
+        mrConfKey = RssMRConfig.MR_RSS_CONFIG_PREFIX + mrConfKey;
+      }
+      String mrConfVal = kv.getValue();
+      if (StringUtils.isEmpty(jobConf.get(mrConfKey, ""))
+          || RssMRConfig.RSS_MANDATORY_CLUSTER_CONF.contains(mrConfKey)) {
+        LOG.warn("Use conf dynamic conf {} = {}", mrConfKey, mrConfVal);
+        jobConf.set(mrConfKey, mrConfVal);
+      }
+    }
   }
 }

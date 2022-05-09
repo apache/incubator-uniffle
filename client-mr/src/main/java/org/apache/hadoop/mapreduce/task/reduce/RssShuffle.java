@@ -106,7 +106,7 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
     this.partitionNum = jobConf.getNumReduceTasks();
     this.partitionNumPerRange = jobConf.getInt(RssMRConfig.RSS_PARTITION_NUM_PER_RANGE,
       RssMRConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
-    this.basePath = jobConf.get(RssMRConfig.RSS_BASE_PATH);
+    this.basePath = jobConf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH);
     this.indexReadLimit = jobConf.getInt(RssMRConfig.RSS_INDEX_READ_LIMIT,
       RssMRConfig.RSS_INDEX_READ_LIMIT_DEFAULT_VALUE);
     this.readBufferSize = (int)UnitConverter.byteStringAsBytes(

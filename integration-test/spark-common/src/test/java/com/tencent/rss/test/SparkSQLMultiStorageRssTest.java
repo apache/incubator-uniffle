@@ -24,7 +24,7 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import org.apache.spark.SparkConf;
-import org.apache.spark.shuffle.RssClientConfig;
+import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.BeforeClass;
 
 import com.tencent.rss.coordinator.CoordinatorConf;
@@ -42,7 +42,7 @@ public class SparkSQLMultiStorageRssTest extends SparkSQLTest {
     coordinatorConf.setLong("rss.coordinator.app.expired", 5000);
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS_2.name());
+    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS_2.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
 

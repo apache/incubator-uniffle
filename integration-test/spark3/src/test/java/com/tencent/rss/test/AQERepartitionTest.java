@@ -30,7 +30,7 @@ import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.storage.util.StorageType;
 
 import org.apache.spark.SparkConf;
-import org.apache.spark.shuffle.RssClientConfig;
+import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.sql.Column;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.internal.SQLConf;
@@ -48,7 +48,7 @@ public class AQERepartitionTest extends SparkIntegrationTestBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();

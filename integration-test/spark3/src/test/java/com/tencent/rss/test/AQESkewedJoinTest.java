@@ -26,7 +26,7 @@ import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.storage.util.StorageType;
 
 import org.apache.spark.SparkConf;
-import org.apache.spark.shuffle.RssClientConfig;
+import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -50,7 +50,7 @@ public class AQESkewedJoinTest extends SparkIntegrationTestBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
@@ -70,8 +70,8 @@ public class AQESkewedJoinTest extends SparkIntegrationTestBase {
 
   @Override
   public void updateSparkConfCustomer(SparkConf sparkConf) {
-    sparkConf.set(RssClientConfig.RSS_STORAGE_TYPE, "HDFS");
-    sparkConf.set(RssClientConfig.RSS_BASE_PATH, HDFS_URI + "rss/test");
+    sparkConf.set(RssSparkConfig.RSS_STORAGE_TYPE, "HDFS");
+    sparkConf.set(RssSparkConfig.RSS_REMOTE_STORAGE_PATH, HDFS_URI + "rss/test");
   }
 
   @Test

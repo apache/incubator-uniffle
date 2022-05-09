@@ -27,7 +27,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.spark.SparkConf;
-import org.apache.spark.shuffle.RssClientConfig;
+import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.BeforeClass;
 
 import com.tencent.rss.coordinator.CoordinatorConf;
@@ -48,7 +48,7 @@ public class SparkSQLWithDelegationShuffleManager extends SparkSQLTest {
     coordinatorConf.set(CoordinatorConf.COORDINATOR_APP_EXPIRED, 5000L);
     coordinatorConf.set(CoordinatorConf.COORDINATOR_ACCESS_LOADCHECKER_SERVER_NUM_THRESHOLD, 1);
     Map<String, String> dynamicConf = Maps.newHashMap();
-    dynamicConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE.name());
+    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
@@ -68,7 +68,7 @@ public class SparkSQLWithDelegationShuffleManager extends SparkSQLTest {
 
   @Override
   public void updateRssStorage(SparkConf sparkConf) {
-    sparkConf.set(RssClientConfig.RSS_ACCESS_ID, "test_access_id");
+    sparkConf.set(RssSparkConfig.RSS_ACCESS_ID, "test_access_id");
     sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.DelegationRssShuffleManager");
   }
 

@@ -23,6 +23,7 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.LargeSorter;
+import org.apache.hadoop.mapreduce.RssMRConfig;
 import org.apache.hadoop.util.Tool;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -38,7 +39,7 @@ public class LargeSorterTest extends MRIntegrationTestBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put("mapreduce.rss.storage.type", StorageType.HDFS.name());
+    dynamicConf.put(RssMRConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();

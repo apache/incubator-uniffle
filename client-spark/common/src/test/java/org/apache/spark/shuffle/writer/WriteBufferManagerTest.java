@@ -34,7 +34,7 @@ import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.memory.TaskMemoryManager;
 import org.apache.spark.serializer.KryoSerializer;
 import org.apache.spark.serializer.Serializer;
-import org.apache.spark.shuffle.RssClientConfig;
+import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.Test;
 
 public class WriteBufferManagerTest {
@@ -54,11 +54,11 @@ public class WriteBufferManagerTest {
 
   private SparkConf getConf() {
     SparkConf conf = new SparkConf(false);
-    conf.set(RssClientConfig.RSS_WRITER_BUFFER_SIZE, "64")
-        .set(RssClientConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE, "32")
-        .set(RssClientConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE, "128")
-        .set(RssClientConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE, "512")
-        .set(RssClientConfig.RSS_WRITER_BUFFER_SPILL_SIZE, "190");
+    conf.set(RssSparkConfig.RSS_WRITER_BUFFER_SIZE, "64")
+        .set(RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE, "32")
+        .set(RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE, "128")
+        .set(RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE, "512")
+        .set(RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE, "190");
     return conf;
   }
 

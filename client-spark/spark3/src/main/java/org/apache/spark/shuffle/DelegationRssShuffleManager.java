@@ -48,8 +48,8 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   public DelegationRssShuffleManager(SparkConf sparkConf, boolean isDriver) throws Exception {
     this.sparkConf = sparkConf;
     accessTimeoutMs = sparkConf.getInt(
-        RssClientConfig.RSS_ACCESS_TIMEOUT_MS,
-        RssClientConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE);
+        RssSparkConfig.RSS_ACCESS_TIMEOUT_MS,
+        RssSparkConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE);
     if (isDriver) {
       coordinatorClients = RssSparkShuffleUtils.createCoordinatorClients(sparkConf);
       delegate = createShuffleManagerInDriver();
@@ -70,7 +70,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     if (canAccess) {
       try {
         shuffleManager = new RssShuffleManager(sparkConf, true);
-        sparkConf.set(RssClientConfig.RSS_ENABLED, "true");
+        sparkConf.set(RssSparkConfig.RSS_ENABLED, "true");
         sparkConf.set("spark.shuffle.manager", RssShuffleManager.class.getCanonicalName());
         LOG.info("Use RssShuffleManager");
         return shuffleManager;
@@ -81,7 +81,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
 
     try {
       shuffleManager = RssSparkShuffleUtils.loadShuffleManager(Constants.SORT_SHUFFLE_MANAGER_NAME, sparkConf, true);
-      sparkConf.set(RssClientConfig.RSS_ENABLED, "false");
+      sparkConf.set(RssSparkConfig.RSS_ENABLED, "false");
       sparkConf.set("spark.shuffle.manager", "sort");
       LOG.info("Use SortShuffleManager");
     } catch (Exception e) {
@@ -93,7 +93,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
 
   private boolean tryAccessCluster() {
     String accessId = sparkConf.get(
-        RssClientConfig.RSS_ACCESS_ID, "").trim();
+        RssSparkConfig.RSS_ACCESS_ID, "").trim();
     if (StringUtils.isEmpty(accessId)) {
       LOG.warn("Access id key is empty");
       return false;
@@ -127,8 +127,8 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     ShuffleManager shuffleManager;
     // get useRSS from spark conf
     boolean useRSS = sparkConf.getBoolean(
-        RssClientConfig.RSS_ENABLED,
-        RssClientConfig.RSS_USE_RSS_SHUFFLE_MANAGER_DEFAULT_VALUE);
+        RssSparkConfig.RSS_ENABLED,
+        RssSparkConfig.RSS_USE_RSS_SHUFFLE_MANAGER_DEFAULT_VALUE);
     if (useRSS) {
       // Executor will not do any fallback
       shuffleManager = new RssShuffleManager(sparkConf, false);

@@ -72,9 +72,9 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     String appId = RssMRUtils.getApplicationAttemptId().toString();
 
     long sendCheckInterval = jobConf.getLong(RssMRConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS,
-        RssMRConfig.RSS_CLIENT_DEFAULT_SEND_CHECK_INTERVAL_MS);
+        RssMRConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE);
     long sendCheckTimeout = jobConf.getLong(RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
-        RssMRConfig.RSS_CLIENT_DEFAULT_CHECK_TIMEOUT_MS);
+        RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE);
     int bitmapSplitNum = jobConf.getInt(RssMRConfig.RSS_CLIENT_BITMAP_NUM,
         RssMRConfig.RSS_CLIENT_DEFAULT_BITMAP_NUM);
     int numMaps = jobConf.getNumMapTasks();

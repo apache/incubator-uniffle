@@ -24,7 +24,7 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import org.apache.spark.SparkConf;
-import org.apache.spark.shuffle.RssClientConfig;
+import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -39,7 +39,7 @@ public class RepartitionWithMemoryRssTest extends RepartitionTest {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.set(CoordinatorConf.COORDINATOR_APP_EXPIRED, 5000L);
     Map<String, String> dynamicConf = Maps.newHashMap();
-    dynamicConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE.name());
+    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();

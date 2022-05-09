@@ -121,12 +121,21 @@ public class RssMRAppMaster {
     // get remote storage from coordinator if necessary
     boolean dynamicConfEnabled = conf.getBoolean(RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
         RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
+
+    // fetch client conf and apply them if necessary
+    if (dynamicConfEnabled) {
+      Map<String, String> clusterClientConf = client.fetchClientConf(
+          conf.getInt(RssMRConfig.RSS_ACCESS_TIMEOUT_MS,
+              RssMRConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
+      RssMRUtils.applyDynamicClientConf(conf, clusterClientConf);
+    }
+
     String storageType = conf.get(RssMRConfig.RSS_STORAGE_TYPE);
-    String defaultRemoteStorage = conf.get(RssMRConfig.RSS_BASE_PATH, "");
+    String defaultRemoteStorage = conf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH, "");
     String remoteStorage = ClientUtils.fetchRemoteStorage(
         appId, defaultRemoteStorage, dynamicConfEnabled, storageType, client);
     // set the remote storage with actual value
-    conf.set(RssMRConfig.RSS_BASE_PATH, remoteStorage);
+    conf.set(RssMRConfig.RSS_REMOTE_STORAGE_PATH, remoteStorage);
 
     LOG.info("Start to register shuffle");
     long start = System.currentTimeMillis();

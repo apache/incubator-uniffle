@@ -18,51 +18,91 @@
 
 package org.apache.hadoop.mapreduce;
 
+import java.util.Set;
+
+import com.google.common.collect.Sets;
+
+import com.tencent.rss.client.util.RssClientConfig;
+
 public class RssMRConfig {
 
-  public static final String RSS_CLIENT_HEARTBEAT_THREAD_NUM = "mapreduce.rss.client.heartBeat.threadNum";
+  public static final String MR_RSS_CONFIG_PREFIX = "mapreduce.";
+  public static final String RSS_CLIENT_HEARTBEAT_THREAD_NUM =
+      MR_RSS_CONFIG_PREFIX + "rss.client.heartBeat.threadNum";
   public static final int RSS_CLIENT_HEARTBEAT_THREAD_NUM_DEFAULT_VALUE = 4;
-  public static final String RSS_CLIENT_TYPE = "mapreduce.rss.client.type";
-  public static final String RSS_CLIENT_TYPE_DEFAULT_VALUE = "GRPC";
-  public static final String RSS_CLIENT_RETRY_MAX = "mapreduce.rss.client.retry.max";
-  public static final int RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE = 100;
-  public static final String RSS_CLIENT_RETRY_INTERVAL_MAX = "mapreduce.rss.client.retry.interval.max";
-  public static final long RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE = 10000;
-  public static final String RSS_COORDINATOR_QUORUM = "mapreduce.rss.coordinator.quorum";
-  public static final String RSS_DATA_REPLICA = "mapreduce.rss.data.replica";
-  public static final int RSS_DATA_REPLICA_DEFAULT_VALUE = 1;
-  public static final String RSS_DATA_REPLICA_WRITE = "mapreduce.rss.data.replica.write";
-  public static final int RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE = 1;
-  public static final String RSS_DATA_REPLICA_READ = "mapreduce.rss.data.replica.read";
-  public static final int RSS_DATA_REPLICA_READ_DEFAULT_VALUE = 1;
-  public static final String RSS_HEARTBEAT_INTERVAL = "mapreduce.rss.heartbeat.interval";
-  public static final long RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE = 10 * 1000L;
-  public static final String RSS_HEARTBEAT_TIMEOUT = "mapreduce.rss.heartbeat.timeout";
-  public static final String RSS_ASSIGNMENT_PREFIX = "mapreduce.rss.assignment.partition.";
-  public static final String RSS_CLIENT_BATCH_TRIGGER_NUM = "mapreduce.rss.client.batch.trigger.num";
+  public static final String RSS_CLIENT_TYPE = MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_TYPE;
+  public static final String RSS_CLIENT_TYPE_DEFAULT_VALUE = RssClientConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE;
+  public static final String RSS_CLIENT_RETRY_MAX = MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_RETRY_MAX;
+  public static final int RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE = RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE;
+  public static final String RSS_CLIENT_RETRY_INTERVAL_MAX =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX;
+  public static final long RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE =
+      RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE;
+  public static final String RSS_COORDINATOR_QUORUM =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_COORDINATOR_QUORUM;
+  public static final String RSS_DATA_REPLICA = MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA;
+  public static final int RSS_DATA_REPLICA_DEFAULT_VALUE = RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE;
+  public static final String RSS_DATA_REPLICA_WRITE =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_WRITE;
+  public static final int RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE =
+      RssClientConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE;
+  public static final String RSS_DATA_REPLICA_READ =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_READ;
+  public static final int RSS_DATA_REPLICA_READ_DEFAULT_VALUE =
+      RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE;
+  public static final String RSS_HEARTBEAT_INTERVAL =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_HEARTBEAT_INTERVAL;
+  public static final long RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE =
+      RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE;
+  public static final String RSS_HEARTBEAT_TIMEOUT =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_HEARTBEAT_TIMEOUT;
+  public static final String RSS_ASSIGNMENT_PREFIX = MR_RSS_CONFIG_PREFIX + "rss.assignment.partition.";
+  public static final String RSS_CLIENT_BATCH_TRIGGER_NUM =
+      MR_RSS_CONFIG_PREFIX + "rss.client.batch.trigger.num";
   public static final int RSS_CLIENT_DEFAULT_BATCH_TRIGGER_NUM = 50;
-  public static final String RSS_CLIENT_MEMORY_THRESHOLD = "mapreduce.rss.client.memory.threshold";
+  public static final String RSS_CLIENT_MEMORY_THRESHOLD =
+      MR_RSS_CONFIG_PREFIX + "rss.client.memory.threshold";
   public static final double RSS_CLIENT_DEFAULT_MEMORY_THRESHOLD = 0.8f;
-  public static final String RSS_CLIENT_SEND_CHECK_INTERVAL_MS = "mapreduce.rss.client.send.check.interval.ms";
-  public static final long RSS_CLIENT_DEFAULT_SEND_CHECK_INTERVAL_MS = 500;
-  public static final String RSS_CLIENT_SEND_CHECK_TIMEOUT_MS = "mapreduce.rss.client.send.check.timeout.ms";
-  public static final long RSS_CLIENT_DEFAULT_CHECK_TIMEOUT_MS = 60 * 1000 * 10;
-  public static final String RSS_CLIENT_BITMAP_NUM = "mapreduce.rss.client.bitmap.num";
+  public static final String RSS_CLIENT_SEND_CHECK_INTERVAL_MS =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS;
+  public static final long RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE =
+      RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE;
+  public static final String RSS_CLIENT_SEND_CHECK_TIMEOUT_MS =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS;
+  public static final long RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE =
+      RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE;
+  public static final String RSS_CLIENT_BITMAP_NUM = MR_RSS_CONFIG_PREFIX + "rss.client.bitmap.num";
   public static final int RSS_CLIENT_DEFAULT_BITMAP_NUM = 1;
-  public static final String RSS_CLIENT_MAX_SEGMENT_SIZE = "mapreduce.rss.client.max.buffer.size";
+  public static final String RSS_CLIENT_MAX_SEGMENT_SIZE =
+      MR_RSS_CONFIG_PREFIX + "rss.client.max.buffer.size";
   public static final long RSS_CLIENT_DEFAULT_MAX_SEGMENT_SIZE = 3 * 1024;
-  public static final String RSS_STORAGE_TYPE = "mapreduce.rss.storage.type";
+  public static final String RSS_STORAGE_TYPE = MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_STORAGE_TYPE;
 
-  public static final String RSS_PARTITION_NUM_PER_RANGE = "mapreduce.rss.partitionNum.per.range";
-  public static final int RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE = 1;
-  public static final String RSS_BASE_PATH = "mapreduce.rss.base.path";
-  public static final String RSS_INDEX_READ_LIMIT = "mapreduce.rss.index.read.limit";
-  public static final int RSS_INDEX_READ_LIMIT_DEFAULT_VALUE = 500;
-  public static String RSS_CLIENT_READ_BUFFER_SIZE = "mapreduce.rss.client.read.buffer.size";
+  public static final String RSS_PARTITION_NUM_PER_RANGE =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_PARTITION_NUM_PER_RANGE;
+  public static final int RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE =
+      RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE;
+  public static final String RSS_REMOTE_STORAGE_PATH =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_STORAGE_PATH;
+  public static final String RSS_INDEX_READ_LIMIT =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_INDEX_READ_LIMIT;
+  public static final int RSS_INDEX_READ_LIMIT_DEFAULT_VALUE =
+      RssClientConfig.RSS_INDEX_READ_LIMIT_DEFAULT_VALUE;
+  public static String RSS_CLIENT_READ_BUFFER_SIZE =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE;
+
   // When the size of read buffer reaches the half of JVM region (i.e., 32m),
   // it will incur humongous allocation, so we set it to 14m.
-  public static String RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE = "14m";
+  public static String RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE =
+      RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE;
 
-  public static String RSS_DYNAMIC_CLIENT_CONF_ENABLED = "mapreduce.rss.dynamicClientConf.enabled";
-  public static boolean RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE = true;
+  public static String RSS_DYNAMIC_CLIENT_CONF_ENABLED =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED;
+  public static boolean RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE =
+      RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE;
+  public static String RSS_ACCESS_TIMEOUT_MS = MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ACCESS_TIMEOUT_MS;
+  public static int RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE = RssClientConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE;
+
+  public static Set<String> RSS_MANDATORY_CLUSTER_CONF = Sets.newHashSet(
+      RSS_STORAGE_TYPE, RSS_REMOTE_STORAGE_PATH);
 }

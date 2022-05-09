@@ -19,7 +19,7 @@
 package org.apache.spark.shuffle.writer;
 
 import org.apache.spark.SparkConf;
-import org.apache.spark.shuffle.RssClientConfig;
+import org.apache.spark.shuffle.RssSparkConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,38 +36,38 @@ public class BufferManagerOptions {
   private int requireMemoryRetryMax;
 
   public BufferManagerOptions(SparkConf sparkConf) {
-    bufferSize = sparkConf.getSizeAsBytes(RssClientConfig.RSS_WRITER_BUFFER_SIZE,
-        RssClientConfig.RSS_WRITER_BUFFER_SIZE_DEFAULT_VALUE);
-    serializerBufferSize = sparkConf.getSizeAsBytes(RssClientConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE,
-        RssClientConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE_DEFAULT_VALUE);
-    bufferSegmentSize = sparkConf.getSizeAsBytes(RssClientConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE,
-        RssClientConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE_DEFAULT_VALUE);
-    bufferSpillThreshold = sparkConf.getSizeAsBytes(RssClientConfig.RSS_WRITER_BUFFER_SPILL_SIZE,
-        RssClientConfig.RSS_WRITER_BUFFER_SPILL_SIZE_DEFAULT_VALUE);
-    preAllocatedBufferSize = sparkConf.getSizeAsBytes(RssClientConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE,
-        RssClientConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE_DEFAULT_VALUE);
-    requireMemoryInterval = sparkConf.getLong(RssClientConfig.RSS_WRITER_REQUIRE_MEMORY_INTERVAL,
-        RssClientConfig.RSS_WRITER_REQUIRE_MEMORY_INTERVAL_DEFAULT_VALUE);
-    requireMemoryRetryMax = sparkConf.getInt(RssClientConfig.RSS_WRITER_REQUIRE_MEMORY_RETRY_MAX,
-        RssClientConfig.RSS_WRITER_REQUIRE_MEMORY_RETRY_MAX_DEFAULT_VALUE);
-    LOG.info(RssClientConfig.RSS_WRITER_BUFFER_SIZE + "=" + bufferSize);
-    LOG.info(RssClientConfig.RSS_WRITER_BUFFER_SPILL_SIZE + "=" + bufferSpillThreshold);
-    LOG.info(RssClientConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE + "=" + preAllocatedBufferSize);
+    bufferSize = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_WRITER_BUFFER_SIZE,
+        RssSparkConfig.RSS_WRITER_BUFFER_SIZE_DEFAULT_VALUE);
+    serializerBufferSize = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE,
+        RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE_DEFAULT_VALUE);
+    bufferSegmentSize = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE,
+        RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE_DEFAULT_VALUE);
+    bufferSpillThreshold = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE,
+        RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE_DEFAULT_VALUE);
+    preAllocatedBufferSize = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE,
+        RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE_DEFAULT_VALUE);
+    requireMemoryInterval = sparkConf.getLong(RssSparkConfig.RSS_WRITER_REQUIRE_MEMORY_INTERVAL,
+        RssSparkConfig.RSS_WRITER_REQUIRE_MEMORY_INTERVAL_DEFAULT_VALUE);
+    requireMemoryRetryMax = sparkConf.getInt(RssSparkConfig.RSS_WRITER_REQUIRE_MEMORY_RETRY_MAX,
+        RssSparkConfig.RSS_WRITER_REQUIRE_MEMORY_RETRY_MAX_DEFAULT_VALUE);
+    LOG.info(RssSparkConfig.RSS_WRITER_BUFFER_SIZE + "=" + bufferSize);
+    LOG.info(RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE + "=" + bufferSpillThreshold);
+    LOG.info(RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE + "=" + preAllocatedBufferSize);
     checkBufferSize();
   }
 
   private void checkBufferSize() {
     if (bufferSize < 0) {
-      throw new RuntimeException("Unexpected value of " + RssClientConfig.RSS_WRITER_BUFFER_SIZE
+      throw new RuntimeException("Unexpected value of " + RssSparkConfig.RSS_WRITER_BUFFER_SIZE
           + "=" + bufferSize);
     }
     if (bufferSpillThreshold < 0) {
-      throw new RuntimeException("Unexpected value of " + RssClientConfig.RSS_WRITER_BUFFER_SPILL_SIZE
+      throw new RuntimeException("Unexpected value of " + RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE
           + "=" + bufferSpillThreshold);
     }
     if (bufferSegmentSize > bufferSize) {
-      LOG.warn(RssClientConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE + "[" + bufferSegmentSize + "] should be less than "
-          + RssClientConfig.RSS_WRITER_BUFFER_SIZE + "[" + bufferSize + "]");
+      LOG.warn(RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE + "[" + bufferSegmentSize + "] should be less than "
+          + RssSparkConfig.RSS_WRITER_BUFFER_SIZE + "[" + bufferSize + "]");
     }
   }
 

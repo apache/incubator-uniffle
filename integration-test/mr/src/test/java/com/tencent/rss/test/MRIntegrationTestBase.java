@@ -35,6 +35,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.MRConfig;
 import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.mapreduce.RssMRConfig;
 import org.apache.hadoop.mapreduce.filecache.DistributedCache;
 import org.apache.hadoop.mapreduce.v2.MiniMRYarnCluster;
 import org.apache.hadoop.mapreduce.v2.TestMRJobs;
@@ -43,8 +44,6 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import com.tencent.rss.storage.util.StorageType;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -122,16 +121,12 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
       throw new RuntimeException("We must set JAVA_HOME");
     }
     jobConf.set(MRJobConfig.MR_AM_COMMAND_OPTS, "-XX:+TraceClassLoading org.apache.hadoop.mapreduce.v2.app.RssMRAppMaster");
-    // jobConf.set(MRJobConfig.REDUCE_JAVA_OPTS, "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp");
-    // jobConf.set(MRJobConfig.REDUCE_JAVA_OPTS, "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
     jobConf.set(MRJobConfig.REDUCE_JAVA_OPTS, "-XX:+TraceClassLoading -XX:MaxDirectMemorySize=419430400");
     jobConf.setInt(MRJobConfig.MAP_MEMORY_MB, 2048);
     jobConf.setInt(MRJobConfig.REDUCE_MEMORY_MB, 2048);
     jobConf.setInt(MRJobConfig.IO_SORT_MB, 128);
-    jobConf.set("mapreduce.rss.storage.type", StorageType.MEMORY_HDFS.name());
     jobConf.set(MRJobConfig.MAP_OUTPUT_COLLECTOR_CLASS_ATTR, "org.apache.hadoop.mapred.RssMapOutputCollector");
     jobConf.set(MRConfig.SHUFFLE_CONSUMER_PLUGIN, "org.apache.hadoop.mapreduce.task.reduce.RssShuffle");
-    jobConf.set("mapreduce.rss.base.path", HDFS_URI + "rss/test");
     File file = new File(parentPath, "client-mr/target/shaded");
     File[] jars = file.listFiles();
     File localFile = null;
@@ -158,7 +153,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
         new Path(newPath.toUri().getPath()), jobConf, fs);
     jobConf.set(MRJobConfig.MAPREDUCE_APPLICATION_CLASSPATH,
         "$PWD/rss.jar/" + localFile.getName() + "," + MRJobConfig.DEFAULT_MAPREDUCE_APPLICATION_CLASSPATH);
-    jobConf.set("mapreduce.rss.coordinator.quorum", COORDINATOR_QUORUM);
+    jobConf.set(RssMRConfig.RSS_COORDINATOR_QUORUM, COORDINATOR_QUORUM);
     updateRssConfiguration(jobConf);
     runMRApp(jobConf, getTestTool(), getTestArgs());
 

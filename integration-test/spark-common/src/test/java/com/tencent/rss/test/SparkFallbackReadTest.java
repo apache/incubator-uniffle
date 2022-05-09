@@ -30,7 +30,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.shuffle.RssClientConfig;
+import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.sql.SparkSession;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -104,8 +104,8 @@ public class SparkFallbackReadTest extends SparkIntegrationTestBase {
   @Override
   public void updateSparkConfCustomer(SparkConf sparkConf) {
     sparkConf.setMaster("local[4, 2]");
-    sparkConf.set(RssClientConfig.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS_2.name());
-    sparkConf.set(RssClientConfig.RSS_BASE_PATH, HDFS_URI + "rss/multi_storage_integration");
+    sparkConf.set(RssSparkConfig.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS_2.name());
+    sparkConf.set(RssSparkConfig.RSS_REMOTE_STORAGE_PATH, HDFS_URI + "rss/multi_storage_integration");
   }
 
   private void checkShuffleData() {
