@@ -68,7 +68,8 @@ public class RssShuffleManager implements ShuffleManager {
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleManager.class);
   private final long heartbeatInterval;
   private final long heartbeatTimeout;
-  private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+  private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
+      new ThreadFactoryBuilder().setDaemon(true).setNameFormat("rss-heartbeat-%d").build());
   private SparkConf sparkConf;
   private String appId = "";
   private String clientType;
