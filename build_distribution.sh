@@ -107,12 +107,12 @@ echo -e "\$ ${BUILD_COMMAND_SPARK2[@]}\n"
 
 "${BUILD_COMMAND_SPARK2[@]}"
 
-CLIENT2_JAR_DIR="${CLIENT_JAR_DIR}/spark2"
-mkdir -p $CLIENT2_JAR_DIR
+SPARK_CLIENT2_JAR_DIR="${CLIENT_JAR_DIR}/spark2"
+mkdir -p $SPARK_CLIENT2_JAR_DIR
 
-CLIENT2_JAR="${RSS_HOME}/client-spark/spark2/target/shaded/rss-client-spark2-${VERSION}-shaded.jar"
-echo "copy $CLIENT2_JAR to ${CLIENT2_JAR_DIR}"
-cp $CLIENT2_JAR ${CLIENT2_JAR_DIR}
+SPARK_CLIENT2_JAR="${RSS_HOME}/client-spark/spark2/target/shaded/rss-client-spark2-${VERSION}-shaded.jar"
+echo "copy $SPARK_CLIENT2_JAR to ${SPARK_CLIENT2_JAR_DIR}"
+cp $SPARK_CLIENT2_JAR ${SPARK_CLIENT2_JAR_DIR}
 
 BUILD_COMMAND_SPARK3=("$MVN" clean package -Pspark3 -pl client-spark/spark3 -DskipTests -am $@)
 
@@ -120,11 +120,21 @@ echo -e "\nBuilding with..."
 echo -e "\$ ${BUILD_COMMAND_SPARK3[@]}\n"
 "${BUILD_COMMAND_SPARK3[@]}"
 
-CLIENT3_JAR_DIR="${CLIENT_JAR_DIR}/spark3"
-mkdir -p $CLIENT3_JAR_DIR
-CLIENT3_JAR="${RSS_HOME}/client-spark/spark3/target/shaded/rss-client-spark3-${VERSION}-shaded.jar"
-echo "copy $CLIENT3_JAR to ${CLIENT3_JAR_DIR}"
-cp $CLIENT3_JAR $CLIENT3_JAR_DIR
+SPARK_CLIENT3_JAR_DIR="${CLIENT_JAR_DIR}/spark3"
+mkdir -p $SPARK_CLIENT3_JAR_DIR
+SPARK_CLIENT3_JAR="${RSS_HOME}/client-spark/spark3/target/shaded/rss-client-spark3-${VERSION}-shaded.jar"
+echo "copy $SPARK_CLIENT3_JAR to ${SPARK_CLIENT3_JAR_DIR}"
+cp $SPARK_CLIENT3_JAR $SPARK_CLIENT3_JAR_DIR
+
+BUILD_COMMAND_MR=("$MVN" clean package -Pmr -pl client-mr -DskipTests -am $@)
+echo -e "\nBuilding with..."
+echo -e "\$ ${BUILD_COMMAND_MR[@]}\n"
+"${BUILD_COMMAND_MR[@]}"
+MR_CLIENT_JAR_DIR="${CLIENT_JAR_DIR}/mr"
+mkdir -p $MR_CLIENT_JAR_DIR
+MR_CLIENT_JAR="${RSS_HOME}/client-mr/target/shaded/rss-client-mr-${VERSION}-shaded.jar"
+echo "copy $MR_CLIENT_JAR to ${MR_CLIENT_JAR_DIR}"
+cp $MR_CLIENT_JAR $MR_CLIENT_JAR_DIR
 
 cp -r bin $DISTDIR
 cp -r conf $DISTDIR
