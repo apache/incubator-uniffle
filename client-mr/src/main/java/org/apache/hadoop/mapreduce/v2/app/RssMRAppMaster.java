@@ -45,7 +45,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.client.api.ShuffleWriteClient;
-import com.tencent.rss.client.factory.ShuffleClientFactory;
 import com.tencent.rss.client.util.ClientUtils;
 import com.tencent.rss.common.PartitionRange;
 import com.tencent.rss.common.ShuffleAssignmentsInfo;
@@ -61,23 +60,9 @@ public class RssMRAppMaster {
     JobConf conf = new JobConf(new YarnConfiguration());
     conf.addResource(new Path(MRJobConfig.JOB_CONF_FILE));
     int numReduceTasks = conf.getInt(MRJobConfig.NUM_REDUCES, 0);
-    String clientType = conf.get(RssMRConfig.RSS_CLIENT_TYPE, RssMRConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
-    int heartBeatThreadNum = conf.getInt(RssMRConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM,
-        RssMRConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM_DEFAULT_VALUE);
-    int retryMax = conf.getInt(RssMRConfig.RSS_CLIENT_RETRY_MAX, RssMRConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
-    long retryIntervalMax = conf.getLong(RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
-        RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
     String coordinators = conf.get(RssMRConfig.RSS_COORDINATOR_QUORUM);
 
-    int replica = conf.getInt(RssMRConfig.RSS_DATA_REPLICA, RssMRConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
-    int replicaWrite = conf.getInt(RssMRConfig.RSS_DATA_REPLICA_WRITE,
-        RssMRConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE);
-    int replicaRead = conf.getInt(RssMRConfig.RSS_DATA_REPLICA_READ,
-        RssMRConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE);
-    ShuffleWriteClient client = ShuffleClientFactory
-        .getInstance()
-        .createShuffleWriteClient(clientType, retryMax, retryIntervalMax,
-            heartBeatThreadNum, replica, replicaWrite, replicaRead);
+    ShuffleWriteClient client = RssMRUtils.createShuffleClient(conf);
 
     LOG.info("Registering coordinators {}", coordinators);
     client.registerCoordinators(coordinators);

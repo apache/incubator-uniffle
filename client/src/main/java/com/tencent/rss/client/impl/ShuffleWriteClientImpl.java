@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -84,9 +85,10 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private int replica;
   private int replicaWrite;
   private int replicaRead;
+  private boolean replicaSkipEnabled;
 
   public ShuffleWriteClientImpl(String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
-                                int replica, int replicaWrite, int replicaRead) {
+                                int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled) {
     this.clientType = clientType;
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
@@ -96,21 +98,16 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     this.replica = replica;
     this.replicaWrite = replicaWrite;
     this.replicaRead = replicaRead;
+    this.replicaSkipEnabled = replicaSkipEnabled;
   }
 
-  private void sendShuffleDataAsync(
+  private boolean sendShuffleDataAsync(
       String appId,
       Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
       Map<ShuffleServerInfo, List<Long>> serverToBlockIds,
-      Set<Long> successBlockIds,
-      Set<Long> tempFailedBlockIds) {
-
-    // maintain the count of blocks that have been sent to the server
-    Map<Long, AtomicInteger> blockIdsTracker = Maps.newConcurrentMap();
-    serverToBlockIds.values().forEach(
-      blockList -> blockList.forEach(block -> blockIdsTracker.put(block, new AtomicInteger(0)))
-    );
-
+      Map<Long, AtomicInteger> blockIdsTracker) {
+    // If one or more servers is failed, the sending is not totally successful.
+    AtomicBoolean isAllServersSuccess = new AtomicBoolean(true);
     if (serverToBlocks != null) {
       serverToBlocks.entrySet().parallelStream().forEach(entry -> {
         ShuffleServerInfo ssi = entry.getKey();
@@ -118,7 +115,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks = entry.getValue();
           // todo: compact unnecessary blocks that reach replicaWrite
           RssSendShuffleDataRequest request = new RssSendShuffleDataRequest(
-              appId, retryMax, retryIntervalMax, shuffleIdToBlocks);
+            appId, retryMax, retryIntervalMax, shuffleIdToBlocks);
           long s = System.currentTimeMillis();
           RssSendShuffleDataResponse response = getShuffleServerClient(ssi).sendShuffleData(request);
           LOG.info("ShuffleWriteClientImpl sendShuffleData cost:" + (System.currentTimeMillis() - s));
@@ -127,27 +124,46 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             // mark a replica of block that has been sent
             serverToBlockIds.get(ssi).forEach(block -> blockIdsTracker.get(block).incrementAndGet());
             LOG.info("Send: " + serverToBlockIds.get(ssi).size()
-                + " blocks to [" + ssi.getId() + "] successfully");
+              + " blocks to [" + ssi.getId() + "] successfully");
           } else {
+            isAllServersSuccess.set(false);
             LOG.warn("Send: " + serverToBlockIds.get(ssi).size() + " blocks to [" + ssi.getId()
-                + "] failed with statusCode[" + response.getStatusCode() + "], ");
+              + "] failed with statusCode[" + response.getStatusCode() + "], ");
           }
         } catch (Exception e) {
+          isAllServersSuccess.set(false);
           LOG.warn("Send: " + serverToBlockIds.get(ssi).size() + " blocks to [" + ssi.getId() + "] failed.", e);
         }
       });
+    }
+    return isAllServersSuccess.get();
+  }
 
-      // check success and failed blocks according to the replicaWrite
-      blockIdsTracker.entrySet().forEach(blockCt -> {
-          long blockId = blockCt.getKey();
-          int count = blockCt.getValue().get();
-          if (count >= replicaWrite) {
-            successBlockIds.add(blockId);
-          } else {
-            tempFailedBlockIds.add(blockId);
-          }
-        }
-      );
+  private void genServerToBlocks(ShuffleBlockInfo sbi, List<ShuffleServerInfo> serverList,
+                                 Map<ShuffleServerInfo,
+                                  Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
+                                 Map<ShuffleServerInfo, List<Long>> serverToBlockIds) {
+    int partitionId = sbi.getPartitionId();
+    int shuffleId = sbi.getShuffleId();
+    for (ShuffleServerInfo ssi : serverList) {
+      if (!serverToBlockIds.containsKey(ssi)) {
+        serverToBlockIds.put(ssi, Lists.newArrayList());
+      }
+      serverToBlockIds.get(ssi).add(sbi.getBlockId());
+
+      if (!serverToBlocks.containsKey(ssi)) {
+        serverToBlocks.put(ssi, Maps.newHashMap());
+      }
+      Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks = serverToBlocks.get(ssi);
+      if (!shuffleIdToBlocks.containsKey(shuffleId)) {
+        shuffleIdToBlocks.put(shuffleId, Maps.newHashMap());
+      }
+
+      Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = shuffleIdToBlocks.get(shuffleId);
+      if (!partitionToBlocks.containsKey(partitionId)) {
+        partitionToBlocks.put(partitionId, Lists.newArrayList());
+      }
+      partitionToBlocks.get(partitionId).add(sbi);
     }
   }
 
@@ -156,41 +172,74 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
     // shuffleServer -> shuffleId -> partitionId -> blocks
     Map<ShuffleServerInfo, Map<Integer,
-        Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks = Maps.newHashMap();
-    Map<ShuffleServerInfo, List<Long>> serverToBlockIds = Maps.newHashMap();
+        Map<Integer, List<ShuffleBlockInfo>>>> primaryServerToBlocks = Maps.newHashMap();
+    Map<ShuffleServerInfo, Map<Integer,
+      Map<Integer, List<ShuffleBlockInfo>>>> secondaryServerToBlocks = Maps.newHashMap();
+    Map<ShuffleServerInfo, List<Long>> primaryServerToBlockIds = Maps.newHashMap();
+    Map<ShuffleServerInfo, List<Long>> secondaryServerToBlockIds = Maps.newHashMap();
+
     // send shuffle block to shuffle server
     // for all ShuffleBlockInfo, create the data structure as shuffleServer -> shuffleId -> partitionId -> blocks
     // it will be helpful to send rpc request to shuffleServer
+
+    // In order to reduce the data to send in quorum protocol,
+    // we split these blocks into two rounds: primary and secondary.
+    // The primary round contains [0, replicaWrite) replicas,
+    // which is minimum number when there is no sending server failures.
+    // The secondary round contains [replicaWrite, replica) replicas,
+    // which is minimum number when there is at most *replicaWrite - replica* sending server failures.
     for (ShuffleBlockInfo sbi : shuffleBlockInfoList) {
-      int partitionId = sbi.getPartitionId();
-      int shuffleId = sbi.getShuffleId();
-      for (ShuffleServerInfo ssi : sbi.getShuffleServerInfos()) {
-        if (!serverToBlockIds.containsKey(ssi)) {
-          serverToBlockIds.put(ssi, Lists.newArrayList());
-        }
-        serverToBlockIds.get(ssi).add(sbi.getBlockId());
-
-        if (!serverToBlocks.containsKey(ssi)) {
-          serverToBlocks.put(ssi, Maps.newHashMap());
-        }
-        Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks = serverToBlocks.get(ssi);
-        if (!shuffleIdToBlocks.containsKey(shuffleId)) {
-          shuffleIdToBlocks.put(shuffleId, Maps.newHashMap());
-        }
-
-        Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = shuffleIdToBlocks.get(shuffleId);
-        if (!partitionToBlocks.containsKey(partitionId)) {
-          partitionToBlocks.put(partitionId, Lists.newArrayList());
-        }
-        partitionToBlocks.get(partitionId).add(sbi);
+      List<ShuffleServerInfo> allServers = sbi.getShuffleServerInfos();
+      if (replicaSkipEnabled) {
+        genServerToBlocks(sbi, allServers.subList(0, replicaWrite),
+          primaryServerToBlocks, primaryServerToBlockIds);
+        genServerToBlocks(sbi, allServers.subList(replicaWrite, replica),
+          secondaryServerToBlocks, secondaryServerToBlockIds);
+      } else {
+        // When replicaSkip is disabled, we send data to all replicas within one round.
+        genServerToBlocks(sbi, allServers,
+          primaryServerToBlocks, primaryServerToBlockIds);
       }
     }
+
+    // maintain the count of blocks that have been sent to the server
+    Map<Long, AtomicInteger> blockIdsTracker = Maps.newConcurrentMap();
+    primaryServerToBlockIds.values().forEach(
+      blockList -> blockList.forEach(block -> blockIdsTracker.put(block, new AtomicInteger(0)))
+    );
+    secondaryServerToBlockIds.values().forEach(
+      blockList -> blockList.forEach(block -> blockIdsTracker.put(block, new AtomicInteger(0)))
+    );
 
     Set<Long> failedBlockIds = Sets.newConcurrentHashSet();
     Set<Long> successBlockIds = Sets.newConcurrentHashSet();
     // if send block failed, the task will fail
     // todo: better to have fallback solution when send to multiple servers
-    sendShuffleDataAsync(appId, serverToBlocks, serverToBlockIds, successBlockIds, failedBlockIds);
+
+    // sent the primary round of blocks.
+    boolean isAllSuccess = sendShuffleDataAsync(
+        appId, primaryServerToBlocks, primaryServerToBlockIds, blockIdsTracker);
+
+    // The secondary round of blocks is sent only when the primary group issues failed sending.
+    // This should be infrequent.
+    // Even though the secondary round may send blocks more than replicaWrite replicas,
+    // we do not apply complicated skipping logic, because server crash is rare in production environment.
+    if (!isAllSuccess && !secondaryServerToBlocks.isEmpty()) {
+      LOG.info("The sending of primary round is failed partially, so start the secondary round");
+      sendShuffleDataAsync(appId, secondaryServerToBlocks, secondaryServerToBlockIds, blockIdsTracker);
+    }
+
+    // check success and failed blocks according to the replicaWrite
+    blockIdsTracker.entrySet().forEach(blockCt -> {
+        long blockId = blockCt.getKey();
+        int count = blockCt.getValue().get();
+        if (count >= replicaWrite) {
+          successBlockIds.add(blockId);
+        } else {
+          failedBlockIds.add(blockId);
+        }
+      }
+    );
     return new SendShuffleDataResult(successBlockIds, failedBlockIds);
   }
 

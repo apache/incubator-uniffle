@@ -33,6 +33,8 @@ public class RssClientConfig {
   public static final int RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE = 1;
   public static final String RSS_DATA_REPLICA_READ = "rss.data.replica.read";
   public static final int RSS_DATA_REPLICA_READ_DEFAULT_VALUE = 1;
+  public static final String RSS_DATA_REPLICA_SKIP_ENABLED = "rss.data.replica.skip.enabled";
+  public static final boolean RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE = true;
   public static final String RSS_HEARTBEAT_INTERVAL = "rss.heartbeat.interval";
   public static final long RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE = 10 * 1000L;
   public static final String RSS_HEARTBEAT_TIMEOUT = "rss.heartbeat.timeout";

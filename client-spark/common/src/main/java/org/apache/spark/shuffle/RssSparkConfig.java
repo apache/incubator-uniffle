@@ -103,6 +103,10 @@ public class RssSparkConfig {
   public static final int RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE = RssClientConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE;
   public static final String RSS_DATA_REPLICA_READ = SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_READ;
   public static final int RSS_DATA_REPLICA_READ_DEFAULT_VALUE = RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE;
+  public static final String RSS_DATA_REPLICA_SKIP_ENABLED =
+      SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_SKIP_ENABLED;
+  public static final boolean RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE =
+      RssClientConfig.RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE;
   public static final String RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE =
       SPARK_RSS_CONFIG_PREFIX + "rss.ozone.dfs.namenode.odfs.enable";
   public static final boolean RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE_DEFAULT_VALUE = false;

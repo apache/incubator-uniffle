@@ -50,6 +50,10 @@ public class RssMRConfig {
       MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_READ;
   public static final int RSS_DATA_REPLICA_READ_DEFAULT_VALUE =
       RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE;
+  public static final String RSS_DATA_REPLICA_SKIP_ENABLED =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_SKIP_ENABLED;
+  public static boolean RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE =
+      RssClientConfig.RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE;
   public static final String RSS_HEARTBEAT_INTERVAL =
       MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_HEARTBEAT_INTERVAL;
   public static final long RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE =

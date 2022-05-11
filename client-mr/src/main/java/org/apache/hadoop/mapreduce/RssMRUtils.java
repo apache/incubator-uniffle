@@ -68,10 +68,12 @@ public class RssMRUtils {
         RssMRConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE);
     int replica = jobConf.getInt(RssMRConfig.RSS_DATA_REPLICA,
         RssMRConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
+    boolean replicaSkipEnabled = jobConf.getBoolean(RssMRConfig.RSS_DATA_REPLICA_SKIP_ENABLED,
+        RssMRConfig.RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE);
     ShuffleWriteClient client = ShuffleClientFactory
         .getInstance()
         .createShuffleWriteClient(clientType, retryMax, retryIntervalMax,
-            heartBeatThreadNum, replica, replicaWrite, replicaRead);
+            heartBeatThreadNum, replica, replicaWrite, replicaRead, replicaSkipEnabled);
     return client;
   }
 
