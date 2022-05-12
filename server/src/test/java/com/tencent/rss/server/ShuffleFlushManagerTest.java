@@ -34,6 +34,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -62,18 +63,20 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   private static AtomicInteger ATOMIC_INT = new AtomicInteger(0);
   private static AtomicLong ATOMIC_LONG = new AtomicLong(0);
 
-  static {
-    ShuffleServerMetrics.register();
-  }
-
   private ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
   private String remoteStorage = HDFS_URI + "rss/test";
 
   @Before
   public void prepare() {
-    shuffleServerConf.setString("rss.storage.basePath", "");
+    ShuffleServerMetrics.register();
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, "");
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     LogManager.getRootLogger().setLevel(Level.INFO);
+  }
+
+  @After
+  public void clear() {
+    ShuffleServerMetrics.clear();
   }
 
   @Test
@@ -94,6 +97,11 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", shuffleServerConf);
     storageManager.registerRemoteStorage(appId, remoteStorage);
+    String storageHost = "localhost";
+    assertEquals(0.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.get(storageHost).get(), 0.5);
+    assertEquals(0.0, ShuffleServerMetrics.counterRemoteStorageRetryWrite.get(storageHost).get(), 0.5);
+    assertEquals(0.0, ShuffleServerMetrics.counterRemoteStorageFailedWrite.get(storageHost).get(), 0.5);
+    assertEquals(0.0, ShuffleServerMetrics.counterRemoteStorageSuccessWrite.get(storageHost).get(), 0.5);
     ShuffleFlushManager manager =
         new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, storageManager);
     ShuffleDataFlushEvent event1 =
@@ -117,6 +125,9 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     blocks21.addAll(blocks22);
     validate(appId, 2, 2, blocks21, 1, remoteStorage);
     assertEquals(blocks21.size(), manager.getCommittedBlockIds(appId, 2).getLongCardinality());
+
+    assertEquals(3.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.get(storageHost).get(), 0.5);
+    assertEquals(3.0, ShuffleServerMetrics.counterRemoteStorageSuccessWrite.get(storageHost).get(), 0.5);
   }
 
   @Test

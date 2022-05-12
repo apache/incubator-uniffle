@@ -163,6 +163,7 @@ public class ShuffleFlushManager {
         do {
           if (event.getRetryTimes() > retryMax) {
             LOG.error("Failed to write data for " + event + " in " + retryMax + " times, shuffle data will be lost");
+            ShuffleServerMetrics.incStorageFailedCounter(storage.getStorageHost());
             break;
           }
           if (!event.isValid()) {
@@ -177,9 +178,11 @@ public class ShuffleFlushManager {
 
           if (writeSuccess) {
             updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), blocks);
+            ShuffleServerMetrics.incStorageSuccessCounter(storage.getStorageHost());
             break;
           } else {
             event.increaseRetryTimes();
+            ShuffleServerMetrics.incStorageRetryCounter(storage.getStorageHost());
           }
         } while (event.getRetryTimes() <= retryMax);
       }

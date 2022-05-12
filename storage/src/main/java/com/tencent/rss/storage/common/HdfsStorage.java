@@ -18,7 +18,12 @@
 
 package com.tencent.rss.storage.common;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 import org.apache.hadoop.conf.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.storage.handler.api.ServerReadHandler;
 import com.tencent.rss.storage.handler.api.ShuffleWriteHandler;
@@ -28,17 +33,32 @@ import com.tencent.rss.storage.request.CreateShuffleWriteHandlerRequest;
 
 public class HdfsStorage extends AbstractStorage {
 
+  private static final Logger LOG = LoggerFactory.getLogger(HdfsStorage.class);
+
   private final String storagePath;
   private final Configuration conf;
+  private String storageHost;
 
   public HdfsStorage(String path, Configuration conf) {
     this.storagePath = path;
     this.conf = conf;
+    try {
+      URI uri = new URI(path);
+      storageHost = uri.getHost();
+    } catch (URISyntaxException e) {
+      storageHost = "";
+      LOG.warn("Invalid format of remoteStoragePath to get storage host, {}", path);
+    }
   }
 
   @Override
   public String getStoragePath() {
     return storagePath;
+  }
+
+  @Override
+  public String getStorageHost() {
+    return storageHost;
   }
 
   @Override

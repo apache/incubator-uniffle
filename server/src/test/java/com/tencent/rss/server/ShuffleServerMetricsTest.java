@@ -18,14 +18,6 @@
 
 package com.tencent.rss.server;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tencent.rss.common.metrics.TestUtils;
-import com.tencent.rss.storage.util.StorageType;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -33,13 +25,27 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import com.tencent.rss.common.metrics.TestUtils;
+import com.tencent.rss.storage.common.LocalStorage;
+import com.tencent.rss.storage.util.StorageType;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ShuffleServerMetricsTest {
 
   private static final String SERVER_METRICS_URL = "http://127.0.0.1:12345/metrics/server";
   private static final String SERVER_JVM_URL = "http://127.0.0.1:12345/metrics/jvm";
   private static final String SERVER_GRPC_URL = "http://127.0.0.1:12345/metrics/grpc";
+  private static final String REMOTE_STORAGE_PATH = "hdfs://hdfs1:9000/rss";
+  private static final String STORAGE_HOST = "hdfs1";
   private static ShuffleServer shuffleServer;
 
   @BeforeClass
@@ -50,16 +56,18 @@ public class ShuffleServerMetricsTest {
     ssc.set(ShuffleServerConf.RPC_SERVER_PORT, 12346);
     ssc.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, "tmp");
     ssc.set(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
-    ssc.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    ssc.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
     ssc.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "fake.coordinator:123");
     ssc.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 1000L);
     shuffleServer = new ShuffleServer(ssc);
+    shuffleServer.getStorageManager().registerRemoteStorage("metricsTest", REMOTE_STORAGE_PATH);
     shuffleServer.start();
   }
 
   @AfterClass
   public static void tearDown() throws Exception {
     shuffleServer.stopServer();
+    ShuffleServerMetrics.clear();
   }
 
   @Test
@@ -76,7 +84,54 @@ public class ShuffleServerMetricsTest {
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
-    assertEquals(32, actualObj.get("metrics").size());
+    JsonNode metricsNode = actualObj.get("metrics");
+    assertEquals(40, metricsNode.size());
+
+    List<String> expectedMetricNames = Lists.newArrayList(
+        ShuffleServerMetrics.STORAGE_TOTAL_WRITE_REMOTE_PREFIX + STORAGE_HOST,
+        ShuffleServerMetrics.STORAGE_SUCCESS_WRITE_REMOTE_PREFIX + STORAGE_HOST,
+        ShuffleServerMetrics.STORAGE_FAILED_WRITE_REMOTE_PREFIX + STORAGE_HOST,
+        ShuffleServerMetrics.STORAGE_RETRY_WRITE_REMOTE_PREFIX + STORAGE_HOST);
+    for (String expectMetricName : expectedMetricNames) {
+      validateMetrics(metricsNode, expectMetricName);
+    }
+  }
+
+  private void validateMetrics(JsonNode metricsNode, String expectedMetricName) {
+    boolean bingo = false;
+    for (int i = 0; i < metricsNode.size(); i++) {
+      JsonNode metricsName = metricsNode.get(i).get("name");
+      if (expectedMetricName.equals(metricsName.textValue())) {
+        bingo = true;
+        break;
+      }
+    }
+    assertTrue(bingo);
+  }
+
+  @Test
+  public void testStorageCounter() {
+    // test for local storage
+    ShuffleServerMetrics.incStorageRetryCounter(LocalStorage.STORAGE_HOST);
+    assertEquals(1.0, ShuffleServerMetrics.counterLocalStorageTotalWrite.get(), 0.5);
+    assertEquals(1.0, ShuffleServerMetrics.counterLocalStorageRetryWrite.get(), 0.5);
+    ShuffleServerMetrics.incStorageSuccessCounter(LocalStorage.STORAGE_HOST);
+    assertEquals(2.0, ShuffleServerMetrics.counterLocalStorageTotalWrite.get(), 0.5);
+    assertEquals(1.0, ShuffleServerMetrics.counterLocalStorageSuccessWrite.get(), 0.5);
+    ShuffleServerMetrics.incStorageFailedCounter(LocalStorage.STORAGE_HOST);
+    assertEquals(3.0, ShuffleServerMetrics.counterLocalStorageTotalWrite.get(), 0.5);
+    assertEquals(1.0, ShuffleServerMetrics.counterLocalStorageFailedWrite.get(), 0.5);
+
+    // test for remote storage
+    ShuffleServerMetrics.incStorageRetryCounter(STORAGE_HOST);
+    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.get(STORAGE_HOST).get(), 0.5);
+    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageRetryWrite.get(STORAGE_HOST).get(), 0.5);
+    ShuffleServerMetrics.incStorageSuccessCounter(STORAGE_HOST);
+    assertEquals(2.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.get(STORAGE_HOST).get(), 0.5);
+    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageSuccessWrite.get(STORAGE_HOST).get(), 0.5);
+    ShuffleServerMetrics.incStorageFailedCounter(STORAGE_HOST);
+    assertEquals(3.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.get(STORAGE_HOST).get(), 0.5);
+    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageFailedWrite.get(STORAGE_HOST).get(), 0.5);
   }
 
   @Test

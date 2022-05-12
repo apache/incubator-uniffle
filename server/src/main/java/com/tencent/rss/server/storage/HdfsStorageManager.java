@@ -87,6 +87,12 @@ public class HdfsStorageManager extends SingleStorageManager {
   public void registerRemoteStorage(String appId, String remoteStorage) {
     if (!pathToStorages.containsKey(remoteStorage)) {
       pathToStorages.putIfAbsent(remoteStorage, new HdfsStorage(remoteStorage, hadoopConf));
+      // registerRemoteStorage may be called in different threads,
+      // make sure metrics won't be created duplicated
+      // there shouldn't have performance issue because
+      // it will be called only few times according to the number of remote storage
+      String storageHost = pathToStorages.get(remoteStorage).getStorageHost();
+      ShuffleServerMetrics.addDynamicCounterForRemoteStorage(storageHost);
     }
     appIdToStorages.putIfAbsent(appId, pathToStorages.get(remoteStorage));
   }

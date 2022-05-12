@@ -18,18 +18,20 @@
 
 package com.tencent.rss.coordinator;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import com.google.common.collect.Sets;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.google.common.collect.Sets;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class SimpleClusterManagerTest {
 
@@ -38,6 +40,11 @@ public class SimpleClusterManagerTest {
   @Before
   public void setUp() {
     CoordinatorMetrics.register();
+  }
+
+  @After
+  public void clear() {
+    CoordinatorMetrics.clear();
   }
 
   @Test

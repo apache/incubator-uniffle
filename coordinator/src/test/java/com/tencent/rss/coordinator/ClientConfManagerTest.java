@@ -29,6 +29,7 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -48,6 +49,11 @@ public class ClientConfManagerTest {
   @Before
   public void setUp() {
     CoordinatorMetrics.register();
+  }
+
+  @After
+  public void clear() {
+    CoordinatorMetrics.clear();
   }
 
   @Test
@@ -139,7 +145,8 @@ public class ClientConfManagerTest {
     String remotePath1 = "hdfs://path1";
     String remotePath2 = "hdfs://path2";
     String remotePath3 = "hdfs://path3";
-    File cfgFile = Files.createTempFile("dynamicConf", ".conf").toFile();
+    File cfgFile = Files.createTempFile("dynamicRemoteStorageTest", ".conf").toFile();
+    cfgFile.deleteOnExit();
     writeRemoteStorageConf(cfgFile, remotePath1);
 
     CoordinatorConf conf = new CoordinatorConf();

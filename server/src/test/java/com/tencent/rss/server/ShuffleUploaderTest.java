@@ -18,15 +18,6 @@
 
 package com.tencent.rss.server;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.Uninterruptibles;
-import com.tencent.rss.storage.common.LocalStorage;
-import com.tencent.rss.storage.common.ShuffleFileInfo;
-import com.tencent.rss.storage.common.StorageReadMetrics;
-import com.tencent.rss.storage.factory.ShuffleUploadHandlerFactory;
-import com.tencent.rss.storage.handler.api.ShuffleUploadHandler;
-import com.tencent.rss.storage.util.ShuffleUploadResult;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -35,22 +26,32 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import com.tencent.rss.storage.util.StorageType;
-import org.apache.hadoop.conf.Configuration;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.roaringbitmap.RoaringBitmap;
+
+import com.tencent.rss.storage.common.LocalStorage;
+import com.tencent.rss.storage.common.ShuffleFileInfo;
+import com.tencent.rss.storage.common.StorageReadMetrics;
+import com.tencent.rss.storage.factory.ShuffleUploadHandlerFactory;
+import com.tencent.rss.storage.handler.api.ShuffleUploadHandler;
+import com.tencent.rss.storage.util.ShuffleUploadResult;
+import com.tencent.rss.storage.util.StorageType;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 
 public class ShuffleUploaderTest  {
@@ -67,6 +68,7 @@ public class ShuffleUploaderTest  {
 
   @AfterClass
   public static void tearDown() {
+    ShuffleServerMetrics.clear();
     tmpDir.delete();
   }
 

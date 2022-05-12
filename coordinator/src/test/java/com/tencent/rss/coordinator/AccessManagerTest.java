@@ -18,13 +18,15 @@
 
 package com.tencent.rss.coordinator;
 
-import com.google.common.collect.Sets;
-import com.tencent.rss.common.util.Constants;
 import java.util.Random;
 
+import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.tencent.rss.common.util.Constants;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -34,6 +36,11 @@ public class AccessManagerTest {
   @Before
   public void setUp() {
     CoordinatorMetrics.register();
+  }
+
+  @After
+  public void clear() {
+    CoordinatorMetrics.clear();
   }
 
   @Test

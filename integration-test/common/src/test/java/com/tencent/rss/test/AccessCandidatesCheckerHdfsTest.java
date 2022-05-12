@@ -22,17 +22,19 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 
 import com.google.common.collect.Sets;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.Path;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import com.tencent.rss.coordinator.AccessCandidatesChecker;
 import com.tencent.rss.coordinator.AccessInfo;
 import com.tencent.rss.coordinator.AccessManager;
 import com.tencent.rss.coordinator.CoordinatorConf;
 import com.tencent.rss.coordinator.CoordinatorMetrics;
 import com.tencent.rss.storage.HdfsTestBase;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.Path;
-import org.junit.Before;
-import org.junit.Test;
 
 import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertEquals;
@@ -44,6 +46,11 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
   @Before
   public void setUp() {
     CoordinatorMetrics.register();
+  }
+
+  @After
+  public void clear() {
+    CoordinatorMetrics.clear();
   }
 
   @Test

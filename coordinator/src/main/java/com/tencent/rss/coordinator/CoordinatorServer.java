@@ -106,6 +106,9 @@ public class CoordinatorServer {
   }
 
   private void initialization() throws Exception {
+    jettyServer = new JettyServer(coordinatorConf);
+    // register metrics first to avoid NPE problem when add dynamic metrics
+    registerMetrics();
     this.applicationManager = new ApplicationManager(coordinatorConf);
 
     ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(coordinatorConf);
@@ -116,8 +119,6 @@ public class CoordinatorServer {
     this.assignmentStrategy = assignmentStrategyFactory.getAssignmentStrategy();
     this.accessManager = new AccessManager(coordinatorConf, clusterManager, new Configuration());
 
-    jettyServer = new JettyServer(coordinatorConf);
-    registerMetrics();
     CoordinatorFactory coordinatorFactory = new CoordinatorFactory(this);
     server = coordinatorFactory.getServer();
   }

@@ -53,4 +53,6 @@ public interface Storage {
   void createMetadataIfNotExist(String shuffleKey);
 
   String getStoragePath();
+
+  String getStorageHost();
 }

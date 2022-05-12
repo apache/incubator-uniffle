@@ -43,6 +43,7 @@ import com.tencent.rss.storage.request.CreateShuffleWriteHandlerRequest;
 public class LocalStorage extends AbstractStorage {
 
   private static final Logger LOG = LoggerFactory.getLogger(LocalStorage.class);
+  public static final String STORAGE_HOST = "local";
 
   private final long capacity;
   private final String basePath;
@@ -85,6 +86,11 @@ public class LocalStorage extends AbstractStorage {
   @Override
   public String getStoragePath() {
     return basePath;
+  }
+
+  @Override
+  public String getStorageHost() {
+    return STORAGE_HOST;
   }
 
   @Override

@@ -29,10 +29,12 @@ import com.google.common.collect.Lists;
 import org.junit.AfterClass;
 
 import com.tencent.rss.coordinator.CoordinatorConf;
+import com.tencent.rss.coordinator.CoordinatorMetrics;
 import com.tencent.rss.coordinator.CoordinatorServer;
 import com.tencent.rss.server.MockedShuffleServer;
 import com.tencent.rss.server.ShuffleServer;
 import com.tencent.rss.server.ShuffleServerConf;
+import com.tencent.rss.server.ShuffleServerMetrics;
 import com.tencent.rss.storage.HdfsTestBase;
 import com.tencent.rss.storage.util.StorageType;
 
@@ -67,6 +69,8 @@ abstract public class IntegrationTestBase extends HdfsTestBase {
     }
     shuffleServers = Lists.newArrayList();
     coordinators = Lists.newArrayList();
+    ShuffleServerMetrics.clear();
+    CoordinatorMetrics.clear();
   }
 
   protected static CoordinatorConf getCoordinatorConf() {

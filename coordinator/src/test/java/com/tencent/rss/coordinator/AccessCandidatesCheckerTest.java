@@ -26,6 +26,7 @@ import java.util.Objects;
 import com.google.common.collect.Sets;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -44,6 +45,11 @@ public class AccessCandidatesCheckerTest {
   @Before
   public void setUp() {
     CoordinatorMetrics.register();
+  }
+
+  @After
+  public void clear() {
+    CoordinatorMetrics.clear();
   }
 
   @Test

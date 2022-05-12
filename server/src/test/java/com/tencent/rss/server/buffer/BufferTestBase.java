@@ -18,18 +18,27 @@
 
 package com.tencent.rss.server.buffer;
 
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+
 import com.tencent.rss.common.ShufflePartitionedBlock;
 import com.tencent.rss.common.ShufflePartitionedData;
 import com.tencent.rss.common.util.ChecksumUtils;
 import com.tencent.rss.server.ShuffleServerMetrics;
 
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicLong;
-
 public abstract class BufferTestBase {
 
-  static {
+  @BeforeClass
+  public static void setup() {
     ShuffleServerMetrics.register();
+  }
+
+  @AfterClass
+  public static void clear() {
+    ShuffleServerMetrics.clear();
   }
 
   private static AtomicLong atomBlockId = new AtomicLong(0);

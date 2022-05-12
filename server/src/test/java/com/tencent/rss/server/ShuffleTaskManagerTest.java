@@ -28,6 +28,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -54,6 +55,11 @@ import static org.junit.Assert.fail;
 public class ShuffleTaskManagerTest extends HdfsTestBase {
 
   private static AtomicInteger ATOMIC_INT = new AtomicInteger(0);
+
+  @AfterClass
+  public static void tearDown() {
+    ShuffleServerMetrics.clear();
+  }
 
   @Test
   public void registerShuffleTest() throws Exception {
