@@ -29,6 +29,7 @@ import org.junit.Test;
 import com.tencent.rss.common.util.Constants;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 
 public class ApplicationManagerTest {
@@ -81,6 +82,7 @@ public class ApplicationManagerTest {
     applicationManager.refreshRemoteStorage(remoteStoragePath);
     assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStoragePath());
     assertEquals(expectedAvailablePath, applicationManager.getRemoteStoragePathCounter().keySet());
+    assertFalse(applicationManager.hasErrorInStatusCheck());
   }
 
   @Test
@@ -132,6 +134,21 @@ public class ApplicationManagerTest {
     applicationManager.refreshRemoteStorage("");
     assertEquals(0, applicationManager.getAvailableRemoteStoragePath().size());
     assertEquals(0, applicationManager.getRemoteStoragePathCounter().size());
+    assertFalse(applicationManager.hasErrorInStatusCheck());
+  }
+
+  @Test
+  public void clearWithoutRemoteStorageTest() throws Exception {
+    // test case for storage type without remote storage,
+    // NPE shouldn't happen when clear the resource
+    String testApp = "clearWithoutRemoteStorageTest";
+    applicationManager.refreshAppId(testApp);
+    // just set a value != 0, it should be reset to 0 if everything goes well
+    CoordinatorMetrics.gaugeRunningAppNum.set(100.0);
+    assertEquals(1, applicationManager.getAppIds().size());
+    Thread.sleep(appExpiredTime + 2000);
+    assertEquals(0, applicationManager.getAppIds().size());
+    assertFalse(applicationManager.hasErrorInStatusCheck());
   }
 
   @Test
@@ -175,5 +192,6 @@ public class ApplicationManagerTest {
     applicationManager.refreshRemoteStorage("");
     assertEquals(0, applicationManager.getAvailableRemoteStoragePath().size());
     assertEquals(0, applicationManager.getRemoteStoragePathCounter().size());
+    assertFalse(applicationManager.hasErrorInStatusCheck());
   }
 }

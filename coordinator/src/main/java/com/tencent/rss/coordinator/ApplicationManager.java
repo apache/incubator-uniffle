@@ -52,6 +52,8 @@ public class ApplicationManager {
   private Map<String, String> remoteStorageToHost = Maps.newConcurrentMap();
   private Set<String> availableRemoteStoragePath = Sets.newConcurrentHashSet();
   private ScheduledExecutorService scheduledExecutorService;
+  // it's only for test case to check if status check has problem
+  private boolean hasErrorInStatusCheck = false;
 
   public ApplicationManager(CoordinatorConf conf) {
     expired = conf.getLong(CoordinatorConf.COORDINATOR_APP_EXPIRED);
@@ -161,21 +163,23 @@ public class ApplicationManager {
 
   @VisibleForTesting
   protected synchronized void decRemoteStorageCounter(String storagePath) {
-    AtomicInteger atomic = remoteStoragePathCounter.get(storagePath);
-    if (atomic != null) {
-      int count = atomic.decrementAndGet();
-      if (count < 0) {
-        LOG.warn("Unexpected counter for remote storage: %s, which is %i, reset to 0",
-            storagePath, count);
-        atomic.set(0);
+    if (!StringUtils.isEmpty(storagePath)) {
+      AtomicInteger atomic = remoteStoragePathCounter.get(storagePath);
+      if (atomic != null) {
+        int count = atomic.decrementAndGet();
+        if (count < 0) {
+          LOG.warn("Unexpected counter for remote storage: %s, which is %i, reset to 0",
+              storagePath, count);
+          atomic.set(0);
+        }
+      } else {
+        LOG.warn("Can't find counter for remote storage: {}", storagePath);
+        remoteStoragePathCounter.putIfAbsent(storagePath, new AtomicInteger(0));
       }
-    } else {
-      LOG.warn("Can't find counter for remote storage: {}", storagePath);
-      remoteStoragePathCounter.putIfAbsent(storagePath, new AtomicInteger(0));
-    }
-    if (remoteStoragePathCounter.get(storagePath).get() == 0
-        && !availableRemoteStoragePath.contains(storagePath)) {
-      remoteStoragePathCounter.remove(storagePath);
+      if (remoteStoragePathCounter.get(storagePath).get() == 0
+          && !availableRemoteStoragePath.contains(storagePath)) {
+        remoteStoragePathCounter.remove(storagePath);
+      }
     }
   }
 
@@ -205,6 +209,11 @@ public class ApplicationManager {
     return availableRemoteStoragePath;
   }
 
+  @VisibleForTesting
+  protected boolean hasErrorInStatusCheck() {
+    return hasErrorInStatusCheck;
+  }
+
   private void statusCheck() {
     try {
       LOG.info("Start to check status for " + appIds.size() + " applications");
@@ -219,12 +228,16 @@ public class ApplicationManager {
       for (String appId : expiredAppIds) {
         LOG.info("Remove expired application:" + appId);
         appIds.remove(appId);
-        decRemoteStorageCounter(appIdToRemoteStoragePath.get(appId));
-        appIdToRemoteStoragePath.remove(appId);
+        if (appIdToRemoteStoragePath.containsKey(appId)) {
+          decRemoteStorageCounter(appIdToRemoteStoragePath.get(appId));
+          appIdToRemoteStoragePath.remove(appId);
+        }
       }
       CoordinatorMetrics.gaugeRunningAppNum.set(appIds.size());
       updateRemoteStorageMetrics();
     } catch (Exception e) {
+      // the flag is only for test case
+      hasErrorInStatusCheck = true;
       LOG.warn("Error happened in statusCheck", e);
     }
   }
