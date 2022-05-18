@@ -95,6 +95,11 @@ public class ShuffleServerMetricsTest {
     for (String expectMetricName : expectedMetricNames) {
       validateMetrics(metricsNode, expectMetricName);
     }
+
+    // for duplicate register, IllegalArgumentException shouldn't be thrown
+    String hostName = "duplicateHost";
+    ShuffleServerMetrics.addDynamicCounterForRemoteStorage(hostName);
+    ShuffleServerMetrics.addDynamicCounterForRemoteStorage(hostName);
   }
 
   private void validateMetrics(JsonNode metricsNode, String expectedMetricName) {

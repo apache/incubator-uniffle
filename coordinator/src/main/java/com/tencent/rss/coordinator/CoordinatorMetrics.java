@@ -28,6 +28,7 @@ import io.prometheus.client.Gauge;
 import org.apache.commons.lang3.StringUtils;
 
 import com.tencent.rss.common.metrics.MetricsManager;
+import com.tencent.rss.common.util.RssUtils;
 
 public class CoordinatorMetrics {
 
@@ -79,7 +80,7 @@ public class CoordinatorMetrics {
   public static void addDynamicGaugeForRemoteStorage(String storageHost) {
     if (!StringUtils.isEmpty(storageHost)) {
       if (!gaugeInUsedRemoteStorage.containsKey(storageHost)) {
-        String metricName = REMOTE_STORAGE_IN_USED_PREFIX + storageHost;
+        String metricName = REMOTE_STORAGE_IN_USED_PREFIX + RssUtils.getMetricNameForHostName(storageHost);
         gaugeInUsedRemoteStorage.putIfAbsent(storageHost,
             metricsManager.addGauge(metricName));
       }

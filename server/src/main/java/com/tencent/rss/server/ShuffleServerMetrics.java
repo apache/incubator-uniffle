@@ -28,6 +28,7 @@ import io.prometheus.client.Gauge;
 import org.apache.commons.lang3.StringUtils;
 
 import com.tencent.rss.common.metrics.MetricsManager;
+import com.tencent.rss.common.util.RssUtils;
 import com.tencent.rss.storage.common.LocalStorage;
 
 public class ShuffleServerMetrics {
@@ -148,23 +149,27 @@ public class ShuffleServerMetrics {
 
   public static synchronized void addDynamicCounterForRemoteStorage(String storageHost) {
     if (!StringUtils.isEmpty(storageHost)) {
-      String totalWriteMetricName = STORAGE_TOTAL_WRITE_REMOTE_PREFIX + storageHost;
-      if (!counterRemoteStorageTotalWrite.containsKey(totalWriteMetricName)) {
+      String totalWriteMetricName = STORAGE_TOTAL_WRITE_REMOTE_PREFIX
+          + RssUtils.getMetricNameForHostName(storageHost);
+      if (!counterRemoteStorageTotalWrite.containsKey(storageHost)) {
         counterRemoteStorageTotalWrite.putIfAbsent(storageHost,
             metricsManager.addCounter(totalWriteMetricName));
       }
-      String retryWriteMetricName = STORAGE_RETRY_WRITE_REMOTE_PREFIX + storageHost;
-      if (!counterRemoteStorageRetryWrite.containsKey(retryWriteMetricName)) {
+      String retryWriteMetricName = STORAGE_RETRY_WRITE_REMOTE_PREFIX
+          + RssUtils.getMetricNameForHostName(storageHost);
+      if (!counterRemoteStorageRetryWrite.containsKey(storageHost)) {
         counterRemoteStorageRetryWrite.putIfAbsent(storageHost,
             metricsManager.addCounter(retryWriteMetricName));
       }
-      String failedWriteMetricName = STORAGE_FAILED_WRITE_REMOTE_PREFIX + storageHost;
-      if (!counterRemoteStorageFailedWrite.containsKey(failedWriteMetricName)) {
+      String failedWriteMetricName = STORAGE_FAILED_WRITE_REMOTE_PREFIX
+          + RssUtils.getMetricNameForHostName(storageHost);
+      if (!counterRemoteStorageFailedWrite.containsKey(storageHost)) {
         counterRemoteStorageFailedWrite.putIfAbsent(storageHost,
             metricsManager.addCounter(failedWriteMetricName));
       }
-      String successWriteMetricName = STORAGE_SUCCESS_WRITE_REMOTE_PREFIX + storageHost;
-      if (!counterRemoteStorageSuccessWrite.containsKey(successWriteMetricName)) {
+      String successWriteMetricName = STORAGE_SUCCESS_WRITE_REMOTE_PREFIX
+          + RssUtils.getMetricNameForHostName(storageHost);
+      if (!counterRemoteStorageSuccessWrite.containsKey(storageHost)) {
         counterRemoteStorageSuccessWrite.putIfAbsent(storageHost,
             metricsManager.addCounter(successWriteMetricName));
       }

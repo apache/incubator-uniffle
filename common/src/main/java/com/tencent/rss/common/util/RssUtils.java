@@ -267,4 +267,14 @@ public class RssUtils {
       throw new RuntimeException("Replica config is unsafe, recommend replica.write + replica.read > replica");
     }
   }
+
+  // the method is used to transfer hostname to metric name.
+  // With standard of hostname, `-` and `.` will be included in hostname,
+  // but they are not valid for metric name, replace them with '_'
+  public static String getMetricNameForHostName(String hostName) {
+    if (hostName == null) {
+      return "";
+    }
+    return hostName.replaceAll("[\\.-]", "_");
+  }
 }

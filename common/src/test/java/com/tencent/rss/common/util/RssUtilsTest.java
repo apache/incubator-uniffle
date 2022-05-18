@@ -18,15 +18,6 @@
 
 package com.tencent.rss.common.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import com.google.common.collect.Lists;
-import com.tencent.rss.common.BufferSegment;
-import com.tencent.rss.common.ShuffleDataSegment;
-import com.tencent.rss.common.ShuffleIndexResult;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -34,8 +25,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+
+import com.google.common.collect.Lists;
 import org.junit.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
+import com.tencent.rss.common.BufferSegment;
+import com.tencent.rss.common.ShuffleDataSegment;
+import com.tencent.rss.common.ShuffleIndexResult;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RssUtilsTest {
 
@@ -128,6 +130,13 @@ public class RssUtilsTest {
     incompleteByteBuffer.putInt(2);
     data = incompleteByteBuffer.array();
     assertTrue(RssUtils.transIndexDataToSegments(new ShuffleIndexResult(data), readBufferSize).isEmpty());
+  }
+
+  @Test
+  public void getMetricNameForHostNameTest() {
+    assertEquals("a_b_c", RssUtils.getMetricNameForHostName("a.b.c"));
+    assertEquals("a_b_c", RssUtils.getMetricNameForHostName("a-b-c"));
+    assertEquals("a_b_c", RssUtils.getMetricNameForHostName("a.b-c"));
   }
 
   @Test
