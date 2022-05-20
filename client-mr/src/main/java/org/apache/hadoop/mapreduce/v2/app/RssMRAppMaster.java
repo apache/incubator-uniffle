@@ -18,6 +18,10 @@
 
 package org.apache.hadoop.mapreduce.v2.app;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -27,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -40,7 +45,6 @@ import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.RssMRConfig;
 import org.apache.hadoop.mapreduce.RssMRUtils;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
-import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,8 +61,7 @@ public class RssMRAppMaster {
 
   public static void main(String[] args) {
 
-    JobConf conf = new JobConf(new YarnConfiguration());
-    conf.addResource(new Path(MRJobConfig.JOB_CONF_FILE));
+    JobConf conf = new JobConf(new Path(MRJobConfig.JOB_CONF_FILE));
     int numReduceTasks = conf.getInt(MRJobConfig.NUM_REDUCES, 0);
     String coordinators = conf.get(RssMRConfig.RSS_COORDINATOR_QUORUM);
 
@@ -145,16 +148,28 @@ public class RssMRAppMaster {
     });
 
     // close slow start
-    if (conf.getFloat(MRJobConfig.COMPLETED_MAPS_FOR_REDUCE_SLOWSTART, 0.05f) != 1) {
-      conf.set(MRJobConfig.COMPLETED_MAPS_FOR_REDUCE_SLOWSTART, "1");
-      LOG.warn("close slow start, because RSS does not support it yet");
-    }
+    conf.setFloat(MRJobConfig.COMPLETED_MAPS_FOR_REDUCE_SLOWSTART, 1.0f);
+    LOG.warn("close slow start, because RSS does not support it yet");
+
+    conf.setBoolean(MRJobConfig.MR_AM_JOB_RECOVERY_ENABLE, false);
+    LOG.warn("close recovery enable, because RSS doesn't support it yet");
 
     String jobDirStr = conf.get(MRJobConfig.MAPREDUCE_JOB_DIR);
     if (jobDirStr == null) {
       throw new RuntimeException("jobDir is empty");
     }
     Path jobConfFile = new Path(jobDirStr, MRJobConfig.JOB_CONF_FILE);
+    updateConf(conf, jobConfFile);
+    // remove org.apache.hadoop.mapreduce.v2.app.MRAppMaster
+    ArrayUtils.remove(args, 0);
+    MRAppMaster.main(args);
+  }
+
+  // After we modify some configurations, we should update configuration for Application
+  // So we update the modify the configuration in the HDFS and local disk. It's a little
+  // tricky to delete the local configuration. But we hope guarantee the integrity for file.
+  // We choose to delete it and override with the new configuration in the HDFS.
+  static void updateConf(JobConf conf, Path jobConfFile) {
     try {
       FileSystem fs = new Cluster(conf).getFileSystem();
       fs.delete(jobConfFile, true);
@@ -163,12 +178,15 @@ public class RssMRAppMaster {
                  new FsPermission(JobSubmissionFiles.JOB_FILE_PERMISSION))) {
           conf.writeXml(out);
       }
+      File file = new File(MRJobConfig.JOB_CONF_FILE);
+      file.delete();
+      try (InputStream input = fs.open(jobConfFile);
+           OutputStream output = new FileOutputStream(file)) {
+        IOUtils.copy(input, output);
+      }
     } catch (Exception e) {
       LOG.error("Modify job conf exception", e);
       throw new RuntimeException("Modify job conf exception ", e);
     }
-    // remove org.apache.hadoop.mapreduce.v2.app.MRAppMaster
-    ArrayUtils.remove(args, 0);
-    MRAppMaster.main(args);
   }
 }
