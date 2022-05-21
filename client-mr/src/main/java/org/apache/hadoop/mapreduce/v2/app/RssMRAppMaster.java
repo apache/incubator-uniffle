@@ -63,103 +63,105 @@ public class RssMRAppMaster {
 
     JobConf conf = new JobConf(new Path(MRJobConfig.JOB_CONF_FILE));
     int numReduceTasks = conf.getInt(MRJobConfig.NUM_REDUCES, 0);
-    String coordinators = conf.get(RssMRConfig.RSS_COORDINATOR_QUORUM);
+    if (numReduceTasks > 0) {
+      String coordinators = conf.get(RssMRConfig.RSS_COORDINATOR_QUORUM);
 
-    ShuffleWriteClient client = RssMRUtils.createShuffleClient(conf);
+      ShuffleWriteClient client = RssMRUtils.createShuffleClient(conf);
 
-    LOG.info("Registering coordinators {}", coordinators);
-    client.registerCoordinators(coordinators);
+      LOG.info("Registering coordinators {}", coordinators);
+      client.registerCoordinators(coordinators);
 
-    ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
-    String appId = applicationAttemptId.toString();
-    ShuffleAssignmentsInfo response = client.getShuffleAssignments(
-        appId, 0, numReduceTasks,
-        1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
-    Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges = response.getServerToPartitionRanges();
-    final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-        new ThreadFactory() {
-          @Override
-          public Thread newThread(Runnable r) {
-            Thread t = Executors.defaultThreadFactory().newThread(r);
-            t.setDaemon(true);
-            return t;
+      ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
+      String appId = applicationAttemptId.toString();
+      ShuffleAssignmentsInfo response = client.getShuffleAssignments(
+          appId, 0, numReduceTasks,
+          1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+      Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges = response.getServerToPartitionRanges();
+      final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
+          new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+              Thread t = Executors.defaultThreadFactory().newThread(r);
+              t.setDaemon(true);
+              return t;
+            }
           }
-        }
-    );
-    if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
-      return;
-    }
-
-    long heartbeatInterval = conf.getLong(RssMRConfig.RSS_HEARTBEAT_INTERVAL,
-        RssMRConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
-    long heartbeatTimeout = conf.getLong(RssMRConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
-    scheduledExecutorService.scheduleAtFixedRate(
-        () -> {
-          try {
-            client.sendAppHeartbeat(appId, heartbeatTimeout);
-            LOG.info("Finish send heartbeat to coordinator and servers");
-          } catch (Exception e) {
-            LOG.warn("Fail to send heartbeat to coordinator and servers", e);
-          }
-        },
-        heartbeatInterval / 2,
-        heartbeatInterval,
-        TimeUnit.MILLISECONDS);
-
-    // get remote storage from coordinator if necessary
-    boolean dynamicConfEnabled = conf.getBoolean(RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
-        RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
-
-    // fetch client conf and apply them if necessary
-    if (dynamicConfEnabled) {
-      Map<String, String> clusterClientConf = client.fetchClientConf(
-          conf.getInt(RssMRConfig.RSS_ACCESS_TIMEOUT_MS,
-              RssMRConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
-      RssMRUtils.applyDynamicClientConf(conf, clusterClientConf);
-    }
-
-    String storageType = conf.get(RssMRConfig.RSS_STORAGE_TYPE);
-    String defaultRemoteStorage = conf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH, "");
-    String remoteStorage = ClientUtils.fetchRemoteStorage(
-        appId, defaultRemoteStorage, dynamicConfEnabled, storageType, client);
-    // set the remote storage with actual value
-    conf.set(RssMRConfig.RSS_REMOTE_STORAGE_PATH, remoteStorage);
-
-    LOG.info("Start to register shuffle");
-    long start = System.currentTimeMillis();
-    serverToPartitionRanges.entrySet().forEach(entry -> {
-      client.registerShuffle(
-          entry.getKey(), appId, 0, entry.getValue(), remoteStorage);
-    });
-    LOG.info("Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
-
-    // write shuffle worker assignments to submit work directory
-    // format is as below:
-    // mapreduce.rss.assignment.partition.1:server1,server2
-    // mapreduce.rss.assignment.partition.2:server3,server4
-    // ...
-
-    response.getPartitionToServers().entrySet().forEach(entry -> {
-      List<String> servers = Lists.newArrayList();
-      for (ShuffleServerInfo server : entry.getValue()) {
-        servers.add(server.getHost() + ":" + server.getPort());
+      );
+      if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
+        return;
       }
-      conf.set(RssMRConfig.RSS_ASSIGNMENT_PREFIX + entry.getKey(), StringUtils.join(servers, ","));
-    });
 
-    // close slow start
-    conf.setFloat(MRJobConfig.COMPLETED_MAPS_FOR_REDUCE_SLOWSTART, 1.0f);
-    LOG.warn("close slow start, because RSS does not support it yet");
+      long heartbeatInterval = conf.getLong(RssMRConfig.RSS_HEARTBEAT_INTERVAL,
+          RssMRConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
+      long heartbeatTimeout = conf.getLong(RssMRConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
+      scheduledExecutorService.scheduleAtFixedRate(
+          () -> {
+            try {
+              client.sendAppHeartbeat(appId, heartbeatTimeout);
+              LOG.info("Finish send heartbeat to coordinator and servers");
+            } catch (Exception e) {
+              LOG.warn("Fail to send heartbeat to coordinator and servers", e);
+            }
+          },
+          heartbeatInterval / 2,
+          heartbeatInterval,
+          TimeUnit.MILLISECONDS);
 
-    conf.setBoolean(MRJobConfig.MR_AM_JOB_RECOVERY_ENABLE, false);
-    LOG.warn("close recovery enable, because RSS doesn't support it yet");
+      // get remote storage from coordinator if necessary
+      boolean dynamicConfEnabled = conf.getBoolean(RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
+          RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
 
-    String jobDirStr = conf.get(MRJobConfig.MAPREDUCE_JOB_DIR);
-    if (jobDirStr == null) {
-      throw new RuntimeException("jobDir is empty");
+      // fetch client conf and apply them if necessary
+      if (dynamicConfEnabled) {
+        Map<String, String> clusterClientConf = client.fetchClientConf(
+            conf.getInt(RssMRConfig.RSS_ACCESS_TIMEOUT_MS,
+                RssMRConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
+        RssMRUtils.applyDynamicClientConf(conf, clusterClientConf);
+      }
+
+      String storageType = conf.get(RssMRConfig.RSS_STORAGE_TYPE);
+      String defaultRemoteStorage = conf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH, "");
+      String remoteStorage = ClientUtils.fetchRemoteStorage(
+          appId, defaultRemoteStorage, dynamicConfEnabled, storageType, client);
+      // set the remote storage with actual value
+      conf.set(RssMRConfig.RSS_REMOTE_STORAGE_PATH, remoteStorage);
+
+      LOG.info("Start to register shuffle");
+      long start = System.currentTimeMillis();
+      serverToPartitionRanges.entrySet().forEach(entry -> {
+        client.registerShuffle(
+            entry.getKey(), appId, 0, entry.getValue(), remoteStorage);
+      });
+      LOG.info("Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
+
+      // write shuffle worker assignments to submit work directory
+      // format is as below:
+      // mapreduce.rss.assignment.partition.1:server1,server2
+      // mapreduce.rss.assignment.partition.2:server3,server4
+      // ...
+
+      response.getPartitionToServers().entrySet().forEach(entry -> {
+        List<String> servers = Lists.newArrayList();
+        for (ShuffleServerInfo server : entry.getValue()) {
+          servers.add(server.getHost() + ":" + server.getPort());
+        }
+        conf.set(RssMRConfig.RSS_ASSIGNMENT_PREFIX + entry.getKey(), StringUtils.join(servers, ","));
+      });
+
+      // close slow start
+      conf.setFloat(MRJobConfig.COMPLETED_MAPS_FOR_REDUCE_SLOWSTART, 1.0f);
+      LOG.warn("close slow start, because RSS does not support it yet");
+
+      conf.setBoolean(MRJobConfig.MR_AM_JOB_RECOVERY_ENABLE, false);
+      LOG.warn("close recovery enable, because RSS doesn't support it yet");
+
+      String jobDirStr = conf.get(MRJobConfig.MAPREDUCE_JOB_DIR);
+      if (jobDirStr == null) {
+        throw new RuntimeException("jobDir is empty");
+      }
+      Path jobConfFile = new Path(jobDirStr, MRJobConfig.JOB_CONF_FILE);
+      updateConf(conf, jobConfFile);
     }
-    Path jobConfFile = new Path(jobDirStr, MRJobConfig.JOB_CONF_FILE);
-    updateConf(conf, jobConfFile);
     // remove org.apache.hadoop.mapreduce.v2.app.MRAppMaster
     ArrayUtils.remove(args, 0);
     MRAppMaster.main(args);
