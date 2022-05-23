@@ -26,6 +26,8 @@ import com.tencent.rss.common.util.ChecksumUtils;
 import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.storage.handler.impl.HdfsFileReader;
 import com.tencent.rss.storage.handler.impl.HdfsShuffleWriteHandler;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -38,38 +40,35 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.io.TempDir;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HdfsTestBase implements Serializable {
 
-  @ClassRule
-  public static final TemporaryFolder tmpDir = new TemporaryFolder();
   public static Configuration conf;
   protected static String HDFS_URI;
   protected static FileSystem fs;
   protected static MiniDFSCluster cluster;
+  protected static File baseDir;
 
-  @BeforeClass
-  public static void setUpHdfs() throws IOException {
+  @BeforeAll
+  public static void setUpHdfs(@TempDir File tempDir) throws IOException {
     conf = new Configuration();
+    baseDir = tempDir;
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR,
-        tmpDir.getRoot().getAbsolutePath());
+        baseDir.getAbsolutePath());
     cluster = (new MiniDFSCluster.Builder(conf)).build();
     HDFS_URI = "hdfs://localhost:" + cluster.getNameNodePort() + "/";
     fs = (new Path(HDFS_URI)).getFileSystem(conf);
   }
 
-  @AfterClass
+  @AfterAll
   public static void tearDownHdfs() throws IOException {
     fs.close();
     cluster.shutdown();
-    tmpDir.delete();
   }
 
   protected void compareBytes(List<byte[]> expected, List<ByteBuffer> actual) {

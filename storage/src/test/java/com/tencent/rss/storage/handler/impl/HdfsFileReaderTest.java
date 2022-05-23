@@ -18,11 +18,6 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import com.tencent.rss.common.util.ChecksumUtils;
 import com.tencent.rss.storage.HdfsTestBase;
 import com.tencent.rss.storage.common.FileBasedShuffleSegment;
@@ -31,14 +26,14 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Random;
 import org.apache.hadoop.fs.Path;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HdfsFileReaderTest extends HdfsTestBase {
-
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void createStreamTest() throws IOException {
@@ -58,12 +53,8 @@ public class HdfsFileReaderTest extends HdfsTestBase {
     Path path = new Path(HDFS_URI, "createStreamFirstTest");
 
     assertFalse(fs.isFile(path));
-    try {
-      new HdfsFileReader(path, conf);
-      fail("Exception should be thrown");
-    } catch (IllegalStateException ise) {
-      ise.getMessage().startsWith(HDFS_URI + "createStreamFirstTest don't exist");
-    }
+    Throwable ise = assertThrows(IllegalStateException.class, () -> new HdfsFileReader(path, conf));
+    assertTrue(ise.getMessage().startsWith(HDFS_URI + "createStreamFirstTest don't exist"));
   }
 
   @Test

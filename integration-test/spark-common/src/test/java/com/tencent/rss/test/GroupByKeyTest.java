@@ -25,7 +25,7 @@ import java.util.Map;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import scala.Tuple2;
 
 public class GroupByKeyTest extends SimpleTestBase {

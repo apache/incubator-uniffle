@@ -18,7 +18,7 @@
 
 package org.apache.spark.shuffle.reader;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.collect.Lists;

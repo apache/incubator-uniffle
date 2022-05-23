@@ -24,9 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
 
 import com.tencent.rss.client.api.CoordinatorClient;
 import com.tencent.rss.client.factory.CoordinatorClientFactory;
@@ -37,17 +35,16 @@ import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.coordinator.CoordinatorConf;
 import com.tencent.rss.server.ShuffleServer;
 import com.tencent.rss.server.ShuffleServerConf;
+import org.junit.jupiter.api.io.TempDir;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AccessClusterTest extends CoordinatorTestBase {
-  @Rule
-  public TemporaryFolder tmpFolder = new TemporaryFolder();
 
   @Test
-  public void test() throws Exception {
-    File cfgFile = tmpFolder.newFile();
+  public void test(@TempDir File tempDir) throws Exception {
+    File cfgFile = File.createTempFile("tmp", ".conf", tempDir);
     FileWriter fileWriter = new FileWriter(cfgFile);
     PrintWriter printWriter = new PrintWriter(fileWriter);
     printWriter.println("9527");

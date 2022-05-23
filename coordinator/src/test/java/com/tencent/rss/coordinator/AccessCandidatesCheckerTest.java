@@ -26,40 +26,37 @@ import java.util.Objects;
 import com.google.common.collect.Sets;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static java.lang.Thread.sleep;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AccessCandidatesCheckerTest {
-  @ClassRule
-  public static final TemporaryFolder tmpDir = new TemporaryFolder();
 
-  @Before
+  @BeforeEach
   public void setUp() {
     CoordinatorMetrics.register();
   }
 
-  @After
+  @AfterEach
   public void clear() {
     CoordinatorMetrics.clear();
   }
 
   @Test
-  public void test() throws Exception {
-    File cfgFile = tmpDir.newFile();
+  public void test(@TempDir File tempDir) throws Exception {
+    File cfgFile = File.createTempFile("tmp", ".conf", tempDir);
     String cfgFileName = cfgFile.getAbsolutePath();
     final String filePath = Objects.requireNonNull(
         getClass().getClassLoader().getResource("coordinator.conf")).getFile();
     CoordinatorConf conf = new CoordinatorConf(filePath);
-    conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, tmpDir.getRoot().toURI().toString());
+    conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, tempDir.toURI().toString());
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
         "com.tencent.rss.coordinator.AccessCandidatesChecker");
 

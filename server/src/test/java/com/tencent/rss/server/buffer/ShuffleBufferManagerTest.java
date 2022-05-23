@@ -31,18 +31,18 @@ import com.tencent.rss.server.StatusCode;
 import com.tencent.rss.server.storage.StorageManager;
 import com.tencent.rss.server.storage.StorageManagerFactory;
 import com.tencent.rss.storage.util.StorageType;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -54,7 +54,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   private ShuffleFlushManager mockShuffleFlushManager;
   private ShuffleServerConf conf;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     conf = new ShuffleServerConf();
     File tmpDir = Files.createTempDir();

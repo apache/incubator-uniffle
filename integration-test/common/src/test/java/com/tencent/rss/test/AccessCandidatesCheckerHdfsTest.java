@@ -25,9 +25,9 @@ import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.tencent.rss.coordinator.AccessCandidatesChecker;
 import com.tencent.rss.coordinator.AccessInfo;
@@ -37,18 +37,18 @@ import com.tencent.rss.coordinator.CoordinatorMetrics;
 import com.tencent.rss.storage.HdfsTestBase;
 
 import static java.lang.Thread.sleep;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
-  @Before
+  @BeforeEach
   public void setUp() {
     CoordinatorMetrics.register();
   }
 
-  @After
+  @AfterEach
   public void clear() {
     CoordinatorMetrics.clear();
   }

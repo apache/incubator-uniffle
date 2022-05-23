@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
-import org.junit.AfterClass;
+import org.junit.jupiter.api.AfterAll;
 
 import com.tencent.rss.coordinator.CoordinatorConf;
 import com.tencent.rss.coordinator.CoordinatorMetrics;
@@ -59,7 +59,7 @@ abstract public class IntegrationTestBase extends HdfsTestBase {
     }
   }
 
-  @AfterClass
+  @AfterAll
   public static void shutdownServers() throws Exception {
     for (CoordinatorServer coordinator : coordinators) {
       coordinator.stopServer();

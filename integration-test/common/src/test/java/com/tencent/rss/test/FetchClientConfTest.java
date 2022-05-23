@@ -27,9 +27,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
 
 import com.tencent.rss.client.request.RssFetchClientConfRequest;
 import com.tencent.rss.client.request.RssFetchRemoteStorageRequest;
@@ -38,18 +36,16 @@ import com.tencent.rss.client.response.RssFetchClientConfResponse;
 import com.tencent.rss.client.response.RssFetchRemoteStorageResponse;
 import com.tencent.rss.coordinator.ApplicationManager;
 import com.tencent.rss.coordinator.CoordinatorConf;
+import org.junit.jupiter.api.io.TempDir;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class FetchClientConfTest extends CoordinatorTestBase {
 
-  @Rule
-  public TemporaryFolder tmpFolder = new TemporaryFolder();
-
   @Test
-  public void test() throws Exception {
-    File clientConfFile = tmpFolder.newFile();
+  public void test(@TempDir File tempDir) throws Exception {
+    File clientConfFile = File.createTempFile("tmp", ".conf", tempDir);
     FileWriter fileWriter = new FileWriter(clientConfFile);
     PrintWriter printWriter = new PrintWriter(fileWriter);
     printWriter.println("spark.mock.1  1234");
@@ -97,10 +93,10 @@ public class FetchClientConfTest extends CoordinatorTestBase {
   }
 
   @Test
-  public void testFetchRemoteStorage() throws Exception {
+  public void testFetchRemoteStorage(@TempDir File tempDir) throws Exception {
     String remotePath1 = "hdfs://path1";
     String remotePath2 = "hdfs://path2";
-    File cfgFile = tmpFolder.newFile();
+    File cfgFile = File.createTempFile("tmp", ".conf", tempDir);
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), remotePath1);
     writeRemoteStorageConf(cfgFile, dynamicConf);

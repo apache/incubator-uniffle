@@ -18,9 +18,9 @@
 
 package com.tencent.rss.common.web;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.tencent.rss.common.config.RssBaseConf;
 import com.tencent.rss.common.util.ExitUtils;
@@ -31,7 +31,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class JettyServerTest {
 

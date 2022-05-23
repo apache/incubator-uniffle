@@ -25,7 +25,7 @@ import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.tencent.rss.coordinator.ApplicationManager;
 import com.tencent.rss.coordinator.ClientConfManager;
@@ -33,10 +33,10 @@ import com.tencent.rss.coordinator.CoordinatorConf;
 import com.tencent.rss.storage.HdfsTestBase;
 
 import static java.lang.Thread.sleep;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClientConfManagerHdfsTest extends HdfsTestBase {
 

@@ -21,27 +21,25 @@ package com.tencent.rss.storage.util;
 import com.tencent.rss.storage.HdfsTestBase;
 import com.tencent.rss.storage.handler.impl.HdfsFileWriter;
 import org.apache.hadoop.fs.Path;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleHdfsStorageUtilsTest extends HdfsTestBase {
 
   @Test
-  public void testUploadFile() {
+  public void testUploadFile(@TempDir File tempDir) {
     FileOutputStream fileOut = null;
     DataOutputStream dataOut = null;
     try {
-      TemporaryFolder tmpDir = new TemporaryFolder();
-      tmpDir.create();
-      File file = tmpDir.newFile("test");
+      File file = new File(tempDir, "test");
       fileOut = new FileOutputStream(file);
       dataOut = new DataOutputStream(fileOut);
       byte[] buf = new byte[2096];
@@ -56,7 +54,6 @@ public class ShuffleHdfsStorageUtilsTest extends HdfsTestBase {
       size = ShuffleStorageUtils.uploadFile(file, writer, 100);
       assertEquals(2096, size);
       writer.close();
-      tmpDir.delete();
     } catch (Exception e) {
       e.printStackTrace();
       fail();

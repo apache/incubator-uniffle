@@ -22,12 +22,12 @@ import java.util.Map;
 
 import com.google.common.collect.Maps;
 import org.apache.hadoop.mapred.JobConf;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.tencent.rss.client.util.RssClientConfig;
 import com.tencent.rss.storage.util.StorageType;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RssMRUtilsTest {
 

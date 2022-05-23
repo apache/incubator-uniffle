@@ -26,13 +26,13 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class PartitionBalanceAssignmentStrategyTest {
 
@@ -41,7 +41,7 @@ public class PartitionBalanceAssignmentStrategyTest {
   private int shuffleNodesMax = 5;
   private Set<String> tags = Sets.newHashSet("test");
 
-  @Before
+  @BeforeEach
   public void setUp() {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, shuffleNodesMax);
@@ -168,7 +168,7 @@ public class PartitionBalanceAssignmentStrategyTest {
     }
   }
 
-  @After
+  @AfterEach
   public void tearDown() {
     clusterManager.clear();
   }

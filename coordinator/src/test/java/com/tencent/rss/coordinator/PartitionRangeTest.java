@@ -18,11 +18,11 @@
 
 package com.tencent.rss.coordinator;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.tencent.rss.common.PartitionRange;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class PartitionRangeTest {
 

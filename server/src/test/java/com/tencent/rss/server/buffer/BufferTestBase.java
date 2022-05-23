@@ -21,8 +21,8 @@ package com.tencent.rss.server.buffer;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 import com.tencent.rss.common.ShufflePartitionedBlock;
 import com.tencent.rss.common.ShufflePartitionedData;
@@ -31,12 +31,12 @@ import com.tencent.rss.server.ShuffleServerMetrics;
 
 public abstract class BufferTestBase {
 
-  @BeforeClass
+  @BeforeAll
   public static void setup() {
     ShuffleServerMetrics.register();
   }
 
-  @AfterClass
+  @AfterAll
   public static void clear() {
     ShuffleServerMetrics.clear();
   }

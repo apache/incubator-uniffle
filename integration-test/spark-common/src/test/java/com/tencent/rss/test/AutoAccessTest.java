@@ -31,23 +31,19 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.RssShuffleManager;
 import org.apache.spark.shuffle.ShuffleManager;
 import org.apache.spark.shuffle.sort.SortShuffleManager;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
 
 import com.tencent.rss.coordinator.CoordinatorConf;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.storage.util.StorageType;
 
 import static java.lang.Thread.sleep;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AutoAccessTest extends IntegrationTestBase {
-  @Rule
-  public TemporaryFolder tmpFolder = new TemporaryFolder();
 
   @Test
   public void test() throws Exception {

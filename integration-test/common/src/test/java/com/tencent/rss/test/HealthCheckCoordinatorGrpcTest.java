@@ -28,8 +28,8 @@ import com.tencent.rss.coordinator.ServerNode;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.storage.util.StorageType;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.io.Files;
 import java.io.File;
@@ -38,10 +38,10 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
 
@@ -49,7 +49,7 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
   private static File tempDataFile = new File(serverTmpDir, "data");
   private static int writeDataSize;
 
-  @BeforeClass
+  @BeforeAll
   public static void setupServers() throws Exception {
     serverTmpDir.deleteOnExit();
     long totalSize = serverTmpDir.getTotalSpace();

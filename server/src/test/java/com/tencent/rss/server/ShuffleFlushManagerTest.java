@@ -34,10 +34,10 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import com.tencent.rss.common.BufferSegment;
@@ -53,10 +53,10 @@ import com.tencent.rss.storage.common.AbstractStorage;
 import com.tencent.rss.storage.handler.impl.HdfsClientReadHandler;
 import com.tencent.rss.storage.util.StorageType;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleFlushManagerTest extends HdfsTestBase {
 
@@ -66,7 +66,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   private ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
   private String remoteStorage = HDFS_URI + "rss/test";
 
-  @Before
+  @BeforeEach
   public void prepare() {
     ShuffleServerMetrics.register();
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, "");
@@ -74,7 +74,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     LogManager.getRootLogger().setLevel(Level.INFO);
   }
 
-  @After
+  @AfterEach
   public void clear() {
     ShuffleServerMetrics.clear();
   }
@@ -223,13 +223,11 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   }
 
   @Test
-  public void clearLocalTest() throws Exception {
+  public void clearLocalTest(@TempDir File tempDir) throws Exception {
     String appId1 = "clearLocalTest_appId1";
     String appId2 = "clearLocalTest_appId2";
-    TemporaryFolder tmpDir = new TemporaryFolder();
-    tmpDir.create();
     ShuffleServerConf serverConf = new ShuffleServerConf();
-    serverConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, tmpDir.getRoot().getAbsolutePath());
+    serverConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, tempDir.getAbsolutePath());
     serverConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     serverConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     StorageManager storageManager =
@@ -249,7 +247,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     assertEquals(5, manager.getCommittedBlockIds(appId1, 1).getLongCardinality());
     assertEquals(5, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     assertEquals(2, storage.getHandlerSize());
-    File file = new File(tmpDir.getRoot(), appId1);
+    File file = new File(tempDir, appId1);
     assertTrue(file.exists());
     storageManager.removeResources(appId1, Sets.newHashSet(1));
     manager.removeResources(appId1);
@@ -265,7 +263,6 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     storageManager.removeResources(appId2, Sets.newHashSet(1));
     assertEquals(0, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     assertEquals(0, storage.getHandlerSize());
-    tmpDir.delete();
   }
 
   private void waitForFlush(ShuffleFlushManager manager,
@@ -341,12 +338,10 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   }
 
   @Test
-  public void processPendingEventsTest() {
+  public void processPendingEventsTest(@TempDir File tempDir) {
     try {
-      TemporaryFolder processEventsTmpdir = new TemporaryFolder();
-      processEventsTmpdir.create();
       shuffleServerConf.set(RssBaseConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.toString());
-      shuffleServerConf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, processEventsTmpdir.getRoot().getAbsolutePath());
+      shuffleServerConf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, tempDir.getAbsolutePath());
       shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
       shuffleServerConf.set(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 5L);
       shuffleServerConf.set(ShuffleServerConf.UPLOADER_BASE_PATH, "test");
@@ -374,7 +369,6 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
       Thread.sleep(6 * 1000);
       assertEquals(eventNum + 3, (int) ShuffleServerMetrics.counterTotalDroppedEventNum.get());
       assertEquals(0, manager.getPendingEventsSize());
-      processEventsTmpdir.delete();
     } catch (Exception e) {
       e.printStackTrace();
       fail();

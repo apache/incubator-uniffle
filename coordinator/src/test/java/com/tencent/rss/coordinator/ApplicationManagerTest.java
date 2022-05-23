@@ -21,16 +21,16 @@ package com.tencent.rss.coordinator;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.tencent.rss.common.util.Constants;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ApplicationManagerTest {
 
@@ -40,17 +40,17 @@ public class ApplicationManagerTest {
   private String remotePath2 = "hdfs://path2";
   private String remotePath3 = "hdfs://path3";
 
-  @BeforeClass
+  @BeforeAll
   public static void setup() {
     CoordinatorMetrics.register();
   }
 
-  @AfterClass
+  @AfterAll
   public static void clear() {
     CoordinatorMetrics.clear();
   }
 
-  @Before
+  @BeforeEach
   public void setUp() {
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_APP_EXPIRED, appExpiredTime);

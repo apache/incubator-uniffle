@@ -23,14 +23,14 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.tencent.rss.client.util.RssClientConfig;
 import com.tencent.rss.storage.util.StorageType;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RssSparkShuffleUtilsTest {
   @Test

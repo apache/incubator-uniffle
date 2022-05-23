@@ -42,11 +42,11 @@ import org.apache.hadoop.mapreduce.v2.TestMRJobs;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class MRIntegrationTestBase extends IntegrationTestBase {
 
@@ -68,7 +68,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
   private static final Path TEST_RESOURCES_DIR = new Path(TEST_ROOT_DIR,
       "localizedResources");
 
-  @BeforeClass
+  @BeforeAll
   public static void setUpMRYarn() throws IOException {
     mrYarnCluster = new MiniMRYarnCluster("test");
     conf.set(MRJobConfig.MR_AM_STAGING_DIR, "/apps_staging_dir");
@@ -79,7 +79,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     localFs.setPermission(APP_JAR, new FsPermission("700"));
   }
 
-  @AfterClass
+  @AfterAll
   public static void tearDown() throws IOException {
     if (mrYarnCluster != null) {
       mrYarnCluster.stop();
@@ -168,8 +168,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
   }
 
   private void runMRApp(Configuration conf, Tool tool, String[] args) throws Exception {
-    assertEquals(tool.getClass().getName() + " failed", 0,
-        ToolRunner.run(conf, tool, args));
+    assertEquals(0, ToolRunner.run(conf, tool, args), tool.getClass().getName() + " failed");
   }
 
   protected Tool getTestTool() {

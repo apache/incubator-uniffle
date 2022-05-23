@@ -18,9 +18,9 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import org.apache.hadoop.fs.Path;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 public class MultiStorageHdfsShuffleReadHandlerTest extends HdfsShuffleHandlerTestBase {

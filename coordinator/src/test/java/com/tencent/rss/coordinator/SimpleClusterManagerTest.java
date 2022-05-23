@@ -26,23 +26,23 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SimpleClusterManagerTest {
 
   private Set<String> testTags = Sets.newHashSet("test");
 
-  @Before
+  @BeforeEach
   public void setUp() {
     CoordinatorMetrics.register();
   }
 
-  @After
+  @AfterEach
   public void clear() {
     CoordinatorMetrics.clear();
   }

@@ -28,16 +28,16 @@ import java.util.concurrent.Future;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.tencent.rss.common.metrics.TestUtils;
 import com.tencent.rss.storage.common.LocalStorage;
 import com.tencent.rss.storage.util.StorageType;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShuffleServerMetricsTest {
 
@@ -48,7 +48,7 @@ public class ShuffleServerMetricsTest {
   private static final String STORAGE_HOST = "hdfs1";
   private static ShuffleServer shuffleServer;
 
-  @BeforeClass
+  @BeforeAll
   public static void setUp() throws Exception {
     ShuffleServerConf ssc = new ShuffleServerConf();
     ssc.set(ShuffleServerConf.JETTY_HTTP_PORT, 12345);
@@ -64,7 +64,7 @@ public class ShuffleServerMetricsTest {
     shuffleServer.start();
   }
 
-  @AfterClass
+  @AfterAll
   public static void tearDown() throws Exception {
     shuffleServer.stopServer();
     ShuffleServerMetrics.clear();

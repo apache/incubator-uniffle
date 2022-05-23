@@ -25,10 +25,10 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import com.tencent.rss.client.impl.grpc.ShuffleServerGrpcClient;
@@ -48,17 +48,17 @@ import com.tencent.rss.storage.handler.impl.LocalFileQuorumClientReadHandler;
 import com.tencent.rss.storage.handler.impl.MemoryQuorumClientReadHandler;
 import com.tencent.rss.storage.util.StorageType;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
 
   private ShuffleServerGrpcClient shuffleServerClient;
   private static String REMOTE_STORAGE = HDFS_URI + "rss/test";
 
-  @BeforeClass
+  @BeforeAll
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
@@ -78,12 +78,12 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     startServers();
   }
 
-  @Before
+  @BeforeEach
   public void createClient() {
     shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
   }
 
-  @After
+  @AfterEach
   public void closeClient() {
     shuffleServerClient.close();
   }

@@ -19,24 +19,24 @@
 package com.tencent.rss.server;
 
 import com.tencent.rss.common.util.ByteUnit;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.io.File;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(SystemStubsExtension.class)
 public class ShuffleServerConfTest {
 
   private static final String confFile = ClassLoader.getSystemResource("confTest.conf").getFile();
-  @Rule
-  public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
+  @SystemStub
+  private static EnvironmentVariables environmentVariables;
 
   @Test
   public void defaultConfTest() {

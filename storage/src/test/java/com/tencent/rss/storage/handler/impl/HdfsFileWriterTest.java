@@ -18,10 +18,6 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import com.tencent.rss.storage.HdfsTestBase;
 import com.tencent.rss.storage.common.FileBasedShuffleSegment;
 import java.io.EOFException;
@@ -31,14 +27,13 @@ import java.util.Random;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HdfsFileWriterTest extends HdfsTestBase {
-
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void createStreamFirstTest() throws IOException {
@@ -71,12 +66,8 @@ public class HdfsFileWriterTest extends HdfsTestBase {
     // disable the append support
     conf.setBoolean("dfs.support.append", false);
     assertTrue(fs.isFile(path));
-    try {
-      new HdfsFileWriter(path, conf);
-      fail("Exception should be thrown");
-    } catch (IllegalStateException ise) {
-      assertTrue(ise.getMessage().startsWith(path + " exists but append mode is not support!"));
-    }
+    Throwable ise = assertThrows(IllegalStateException.class, () -> new HdfsFileWriter(path, conf));
+    assertTrue(ise.getMessage().startsWith(path + " exists but append mode is not support!"));
   }
 
   @Test
@@ -85,12 +76,8 @@ public class HdfsFileWriterTest extends HdfsTestBase {
     Path path = new Path(HDFS_URI, "createStreamDirectory");
     fs.mkdirs(path);
 
-    try {
-      new HdfsFileWriter(path, conf);
-      fail("Exception should be thrown");
-    } catch (IllegalStateException ise) {
-      assertTrue(ise.getMessage().startsWith(HDFS_URI + "createStreamDirectory is a directory!"));
-    }
+    Throwable ise = assertThrows(IllegalStateException.class, () -> new HdfsFileWriter(path, conf));
+    assertTrue(ise.getMessage().startsWith(HDFS_URI + "createStreamDirectory is a directory!"));
   }
 
   @Test
@@ -109,7 +96,7 @@ public class HdfsFileWriterTest extends HdfsTestBase {
     }
   }
 
-  @Test(expected = EOFException.class)
+  @Test
   public void writeBufferTest() throws IOException {
     byte[] data = new byte[32];
     new Random().nextBytes(data);
@@ -127,12 +114,12 @@ public class HdfsFileWriterTest extends HdfsTestBase {
         assertEquals(data[i], in.readByte());
       }
       // EOF exception is expected
-      in.readInt();
+      assertThrows(EOFException.class, in::readInt);
     }
 
   }
 
-  @Test(expected = EOFException.class)
+  @Test
   public void writeBufferArrayTest() throws IOException {
     int[] data = {1, 3, 5, 7, 9};
 
@@ -152,7 +139,7 @@ public class HdfsFileWriterTest extends HdfsTestBase {
         assertEquals(data[i], in.readInt());
       }
       // EOF exception is expected
-      in.readInt();
+      assertThrows(EOFException.class, in::readInt);
     }
   }
 

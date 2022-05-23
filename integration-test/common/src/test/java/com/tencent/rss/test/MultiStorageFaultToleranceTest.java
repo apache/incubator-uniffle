@@ -27,10 +27,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import com.tencent.rss.client.impl.ShuffleReadClientImpl;
@@ -49,15 +49,15 @@ import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import com.tencent.rss.storage.util.StorageType;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class MultiStorageFaultToleranceTest extends ShuffleReadWriteBase {
   private ShuffleServerGrpcClient shuffleServerClient;
   private static String REMOTE_STORAGE = HDFS_URI + "rss/multi_storage_fault";
 
-  @BeforeClass
+  @BeforeAll
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
@@ -78,12 +78,12 @@ public class MultiStorageFaultToleranceTest extends ShuffleReadWriteBase {
     createAndStartServers(shuffleServerConf, coordinatorConf);
   }
 
-  @Before
+  @BeforeEach
   public void createClient() {
     shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
   }
 
-  @After
+  @AfterEach
   public void closeClient() {
     shuffleServerClient.close();
   }

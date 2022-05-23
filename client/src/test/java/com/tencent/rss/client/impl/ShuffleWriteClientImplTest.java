@@ -18,7 +18,7 @@
 
 package com.tencent.rss.client.impl;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -35,7 +35,7 @@ import com.tencent.rss.common.ShuffleServerInfo;
 
 import java.nio.ByteBuffer;
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ShuffleWriteClientImplTest {
 

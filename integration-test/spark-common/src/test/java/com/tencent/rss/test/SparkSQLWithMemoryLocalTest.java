@@ -25,19 +25,19 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 
 import com.tencent.rss.coordinator.CoordinatorConf;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.storage.util.StorageType;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SparkSQLWithMemoryLocalTest extends SparkSQLTest {
 
   private static String basePath;
 
-  @BeforeClass
+  @BeforeAll
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setLong("rss.coordinator.app.expired", 5000);

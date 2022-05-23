@@ -26,9 +26,9 @@ import com.google.common.collect.Lists;
 import com.tencent.rss.storage.util.StorageType;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.sort.SortShuffleManager;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
@@ -37,9 +37,9 @@ import com.tencent.rss.client.response.RssAccessClusterResponse;
 
 import static com.tencent.rss.client.response.ResponseStatusCode.ACCESS_DENIED;
 import static com.tencent.rss.client.response.ResponseStatusCode.SUCCESS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -48,12 +48,12 @@ import static org.mockito.Mockito.when;
 public class DelegationRssShuffleManagerTest {
   private static MockedStatic<RssSparkShuffleUtils> mockedStaticRssShuffleUtils;
 
-  @BeforeClass
+  @BeforeAll
   public static void setUp() {
     mockedStaticRssShuffleUtils = mockStatic(RssSparkShuffleUtils.class, Mockito.CALLS_REAL_METHODS);
   }
 
-  @AfterClass
+  @AfterAll
   public static void tearDown() {
     mockedStaticRssShuffleUtils.close();
   }

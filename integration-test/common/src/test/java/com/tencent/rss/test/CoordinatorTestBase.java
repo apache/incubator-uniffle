@@ -19,20 +19,20 @@ package com.tencent.rss.test;
 
 import com.tencent.rss.client.factory.CoordinatorClientFactory;
 import com.tencent.rss.client.impl.grpc.CoordinatorGrpcClient;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 public class CoordinatorTestBase extends IntegrationTestBase {
 
   protected CoordinatorClientFactory factory = new CoordinatorClientFactory("GRPC");
   protected CoordinatorGrpcClient coordinatorClient;
-  @Before
+  @BeforeEach
   public void createClient() {
     coordinatorClient =
         (CoordinatorGrpcClient) factory.createCoordinatorClient(LOCALHOST, COORDINATOR_PORT_1);
   }
 
-  @After
+  @AfterEach
   public void closeClient() {
     if (coordinatorClient != null) {
       coordinatorClient.close();

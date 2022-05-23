@@ -21,7 +21,7 @@ package com.tencent.rss.server.storage;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.tencent.rss.common.ShufflePartitionedBlock;
 import com.tencent.rss.server.ShuffleDataFlushEvent;
@@ -30,7 +30,7 @@ import com.tencent.rss.storage.common.HdfsStorage;
 import com.tencent.rss.storage.common.LocalStorage;
 import com.tencent.rss.storage.util.StorageType;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MultiStorageManagerTest {
 

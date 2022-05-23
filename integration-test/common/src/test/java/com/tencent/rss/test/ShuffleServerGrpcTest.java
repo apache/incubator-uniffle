@@ -28,9 +28,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import com.tencent.rss.client.api.ShuffleWriteClient;
@@ -61,10 +61,10 @@ import com.tencent.rss.server.ShuffleServerGrpcMetrics;
 import com.tencent.rss.server.ShuffleServerMetrics;
 import com.tencent.rss.storage.util.StorageType;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleServerGrpcTest extends IntegrationTestBase {
 
@@ -72,7 +72,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
   private AtomicInteger atomicInteger = new AtomicInteger(0);
   private static Long EVENT_THRESHOLD_SIZE = 2048L;
 
-  @BeforeClass
+  @BeforeAll
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2000);
@@ -91,7 +91,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     startServers();
   }
 
-  @Before
+  @BeforeEach
   public void createClient() {
     shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
   }

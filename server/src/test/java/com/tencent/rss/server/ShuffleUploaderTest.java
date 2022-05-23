@@ -29,11 +29,10 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.RoaringBitmap;
 
 import com.tencent.rss.storage.common.LocalStorage;
@@ -44,10 +43,10 @@ import com.tencent.rss.storage.handler.api.ShuffleUploadHandler;
 import com.tencent.rss.storage.util.ShuffleUploadResult;
 import com.tencent.rss.storage.util.StorageType;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -56,20 +55,17 @@ import static org.mockito.Mockito.when;
 
 public class ShuffleUploaderTest  {
 
-  @ClassRule
-  public static final TemporaryFolder tmpDir = new TemporaryFolder();
   private static File base;
 
-  @BeforeClass
-  public static void setUp() throws IOException {
-    base = tmpDir.newFolder("ShuffleUploaderTest");
+  @BeforeAll
+  public static void setUp(@TempDir File tempDir) {
+    base = tempDir;
     ShuffleServerMetrics.register();
   }
 
-  @AfterClass
+  @AfterAll
   public static void tearDown() {
     ShuffleServerMetrics.clear();
-    tmpDir.delete();
   }
 
   @Test
@@ -78,11 +74,11 @@ public class ShuffleUploaderTest  {
       String app1 = "app-1";
       String shuffle1 = "1";
       String shuffleKey1 = String.join("/", app1, shuffle1);
-      File partitionDir1 = tmpDir.newFolder(base.getName(), app1, shuffle1, "1-1");
-      File partitionDir2 = tmpDir.newFolder(base.getName(), app1, shuffle1, "2-2");
-      File partitionDir3 = tmpDir.newFolder(base.getName(), app1, shuffle1, "3-3");
-      File partitionDir4 = tmpDir.newFolder(base.getName(), app1, shuffle1, "4-4");
-      File partitionDir5 = tmpDir.newFolder(base.getName(), app1, shuffle1, "5-5");
+      File partitionDir1 = makePartitionDir(app1, shuffle1, 1);
+      File partitionDir2 = makePartitionDir(app1, shuffle1, 2);
+      File partitionDir3 = makePartitionDir(app1, shuffle1, 3);
+      File partitionDir4 = makePartitionDir(app1, shuffle1, 4);
+      File partitionDir5 = makePartitionDir(app1, shuffle1, 5);
 
       File dataFile1 = new File(partitionDir1.getAbsolutePath() + "/127.0.0.1-8080.data");
       File dataFile2 = new File(partitionDir2.getAbsolutePath() + "/127.0.0.1-8080.data");
@@ -227,7 +223,7 @@ public class ShuffleUploaderTest  {
         shuffleKeys.add(shuffleKey);
 
         for (int j = 0; j < partitionNum; ++j) {
-          File partitionDir = tmpDir.newFolder(base.getName(), appId, shuffleId, j + "-" + j);
+          File partitionDir = makePartitionDir(appId, shuffleId, j);
           File dataFile = new File(partitionDir.getAbsolutePath() + "/127.0.0.1-8080.data");
           File indexFile = new File(partitionDir.getAbsolutePath() + "/127.0.0.1-8080.index");
           writeFile(dataFile, 5 * (i + 1));
@@ -558,10 +554,8 @@ public class ShuffleUploaderTest  {
   }
 
   @Test
-  public void cleanTest() {
-    TemporaryFolder testBaseDir = new TemporaryFolder();
+  public void cleanTest(@TempDir File tempDir) {
     try {
-      testBaseDir.create();
 
       ShuffleServerConf conf = new ShuffleServerConf();
       conf.setInteger(ShuffleServerConf.UPLOADER_THREAD_NUM, 1);
@@ -571,7 +565,8 @@ public class ShuffleUploaderTest  {
       conf.setString(ShuffleServerConf.UPLOAD_STORAGE_TYPE, StorageType.HDFS.name());
       conf.setString(ShuffleServerConf.UPLOADER_BASE_PATH, "hdfs://test");
 
-      LocalStorage localStorage = LocalStorage.newBuilder().basePath(testBaseDir.getRoot().getAbsolutePath())
+      LocalStorage localStorage = LocalStorage.newBuilder()
+          .basePath(tempDir.getAbsolutePath())
           .cleanupThreshold(50)
           .highWaterMarkOfWrite(100)
           .lowWaterMarkOfWrite(100)
@@ -580,10 +575,13 @@ public class ShuffleUploaderTest  {
           .shuffleExpiredTimeoutMs(1)
           .build();
 
-      File baseDir = testBaseDir.newFolder(testBaseDir.getRoot().getName(),"app-1");
+      File baseDir = new File(tempDir, "app-1");
+      baseDir.mkdir();
       assertTrue(baseDir.exists());
-      File dir1 = testBaseDir.newFolder("app-1", "1");
-      File dir2 = testBaseDir.newFolder("app-1", "2");
+      File dir1 = new File(baseDir, "1");
+      File dir2 = new File(baseDir, "2");
+      dir1.mkdir();
+      dir2.mkdir();
       assertTrue(dir1.exists());
       assertTrue(dir2.exists());
       localStorage.createMetadataIfNotExist("app-1/1");
@@ -625,16 +623,13 @@ public class ShuffleUploaderTest  {
     } catch (Exception e) {
       e.printStackTrace();
       fail();
-    } finally {
-      testBaseDir.delete();
     }
   }
 
   @Test
-  public void delayCleanTest() throws IOException {
-    TemporaryFolder testBaseDir = new TemporaryFolder();
-    testBaseDir.create();
-    LocalStorage storage = LocalStorage.newBuilder().basePath(testBaseDir.getRoot().getAbsolutePath())
+  public void delayCleanTest(@TempDir File tempDir) {
+    LocalStorage storage = LocalStorage.newBuilder()
+        .basePath(tempDir.getAbsolutePath())
         .cleanupThreshold(0)
         .highWaterMarkOfWrite(100)
         .lowWaterMarkOfWrite(100)
@@ -689,6 +684,13 @@ public class ShuffleUploaderTest  {
     assertEquals(0, storage.getShuffleMetaSet().size());
     assertEquals(0, storage.getDiskSize());
     assertEquals(0, storage.getExpiredShuffleKeys().size());
+  }
+
+  private File makePartitionDir(String appId, String shuffleId, int partitionId) {
+    File dir = base.toPath().resolve(appId).resolve(shuffleId)
+        .resolve(partitionId + "-" + partitionId).toFile();
+    dir.mkdirs();
+    return dir;
   }
 
   private void writeFile(File f, int size) {

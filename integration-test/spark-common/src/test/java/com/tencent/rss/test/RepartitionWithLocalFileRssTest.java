@@ -25,7 +25,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 
 import com.tencent.rss.coordinator.CoordinatorConf;
 import com.tencent.rss.server.ShuffleServerConf;
@@ -33,7 +33,7 @@ import com.tencent.rss.storage.util.StorageType;
 
 public class RepartitionWithLocalFileRssTest extends RepartitionTest {
 
-  @BeforeClass
+  @BeforeAll
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = Maps.newHashMap();

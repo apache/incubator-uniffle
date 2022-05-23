@@ -26,10 +26,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import com.tencent.rss.client.factory.ShuffleServerClientFactory;
@@ -51,9 +51,9 @@ import com.tencent.rss.server.ShuffleServer;
 import com.tencent.rss.server.ShuffleServerConf;
 import com.tencent.rss.storage.util.StorageType;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class QuorumTest extends ShuffleReadWriteBase {
 
@@ -86,7 +86,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     return new MockedShuffleServer(shuffleServerConf);
   }
 
-  @BeforeClass
+  @BeforeAll
   public static void initCluster() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
@@ -145,7 +145,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     coordinators = Lists.newArrayList();
   }
 
-  @Before
+  @BeforeEach
   public void InitEnv() throws Exception {
     // spark.rss.data.replica=3
     // spark.rss.data.replica.write=2
@@ -158,7 +158,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
       .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(100);
   }
 
-  @After
+  @AfterEach
   public void cleanEnv() throws Exception {
     if (shuffleWriteClientImpl != null) {
       shuffleWriteClientImpl.close();

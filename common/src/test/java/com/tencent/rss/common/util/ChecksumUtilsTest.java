@@ -18,7 +18,7 @@
 
 package com.tencent.rss.common.util;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,7 +29,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Random;
 import java.util.zip.CRC32;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ChecksumUtilsTest {
 

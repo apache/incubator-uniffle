@@ -25,15 +25,15 @@ import java.nio.file.Files;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.tencent.rss.common.config.RssBaseConf;
 import com.tencent.rss.common.metrics.TestUtils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CoordinatorMetricsTest {
 
@@ -42,7 +42,7 @@ public class CoordinatorMetricsTest {
   private static final String SERVER_GRPC_URL = "http://127.0.0.1:12345/metrics/grpc";
   private static CoordinatorServer coordinatorServer;
 
-  @BeforeClass
+  @BeforeAll
   public static void setUp() throws Exception {
     String remotePath1 = "hdfs://path1";
     File cfgFile = Files.createTempFile("coordinatorMetricsTest", ".conf").toFile();
@@ -60,7 +60,7 @@ public class CoordinatorMetricsTest {
     coordinatorServer.start();
   }
 
-  @AfterClass
+  @AfterAll
   public static void tearDown() throws Exception {
     coordinatorServer.stopServer();
   }

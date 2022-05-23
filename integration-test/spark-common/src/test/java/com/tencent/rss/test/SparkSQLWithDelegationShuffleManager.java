@@ -28,7 +28,7 @@ import com.google.common.io.Files;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 
 import com.tencent.rss.coordinator.CoordinatorConf;
 import com.tencent.rss.server.ShuffleServerConf;
@@ -36,7 +36,7 @@ import com.tencent.rss.storage.util.StorageType;
 
 public class SparkSQLWithDelegationShuffleManager extends SparkSQLTest {
 
-  @BeforeClass
+  @BeforeAll
   public static void setupServers() throws Exception {
     final String candidates = Objects.requireNonNull(
         SparkSQLWithDelegationShuffleManager.class.getClassLoader().getResource("candidates")).getFile();

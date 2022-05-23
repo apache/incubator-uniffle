@@ -21,10 +21,10 @@ package com.tencent.rss.server;
 import com.tencent.rss.common.util.ExitUtils;
 import com.tencent.rss.common.util.ExitUtils.ExitException;
 import com.tencent.rss.storage.util.StorageType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleServerTest {
 

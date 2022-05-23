@@ -18,18 +18,16 @@
 
 package com.tencent.rss.storage.common;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.Lists;
 import com.tencent.rss.common.util.RssUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.RoaringBitmap;
 
 import java.io.File;
@@ -39,18 +37,17 @@ import java.util.List;
 
 public class LocalStorageTest {
 
-  @ClassRule
-  public static final TemporaryFolder tmpDir = new TemporaryFolder();
   private static File testBaseDir;
 
-  @BeforeClass
-  public static void setUp() throws IOException  {
-    testBaseDir = tmpDir.newFolder("test");
+  @BeforeAll
+  public static void setUp(@TempDir File tempDir) throws IOException  {
+    testBaseDir = new File(tempDir, "test");
+    testBaseDir.mkdir();
   }
 
-  @AfterClass
+  @AfterAll
   public static void tearDown() {
-    tmpDir.delete();
+    testBaseDir.delete();
   }
 
   @Test

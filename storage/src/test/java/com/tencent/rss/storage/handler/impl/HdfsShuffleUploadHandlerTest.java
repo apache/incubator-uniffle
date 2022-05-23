@@ -18,10 +18,11 @@
 
 package com.tencent.rss.storage.handler.impl;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.Lists;
 import com.tencent.rss.common.util.ChecksumUtils;
@@ -39,14 +40,9 @@ import java.util.Random;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 public class HdfsShuffleUploadHandlerTest extends HdfsTestBase {
-
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void initTest() throws IOException, IllegalStateException {
@@ -62,8 +58,8 @@ public class HdfsShuffleUploadHandlerTest extends HdfsTestBase {
     HdfsShuffleUploadHandler handler = new HdfsShuffleUploadHandler(
         basePath, conf, "uploadTestCombine", 4096, true);
 
-    File dataFile1 = File.createTempFile("uploadTestCombine1", ".data", tmpDir.getRoot());
-    File dataFile2 = File.createTempFile("uploadTestCombine2", ".data", tmpDir.getRoot());
+    File dataFile1 = File.createTempFile("uploadTestCombine1", ".data", baseDir);
+    File dataFile2 = File.createTempFile("uploadTestCombine2", ".data", baseDir);
 
     byte[] data1 = new byte[10];
     new Random().nextBytes(data1);
@@ -77,8 +73,8 @@ public class HdfsShuffleUploadHandlerTest extends HdfsTestBase {
       out.write(data2);
     }
 
-    File indexFile1 = File.createTempFile("uploadTestCombine1", ".index", tmpDir.getRoot());
-    File indexFile2 = File.createTempFile("uploadTestCombine2", ".index", tmpDir.getRoot());
+    File indexFile1 = File.createTempFile("uploadTestCombine1", ".index", baseDir);
+    File indexFile2 = File.createTempFile("uploadTestCombine2", ".index", baseDir);
 
     writeAndAssertResult(handler, dataFile1, dataFile2, indexFile1, indexFile2);
 
@@ -120,8 +116,7 @@ public class HdfsShuffleUploadHandlerTest extends HdfsTestBase {
         assertEquals(data2[i], dataStream.readByte());
       }
 
-      thrown.expect(EOFException.class);
-      dataStream.readByte();
+      assertThrows(EOFException.class, dataStream::readByte);
     }
   }
 
@@ -147,8 +142,8 @@ public class HdfsShuffleUploadHandlerTest extends HdfsTestBase {
     String basePath = HDFS_URI + "test_base";
     HdfsShuffleUploadHandler handler =
         new HdfsShuffleUploadHandler(basePath, conf, "uploadTestOneByOne", 4096, false);
-    File dataFile1 = File.createTempFile("uploadTestOneByOne1", ".data", tmpDir.getRoot());
-    File dataFile2 = File.createTempFile("uploadTestOneByOne2", ".data", tmpDir.getRoot());
+    File dataFile1 = File.createTempFile("uploadTestOneByOne1", ".data", baseDir);
+    File dataFile2 = File.createTempFile("uploadTestOneByOne2", ".data", baseDir);
 
     byte[] data1 = new byte[10];
     new Random().nextBytes(data1);
@@ -162,8 +157,8 @@ public class HdfsShuffleUploadHandlerTest extends HdfsTestBase {
       out.write(data2);
     }
 
-    File indexFile1 = File.createTempFile("uploadTestOneByOne1", ".index", tmpDir.getRoot());
-    File indexFile2 = File.createTempFile("uploadTestOneByOne2", ".index", tmpDir.getRoot());
+    File indexFile1 = File.createTempFile("uploadTestOneByOne1", ".index", baseDir);
+    File indexFile2 = File.createTempFile("uploadTestOneByOne2", ".index", baseDir);
 
     writeAndAssertResult(handler, dataFile1, dataFile2, indexFile1, indexFile2);
 
@@ -215,8 +210,7 @@ public class HdfsShuffleUploadHandlerTest extends HdfsTestBase {
         assertEquals(data2[i], dataStream.readByte());
       }
 
-      thrown.expect(EOFException.class);
-      dataStream.readByte();
+      assertThrows(EOFException.class, dataStream::readByte);
     }
 
   }
@@ -226,8 +220,8 @@ public class HdfsShuffleUploadHandlerTest extends HdfsTestBase {
     String basePath = HDFS_URI + "test_base";
     HdfsShuffleUploadHandler handler =
         new HdfsShuffleUploadHandler(basePath, conf, "uploadTestCombineBestEffort", 4096, true);
-    File dataFile1 = File.createTempFile("uploadTestCombineBestEffort1", ".data", tmpDir.getRoot());
-    File dataFile2 = File.createTempFile("uploadTestCombineBestEffort2", ".data", tmpDir.getRoot());
+    File dataFile1 = File.createTempFile("uploadTestCombineBestEffort1", ".data", baseDir);
+    File dataFile2 = File.createTempFile("uploadTestCombineBestEffort2", ".data", baseDir);
     File dataFile3 = new File(dataFile1.getAbsolutePath() + "null");
 
     byte[] data1 = new byte[10];
@@ -242,7 +236,7 @@ public class HdfsShuffleUploadHandlerTest extends HdfsTestBase {
       out.write(data2);
     }
 
-    File indexFile1 = File.createTempFile("uploadTestCombineBestEffort1", ".index", tmpDir.getRoot());
+    File indexFile1 = File.createTempFile("uploadTestCombineBestEffort1", ".index", baseDir);
     File indexFile2 = new File(indexFile1.getAbsolutePath() + "null");
     File indexFile3 = new File(indexFile1.getAbsolutePath() + "null");
 
@@ -285,8 +279,7 @@ public class HdfsShuffleUploadHandlerTest extends HdfsTestBase {
       assertEquals(30L, indexStream.readLong());
 
       indexStream.seek(ShuffleStorageUtils.getIndexFileHeaderLen(2) + 5);
-      thrown.expect(EOFException.class);
-      indexStream.readByte();
+      assertThrows(EOFException.class, indexStream::readByte);
 
     }
   }
@@ -296,9 +289,9 @@ public class HdfsShuffleUploadHandlerTest extends HdfsTestBase {
     String basePath = HDFS_URI + "test_base";
     HdfsShuffleUploadHandler handler = new HdfsShuffleUploadHandler(
         basePath, conf, "uploadTestOneByOneBestEffort", 4096, false);
-    File dataFile1 = File.createTempFile("uploadTestOneByOneBestEffort1", ".data", tmpDir.getRoot());
+    File dataFile1 = File.createTempFile("uploadTestOneByOneBestEffort1", ".data", baseDir);
     File dataFile2 = new File(dataFile1.getAbsolutePath() + "null");
-    File dataFile3 = File.createTempFile("uploadTestOneByOneBestEffort3", ".data", tmpDir.getRoot());
+    File dataFile3 = File.createTempFile("uploadTestOneByOneBestEffort3", ".data", baseDir);
 
     byte[] data1 = new byte[10];
     new Random().nextBytes(data1);
@@ -312,7 +305,7 @@ public class HdfsShuffleUploadHandlerTest extends HdfsTestBase {
       out.write(data2);
     }
 
-    File indexFile1 = File.createTempFile("uploadTestOneByOneBestEffort1", ".index", tmpDir.getRoot());
+    File indexFile1 = File.createTempFile("uploadTestOneByOneBestEffort1", ".index", baseDir);
     File indexFile2 = new File(indexFile1.getAbsolutePath() + "null");
     File indexFile3 = new File(indexFile1.getAbsolutePath() + "null");
 
@@ -359,8 +352,8 @@ public class HdfsShuffleUploadHandlerTest extends HdfsTestBase {
       assertEquals(1, indexStream.readInt());
       assertEquals(5L, indexStream.readLong());
 
-      thrown.expect(EOFException.class);
-      indexStream.seek(ShuffleStorageUtils.getIndexFileHeaderLen(1) + 5 + 1);
+      assertThrows(EOFException.class, () ->
+          indexStream.seek(ShuffleStorageUtils.getIndexFileHeaderLen(1) + 5 + 1));
 
     }
 
@@ -407,9 +400,9 @@ public class HdfsShuffleUploadHandlerTest extends HdfsTestBase {
       HdfsShuffleUploadHandler handler = new HdfsShuffleUploadHandler(
           basePath, conf, "uploadTestOneByOneBestEffort", 4096, false);
 
-      File indexFile1 = File.createTempFile("writeHeaderTest1", ".index", tmpDir.getRoot());
-      File indexFile2 = File.createTempFile("writeHeaderTest2", ".index", tmpDir.getRoot());
-      File indexFile3 = File.createTempFile("writeHeaderTest3", ".index", tmpDir.getRoot());
+      File indexFile1 = File.createTempFile("writeHeaderTest1", ".index", baseDir);
+      File indexFile2 = File.createTempFile("writeHeaderTest2", ".index", baseDir);
+      File indexFile3 = File.createTempFile("writeHeaderTest3", ".index", baseDir);
 
       try (OutputStream out = new FileOutputStream(indexFile1)) {
         out.write(new byte[5]);
