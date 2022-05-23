@@ -36,6 +36,7 @@
   </parent>
 
   <properties>
+    <checkstyle.version>9.3</checkstyle.version>
     <error_prone_annotations.version>2.3.4</error_prone_annotations.version>
     <execution.root>${user.dir}</execution.root>
     <fasterxml.jackson.version>2.10.0</fasterxml.jackson.version>
@@ -51,6 +52,7 @@
     <junit.platform.version>1.8.2</junit.platform.version>
     <system.stubs.version>2.0.1</system.stubs.version>
     <log4j.core.version>2.17.1</log4j.core.version>
+    <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <metrics.version>3.1.0</metrics.version>
@@ -763,15 +765,13 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>3.1.1</version>
+        <version>${maven-checkstyle-plugin.version}</version>
         <configuration>
           <sourceDirectories>
             <directory>${basedir}/src/main/java</directory>
-            <directory>${basedir}/src/main/scala</directory>
           </sourceDirectories>
           <testSourceDirectories>
             <directory>${basedir}/src/test/java</directory>
-            <directory>${basedir}/src/main/scala</directory>
           </testSourceDirectories>
           <configLocation>checkstyle.xml</configLocation>
           <encoding>UTF-8</encoding>
@@ -785,7 +785,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.37</version>
+            <version>${checkstyle.version}</version>
           </dependency>
         </dependencies>
         <executions>

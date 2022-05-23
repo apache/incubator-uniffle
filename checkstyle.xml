@@ -22,8 +22,6 @@
 
 <module name = "Checker">
     <property name="charset" value="UTF-8"/>
-    <property name="localeCountry" value="ZH"/>
-    <property name="localeLanguage" value="zh"/>
 
     <property name="severity" value="warning"/>
 
@@ -363,7 +361,7 @@
         -->
         <module name="JavadocMethod">
             <property name="severity" value="info"/>
-            <property name="scope" value="public"/>
+            <property name="accessModifiers" value="public"/>
             <property name="allowMissingParamTags" value="true"/>
             <property name="allowMissingReturnTag" value="true"/>
             <property name="allowedAnnotations" value="Override, Test"/>
