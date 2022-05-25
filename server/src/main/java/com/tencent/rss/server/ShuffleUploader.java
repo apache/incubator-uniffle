@@ -461,7 +461,7 @@ public class ShuffleUploader {
   @VisibleForTesting
   void cleanUploadedShuffle(Set<String> successUploadShuffles) {
     Queue<String> expiredShuffleKeys = localStorage.getExpiredShuffleKeys();
-    if (localStorage.getDiskSize() * 100 / localStorage.getCapacity() < cleanupThreshold) {
+    if (localStorage.getDiskSize() * 100.0 / localStorage.getCapacity() < cleanupThreshold) {
       return;
     }
 
