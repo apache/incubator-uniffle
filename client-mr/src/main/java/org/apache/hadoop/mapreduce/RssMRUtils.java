@@ -38,19 +38,29 @@ import com.tencent.rss.common.exception.RssException;
 public class RssMRUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssMRUtils.class);
+  private static int MAX_TASK_LENGTH = 19;
+  private static int MAX_ATTEMPT_LENGTH = 2;
+  private static long MAX_TASK_ID = (1 << MAX_TASK_LENGTH) - 1;
+  private static long MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
 
-  // Class TaskAttemptId have two field id and mapId, mapId is 4 low byte,
-  // id is high 4 byte.
+  // Class TaskAttemptId have two field id and mapId, rss taskAttemptID have 21 bits,
+  // mapId is 19 bits, id is 2 bits.
   public static long convertTaskAttemptIdToLong(TaskAttemptID taskAttemptID) {
     long lowBytes = taskAttemptID.getTaskID().getId();
-    long highBytes = (long)taskAttemptID.getId() << 32;
-    return highBytes + lowBytes;
+    if (lowBytes > MAX_TASK_ID) {
+      throw new RssException("TaskAttempt " + taskAttemptID + " low bytes " + lowBytes + " exceed");
+    }
+    long highBytes = (long)taskAttemptID.getId();
+    if (highBytes > MAX_ATTEMPT_ID) {
+      throw new RssException("TaskAttempt " + taskAttemptID + " high bytes " + highBytes + " exceed");
+    }
+    return (highBytes << MAX_TASK_LENGTH) + lowBytes;
   }
 
   public static TaskAttemptID createMRTaskAttemptId(JobID jobID, TaskType taskType,
                                                     long rssTaskAttemptId) {
-    TaskID taskID = new TaskID(jobID, taskType, (int)rssTaskAttemptId);
-    return new TaskAttemptID(taskID, (int)(rssTaskAttemptId >> 32));
+    TaskID taskID = new TaskID(jobID, taskType, (int)(rssTaskAttemptId & MAX_TASK_ID));
+    return new TaskAttemptID(taskID, (int)(rssTaskAttemptId >> MAX_TASK_LENGTH));
   }
 
   public static ShuffleWriteClient createShuffleClient(JobConf jobConf) {

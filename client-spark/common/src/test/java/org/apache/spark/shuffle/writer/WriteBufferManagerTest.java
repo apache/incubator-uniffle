@@ -136,14 +136,14 @@ public class WriteBufferManagerTest {
 
     // seqNo = 1, partitionId = 0, taskId = 0
     sbi = wbm.createShuffleBlock(0, mockWriterBuffer);
-    assertEquals(17592186044416L, sbi.getBlockId());
+    assertEquals(35184372088832L, sbi.getBlockId());
 
     // seqNo = 0, partitionId = 1, taskId = 0
     sbi = wbm.createShuffleBlock(1, mockWriterBuffer);
-    assertEquals(1048576L, sbi.getBlockId());
+    assertEquals(2097152L, sbi.getBlockId());
 
     // seqNo = 1, partitionId = 1, taskId = 0
     sbi = wbm.createShuffleBlock(1, mockWriterBuffer);
-    assertEquals(17592187092992L, sbi.getBlockId());
+    assertEquals(35184374185984L, sbi.getBlockId());
   }
 }

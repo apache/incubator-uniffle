@@ -25,9 +25,11 @@ import org.apache.hadoop.mapred.JobConf;
 import org.junit.jupiter.api.Test;
 
 import com.tencent.rss.client.util.RssClientConfig;
+import com.tencent.rss.common.exception.RssException;
 import com.tencent.rss.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RssMRUtilsTest {
 
@@ -35,12 +37,26 @@ public class RssMRUtilsTest {
   public void TaskAttemptIdTest() {
     long taskAttemptId = 0x1000ad12;
     TaskAttemptID mrTaskAttemptId = RssMRUtils.createMRTaskAttemptId(new org.apache.hadoop.mapred.JobID(), TaskType.MAP, taskAttemptId);
+    boolean isException = false;
+    try {
+      RssMRUtils.convertTaskAttemptIdToLong(mrTaskAttemptId);
+    } catch (RssException e) {
+      isException = true;
+    }
+    assertTrue(isException);
+    taskAttemptId = (1 << 20) + 0x123;
+    mrTaskAttemptId = RssMRUtils.createMRTaskAttemptId(new JobID(), TaskType.MAP, taskAttemptId);
     long testId = RssMRUtils.convertTaskAttemptIdToLong(mrTaskAttemptId);
     assertEquals(taskAttemptId, testId);
-    taskAttemptId = 0xff1000ad12L;
-    mrTaskAttemptId = RssMRUtils.createMRTaskAttemptId(new JobID(), TaskType.MAP, taskAttemptId);
-    testId = RssMRUtils.convertTaskAttemptIdToLong(mrTaskAttemptId);
-    assertEquals(taskAttemptId, testId);
+    TaskID taskID = new TaskID(new org.apache.hadoop.mapred.JobID(), TaskType.MAP, (int)(1 << 19));
+    mrTaskAttemptId = new TaskAttemptID(taskID, 2);
+    isException = false;
+    try {
+      RssMRUtils.convertTaskAttemptIdToLong(mrTaskAttemptId);
+    } catch (RssException e) {
+      isException = true;
+    }
+    assertTrue(isException);
   }
 
   @Test

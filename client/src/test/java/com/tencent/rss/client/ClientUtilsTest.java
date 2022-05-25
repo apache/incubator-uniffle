@@ -34,10 +34,10 @@ public class ClientUtilsTest {
   public void getBlockIdTest() {
     // max value of blockId
     assertEquals(
-        new Long(9223372036854775807L), ClientUtils.getBlockId(16777215, 1048575, 524287));
+        new Long(854558029292503039L), ClientUtils.getBlockId(16777215, 1048575, 24287));
     // just a random test
     assertEquals(
-        new Long(1759218709299300L), ClientUtils.getBlockId(100, 100, 100));
+        new Long(3518437418598500L), ClientUtils.getBlockId(100, 100, 100));
     // min value of blockId
     assertEquals(
         new Long(0L), ClientUtils.getBlockId(0, 0, 0));
@@ -48,16 +48,16 @@ public class ClientUtilsTest {
       assertTrue(e.getMessage().contains("Can't support partitionId[16777216], the max value should be 16777215"));
     }
     try {
-      ClientUtils.getBlockId(0, 1048576, 0);
+      ClientUtils.getBlockId(0, 2097152, 0);
       fail(EXCEPTION_EXPECTED);
     } catch (Exception e) {
-      assertTrue(e.getMessage().contains("Can't support taskAttemptId[1048576], the max value should be 1048575"));
+      assertTrue(e.getMessage().contains("Can't support taskAttemptId[2097152], the max value should be 2097151"));
     }
     try {
-      ClientUtils.getBlockId(0, 0, 524288);
+      ClientUtils.getBlockId(0, 0, 262144);
       fail(EXCEPTION_EXPECTED);
     } catch (Exception e) {
-      assertTrue(e.getMessage().contains("Can't support sequence[524288], the max value should be 524287"));
+      assertTrue(e.getMessage().contains("Can't support sequence[262144], the max value should be 262143"));
     }
   }
 }
