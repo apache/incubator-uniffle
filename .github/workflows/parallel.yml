@@ -1,0 +1,92 @@
+#
+# Tencent is pleased to support the open source community by making
+# Firestorm-Spark remote shuffle server available.
+#
+# Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+# this file except in compliance with the License. You may obtain a copy of the
+# License at
+#
+# https://opensource.org/licenses/Apache-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OF ANY KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations under the License.
+#
+# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
+
+name: Java CI with Maven
+
+on:
+  workflow_call:
+    inputs:
+      maven-args:
+        required: true
+        type: string
+      experimental:
+        default: false
+        required: false
+        type: boolean
+      summary:
+        default: "grep -e '^\\[ERROR\\]' /tmp/maven.log || true"
+        required: false
+        type: string
+      reports-path:
+        default: ''
+        required: false
+        type: string
+      reports-name:
+        default: 'test-reports'
+        required: false
+        type: string
+      jdk-version:
+        default: '8'
+        required: false
+        type: string
+      jdk-distro:
+        default: 'adopt'
+        required: false
+        type: string
+
+jobs:
+  mvn:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        profile:
+          - spark2
+          - spark3
+          - mr
+      fail-fast: false
+    steps:
+    - name: Checkout project
+      uses: actions/checkout@v2
+    - name: Set up JDK ${{ inputs.jdk-version }}
+      uses: actions/setup-java@v2
+      with:
+        java-version: ${{ inputs.jdk-version }}
+        distribution: ${{ inputs.jdk-distro }}
+        cache: maven
+    - name: Execute maven with -P${{ matrix.profile }}
+      if: ${{ !inputs.experimental }}
+      run: mvn -B -fae -P${{ matrix.profile }} ${{ inputs.maven-args }} | tee /tmp/maven.log
+      shell: bash
+    - name: Execute maven with -P${{ matrix.profile }} (experimental)
+      if: ${{ inputs.experimental }}
+      run: mvn -B -fae -P${{ matrix.profile }} ${{ inputs.maven-args }} | tee /tmp/maven.log
+      shell: bash
+      continue-on-error: true
+    - name: Summary of failures
+      if: ${{ (failure() || inputs.experimental) && inputs.summary != '' }}
+      run: ${{ inputs.summary }}
+      continue-on-error: true
+    - name: Upload test reports
+      if: ${{ failure() && inputs.reports-path != '' }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ inputs.reports-name }}-${{ matrix.profile }}
+        path: ${{ inputs.reports-path }}
+      continue-on-error: true

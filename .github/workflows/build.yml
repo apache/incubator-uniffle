@@ -18,40 +18,30 @@
 # This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
 
-name: Java CI with Maven
+name: CI
 
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: [push, pull_request]
 
 jobs:
+  checkstyle:
+    uses: ./.github/workflows/sequential.yml
+    with:
+      maven-args: checkstyle:check
+
+  license:
+    uses: ./.github/workflows/sequential.yml
+    with:
+      maven-args: org.apache.rat:apache-rat-plugin:check
+      summary: "grep -r '!?????' --include='rat.txt' | awk '{print $3}'"
+
+  spotbugs:
+    uses: ./.github/workflows/sequential.yml
+    with:
+      maven-args: test-compile spotbugs:check
+      experimental: true
+
   build:
-
-    runs-on: ubuntu-20.04
-
-    strategy:
-      matrix:
-        profile:
-          - spark2
-          - spark3
-          - mr
-      fail-fast: false
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 8
-      uses: actions/setup-java@v2
-      with:
-        java-version: '8'
-        distribution: 'adopt'
-        cache: maven
-    - name: Build with Maven with Profile ${{ matrix.profile }}
-      run: mvn -B package --file pom.xml -P${{ matrix.profile }}
-    - name: Upload ${{ matrix.profile }} test results to report
-      if: failure()
-      uses: actions/upload-artifact@v2
-      with:
-        name: test-results-of-rss-${{ matrix.profile }}
-        path: "**/target/surefire-reports/*.txt"
+    uses: ./.github/workflows/parallel.yml
+    with:
+      maven-args: package
+      reports-path: "**/target/surefire-reports/*.txt"

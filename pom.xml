@@ -67,6 +67,8 @@
     <rss.shade.packageName>com.tencent.rss</rss.shade.packageName>
     <skipDeploy>false</skipDeploy>
     <slf4j.version>1.7.25</slf4j.version>
+    <spotbugs.version>4.7.0</spotbugs.version>
+    <spotbugs-maven-plugin.version>4.7.0.0</spotbugs-maven-plugin.version>
     <system-rules.version>1.19.0</system-rules.version>
     <test.redirectToFile>true</test.redirectToFile>
   </properties>
@@ -788,15 +790,22 @@
             <version>${checkstyle.version}</version>
           </dependency>
         </dependencies>
-        <executions>
-          <execution>
-            <id>validate</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>com.github.spotbugs</groupId>
+        <artifactId>spotbugs-maven-plugin</artifactId>
+	<version>${spotbugs-maven-plugin.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs</artifactId>
+	    <version>${spotbugs.version}</version>
+          </dependency>
+        </dependencies>
+        <configuration>
+          <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
+        </configuration>
       </plugin>
 
       <plugin>
@@ -874,42 +883,34 @@
       <plugin>
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>validate</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-            <configuration>
-              <excludes>
-                <exclude>README.md</exclude>
-                <exclude>CONTRIBUTING.md</exclude>
-                <exclude>LICENSE</exclude>
-                <exclude>**/target/**</exclude>
-                <exclude>**/**/target/**</exclude>
-                <exclude>tencent-bin/**</exclude>
-                <exclude>*.iml</exclude>
-                <exclude>**/*.iml</exclude>
-                <exclude>**/**/*.iml</exclude>
-                <exclude>dependency-reduced-pom.xml</exclude>
-                <exclude>src/test/resources/empty</exclude>
-                <exclude>**/dependency-reduced-pom.xml</exclude>
-                <exclude>**/**/dependency-reduced-pom.xml</exclude>
-                <exclude>**/pom.xml.versionsBackup</exclude>
-                <exclude>**/**/pom.xml.versionsBackup</exclude>
-                <exclude>pom.xml.versionsBackup</exclude>
-                <exclude>*.log</exclude>
-                <exclude>CovTemp/**</exclude>
-                <exclude>coverage_ogid.txt</exclude>
-                <exclude>quantity_temp.properties</exclude>
-                <exclude>rss*/</exclude>
-                <exclude>spark-patches/**</exclude>
-                <exclude>docs/*.md</exclude>
-                <exclude>.github/PULL_REQUEST_TEMPLATE</exclude>
-              </excludes>
-            </configuration>
-          </execution>
-        </executions>
+        <configuration>
+          <excludes>
+            <exclude>README.md</exclude>
+            <exclude>CONTRIBUTING.md</exclude>
+            <exclude>LICENSE</exclude>
+            <exclude>**/target/**</exclude>
+            <exclude>**/**/target/**</exclude>
+            <exclude>tencent-bin/**</exclude>
+            <exclude>*.iml</exclude>
+            <exclude>**/*.iml</exclude>
+            <exclude>**/**/*.iml</exclude>
+            <exclude>dependency-reduced-pom.xml</exclude>
+            <exclude>src/test/resources/empty</exclude>
+            <exclude>**/dependency-reduced-pom.xml</exclude>
+            <exclude>**/**/dependency-reduced-pom.xml</exclude>
+            <exclude>**/pom.xml.versionsBackup</exclude>
+            <exclude>**/**/pom.xml.versionsBackup</exclude>
+            <exclude>pom.xml.versionsBackup</exclude>
+            <exclude>*.log</exclude>
+            <exclude>CovTemp/**</exclude>
+            <exclude>coverage_ogid.txt</exclude>
+            <exclude>quantity_temp.properties</exclude>
+            <exclude>rss*/</exclude>
+            <exclude>spark-patches/**</exclude>
+            <exclude>docs/*.md</exclude>
+            <exclude>.github/PULL_REQUEST_TEMPLATE</exclude>
+          </excludes>
+        </configuration>
       </plugin>
     </plugins>
 
