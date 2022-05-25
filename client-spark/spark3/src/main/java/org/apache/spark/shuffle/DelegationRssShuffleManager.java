@@ -166,13 +166,78 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   @Override
   public <K, C> ShuffleReader<K, C> getReader(
       ShuffleHandle handle,
+      int startPartition,
+      int endPartition,
+      TaskContext context,
+      ShuffleReadMetricsReporter metrics) {
+    return delegate.getReader(handle,
+      startPartition, endPartition, context, metrics);
+  }
+
+  // The interface is only used for compatibility with spark 3.1.2
+  public <K, C> ShuffleReader<K, C> getReader(
+      ShuffleHandle handle,
       int startMapIndex,
       int endMapIndex,
       int startPartition,
       int endPartition,
       TaskContext context,
       ShuffleReadMetricsReporter metrics) {
-    return delegate.getReader(handle, startMapIndex, endMapIndex, startPartition, endPartition, context, metrics);
+    ShuffleReader<K, C> reader = null;
+    try {
+      reader = (ShuffleReader<K, C>)delegate.getClass().getDeclaredMethod(
+        "getReader",
+        ShuffleHandle.class,
+        int.class,
+        int.class,
+        int.class,
+        int.class,
+        TaskContext.class,
+        ShuffleReadMetricsReporter.class).invoke(
+        handle,
+        startMapIndex,
+        endMapIndex,
+        startPartition,
+        endPartition,
+        context,
+        metrics);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return reader;
+  }
+
+  // The interface is only used for compatibility with spark 3.0.1
+  public <K, C> ShuffleReader<K, C> getReaderForRange(
+    ShuffleHandle handle,
+    int startMapIndex,
+    int endMapIndex,
+    int startPartition,
+    int endPartition,
+    TaskContext context,
+    ShuffleReadMetricsReporter metrics) {
+    ShuffleReader<K, C> reader = null;
+    try {
+      reader = (ShuffleReader<K, C>)delegate.getClass().getDeclaredMethod(
+        "getReaderForRange",
+        ShuffleHandle.class,
+        int.class,
+        int.class,
+        int.class,
+        int.class,
+        TaskContext.class,
+        ShuffleReadMetricsReporter.class).invoke(
+        handle,
+        startMapIndex,
+        endMapIndex,
+        startPartition,
+        endPartition,
+        context,
+        metrics);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return reader;
   }
 
   @Override
