@@ -26,6 +26,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import com.tencent.rss.client.response.SendShuffleDataResult;
 import com.tencent.rss.common.PartitionRange;
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.common.ShuffleAssignmentsInfo;
 import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
@@ -41,7 +42,7 @@ public interface ShuffleWriteClient {
       String appId,
       int shuffleId,
       List<PartitionRange> partitionRanges,
-      String remoteStorage);
+      RemoteStorageInfo remoteStorage);
 
   boolean sendCommit(Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);
 
@@ -49,7 +50,7 @@ public interface ShuffleWriteClient {
 
   Map<String, String> fetchClientConf(int timeoutMs);
 
-  String fetchRemoteStorage(String appId);
+  RemoteStorageInfo fetchRemoteStorage(String appId);
 
   void reportShuffleResult(
       Map<Integer, List<ShuffleServerInfo>> partitionToServers,

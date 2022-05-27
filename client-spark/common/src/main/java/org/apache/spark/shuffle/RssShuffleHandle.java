@@ -25,6 +25,7 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 import org.apache.spark.ShuffleDependency;
 
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
 
 public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
@@ -36,7 +37,7 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
   // shuffle servers which is for store shuffle data
   private Set<ShuffleServerInfo> shuffleServersForData;
   // remoteStorage used for this job
-  private String remoteStorage;
+  private RemoteStorageInfo remoteStorage;
 
   public RssShuffleHandle(
       int shuffleId,
@@ -44,7 +45,7 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
       int numMaps,
       ShuffleDependency<K, V, C> dependency,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers,
-      String remoteStorage) {
+      RemoteStorageInfo remoteStorage) {
     super(shuffleId);
     this.appId = appId;
     this.numMaps = numMaps;
@@ -81,7 +82,7 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
     return shuffleServersForData;
   }
 
-  public String getRemoteStorage() {
+  public RemoteStorageInfo getRemoteStorage() {
     return remoteStorage;
   }
 }

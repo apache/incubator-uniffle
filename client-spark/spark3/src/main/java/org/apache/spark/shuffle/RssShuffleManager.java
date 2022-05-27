@@ -34,6 +34,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkEnv;
@@ -61,6 +62,7 @@ import com.tencent.rss.client.factory.ShuffleClientFactory;
 import com.tencent.rss.client.response.SendShuffleDataResult;
 import com.tencent.rss.client.util.ClientUtils;
 import com.tencent.rss.common.PartitionRange;
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.common.ShuffleAssignmentsInfo;
 import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
@@ -87,7 +89,7 @@ public class RssShuffleManager implements ShuffleManager {
   private final ScheduledExecutorService scheduledExecutorService;
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
-  private String remoteStorage = "";
+  private RemoteStorageInfo remoteStorage;
   private final EventLoop eventLoop;
   private final EventLoop defaultEventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
 
@@ -260,7 +262,8 @@ public class RssShuffleManager implements ShuffleManager {
     LOG.info("Generate application id used in rss: " + id.get());
 
     String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE);
-    remoteStorage = sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH, "");
+    remoteStorage = new RemoteStorageInfo(
+        sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH, ""));
     remoteStorage = ClientUtils.fetchRemoteStorage(
         id.get(), remoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
 
@@ -391,7 +394,7 @@ public class RssShuffleManager implements ShuffleManager {
     final int indexReadLimit = sparkConf.getInt(RssSparkConfig.RSS_INDEX_READ_LIMIT,
         RssSparkConfig.RSS_INDEX_READ_LIMIT_DEFAULT_VALUE);
     RssShuffleHandle rssShuffleHandle = (RssShuffleHandle) handle;
-    final String shuffleRemoteStoragePath = rssShuffleHandle.getRemoteStorage();
+    final String shuffleRemoteStoragePath = rssShuffleHandle.getRemoteStorage().getPath();
     final int partitionNum = rssShuffleHandle.getDependency().partitioner().numPartitions();
     long readBufferSize = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE,
         RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE);
@@ -419,6 +422,12 @@ public class RssShuffleManager implements ShuffleManager {
     } else {
       readMetrics = context.taskMetrics().shuffleReadMetrics();
     }
+
+    Configuration readerHadoopConf = RssSparkShuffleUtils.newHadoopConfiguration(sparkConf);
+    for (Map.Entry<String, String> entry : remoteStorage.getConfItems().entrySet()) {
+      readerHadoopConf.set(entry.getKey(), entry.getValue());
+    }
+
     return new RssShuffleReader<K, C>(
         startPartition,
         endPartition,
@@ -428,7 +437,7 @@ public class RssShuffleManager implements ShuffleManager {
         rssShuffleHandle,
         shuffleRemoteStoragePath,
         indexReadLimit,
-        RssSparkShuffleUtils.newHadoopConfiguration(sparkConf),
+        readerHadoopConf,
         storageType,
         (int) readBufferSize,
         partitionNum,
@@ -668,5 +677,10 @@ public class RssShuffleManager implements ShuffleManager {
     public void incWriteTime(long v) {
       reporter.incWriteTime(v);
     }
+  }
+
+  @VisibleForTesting
+  public void setAppId(String appId) {
+    this.id = new AtomicReference<>(appId);
   }
 }

@@ -40,6 +40,7 @@ import com.tencent.rss.client.response.CompressedShuffleBlock;
 import com.tencent.rss.client.response.SendShuffleDataResult;
 import com.tencent.rss.client.util.ClientType;
 import com.tencent.rss.common.PartitionRange;
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.util.RssUtils;
@@ -264,7 +265,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
     for (int i = 0; i < replica; i ++) {
       shuffleWriteClientImpl.registerShuffle(allServers.get(i),
-          testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), "");
+          testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), new RemoteStorageInfo(""));
     }
   }
 

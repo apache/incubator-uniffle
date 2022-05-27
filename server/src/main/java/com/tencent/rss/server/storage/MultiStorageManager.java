@@ -26,6 +26,7 @@ import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.server.Checker;
 import com.tencent.rss.server.ShuffleDataFlushEvent;
 import com.tencent.rss.server.ShuffleDataReadEvent;
@@ -69,8 +70,8 @@ public class MultiStorageManager implements StorageManager {
   }
 
   @Override
-  public void registerRemoteStorage(String appId, String remoteStorage) {
-    coldStorageManager.registerRemoteStorage(appId, remoteStorage);
+  public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo) {
+    coldStorageManager.registerRemoteStorage(appId, remoteStorageInfo);
   }
 
   @Override
@@ -146,5 +147,9 @@ public class MultiStorageManager implements StorageManager {
     LOG.info("Start to remove resource of appId: {}, shuffles: {}", appId, shuffleSet.toString());
     warmStorageManager.removeResources(appId, shuffleSet);
     coldStorageManager.removeResources(appId, shuffleSet);
+  }
+
+  public StorageManager getColdStorageManager() {
+    return coldStorageManager;
   }
 }

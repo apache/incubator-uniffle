@@ -20,6 +20,7 @@ package com.tencent.rss.server.storage;
 
 import java.util.Set;
 
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.server.Checker;
 import com.tencent.rss.server.ShuffleDataFlushEvent;
 import com.tencent.rss.server.ShuffleDataReadEvent;
@@ -45,7 +46,7 @@ public interface StorageManager {
 
   void stop();
 
-  void registerRemoteStorage(String appId, String remoteStorage);
+  void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo);
 
   Checker getStorageChecker();
 

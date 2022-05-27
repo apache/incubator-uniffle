@@ -37,6 +37,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.common.util.Constants;
 
 public class ApplicationManager {
@@ -46,11 +47,11 @@ public class ApplicationManager {
   private Map<String, Long> appIds = Maps.newConcurrentMap();
   // store appId -> remote path to make sure all shuffle data of the same application
   // will be written to the same remote storage
-  private Map<String, String> appIdToRemoteStoragePath = Maps.newConcurrentMap();
+  private Map<String, RemoteStorageInfo> appIdToRemoteStorageInfo = Maps.newConcurrentMap();
   // store remote path -> application count for assignment strategy
   private Map<String, AtomicInteger> remoteStoragePathCounter = Maps.newConcurrentMap();
   private Map<String, String> remoteStorageToHost = Maps.newConcurrentMap();
-  private Set<String> availableRemoteStoragePath = Sets.newConcurrentHashSet();
+  private Map<String, RemoteStorageInfo> availableRemoteStorageInfo = Maps.newHashMap();
   private ScheduledExecutorService scheduledExecutorService;
   // it's only for test case to check if status check has problem
   private boolean hasErrorInStatusCheck = false;
@@ -71,47 +72,50 @@ public class ApplicationManager {
     appIds.put(appId, System.currentTimeMillis());
   }
 
-  public void refreshRemoteStorage(String remoteStoragePath) {
+  public void refreshRemoteStorage(String remoteStoragePath, String remoteStorageConf) {
     if (!StringUtils.isEmpty(remoteStoragePath)) {
       LOG.info("Refresh remote storage with {}", remoteStoragePath);
       Set<String> paths = Sets.newHashSet(remoteStoragePath.split(Constants.COMMA_SPLIT_CHAR));
+      Map<String, Map<String, String>> confKVs = CoordinatorUtils.extractRemoteStorageConf(remoteStorageConf);
       // add remote path if not exist
       for (String path : paths) {
-        if (!availableRemoteStoragePath.contains(path)) {
+        if (!availableRemoteStorageInfo.containsKey(path)) {
           remoteStoragePathCounter.putIfAbsent(path, new AtomicInteger(0));
-          availableRemoteStoragePath.add(path);
           // refreshRemoteStorage is designed without multiple thread problem
           // metrics shouldn't be added duplicated
           addRemoteStorageMetrics(path);
         }
+        String storageHost = getStorageHost(path);
+        RemoteStorageInfo rsInfo = new RemoteStorageInfo(path, confKVs.getOrDefault(storageHost, Maps.newHashMap()));
+        availableRemoteStorageInfo.put(path, rsInfo);
       }
       // remove unused remote path if exist
       List<String> unusedPath = Lists.newArrayList();
-      for (String existPath : availableRemoteStoragePath) {
+      for (String existPath : availableRemoteStorageInfo.keySet()) {
         if (!paths.contains(existPath)) {
           unusedPath.add(existPath);
         }
       }
       // remote unused path
       for (String path : unusedPath) {
-        availableRemoteStoragePath.remove(path);
+        availableRemoteStorageInfo.remove(path);
         // try to remove if counter = 0, or it will be removed in decRemoteStorageCounter() later
         removePathFromCounter(path);
       }
     } else {
       LOG.info("Refresh remote storage with empty value {}", remoteStoragePath);
-      for (String path : availableRemoteStoragePath) {
+      for (String path : availableRemoteStorageInfo.keySet()) {
         removePathFromCounter(path);
       }
-      availableRemoteStoragePath.clear();
+      availableRemoteStorageInfo.clear();
     }
   }
 
   // the strategy of pick remote storage is according to assignment count
   // todo: better strategy with workload balance
-  public String pickRemoteStoragePath(String appId) {
-    if (appIdToRemoteStoragePath.containsKey(appId)) {
-      return appIdToRemoteStoragePath.get(appId);
+  public RemoteStorageInfo pickRemoteStorage(String appId) {
+    if (appIdToRemoteStorageInfo.containsKey(appId)) {
+      return appIdToRemoteStorageInfo.get(appId);
     }
 
     // create list for sort
@@ -138,13 +142,13 @@ public class ApplicationManager {
 
     for (Map.Entry<String, AtomicInteger> entry : sizeList) {
       String storagePath = entry.getKey();
-      if (availableRemoteStoragePath.contains(storagePath)) {
-        appIdToRemoteStoragePath.putIfAbsent(appId, storagePath);
+      if (availableRemoteStorageInfo.containsKey(storagePath)) {
+        appIdToRemoteStorageInfo.putIfAbsent(appId, availableRemoteStorageInfo.get(storagePath));
         incRemoteStorageCounter(storagePath);
         break;
       }
     }
-    return appIdToRemoteStoragePath.get(appId);
+    return appIdToRemoteStorageInfo.get(appId);
   }
 
   @VisibleForTesting
@@ -177,7 +181,7 @@ public class ApplicationManager {
         remoteStoragePathCounter.putIfAbsent(storagePath, new AtomicInteger(0));
       }
       if (remoteStoragePathCounter.get(storagePath).get() == 0
-          && !availableRemoteStoragePath.contains(storagePath)) {
+          && !availableRemoteStorageInfo.containsKey(storagePath)) {
         remoteStoragePathCounter.remove(storagePath);
       }
     }
@@ -195,8 +199,8 @@ public class ApplicationManager {
   }
 
   @VisibleForTesting
-  protected Map<String, String> getAppIdToRemoteStoragePath() {
-    return appIdToRemoteStoragePath;
+  protected Map<String, RemoteStorageInfo> getAppIdToRemoteStorageInfo() {
+    return appIdToRemoteStorageInfo;
   }
 
   @VisibleForTesting
@@ -205,8 +209,8 @@ public class ApplicationManager {
   }
 
   @VisibleForTesting
-  public Set<String> getAvailableRemoteStoragePath() {
-    return availableRemoteStoragePath;
+  public Map<String, RemoteStorageInfo> getAvailableRemoteStorageInfo() {
+    return availableRemoteStorageInfo;
   }
 
   @VisibleForTesting
@@ -228,9 +232,9 @@ public class ApplicationManager {
       for (String appId : expiredAppIds) {
         LOG.info("Remove expired application:" + appId);
         appIds.remove(appId);
-        if (appIdToRemoteStoragePath.containsKey(appId)) {
-          decRemoteStorageCounter(appIdToRemoteStoragePath.get(appId));
-          appIdToRemoteStoragePath.remove(appId);
+        if (appIdToRemoteStorageInfo.containsKey(appId)) {
+          decRemoteStorageCounter(appIdToRemoteStorageInfo.get(appId).getPath());
+          appIdToRemoteStorageInfo.remove(appId);
         }
       }
       CoordinatorMetrics.gaugeRunningAppNum.set(appIds.size());
@@ -243,7 +247,7 @@ public class ApplicationManager {
   }
 
   private void updateRemoteStorageMetrics() {
-    for (String remoteStoragePath : availableRemoteStoragePath) {
+    for (String remoteStoragePath : availableRemoteStorageInfo.keySet()) {
       try {
         String storageHost = getStorageHost(remoteStoragePath);
         CoordinatorMetrics.updateDynamicGaugeForRemoteStorage(storageHost,

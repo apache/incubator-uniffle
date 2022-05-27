@@ -177,4 +177,8 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         + ", partitions: [" + startPartition
         + ", " + endPartition + ")";
   }
+
+  public Configuration getHadoopConf() {
+    return hadoopConf;
+  }
 }

@@ -1006,6 +1006,7 @@
         <module>client-spark/common</module>
         <module>client-spark/spark2</module>
         <module>integration-test/spark-common</module>
+        <module>integration-test/spark2</module>
       </modules>
       <dependencyManagement>
         <dependencies>
@@ -1040,6 +1041,13 @@
             <artifactId>rss-client-spark-common</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
+          </dependency>
+          <dependency>
+            <groupId>com.tencent.rss</groupId>
+            <artifactId>rss-integration-spark-common-test</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
           </dependency>
         </dependencies>
       </dependencyManagement>

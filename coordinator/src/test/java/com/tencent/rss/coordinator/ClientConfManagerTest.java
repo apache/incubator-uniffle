@@ -33,6 +33,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.common.util.Constants;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -139,9 +140,9 @@ public class ClientConfManagerTest {
   @Test
   public void dynamicRemoteStorageTest() throws Exception {
     int updateIntervalSec = 2;
-    String remotePath1 = "hdfs://path1";
-    String remotePath2 = "hdfs://path2";
-    String remotePath3 = "hdfs://path3";
+    String remotePath1 = "hdfs://host1/path1";
+    String remotePath2 = "hdfs://host2/path2";
+    String remotePath3 = "hdfs://host3/path3";
     File cfgFile = Files.createTempFile("dynamicRemoteStorageTest", ".conf").toFile();
     cfgFile.deleteOnExit();
     writeRemoteStorageConf(cfgFile, remotePath1);
@@ -155,35 +156,58 @@ public class ClientConfManagerTest {
     ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
     Thread.sleep(500);
     Set<String> expectedAvailablePath = Sets.newHashSet(remotePath1);
-    assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStoragePath());
-    assertEquals(remotePath1, applicationManager.pickRemoteStoragePath("testAppId1"));
+    assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
+    RemoteStorageInfo remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId1");
+    assertEquals(remotePath1, remoteStorageInfo.getPath());
+    assertTrue(remoteStorageInfo.getConfItems().isEmpty());
 
     writeRemoteStorageConf(cfgFile, remotePath3);
     expectedAvailablePath = Sets.newHashSet(remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
-    assertEquals(remotePath3, applicationManager.pickRemoteStoragePath("testAppId2"));
+    remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId2");
+    assertEquals(remotePath3, remoteStorageInfo.getPath());
 
-    writeRemoteStorageConf(cfgFile, remotePath2 + Constants.COMMA_SPLIT_CHAR + remotePath3);
+    String confItems = "host2,k1=v1,k2=v2;host3,k3=v3";
+    writeRemoteStorageConf(cfgFile, remotePath2 + Constants.COMMA_SPLIT_CHAR + remotePath3, confItems);
     expectedAvailablePath = Sets.newHashSet(remotePath2, remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
-    assertEquals(remotePath2, applicationManager.pickRemoteStoragePath("testAppId3"));
+    remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId3");
+    assertEquals(remotePath2, remoteStorageInfo.getPath());
+    assertEquals(2, remoteStorageInfo.getConfItems().size());
+    assertEquals("v1", remoteStorageInfo.getConfItems().get("k1"));
+    assertEquals("v2", remoteStorageInfo.getConfItems().get("k2"));
 
-    writeRemoteStorageConf(cfgFile, remotePath1 + Constants.COMMA_SPLIT_CHAR + remotePath2);
+    confItems = "host1,keyTest1=test1,keyTest2=test2;host2,k1=deadbeaf";
+    writeRemoteStorageConf(cfgFile, remotePath1 + Constants.COMMA_SPLIT_CHAR + remotePath2, confItems);
     expectedAvailablePath = Sets.newHashSet(remotePath1, remotePath2);
     waitForUpdate(expectedAvailablePath, applicationManager);
-    String remoteStorage = applicationManager.pickRemoteStoragePath("testAppId4");
+    remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId4");
     // one of remote storage will be chosen
-    assertTrue(remotePath1.equals(remoteStorage) || remotePath2.equals(remoteStorage));
+    assertTrue(
+        (remotePath1.equals(remoteStorageInfo.getPath())
+                      && (remoteStorageInfo.getConfItems().size() == 2)
+                      && (remoteStorageInfo.getConfItems().get("keyTest1").equals("test1")))
+                      && (remoteStorageInfo.getConfItems().get("keyTest2").equals("test2"))
+            || (remotePath2.equals(remoteStorageInfo.getPath())
+                      && remoteStorageInfo.getConfItems().size() == 1)
+                      && remoteStorageInfo.getConfItems().get("k1").equals("deadbeaf"));
 
     clientConfManager.close();
   }
 
   private void writeRemoteStorageConf(File cfgFile, String value) throws Exception {
+    writeRemoteStorageConf(cfgFile, value, null);
+  }
+
+  private void writeRemoteStorageConf(File cfgFile, String pathItems, String confItems) throws Exception {
     // sleep 2 secs to make sure the modified time will be updated
     Thread.sleep(2000);
     FileWriter fileWriter = new FileWriter(cfgFile);
     PrintWriter printWriter = new PrintWriter(fileWriter);
-    printWriter.println(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key() + " " + value);
+    printWriter.println(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key() + " " + pathItems);
+    if (confItems != null) {
+      printWriter.println(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_CLUSTER_CONF.key() + " " + confItems);
+    }
     printWriter.flush();
     printWriter.close();
   }
@@ -199,7 +223,7 @@ public class ClientConfManagerTest {
       }
       Thread.sleep(1000);
       try {
-        assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStoragePath());
+        assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
         break;
       } catch (Throwable e) {
         // ignore

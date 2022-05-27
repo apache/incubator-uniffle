@@ -151,7 +151,7 @@ message ShuffleRegisterRequest {
   string appId = 1;
   int32 shuffleId = 2;
   repeated ShufflePartitionRange partitionRanges = 3;
-  string remoteStorage = 4;
+  RemoteStorage remoteStorage = 4;
 }
 
 message ShuffleRegisterResponse {
@@ -358,7 +358,17 @@ message FetchRemoteStorageRequest {
   string appId = 1;
 }
 
+message RemoteStorageConfItem {
+  string key = 1;
+  string value = 2;
+}
+
+message RemoteStorage {
+  string path = 1;
+  repeated RemoteStorageConfItem remoteStorageConf = 2;
+}
+
 message FetchRemoteStorageResponse {
   StatusCode status = 1;
-  string remoteStorage = 2;
+  RemoteStorage remoteStorage = 2;
 }

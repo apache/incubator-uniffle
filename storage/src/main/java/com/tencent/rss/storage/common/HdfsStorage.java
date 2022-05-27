@@ -106,7 +106,7 @@ public class HdfsStorage extends AbstractStorage {
           request.getEndPartition(),
           storagePath,
           request.getFileNamePrefix(),
-          request.getConf()
+          conf
       );
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -121,5 +121,9 @@ public class HdfsStorage extends AbstractStorage {
   @Override
   public void createMetadataIfNotExist(String shuffleKey) {
     // do nothing
+  }
+
+  public Configuration getConf() {
+    return conf;
   }
 }

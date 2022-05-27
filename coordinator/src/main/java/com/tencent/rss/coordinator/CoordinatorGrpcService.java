@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.common.PartitionRange;
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.proto.CoordinatorServerGrpc;
 import com.tencent.rss.proto.RssProtos.AccessClusterRequest;
 import com.tencent.rss.proto.RssProtos.AccessClusterResponse;
@@ -47,6 +48,8 @@ import com.tencent.rss.proto.RssProtos.GetShuffleAssignmentsResponse;
 import com.tencent.rss.proto.RssProtos.GetShuffleServerListResponse;
 import com.tencent.rss.proto.RssProtos.GetShuffleServerNumResponse;
 import com.tencent.rss.proto.RssProtos.GetShuffleServerRequest;
+import com.tencent.rss.proto.RssProtos.RemoteStorage;
+import com.tencent.rss.proto.RssProtos.RemoteStorageConfItem;
 import com.tencent.rss.proto.RssProtos.ReportShuffleClientOpRequest;
 import com.tencent.rss.proto.RssProtos.ReportShuffleClientOpResponse;
 import com.tencent.rss.proto.RssProtos.ShuffleServerHeartBeatRequest;
@@ -257,19 +260,26 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       StreamObserver<FetchRemoteStorageResponse> responseObserver) {
     FetchRemoteStorageResponse response;
     StatusCode status = StatusCode.SUCCESS;
-    String remoteStorage = "";
     String appId = request.getAppId();
     try {
-      remoteStorage = coordinatorServer.getApplicationManager().pickRemoteStoragePath(appId);
+      RemoteStorage.Builder rsBuilder = RemoteStorage.newBuilder();
+      RemoteStorageInfo rsInfo = coordinatorServer.getApplicationManager().pickRemoteStorage(appId);
+      if (rsInfo == null) {
+        LOG.error("Remote storage of {} do not exist.", appId);
+      } else {
+        rsBuilder.setPath(rsInfo.getPath());
+        for (Map.Entry<String, String> entry : rsInfo.getConfItems().entrySet()) {
+          rsBuilder.addRemoteStorageConf(
+              RemoteStorageConfItem.newBuilder().setKey(entry.getKey()).setValue(entry.getValue()).build());
+        }
+      }
+      response = FetchRemoteStorageResponse.newBuilder()
+          .setStatus(status).setRemoteStorage(rsBuilder.build()).build();
     } catch (Exception e) {
       status = StatusCode.INTERNAL_ERROR;
+      response = FetchRemoteStorageResponse.newBuilder().setStatus(status).build();
       LOG.error("Error happened when get remote storage for appId[" + appId + "]", e);
     }
-
-    response = FetchRemoteStorageResponse.newBuilder()
-        .setRemoteStorage(remoteStorage)
-        .setStatus(status)
-        .build();
 
     if (Context.current().isCancelled()) {
       responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());

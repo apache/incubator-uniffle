@@ -20,6 +20,7 @@ package com.tencent.rss.server;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -33,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.common.BufferSegment;
 import com.tencent.rss.common.PartitionRange;
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.ShuffleIndexResult;
 import com.tencent.rss.common.ShufflePartitionedBlock;
@@ -52,6 +54,7 @@ import com.tencent.rss.proto.RssProtos.GetMemoryShuffleDataResponse;
 import com.tencent.rss.proto.RssProtos.GetShuffleResultRequest;
 import com.tencent.rss.proto.RssProtos.GetShuffleResultResponse;
 import com.tencent.rss.proto.RssProtos.PartitionToBlockIds;
+import com.tencent.rss.proto.RssProtos.RemoteStorageConfItem;
 import com.tencent.rss.proto.RssProtos.ReportShuffleResultRequest;
 import com.tencent.rss.proto.RssProtos.ReportShuffleResultResponse;
 import com.tencent.rss.proto.RssProtos.RequireBufferRequest;
@@ -106,15 +109,22 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     ShuffleRegisterResponse reply;
     String appId = req.getAppId();
     int shuffleId = req.getShuffleId();
-    String remoteStorage = req.getRemoteStorage();
+    String remoteStoragePath = req.getRemoteStorage().getPath();
+    Map<String, String> remoteStorageConf = req
+        .getRemoteStorage()
+        .getRemoteStorageConfList()
+        .stream()
+        .collect(Collectors.toMap(RemoteStorageConfItem::getKey, RemoteStorageConfItem::getValue));
+
     List<PartitionRange> partitionRanges = toPartitionRanges(req.getPartitionRangesList());
     LOG.info("Get register request for appId[" + appId + "], shuffleId[" + shuffleId
-        + "], remoteStorage[" + remoteStorage + "] with "
+        + "], remoteStorage[" + remoteStoragePath + "] with "
         + partitionRanges.size() + " partition ranges");
 
     StatusCode result = shuffleServer
         .getShuffleTaskManager()
-        .registerShuffle(appId, shuffleId, partitionRanges, remoteStorage);
+        .registerShuffle(
+            appId, shuffleId, partitionRanges, new RemoteStorageInfo(remoteStoragePath, remoteStorageConf));
 
     reply = ShuffleRegisterResponse
         .newBuilder()

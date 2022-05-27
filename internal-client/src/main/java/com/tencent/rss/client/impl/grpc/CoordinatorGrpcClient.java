@@ -49,6 +49,7 @@ import com.tencent.rss.client.response.RssFetchRemoteStorageResponse;
 import com.tencent.rss.client.response.RssGetShuffleAssignmentsResponse;
 import com.tencent.rss.client.response.RssSendHeartBeatResponse;
 import com.tencent.rss.common.PartitionRange;
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.exception.RssException;
 import com.tencent.rss.proto.CoordinatorServerGrpc;
@@ -65,6 +66,7 @@ import com.tencent.rss.proto.RssProtos.FetchRemoteStorageResponse;
 import com.tencent.rss.proto.RssProtos.GetShuffleAssignmentsResponse;
 import com.tencent.rss.proto.RssProtos.GetShuffleServerListResponse;
 import com.tencent.rss.proto.RssProtos.PartitionRangeAssignment;
+import com.tencent.rss.proto.RssProtos.RemoteStorageConfItem;
 import com.tencent.rss.proto.RssProtos.ShuffleServerHeartBeatRequest;
 import com.tencent.rss.proto.RssProtos.ShuffleServerHeartBeatResponse;
 import com.tencent.rss.proto.RssProtos.ShuffleServerId;
@@ -299,13 +301,18 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         FetchRemoteStorageRequest.newBuilder().setAppId(request.getAppId()).build();
     try {
       rpcResponse = blockingStub.fetchRemoteStorage(rpcRequest);
+      Map<String, String> remoteStorageConf = rpcResponse
+          .getRemoteStorage()
+          .getRemoteStorageConfList()
+          .stream()
+          .collect(Collectors.toMap(RemoteStorageConfItem::getKey, RemoteStorageConfItem::getValue));
       RssFetchRemoteStorageResponse tt = new RssFetchRemoteStorageResponse(
           ResponseStatusCode.SUCCESS,
-          rpcResponse.getRemoteStorage());
+          new RemoteStorageInfo(rpcResponse.getRemoteStorage().getPath(), remoteStorageConf));
       return tt;
     } catch (Exception e) {
       LOG.info("Failed to fetch remote storage from coordinator, " + e.getMessage(), e);
-      return new RssFetchRemoteStorageResponse(ResponseStatusCode.INTERNAL_ERROR, "");
+      return new RssFetchRemoteStorageResponse(ResponseStatusCode.INTERNAL_ERROR, null);
     }
   }
 

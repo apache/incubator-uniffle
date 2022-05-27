@@ -50,6 +50,7 @@ import com.tencent.rss.client.response.RssGetShuffleResultResponse;
 import com.tencent.rss.client.response.RssReportShuffleResultResponse;
 import com.tencent.rss.client.util.ClientUtils;
 import com.tencent.rss.common.PartitionRange;
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.config.RssBaseConf;
@@ -106,7 +107,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
         new ShuffleServerInfo("127.0.0.1-20001", "127.0.0.1", 20001),
         "clearResourceTest1",
         0,
-        Lists.newArrayList(new PartitionRange(0, 1)), "");
+        Lists.newArrayList(new PartitionRange(0, 1)), new RemoteStorageInfo(""));
 
     shuffleWriteClient.sendAppHeartbeat("clearResourceTest1", 1000L);
     shuffleWriteClient.sendAppHeartbeat("clearResourceTest2", 1000L);

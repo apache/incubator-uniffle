@@ -18,16 +18,19 @@
 
 package com.tencent.rss.client.response;
 
+import com.tencent.rss.common.RemoteStorageInfo;
+
 public class RssFetchRemoteStorageResponse extends ClientResponse {
+  private RemoteStorageInfo remoteStorageInfo;
 
-  private String remoteStorage;
-
-  public RssFetchRemoteStorageResponse(ResponseStatusCode statusCode, String remoteStorage) {
+  public RssFetchRemoteStorageResponse(
+      ResponseStatusCode statusCode,
+      RemoteStorageInfo remoteStorageInfo) {
     super(statusCode);
-    this.remoteStorage = remoteStorage;
+    this.remoteStorageInfo = remoteStorageInfo;
   }
 
-  public String getRemoteStorage() {
-    return remoteStorage;
+  public RemoteStorageInfo getRemoteStorageInfo() {
+    return remoteStorageInfo;
   }
 }

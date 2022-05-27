@@ -28,7 +28,9 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.client.request.RssFetchClientConfRequest;
 import com.tencent.rss.client.request.RssFetchRemoteStorageRequest;
 import com.tencent.rss.client.response.ResponseStatusCode;
@@ -36,10 +38,10 @@ import com.tencent.rss.client.response.RssFetchClientConfResponse;
 import com.tencent.rss.client.response.RssFetchRemoteStorageResponse;
 import com.tencent.rss.coordinator.ApplicationManager;
 import com.tencent.rss.coordinator.CoordinatorConf;
-import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FetchClientConfTest extends CoordinatorTestBase {
 
@@ -97,8 +99,10 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     String remotePath1 = "hdfs://path1";
     String remotePath2 = "hdfs://path2";
     File cfgFile = File.createTempFile("tmp", ".conf", tempDir);
+    String contItem = "path2,key1=test1,key2=test2";
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), remotePath1);
+    dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_CLUSTER_CONF.key(), contItem);
     writeRemoteStorageConf(cfgFile, dynamicConf);
 
     CoordinatorConf coordinatorConf = getCoordinatorConf();
@@ -112,7 +116,9 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     String appId = "testFetchRemoteStorageApp";
     RssFetchRemoteStorageRequest request = new RssFetchRemoteStorageRequest(appId);
     RssFetchRemoteStorageResponse response = coordinatorClient.fetchRemoteStorage(request);
-    assertEquals(remotePath1, response.getRemoteStorage());
+    RemoteStorageInfo remoteStorageInfo = response.getRemoteStorageInfo();
+    assertTrue(remoteStorageInfo.getConfItems().isEmpty());
+    assertEquals(remotePath1, remoteStorageInfo.getPath());
 
     // update remote storage info
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), remotePath2);
@@ -121,12 +127,18 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     request = new RssFetchRemoteStorageRequest(appId);
     response = coordinatorClient.fetchRemoteStorage(request);
     // remotePath1 will be return because (appId -> remote storage path) is in cache
-    assertEquals(remotePath1, response.getRemoteStorage());
+    remoteStorageInfo = response.getRemoteStorageInfo();
+    assertEquals(remotePath1, remoteStorageInfo.getPath());
+    assertTrue(remoteStorageInfo.getConfItems().isEmpty());
 
     request = new RssFetchRemoteStorageRequest(appId + "another");
     response = coordinatorClient.fetchRemoteStorage(request);
     // got the remotePath2 for new appId
-    assertEquals(remotePath2, response.getRemoteStorage());
+    remoteStorageInfo = response.getRemoteStorageInfo();
+    assertEquals(remotePath2, remoteStorageInfo.getPath());
+    assertEquals(2, remoteStorageInfo.getConfItems().size());
+    assertEquals("test1", remoteStorageInfo.getConfItems().get("key1"));
+    assertEquals("test2", remoteStorageInfo.getConfItems().get("key2"));
   }
 
   private void waitForUpdate(
@@ -140,7 +152,7 @@ public class FetchClientConfTest extends CoordinatorTestBase {
       }
       Thread.sleep(1000);
       try {
-        assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStoragePath());
+        assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
         break;
       } catch (Throwable e) {
         // ignore

@@ -21,6 +21,7 @@ package org.apache.spark.shuffle.reader;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.InterruptibleIterator;
@@ -175,6 +176,11 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         + ", " + endPartition + ")"
         + ", maps: [" + mapStartIndex
         + ", " + mapEndIndex + ")";
+  }
+
+  @VisibleForTesting
+  public Configuration getHadoopConf() {
+    return hadoopConf;
   }
 
   class MultiPartitionIterator<K, C> extends AbstractIterator<Product2<K, C>> {

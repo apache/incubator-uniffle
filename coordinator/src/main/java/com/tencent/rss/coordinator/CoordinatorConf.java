@@ -113,6 +113,12 @@ public class CoordinatorConf extends RssBaseConf {
       .checkValue(ConfigUtils.positiveIntegerValidator2, "dynamic client conf update interval in seconds")
       .defaultValue(120)
       .withDescription("Accessed candidates update interval in seconds");
+  public static final ConfigOption<String> COORDINATOR_REMOTE_STORAGE_CLUSTER_CONF = ConfigOptions
+      .key("rss.coordinator.remote.storage.cluster.conf")
+      .stringType()
+      .noDefaultValue()
+      .withDescription("Remote Storage Cluster related conf with format $clusterId,$key=$value, sperated by ';'");
+
 
   public CoordinatorConf() {
   }

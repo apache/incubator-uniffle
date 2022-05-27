@@ -21,6 +21,7 @@ package org.apache.hadoop.mapreduce.task.reduce;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.logging.Log;
@@ -41,6 +42,7 @@ import com.tencent.rss.client.api.ShuffleReadClient;
 import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.client.factory.ShuffleClientFactory;
 import com.tencent.rss.client.request.CreateShuffleReadClientRequest;
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.util.UnitConverter;
 
@@ -77,6 +79,7 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
   private String basePath;
   private int indexReadLimit;
   private int readBufferSize;
+  private RemoteStorageInfo remoteStorageInfo;
 
   @Override
   public void init(ShuffleConsumerPlugin.Context context) {
@@ -112,6 +115,8 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
     this.readBufferSize = (int)UnitConverter.byteStringAsBytes(
       jobConf.get(RssMRConfig.RSS_CLIENT_READ_BUFFER_SIZE,
         RssMRConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE));
+    String remoteStorageConf = jobConf.get(RssMRConfig.RSS_REMOTE_STORAGE_CONF, "");
+    this.remoteStorageInfo = new RemoteStorageInfo(basePath, remoteStorageConf);
    }
 
   protected MergeManager<K, V> createMergeManager(
@@ -154,9 +159,15 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
     if (!taskIdBitmap.isEmpty()) {
       LOG.info("In reduce: " + reduceId
         + ", Rss MR client starts to fetch blocks from RSS server");
+      JobConf readerJobConf = new JobConf((jobConf));
+      if (!remoteStorageInfo.isEmpty()) {
+        for (Map.Entry<String, String> entry : remoteStorageInfo.getConfItems().entrySet()) {
+          readerJobConf.set(entry.getKey(), entry.getValue());
+        }
+      }
       CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
         appId, 0, reduceId.getTaskID().getId(), storageType, basePath, indexReadLimit, readBufferSize,
-        partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, serverInfoList, jobConf);
+        partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, serverInfoList, readerJobConf);
       ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
       RssFetcher fetcher = new RssFetcher(jobConf, reduceId, taskStatus, merger, copyPhase, reporter, metrics,
         shuffleReadClient, blockIdBitmap.getLongCardinality());

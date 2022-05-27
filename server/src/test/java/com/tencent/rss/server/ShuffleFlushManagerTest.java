@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import com.tencent.rss.common.BufferSegment;
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.ShufflePartitionedBlock;
 import com.tencent.rss.common.config.RssBaseConf;
@@ -64,7 +66,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   private static AtomicLong ATOMIC_LONG = new AtomicLong(0);
 
   private ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
-  private String remoteStorage = HDFS_URI + "rss/test";
+  private RemoteStorageInfo remoteStorage = new RemoteStorageInfo(HDFS_URI + "rss/test", Maps.newHashMap());
 
   @BeforeEach
   public void prepare() {
@@ -97,7 +99,6 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", shuffleServerConf);
     storageManager.registerRemoteStorage(appId, remoteStorage);
-    // test case: duplicate register
     storageManager.registerRemoteStorage(appId, remoteStorage);
     String storageHost = "localhost";
     assertEquals(0.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.get(storageHost).get(), 0.5);
@@ -121,11 +122,11 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     // wait for write data
     waitForFlush(manager, appId, 1, 5);
     waitForFlush(manager, appId, 2, 10);
-    validate(appId, 1, 1, blocks1, 1, remoteStorage);
+    validate(appId, 1, 1, blocks1, 1, remoteStorage.getPath());
     assertEquals(blocks1.size(), manager.getCommittedBlockIds(appId, 1).getLongCardinality());
 
     blocks21.addAll(blocks22);
-    validate(appId, 2, 2, blocks21, 1, remoteStorage);
+    validate(appId, 2, 2, blocks21, 1, remoteStorage.getPath());
     assertEquals(blocks21.size(), manager.getCommittedBlockIds(appId, 2).getLongCardinality());
 
     assertEquals(3.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.get(storageHost).get(), 0.5);
@@ -168,7 +169,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     flushThread2.join();
 
     waitForFlush(manager, appId, 1, 300);
-    validate(appId, 1, 1, expectedBlocks, 1, remoteStorage);
+    validate(appId, 1, 1, expectedBlocks, 1, remoteStorage.getPath());
   }
 
   @Test
@@ -195,7 +196,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     assertEquals(storageManager.selectStorage(event1), storageManager.selectStorage(event2));
     int size = storage.getHandlerSize();
     assertEquals(2, size);
-    FileStatus[] fileStatus = fs.listStatus(new Path(remoteStorage + "/" + appId1 + "/"));
+    FileStatus[] fileStatus = fs.listStatus(new Path(remoteStorage.getPath() + "/" + appId1 + "/"));
     assertTrue(fileStatus.length > 0);
     manager.removeResources(appId1);
 
@@ -203,7 +204,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     storageManager.removeResources(appId1, Sets.newHashSet(1));
     assertFalse(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId1));
     try {
-      fs.listStatus(new Path(remoteStorage + "/" + appId1 + "/"));
+      fs.listStatus(new Path(remoteStorage.getPath() + "/" + appId1 + "/"));
       fail("Exception should be thrown");
     } catch (FileNotFoundException fnfe) {
       // expected exception

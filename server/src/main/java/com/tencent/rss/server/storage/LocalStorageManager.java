@@ -26,6 +26,7 @@ import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.common.util.RssUtils;
 import com.tencent.rss.server.Checker;
 import com.tencent.rss.server.LocalStorageChecker;
@@ -134,7 +135,7 @@ public class LocalStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void registerRemoteStorage(String appId, String remoteStorage) {
+  public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo) {
     // ignore
   }
 

@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.client.util.ClientUtils;
 import com.tencent.rss.common.PartitionRange;
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.common.ShuffleAssignmentsInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.util.Constants;
@@ -118,13 +119,14 @@ public class RssMRAppMaster {
                 RssMRConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
         RssMRUtils.applyDynamicClientConf(conf, clusterClientConf);
       }
-
       String storageType = conf.get(RssMRConfig.RSS_STORAGE_TYPE);
-      String defaultRemoteStorage = conf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH, "");
-      String remoteStorage = ClientUtils.fetchRemoteStorage(
-          appId, defaultRemoteStorage, dynamicConfEnabled, storageType, client);
+      RemoteStorageInfo defaultRemoteStorage =
+          new RemoteStorageInfo(conf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH, ""));
+      RemoteStorageInfo remoteStorage = ClientUtils.fetchRemoteStorage(
+        appId, defaultRemoteStorage, dynamicConfEnabled, storageType, client);
       // set the remote storage with actual value
-      conf.set(RssMRConfig.RSS_REMOTE_STORAGE_PATH, remoteStorage);
+      conf.set(RssMRConfig.RSS_REMOTE_STORAGE_PATH, remoteStorage.getPath());
+      conf.set(RssMRConfig.RSS_REMOTE_STORAGE_CONF, remoteStorage.getConfString());
 
       LOG.info("Start to register shuffle");
       long start = System.currentTimeMillis();

@@ -25,6 +25,7 @@ import java.util.Set;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.tencent.rss.common.RemoteStorageInfo;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.WritableComparator;
@@ -212,7 +213,7 @@ public class SortWriteBufferManagerTest {
         String appId,
         int shuffleId,
         List<PartitionRange> partitionRanges,
-        String remoteStorage) {
+        RemoteStorageInfo remoteStorage) {
     }
 
     @Override
@@ -231,7 +232,7 @@ public class SortWriteBufferManagerTest {
     }
 
     @Override
-    public String fetchRemoteStorage(String appId) {
+    public RemoteStorageInfo fetchRemoteStorage(String appId) {
       return null;
     }
 

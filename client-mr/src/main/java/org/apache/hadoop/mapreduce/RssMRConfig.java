@@ -88,6 +88,8 @@ public class RssMRConfig {
       RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE;
   public static final String RSS_REMOTE_STORAGE_PATH =
       MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_STORAGE_PATH;
+  public static final String RSS_REMOTE_STORAGE_CONF =
+      MR_RSS_CONFIG_PREFIX + "rss.remote.storage.conf";
   public static final String RSS_INDEX_READ_LIMIT =
       MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_INDEX_READ_LIMIT;
   public static final int RSS_INDEX_READ_LIMIT_DEFAULT_VALUE =

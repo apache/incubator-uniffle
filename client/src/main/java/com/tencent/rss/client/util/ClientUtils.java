@@ -18,9 +18,8 @@
 
 package com.tencent.rss.client.util;
 
-import org.apache.commons.lang.StringUtils;
-
 import com.tencent.rss.client.api.ShuffleWriteClient;
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.storage.util.StorageType;
 
@@ -47,25 +46,25 @@ public class ClientUtils {
         + (partitionId << Constants.TASK_ATTEMPT_ID_MAX_LENGTH) + taskAttemptId;
   }
 
-  public static String fetchRemoteStorage(
+  public static RemoteStorageInfo fetchRemoteStorage(
       String appId,
-      String defaultRemoteStorage,
+      RemoteStorageInfo defaultRemoteStorage,
       boolean dynamicConfEnabled,
       String storageType,
       ShuffleWriteClient shuffleWriteClient) {
-    String remoteStorage = defaultRemoteStorage;
-    if (StringUtils.isEmpty(remoteStorage) && requireRemoteStorage(storageType)) {
+    RemoteStorageInfo remoteStorage = defaultRemoteStorage;
+    if (remoteStorage.isEmpty() && requireRemoteStorage(storageType)) {
       if (dynamicConfEnabled) {
         // get from coordinator first
         remoteStorage = shuffleWriteClient.fetchRemoteStorage(appId);
-        if (StringUtils.isEmpty(remoteStorage)) {
+        if (remoteStorage.isEmpty()) {
           // empty from coordinator, use default remote storage
           remoteStorage = defaultRemoteStorage;
         }
       } else {
         remoteStorage = defaultRemoteStorage;
       }
-      if (StringUtils.isEmpty(remoteStorage)) {
+      if (remoteStorage.isEmpty()) {
         throw new RuntimeException("Can't find remoteStorage: with storageType[" + storageType + "]");
       }
     }

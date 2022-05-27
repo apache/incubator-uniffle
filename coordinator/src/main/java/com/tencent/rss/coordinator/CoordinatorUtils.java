@@ -21,7 +21,11 @@ package com.tencent.rss.coordinator;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import com.google.common.collect.Maps;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
@@ -30,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.common.PartitionRange;
+import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.proto.RssProtos;
 import com.tencent.rss.proto.RssProtos.GetShuffleAssignmentsResponse;
 
@@ -84,5 +89,46 @@ public class CoordinatorUtils {
       LOG.error("Fail to get filesystem of {}", path);
       throw e;
     }
+  }
+
+  public static Map<String, Map<String, String>> extractRemoteStorageConf(String confString) {
+    Map<String, Map<String, String>> res = Maps.newHashMap();
+    if (StringUtils.isEmpty(confString)) {
+      return res;
+    }
+
+    String[] clusterConfItems = confString.split(Constants.SEMICOLON_SPLIT_CHAR);
+    String msg = "Cluster specific conf[{}] format[cluster,k1=v1;...] is wrong.";
+    if (ArrayUtils.isEmpty(clusterConfItems)) {
+      LOG.warn(msg, confString);
+      return res;
+    }
+
+    for (String s : clusterConfItems) {
+      String[] item = s.split(Constants.COMMA_SPLIT_CHAR);
+      if (ArrayUtils.isEmpty(item) || item.length < 2) {
+        LOG.warn(msg, s);
+        return Maps.newHashMap();
+      }
+
+      String clusterId = item[0];
+      Map<String, String> curClusterConf = Maps.newHashMap();
+      for (int i = 1; i < item.length; ++i) {
+        String[] kv = item[i].split(Constants.EQUAL_SPLIT_CHAR);
+        if (ArrayUtils.isEmpty(item) || kv.length != 2) {
+          LOG.warn(msg, s);
+          return Maps.newHashMap();
+        }
+        String key = kv[0].trim();
+        String value = kv[1].trim();
+        if (StringUtils.isEmpty((key)) || StringUtils.isEmpty(value)) {
+          LOG.warn("This cluster conf[{}] format is wrong[k=v]", s);
+          return Maps.newHashMap();
+        }
+        curClusterConf.put(key, value);
+      }
+      res.put(clusterId, curClusterConf);
+    }
+    return res;
   }
 }

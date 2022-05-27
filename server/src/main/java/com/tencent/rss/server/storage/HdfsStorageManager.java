@@ -27,6 +27,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.server.Checker;
 import com.tencent.rss.server.ShuffleDataFlushEvent;
 import com.tencent.rss.server.ShuffleDataReadEvent;
@@ -70,11 +71,11 @@ public class HdfsStorageManager extends SingleStorageManager {
 
   @Override
   public void removeResources(String appId, Set<Integer> shuffleSet) {
-    Storage storage = getStorageByAppId(appId);
+    HdfsStorage storage = getStorageByAppId(appId);
     storage.removeHandlers(appId);
     appIdToStorages.remove(appId);
     ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
-        .createShuffleDeleteHandler(new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), hadoopConf));
+        .createShuffleDeleteHandler(new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), storage.getConf()));
     deleteHandler.delete(new String[] {storage.getStoragePath()}, appId);
   }
 
@@ -84,9 +85,17 @@ public class HdfsStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void registerRemoteStorage(String appId, String remoteStorage) {
+  public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo) {
+    String remoteStorage = remoteStorageInfo.getPath();
+    Map<String, String> remoteStorageConf = remoteStorageInfo.getConfItems();
     if (!pathToStorages.containsKey(remoteStorage)) {
-      pathToStorages.putIfAbsent(remoteStorage, new HdfsStorage(remoteStorage, hadoopConf));
+      Configuration remoteStorageHadoopConf = new Configuration(hadoopConf);
+      if (remoteStorageConf != null && remoteStorageConf.size() > 0) {
+        for (Map.Entry<String, String> entry : remoteStorageConf.entrySet()) {
+          remoteStorageHadoopConf.setStrings(entry.getKey(), entry.getValue());
+        }
+      }
+      pathToStorages.putIfAbsent(remoteStorage, new HdfsStorage(remoteStorage, remoteStorageHadoopConf));
       // registerRemoteStorage may be called in different threads,
       // make sure metrics won't be created duplicated
       // there shouldn't have performance issue because
@@ -97,7 +106,7 @@ public class HdfsStorageManager extends SingleStorageManager {
     appIdToStorages.putIfAbsent(appId, pathToStorages.get(remoteStorage));
   }
 
-  private Storage getStorageByAppId(String appId) {
+  private HdfsStorage getStorageByAppId(String appId) {
     if (!appIdToStorages.containsKey(appId)) {
       String msg = "Can't find HDFS storage for appId[" + appId + "]";
       LOG.error(msg);
@@ -109,5 +118,10 @@ public class HdfsStorageManager extends SingleStorageManager {
   @VisibleForTesting
   public Map<String, HdfsStorage> getAppIdToStorages() {
     return appIdToStorages;
+  }
+
+  @VisibleForTesting
+  public Map<String, HdfsStorage> getPathToStorages() {
+    return pathToStorages;
   }
 }

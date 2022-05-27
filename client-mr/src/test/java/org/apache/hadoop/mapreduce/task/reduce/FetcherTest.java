@@ -33,6 +33,7 @@ import com.google.common.collect.Sets;
 import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.client.response.SendShuffleDataResult;
 import com.tencent.rss.common.PartitionRange;
+import com.tencent.rss.common.RemoteStorageInfo;
 import com.tencent.rss.common.RssShuffleUtils;
 import com.tencent.rss.common.ShuffleAssignmentsInfo;
 import com.tencent.rss.common.ShuffleBlockInfo;
@@ -280,7 +281,7 @@ public class FetcherTest {
         String appId,
         int shuffleId,
         List<PartitionRange> partitionRanges,
-        String storageType) {
+        RemoteStorageInfo storageType) {
 
     }
 
@@ -300,7 +301,7 @@ public class FetcherTest {
     }
 
     @Override
-    public String fetchRemoteStorage(String appId) {
+    public RemoteStorageInfo fetchRemoteStorage(String appId) {
       return null;
     }
 
