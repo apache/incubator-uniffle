@@ -58,7 +58,10 @@ jobs:
       matrix:
         profile:
           - spark2
+          - spark2.3
+          - spark3.0
           - spark3
+          - spark3.2
           - mr
       fail-fast: false
     steps:
