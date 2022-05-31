@@ -137,5 +137,17 @@ public class GetReaderTest extends IntegrationTestBase {
     commonHadoopConf = jsc2.hadoopConfiguration();
     assertNull(commonHadoopConf.get("k1"));
     assertNull(commonHadoopConf.get("k2"));
+
+    // mock the scenario that get reader in an executor
+    rssShuffleManager.setRemoteStorage(null);
+    rssShuffleReader = (RssShuffleReader) rssShuffleManager.getReader(
+        rssShuffleHandle, 0, 0, mockTaskContextImpl);
+    hadoopConf =  rssShuffleReader.getHadoopConf();
+    assertEquals("v1", hadoopConf.get("k1"));
+    assertEquals("v2", hadoopConf.get("k2"));
+    // hadoop conf of reader and spark context should be isolated
+    commonHadoopConf = jsc2.hadoopConfiguration();
+    assertNull(commonHadoopConf.get("k1"));
+    assertNull(commonHadoopConf.get("k2"));
   }
 }

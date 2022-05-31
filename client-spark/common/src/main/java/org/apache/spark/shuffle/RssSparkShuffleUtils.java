@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.client.api.CoordinatorClient;
 import com.tencent.rss.client.factory.CoordinatorClientFactory;
+import com.tencent.rss.common.RemoteStorageInfo;
 
 public class RssSparkShuffleUtils {
 
@@ -110,5 +111,17 @@ public class RssSparkShuffleUtils {
       LOG.error(msg);
       throw new IllegalArgumentException(msg);
     }
+  }
+
+  public static Configuration getRemoteStorageHadoopConf(
+      SparkConf sparkConf, RemoteStorageInfo remoteStorageInfo) {
+    Configuration readerHadoopConf = RssSparkShuffleUtils.newHadoopConfiguration(sparkConf);
+    final Map<String, String> shuffleRemoteStorageConf = remoteStorageInfo.getConfItems();
+    if (shuffleRemoteStorageConf != null && !shuffleRemoteStorageConf.isEmpty()) {
+      for (Map.Entry<String, String> entry : shuffleRemoteStorageConf.entrySet()) {
+        readerHadoopConf.set(entry.getKey(), entry.getValue());
+      }
+    }
+    return readerHadoopConf;
   }
 }

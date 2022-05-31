@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.ArrayUtils;
@@ -115,6 +116,19 @@ public class RemoteStorageInfo implements Serializable {
     }
 
     return true;
+  }
+
+  @Override
+  public String toString() {
+    if (isEmpty()) {
+      return "Empty Remote Storage";
+    } else if (confItems == null) {
+      return String.join(Constants.COMMA_SPLIT_CHAR, path, "null conf");
+    } else if (confItems.isEmpty()) {
+      return String.join(Constants.COMMA_SPLIT_CHAR, path, "empty conf");
+    } else {
+      return String.join(Constants.COMMA_SPLIT_CHAR, path, Joiner.on(",").withKeyValueSeparator("=").join(confItems));
+    }
   }
 
   @Override
