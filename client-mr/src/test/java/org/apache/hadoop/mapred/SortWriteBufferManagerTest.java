@@ -41,6 +41,7 @@ import com.tencent.rss.common.ShuffleBlockInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.exception.RssException;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -76,7 +77,9 @@ public class SortWriteBufferManagerTest {
         1,
         100,
         1000,
-        true);
+        true,
+        5,
+        0.2f);
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
@@ -122,7 +125,9 @@ public class SortWriteBufferManagerTest {
         1,
         100,
         1000,
-        true);
+        true,
+        5,
+        0.2f);
     byte[] key = new byte[20];
     byte[] value = new byte[1024];
     random.nextBytes(key);
@@ -167,16 +172,34 @@ public class SortWriteBufferManagerTest {
         1,
         100,
         2000,
-        true);
+        true,
+        5,
+        0.2f);
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
       byte[] value = new byte[1024];
       random.nextBytes(key);
       random.nextBytes(value);
-      manager.addRecord(1, new BytesWritable(key), new BytesWritable(value));
+      int partitionId = random.nextInt(50);
+      manager.addRecord(partitionId, new BytesWritable(key), new BytesWritable(value));
     }
     manager.waitSendFinished();
+    assertTrue(manager.getWaitSendBuffers().isEmpty());
+    for (int i = 0; i < 14; i++) {
+      byte[] key = new byte[20];
+      byte[] value = new byte[i * 100];
+      random.nextBytes(key);
+      random.nextBytes(value);
+      manager.addRecord(i, new BytesWritable(key), new BytesWritable(value));
+    }
+    assertEquals(4, manager.getWaitSendBuffers().size());
+    for (int i = 0; i < 4; i++) {
+      int dataLength = manager.getWaitSendBuffers().get(i).getDataLength();
+      assertEquals((3 - i) * 100 + 28, dataLength);
+    }
+    manager.waitSendFinished();
+    assertTrue(manager.getWaitSendBuffers().isEmpty());
   }
 
   class MockShuffleWriteClient implements ShuffleWriteClient {

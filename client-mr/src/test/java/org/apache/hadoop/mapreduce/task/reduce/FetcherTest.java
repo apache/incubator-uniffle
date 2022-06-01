@@ -216,7 +216,9 @@ public class FetcherTest {
       1,
       100,
       2000,
-      true);
+      true,
+        5,
+        0.2f);
 
     for (String key : keysToValues.keySet()) {
       String value = keysToValues.get(key);

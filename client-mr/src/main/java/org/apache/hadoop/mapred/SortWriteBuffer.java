@@ -37,7 +37,6 @@ public class SortWriteBuffer<K, V> extends OutputStream  {
   private final List<WrappedBuffer> buffers = Lists.newArrayList();
   private final List<Record<K>> records = Lists.newArrayList();
   private int dataLength = 0;
-  private int totalKeyLength = 0;
   private long sortTime = 0;
   private final RawComparator<K> comparator;
   private long maxSegmentSize;
@@ -136,7 +135,7 @@ public class SortWriteBuffer<K, V> extends OutputStream  {
 
   private boolean compact(int lastIndex, int lastOffset, int dataLength) {
     if (lastIndex != currentIndex) {
-      LOG.info("compact lastIndex {}, currentIndex {}, lastOffset {} currentOffset {} dataLength {}",
+      LOG.debug("compact lastIndex {}, currentIndex {}, lastOffset {} currentOffset {} dataLength {}",
           lastIndex, currentIndex, lastOffset, currentOffset, dataLength);
       WrappedBuffer buffer = new WrappedBuffer(lastOffset + dataLength);
       // copy data
@@ -192,10 +191,6 @@ public class SortWriteBuffer<K, V> extends OutputStream  {
 
   public int getDataLength() {
     return dataLength;
-  }
-
-  public int getTotalKeyLength() {
-    return totalKeyLength;
   }
 
   public long getCopyTime() {

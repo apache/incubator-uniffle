@@ -49,6 +49,8 @@ public class RssClientConfig {
   public static final String RSS_REMOTE_STORAGE_PATH = "rss.remote.storage.path";
   public static final String RSS_INDEX_READ_LIMIT = "rss.index.read.limit";
   public static final int RSS_INDEX_READ_LIMIT_DEFAULT_VALUE = 500;
+  public static final String RSS_CLIENT_SEND_THREAD_NUM = "rss.client.send.thread.num";
+  public static final int RSS_CLIENT_DEFAULT_SEND_NUM = 5;
   public static String RSS_CLIENT_READ_BUFFER_SIZE = "rss.client.read.buffer.size";
   // When the size of read buffer reaches the half of JVM region (i.e., 32m),
   // it will incur humongous allocation, so we set it to 14m.

@@ -52,6 +52,12 @@ public class RssMRConfig {
       RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE;
   public static final String RSS_DATA_REPLICA_SKIP_ENABLED =
       MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_SKIP_ENABLED;
+  public static final String RSS_CLIENT_SEND_THREAD_NUM =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_SEND_THREAD_NUM;
+  public static final int RSS_CLIENT_DEFAULT_SEND_THREAD_NUM =
+      RssClientConfig.RSS_CLIENT_DEFAULT_SEND_NUM;
+  public static final String RSS_CLIENT_SEND_THRESHOLD = MR_RSS_CONFIG_PREFIX + "rss.client.send.threshold";
+  public static final double RSS_CLIENT_DEFAULT_SEND_THRESHOLD = 0.2f;
   public static boolean RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE =
       RssClientConfig.RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE;
   public static final String RSS_HEARTBEAT_INTERVAL =
