@@ -220,9 +220,12 @@ public class RssFetcher<K,V> {
     String statusString = copyBlockCount + " / " + copyBlockCount + " copied.";
     status.setStateString(statusString);
 
+    if (copyTime == 0) {
+      copyTime = 1;
+    }
     double bytesPerMillis = (double) unCompressionLength / copyTime;
     double transferRate = bytesPerMillis * BYTES_PER_MILLIS_TO_MBS;
-    progress.setStatus("copy(" + copyBlockCount + " of " + copyBlockCount + " at "
+    progress.setStatus("copy(" + copyBlockCount + " of " + totalBlockCount + " at "
       + mbpsFormat.format(transferRate) + " MB/s)");
   }
 
