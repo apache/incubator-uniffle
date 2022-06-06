@@ -144,6 +144,8 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
       if (!prop.contains("classes") && !prop.contains("grpc") && !prop.contains("rss-")
         && !prop.contains("shuffle-storage")) {
         newProps = newProps + ":" + prop;
+      } else if (prop.contains("mr") && prop.contains("integration-test")) {
+        newProps = newProps + ":" + prop;
       }
     }
     System.setProperty("java.class.path", newProps);

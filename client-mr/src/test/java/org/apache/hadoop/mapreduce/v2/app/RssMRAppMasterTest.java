@@ -42,6 +42,8 @@ public class RssMRAppMasterTest {
     assertTrue(file.exists());
     JobConf newJobConf = new JobConf(new Path(MRJobConfig.JOB_CONF_FILE));
     assertEquals("B", newJobConf.get("A"));
+    File testFile = new File("test");
+    testFile.deleteOnExit();
     file.deleteOnExit();
   }
 }

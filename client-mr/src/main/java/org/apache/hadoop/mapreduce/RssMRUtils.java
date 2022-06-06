@@ -44,23 +44,33 @@ public class RssMRUtils {
   private static long MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
 
   // Class TaskAttemptId have two field id and mapId, rss taskAttemptID have 21 bits,
-  // mapId is 19 bits, id is 2 bits.
-  public static long convertTaskAttemptIdToLong(TaskAttemptID taskAttemptID) {
+  // mapId is 19 bits, id is 2 bits. MR have a trick logic, taskAttemptId will increase
+  // 1000 * (appAttemptId - 1), so we will decrease it.
+  public static long convertTaskAttemptIdToLong(TaskAttemptID taskAttemptID, int appAttemptId) {
     long lowBytes = taskAttemptID.getTaskID().getId();
     if (lowBytes > MAX_TASK_ID) {
       throw new RssException("TaskAttempt " + taskAttemptID + " low bytes " + lowBytes + " exceed");
     }
-    long highBytes = (long)taskAttemptID.getId();
-    if (highBytes > MAX_ATTEMPT_ID) {
+    if (appAttemptId < 1) {
+      throw new RssException("appAttemptId " + appAttemptId + " is wrong");
+    }
+    long highBytes = (long)taskAttemptID.getId() - (appAttemptId - 1) * 1000;
+    if (highBytes > MAX_ATTEMPT_ID || highBytes < 0) {
       throw new RssException("TaskAttempt " + taskAttemptID + " high bytes " + highBytes + " exceed");
     }
     return (highBytes << MAX_TASK_LENGTH) + lowBytes;
   }
 
-  public static TaskAttemptID createMRTaskAttemptId(JobID jobID, TaskType taskType,
-                                                    long rssTaskAttemptId) {
+  public static TaskAttemptID createMRTaskAttemptId(
+      JobID jobID,
+      TaskType taskType,
+      long rssTaskAttemptId,
+      int appAttemptId) {
+    if (appAttemptId < 1) {
+      throw new RssException("appAttemptId " + appAttemptId + " is wrong");
+    }
     TaskID taskID = new TaskID(jobID, taskType, (int)(rssTaskAttemptId & MAX_TASK_ID));
-    return new TaskAttemptID(taskID, (int)(rssTaskAttemptId >> MAX_TASK_LENGTH));
+    return new TaskAttemptID(taskID, (int)(rssTaskAttemptId >> MAX_TASK_LENGTH) + 1000 * (appAttemptId - 1));
   }
 
   public static ShuffleWriteClient createShuffleClient(JobConf jobConf) {

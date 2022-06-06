@@ -80,6 +80,7 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
   private int indexReadLimit;
   private int readBufferSize;
   private RemoteStorageInfo remoteStorageInfo;
+  private int appAttemptId;
 
   @Override
   public void init(ShuffleConsumerPlugin.Context context) {
@@ -88,6 +89,8 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
 
     this.reduceId = context.getReduceId();
     this.jobConf = context.getJobConf();
+    jobConf.addResource(RssMRConfig.RSS_CONF_FILE);
+
     this.umbilical = context.getUmbilical();
     this.reporter = context.getReporter();
     this.metrics = new ShuffleClientMetrics(reduceId, jobConf);
@@ -98,6 +101,7 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
 
     // rss init
     this.appId = RssMRUtils.getApplicationAttemptId().toString();
+    this.appAttemptId = RssMRUtils.getApplicationAttemptId().getAttemptId();
     this.storageType = jobConf.get(RssMRConfig.RSS_STORAGE_TYPE);
     this.replicaWrite = jobConf.getInt(RssMRConfig.RSS_DATA_REPLICA_WRITE,
       RssMRConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE);
@@ -149,7 +153,7 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
 
     // get map-completion events to generate RSS taskIDs
     final RssEventFetcher<K,V> eventFetcher =
-      new RssEventFetcher<K,V>(reduceId, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
+      new RssEventFetcher<K,V>(appAttemptId, reduceId, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
     Roaring64NavigableMap taskIdBitmap = eventFetcher.fetchAllRssTaskIds();
 
     LOG.info("In reduce: " + reduceId

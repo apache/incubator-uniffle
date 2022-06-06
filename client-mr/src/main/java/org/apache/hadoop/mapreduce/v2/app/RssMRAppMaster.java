@@ -20,8 +20,6 @@ package org.apache.hadoop.mapreduce.v2.app;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -31,10 +29,10 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -62,6 +60,7 @@ public class RssMRAppMaster {
 
   public static void main(String[] args) {
 
+
     JobConf conf = new JobConf(new Path(MRJobConfig.JOB_CONF_FILE));
     int numReduceTasks = conf.getInt(MRJobConfig.NUM_REDUCES, 0);
     if (numReduceTasks > 0) {
@@ -77,6 +76,7 @@ public class RssMRAppMaster {
       ShuffleAssignmentsInfo response = client.getShuffleAssignments(
           appId, 0, numReduceTasks,
           1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+
       Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges = response.getServerToPartitionRanges();
       final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
           new ThreadFactory() {
@@ -108,6 +108,21 @@ public class RssMRAppMaster {
           heartbeatInterval,
           TimeUnit.MILLISECONDS);
 
+      JobConf extraConf = new JobConf();
+      extraConf.clear();
+      // write shuffle worker assignments to submit work directory
+      // format is as below:
+      // mapreduce.rss.assignment.partition.1:server1,server2
+      // mapreduce.rss.assignment.partition.2:server3,server4
+      // ...
+      response.getPartitionToServers().entrySet().forEach(entry -> {
+        List<String> servers = Lists.newArrayList();
+        for (ShuffleServerInfo server : entry.getValue()) {
+          servers.add(server.getHost() + ":" + server.getPort());
+        }
+        extraConf.set(RssMRConfig.RSS_ASSIGNMENT_PREFIX + entry.getKey(), StringUtils.join(servers, ","));
+      });
+
       // get remote storage from coordinator if necessary
       boolean dynamicConfEnabled = conf.getBoolean(RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
           RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
@@ -117,16 +132,17 @@ public class RssMRAppMaster {
         Map<String, String> clusterClientConf = client.fetchClientConf(
             conf.getInt(RssMRConfig.RSS_ACCESS_TIMEOUT_MS,
                 RssMRConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
-        RssMRUtils.applyDynamicClientConf(conf, clusterClientConf);
+        RssMRUtils.applyDynamicClientConf(extraConf, clusterClientConf);
       }
+
       String storageType = conf.get(RssMRConfig.RSS_STORAGE_TYPE);
       RemoteStorageInfo defaultRemoteStorage =
           new RemoteStorageInfo(conf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH, ""));
       RemoteStorageInfo remoteStorage = ClientUtils.fetchRemoteStorage(
         appId, defaultRemoteStorage, dynamicConfEnabled, storageType, client);
       // set the remote storage with actual value
-      conf.set(RssMRConfig.RSS_REMOTE_STORAGE_PATH, remoteStorage.getPath());
-      conf.set(RssMRConfig.RSS_REMOTE_STORAGE_CONF, remoteStorage.getConfString());
+      extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_PATH, remoteStorage.getPath());
+      extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_CONF, remoteStorage.getConfString());
 
       LOG.info("Start to register shuffle");
       long start = System.currentTimeMillis();
@@ -136,24 +152,14 @@ public class RssMRAppMaster {
       });
       LOG.info("Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
 
-      // write shuffle worker assignments to submit work directory
-      // format is as below:
-      // mapreduce.rss.assignment.partition.1:server1,server2
-      // mapreduce.rss.assignment.partition.2:server3,server4
-      // ...
-
-      response.getPartitionToServers().entrySet().forEach(entry -> {
-        List<String> servers = Lists.newArrayList();
-        for (ShuffleServerInfo server : entry.getValue()) {
-          servers.add(server.getHost() + ":" + server.getPort());
-        }
-        conf.set(RssMRConfig.RSS_ASSIGNMENT_PREFIX + entry.getKey(), StringUtils.join(servers, ","));
-      });
+      writeExtraConf(conf, extraConf);
 
       // close slow start
       conf.setFloat(MRJobConfig.COMPLETED_MAPS_FOR_REDUCE_SLOWSTART, 1.0f);
       LOG.warn("close slow start, because RSS does not support it yet");
 
+      // MapReduce don't set setKeepContainersAcrossApplicationAttempts in AppContext, there will be no container
+      // to be shared between attempts. Rss don't support shared container between attempts.
       conf.setBoolean(MRJobConfig.MR_AM_JOB_RECOVERY_ENABLE, false);
       LOG.warn("close recovery enable, because RSS doesn't support it yet");
 
@@ -162,11 +168,42 @@ public class RssMRAppMaster {
         throw new RuntimeException("jobDir is empty");
       }
       Path jobConfFile = new Path(jobDirStr, MRJobConfig.JOB_CONF_FILE);
+
       updateConf(conf, jobConfFile);
     }
     // remove org.apache.hadoop.mapreduce.v2.app.MRAppMaster
     ArrayUtils.remove(args, 0);
     MRAppMaster.main(args);
+  }
+
+  static void writeExtraConf(JobConf conf, JobConf extraConf) {
+    try {
+      FileSystem fs = new Cluster(conf).getFileSystem();
+      String jobDirStr = conf.get(MRJobConfig.MAPREDUCE_JOB_DIR);
+      Path assignmentFile = new Path(jobDirStr, RssMRConfig.RSS_CONF_FILE);
+
+      try (FSDataOutputStream out =
+               FileSystem.create(fs, assignmentFile,
+                   new FsPermission(JobSubmissionFiles.JOB_FILE_PERMISSION))) {
+        extraConf.writeXml(out);
+      }
+      FileStatus status = fs.getFileStatus(assignmentFile);
+      long currentTs = status.getModificationTime();
+      String uri = fs.getUri() + Path.SEPARATOR + assignmentFile.toUri();
+      String files = conf.get(MRJobConfig.CACHE_FILES);
+      conf.set(MRJobConfig.CACHE_FILES, files == null ? uri : uri + "," + files);
+      String ts = conf.get(MRJobConfig.CACHE_FILE_TIMESTAMPS);
+      conf.set(MRJobConfig.CACHE_FILE_TIMESTAMPS,
+          ts == null ? String.valueOf(currentTs) : currentTs + "," + ts);
+      String vis = conf.get(MRJobConfig.CACHE_FILE_VISIBILITIES);
+      conf.set(MRJobConfig.CACHE_FILE_VISIBILITIES, vis == null ? "false" : "false" + "," + vis);
+      long size = status.getLen();
+      String sizes = conf.get(MRJobConfig.CACHE_FILES_SIZES);
+      conf.set(MRJobConfig.CACHE_FILES_SIZES, sizes == null ? String.valueOf(size) : size + "," + sizes);
+    } catch (Exception e) {
+      LOG.error("Upload extra conf exception", e);
+      throw new RuntimeException("Upload extra conf exception ", e);
+    }
   }
 
   // After we modify some configurations, we should update configuration for Application
@@ -175,19 +212,13 @@ public class RssMRAppMaster {
   // We choose to delete it and override with the new configuration in the HDFS.
   static void updateConf(JobConf conf, Path jobConfFile) {
     try {
-      FileSystem fs = new Cluster(conf).getFileSystem();
-      fs.delete(jobConfFile, true);
-      try (FSDataOutputStream out =
-             FileSystem.create(fs, jobConfFile,
-                 new FsPermission(JobSubmissionFiles.JOB_FILE_PERMISSION))) {
+      File newFile = new File(MRJobConfig.JOB_CONF_FILE + ".bak");
+      try (FileOutputStream out = new FileOutputStream(newFile)) {
           conf.writeXml(out);
       }
       File file = new File(MRJobConfig.JOB_CONF_FILE);
       file.delete();
-      try (InputStream input = fs.open(jobConfFile);
-           OutputStream output = new FileOutputStream(file)) {
-        IOUtils.copy(input, output);
-      }
+      newFile.renameTo(file);
     } catch (Exception e) {
       LOG.error("Modify job conf exception", e);
       throw new RuntimeException("Modify job conf exception ", e);

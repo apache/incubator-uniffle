@@ -47,16 +47,20 @@ public class RssEventFetcher<K,V> {
   private List<TaskAttemptID> obsoleteMaps = new LinkedList<>();
   private int tipFailedCount = 0;
   private final int totalMapsCount;
+  private final int appAttemptId;
 
-  public RssEventFetcher(TaskAttemptID reduce,
-                         TaskUmbilicalProtocol umbilical,
-                         JobConf jobConf,
-                         int maxEventsToFetch) {
+  public RssEventFetcher(
+      int appAttemptId,
+      TaskAttemptID reduce,
+      TaskUmbilicalProtocol umbilical,
+      JobConf jobConf,
+      int maxEventsToFetch) {
     this.jobConf = jobConf;
     this.totalMapsCount = jobConf.getNumMapTasks();
     this.reduce = reduce;
     this.umbilical = umbilical;
     this.maxEventsToFetch = maxEventsToFetch;
+    this.appAttemptId = appAttemptId;
   }
 
   public Roaring64NavigableMap fetchAllRssTaskIds() {
@@ -73,11 +77,11 @@ public class RssEventFetcher<K,V> {
     String errMsg = "TaskAttemptIDs are inconsistent with map tasks";
     for (TaskAttemptID taskAttemptID: successMaps) {
       if (!obsoleteMaps.contains(taskAttemptID)) {
+        long rssTaskId = RssMRUtils.convertTaskAttemptIdToLong(taskAttemptID, appAttemptId);
         int mapIndex = taskAttemptID.getTaskID().getId();
         // There can be multiple successful attempts on same map task.
         // So we only need to accept one of them.
         if (!mapIndexBitmap.contains(mapIndex)) {
-          long rssTaskId = RssMRUtils.convertTaskAttemptIdToLong(taskAttemptID);
           taskIdBitmap.addLong(rssTaskId);
           if (mapIndex < totalMapsCount) {
             mapIndexBitmap.addLong(mapIndex);
