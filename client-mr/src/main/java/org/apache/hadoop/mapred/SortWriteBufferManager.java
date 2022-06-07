@@ -166,7 +166,7 @@ public class SortWriteBufferManager<K, V> {
     if (length > maxMemSize) {
       throw new RssException("record is too big");
     }
-    LOG.info("memoryUsedSize {} increase {}", memoryUsedSize, length);
+    LOG.debug("memoryUsedSize {} increase {}", memoryUsedSize, length);
     memoryUsedSize.addAndGet(length);
     if (memoryUsedSize.get() > maxMemSize * memoryThreshold
       && inSendListBytes.get() <= maxMemSize * sendThreshold) {
@@ -223,7 +223,7 @@ public class SortWriteBufferManager<K, V> {
         } finally {
           try {
             memoryLock.lock();
-            LOG.info("memoryUsedSize {} decrease {}", memoryUsedSize, size);
+            LOG.debug("memoryUsedSize {} decrease {}", memoryUsedSize, size);
             memoryUsedSize.addAndGet(-size);
             inSendListBytes.addAndGet(-size);
             full.signalAll();

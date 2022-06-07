@@ -145,4 +145,24 @@ public class RssMRUtils {
       }
     }
   }
+
+  public static int getInt(JobConf rssJobConf, JobConf mrJobCOnf, String key, int defaultValue) {
+    return rssJobConf.getInt(key,  mrJobCOnf.getInt(key, defaultValue));
+  }
+
+  public static long getLong(JobConf rssJobConf, JobConf mrJobConf, String key, long defaultValue) {
+    return rssJobConf.getLong(key, mrJobConf.getLong(key, defaultValue));
+  }
+
+  public static double getDouble(JobConf rssJobConf, JobConf mrJobConf, String key, double defaultValue) {
+    return rssJobConf.getDouble(key, mrJobConf.getDouble(key, defaultValue));
+  }
+
+  public static String getString(JobConf rssJobConf, JobConf mrJobConf, String key) {
+    return rssJobConf.get(key, mrJobConf.get(key));
+  }
+
+  public static String getString(JobConf rssJobConf, JobConf mrJobConf, String key, String defaultValue) {
+    return rssJobConf.get(key, mrJobConf.get(key, defaultValue));
+  }
 }
