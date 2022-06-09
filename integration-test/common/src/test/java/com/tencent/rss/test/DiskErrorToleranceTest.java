@@ -29,6 +29,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.tencent.rss.client.util.DefaultIdHelper;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -110,7 +111,7 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     shuffleServerClient.finishShuffle(rf1);
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(),
         appId, 0, 0, 100, 1, 10, 1000, null,
-        blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1), shuffleServerInfo, conf);
+        blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1), shuffleServerInfo, conf, new DefaultIdHelper());
     validateResult(readClient, expectedData);
 
     File shuffleData = new File(data2, appId);
@@ -138,7 +139,7 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
 
     readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(),
         appId, 0, 0, 100, 1, 10, 1000, null,
-        blockIdBitmap2, Roaring64NavigableMap.bitmapOf(2), shuffleServerInfo, conf);
+        blockIdBitmap2, Roaring64NavigableMap.bitmapOf(2), shuffleServerInfo, conf, new DefaultIdHelper());
     validateResult(readClient, expectedData);
     shuffleData = new File(data1, appId);
     assertTrue(shuffleData.exists());

@@ -26,6 +26,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
+import com.tencent.rss.client.util.DefaultIdHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -226,7 +227,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
 
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(), testAppId, 0, 0, 100, 1,
         10, 1000, "", blockIdBitmap, taskIdBitmap,
-        Lists.newArrayList(shuffleServerInfo1, shuffleServerInfo2), null);
+        Lists.newArrayList(shuffleServerInfo1, shuffleServerInfo2), null, new DefaultIdHelper());
 
     try {
       readClient.readShuffleBlockData();
@@ -242,7 +243,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     assertTrue(commitResult);
     readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(), testAppId, 0, 0, 100, 1,
         10, 1000, "", blockIdBitmap, taskIdBitmap,
-        Lists.newArrayList(shuffleServerInfo1, shuffleServerInfo2), null);
+        Lists.newArrayList(shuffleServerInfo1, shuffleServerInfo2), null, new DefaultIdHelper());
     validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
     readClient.close();

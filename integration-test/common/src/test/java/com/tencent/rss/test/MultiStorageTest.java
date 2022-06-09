@@ -30,6 +30,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.tencent.rss.client.util.DefaultIdHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -222,22 +223,22 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
 
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
         appId, 0, 0, 100, 1, 10, 1000, REMOTE_STORAGE,
-        blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1), Lists.newArrayList(), conf);
+        blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1), Lists.newArrayList(), conf, new DefaultIdHelper());
     validateResult(readClient, expectedData, blockIdBitmap1);
 
     readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
         appId, 0, 1, 100, 1, 10, 1000, REMOTE_STORAGE,
-        blockIdBitmap2, Roaring64NavigableMap.bitmapOf(1), Lists.newArrayList(), conf);
+        blockIdBitmap2, Roaring64NavigableMap.bitmapOf(1), Lists.newArrayList(), conf, new DefaultIdHelper());
     validateResult(readClient, expectedData, blockIdBitmap2);
 
     readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
         appId, 0, 2, 100, 1, 10, 1000, REMOTE_STORAGE,
-        blockIdBitmap3, Roaring64NavigableMap.bitmapOf(2), Lists.newArrayList(), conf);
+        blockIdBitmap3, Roaring64NavigableMap.bitmapOf(2), Lists.newArrayList(), conf, new DefaultIdHelper());
     validateResult(readClient, expectedData, blockIdBitmap3);
 
     readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
         appId, 0, 4, 100, 1, 10, 1000, REMOTE_STORAGE,
-        blockIdBitmap4, Roaring64NavigableMap.bitmapOf(3), Lists.newArrayList(), conf);
+        blockIdBitmap4, Roaring64NavigableMap.bitmapOf(3), Lists.newArrayList(), conf, new DefaultIdHelper());
     validateResult(readClient, expectedData, blockIdBitmap4);
   }
 
@@ -368,7 +369,7 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
         appId, 0, 0, 100, 1, 10, 1000, REMOTE_STORAGE,
         blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1),
-        Lists.newArrayList(new ShuffleServerInfo("test", LOCALHOST, SHUFFLE_SERVER_PORT)), conf);
+        Lists.newArrayList(new ShuffleServerInfo("test", LOCALHOST, SHUFFLE_SERVER_PORT)), conf, new DefaultIdHelper());
 
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();
     Roaring64NavigableMap matched = Roaring64NavigableMap.bitmapOf();
@@ -468,7 +469,7 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
         appId, 0, 0, 100, 1, 10, 1000, REMOTE_STORAGE,
         blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1, 2),
-        Lists.newArrayList(new ShuffleServerInfo("test", LOCALHOST, SHUFFLE_SERVER_PORT)), conf);
+        Lists.newArrayList(new ShuffleServerInfo("test", LOCALHOST, SHUFFLE_SERVER_PORT)), conf, new DefaultIdHelper());
 
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();
     Roaring64NavigableMap matched = Roaring64NavigableMap.bitmapOf();
@@ -666,7 +667,7 @@ public class MultiStorageTest extends ShuffleReadWriteBase {
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS_2.name(),
         appId, 2, 0, 100, 1, 10, 1000, REMOTE_STORAGE,
         blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1),
-        Lists.newArrayList(new ShuffleServerInfo("test", LOCALHOST, SHUFFLE_SERVER_PORT)), conf);
+        Lists.newArrayList(new ShuffleServerInfo("test", LOCALHOST, SHUFFLE_SERVER_PORT)), conf, new DefaultIdHelper());
     validateResult(readClient, expectedData, blockIdBitmap1);
     try {
       sendSinglePartitionToShuffleServer(appId, 3, 1,2, blocks2);

@@ -23,6 +23,8 @@ import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import com.tencent.rss.client.util.DefaultIdHelper;
+import com.tencent.rss.client.util.IdHelper;
 import com.tencent.rss.common.ShuffleServerInfo;
 
 public class CreateShuffleReadClientRequest {
@@ -40,11 +42,42 @@ public class CreateShuffleReadClientRequest {
   private Roaring64NavigableMap taskIdBitmap;
   private List<ShuffleServerInfo> shuffleServerInfoList;
   private Configuration hadoopConf;
+  private IdHelper idHelper;
 
-  public CreateShuffleReadClientRequest(String appId, int shuffleId, int partitionId, String storageType,
-      String basePath, int indexReadLimit, int readBufferSize, int partitionNumPerRange,
-      int partitionNum, Roaring64NavigableMap blockIdBitmap, Roaring64NavigableMap taskIdBitmap,
-      List<ShuffleServerInfo> shuffleServerInfoList, Configuration hadoopConf) {
+  public CreateShuffleReadClientRequest(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      String storageType,
+      String basePath,
+      int indexReadLimit,
+      int readBufferSize,
+      int partitionNumPerRange,
+      int partitionNum,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap taskIdBitmap,
+      List<ShuffleServerInfo> shuffleServerInfoList,
+      Configuration hadoopConf) {
+    this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
+        partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
+        hadoopConf, new DefaultIdHelper());
+  }
+
+  public CreateShuffleReadClientRequest(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      String storageType,
+      String basePath,
+      int indexReadLimit,
+      int readBufferSize,
+      int partitionNumPerRange,
+      int partitionNum,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap taskIdBitmap,
+      List<ShuffleServerInfo> shuffleServerInfoList,
+      Configuration hadoopConf,
+      IdHelper idHelper) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -58,6 +91,7 @@ public class CreateShuffleReadClientRequest {
     this.taskIdBitmap = taskIdBitmap;
     this.shuffleServerInfoList = shuffleServerInfoList;
     this.hadoopConf = hadoopConf;
+    this.idHelper = idHelper;
   }
 
   public String getAppId() {
@@ -110,5 +144,9 @@ public class CreateShuffleReadClientRequest {
 
   public Configuration getHadoopConf() {
     return hadoopConf;
+  }
+
+  public IdHelper getIdHelper() {
+    return idHelper;
   }
 }

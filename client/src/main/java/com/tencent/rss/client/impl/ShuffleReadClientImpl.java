@@ -34,12 +34,12 @@ import org.slf4j.LoggerFactory;
 
 import com.tencent.rss.client.api.ShuffleReadClient;
 import com.tencent.rss.client.response.CompressedShuffleBlock;
+import com.tencent.rss.client.util.IdHelper;
 import com.tencent.rss.common.BufferSegment;
 import com.tencent.rss.common.ShuffleDataResult;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.exception.RssException;
 import com.tencent.rss.common.util.ChecksumUtils;
-import com.tencent.rss.common.util.Constants;
 import com.tencent.rss.common.util.RssUtils;
 import com.tencent.rss.storage.factory.ShuffleHandlerFactory;
 import com.tencent.rss.storage.handler.api.ClientReadHandler;
@@ -61,6 +61,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private AtomicLong copyTime = new AtomicLong(0);
   private AtomicLong crcCheckTime = new AtomicLong(0);
   private ClientReadHandler clientReadHandler;
+  private final IdHelper idHelper;
 
   public ShuffleReadClientImpl(
       String storageType,
@@ -75,11 +76,13 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       Roaring64NavigableMap blockIdBitmap,
       Roaring64NavigableMap taskIdBitmap,
       List<ShuffleServerInfo> shuffleServerInfoList,
-      Configuration hadoopConf) {
+      Configuration hadoopConf,
+      IdHelper idHelper) {
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.blockIdBitmap = blockIdBitmap;
     this.taskIdBitmap = taskIdBitmap;
+    this.idHelper = idHelper;
 
     CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
     request.setStorageType(storageType);
@@ -98,7 +101,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
 
     List<Long> removeBlockIds = Lists.newArrayList();
     blockIdBitmap.forEach(bid -> {
-      if (!taskIdBitmap.contains(bid & Constants.MAX_TASK_ATTEMPT_ID)) {
+      if (!taskIdBitmap.contains(idHelper.getTaskAttemptId(bid))) {
         removeBlockIds.add(bid);
       }
     });

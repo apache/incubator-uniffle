@@ -25,6 +25,7 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
+import com.tencent.rss.client.util.DefaultIdHelper;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -97,7 +98,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     blockIdBitmap.addLong((1 << Constants.TASK_ATTEMPT_ID_MAX_LENGTH));
     ShuffleReadClientImpl readClient;
     readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(), testAppId, 0, 0, 100, 1,
-        10, 1000, "", blockIdBitmap, taskIdBitmap, shuffleServerInfo, null);
+        10, 1000, "", blockIdBitmap, taskIdBitmap, shuffleServerInfo, null, new DefaultIdHelper());
     validateResult(readClient, expectedData);
     try {
       // can't find all expected block id, data loss
@@ -128,7 +129,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
 
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(),
         testAppId, 0, 0, 100, 1, 10, 1000,
-        "", blockIdBitmap, taskIdBitmap, shuffleServerInfo, null);
+        "", blockIdBitmap, taskIdBitmap, shuffleServerInfo, null, new DefaultIdHelper());
 
     validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
@@ -149,7 +150,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
 
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(),
         testAppId, 0, 0, 100, 1, 10, 1000,
-        "", blockIdBitmap, taskIdBitmap, shuffleServerInfo, null);
+        "", blockIdBitmap, taskIdBitmap, shuffleServerInfo, null, new DefaultIdHelper());
     FileUtils.deleteDirectory(new File(DATA_DIR1.getAbsolutePath() + "/" + testAppId + "/0/0-0"));
     FileUtils.deleteDirectory(new File(DATA_DIR2.getAbsolutePath() + "/" + testAppId + "/0/0-0"));
     // sleep to wait delete operation
@@ -188,10 +189,10 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
 
     ShuffleReadClientImpl readClient1 = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(),
         testAppId, 0, 0, 100, 2, 10, 100,
-        "", blockIdBitmap1, taskIdBitmap, shuffleServerInfo, null);
+        "", blockIdBitmap1, taskIdBitmap, shuffleServerInfo, null, new DefaultIdHelper());
     ShuffleReadClientImpl readClient2 = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(),
         testAppId, 0, 1, 100, 2, 10, 100,
-        "", blockIdBitmap2, taskIdBitmap, shuffleServerInfo, null);
+        "", blockIdBitmap2, taskIdBitmap, shuffleServerInfo, null, new DefaultIdHelper());
     validateResult(readClient1, expectedData1);
     readClient1.checkProcessedBlockIds();
     readClient1.close();
@@ -207,7 +208,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(),
         testAppId, 0, 1, 100, 2, 10, 1000,
         "", Roaring64NavigableMap.bitmapOf(), Roaring64NavigableMap.bitmapOf(),
-        shuffleServerInfo, null);
+        shuffleServerInfo, null, new DefaultIdHelper());
     assertNull(readClient.readShuffleBlockData());
     readClient.checkProcessedBlockIds();
   }
@@ -232,7 +233,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
 
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(),
         testAppId, 0, 0, 100, 1, 10, 100,
-        "", wrongBlockIdBitmap, taskIdBitmap, shuffleServerInfo, null);
+        "", wrongBlockIdBitmap, taskIdBitmap, shuffleServerInfo, null, new DefaultIdHelper());
     assertNull(readClient.readShuffleBlockData());
     try {
       readClient.checkProcessedBlockIds();
@@ -265,7 +266,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
 
     // unexpected taskAttemptId should be filtered
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(), testAppId, 0, 0, 100, 1,
-        10, 1000, "", blockIdBitmap, taskIdBitmap, shuffleServerInfo, null);
+        10, 1000, "", blockIdBitmap, taskIdBitmap, shuffleServerInfo, null, new DefaultIdHelper());
 
     validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
@@ -299,7 +300,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
 
     // unexpected taskAttemptId should be filtered
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(), testAppId, 0, 0, 100, 1,
-        10, 1000, "", blockIdBitmap, taskIdBitmap, shuffleServerInfo, null);
+        10, 1000, "", blockIdBitmap, taskIdBitmap, shuffleServerInfo, null, new DefaultIdHelper());
 
     validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
@@ -326,7 +327,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     // test with un-changed expected blockId
     readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(), testAppId, 0, 0, 100, 1,
         10, 1000, "", beforeAdded, taskIdBitmap,
-        shuffleServerInfo, null);
+        shuffleServerInfo, null, new DefaultIdHelper());
     validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
     readClient.close();
@@ -334,7 +335,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     // test with changed expected blockId
     readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(), testAppId, 0, 0, 100, 1,
         10, 1000, "", blockIdBitmap, taskIdBitmap,
-        shuffleServerInfo, null);
+        shuffleServerInfo, null, new DefaultIdHelper());
     validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
     readClient.close();
@@ -364,7 +365,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     sendTestData(testAppId, blocks);
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(),
       testAppId, 0, 0, 100, 1, 10, 1000,
-      "", expectedBlockIds, taskIdBitmap, shuffleServerInfo, null);
+      "", expectedBlockIds, taskIdBitmap, shuffleServerInfo, null, new DefaultIdHelper());
 
     validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
@@ -414,7 +415,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
         blockIdBitmap,
         taskIdBitmap,
         shuffleServerInfo,
-        null);
+        null, new DefaultIdHelper());
     validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
     readClient.close();

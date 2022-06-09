@@ -34,21 +34,20 @@ import com.tencent.rss.client.api.ShuffleWriteClient;
 import com.tencent.rss.client.factory.ShuffleClientFactory;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.exception.RssException;
+import com.tencent.rss.common.util.Constants;
 
 public class RssMRUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssMRUtils.class);
-  private static int MAX_TASK_LENGTH = 19;
-  private static int MAX_ATTEMPT_LENGTH = 2;
-  private static long MAX_TASK_ID = (1 << MAX_TASK_LENGTH) - 1;
-  private static long MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
+  private static final int MAX_ATTEMPT_LENGTH = 6;
+  private static final long MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
 
   // Class TaskAttemptId have two field id and mapId, rss taskAttemptID have 21 bits,
   // mapId is 19 bits, id is 2 bits. MR have a trick logic, taskAttemptId will increase
   // 1000 * (appAttemptId - 1), so we will decrease it.
   public static long convertTaskAttemptIdToLong(TaskAttemptID taskAttemptID, int appAttemptId) {
     long lowBytes = taskAttemptID.getTaskID().getId();
-    if (lowBytes > MAX_TASK_ID) {
+    if (lowBytes > Constants.MAX_TASK_ATTEMPT_ID) {
       throw new RssException("TaskAttempt " + taskAttemptID + " low bytes " + lowBytes + " exceed");
     }
     if (appAttemptId < 1) {
@@ -58,7 +57,7 @@ public class RssMRUtils {
     if (highBytes > MAX_ATTEMPT_ID || highBytes < 0) {
       throw new RssException("TaskAttempt " + taskAttemptID + " high bytes " + highBytes + " exceed");
     }
-    return (highBytes << MAX_TASK_LENGTH) + lowBytes;
+    return (highBytes << (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH)) + lowBytes;
   }
 
   public static TaskAttemptID createMRTaskAttemptId(
@@ -69,8 +68,9 @@ public class RssMRUtils {
     if (appAttemptId < 1) {
       throw new RssException("appAttemptId " + appAttemptId + " is wrong");
     }
-    TaskID taskID = new TaskID(jobID, taskType, (int)(rssTaskAttemptId & MAX_TASK_ID));
-    return new TaskAttemptID(taskID, (int)(rssTaskAttemptId >> MAX_TASK_LENGTH) + 1000 * (appAttemptId - 1));
+    TaskID taskID = new TaskID(jobID, taskType, (int)(rssTaskAttemptId & Constants.MAX_TASK_ATTEMPT_ID));
+    return new TaskAttemptID(taskID, (int)(rssTaskAttemptId
+        >> (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH)) + 1000 * (appAttemptId - 1));
   }
 
   public static ShuffleWriteClient createShuffleClient(JobConf jobConf) {
@@ -164,5 +164,37 @@ public class RssMRUtils {
 
   public static String getString(JobConf rssJobConf, JobConf mrJobConf, String key, String defaultValue) {
     return rssJobConf.get(key, mrJobConf.get(key, defaultValue));
+  }
+
+  public static long getBlockId(int partitionId, long taskAttemptId, int nextSeqNo) {
+    long attemptId = taskAttemptId >> (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH);
+    if (attemptId < 0 || attemptId > MAX_ATTEMPT_ID) {
+      throw new RuntimeException("Can't support attemptId [" + attemptId
+          + "], the max value should be " + MAX_ATTEMPT_ID);
+    }
+    long  atomicInt = (nextSeqNo << MAX_ATTEMPT_LENGTH) + attemptId;
+    if (atomicInt < 0 || atomicInt > Constants.MAX_SEQUENCE_NO) {
+      throw new RuntimeException("Can't support sequence [" + atomicInt
+          + "], the max value should be " + Constants.MAX_SEQUENCE_NO);
+    }
+    if (partitionId < 0 || partitionId > Constants.MAX_PARTITION_ID) {
+      throw new RuntimeException("Can't support partitionId["
+          + partitionId + "], the max value should be " + Constants.MAX_PARTITION_ID);
+    }
+    long taskId = taskAttemptId - (attemptId
+        << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH));
+    if (taskId < 0 ||  taskId > Constants.MAX_TASK_ATTEMPT_ID) {
+      throw new RuntimeException("Can't support taskId["
+          + taskId + "], the max value should be " + Constants.MAX_TASK_ATTEMPT_ID);
+    }
+    return (atomicInt << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
+        + (partitionId << Constants.TASK_ATTEMPT_ID_MAX_LENGTH) + taskId;
+  }
+
+  public static long getTaskAttemptId(long blockId) {
+    long mapId = blockId & Constants.MAX_TASK_ATTEMPT_ID;
+    long attemptId = (blockId >> (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH))
+        & MAX_ATTEMPT_ID;
+    return (attemptId << (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH)) + mapId;
   }
 }
