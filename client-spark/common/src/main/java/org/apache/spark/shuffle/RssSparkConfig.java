@@ -31,7 +31,8 @@ public class RssSparkConfig {
       SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_PARTITION_NUM_PER_RANGE;
   public static final int RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE =
       RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE;
-  public static final String RSS_WRITER_BUFFER_SIZE = SPARK_RSS_CONFIG_PREFIX + "rss.writer.buffer.size";
+  public static final String RSS_WRITER_BUFFER_SIZE =
+      SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_WRITER_BUFFER_SIZE;
   public static final String RSS_WRITER_BUFFER_SIZE_DEFAULT_VALUE = "3m";
   public static final String RSS_WRITER_SERIALIZER_BUFFER_SIZE =
       SPARK_RSS_CONFIG_PREFIX + "rss.writer.serializer.buffer.size";

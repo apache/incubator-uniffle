@@ -43,7 +43,7 @@ public class RssClientConfig {
   public static final long RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE = 500;
   public static final String RSS_CLIENT_SEND_CHECK_TIMEOUT_MS = "rss.client.send.check.timeout.ms";
   public static final long RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE = 60 * 1000 * 10;
-
+  public static final String RSS_WRITER_BUFFER_SIZE = "rss.writer.buffer.size";
   public static final String RSS_PARTITION_NUM_PER_RANGE = "rss.partitionNum.per.range";
   public static final int RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE = 1;
   public static final String RSS_REMOTE_STORAGE_PATH = "rss.remote.storage.path";

@@ -80,6 +80,11 @@ public class SortWriteBuffer<K, V> extends OutputStream  {
     return keyLength + valueLength;
   }
 
+  public void clear() {
+    buffers.clear();
+    records.clear();
+  }
+
   public synchronized byte[] getData() {
     int extraSize = 0;
     for (Record<K> record : records) {

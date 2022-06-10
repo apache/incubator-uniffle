@@ -122,7 +122,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     }
     jobConf.set(MRJobConfig.MR_AM_COMMAND_OPTS, "-XX:+TraceClassLoading org.apache.hadoop.mapreduce.v2.app.RssMRAppMaster");
     jobConf.set(MRJobConfig.REDUCE_JAVA_OPTS, "-XX:+TraceClassLoading -XX:MaxDirectMemorySize=419430400");
-    jobConf.setInt(MRJobConfig.MAP_MEMORY_MB, 2048);
+    jobConf.setInt(MRJobConfig.MAP_MEMORY_MB, 500);
     jobConf.setInt(MRJobConfig.REDUCE_MEMORY_MB, 2048);
     jobConf.setInt(MRJobConfig.IO_SORT_MB, 128);
     jobConf.set(MRJobConfig.MAP_OUTPUT_COLLECTOR_CLASS_ATTR, "org.apache.hadoop.mapred.RssMapOutputCollector");

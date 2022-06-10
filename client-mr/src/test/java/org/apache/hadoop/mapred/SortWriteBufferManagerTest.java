@@ -79,7 +79,8 @@ public class SortWriteBufferManagerTest {
         1000,
         true,
         5,
-        0.2f);
+        0.2f,
+        1024000L);
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
@@ -127,7 +128,8 @@ public class SortWriteBufferManagerTest {
         1000,
         true,
         5,
-        0.2f);
+        0.2f,
+        1024000L);
     byte[] key = new byte[20];
     byte[] value = new byte[1024];
     random.nextBytes(key);
@@ -139,6 +141,53 @@ public class SortWriteBufferManagerTest {
       isException = true;
     }
     assertTrue(isException);
+  }
+
+  @Test
+  public void testOnePartition() throws Exception {
+    JobConf jobConf = new JobConf(new Configuration());
+    SerializationFactory serializationFactory = new SerializationFactory(jobConf);
+    MockShuffleWriteClient client = new MockShuffleWriteClient();
+    client.setMode(2);
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newConcurrentMap();
+    Set<Long> successBlocks = Sets.newConcurrentHashSet();
+    Set<Long> failedBlocks = Sets.newConcurrentHashSet();
+    Counters.Counter mapOutputByteCounter = new Counters.Counter();
+    Counters.Counter mapOutputRecordCounter = new Counters.Counter();
+    SortWriteBufferManager<BytesWritable, BytesWritable> manager = new SortWriteBufferManager(
+        10240,
+        1L,
+        10,
+        serializationFactory.getSerializer(BytesWritable.class),
+        serializationFactory.getSerializer(BytesWritable.class),
+        WritableComparator.get(BytesWritable.class),
+        0.9,
+        "test",
+        client,
+        500,
+        5 * 1000,
+        partitionToServers,
+        successBlocks,
+        failedBlocks,
+        mapOutputByteCounter,
+        mapOutputRecordCounter,
+        1,
+        100,
+        2000,
+        true,
+        5,
+        0.2f,
+        100L);
+    Random random = new Random();
+    for (int i = 0; i < 1000; i++) {
+      byte[] key = new byte[20];
+      byte[] value = new byte[1024];
+      random.nextBytes(key);
+      random.nextBytes(value);
+      int partitionId = random.nextInt(50);
+      manager.addRecord(partitionId, new BytesWritable(key), new BytesWritable(value));
+      assertTrue(manager.getWaitSendBuffers().isEmpty());
+    }
   }
 
   @Test
@@ -174,7 +223,8 @@ public class SortWriteBufferManagerTest {
         2000,
         true,
         5,
-        0.2f);
+        0.2f,
+        1024000L);
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];

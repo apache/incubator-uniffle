@@ -68,6 +68,13 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     partitions = mrJobConf.getNumReduceTasks();
     MapTask mapTask = context.getMapTask();
     JobConf rssJobConf = new JobConf(RssMRConfig.RSS_CONF_FILE);
+    double sortThreshold = RssMRUtils.getDouble(rssJobConf, mrJobConf, RssMRConfig.RSS_CLIENT_SORT_MEMORY_USE_THRESHOLD,
+        RssMRConfig.RSS_CLIENT_DEFAULT_SORT_MEMORY_USE_THRESHOLD);
+    if (sortThreshold <= 0 || Double.compare(sortThreshold, 1.0) > 0) {
+      throw new IOException(
+          "Invalid  sort memory use threshold : " + sortThreshold);
+    }
+
     int batch = RssMRUtils.getInt(rssJobConf, mrJobConf, RssMRConfig.RSS_CLIENT_BATCH_TRIGGER_NUM,
         RssMRConfig.RSS_CLIENT_DEFAULT_BATCH_TRIGGER_NUM);
     RawComparator<K> comparator = mrJobConf.getOutputKeyComparator();
@@ -99,8 +106,10 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
         RssMRConfig.RSS_CLIENT_DEFAULT_MAX_SEGMENT_SIZE);
     int sendThreadNum = RssMRUtils.getInt(rssJobConf, mrJobConf, RssMRConfig.RSS_CLIENT_SEND_THREAD_NUM,
         RssMRConfig.RSS_CLIENT_DEFAULT_SEND_THREAD_NUM);
+    long maxBufferSize = RssMRUtils.getLong(rssJobConf, mrJobConf, RssMRConfig.RSS_WRITER_BUFFER_SIZE,
+        RssMRConfig.RSS_WRITER_BUFFER_SIZE_DEFAULT_VALUE);
     bufferManager = new SortWriteBufferManager(
-        (long)ByteUnit.MiB.toBytes(sortmb),
+        (long)(ByteUnit.MiB.toBytes(sortmb) * sortThreshold),
         taskAttemptId,
         batch,
         serializationFactory.getSerializer(keyClass),
@@ -121,7 +130,8 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
         numMaps,
         isMemoryShuffleEnabled(storageType),
         sendThreadNum,
-        sendThreshold);
+        sendThreshold,
+        maxBufferSize);
   }
 
   private Map<Integer, List<ShuffleServerInfo>> createAssignmentMap(JobConf jobConf) {

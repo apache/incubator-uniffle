@@ -70,6 +70,12 @@ public class RssMRConfig {
   public static final String RSS_CLIENT_BATCH_TRIGGER_NUM =
       MR_RSS_CONFIG_PREFIX + "rss.client.batch.trigger.num";
   public static final int RSS_CLIENT_DEFAULT_BATCH_TRIGGER_NUM = 50;
+  public static final String RSS_CLIENT_SORT_MEMORY_USE_THRESHOLD =
+      MR_RSS_CONFIG_PREFIX + "rss.client.sort.memory.use.threshold";
+  public static final String RSS_WRITER_BUFFER_SIZE =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_WRITER_BUFFER_SIZE;
+  public static final long RSS_WRITER_BUFFER_SIZE_DEFAULT_VALUE = 1024 * 1024 * 14;
+  public static final double RSS_CLIENT_DEFAULT_SORT_MEMORY_USE_THRESHOLD = 0.9f;
   public static final String RSS_CLIENT_MEMORY_THRESHOLD =
       MR_RSS_CONFIG_PREFIX + "rss.client.memory.threshold";
   public static final double RSS_CLIENT_DEFAULT_MEMORY_THRESHOLD = 0.8f;
