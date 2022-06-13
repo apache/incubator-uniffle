@@ -190,7 +190,7 @@ public class RssFetcher<K,V> {
 
       // update some status
       copyBlockCount++;
-      copyTime += readTime + decompressTime + serializeTime;
+      copyTime = readTime + decompressTime + serializeTime;
       updateStatus();
       reporter.progress();
     } else {
@@ -199,7 +199,7 @@ public class RssFetcher<K,V> {
       shuffleReadClient.checkProcessedBlockIds();
       shuffleReadClient.logStatics();
       metrics.inputBytes(unCompressionLength);
-      LOG.info("reduce task " + reduceId.toString() + " cost " + readTime + " ms and "
+      LOG.info("reduce task " + reduceId.toString() + " cost " + readTime + " ms to fetch and "
         + decompressTime + " ms to decompress with unCompressionLength["
         + unCompressionLength + "] and " + serializeTime + " ms to serialize");
       stopFetch();
@@ -217,7 +217,7 @@ public class RssFetcher<K,V> {
 
   private void updateStatus() {
     progress.set((float) copyBlockCount / totalBlockCount);
-    String statusString = copyBlockCount + " / " + copyBlockCount + " copied.";
+    String statusString = copyBlockCount + " / " + totalBlockCount + " copied.";
     status.setStateString(statusString);
 
     if (copyTime == 0) {
@@ -225,6 +225,7 @@ public class RssFetcher<K,V> {
     }
     double bytesPerMillis = (double) unCompressionLength / copyTime;
     double transferRate = bytesPerMillis * BYTES_PER_MILLIS_TO_MBS;
+
     progress.setStatus("copy(" + copyBlockCount + " of " + totalBlockCount + " at "
       + mbpsFormat.format(transferRate) + " MB/s)");
   }
