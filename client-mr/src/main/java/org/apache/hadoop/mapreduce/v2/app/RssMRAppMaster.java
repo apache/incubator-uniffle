@@ -18,8 +18,8 @@
 
 package org.apache.hadoop.mapreduce.v2.app;
 
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -29,20 +29,43 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.ipc.CallerContext;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.Cluster;
 import org.apache.hadoop.mapreduce.JobSubmissionFiles;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.RssMRConfig;
 import org.apache.hadoop.mapreduce.RssMRUtils;
+import org.apache.hadoop.mapreduce.v2.app.client.ClientService;
+import org.apache.hadoop.mapreduce.v2.app.job.Job;
+import org.apache.hadoop.mapreduce.v2.app.job.impl.JobImpl;
+import org.apache.hadoop.mapreduce.v2.app.local.LocalContainerAllocator;
+import org.apache.hadoop.mapreduce.v2.app.rm.ContainerAllocator;
+import org.apache.hadoop.mapreduce.v2.app.rm.ContainerAllocatorEvent;
+import org.apache.hadoop.mapreduce.v2.app.rm.RMCommunicator;
+import org.apache.hadoop.mapreduce.v2.app.rm.RMContainerAllocator;
+import org.apache.hadoop.mapreduce.v2.app.rm.RMHeartbeatHandler;
+import org.apache.hadoop.mapreduce.v2.util.MRApps;
+import org.apache.hadoop.mapreduce.v2.util.MRWebAppUtil;
+import org.apache.hadoop.service.AbstractService;
+import org.apache.hadoop.service.Service;
+import org.apache.hadoop.service.ServiceOperations;
+import org.apache.hadoop.util.ExitUtil;
+import org.apache.hadoop.util.ShutdownHookManager;
+import org.apache.hadoop.yarn.YarnUncaughtExceptionHandler;
+import org.apache.hadoop.yarn.api.ApplicationConstants;
+import org.apache.hadoop.yarn.api.protocolrecords.AllocateResponse;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
+import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.exceptions.YarnException;
+import org.apache.hadoop.yarn.util.SystemClock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,14 +77,36 @@ import com.tencent.rss.common.ShuffleAssignmentsInfo;
 import com.tencent.rss.common.ShuffleServerInfo;
 import com.tencent.rss.common.util.Constants;
 
-public class RssMRAppMaster {
+public class RssMRAppMaster extends MRAppMaster {
+
+  private final String rssNmHost;
+  private final int rssNmPort;
+  private final int rssNmHttpPort;
+  private final ContainerId rssContainerID;
+  private RssContainerAllocatorRouter rssContainerAllocator;
+
+  public RssMRAppMaster(
+      ApplicationAttemptId applicationAttemptId,
+      ContainerId containerId,
+      String nmHost,
+      int nmPort,
+      int nmHttpPort,
+      long appSubmitTime) {
+    super(applicationAttemptId, containerId, nmHost, nmPort, nmHttpPort, new SystemClock(), appSubmitTime);
+    rssNmHost = nmHost;
+    rssNmPort = nmPort;
+    rssNmHttpPort = nmHttpPort;
+    rssContainerID = containerId;
+    rssContainerAllocator = null;
+  }
 
   private static final Logger LOG = LoggerFactory.getLogger(RssMRAppMaster.class);
 
   public static void main(String[] args) {
 
+    JobConf conf = new JobConf(new YarnConfiguration());
+    conf.addResource(new Path(MRJobConfig.JOB_CONF_FILE));
 
-    JobConf conf = new JobConf(new Path(MRJobConfig.JOB_CONF_FILE));
     int numReduceTasks = conf.getInt(MRJobConfig.NUM_REDUCES, 0);
     if (numReduceTasks > 0) {
       String coordinators = conf.get(RssMRConfig.RSS_COORDINATOR_QUORUM);
@@ -167,13 +212,64 @@ public class RssMRAppMaster {
       if (jobDirStr == null) {
         throw new RuntimeException("jobDir is empty");
       }
-      Path jobConfFile = new Path(jobDirStr, MRJobConfig.JOB_CONF_FILE);
-
-      updateConf(conf, jobConfFile);
     }
-    // remove org.apache.hadoop.mapreduce.v2.app.MRAppMaster
-    ArrayUtils.remove(args, 0);
-    MRAppMaster.main(args);
+    try {
+      setMainStartedTrue();
+      Thread.setDefaultUncaughtExceptionHandler(new YarnUncaughtExceptionHandler());
+      String containerIdStr = System.getenv(ApplicationConstants.Environment.CONTAINER_ID.name());
+      validateInputParam(containerIdStr, ApplicationConstants.Environment.CONTAINER_ID.name());
+      String nodeHostString = System.getenv(ApplicationConstants.Environment.NM_HOST.name());
+      validateInputParam(nodeHostString, ApplicationConstants.Environment.NM_HOST.name());
+      String nodePortString = System.getenv(ApplicationConstants.Environment.NM_PORT.name());
+      validateInputParam(nodePortString, ApplicationConstants.Environment.NM_PORT.name());
+      String nodeHttpPortString = System.getenv(ApplicationConstants.Environment.NM_HTTP_PORT.name());
+      validateInputParam(nodeHttpPortString, ApplicationConstants.Environment.NM_HTTP_PORT.name());
+      String appSubmitTimeStr = System.getenv("APP_SUBMIT_TIME_ENV");
+      validateInputParam(appSubmitTimeStr, "APP_SUBMIT_TIME_ENV");
+      ContainerId containerId = ContainerId.fromString(containerIdStr);
+      ApplicationAttemptId applicationAttemptId = containerId.getApplicationAttemptId();
+      if (applicationAttemptId != null) {
+        CallerContext.setCurrent((
+            new CallerContext.Builder("mr_appmaster_" + applicationAttemptId.toString())).build());
+      }
+
+      long appSubmitTime = Long.parseLong(appSubmitTimeStr);
+      RssMRAppMaster appMaster = new RssMRAppMaster(
+          applicationAttemptId, containerId, nodeHostString, Integer.parseInt(nodePortString),
+          Integer.parseInt(nodeHttpPortString), appSubmitTime);
+      ShutdownHookManager.get().addShutdownHook(new RssMRAppMasterShutdownHook(appMaster), 30);
+      MRWebAppUtil.initialize(conf);
+      String systemPropsToLog = MRApps.getSystemPropertiesToLog(conf);
+      if (systemPropsToLog != null) {
+        LOG.info(systemPropsToLog);
+      }
+      String jobUserName = System.getenv(ApplicationConstants.Environment.USER.name());
+      conf.set("mapreduce.job.user.name", jobUserName);
+      initAndStartAppMaster(appMaster, conf, jobUserName);
+    } catch (Throwable t) {
+      LOG.error("Error starting MRAppMaster", t);
+      ExitUtil.terminate(1, t);
+    }
+  }
+
+  private static void setMainStartedTrue() throws Exception {
+    Field field = MRAppMaster.class.getDeclaredField("mainStarted");
+    field.setAccessible(true);
+    field.setBoolean(null, true);
+    field.setAccessible(false);
+  }
+
+  protected ContainerAllocator createContainerAllocator(ClientService clientService, AppContext context) {
+    rssContainerAllocator = new RssContainerAllocatorRouter(clientService, context);
+    return rssContainerAllocator;
+  }
+
+  private static void validateInputParam(String value, String param) throws IOException {
+    if (value == null) {
+      String msg = param + " is null";
+      LOG.error(msg);
+      throw new IOException(msg);
+    }
   }
 
   static void writeExtraConf(JobConf conf, JobConf extraConf) {
@@ -206,22 +302,109 @@ public class RssMRAppMaster {
     }
   }
 
-  // After we modify some configurations, we should update configuration for Application
-  // So we update the modify the configuration in the HDFS and local disk. It's a little
-  // tricky to delete the local configuration. But we hope guarantee the integrity for file.
-  // We choose to delete it and override with the new configuration in the HDFS.
-  static void updateConf(JobConf conf, Path jobConfFile) {
-    try {
-      File newFile = new File(MRJobConfig.JOB_CONF_FILE + ".bak");
-      try (FileOutputStream out = new FileOutputStream(newFile)) {
-          conf.writeXml(out);
+  private final class RssContainerAllocatorRouter
+      extends AbstractService implements ContainerAllocator, RMHeartbeatHandler {
+    private final ClientService clientService;
+    private final AppContext context;
+    private ContainerAllocator containerAllocator;
+
+    RssContainerAllocatorRouter(ClientService clientService, AppContext context) {
+      super(RssMRAppMaster.RssContainerAllocatorRouter.class.getName());
+      this.clientService = clientService;
+      this.context = context;
+    }
+
+    protected void serviceStart() throws Exception {
+      if (RssMRAppMaster.this.getJob().isUber()) {
+        MRApps.setupDistributedCacheLocal(this.getConfig());
+        this.containerAllocator = new LocalContainerAllocator(
+            this.clientService,
+            this.context,
+            RssMRAppMaster.this.rssNmHost,
+            RssMRAppMaster.this.rssNmPort,
+            RssMRAppMaster.this.rssNmHttpPort,
+            RssMRAppMaster.this.rssContainerID);
+      } else {
+        this.containerAllocator = new RMContainerAllocator(this.clientService, this.context) {
+          @Override
+          protected AllocateResponse makeRemoteRequest() throws YarnException, IOException {
+            AllocateResponse response = super.makeRemoteRequest();
+            // UpdateNodes only have one use for MRAppMaster, MRAppMaster use the updateNodes to find which
+            // nodes are bad nodes. So we clear them, MRAppMaster will not recompute the map tasks.
+            response.getUpdatedNodes().clear();
+            return response;
+          }
+        };
       }
-      File file = new File(MRJobConfig.JOB_CONF_FILE);
-      file.delete();
-      newFile.renameTo(file);
+
+      ((Service)this.containerAllocator).init(this.getConfig());
+      ((Service)this.containerAllocator).start();
+      super.serviceStart();
+    }
+
+    protected void serviceStop() throws Exception {
+      ServiceOperations.stop((Service)this.containerAllocator);
+      super.serviceStop();
+    }
+
+    public void handle(ContainerAllocatorEvent event) {
+      this.containerAllocator.handle(event);
+    }
+
+    public void setSignalled(boolean isSignalled) {
+      ((RMCommunicator)this.containerAllocator).setSignalled(isSignalled);
+    }
+
+    public void setShouldUnregister(boolean shouldUnregister) {
+      ((RMCommunicator)this.containerAllocator).setShouldUnregister(shouldUnregister);
+    }
+
+    public long getLastHeartbeatTime() {
+      return ((RMCommunicator)this.containerAllocator).getLastHeartbeatTime();
+    }
+
+    public void runOnNextHeartbeat(Runnable callback) {
+      ((RMCommunicator)this.containerAllocator).runOnNextHeartbeat(callback);
+    }
+  }
+
+  @Override
+  public void notifyIsLastAMRetry(boolean isLastAMRetry) {
+    LOG.info("Notify RMCommunicator isAMLastRetry: " + isLastAMRetry);
+    if (rssContainerAllocator != null) {
+      rssContainerAllocator.setShouldUnregister(isLastAMRetry);
+    }
+    super.notifyIsLastAMRetry(isLastAMRetry);
+  }
+
+  static class RssMRAppMasterShutdownHook implements Runnable {
+    RssMRAppMaster appMaster;
+
+    RssMRAppMasterShutdownHook(RssMRAppMaster appMaster) {
+      this.appMaster = appMaster;
+    }
+
+    public void run() {
+      RssMRAppMaster.LOG.info("MRAppMaster received a signal. Signaling RMCommunicator and JobHistoryEventHandler.");
+      RssContainerAllocatorRouter allocatorRouter = this.appMaster.rssContainerAllocator;
+      if (allocatorRouter != null) {
+        allocatorRouter.setSignalled(true);
+      }
+      this.appMaster.notifyIsLastAMRetry(this.appMaster.isLastAMRetry);
+      this.appMaster.stop();
+    }
+  }
+
+  private Job getJob() {
+    try {
+      Field field = RssMRAppMaster.class.getSuperclass().getDeclaredField("job");
+      field.setAccessible(true);
+      JobImpl job = (JobImpl)field.get(this);
+      field.setAccessible(false);
+      return job;
     } catch (Exception e) {
-      LOG.error("Modify job conf exception", e);
-      throw new RuntimeException("Modify job conf exception ", e);
+      LOG.error("getJob error !" + e.getMessage());
+      return null;
     }
   }
 }
