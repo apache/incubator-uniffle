@@ -25,6 +25,8 @@ import java.lang.reflect.Field;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.io.compress.CodecPool;
+import org.apache.hadoop.io.compress.Decompressor;
 
 import com.tencent.rss.common.exception.RssException;
 
@@ -39,7 +41,12 @@ public class RssBypassWriter {
     // but when data size exceeds the threshold, merger can also allocate disk.
     // So, we should consider the two situations, respectively.
     if (mapOutput instanceof InMemoryMapOutput) {
-      write((InMemoryMapOutput) mapOutput, buffer);
+      InMemoryMapOutput inMemoryMapOutput = (InMemoryMapOutput) mapOutput;
+      // In InMemoryMapOutput constructor method, we create a decompressor or borrow a decompressor from
+      // pool. Now we need to put it back, otherwise we will create a decompressor for every InMemoryMapOutput
+      // object, they will cause `out of direct memory` problems.
+      CodecPool.returnDecompressor(getDecompressor(inMemoryMapOutput));
+      write(inMemoryMapOutput, buffer);
     } else if (mapOutput instanceof OnDiskMapOutput) {
       write((OnDiskMapOutput) mapOutput, buffer);
     } else {
@@ -77,6 +84,18 @@ public class RssBypassWriter {
       IOUtils.cleanup(LOG, disk);
       throw new RssException("Failed to write OnDiskMapOutput due to: "
         + ioe.getMessage());
+    }
+  }
+
+  static Decompressor getDecompressor(InMemoryMapOutput inMemoryMapOutput) {
+    try {
+      Class clazz = Class.forName(InMemoryMapOutput.class.getName());
+      Field deCompressorField = clazz.getDeclaredField("decompressor");
+      deCompressorField.setAccessible(true);
+      Decompressor decompressor = (Decompressor) deCompressorField.get(inMemoryMapOutput);
+      return decompressor;
+    } catch (Exception e) {
+      throw new RssException("Get Decompressor fail " + e.getMessage());
     }
   }
 }
