@@ -46,16 +46,19 @@ import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.compress.BZip2Codec;
+import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.IFile;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.MapOutputFile;
 import org.apache.hadoop.mapred.MROutputFiles;
 import org.apache.hadoop.mapred.RawKeyValueIterator;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.SortWriteBufferManager;
 import org.apache.hadoop.mapred.TaskStatus;
+import org.apache.hadoop.mapred.Task;
 import org.apache.hadoop.mapreduce.JobID;
 import org.apache.hadoop.mapreduce.RssMRUtils;
 import org.apache.hadoop.mapreduce.TaskID;
@@ -149,6 +152,40 @@ public class FetcherTest {
   }
 
   @Test
+  public void writeAndReadDataMergeFailsTestWithRss() throws Throwable {
+    fs = FileSystem.getLocal(conf);
+    initRssData();
+    // The 1-th and 2-th mapout will reserve null
+    Set<Integer> expectedFails = Sets.newHashSet(1, 2);
+    merger = new MockMergeManagerImpl<Text, Text>(
+      reduceId1, jobConf, fs, lda, Reporter.NULL, null, null, null, null, null,
+      null, null, new Progress(), new MROutputFiles(), expectedFails);
+    ShuffleReadClient shuffleReadClient = new MockedShuffleReadClient(data);
+    RssFetcher fetcher = new RssFetcher(jobConf, reduceId1, taskStatus, merger, new Progress(),
+      reporter, metrics, shuffleReadClient, 3);
+    fetcher.fetchAllRssBlocks();
+
+    RawKeyValueIterator iterator = merger.close();
+    // the final output of merger.close() must be sorted
+    List<String> allKeysExpected = Lists.newArrayList("k11", "k22", "k22", "k33", "k44", "k55", "k55");
+    List<String> allValuesExpected = Lists.newArrayList("v11", "v22", "v22", "v33", "v44", "v55", "v55");
+    List<String> allKeys = Lists.newArrayList();
+    List<String> allValues = Lists.newArrayList();
+    while(iterator.next()){
+      byte[] key = new byte[iterator.getKey().getLength()];
+      byte[] value = new byte[iterator.getValue().getLength()];
+      System.arraycopy(iterator.getKey().getData(), 0, key, 0, key.length);
+      System.arraycopy(iterator.getValue().getData(), 0, value, 0, value.length);
+      allKeys.add(new Text(key).toString().trim());
+      allValues.add(new Text(value).toString().trim());
+    }
+    validate(allKeysExpected, allKeys);
+    validate(allValuesExpected, allValues);
+    // There will be 2 retries
+    assert(fetcher.getRetryCount() == 2);
+    assert(((MockMergeManagerImpl)merger).happenedFails.size() == 2);
+  }
+
   public void testCodecIsDuplicated() throws Exception {
     fs = FileSystem.getLocal(conf);
     BZip2Codec codec = new BZip2Codec();
@@ -165,7 +202,6 @@ public class FetcherTest {
     assertEquals(RssBypassWriter.getDecompressor(
         (InMemoryMapOutput) mapOutput1), RssBypassWriter.getDecompressor((InMemoryMapOutput) mapOutput2));
   }
-
 
   private void validate(List<String> expected, List<String> actual) {
     assert(expected.size() == actual.size());
@@ -267,6 +303,37 @@ public class FetcherTest {
   }
 
 
+  static class MockMergeManagerImpl<K,V> extends MergeManagerImpl {
+    public Set<Integer> happenedFails = Sets.newHashSet();
+    private Set<Integer> expectedFails;
+    private int currentMapout = 0;
+    public MockMergeManagerImpl(TaskAttemptID reduceId, JobConf jobConf,
+                                FileSystem localFS, LocalDirAllocator localDirAllocator,
+                                Reporter reporter, CompressionCodec codec, Class combinerClass,
+                                Task.CombineOutputCollector combineCollector,
+                                Counters.Counter spilledRecordsCounter, Counters.Counter reduceCombineInputCounter,
+                                Counters.Counter mergedMapOutputsCounter, ExceptionReporter exceptionReporter,
+                                Progress mergePhase, MapOutputFile mapOutputFile, Set<Integer> expectedFails) {
+      super(reduceId, jobConf, localFS, localDirAllocator, reporter, codec, combinerClass,
+        combineCollector, spilledRecordsCounter, reduceCombineInputCounter, mergedMapOutputsCounter, exceptionReporter,
+        mergePhase, mapOutputFile);
+      this.expectedFails = expectedFails;
+    }
+
+    @Override
+    public synchronized MapOutput<K,V> reserve(TaskAttemptID mapId,
+                                               long requestedSize,
+                                               int fetcher) throws IOException {
+      if (expectedFails.contains(currentMapout) && !happenedFails.contains(currentMapout)) {
+        happenedFails.add(currentMapout);
+        return null;
+      } else {
+        currentMapout++;
+        return super.reserve(mapId, requestedSize, fetcher);
+      }
+    }
+  }
+
   static class MockShuffleWriteClient implements ShuffleWriteClient {
 
     int mode = 0;
@@ -289,7 +356,6 @@ public class FetcherTest {
         }
         shuffleBlockInfoList.forEach( block -> {
           data.add(RssShuffleUtils.decompressData(block.getData(), block.getUncompressLength()));
-          System.out.println("A block is sent");
         });
         return new SendShuffleDataResult(successBlockIds, Sets.newHashSet());
       }
