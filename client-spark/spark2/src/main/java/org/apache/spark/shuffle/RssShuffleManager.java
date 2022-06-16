@@ -70,8 +70,7 @@ public class RssShuffleManager implements ShuffleManager {
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleManager.class);
   private final long heartbeatInterval;
   private final long heartbeatTimeout;
-  private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-      new ThreadFactoryBuilder().setDaemon(true).setNameFormat("rss-heartbeat-%d").build());
+  private ScheduledExecutorService heartBeatScheduledExecutorService;
   private SparkConf sparkConf;
   private String appId = "";
   private String clientType;
@@ -192,6 +191,11 @@ public class RssShuffleManager implements ShuffleManager {
       threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize * 2, keepAliveTime, TimeUnit.SECONDS,
           Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
           new ThreadFactoryBuilder().setDaemon(true).setNameFormat("SendData").build());
+
+      if (isDriver) {
+        heartBeatScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder().setDaemon(true).setNameFormat("rss-heartbeat-%d").build());
+      }
     }
   }
 
@@ -235,7 +239,7 @@ public class RssShuffleManager implements ShuffleManager {
 
   private void startHeartbeat() {
     if (!sparkConf.getBoolean(RssSparkConfig.RSS_TEST_FLAG, false) && !heartbeatStarted) {
-      scheduledExecutorService.scheduleAtFixedRate(
+      heartBeatScheduledExecutorService.scheduleAtFixedRate(
           () -> {
             try {
               shuffleWriteClient.sendAppHeartbeat(appId, heartbeatTimeout);
@@ -366,7 +370,7 @@ public class RssShuffleManager implements ShuffleManager {
 
   @Override
   public void stop() {
-    scheduledExecutorService.shutdownNow();
+    heartBeatScheduledExecutorService.shutdownNow();
     threadPoolExecutor.shutdownNow();
     shuffleWriteClient.close();
   }

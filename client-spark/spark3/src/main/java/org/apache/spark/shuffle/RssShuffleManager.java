@@ -86,7 +86,7 @@ public class RssShuffleManager implements ShuffleManager {
   private final Map<String, Set<Long>> taskToSuccessBlockIds;
   private final Map<String, Set<Long>> taskToFailedBlockIds;
   private Map<String, WriteBufferManager> taskToBufferManager = Maps.newConcurrentMap();
-  private final ScheduledExecutorService scheduledExecutorService;
+  private ScheduledExecutorService heartBeatScheduledExecutorService;
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
   private RemoteStorageInfo remoteStorage;
@@ -195,8 +195,10 @@ public class RssShuffleManager implements ShuffleManager {
         RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE_DEFAULT_VALUE);
     threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize * 2, keepAliveTime, TimeUnit.SECONDS,
         Queues.newLinkedBlockingQueue(Integer.MAX_VALUE));
-    scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-        new ThreadFactoryBuilder().setDaemon(true).setNameFormat("rss-heartbeat-%d").build());
+    if (isDriver) {
+      heartBeatScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
+              new ThreadFactoryBuilder().setDaemon(true).setNameFormat("rss-heartbeat-%d").build());
+    }
   }
 
   // For testing only
@@ -244,7 +246,7 @@ public class RssShuffleManager implements ShuffleManager {
     }
     eventLoop.start();
     threadPoolExecutor = null;
-    scheduledExecutorService = null;
+    heartBeatScheduledExecutorService = null;
   }
 
 
@@ -540,8 +542,8 @@ public class RssShuffleManager implements ShuffleManager {
 
   @Override
   public void stop() {
-    if (scheduledExecutorService != null) {
-      scheduledExecutorService.shutdownNow();
+    if (heartBeatScheduledExecutorService != null) {
+      heartBeatScheduledExecutorService.shutdownNow();
     }
     if (threadPoolExecutor != null) {
       threadPoolExecutor.shutdownNow();
@@ -595,7 +597,7 @@ public class RssShuffleManager implements ShuffleManager {
 
   private synchronized void startHeartbeat() {
     if (!heartbeatStarted) {
-      scheduledExecutorService.scheduleAtFixedRate(
+      heartBeatScheduledExecutorService.scheduleAtFixedRate(
           () -> {
             try {
               shuffleWriteClient.sendAppHeartbeat(id.get(), heartbeatTimeout);
