@@ -18,13 +18,10 @@
 
 package org.apache.hadoop.mapreduce.task.reduce;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.lang.reflect.Field;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.io.compress.Decompressor;
 
@@ -48,7 +45,10 @@ public class RssBypassWriter {
       CodecPool.returnDecompressor(getDecompressor(inMemoryMapOutput));
       write(inMemoryMapOutput, buffer);
     } else if (mapOutput instanceof OnDiskMapOutput) {
-      write((OnDiskMapOutput) mapOutput, buffer);
+      // RSS leverages its own compression, it is incompatible with hadoop's disk file compression.
+      // So we should disable this situation.
+      throw new IllegalStateException("RSS does not support OnDiskMapOutput as shuffle ouput,"
+        + " try to reduce mapreduce.reduce.shuffle.memory.limit.percent");
     } else {
       throw new IllegalStateException("Merger reserve unknown type of MapOutput："
         + mapOutput.getClass().getCanonicalName());
@@ -58,33 +58,6 @@ public class RssBypassWriter {
   private static void write(InMemoryMapOutput inMemoryMapOutput, byte[] buffer) {
     byte[] memory = inMemoryMapOutput.getMemory();
     System.arraycopy(buffer, 0, memory, 0, buffer.length);
-  }
-
-  private static void write(OnDiskMapOutput onDiskMapOutput, byte[] buffer) {
-    OutputStream disk = null;
-    try {
-      Class clazz = Class.forName(OnDiskMapOutput.class.getName());
-      Field diskField = clazz.getDeclaredField("disk");
-      diskField.setAccessible(true);
-      disk = (OutputStream)diskField.get(onDiskMapOutput);
-    } catch (Exception e) {
-      throw new RssException("Failed to access OnDiskMapOutput by reflection due to: "
-        + e.getMessage());
-    }
-    if (disk == null) {
-      throw new RssException("OnDiskMapOutput should not contain null disk stream");
-    }
-
-    // Copy data to local-disk
-    try {
-      disk.write(buffer, 0, buffer.length);
-      disk.close();
-    } catch (IOException ioe) {
-      // Close the streams
-      IOUtils.cleanup(LOG, disk);
-      throw new RssException("Failed to write OnDiskMapOutput due to: "
-        + ioe.getMessage());
-    }
   }
 
   static Decompressor getDecompressor(InMemoryMapOutput inMemoryMapOutput) {
