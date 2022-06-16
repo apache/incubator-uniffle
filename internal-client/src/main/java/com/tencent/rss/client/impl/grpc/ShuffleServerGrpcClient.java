@@ -222,7 +222,6 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     String appId = request.getAppId();
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks = request.getShuffleIdToBlocks();
 
-    List<ShuffleBlockInfo> shuffleBlockInfos = Lists.newArrayList();
     boolean isSuccessful = true;
 
     // prepare rpc request based on shuffleId -> partitionId -> blocks
@@ -233,7 +232,6 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       for (Map.Entry<Integer, List<ShuffleBlockInfo>> ptb : stb.getValue().entrySet()) {
         List<ShuffleBlock> shuffleBlocks = Lists.newArrayList();
         for (ShuffleBlockInfo sbi : ptb.getValue()) {
-          shuffleBlockInfos.add(sbi);
           shuffleBlocks.add(ShuffleBlock.newBuilder().setBlockId(sbi.getBlockId())
               .setCrc(sbi.getCrc())
               .setLength(sbi.getLength())
@@ -263,7 +261,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             + " ms for " + size + " bytes with " + blockNum + " blocks");
 
         if (response.getStatus() != StatusCode.SUCCESS) {
-          String msg = "Can't send shuffle data with " + shuffleBlockInfos.size()
+          String msg = "Can't send shuffle data with " + blockNum
               + " blocks to " + host + ":" + port
               + ", statusCode=" + response.getStatus()
               + ", errorMsg:" + response.getRetMsg();
