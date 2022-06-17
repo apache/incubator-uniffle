@@ -164,7 +164,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
 
   public long requirePreAllocation(int requireSize, int retryMax, long retryIntervalMax) {
     RequireBufferRequest rpcRequest = RequireBufferRequest.newBuilder().setRequireSize(requireSize).build();
-    RequireBufferResponse rpcResponse = blockingStub.requireBuffer(rpcRequest);
+    RequireBufferResponse rpcResponse = blockingStub.withDeadlineAfter(
+        RPC_TIMEOUT_DEFAULT_MS, TimeUnit.MILLISECONDS).requireBuffer(rpcRequest);
     int retry = 0;
     long result = FAILED_REQUIRE_ID;
     Random random = new Random();
@@ -184,7 +185,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       } catch (Exception e) {
         LOG.warn("Exception happened when require pre allocation", e);
       }
-      rpcResponse = blockingStub.requireBuffer(rpcRequest);
+      rpcResponse = blockingStub.withDeadlineAfter(
+          RPC_TIMEOUT_DEFAULT_MS, TimeUnit.MILLISECONDS).requireBuffer(rpcRequest);
       retry++;
     }
     if (rpcResponse.getStatus() == StatusCode.SUCCESS) {

@@ -151,7 +151,8 @@ public class SortWriteBufferManager<K, V> {
     memoryLock.lock();
     try {
       while (memoryUsedSize.get() > maxMemSize) {
-        LOG.warn("memoryUsedSize {} is more than {}", memoryUsedSize, maxMemSize);
+        LOG.warn("memoryUsedSize {} is more than {}, inSendListBytes {}",
+            memoryUsedSize, maxMemSize, inSendListBytes);
         full.await();
       }
     } finally {
