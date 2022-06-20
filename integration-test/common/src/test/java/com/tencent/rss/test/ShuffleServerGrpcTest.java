@@ -30,6 +30,7 @@ import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -461,6 +462,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     assertEquals(blockIdBitmap, actualBlockIdBitmap);
   }
 
+  @Disabled("flaky test")
   @Test
   public void rpcMetricsTest() {
     String appId = "rpcMetricsTest";
