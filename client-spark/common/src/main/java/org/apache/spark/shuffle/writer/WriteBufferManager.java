@@ -146,7 +146,7 @@ public class WriteBufferManager extends MemoryConsumer {
 
     // check buffer size > spill threshold
     if (usedBytes.get() - inSendListBytes.get() > spillSize) {
-      result = clear();
+      result.addAll(clear());
     }
     writeTime += System.currentTimeMillis() - start;
     return result;
