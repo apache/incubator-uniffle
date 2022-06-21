@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -87,19 +88,24 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private int replicaWrite;
   private int replicaRead;
   private boolean replicaSkipEnabled;
+  private int dataTranferPoolSize;
+  private final ForkJoinPool dataTransferPool;
 
   public ShuffleWriteClientImpl(String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
-                                int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled) {
+                                int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled,
+                                int dataTranferPoolSize) {
     this.clientType = clientType;
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
-    coordinatorClientFactory = new CoordinatorClientFactory(clientType);
-    heartBeatExecutorService = Executors.newFixedThreadPool(heartBeatThreadNum,
-        new ThreadFactoryBuilder().setDaemon(true).setNameFormat("client-heartbeat-%d").build());
+    this.coordinatorClientFactory = new CoordinatorClientFactory(clientType);
+    this.heartBeatExecutorService = Executors.newFixedThreadPool(heartBeatThreadNum,
+            new ThreadFactoryBuilder().setDaemon(true).setNameFormat("client-heartbeat-%d").build());
     this.replica = replica;
     this.replicaWrite = replicaWrite;
     this.replicaRead = replicaRead;
     this.replicaSkipEnabled = replicaSkipEnabled;
+    this.dataTranferPoolSize = dataTranferPoolSize;
+    this.dataTransferPool = new ForkJoinPool(dataTranferPoolSize);
   }
 
   private boolean sendShuffleDataAsync(
@@ -110,13 +116,13 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     // If one or more servers is failed, the sending is not totally successful.
     AtomicBoolean isAllServersSuccess = new AtomicBoolean(true);
     if (serverToBlocks != null) {
-      serverToBlocks.entrySet().parallelStream().forEach(entry -> {
+      dataTransferPool.submit(() -> serverToBlocks.entrySet().parallelStream().forEach(entry -> {
         ShuffleServerInfo ssi = entry.getKey();
         try {
           Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks = entry.getValue();
           // todo: compact unnecessary blocks that reach replicaWrite
           RssSendShuffleDataRequest request = new RssSendShuffleDataRequest(
-            appId, retryMax, retryIntervalMax, shuffleIdToBlocks);
+                  appId, retryMax, retryIntervalMax, shuffleIdToBlocks);
           long s = System.currentTimeMillis();
           RssSendShuffleDataResponse response = getShuffleServerClient(ssi).sendShuffleData(request);
           LOG.info("ShuffleWriteClientImpl sendShuffleData cost:" + (System.currentTimeMillis() - s));
@@ -125,17 +131,17 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             // mark a replica of block that has been sent
             serverToBlockIds.get(ssi).forEach(block -> blockIdsTracker.get(block).incrementAndGet());
             LOG.info("Send: " + serverToBlockIds.get(ssi).size()
-              + " blocks to [" + ssi.getId() + "] successfully");
+                    + " blocks to [" + ssi.getId() + "] successfully");
           } else {
             isAllServersSuccess.set(false);
             LOG.warn("Send: " + serverToBlockIds.get(ssi).size() + " blocks to [" + ssi.getId()
-              + "] failed with statusCode[" + response.getStatusCode() + "], ");
+                    + "] failed with statusCode[" + response.getStatusCode() + "], ");
           }
         } catch (Exception e) {
           isAllServersSuccess.set(false);
           LOG.warn("Send: " + serverToBlockIds.get(ssi).size() + " blocks to [" + ssi.getId() + "] failed.", e);
         }
-      });
+      })).join();
     }
     return isAllServersSuccess.get();
   }

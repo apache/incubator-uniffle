@@ -259,7 +259,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
       int replica, int replicaWrite, int replicaRead, boolean replicaSkip) {
 
     shuffleWriteClientImpl = new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1,
-      replica, replicaWrite, replicaRead, replicaSkip);
+      replica, replicaWrite, replicaRead, replicaSkip, 1);
 
     List<ShuffleServerInfo> allServers = Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1,
         shuffleServerInfo2, shuffleServerInfo3, shuffleServerInfo4);
