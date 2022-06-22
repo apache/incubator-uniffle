@@ -11,7 +11,7 @@ Coordinator will collect status of shuffle server and do the assignment for the 
 
 Shuffle server will receive the shuffle data, merge them and write to storage.
 
-Depend on different situation, Firestorm supports Memory & Local, Memory & Remote Storage(eg, HDFS), Local only, Remote Storage only.
+Depend on different situation, Firestorm supports Memory & Local, Memory & Remote Storage(eg, HDFS), Memory & Local & Remote Storage(recommendation for production environment).
 
 ## Shuffle Process with Firestorm
 
@@ -74,9 +74,25 @@ rss-xxx.tgz will be generated for deployment
      rss.coordinator.server.heartbeat.timeout 30000
      rss.coordinator.app.expired 60000
      rss.coordinator.shuffle.nodes.max 5
-     rss.coordinator.exclude.nodes.file.path RSS_HOME/conf/exclude_nodes
+     # enable dynamicClientConf, and coordinator will be responsible for most of client conf
+     rss.coordinator.dynamicClientConf.enabled true
+     # config the path of client conf
+     rss.coordinator.dynamicClientConf.path <RSS_HOME>/conf/dynamic_client.conf
+     # config the path of excluded shuffle server
+     rss.coordinator.exclude.nodes.file.path <RSS_HOME>/conf/exclude_nodes
    ```
-4. start Coordinator
+4. update <RSS_HOME>/conf/dynamic_client.conf, rss client will get default conf from coordinator eg,
+   ```
+    # MEMORY_LOCALFILE_HDFS is recommandation for production environment
+    rss.storage.type MEMORY_LOCALFILE_HDFS
+    # multiple remote storages are supported, and client will get assignment from coordinator
+    rss.coordinator.remote.storage.path hdfs://cluster1/path,hdfs://cluster2/path
+    rss.writer.require.memory.retryMax 1200
+    rss.client.retry.max 100
+    rss.writer.send.check.timeout 600000
+    rss.client.read.buffer.size 14m
+   ```
+5. start Coordinator
    ```
     bash RSS_HOME/bin/start-coordnator.sh
    ```
@@ -90,14 +106,17 @@ rss-xxx.tgz will be generated for deployment
      HADOOP_HOME=<hadoop home>
      XMX_SIZE="80g"
    ```
-3. update RSS_HOME/conf/server.conf, the following demo is for memory + local storage only, eg,
+3. update RSS_HOME/conf/server.conf, eg,
    ```
      rss.rpc.server.port 19999
      rss.jetty.http.port 19998
      rss.rpc.executor.size 2000
-     rss.storage.type MEMORY_LOCALFILE
+     # it should be configed the same as in coordinator
+     rss.storage.type MEMORY_LOCALFILE_HDFS
      rss.coordinator.quorum <coordinatorIp1>:19999,<coordinatorIp2>:19999
+     # local storage path for shuffle server
      rss.storage.basePath /data1/rssdata,/data2/rssdata....
+     # it's better to config thread num according to local disk num
      rss.server.flush.thread.alive 5
      rss.server.flush.threadPool.size 10
      rss.server.buffer.capacity 40g
@@ -108,6 +127,10 @@ rss-xxx.tgz will be generated for deployment
      rss.server.preAllocation.expired 120000
      rss.server.commit.timeout 600000
      rss.server.app.expired.withoutHeartbeat 120000
+     # note: the default value of rss.server.flush.cold.storage.threshold.size is 64m
+     # there will be no data written to DFS if set it as 100g even rss.storage.type=MEMORY_LOCALFILE_HDFS
+     # please set proper value if DFS is used, eg, 64m, 128m.
+     rss.server.flush.cold.storage.threshold.size 100g
    ```
 4. start Shuffle Server
    ```
@@ -121,12 +144,11 @@ rss-xxx.tgz will be generated for deployment
 
    The jar for Spark3 is located in <RSS_HOME>/jars/client/spark3/rss-client-XXXXX-shaded.jar
 
-2. Update Spark conf to enable Firestorm, the following demo is for local storage only, eg,
+2. Update Spark conf to enable Firestorm, eg,
 
    ```
    spark.shuffle.manager org.apache.spark.shuffle.RssShuffleManager
    spark.rss.coordinator.quorum <coordinatorIp1>:19999,<coordinatorIp2>:19999
-   spark.rss.storage.type MEMORY_LOCALFILE
    ```
 
 ### Support Spark dynamic allocation
@@ -140,17 +162,16 @@ After apply the patch and rebuild spark, add following configuration in spark co
   spark.dynamicAllocation.enabled true
   ```
 
-## Deploy MapReduce Client
+### Deploy MapReduce Client
 
 1. Add client jar to the classpath of each NodeManager, e.g., <HADOOP>/share/hadoop/mapreduce/
 
 The jar for MapReduce is located in <RSS_HOME>/jars/client/mr/rss-client-mr-XXXXX-shaded.jar
 
-2. Update MapReduce conf to enable Firestorm, the following demo is for local storage only, eg,
+2. Update MapReduce conf to enable Firestorm, eg,
 
    ```
    -Dmapreduce.rss.coordinator.quorum=<coordinatorIp1>:19999,<coordinatorIp2>:19999
-   -Dmapreduce.rss.storage.type=MEMORY_LOCALFILE 
    -Dyarn.app.mapreduce.am.command-opts=org.apache.hadoop.mapreduce.v2.app.RssMRAppMaster
    -Dmapreduce.job.map.output.collector.class=org.apache.hadoop.mapred.RssMapOutputCollector
    -Dmapreduce.job.reduce.shuffle.consumer.plugin.class=org.apache.hadoop.mapreduce.task.reduce.RssShuffle
@@ -168,9 +189,10 @@ The important configuration is listed as following.
 |Property Name|Default|	Description|
 |---|---|---|
 |rss.coordinator.server.heartbeat.timeout|30000|Timeout if can't get heartbeat from shuffle server|
-|rss.coordinator.assignment.strategy|BASIC|Strategy for assigning shuffle server, only BASIC support|
+|rss.coordinator.assignment.strategy|PARTITION_BALANCE|Strategy for assigning shuffle server, PARTITION_BALANCE should be used for workload balance|
 |rss.coordinator.app.expired|60000|Application expired time (ms), the heartbeat interval should be less than it|
 |rss.coordinator.shuffle.nodes.max|9|The max number of shuffle server when do the assignment|
+|rss.coordinator.dynamicClientConf.path|-|The path of configuration file which have default conf for rss client|
 |rss.coordinator.exclude.nodes.file.path|-|The path of configuration file which have exclude nodes|
 |rss.coordinator.exclude.nodes.check.interval.ms|60000|Update interval (ms) for exclude nodes|
 |rss.rpc.server.port|-|RPC port for coordinator|
