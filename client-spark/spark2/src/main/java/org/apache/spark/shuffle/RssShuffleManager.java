@@ -370,7 +370,9 @@ public class RssShuffleManager implements ShuffleManager {
 
   @Override
   public void stop() {
-    heartBeatScheduledExecutorService.shutdownNow();
+    if (heartBeatScheduledExecutorService != null) {
+      heartBeatScheduledExecutorService.shutdownNow();
+    }
     threadPoolExecutor.shutdownNow();
     shuffleWriteClient.close();
   }
