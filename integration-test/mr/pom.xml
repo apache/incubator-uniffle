@@ -22,14 +22,14 @@
     <parent>
         <artifactId>rss-main</artifactId>
         <groupId>com.tencent.rss</groupId>
-        <version>0.5.0-snapshot</version>
+        <version>0.5.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.tencent.rss</groupId>
     <artifactId>rss-integration-mr-test</artifactId>
-    <version>0.5.0-snapshot</version>
+    <version>0.5.0</version>
     <packaging>jar</packaging>
 
     <dependencies>
