@@ -72,7 +72,7 @@ public class SimpleClusterManager implements ClusterManager {
     }
   }
 
-  private void nodesCheck() {
+  void nodesCheck() {
     try {
       long timestamp = System.currentTimeMillis();
       Set<String> deleteIds = Sets.newHashSet();
@@ -83,7 +83,12 @@ public class SimpleClusterManager implements ClusterManager {
         }
       }
       for (String serverId : deleteIds) {
-        servers.remove(serverId);
+        ServerNode sn = servers.remove(serverId);
+        if (sn != null) {
+          for (Set<ServerNode> nodesWithTag : tagToNodes.values()) {
+            nodesWithTag.remove(sn);
+          }
+        }
       }
 
       CoordinatorMetrics.gaugeTotalServerNum.set(servers.size());

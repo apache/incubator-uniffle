@@ -115,6 +115,13 @@ public class ServerNode implements Comparable<ServerNode> {
         + ", healthy[" + isHealthy + "]";
   }
 
+  /**
+   * Only for test case
+   */
+  void setTimestamp(long timestamp) {
+    this.timestamp = timestamp;
+  }
+
   @Override
   public int compareTo(ServerNode other) {
     if (availableMemory > other.getAvailableMemory()) {
