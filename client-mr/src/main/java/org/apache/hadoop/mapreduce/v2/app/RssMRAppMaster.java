@@ -180,7 +180,7 @@ public class RssMRAppMaster extends MRAppMaster {
         RssMRUtils.applyDynamicClientConf(extraConf, clusterClientConf);
       }
 
-      String storageType = conf.get(RssMRConfig.RSS_STORAGE_TYPE);
+      String storageType = RssMRUtils.getString(extraConf, conf, RssMRConfig.RSS_STORAGE_TYPE);
       RemoteStorageInfo defaultRemoteStorage =
           new RemoteStorageInfo(conf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH, ""));
       RemoteStorageInfo remoteStorage = ClientUtils.fetchRemoteStorage(
