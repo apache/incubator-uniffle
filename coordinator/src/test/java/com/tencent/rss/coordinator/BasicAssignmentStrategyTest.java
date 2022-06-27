@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Sets;
 import com.tencent.rss.common.PartitionRange;
+
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -49,8 +51,9 @@ public class BasicAssignmentStrategyTest {
   }
 
   @AfterEach
-  public void tearDown() {
+  public void tearDown() throws IOException {
     clusterManager.clear();
+    clusterManager.close();
   }
 
   @Test

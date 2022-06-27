@@ -237,6 +237,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     shuffleServers.set(0, ss);
     Thread.sleep(3000);
     assertEquals(2, coordinators.get(0).getClusterManager().getNodesNum());
+    scm.close();
   }
 
   @Test

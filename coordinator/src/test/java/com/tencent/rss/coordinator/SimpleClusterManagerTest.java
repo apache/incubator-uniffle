@@ -20,6 +20,7 @@ package com.tencent.rss.coordinator;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,7 @@ public class SimpleClusterManagerTest {
   }
 
   @Test
-  public void getServerListTest() {
+  public void getServerListTest() throws IOException {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
     SimpleClusterManager clusterManager = new SimpleClusterManager(ssc);
@@ -99,6 +100,8 @@ public class SimpleClusterManagerTest {
     assertTrue(testTagNodes.contains(sn2));
     assertTrue(testTagNodes.contains(sn3));
     assertTrue(testTagNodes.contains(sn4));
+
+    clusterManager.close();
   }
 
   @Test
@@ -141,10 +144,12 @@ public class SimpleClusterManagerTest {
     Thread.sleep(500);
     serverNodes = clusterManager.getServerList(testTags);
     assertEquals(0, serverNodes.size());
+
+    clusterManager.close();
   }
 
   @Test
-  public void testGetCorrectServerNodesWhenOneNodeRemoved() {
+  public void testGetCorrectServerNodesWhenOneNodeRemoved() throws IOException {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
     SimpleClusterManager clusterManager = new SimpleClusterManager(ssc);
@@ -167,6 +172,8 @@ public class SimpleClusterManagerTest {
     List<ServerNode> serverList = clusterManager.getServerList(testTags);
     Assertions.assertEquals(2, tagToNodes.get(testTags.iterator().next()).size());
     Assertions.assertEquals(2, serverList.size());
+
+    clusterManager.close();
   }
 
   @Test
@@ -231,6 +238,8 @@ public class SimpleClusterManagerTest {
       remainNodes.remove(node.getId());
     }
     assertEquals(0, remainNodes.size());
+
+    scm.close();
   }
 
   private void writeExcludeHosts(String path, Set<String> values) throws Exception {

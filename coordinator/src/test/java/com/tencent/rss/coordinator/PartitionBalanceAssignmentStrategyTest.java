@@ -18,6 +18,7 @@
 
 package com.tencent.rss.coordinator;
 
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -169,8 +170,9 @@ public class PartitionBalanceAssignmentStrategyTest {
   }
 
   @AfterEach
-  public void tearDown() {
+  public void tearDown() throws IOException {
     clusterManager.clear();
+    clusterManager.close();
   }
 
   void updateServerResource(List<Long> resources) {

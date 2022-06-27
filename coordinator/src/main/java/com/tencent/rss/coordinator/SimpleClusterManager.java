@@ -21,6 +21,7 @@ package com.tencent.rss.coordinator;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -186,8 +187,13 @@ public class SimpleClusterManager implements ClusterManager {
   }
 
   @Override
-  public void shutdown() {
-    scheduledExecutorService.shutdown();
+  public void close() throws IOException {
+    if (scheduledExecutorService != null) {
+      scheduledExecutorService.shutdown();
+    }
+    if (checkNodesExecutorService != null) {
+      checkNodesExecutorService.shutdown();
+    }
   }
 
   @Override

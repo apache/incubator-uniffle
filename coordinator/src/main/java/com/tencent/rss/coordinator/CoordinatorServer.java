@@ -94,7 +94,7 @@ public class CoordinatorServer {
       jettyServer.stop();
     }
     if (clusterManager != null) {
-      clusterManager.shutdown();
+      clusterManager.close();
     }
     if (accessManager != null) {
       accessManager.close();
