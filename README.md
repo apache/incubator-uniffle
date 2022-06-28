@@ -233,27 +233,9 @@ The important configuration is listed as following.
 |rss.server.flush.cold.storage.threshold.size|64M| The threshold of data size for LOACALFILE and HDFS if MEMORY_LOCALFILE_HDFS is used|
 
 
-### Spark Client
+### Shuffle Client
 
-|Property Name|Default|Description|
-|---|---|---|
-|spark.rss.writer.buffer.size|3m|Buffer size for single partition data|
-|spark.rss.writer.buffer.spill.size|128m|Buffer size for total partition data|
-|spark.rss.coordinator.quorum|-|Coordinator quorum|
-|spark.rss.storage.type|-|Supports MEMORY_LOCALFILE, MEMORY_HDFS, MEMORY_LOCALFILE_HDFS|
-|spark.rss.client.send.size.limit|16m|The max data size sent to shuffle server|
-|spark.rss.client.read.buffer.size|32m|The max data size read from storage|
-|spark.rss.client.send.threadPool.size|10|The thread size for send shuffle data to shuffle server|
-
-
-### MapReduce Client
-
-|Property Name|Default|Description|
-|---|---|---|
-|mapreduce.rss.coordinator.quorum|-|Coordinator quorum|
-|mapreduce.rss.storage.type|-|Supports MEMORY_LOCALFILE, MEMORY_HDFS, MEMORY_LOCALFILE_HDFS|
-|mapreduce.rss.client.max.buffer.size|3k|The max buffer size in map side|
-|mapreduce.rss.client.read.buffer.size|32m|The max data size read from storage|
+For more details of advanced configuration, please see [Firestorm Shuffle Client Guide](https://github.com/Tencent/Firestorm/blob/master/docs/client_guide.md).
 
 ## LICENSE
 
