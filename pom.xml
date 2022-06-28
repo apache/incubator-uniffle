@@ -795,12 +795,12 @@
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-	<version>${spotbugs-maven-plugin.version}</version>
+        <version>${spotbugs-maven-plugin.version}</version>
         <dependencies>
           <dependency>
             <groupId>com.github.spotbugs</groupId>
             <artifactId>spotbugs</artifactId>
-	    <version>${spotbugs.version}</version>
+            <version>${spotbugs.version}</version>
           </dependency>
         </dependencies>
         <configuration>

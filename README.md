@@ -50,9 +50,25 @@ To build it, run:
 
     mvn -DskipTests clean package
 
+Build against profile Spark2(2.4.6)
+
+    mvn -DskipTests clean package -Pspark2
+
+Build against profile Spark3(3.1.2)
+
+    mvn -DskipTests clean package -Pspark3
+
+Build against Spark 3.2.x
+
+    mvn -DskipTests clean package -Pspark3.2
+
 To package the Firestorm, run:
 
     ./build_distribution.sh
+
+Package against Spark 3.2.x, run:
+
+    ./build_distribution.sh --spark3-profile 'spark3.2'
 
 rss-xxx.tgz will be generated for deployment
 
