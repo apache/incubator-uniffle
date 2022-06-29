@@ -18,6 +18,7 @@
 
 package com.tencent.rss.common.util;
 
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -62,6 +63,18 @@ public class RssUtilsTest {
       if (!address.equals("127.0.0.1")) {
         assertEquals(address, realIp);
       }
+      setEnv("RSS_IP", "8.8.8.8");
+      assertEquals("8.8.8.8", RssUtils.getHostIp());
+      setEnv("RSS_IP", "xxxx");
+      boolean isException = false;
+      try {
+        RssUtils.getHostIp();
+      } catch (Exception e) {
+        isException = true;
+      }
+      setEnv("RSS_IP", realIp);
+      RssUtils.getHostIp();
+      assertTrue(isException);
     } catch (Exception e) {
       fail(e.getMessage());
     }
@@ -182,6 +195,19 @@ public class RssUtilsTest {
 
     public String get() {
       return null;
+    }
+  }
+
+  public static void setEnv(String key, String value) {
+    try {
+      Map<String, String> env = System.getenv();
+      Class<?> cl = env.getClass();
+      Field field = cl.getDeclaredField("m");
+      field.setAccessible(true);
+      Map<String, String> writableEnv = (Map<String, String>) field.get(env);
+      writableEnv.put(key, value);
+    } catch (Exception e) {
+      throw new IllegalStateException("Failed to set environment variable", e);
     }
   }
 
