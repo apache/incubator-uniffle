@@ -248,6 +248,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   @Override
   public void stop() {
     delegate.stop();
+    coordinatorClients.forEach(CoordinatorClient::close);
   }
 
   @Override
