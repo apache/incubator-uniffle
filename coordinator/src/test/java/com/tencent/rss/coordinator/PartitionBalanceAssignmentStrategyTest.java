@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
+
+import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,10 +45,10 @@ public class PartitionBalanceAssignmentStrategyTest {
   private Set<String> tags = Sets.newHashSet("test");
 
   @BeforeEach
-  public void setUp() {
+  public void setUp() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, shuffleNodesMax);
-    clusterManager = new SimpleClusterManager(ssc);
+    clusterManager = new SimpleClusterManager(ssc, new Configuration());
     strategy = new PartitionBalanceAssignmentStrategy(clusterManager);
   }
 

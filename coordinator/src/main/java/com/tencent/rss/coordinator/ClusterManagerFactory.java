@@ -18,15 +18,19 @@
 
 package com.tencent.rss.coordinator;
 
+import org.apache.hadoop.conf.Configuration;
+
 public class ClusterManagerFactory {
 
   CoordinatorConf conf;
+  Configuration hadoopConf;
 
-  public ClusterManagerFactory(CoordinatorConf conf) {
+  public ClusterManagerFactory(CoordinatorConf conf, Configuration hadoopConf) {
     this.conf = conf;
+    this.hadoopConf = hadoopConf;
   }
 
-  public ClusterManager getClusterManager() {
-    return new SimpleClusterManager(conf);
+  public ClusterManager getClusterManager() throws Exception {
+    return new SimpleClusterManager(conf, hadoopConf);
   }
 }

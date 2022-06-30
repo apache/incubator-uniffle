@@ -22,11 +22,14 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
+
+import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +56,7 @@ public class SimpleClusterManagerTest {
   public void getServerListTest() throws IOException {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
-    SimpleClusterManager clusterManager = new SimpleClusterManager(ssc);
+    SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
     ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
         10, testTags, true);
     ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
@@ -108,7 +111,7 @@ public class SimpleClusterManagerTest {
   public void heartbeatTimeoutTest() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 300L);
-    SimpleClusterManager clusterManager = new SimpleClusterManager(ssc);
+    SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
     Thread t = new Thread(() -> {
       for (int i = 0; i < 3; i++) {
         if (i == 2) {
@@ -152,7 +155,7 @@ public class SimpleClusterManagerTest {
   public void testGetCorrectServerNodesWhenOneNodeRemoved() throws IOException {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
-    SimpleClusterManager clusterManager = new SimpleClusterManager(ssc);
+    SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
     ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
             10, testTags, true);
     ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
@@ -181,13 +184,13 @@ public class SimpleClusterManagerTest {
     String excludeNodesFolder = (new File(ClassLoader.getSystemResource("empty").getFile())).getParent();
     String excludeNodesPath = excludeNodesFolder + "/excludeNodes";
     CoordinatorConf ssc = new CoordinatorConf();
-    ssc.setString(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH, excludeNodesPath);
+    ssc.setString(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH, URI.create(excludeNodesPath).toString());
     ssc.setLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL, 2000);
 
     Set<String> nodes = Sets.newHashSet("node1-1999", "node2-1999");
     writeExcludeHosts(excludeNodesPath, nodes);
 
-    SimpleClusterManager scm = new SimpleClusterManager(ssc);
+    SimpleClusterManager scm = new SimpleClusterManager(ssc, new Configuration());
     scm.add(new ServerNode("node1-1999", "ip", 0, 100L, 50L, 20,
         10, testTags, true));
     scm.add(new ServerNode("node2-1999", "ip", 0, 100L, 50L, 20,

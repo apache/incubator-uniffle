@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
+
+import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,10 +45,10 @@ public class BasicAssignmentStrategyTest {
   private int shuffleNodesMax = 7;
 
   @BeforeEach
-  public void setUp() {
+  public void setUp() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, shuffleNodesMax);
-    clusterManager = new SimpleClusterManager(ssc);
+    clusterManager = new SimpleClusterManager(ssc, new Configuration());
     strategy = new BasicAssignmentStrategy(clusterManager);
   }
 

@@ -111,7 +111,7 @@ public class CoordinatorServer {
     registerMetrics();
     this.applicationManager = new ApplicationManager(coordinatorConf);
 
-    ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(coordinatorConf);
+    ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(coordinatorConf, new Configuration());
     this.clusterManager = clusterManagerFactory.getClusterManager();
     this.clientConfManager = new ClientConfManager(coordinatorConf, new Configuration(), applicationManager);
     AssignmentStrategyFactory assignmentStrategyFactory =
