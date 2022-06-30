@@ -123,6 +123,7 @@ public class ShuffleTaskManager {
     };
     Thread thread = new Thread(clearResourceThread);
     thread.setName("clearResourceThread");
+    thread.setDaemon(true);
     thread.start();
   }
 

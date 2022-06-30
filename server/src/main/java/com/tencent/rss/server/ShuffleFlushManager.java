@@ -29,6 +29,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.RangeMap;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -60,7 +61,6 @@ public class ShuffleFlushManager {
   private Map<String, Map<Integer, RangeMap<Integer, ShuffleWriteHandler>>> handlers = Maps.newConcurrentMap();
   // appId -> shuffleId -> committed shuffle blockIds
   private Map<String, Map<Integer, Roaring64NavigableMap>> committedBlockIds = Maps.newConcurrentMap();
-  private Runnable processEventThread;
   private final int retryMax;
 
   private final StorageManager storageManager;
@@ -84,11 +84,12 @@ public class ShuffleFlushManager {
     BlockingQueue<Runnable> waitQueue = Queues.newLinkedBlockingQueue(waitQueueSize);
     int poolSize = shuffleServerConf.getInteger(ShuffleServerConf.SERVER_FLUSH_THREAD_POOL_SIZE);
     long keepAliveTime = shuffleServerConf.getLong(ShuffleServerConf.SERVER_FLUSH_THREAD_ALIVE);
-    threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize, keepAliveTime, TimeUnit.SECONDS, waitQueue);
+    threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize, keepAliveTime, TimeUnit.SECONDS, waitQueue,
+            new ThreadFactoryBuilder().setDaemon(true).setNameFormat("FlushEventThreadPool").build());
     storageBasePaths = shuffleServerConf.getString(ShuffleServerConf.RSS_STORAGE_BASE_PATH).split(",");
     pendingEventTimeoutSec = shuffleServerConf.getLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC);
     // the thread for flush data
-    processEventThread = () -> {
+    Runnable processEventRunnable = () -> {
       while (true) {
         try {
           ShuffleDataFlushEvent event = flushQueue.take();
@@ -103,7 +104,10 @@ public class ShuffleFlushManager {
         }
       }
     };
-    new Thread(processEventThread).start();
+    Thread processEventThread = new Thread(processEventRunnable);
+    processEventThread.setName("ProcessEventThread");
+    processEventThread.setDaemon(true);
+    processEventThread.start();
     // todo: extract a class named Service, and support stop method
     Thread thread = new Thread("PendingEventProcessThread") {
       @Override
