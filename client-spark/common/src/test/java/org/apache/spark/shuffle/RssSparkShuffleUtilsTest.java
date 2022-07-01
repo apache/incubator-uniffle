@@ -24,8 +24,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.junit.jupiter.api.Test;
 
-import com.tencent.rss.client.util.RssClientConfig;
-import com.tencent.rss.storage.util.StorageType;
+import org.apache.uniffle.client.util.RssClientConfig;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

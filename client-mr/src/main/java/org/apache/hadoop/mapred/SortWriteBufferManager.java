@@ -42,13 +42,13 @@ import org.apache.hadoop.mapreduce.RssMRUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tencent.rss.client.api.ShuffleWriteClient;
-import com.tencent.rss.client.response.SendShuffleDataResult;
-import com.tencent.rss.common.RssShuffleUtils;
-import com.tencent.rss.common.ShuffleBlockInfo;
-import com.tencent.rss.common.ShuffleServerInfo;
-import com.tencent.rss.common.exception.RssException;
-import com.tencent.rss.common.util.ChecksumUtils;
+import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.client.response.SendShuffleDataResult;
+import org.apache.uniffle.common.RssShuffleUtils;
+import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.ChecksumUtils;
 
 public class SortWriteBufferManager<K, V> {
 

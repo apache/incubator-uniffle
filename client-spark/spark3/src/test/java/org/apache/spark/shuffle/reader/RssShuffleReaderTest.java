@@ -32,8 +32,8 @@ import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import scala.Option;
 
-import com.tencent.rss.storage.handler.impl.HdfsShuffleWriteHandler;
-import com.tencent.rss.storage.util.StorageType;
+import org.apache.uniffle.storage.handler.impl.HdfsShuffleWriteHandler;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;

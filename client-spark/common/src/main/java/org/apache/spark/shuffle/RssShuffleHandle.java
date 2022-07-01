@@ -24,8 +24,8 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 import org.apache.spark.ShuffleDependency;
 
-import com.tencent.rss.common.RemoteStorageInfo;
-import com.tencent.rss.common.ShuffleServerInfo;
+import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.ShuffleServerInfo;
 
 public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
 

@@ -34,7 +34,7 @@ HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
 HADOOP_DEPENDENCY=$HADOOP_HOME/etc/hadoop:$HADOOP_HOME/share/hadoop/common/lib/*:$HADOOP_HOME/share/hadoop/common/*:$HADOOP_HOME/share/hadoop/hdfs:$HADOOP_HOME/share/hadoop/hdfs/lib/*:$HADOOP_HOME/share/hadoop/hdfs/*:$HADOOP_HOME/share/hadoop/yarn/lib/*:$HADOOP_HOME/share/hadoop/yarn/*:$HADOOP_HOME/share/hadoop/mapreduce/lib/*:$HADOOP_HOME/share/hadoop/mapreduce/*
 
 CONF_FILE="./conf/server.conf "
-MAIN_CLASS="com.tencent.rss.server.ShuffleServer"
+MAIN_CLASS="org.apache.uniffle.server.ShuffleServer"
 
 echo "Check process existence"
 is_jvm_process_running $JPS $MAIN_CLASS

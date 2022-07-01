@@ -33,11 +33,11 @@ import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.util.Progress;
 
-import com.tencent.rss.client.api.ShuffleReadClient;
-import com.tencent.rss.client.response.CompressedShuffleBlock;
-import com.tencent.rss.common.RssShuffleUtils;
-import com.tencent.rss.common.exception.RssException;
-import com.tencent.rss.common.util.ByteUnit;
+import org.apache.uniffle.client.api.ShuffleReadClient;
+import org.apache.uniffle.client.response.CompressedShuffleBlock;
+import org.apache.uniffle.common.RssShuffleUtils;
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.ByteUnit;
 
 public class RssFetcher<K,V> {
 

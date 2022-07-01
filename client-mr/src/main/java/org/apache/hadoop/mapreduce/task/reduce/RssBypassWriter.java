@@ -24,7 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.io.compress.Decompressor;
 
-import com.tencent.rss.common.exception.RssException;
+import org.apache.uniffle.common.exception.RssException;
 
 // In MR shuffle, MapOutput encapsulates the logic to fetch map task's output data via http.
 // So, in RSS, we should bypass this logic, and directly write data to MapOutput.

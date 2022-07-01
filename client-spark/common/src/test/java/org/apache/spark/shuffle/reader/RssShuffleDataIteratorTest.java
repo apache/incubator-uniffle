@@ -24,13 +24,13 @@ import static org.mockito.ArgumentMatchers.any;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.tencent.rss.client.impl.ShuffleReadClientImpl;
-import com.tencent.rss.client.util.ClientUtils;
-import com.tencent.rss.client.util.DefaultIdHelper;
-import com.tencent.rss.common.util.ChecksumUtils;
-import com.tencent.rss.common.util.Constants;
-import com.tencent.rss.storage.handler.impl.HdfsShuffleWriteHandler;
-import com.tencent.rss.storage.util.StorageType;
+import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
+import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.client.util.DefaultIdHelper;
+import org.apache.uniffle.common.util.ChecksumUtils;
+import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.storage.handler.impl.HdfsShuffleWriteHandler;
+import org.apache.uniffle.storage.util.StorageType;
 import java.nio.ByteBuffer;
 import java.util.Map;
 

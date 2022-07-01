@@ -36,12 +36,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.reflect.ClassTag$;
 
-import com.tencent.rss.client.util.ClientUtils;
-import com.tencent.rss.common.RssShuffleUtils;
-import com.tencent.rss.common.ShuffleBlockInfo;
-import com.tencent.rss.common.ShuffleServerInfo;
-import com.tencent.rss.common.exception.RssException;
-import com.tencent.rss.common.util.ChecksumUtils;
+import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.RssShuffleUtils;
+import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.ChecksumUtils;
 
 public class WriteBufferManager extends MemoryConsumer {
 

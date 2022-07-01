@@ -27,9 +27,9 @@ import org.apache.spark.deploy.SparkHadoopUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tencent.rss.client.api.CoordinatorClient;
-import com.tencent.rss.client.factory.CoordinatorClientFactory;
-import com.tencent.rss.common.RemoteStorageInfo;
+import org.apache.uniffle.client.api.CoordinatorClient;
+import org.apache.uniffle.client.factory.CoordinatorClientFactory;
+import org.apache.uniffle.common.RemoteStorageInfo;
 
 public class RssSparkShuffleUtils {
 
