@@ -20,21 +20,21 @@
     xmlns="http://maven.apache.org/POM/4.0.0"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
-    <artifactId>rss-main</artifactId>
-    <groupId>com.tencent.rss</groupId>
+    <artifactId>uniffle-parent</artifactId>
+    <groupId>org.apache.uniffle</groupId>
     <version>0.6.0-snapshot</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.tencent.rss</groupId>
+  <groupId>org.apache.uniffle</groupId>
   <artifactId>rss-integration-spark-common-test</artifactId>
   <version>0.6.0-snapshot</version>
   <packaging>jar</packaging>
 
   <dependencies>
     <dependency>
-      <groupId>com.tencent.rss</groupId>
+      <groupId>org.apache.uniffle</groupId>
       <artifactId>rss-internal-client</artifactId>
       <scope>test</scope>
       <exclusions>
@@ -51,38 +51,38 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.tencent.rss</groupId>
+      <groupId>org.apache.uniffle</groupId>
       <artifactId>shuffle-server</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.tencent.rss</groupId>
+      <groupId>org.apache.uniffle</groupId>
       <artifactId>coordinator</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.tencent.rss</groupId>
+      <groupId>org.apache.uniffle</groupId>
       <artifactId>rss-client</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.tencent.rss</groupId>
+      <groupId>org.apache.uniffle</groupId>
       <artifactId>rss-integration-common-test</artifactId>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.tencent.rss</groupId>
+      <groupId>org.apache.uniffle</groupId>
       <artifactId>rss-client-spark-common</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.tencent.rss</groupId>
+      <groupId>org.apache.uniffle</groupId>
       <artifactId>rss-client-spark${client.type}</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.tencent.rss</groupId>
+      <groupId>org.apache.uniffle</groupId>
       <artifactId>shuffle-storage</artifactId>
       <type>test-jar</type>
       <scope>test</scope>
@@ -135,7 +135,7 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>com.tencent.rss</groupId>
+      <groupId>org.apache.uniffle</groupId>
       <artifactId>rss-client</artifactId>
       <type>test-jar</type>
       <scope>test</scope>
