@@ -38,7 +38,7 @@
   <properties>
     <error_prone_annotations.version>2.3.4</error_prone_annotations.version>
     <execution.root>${user.dir}</execution.root>
-    <fasterxml.jackson.version>2.9.8</fasterxml.jackson.version>
+    <fasterxml.jackson.version>2.12.6.1</fasterxml.jackson.version>
     <grpc.version>1.33.0</grpc.version>
     <guava.version>29.0-jre</guava.version>
     <hadoop.scope>provided</hadoop.scope>
@@ -950,7 +950,7 @@
         <scala.binary.version>2.11</scala.binary.version>
         <spark.version>2.4.6</spark.version>
         <client.type>2</client.type>
-        <jackson.version>2.9.0</jackson.version>
+        <jackson.version>2.12.6.1</jackson.version>
       </properties>
       <modules>
         <module>client-spark/common</module>
