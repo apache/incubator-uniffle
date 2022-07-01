@@ -22,11 +22,87 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.List;
+import java.util.function.Function;
+
 public class ConfigOptionTest {
+
+  @Test
+  public void testListTypes() {
+    // test the string type list.
+    final ConfigOption<List<String>> listStringConfigOption = ConfigOptions
+            .key("rss.key1")
+            .stringType()
+            .asList()
+            .defaultValues("h1", "h2")
+            .withDescription("List config key1");
+
+    List<String> defaultValues = listStringConfigOption.defaultValue();
+    assertEquals(2, defaultValues.size());
+    assertSame(String.class, listStringConfigOption.getClazz());
+
+    RssBaseConf conf = new RssBaseConf();
+    conf.setList(listStringConfigOption, "a,b,c");
+
+    List<String> vals = conf.get(listStringConfigOption);
+    assertEquals(3, vals.size());
+    assertEquals(vals.toString(), "[a, b, c]");
+
+    // test the long type list
+    final ConfigOption<List<Long>> listLongConfigOption = ConfigOptions
+            .key("rss.key2")
+            .longType()
+            .asList()
+            .defaultValues(1)
+            .withDescription("List long config key2");
+
+    List<Long> longDefaultVals = listLongConfigOption.defaultValue();
+    assertEquals(longDefaultVals.size(), 1);
+
+    conf.setList(listLongConfigOption, "1,2,3");
+    List<Long> longVals = conf.get(listLongConfigOption);
+    assertEquals("[1, 2, 3]", longVals.toString());
+    assertEquals(1, longVals.get(0));
+
+    // test the no-default values
+    final ConfigOption<List<Long>> listLongConfigOptionWithoutDefault = ConfigOptions
+            .key("rss.key3")
+            .longType()
+            .asList()
+            .noDefaultValue()
+            .withDescription("List long config key3 without default values");
+    List<Long> valsWithoutDefault = listLongConfigOptionWithoutDefault.defaultValue();
+    assertNull(valsWithoutDefault);
+
+    // test the method of check
+    final ConfigOption<List<Integer>> checkLongValsOptions = ConfigOptions
+            .key("rss.key4")
+            .intType()
+            .asList()
+            .checkValue((Function<Integer, Boolean>) val -> val > 0, "Every number of list should be positive")
+            .noDefaultValue()
+            .withDescription("The key4 is illegal");
+
+    conf.setList(checkLongValsOptions, "-1,2,3");
+
+    try {
+      conf.get(checkLongValsOptions);
+      fail();
+    } catch (IllegalArgumentException illegalArgumentException) {
+    }
+
+    conf.setList(checkLongValsOptions, "1,2,3");
+    try {
+      conf.get(checkLongValsOptions);
+    } catch (IllegalArgumentException illegalArgumentException) {
+      fail();
+    }
+  }
 
   @Test
   public void testBasicTypes() {

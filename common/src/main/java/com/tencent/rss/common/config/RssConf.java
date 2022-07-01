@@ -19,6 +19,7 @@
 package com.tencent.rss.common.config;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -577,6 +578,11 @@ public class RssConf {
   }
 
   public <T> RssConf set(ConfigOption<T> option, T value) {
+    setValueInternal(option.key(), value);
+    return this;
+  }
+
+  public <T> RssConf setList(ConfigOption<List<T>> option, Object value) {
     setValueInternal(option.key(), value);
     return this;
   }
