@@ -17,6 +17,6 @@
   -->
 <FindBugsFilter>
   <Match>
-    <Package name="~com\.tencent\.rss\.proto.*"/>
+    <Package name="~org\.apache\.uniffle\.proto.*"/>
   </Match>
 </FindBugsFilter>
