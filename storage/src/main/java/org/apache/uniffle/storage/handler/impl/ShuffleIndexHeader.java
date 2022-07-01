@@ -21,11 +21,11 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.util.ChecksumUtils;
+import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 public class ShuffleIndexHeader {
 

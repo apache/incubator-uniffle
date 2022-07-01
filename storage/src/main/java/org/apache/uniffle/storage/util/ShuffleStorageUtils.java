@@ -30,13 +30,13 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.hash.MurmurHash;
-import org.apache.uniffle.storage.handler.impl.DataFileSegment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
+import org.apache.uniffle.storage.handler.impl.DataFileSegment;
 import org.apache.uniffle.storage.handler.impl.HdfsFileWriter;
 
 public class ShuffleStorageUtils {

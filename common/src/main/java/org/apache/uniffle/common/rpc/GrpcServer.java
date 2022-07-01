@@ -28,11 +28,12 @@ import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.util.ExitUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class GrpcServer implements ServerInterface {
 

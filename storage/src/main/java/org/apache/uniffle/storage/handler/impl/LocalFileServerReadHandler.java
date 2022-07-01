@@ -20,7 +20,6 @@ package org.apache.uniffle.storage.handler.impl;
 import java.io.File;
 import java.io.FilenameFilter;
 
-import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +28,7 @@ import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
+import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 public class LocalFileServerReadHandler implements ServerReadHandler {
 

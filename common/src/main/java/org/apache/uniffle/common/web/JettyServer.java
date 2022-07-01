@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.Servlet;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.apache.uniffle.common.config.RssBaseConf;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -44,6 +43,7 @@ import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.ExitUtils;
 
 public class JettyServer {

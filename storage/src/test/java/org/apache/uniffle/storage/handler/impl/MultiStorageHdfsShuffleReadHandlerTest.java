@@ -24,12 +24,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Bytes;
-import org.apache.uniffle.common.ShuffleDataResult;
-import org.apache.uniffle.common.ShufflePartitionedBlock;
-import org.apache.uniffle.common.util.ChecksumUtils;
-import org.apache.uniffle.storage.HdfsShuffleHandlerTestBase;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
-import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +31,13 @@ import java.util.Random;
 import org.apache.hadoop.fs.Path;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
+import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.util.ChecksumUtils;
+import org.apache.uniffle.storage.HdfsShuffleHandlerTestBase;
+import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
+import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 public class MultiStorageHdfsShuffleReadHandlerTest extends HdfsShuffleHandlerTestBase {
 

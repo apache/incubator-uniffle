@@ -41,12 +41,13 @@ import java.util.Properties;
 
 import com.google.common.collect.Lists;
 import com.google.common.net.InetAddresses;
-import org.apache.uniffle.common.BufferSegment;
-import org.apache.uniffle.common.ShuffleDataSegment;
-import org.apache.uniffle.common.ShuffleIndexResult;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleDataSegment;
+import org.apache.uniffle.common.ShuffleIndexResult;
 
 public class RssUtils {
 

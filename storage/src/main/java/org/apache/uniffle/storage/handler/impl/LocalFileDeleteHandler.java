@@ -20,11 +20,11 @@ package org.apache.uniffle.storage.handler.impl;
 import java.io.File;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
+import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 public class LocalFileDeleteHandler implements ShuffleDeleteHandler {
 
