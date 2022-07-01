@@ -31,8 +31,8 @@ import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.request.RssAccessClusterRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
-import com.tencent.rss.common.util.Constants;
-import com.tencent.rss.coordinator.CoordinatorConf;
+import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.junit.jupiter.api.io.TempDir;
@@ -58,7 +58,7 @@ public class AccessClusterTest extends CoordinatorTestBase {
     coordinatorConf.setString("rss.coordinator.access.candidates.path", cfgFile.getAbsolutePath());
     coordinatorConf.setString(
         "rss.coordinator.access.checkers",
-        "com.tencent.rss.coordinator.AccessCandidatesChecker,com.tencent.rss.coordinator.AccessClusterLoadChecker");
+        "org.apache.uniffle.coordinator.AccessCandidatesChecker,org.apache.uniffle.coordinator.AccessClusterLoadChecker");
     createCoordinatorServer(coordinatorConf);
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();

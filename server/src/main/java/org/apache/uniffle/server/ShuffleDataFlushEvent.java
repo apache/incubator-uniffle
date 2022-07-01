@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
-import com.tencent.rss.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 
 public class ShuffleDataFlushEvent {

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.tencent.rss.test;
+package org.apache.uniffle.test;
 
 import java.io.File;
 import java.util.List;
@@ -24,7 +24,7 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
-import com.tencent.rss.client.util.DefaultIdHelper;
+import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,20 +33,20 @@ import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.LongIterator;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import com.tencent.rss.client.impl.ShuffleReadClientImpl;
-import com.tencent.rss.client.impl.grpc.ShuffleServerGrpcClient;
-import com.tencent.rss.client.request.RssFinishShuffleRequest;
-import com.tencent.rss.client.request.RssRegisterShuffleRequest;
-import com.tencent.rss.client.request.RssSendCommitRequest;
-import com.tencent.rss.client.request.RssSendShuffleDataRequest;
-import com.tencent.rss.common.PartitionRange;
-import com.tencent.rss.common.ShuffleBlockInfo;
-import com.tencent.rss.common.ShuffleServerInfo;
-import com.tencent.rss.common.util.Constants;
-import com.tencent.rss.common.util.RssUtils;
-import com.tencent.rss.coordinator.CoordinatorConf;
-import com.tencent.rss.server.ShuffleServerConf;
-import com.tencent.rss.storage.util.StorageType;
+import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
+import org.apache.uniffle.client.request.RssFinishShuffleRequest;
+import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
+import org.apache.uniffle.client.request.RssSendCommitRequest;
+import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
+import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;

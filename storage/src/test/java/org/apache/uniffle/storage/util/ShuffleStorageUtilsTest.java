@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.tencent.rss.common.BufferSegment;
+import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.impl.DataFileSegment;
 import java.util.List;

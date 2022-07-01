@@ -17,9 +17,9 @@
 
 package org.apache.uniffle.server;
 
-import com.tencent.rss.common.config.RssBaseConf;
-import com.tencent.rss.common.metrics.GRPCMetrics;
-import com.tencent.rss.common.rpc.GrpcServer;
+import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.metrics.GRPCMetrics;
+import org.apache.uniffle.common.rpc.GrpcServer;
 
 public class MockedGrpcServer extends GrpcServer {
   MockedShuffleServerGrpcService service;

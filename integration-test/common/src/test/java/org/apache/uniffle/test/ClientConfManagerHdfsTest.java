@@ -26,9 +26,9 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
 import org.junit.jupiter.api.Test;
 
-import com.tencent.rss.coordinator.ApplicationManager;
-import com.tencent.rss.coordinator.ClientConfManager;
-import com.tencent.rss.coordinator.CoordinatorConf;
+import org.apache.uniffle.coordinator.ApplicationManager;
+import org.apache.uniffle.coordinator.ClientConfManager;
+import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.storage.HdfsTestBase;
 
 import static java.lang.Thread.sleep;

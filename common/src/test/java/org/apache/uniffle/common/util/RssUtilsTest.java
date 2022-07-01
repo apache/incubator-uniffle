@@ -159,20 +159,20 @@ public class RssUtilsTest {
     } catch (RuntimeException e) {
       assertTrue(e.getMessage().startsWith("java.lang.ClassNotFoundException: Dummy"));
     }
-    exts = Arrays.asList("com.tencent.rss.common.util.RssUtilsTest$RssUtilTestDummyFailNotSub");
+    exts = Arrays.asList("org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummyFailNotSub");
     try {
       RssUtils.loadExtensions(RssUtilTestDummy.class, exts, 1);
     } catch (RuntimeException e) {
       assertTrue(e.getMessage().contains("RssUtilTestDummyFailNotSub is not subclass of "
-          + "com.tencent.rss.common.util.RssUtilsTest$RssUtilTestDummy"));
+          + "org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummy"));
     }
-    exts = Arrays.asList("com.tencent.rss.common.util.RssUtilsTest$RssUtilTestDummyNoConstructor");
+    exts = Arrays.asList("org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummyNoConstructor");
     try {
       RssUtils.loadExtensions(RssUtilTestDummy.class, exts, "Test");
     } catch (RuntimeException e) {
       assertTrue(e.getMessage().contains("RssUtilTestDummyNoConstructor.<init>()"));
     }
-    exts = Arrays.asList("com.tencent.rss.common.util.RssUtilsTest$RssUtilTestDummySuccess");
+    exts = Arrays.asList("org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummySuccess");
     String testStr = String.valueOf(new Random().nextInt());
     List<RssUtilTestDummy> extsObjs = RssUtils.loadExtensions(RssUtilTestDummy.class, exts, testStr);
     assertEquals(1, extsObjs.size());

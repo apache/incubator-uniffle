@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.tencent.rss.common.BufferSegment;
-import com.tencent.rss.common.ShuffleDataResult;
-import com.tencent.rss.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.storage.HdfsTestBase;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.hadoop.conf.Configuration;

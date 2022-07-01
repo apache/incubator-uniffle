@@ -17,7 +17,7 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
-import com.tencent.rss.common.util.ChecksumUtils;
+import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.storage.HdfsTestBase;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 

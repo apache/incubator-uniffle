@@ -64,7 +64,7 @@ public class AccessClusterLoadCheckerTest {
         getClass().getClassLoader().getResource("coordinator.conf")).getFile();
     CoordinatorConf conf = new CoordinatorConf(filePath);
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
-        "com.tencent.rss.coordinator.AccessClusterLoadChecker");
+        "org.apache.uniffle.coordinator.AccessClusterLoadChecker");
     AccessManager accessManager = new AccessManager(conf, clusterManager, new Configuration());
     AccessClusterLoadChecker accessClusterLoadChecker =
         (AccessClusterLoadChecker) accessManager.getAccessCheckers().get(0);

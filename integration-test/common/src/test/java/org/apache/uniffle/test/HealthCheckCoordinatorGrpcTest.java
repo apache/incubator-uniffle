@@ -22,9 +22,9 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.uniffle.client.request.RssGetShuffleAssignmentsRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
-import com.tencent.rss.common.util.Constants;
-import com.tencent.rss.coordinator.CoordinatorConf;
-import com.tencent.rss.coordinator.ServerNode;
+import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 

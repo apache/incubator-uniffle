@@ -28,7 +28,7 @@ import org.apache.uniffle.server.ShuffleServerConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tencent.rss.common.RemoteStorageInfo;
+import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleUploader;
 import org.apache.uniffle.storage.common.LocalStorage;

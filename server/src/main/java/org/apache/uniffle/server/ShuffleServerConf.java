@@ -22,11 +22,11 @@ import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 
-import com.tencent.rss.common.config.ConfigOption;
-import com.tencent.rss.common.config.ConfigOptions;
-import com.tencent.rss.common.config.ConfigUtils;
-import com.tencent.rss.common.config.RssBaseConf;
-import com.tencent.rss.common.util.RssUtils;
+import org.apache.uniffle.common.config.ConfigOption;
+import org.apache.uniffle.common.config.ConfigOptions;
+import org.apache.uniffle.common.config.ConfigUtils;
+import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.util.RssUtils;
 
 public class ShuffleServerConf extends RssBaseConf {
 

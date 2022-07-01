@@ -22,7 +22,7 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tencent.rss.proto.RssProtos;
+import org.apache.uniffle.proto.RssProtos;
 
 import java.util.concurrent.TimeUnit;
 

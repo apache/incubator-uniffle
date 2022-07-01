@@ -19,9 +19,9 @@ package org.apache.uniffle.server.buffer;
 
 import com.google.common.collect.RangeMap;
 import com.google.common.io.Files;
-import com.tencent.rss.common.ShuffleDataResult;
-import com.tencent.rss.common.ShufflePartitionedData;
-import com.tencent.rss.common.util.Constants;
+import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.server.ShuffleFlushManager;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;

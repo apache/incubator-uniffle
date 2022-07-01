@@ -29,7 +29,7 @@ import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tencent.rss.common.RemoteStorageInfo;
+import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.storage.common.HdfsStorage;

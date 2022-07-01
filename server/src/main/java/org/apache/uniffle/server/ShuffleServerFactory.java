@@ -17,8 +17,8 @@
 
 package org.apache.uniffle.server;
 
-import com.tencent.rss.common.rpc.GrpcServer;
-import com.tencent.rss.common.rpc.ServerInterface;
+import org.apache.uniffle.common.rpc.GrpcServer;
+import org.apache.uniffle.common.rpc.ServerInterface;
 
 public class ShuffleServerFactory {
 

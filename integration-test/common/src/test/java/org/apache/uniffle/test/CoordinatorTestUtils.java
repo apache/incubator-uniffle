@@ -18,7 +18,7 @@
 package org.apache.uniffle.test;
 
 import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
-import com.tencent.rss.proto.RssProtos;
+import org.apache.uniffle.proto.RssProtos;
 
 public class CoordinatorTestUtils {
 

@@ -41,7 +41,7 @@ import org.roaringbitmap.RoaringBitmap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tencent.rss.common.util.ByteUnit;
+import org.apache.uniffle.common.util.ByteUnit;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.ShuffleFileInfo;
 import org.apache.uniffle.storage.factory.ShuffleUploadHandlerFactory;

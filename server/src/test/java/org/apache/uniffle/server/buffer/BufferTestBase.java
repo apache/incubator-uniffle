@@ -24,9 +24,9 @@ import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
-import com.tencent.rss.common.ShufflePartitionedBlock;
-import com.tencent.rss.common.ShufflePartitionedData;
-import com.tencent.rss.common.util.ChecksumUtils;
+import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.util.ChecksumUtils;
 
 public abstract class BufferTestBase {
 

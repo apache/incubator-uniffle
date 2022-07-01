@@ -26,8 +26,8 @@ import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import org.apache.commons.lang3.StringUtils;
 
-import com.tencent.rss.common.metrics.MetricsManager;
-import com.tencent.rss.common.util.RssUtils;
+import org.apache.uniffle.common.metrics.MetricsManager;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.common.LocalStorage;
 
 public class ShuffleServerMetrics {

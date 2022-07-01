@@ -21,11 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.collect.Lists;
-import com.tencent.rss.common.BufferSegment;
-import com.tencent.rss.common.ShuffleDataResult;
-import com.tencent.rss.common.ShufflePartitionedBlock;
-import com.tencent.rss.common.util.ChecksumUtils;
-import com.tencent.rss.common.util.Constants;
+import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.util.ChecksumUtils;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.impl.HdfsFileReader;
 import org.apache.uniffle.storage.handler.impl.HdfsFileWriter;

@@ -18,11 +18,11 @@
 package org.apache.uniffle.server.buffer;
 
 import com.google.common.collect.Lists;
-import com.tencent.rss.common.BufferSegment;
-import com.tencent.rss.common.ShuffleDataResult;
-import com.tencent.rss.common.ShufflePartitionedBlock;
-import com.tencent.rss.common.ShufflePartitionedData;
-import com.tencent.rss.common.util.Constants;
+import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.junit.jupiter.api.Test;
 

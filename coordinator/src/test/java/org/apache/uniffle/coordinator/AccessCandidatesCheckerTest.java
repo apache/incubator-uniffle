@@ -57,7 +57,7 @@ public class AccessCandidatesCheckerTest {
     CoordinatorConf conf = new CoordinatorConf(filePath);
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, tempDir.toURI().toString());
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
-        "com.tencent.rss.coordinator.AccessCandidatesChecker");
+        "org.apache.uniffle.coordinator.AccessCandidatesChecker");
 
     // file load checking at startup
     Exception expectedException = null;
@@ -68,7 +68,7 @@ public class AccessCandidatesCheckerTest {
     }
     assertNotNull(expectedException);
     assertTrue(expectedException.getMessage().contains(
-        "NoSuchMethodException: com.tencent.rss.coordinator.AccessCandidatesChecker.<init>()"));
+        "NoSuchMethodException: org.apache.uniffle.coordinator.AccessCandidatesChecker.<init>()"));
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, cfgFile.toURI().toString());
     expectedException = null;
     try {
@@ -78,7 +78,7 @@ public class AccessCandidatesCheckerTest {
     }
     assertNotNull(expectedException);
     assertTrue(expectedException.getMessage().contains(
-        "NoSuchMethodException: com.tencent.rss.coordinator.AccessCandidatesChecker.<init>()"));
+        "NoSuchMethodException: org.apache.uniffle.coordinator.AccessCandidatesChecker.<init>()"));
 
     // load the config at the beginning
     FileWriter fileWriter = new FileWriter(cfgFile);

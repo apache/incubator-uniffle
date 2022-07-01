@@ -65,7 +65,7 @@ public class CoordinatorConf extends RssBaseConf {
   public static final ConfigOption<String> COORDINATOR_ACCESS_CHECKERS = ConfigOptions
       .key("rss.coordinator.access.checkers")
       .stringType()
-      .defaultValue("com.tencent.rss.coordinator.AccessClusterLoadChecker")
+      .defaultValue("org.apache.uniffle.coordinator.AccessClusterLoadChecker")
       .withDescription("Access checkers");
   public static final ConfigOption<Integer> COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC = ConfigOptions
       .key("rss.coordinator.access.candidates.updateIntervalSec")

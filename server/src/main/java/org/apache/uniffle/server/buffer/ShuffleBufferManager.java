@@ -39,10 +39,10 @@ import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tencent.rss.common.ShuffleDataResult;
-import com.tencent.rss.common.ShufflePartitionedData;
-import com.tencent.rss.common.util.Constants;
-import com.tencent.rss.common.util.RssUtils;
+import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.StatusCode;
 
 public class ShuffleBufferManager {

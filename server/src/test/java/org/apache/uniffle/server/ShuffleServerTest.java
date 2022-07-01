@@ -17,8 +17,8 @@
 
 package org.apache.uniffle.server;
 
-import com.tencent.rss.common.util.ExitUtils;
-import com.tencent.rss.common.util.ExitUtils.ExitException;
+import org.apache.uniffle.common.util.ExitUtils;
+import org.apache.uniffle.common.util.ExitUtils.ExitException;
 import org.apache.uniffle.storage.util.StorageType;
 import org.junit.jupiter.api.Test;
 

@@ -27,9 +27,9 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.AfterAll;
 
-import com.tencent.rss.coordinator.CoordinatorConf;
-import com.tencent.rss.coordinator.CoordinatorMetrics;
-import com.tencent.rss.coordinator.CoordinatorServer;
+import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.coordinator.CoordinatorMetrics;
+import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.server.MockedShuffleServer;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;

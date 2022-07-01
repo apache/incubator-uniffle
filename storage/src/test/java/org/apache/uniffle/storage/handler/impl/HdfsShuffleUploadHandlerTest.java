@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.Lists;
-import com.tencent.rss.common.util.ChecksumUtils;
+import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.storage.HdfsTestBase;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.apache.uniffle.storage.util.ShuffleUploadResult;

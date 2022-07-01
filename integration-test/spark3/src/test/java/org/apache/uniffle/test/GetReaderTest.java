@@ -52,11 +52,11 @@ import org.apache.spark.shuffle.RssShuffleManager;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.Test;
 
-import com.tencent.rss.common.RemoteStorageInfo;
-import com.tencent.rss.common.util.Constants;
-import com.tencent.rss.coordinator.CoordinatorConf;
-import com.tencent.rss.server.ShuffleServerConf;
-import com.tencent.rss.storage.util.StorageType;
+import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;

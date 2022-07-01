@@ -31,8 +31,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import com.tencent.rss.common.RemoteStorageInfo;
-import com.tencent.rss.common.metrics.TestUtils;
+import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.metrics.TestUtils;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.util.StorageType;
 

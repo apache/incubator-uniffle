@@ -17,7 +17,7 @@
 
 package org.apache.uniffle.server;
 
-import com.tencent.rss.common.util.ByteUnit;
+import org.apache.uniffle.common.util.ByteUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;

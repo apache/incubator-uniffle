@@ -19,7 +19,7 @@ package org.apache.uniffle.server.storage;
 
 import java.util.Set;
 
-import com.tencent.rss.common.RemoteStorageInfo;
+import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;

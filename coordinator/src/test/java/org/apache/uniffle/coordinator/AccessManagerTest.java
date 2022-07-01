@@ -54,7 +54,7 @@ public class AccessManagerTest {
       assertTrue(e.getMessage().startsWith(expectedMessage));
     }
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
-        "com.Dummy,com.tencent.rss.coordinator.AccessManagerTest$MockAccessChecker");
+        "com.Dummy,org.apache.uniffle.coordinator.AccessManagerTest$MockAccessChecker");
     try {
       new AccessManager(conf, null, new Configuration());
     } catch (RuntimeException e) {
@@ -71,14 +71,14 @@ public class AccessManagerTest {
     accessManager.close();
     // test mock checkers
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
-        "com.tencent.rss.coordinator.AccessManagerTest$MockAccessCheckerAlwaysTrue,");
+        "org.apache.uniffle.coordinator.AccessManagerTest$MockAccessCheckerAlwaysTrue,");
     accessManager = new AccessManager(conf, null, new Configuration());
     assertEquals(1, accessManager.getAccessCheckers().size());
     assertTrue(accessManager.handleAccessRequest(new AccessInfo("mock1")).isSuccess());
     assertTrue(accessManager.handleAccessRequest(new AccessInfo("mock2")).isSuccess());
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
-        "com.tencent.rss.coordinator.AccessManagerTest$MockAccessCheckerAlwaysTrue,"
-            + "com.tencent.rss.coordinator.AccessManagerTest$MockAccessCheckerAlwaysFalse");
+        "org.apache.uniffle.coordinator.AccessManagerTest$MockAccessCheckerAlwaysTrue,"
+            + "org.apache.uniffle.coordinator.AccessManagerTest$MockAccessCheckerAlwaysFalse");
     accessManager = new AccessManager(conf, null, new Configuration());
     assertEquals(2, accessManager.getAccessCheckers().size());
     assertFalse(accessManager.handleAccessRequest(new AccessInfo("mock1")).isSuccess());

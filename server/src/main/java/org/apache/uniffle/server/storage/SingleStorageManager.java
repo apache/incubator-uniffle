@@ -28,8 +28,8 @@ import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tencent.rss.common.ShufflePartitionedBlock;
-import com.tencent.rss.common.util.RssUtils;
+import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageWriteMetrics;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;

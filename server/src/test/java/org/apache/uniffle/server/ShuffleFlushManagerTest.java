@@ -40,12 +40,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import com.tencent.rss.common.BufferSegment;
-import com.tencent.rss.common.RemoteStorageInfo;
-import com.tencent.rss.common.ShuffleDataResult;
-import com.tencent.rss.common.ShufflePartitionedBlock;
-import com.tencent.rss.common.config.RssBaseConf;
-import com.tencent.rss.common.util.ChecksumUtils;
+import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.server.storage.HdfsStorageManager;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;

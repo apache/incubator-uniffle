@@ -24,8 +24,8 @@ import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.junit.jupiter.api.Test;
 
-import com.tencent.rss.common.RemoteStorageInfo;
-import com.tencent.rss.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.storage.common.HdfsStorage;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.util.StorageType;

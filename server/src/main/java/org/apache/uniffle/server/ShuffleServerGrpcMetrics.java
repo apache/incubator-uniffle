@@ -17,7 +17,7 @@
 
 package org.apache.uniffle.server;
 
-import com.tencent.rss.common.metrics.GRPCMetrics;
+import org.apache.uniffle.common.metrics.GRPCMetrics;
 
 public class ShuffleServerGrpcMetrics extends GRPCMetrics {
 

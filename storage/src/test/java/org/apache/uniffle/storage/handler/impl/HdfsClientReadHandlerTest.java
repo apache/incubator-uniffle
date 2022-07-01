@@ -19,8 +19,8 @@ package org.apache.uniffle.storage.handler.impl;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.tencent.rss.common.BufferSegment;
-import com.tencent.rss.common.ShuffleDataResult;
+import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.storage.HdfsShuffleHandlerTestBase;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
