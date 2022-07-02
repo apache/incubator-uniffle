@@ -53,8 +53,7 @@ public abstract class SingleStorageManager implements StorageManager {
 
   @Override
   public boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event) {
-    String shuffleKey = RssUtils.generateShuffleKey(
-        event.getAppId(), event.getShuffleId());
+    String shuffleKey = RssUtils.generateShuffleKey(event.getAppId(), event.getShuffleId());
     storage.createMetadataIfNotExist(shuffleKey);
 
     boolean locked = storage.lockShuffleShared(shuffleKey);
@@ -76,7 +75,7 @@ public abstract class SingleStorageManager implements StorageManager {
       ShuffleServerMetrics.counterWriteException.inc();
       Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
     } finally {
-      storage.unlockShuffleShared(RssUtils.generateShuffleKey(event.getAppId(), event.getShuffleId()));
+      storage.unlockShuffleShared(shuffleKey);
     }
     return false;
   }
