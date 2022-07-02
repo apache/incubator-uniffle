@@ -121,7 +121,7 @@ public class PartitionBalanceAssignmentStrategy implements AssignmentStrategy {
           for (int rc = 0; rc < replica; rc++) {
             ServerNode node =  candidatesNodes.get(idx);
             idx = CoordinatorUtils.nextIdx(idx,  candidatesNodes.size());
-            serverToPartitions.get(node).incrementPartitionNum();;
+            serverToPartitions.get(node).incrementPartitionNum();
             assignNodes.add(node);
           }
           assignments.put(range, assignNodes);

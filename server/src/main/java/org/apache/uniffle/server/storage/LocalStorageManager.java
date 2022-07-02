@@ -162,7 +162,7 @@ public class LocalStorageManager extends SingleStorageManager {
     if (unCorruptedStorages.isEmpty()) {
       throw new RuntimeException("No enough storages");
     }
-    return  unCorruptedStorages.get(ShuffleStorageUtils.getStorageIndex(
+    return unCorruptedStorages.get(ShuffleStorageUtils.getStorageIndex(
         unCorruptedStorages.size(),
         appId,
         shuffleId,
