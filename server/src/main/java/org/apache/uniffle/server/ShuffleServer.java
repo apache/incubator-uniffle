@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,6 +26,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.prometheus.client.CollectorRegistry;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -157,8 +159,18 @@ public class ShuffleServer {
 
     setServer();
 
+    setServerTags();
+  }
+
+  private void setServerTags() {
     // it's the system tag for server's version
     tags.add(Constants.SHUFFLE_SERVER_VERSION);
+
+    List<String> configuredTags = shuffleServerConf.get(ShuffleServerConf.TAGS);
+    if (CollectionUtils.isNotEmpty(configuredTags)) {
+      tags.addAll(configuredTags);
+    }
+    LOG.info("Server tags: {}", tags);
   }
 
   private void registerMetrics() {
@@ -262,7 +274,7 @@ public class ShuffleServer {
   }
 
   public Set<String> getTags() {
-    return tags;
+    return Collections.unmodifiableSet(tags);
   }
 
   public boolean isHealthy() {

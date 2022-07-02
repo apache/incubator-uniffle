@@ -230,9 +230,11 @@ public class RssShuffleManager implements ShuffleManager {
         RssSparkConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
 
     // get all register info according to coordinator's response
+    Set<String> placementTags = RssSparkShuffleUtils.getDataPlacementTags(sparkConf);
+
     ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
         appId, shuffleId, dependency.partitioner().numPartitions(),
-        partitionNumPerRange, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+        partitionNumPerRange, placementTags);
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = response.getPartitionToServers();
 
     startHeartbeat();

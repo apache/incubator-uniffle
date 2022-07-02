@@ -276,12 +276,14 @@ public class RssShuffleManager implements ShuffleManager {
     remoteStorage = ClientUtils.fetchRemoteStorage(
         id.get(), remoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
 
+    Set<String> placementTags = RssSparkShuffleUtils.getDataPlacementTags(sparkConf);
+
     ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
         id.get(),
         shuffleId,
         dependency.partitioner().numPartitions(),
         1,
-        Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+        placementTags);
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = response.getPartitionToServers();
 
     startHeartbeat();

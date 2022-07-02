@@ -18,6 +18,7 @@
 package org.apache.spark.shuffle;
 
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -100,9 +101,11 @@ public class DelegationRssShuffleManager implements ShuffleManager {
 
     for (CoordinatorClient coordinatorClient : coordinatorClients) {
       try {
+        Set<String> placementTags = RssSparkShuffleUtils.getDataPlacementTags(sparkConf);
+
         RssAccessClusterResponse response =
             coordinatorClient.accessCluster(new RssAccessClusterRequest(
-                accessId, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), accessTimeoutMs));
+                accessId, placementTags, accessTimeoutMs));
         if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
           LOG.warn("Success to access cluster {} using {}", coordinatorClient.getDesc(), accessId);
           return true;

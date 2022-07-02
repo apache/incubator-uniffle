@@ -17,11 +17,16 @@
 
 package org.apache.spark.shuffle;
 
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.collect.Maps;
+
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
+import org.apache.uniffle.common.util.Constants;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.util.RssClientConfig;
@@ -32,6 +37,21 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RssSparkShuffleUtilsTest {
+
+  @Test
+  public void testGetDataPlacementTags() {
+    SparkConf conf = new SparkConf();
+    Set<String> tags = RssSparkShuffleUtils.getDataPlacementTags(conf);
+    assertEquals(Constants.SHUFFLE_SERVER_VERSION, tags.iterator().next());
+
+    conf.set(RssSparkConfig.RSS_CLIENT_DATA_PLACEMENT_TAGS, " a,b");
+    tags = RssSparkShuffleUtils.getDataPlacementTags(conf);
+    assertEquals(2, tags.size());
+    Iterator<String> iterator = tags.iterator();
+    assertEquals("a", iterator.next());
+    assertEquals("b", iterator.next());
+  }
+
   @Test
   public void odfsConfigurationTest() {
     SparkConf conf = new SparkConf();

@@ -18,9 +18,13 @@
 package org.apache.spark.shuffle;
 
 import java.lang.reflect.Constructor;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.deploy.SparkHadoopUtil;
@@ -122,5 +126,16 @@ public class RssSparkShuffleUtils {
       }
     }
     return readerHadoopConf;
+  }
+
+  public static Set<String> getDataPlacementTags(SparkConf sparkConf) {
+    Set<String> placementTags = new HashSet<>();
+    String tagsRaw = sparkConf.get(RssSparkConfig.RSS_CLIENT_DATA_PLACEMENT_TAGS,
+            RssSparkConfig.RSS_CLIENT_DATA_PLACEMENT_TAGS_DEFAULT_VALUE);
+    if (StringUtils.isNotEmpty(tagsRaw)) {
+      tagsRaw = tagsRaw.trim();
+      placementTags.addAll(Arrays.asList(tagsRaw.split(",")));
+    }
+    return placementTags;
   }
 }
