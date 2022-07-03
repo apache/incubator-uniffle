@@ -30,6 +30,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.List;
 import java.util.function.Function;
 
+import com.google.common.collect.Lists;
+
 public class ConfigOptionTest {
 
   @Test
@@ -47,27 +49,31 @@ public class ConfigOptionTest {
     assertSame(String.class, listStringConfigOption.getClazz());
 
     RssBaseConf conf = new RssBaseConf();
-    conf.set(listStringConfigOption, "a,b,c");
+    conf.set(listStringConfigOption, Lists.newArrayList("a", "b", "c"));
 
     List<String> vals = conf.get(listStringConfigOption);
     assertEquals(3, vals.size());
-    assertEquals(vals.toString(), "[a, b, c]");
+    assertEquals(Lists.newArrayList("a", "b", "c"), vals);
 
     // test the long type list
     final ConfigOption<List<Long>> listLongConfigOption = ConfigOptions
             .key("rss.key2")
             .longType()
             .asList()
-            .defaultValues(1)
+            .defaultValues(1L)
             .withDescription("List long config key2");
 
     List<Long> longDefaultVals = listLongConfigOption.defaultValue();
     assertEquals(longDefaultVals.size(), 1);
+    assertEquals(Lists.newArrayList(1L), longDefaultVals);
 
-    conf.set(listLongConfigOption, "1,2,3");
+    conf.set("rss.key2", "1,2,3");
     List<Long> longVals = conf.get(listLongConfigOption);
-    assertEquals("[1, 2, 3]", longVals.toString());
-    assertEquals(1, longVals.get(0));
+    assertEquals(Lists.newArrayList(1L, 2L, 3L), longVals);
+
+    // test overwrite the same conf key.
+    conf.set(listLongConfigOption, Lists.newArrayList(1L, 2L, 3L, 4L));
+    assertEquals(Lists.newArrayList(1L, 2L, 3L, 4L), conf.get(listLongConfigOption));
 
     // test the no-default values
     final ConfigOption<List<Long>> listLongConfigOptionWithoutDefault = ConfigOptions
@@ -88,7 +94,7 @@ public class ConfigOptionTest {
             .noDefaultValue()
             .withDescription("The key4 is illegal");
 
-    conf.set(checkLongValsOptions, "-1,2,3");
+    conf.set(checkLongValsOptions, Lists.newArrayList(-1, 2, 3));
 
     try {
       conf.get(checkLongValsOptions);
@@ -96,7 +102,7 @@ public class ConfigOptionTest {
     } catch (IllegalArgumentException illegalArgumentException) {
     }
 
-    conf.set(checkLongValsOptions, "1,2,3");
+    conf.set(checkLongValsOptions, Lists.newArrayList(1, 2, 3));
     try {
       conf.get(checkLongValsOptions);
     } catch (IllegalArgumentException illegalArgumentException) {

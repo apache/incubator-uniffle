@@ -576,8 +576,13 @@ public class RssConf {
     return value;
   }
 
-  public <T> RssConf set(ConfigOption<T> option, Object value) {
+  public <T> RssConf set(ConfigOption<T> option, T value) {
     setValueInternal(option.key(), value);
+    return this;
+  }
+
+  public RssConf set(String key, String value) {
+    setValueInternal(key, value);
     return this;
   }
 

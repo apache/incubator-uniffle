@@ -234,15 +234,19 @@ public class ConfigOptions {
       this.clazz = clazz;
       this.atomicConverter = atomicConverter;
       this.asListConverter = (v) -> {
-        return Arrays.stream(v.toString().split(LIST_SPILTTER))
-                .map(s -> atomicConverter.apply(s)).collect(Collectors.toList());
+        if (v instanceof List) {
+          return (List<E>) v;
+        } else {
+          return Arrays.stream(v.toString().split(LIST_SPILTTER))
+                  .map(s -> atomicConverter.apply(s)).collect(Collectors.toList());
+        }
       };
     }
 
     public ListConfigOptionBuilder checkValue(Function<E, Boolean> checkValueFunc, String errMsg) {
+      final Function<Object, List<E>> listConverFunc = asListConverter;
       Function<Object, List<E>> newConverter = (v) -> {
-        List<E> list = Arrays.stream(v.toString().split(LIST_SPILTTER))
-                .map(s -> atomicConverter.apply(s)).collect(Collectors.toList());
+        List<E> list = listConverFunc.apply(v);
         if (list.stream().anyMatch(x -> !checkValueFunc.apply(x))) {
           throw new IllegalArgumentException(errMsg);
         }
