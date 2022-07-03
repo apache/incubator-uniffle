@@ -47,7 +47,7 @@ public class ConfigOptionTest {
     assertSame(String.class, listStringConfigOption.getClazz());
 
     RssBaseConf conf = new RssBaseConf();
-    conf.setList(listStringConfigOption, "a,b,c");
+    conf.set(listStringConfigOption, "a,b,c");
 
     List<String> vals = conf.get(listStringConfigOption);
     assertEquals(3, vals.size());
@@ -64,7 +64,7 @@ public class ConfigOptionTest {
     List<Long> longDefaultVals = listLongConfigOption.defaultValue();
     assertEquals(longDefaultVals.size(), 1);
 
-    conf.setList(listLongConfigOption, "1,2,3");
+    conf.set(listLongConfigOption, "1,2,3");
     List<Long> longVals = conf.get(listLongConfigOption);
     assertEquals("[1, 2, 3]", longVals.toString());
     assertEquals(1, longVals.get(0));
@@ -88,7 +88,7 @@ public class ConfigOptionTest {
             .noDefaultValue()
             .withDescription("The key4 is illegal");
 
-    conf.setList(checkLongValsOptions, "-1,2,3");
+    conf.set(checkLongValsOptions, "-1,2,3");
 
     try {
       conf.get(checkLongValsOptions);
@@ -96,7 +96,7 @@ public class ConfigOptionTest {
     } catch (IllegalArgumentException illegalArgumentException) {
     }
 
-    conf.setList(checkLongValsOptions, "1,2,3");
+    conf.set(checkLongValsOptions, "1,2,3");
     try {
       conf.get(checkLongValsOptions);
     } catch (IllegalArgumentException illegalArgumentException) {
