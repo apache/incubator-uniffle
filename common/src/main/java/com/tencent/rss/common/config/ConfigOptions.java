@@ -17,8 +17,11 @@
 
 package com.tencent.rss.common.config;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * {@code ConfigOptions} are used to build a {@link ConfigOption}.
@@ -53,6 +56,7 @@ import java.util.function.Function;
  * }</pre>
  */
 public class ConfigOptions {
+
   /**
    * Not intended to be instantiated.
    */
@@ -166,6 +170,10 @@ public class ConfigOptions {
       this.converter = converter;
     }
 
+    public ListConfigOptionBuilder asList() {
+      return new ListConfigOptionBuilder<T>(key, clazz, converter);
+    }
+
     // todo: errorMsg shouldn't contain key
     public TypedConfigOptionBuilder checkValue(Function<T, Boolean> checkValue, String errMsg) {
       Function<Object, T> newConverter = (v) -> {
@@ -205,6 +213,77 @@ public class ConfigOptions {
         ConfigOption.EMPTY_DESCRIPTION,
         null,
         converter);
+    }
+  }
+
+  /**
+   * Builder for {@link ConfigOption} of list of type {@link E}.
+   *
+   * @param <E> list element type of the option
+   */
+  public static class ListConfigOptionBuilder<E> {
+    private static final String LIST_SPILTTER = ",";
+
+    private final String key;
+    private final Class<E> clazz;
+    private final Function<Object, E> atomicConverter;
+    private Function<Object, List<E>> asListConverter;
+
+    public ListConfigOptionBuilder(String key, Class<E> clazz, Function<Object, E> atomicConverter) {
+      this.key = key;
+      this.clazz = clazz;
+      this.atomicConverter = atomicConverter;
+      this.asListConverter = (v) -> {
+        if (v instanceof List) {
+          return (List<E>) v;
+        } else {
+          return Arrays.stream(v.toString().split(LIST_SPILTTER))
+                  .map(s -> atomicConverter.apply(s)).collect(Collectors.toList());
+        }
+      };
+    }
+
+    public ListConfigOptionBuilder checkValue(Function<E, Boolean> checkValueFunc, String errMsg) {
+      final Function<Object, List<E>> listConverFunc = asListConverter;
+      Function<Object, List<E>> newConverter = (v) -> {
+        List<E> list = listConverFunc.apply(v);
+        if (list.stream().anyMatch(x -> !checkValueFunc.apply(x))) {
+          throw new IllegalArgumentException(errMsg);
+        }
+        return list;
+      };
+      this.asListConverter = newConverter;
+      return this;
+    }
+
+    /**
+     * Creates a ConfigOption with the given default value.
+     *
+     * @param values The list of default values for the config option
+     * @return The config option with the default value.
+     */
+    @SafeVarargs
+    public final ConfigOption<List<E>> defaultValues(E... values) {
+      return new ConfigOption<>(
+        key,
+        clazz,
+        ConfigOption.EMPTY_DESCRIPTION,
+        Arrays.asList(values),
+        asListConverter);
+    }
+
+    /**
+     * Creates a ConfigOption without a default value.
+     *
+     * @return The config option without a default value.
+     */
+    public ConfigOption<List<E>> noDefaultValue() {
+      return new ConfigOption<>(
+        key,
+        clazz,
+        ConfigOption.EMPTY_DESCRIPTION,
+        null,
+        asListConverter);
     }
   }
 }
