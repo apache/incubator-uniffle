@@ -581,11 +581,6 @@ public class RssConf {
     return this;
   }
 
-  public RssConf set(String key, String value) {
-    setValueInternal(key, value);
-    return this;
-  }
-
   <T> void setValueInternal(String key, T value) {
     if (key == null) {
       throw new NullPointerException("Key must not be null.");

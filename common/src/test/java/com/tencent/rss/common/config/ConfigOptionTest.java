@@ -43,7 +43,7 @@ public class ConfigOptionTest {
             .withDescription("Int config key1");
 
     RssConf conf = new RssBaseConf();
-    conf.set("rss.key1", "2000");
+    conf.setString("rss.key1", "2000");
     assertEquals(2000, conf.get(intConfig));
 
     final ConfigOption<Boolean> booleanConfig = ConfigOptions
@@ -52,9 +52,9 @@ public class ConfigOptionTest {
             .defaultValue(false)
             .withDescription("Boolean config key");
 
-    conf.set("key2", "true");
+    conf.setString("key2", "true");
     assertTrue(conf.get(booleanConfig));
-    conf.set("key2", "False");
+    conf.setString("key2", "False");
     assertFalse(conf.get(booleanConfig));
   }
 
@@ -91,7 +91,7 @@ public class ConfigOptionTest {
     assertEquals(longDefaultVals.size(), 1);
     assertEquals(Lists.newArrayList(1L), longDefaultVals);
 
-    conf.set("rss.key2", "1,2,3");
+    conf.setString("rss.key2", "1,2,3");
     List<Long> longVals = conf.get(listLongConfigOption);
     assertEquals(Lists.newArrayList(1L, 2L, 3L), longVals);
 
