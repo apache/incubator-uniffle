@@ -35,6 +35,30 @@ import com.google.common.collect.Lists;
 public class ConfigOptionTest {
 
   @Test
+  public void testSetKVWithStringTypeDirectly() {
+    final ConfigOption<Integer> intConfig = ConfigOptions
+            .key("rss.key1")
+            .intType()
+            .defaultValue(1000)
+            .withDescription("Int config key1");
+
+    RssConf conf = new RssBaseConf();
+    conf.set("rss.key1", "2000");
+    assertEquals(2000, conf.get(intConfig));
+
+    final ConfigOption<Boolean> booleanConfig = ConfigOptions
+            .key("key2")
+            .booleanType()
+            .defaultValue(false)
+            .withDescription("Boolean config key");
+
+    conf.set("key2", "true");
+    assertTrue(conf.get(booleanConfig));
+    conf.set("key2", "False");
+    assertFalse(conf.get(booleanConfig));
+  }
+
+  @Test
   public void testListTypes() {
     // test the string type list.
     final ConfigOption<List<String>> listStringConfigOption = ConfigOptions
