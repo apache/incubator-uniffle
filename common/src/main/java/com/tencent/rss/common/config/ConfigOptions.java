@@ -57,7 +57,6 @@ import java.util.stream.Collectors;
  * }</pre>
  */
 public class ConfigOptions {
-  private static final String LIST_SPILTTER = ",";
 
   /**
    * Not intended to be instantiated.
@@ -224,6 +223,8 @@ public class ConfigOptions {
    * @param <E> list element type of the option
    */
   public static class ListConfigOptionBuilder<E> {
+    private static final String LIST_SPILTTER = ",";
+
     private final String key;
     private final Class<E> clazz;
     private final Function<Object, E> atomicConverter;
