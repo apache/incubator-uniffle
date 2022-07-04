@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +48,7 @@ public class AccessManager {
 
   private void init() throws RuntimeException {
     List<String> checkers = coordinatorConf.get(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS);
-    if (checkers.isEmpty()) {
+    if (CollectionUtils.isEmpty(checkers)) {
       LOG.warn("Access checkers is empty, will not init any checkers.");
       return;
     }

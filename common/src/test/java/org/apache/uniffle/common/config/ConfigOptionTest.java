@@ -139,6 +139,10 @@ public class ConfigOptionTest {
             .asList()
             .noDefaultValue()
             .withDescription("List config key5");
+
+    List<String> key5Val = conf.get(emptyListStringOption);
+    assertNull(key5Val);
+
     conf.setString(emptyListStringOption.key(), "");
     assertEquals(conf.get(emptyListStringOption).size(), 0);
     conf.setString(emptyListStringOption.key(), ", ");
