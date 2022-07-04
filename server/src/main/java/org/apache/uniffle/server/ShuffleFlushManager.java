@@ -139,18 +139,18 @@ public class ShuffleFlushManager {
 
   private void flushToFile(ShuffleDataFlushEvent event) {
 
+    Storage storage = storageManager.selectStorage(event);
+    if (storage != null && !storage.canWrite()) {
+      addPendingEvents(event);
+      return;
+    }
+
     long start = System.currentTimeMillis();
     List<ShufflePartitionedBlock> blocks = event.getShuffleBlocks();
     boolean writeSuccess = false;
     try {
-      Storage storage = storageManager.selectStorage(event);
       // storage info maybe null if the application cache was cleared already
       if (storage != null) {
-        if (!storage.canWrite()) {
-          addPendingEvents(event);
-          return;
-        }
-
         if (blocks == null || blocks.isEmpty()) {
           LOG.info("There is no block to be flushed: " + event);
         } else if (!event.isValid()) {

@@ -75,7 +75,8 @@ public class HdfsStorageManager extends SingleStorageManager {
       storage.removeHandlers(appId);
       appIdToStorages.remove(appId);
       ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
-          .createShuffleDeleteHandler(new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), storage.getConf()));
+          .createShuffleDeleteHandler(
+              new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), storage.getConf()));
       deleteHandler.delete(new String[] {storage.getStoragePath()}, appId);
     }
   }
