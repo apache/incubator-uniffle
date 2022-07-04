@@ -23,9 +23,9 @@ import com.google.common.collect.Maps;
 import org.apache.hadoop.mapred.JobConf;
 import org.junit.jupiter.api.Test;
 
-import com.tencent.rss.client.util.RssClientConfig;
-import com.tencent.rss.common.exception.RssException;
-import com.tencent.rss.storage.util.StorageType;
+import org.apache.uniffle.client.util.RssClientConfig;
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

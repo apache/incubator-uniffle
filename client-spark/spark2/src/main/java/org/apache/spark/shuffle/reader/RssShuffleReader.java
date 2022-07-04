@@ -39,10 +39,10 @@ import scala.collection.Iterator;
 import scala.runtime.AbstractFunction0;
 import scala.runtime.BoxedUnit;
 
-import com.tencent.rss.client.api.ShuffleReadClient;
-import com.tencent.rss.client.factory.ShuffleClientFactory;
-import com.tencent.rss.client.request.CreateShuffleReadClientRequest;
-import com.tencent.rss.common.ShuffleServerInfo;
+import org.apache.uniffle.client.api.ShuffleReadClient;
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
+import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
+import org.apache.uniffle.common.ShuffleServerInfo;
 
 public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 

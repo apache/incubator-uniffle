@@ -25,7 +25,7 @@ COORDINATOR_HOME="$(
   pwd
 )"
 CONF_FILE="./conf/coordinator.conf "
-MAIN_CLASS="com.tencent.rss.coordinator.CoordinatorServer"
+MAIN_CLASS="org.apache.uniffle.coordinator.CoordinatorServer"
 
 cd $COORDINATOR_HOME
 

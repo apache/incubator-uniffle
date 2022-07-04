@@ -22,7 +22,7 @@ import java.util.NoSuchElementException;
 
 import com.google.common.collect.Lists;
 
-import com.tencent.rss.storage.util.StorageType;
+import org.apache.uniffle.storage.util.StorageType;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.sort.SortShuffleManager;
 import org.junit.jupiter.api.AfterAll;
@@ -31,11 +31,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-import com.tencent.rss.client.api.CoordinatorClient;
-import com.tencent.rss.client.response.RssAccessClusterResponse;
+import org.apache.uniffle.client.api.CoordinatorClient;
+import org.apache.uniffle.client.response.RssAccessClusterResponse;
 
-import static com.tencent.rss.client.response.ResponseStatusCode.ACCESS_DENIED;
-import static com.tencent.rss.client.response.ResponseStatusCode.SUCCESS;
+import static org.apache.uniffle.client.response.ResponseStatusCode.ACCESS_DENIED;
+import static org.apache.uniffle.client.response.ResponseStatusCode.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

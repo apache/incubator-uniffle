@@ -21,7 +21,7 @@ import java.util.Set;
 
 import com.google.common.collect.Sets;
 
-import com.tencent.rss.client.util.RssClientConfig;
+import org.apache.uniffle.client.util.RssClientConfig;
 
 public class RssSparkConfig {
 

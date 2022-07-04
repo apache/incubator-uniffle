@@ -22,8 +22,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>rss-main</artifactId>
-        <groupId>com.tencent.rss</groupId>
+        <artifactId>uniffle-parent</artifactId>
+        <groupId>org.apache.uniffle</groupId>
         <version>0.6.0-snapshot</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
@@ -38,11 +38,11 @@
             <artifactId>guava</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.tencent.rss</groupId>
+            <groupId>org.apache.uniffle</groupId>
             <artifactId>rss-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.tencent.rss</groupId>
+            <groupId>org.apache.uniffle</groupId>
             <artifactId>rss-client</artifactId>
         </dependency>
         <dependency>
@@ -52,7 +52,7 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.tencent.rss</groupId>
+            <groupId>org.apache.uniffle</groupId>
             <artifactId>shuffle-storage</artifactId>
             <type>test-jar</type>
             <scope>test</scope>

@@ -31,7 +31,7 @@ import org.apache.hadoop.mapreduce.RssMRUtils;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import com.tencent.rss.common.exception.RssException;
+import org.apache.uniffle.common.exception.RssException;
 
 public class RssEventFetcher<K,V> {
   private static final Log LOG = LogFactory.getLog(RssEventFetcher.class);

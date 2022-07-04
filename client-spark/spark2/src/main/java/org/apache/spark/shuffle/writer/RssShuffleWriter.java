@@ -49,11 +49,11 @@ import scala.Option;
 import scala.Product2;
 import scala.collection.Iterator;
 
-import com.tencent.rss.client.api.ShuffleWriteClient;
-import com.tencent.rss.common.ShuffleBlockInfo;
-import com.tencent.rss.common.ShuffleServerInfo;
-import com.tencent.rss.common.exception.RssException;
-import com.tencent.rss.storage.util.StorageType;
+import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.storage.util.StorageType;
 
 public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 

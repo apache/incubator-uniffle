@@ -21,13 +21,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>rss-main</artifactId>
-        <groupId>com.tencent.rss</groupId>
+        <artifactId>uniffle-parent</artifactId>
+        <groupId>org.apache.uniffle</groupId>
         <version>0.6.0-snapshot</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <groupId>com.tencent.rss</groupId>
+    <groupId>org.apache.uniffle</groupId>
     <artifactId>rss-client-spark3</artifactId>
     <version>0.6.0-snapshot</version>
     <packaging>jar</packaging>
@@ -40,11 +40,11 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.tencent.rss</groupId>
+            <groupId>org.apache.uniffle</groupId>
             <artifactId>rss-client</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.tencent.rss</groupId>
+            <groupId>org.apache.uniffle</groupId>
             <artifactId>rss-client-spark-common</artifactId>
         </dependency>
         <dependency>
@@ -57,13 +57,13 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.tencent.rss</groupId>
+            <groupId>org.apache.uniffle</groupId>
             <artifactId>rss-client-spark-common</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.tencent.rss</groupId>
+            <groupId>org.apache.uniffle</groupId>
             <artifactId>shuffle-storage</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
@@ -91,7 +91,7 @@
                             <shadedArtifactAttached>true</shadedArtifactAttached>
                             <artifactSet>
                                 <includes>
-                                    <include>com.tencent.rss:*</include>
+                                    <include>org.apache.uniffle:*</include>
                                     <include>com.google.protobuf:*</include>
                                     <include>com.google.code.gson:gson</include>
                                     <include>io.grpc:*</include>

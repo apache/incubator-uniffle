@@ -24,7 +24,7 @@ import java.util.Set;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.tencent.rss.common.RemoteStorageInfo;
+import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.WritableComparator;
@@ -32,13 +32,13 @@ import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import com.tencent.rss.client.api.ShuffleWriteClient;
-import com.tencent.rss.client.response.SendShuffleDataResult;
-import com.tencent.rss.common.PartitionRange;
-import com.tencent.rss.common.ShuffleAssignmentsInfo;
-import com.tencent.rss.common.ShuffleBlockInfo;
-import com.tencent.rss.common.ShuffleServerInfo;
-import com.tencent.rss.common.exception.RssException;
+import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.client.response.SendShuffleDataResult;
+import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.ShuffleAssignmentsInfo;
+import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

@@ -35,9 +35,9 @@ import scala.Tuple2;
 import scala.collection.AbstractIterator;
 import scala.collection.Iterator;
 
-import com.tencent.rss.client.api.ShuffleReadClient;
-import com.tencent.rss.client.response.CompressedShuffleBlock;
-import com.tencent.rss.common.RssShuffleUtils;
+import org.apache.uniffle.client.api.ShuffleReadClient;
+import org.apache.uniffle.client.response.CompressedShuffleBlock;
+import org.apache.uniffle.common.RssShuffleUtils;
 
 public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C>> {
 

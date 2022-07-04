@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.tencent.rss.test;
+package org.apache.uniffle.test;
 
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -29,8 +29,8 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.RssShuffleManager;
 import org.junit.jupiter.api.Test;
 
-import com.tencent.rss.coordinator.CoordinatorConf;
-import com.tencent.rss.storage.util.StorageType;
+import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

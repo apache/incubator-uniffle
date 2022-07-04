@@ -26,7 +26,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Maps;
-import com.tencent.rss.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleBlockInfo;
 import java.util.List;
 import org.apache.spark.SparkConf;
 import org.apache.spark.executor.ShuffleWriteMetrics;

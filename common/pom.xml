@@ -19,8 +19,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>com.tencent.rss</groupId>
-    <artifactId>rss-main</artifactId>
+    <groupId>org.apache.uniffle</groupId>
+    <artifactId>uniffle-parent</artifactId>
     <version>0.6.0-snapshot</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
@@ -32,7 +32,7 @@
   <dependencies>
     <dependency>
       <artifactId>rss-proto</artifactId>
-      <groupId>com.tencent.rss</groupId>
+      <groupId>org.apache.uniffle</groupId>
     </dependency>
     <dependency>
       <groupId>info.picocli</groupId>

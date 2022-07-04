@@ -28,12 +28,12 @@ import org.apache.spark.TaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tencent.rss.client.api.CoordinatorClient;
-import com.tencent.rss.client.request.RssAccessClusterRequest;
-import com.tencent.rss.client.response.ResponseStatusCode;
-import com.tencent.rss.client.response.RssAccessClusterResponse;
-import com.tencent.rss.common.exception.RssException;
-import com.tencent.rss.common.util.Constants;
+import org.apache.uniffle.client.api.CoordinatorClient;
+import org.apache.uniffle.client.request.RssAccessClusterRequest;
+import org.apache.uniffle.client.response.ResponseStatusCode;
+import org.apache.uniffle.client.response.RssAccessClusterResponse;
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.Constants;
 
 public class DelegationRssShuffleManager implements ShuffleManager {
 

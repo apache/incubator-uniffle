@@ -23,8 +23,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Maps;
-import com.tencent.rss.storage.handler.impl.HdfsShuffleWriteHandler;
-import com.tencent.rss.storage.util.StorageType;
+import org.apache.uniffle.storage.handler.impl.HdfsShuffleWriteHandler;
+import org.apache.uniffle.storage.util.StorageType;
 import java.util.Map;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;

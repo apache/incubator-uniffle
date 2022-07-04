@@ -290,7 +290,7 @@
              <!-- new add -->
             <property name="severity" value="WARNING"/>
             <property name="sortImportsInGroupAlphabetically" value="true"/>
-            <property name="specialImportsRegExp" value="^com\.tencent\."/>
+            <property name="specialImportsRegExp" value="^org\.apache\.uniffle"/>
             <property name="standardPackageRegExp" value="^java\.|^javax\."/>
             <property name="separateLineBetweenGroups" value="true"/>
             <property name="customImportOrderRules" value="STANDARD_JAVA_PACKAGE###THIRD_PARTY_PACKAGE###SPECIAL_IMPORTS###STATIC"/>

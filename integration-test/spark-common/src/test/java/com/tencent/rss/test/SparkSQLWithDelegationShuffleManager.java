@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.tencent.rss.test;
+package org.apache.uniffle.test;
 
 import java.io.File;
 import java.util.Map;
@@ -29,9 +29,9 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
 
-import com.tencent.rss.coordinator.CoordinatorConf;
-import com.tencent.rss.server.ShuffleServerConf;
-import com.tencent.rss.storage.util.StorageType;
+import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.storage.util.StorageType;
 
 public class SparkSQLWithDelegationShuffleManager extends SparkSQLTest {
 
@@ -42,7 +42,7 @@ public class SparkSQLWithDelegationShuffleManager extends SparkSQLTest {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setString(
         CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
-        "com.tencent.rss.coordinator.AccessCandidatesChecker,com.tencent.rss.coordinator.AccessClusterLoadChecker");
+        "org.apache.uniffle.coordinator.AccessCandidatesChecker,org.apache.uniffle.coordinator.AccessClusterLoadChecker");
     coordinatorConf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, candidates);
     coordinatorConf.set(CoordinatorConf.COORDINATOR_APP_EXPIRED, 5000L);
     coordinatorConf.set(CoordinatorConf.COORDINATOR_ACCESS_LOADCHECKER_SERVER_NUM_THRESHOLD, 1);

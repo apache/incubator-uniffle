@@ -36,10 +36,10 @@ import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tencent.rss.common.ShuffleServerInfo;
-import com.tencent.rss.common.exception.RssException;
-import com.tencent.rss.common.util.ByteUnit;
-import com.tencent.rss.storage.util.StorageType;
+import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.ByteUnit;
+import org.apache.uniffle.storage.util.StorageType;
 
 public class RssMapOutputCollector<K extends Object, V extends Object>
     implements MapOutputCollector<K, V> {

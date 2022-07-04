@@ -56,17 +56,17 @@ import scala.Tuple3;
 import scala.collection.Iterator;
 import scala.collection.Seq;
 
-import com.tencent.rss.client.api.ShuffleWriteClient;
-import com.tencent.rss.client.factory.ShuffleClientFactory;
-import com.tencent.rss.client.response.SendShuffleDataResult;
-import com.tencent.rss.client.util.ClientUtils;
-import com.tencent.rss.common.PartitionRange;
-import com.tencent.rss.common.RemoteStorageInfo;
-import com.tencent.rss.common.ShuffleAssignmentsInfo;
-import com.tencent.rss.common.ShuffleBlockInfo;
-import com.tencent.rss.common.ShuffleServerInfo;
-import com.tencent.rss.common.util.Constants;
-import com.tencent.rss.common.util.RssUtils;
+import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
+import org.apache.uniffle.client.response.SendShuffleDataResult;
+import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.ShuffleAssignmentsInfo;
+import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.RssUtils;
 
 public class RssShuffleManager implements ShuffleManager {
 

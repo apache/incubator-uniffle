@@ -19,7 +19,7 @@ package org.apache.spark.shuffle.writer;
 
 import java.util.List;
 
-import com.tencent.rss.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleBlockInfo;
 
 public class AddBlockEvent {
 

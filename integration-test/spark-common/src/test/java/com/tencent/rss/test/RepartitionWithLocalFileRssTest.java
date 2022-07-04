@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.tencent.rss.test;
+package org.apache.uniffle.test;
 
 import java.io.File;
 import java.util.Map;
@@ -26,9 +26,9 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
 
-import com.tencent.rss.coordinator.CoordinatorConf;
-import com.tencent.rss.server.ShuffleServerConf;
-import com.tencent.rss.storage.util.StorageType;
+import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.storage.util.StorageType;
 
 public class RepartitionWithLocalFileRssTest extends RepartitionTest {
 

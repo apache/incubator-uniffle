@@ -17,7 +17,7 @@
 
 package org.apache.hadoop.mapreduce;
 
-import com.tencent.rss.client.util.IdHelper;
+import org.apache.uniffle.client.util.IdHelper;
 
 public class MRIdHelper implements IdHelper {
 

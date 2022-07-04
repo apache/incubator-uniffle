@@ -21,8 +21,8 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>com.tencent.rss</groupId>
-    <artifactId>rss-main</artifactId>
+    <groupId>org.apache.uniffle</groupId>
+    <artifactId>uniffle-parent</artifactId>
     <version>0.6.0-snapshot</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
@@ -34,7 +34,7 @@
   <dependencies>
     <dependency>
       <artifactId>rss-internal-client</artifactId>
-      <groupId>com.tencent.rss</groupId>
+      <groupId>org.apache.uniffle</groupId>
     </dependency>
 
     <dependency>

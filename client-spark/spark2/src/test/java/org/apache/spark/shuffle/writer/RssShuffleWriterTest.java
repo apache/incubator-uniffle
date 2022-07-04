@@ -44,10 +44,10 @@ import scala.Product2;
 import scala.Tuple2;
 import scala.collection.mutable.MutableList;
 
-import com.tencent.rss.client.api.ShuffleWriteClient;
-import com.tencent.rss.common.ShuffleBlockInfo;
-import com.tencent.rss.common.ShuffleServerInfo;
-import com.tencent.rss.storage.util.StorageType;
+import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.tencent.rss.test;
+package org.apache.uniffle.test;
 
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -32,9 +32,9 @@ import org.apache.spark.shuffle.ShuffleManager;
 import org.apache.spark.shuffle.sort.SortShuffleManager;
 import org.junit.jupiter.api.Test;
 
-import com.tencent.rss.coordinator.CoordinatorConf;
-import com.tencent.rss.server.ShuffleServerConf;
-import com.tencent.rss.storage.util.StorageType;
+import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static java.lang.Thread.sleep;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -83,7 +83,7 @@ public class AutoAccessTest extends IntegrationTestBase {
     coordinatorConf.setString("rss.coordinator.access.candidates.path", candidatesFile);
     coordinatorConf.setString(
         "rss.coordinator.access.checkers",
-        "com.tencent.rss.coordinator.AccessCandidatesChecker,com.tencent.rss.coordinator.AccessClusterLoadChecker");
+        "org.apache.uniffle.coordinator.AccessCandidatesChecker,org.apache.uniffle.coordinator.AccessClusterLoadChecker");
     createCoordinatorServer(coordinatorConf);
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
