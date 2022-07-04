@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import io.prometheus.client.Gauge;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
@@ -131,6 +132,14 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
 
     assertEquals(3.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.get(storageHost).get(), 0.5);
     assertEquals(3.0, ShuffleServerMetrics.counterRemoteStorageSuccessWrite.get(storageHost).get(), 0.5);
+
+    // test case for process event whose related app was cleared already
+    assertEquals(0, ShuffleServerMetrics.gaugeWriteHandler.get(), 0.5);
+    ShuffleDataFlushEvent fakeEvent =
+        createShuffleDataFlushEvent("fakeAppId", 1, 1, 1, null);
+    manager.addToFlushQueue(fakeEvent);
+    waitForQueueClear(manager);
+    waitForMetrics(ShuffleServerMetrics.gaugeWriteHandler, 0, 0.5);
   }
 
   @Test
@@ -264,6 +273,37 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     storageManager.removeResources(appId2, Sets.newHashSet(1));
     assertEquals(0, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     assertEquals(0, storage.getHandlerSize());
+  }
+
+  private void waitForMetrics(Gauge gauge, double expected, double delta) throws Exception {
+    int retry = 0;
+    boolean match = false;
+    do {
+      Thread.sleep(500);
+      if (retry > 10) {
+        fail("Unexpected flush process when waitForMetrics");
+      }
+      retry++;
+      try {
+        assertEquals(0, gauge.get(), delta);
+        match = true;
+      } catch(Exception e) {
+        // ignore
+      }
+    } while (!match);
+  }
+
+  private void waitForQueueClear(ShuffleFlushManager manager) throws Exception {
+    int retry = 0;
+    int size = 0;
+    do {
+      Thread.sleep(500);
+      if (retry > 10) {
+        fail("Unexpected flush process when waitForQueueClear");
+      }
+      retry++;
+      size = manager.getEventNumInFlush();
+    } while (size > 0);
   }
 
   private void waitForFlush(ShuffleFlushManager manager,
