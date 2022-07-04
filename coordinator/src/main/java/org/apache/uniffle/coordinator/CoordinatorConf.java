@@ -90,7 +90,7 @@ public class CoordinatorConf extends RssBaseConf {
       .intType()
       .checkValue(ConfigUtils.positiveIntegerValidator2, "load checker serverNum threshold must be positive")
       .noDefaultValue()
-      .withDescription("Accessed candidates file path");
+      .withDescription("The minimal required number of healthy shuffle servers when being accessed by client");
   public static final ConfigOption<Boolean> COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED = ConfigOptions
       .key("rss.coordinator.dynamicClientConf.enabled")
       .booleanType()
@@ -105,7 +105,7 @@ public class CoordinatorConf extends RssBaseConf {
           .key("rss.coordinator.remote.storage.path")
           .stringType()
           .noDefaultValue()
-          .withDescription("all supported remote paths for RSS cluster, seperated by ','");
+          .withDescription("all supported remote paths for RSS cluster, separated by ','");
   public static final ConfigOption<Integer> COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC = ConfigOptions
       .key("rss.coordinator.dynamicClientConf.updateIntervalSec")
       .intType()
@@ -116,7 +116,7 @@ public class CoordinatorConf extends RssBaseConf {
       .key("rss.coordinator.remote.storage.cluster.conf")
       .stringType()
       .noDefaultValue()
-      .withDescription("Remote Storage Cluster related conf with format $clusterId,$key=$value, sperated by ';'");
+      .withDescription("Remote Storage Cluster related conf with format $clusterId,$key=$value, separated by ';'");
 
 
   public CoordinatorConf() {
