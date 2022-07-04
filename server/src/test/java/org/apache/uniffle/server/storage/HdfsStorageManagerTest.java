@@ -24,28 +24,27 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.storage.common.HdfsStorage;
 import org.apache.uniffle.storage.util.StorageType;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class HdfsStorageManagerTest {
 
-  @Before
-  public void prepare() {
+  @BeforeAll
+  public static void prepare() {
     ShuffleServerMetrics.register();
   }
 
-  @After
-  public void clear() {
+  @AfterAll
+  public static void clear() {
     ShuffleServerMetrics.clear();
   }
 
