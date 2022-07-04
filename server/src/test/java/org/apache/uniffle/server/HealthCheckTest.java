@@ -33,9 +33,9 @@ public class HealthCheckTest {
   public void buildInCheckerTest() {
     ShuffleServerConf conf = new ShuffleServerConf();
     assertConf(conf);
-    conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES, "");
+    conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(), "");
     assertConf(conf);
-    conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES, "org.apache.uniffle.server.LocalStorageChecker");
+    conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(), "org.apache.uniffle.server.LocalStorageChecker");
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, "s1");
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     assertConf(conf);
@@ -62,15 +62,15 @@ public class HealthCheckTest {
   public void checkTest() {
     AtomicBoolean healthy = new AtomicBoolean(false);
     ShuffleServerConf conf = new ShuffleServerConf();
-    conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES, HealthyMockChecker.class.getCanonicalName());
+    conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(), HealthyMockChecker.class.getCanonicalName());
     HealthCheck checker = new HealthCheck(healthy, conf, Lists.newArrayList());
     checker.check();
     assertTrue(healthy.get());
-    conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES, UnHealthyMockChecker.class.getCanonicalName());
+    conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(), UnHealthyMockChecker.class.getCanonicalName());
     checker = new HealthCheck(healthy, conf, Lists.newArrayList());
     checker.check();
     assertFalse(healthy.get());
-    conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES,
+    conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(),
         UnHealthyMockChecker.class.getCanonicalName() + "," + HealthyMockChecker.class.getCanonicalName());
     checker = new HealthCheck(healthy, conf, Lists.newArrayList());
     checker.check();

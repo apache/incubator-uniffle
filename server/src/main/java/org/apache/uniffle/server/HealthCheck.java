@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Uninterruptibles;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,15 +46,14 @@ public class HealthCheck {
   public HealthCheck(AtomicBoolean isHealthy, ShuffleServerConf conf, List<Checker> buildInCheckers) {
     this.isHealthy = isHealthy;
     this.checkIntervalMs = conf.getLong(ShuffleServerConf.HEALTH_CHECK_INTERVAL);
-    String checkersStr = conf.getString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES);
-    if (StringUtils.isEmpty(checkersStr) && buildInCheckers.isEmpty()) {
+    List<String> configuredCheckers = conf.get(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES);
+    if (configuredCheckers.isEmpty() && buildInCheckers.isEmpty()) {
       throw new IllegalArgumentException("The checkers cannot be empty");
     }
     checkers.addAll(buildInCheckers);
-    if (!StringUtils.isEmpty(checkersStr)) {
-      String[] checkerNames = checkersStr.split(",");
+    if (!configuredCheckers.isEmpty()) {
       try {
-        for (String name : checkerNames) {
+        for (String name : configuredCheckers) {
           Class<?> cls = Class.forName(name);
           Constructor<?> cons = cls.getConstructor(ShuffleServerConf.class);
           checkers.add((Checker) cons.newInstance(conf));
