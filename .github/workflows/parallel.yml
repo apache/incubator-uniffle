@@ -92,3 +92,5 @@ jobs:
         name: ${{ inputs.reports-name }}-${{ matrix.profile }}
         path: ${{ inputs.reports-path }}
       continue-on-error: true
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
