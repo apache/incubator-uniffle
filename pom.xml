@@ -906,7 +906,6 @@
             <exclude>quantity_temp.properties</exclude>
             <exclude>rss*/</exclude>
             <exclude>spark-patches/**</exclude>
-            <exclude>docs/*.md</exclude>
             <exclude>.github/PULL_REQUEST_TEMPLATE</exclude>
           </excludes>
         </configuration>
