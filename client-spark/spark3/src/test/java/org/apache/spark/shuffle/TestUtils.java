@@ -20,6 +20,8 @@ package org.apache.spark.shuffle;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import org.apache.spark.SparkConf;
 import org.apache.spark.util.EventLoop;
 
@@ -35,5 +37,9 @@ public class TestUtils {
       Map<String, Set<Long>> successBlockIds,
       Map<String, Set<Long>> failBlockIds) {
     return new RssShuffleManager(conf, isDriver, loop, successBlockIds, failBlockIds);
+  }
+
+  public static boolean isMacOnAppleSilicon() {
+    return SystemUtils.IS_OS_MAC_OSX && SystemUtils.OS_ARCH.equals("aarch64");
   }
 }
