@@ -888,23 +888,8 @@
             <exclude>CONTRIBUTING.md</exclude>
             <exclude>LICENSE</exclude>
             <exclude>**/target/**</exclude>
-            <exclude>**/**/target/**</exclude>
-            <exclude>tencent-bin/**</exclude>
-            <exclude>*.iml</exclude>
-            <exclude>**/*.iml</exclude>
-            <exclude>**/**/*.iml</exclude>
-            <exclude>dependency-reduced-pom.xml</exclude>
             <exclude>src/test/resources/empty</exclude>
             <exclude>**/dependency-reduced-pom.xml</exclude>
-            <exclude>**/**/dependency-reduced-pom.xml</exclude>
-            <exclude>**/pom.xml.versionsBackup</exclude>
-            <exclude>**/**/pom.xml.versionsBackup</exclude>
-            <exclude>pom.xml.versionsBackup</exclude>
-            <exclude>*.log</exclude>
-            <exclude>CovTemp/**</exclude>
-            <exclude>coverage_ogid.txt</exclude>
-            <exclude>quantity_temp.properties</exclude>
-            <exclude>rss*/</exclude>
             <exclude>spark-patches/**</exclude>
             <exclude>.github/PULL_REQUEST_TEMPLATE</exclude>
           </excludes>
