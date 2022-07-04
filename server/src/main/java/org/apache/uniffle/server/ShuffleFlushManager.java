@@ -93,10 +93,14 @@ public class ShuffleFlushManager {
         try {
           ShuffleDataFlushEvent event = flushQueue.take();
           threadPoolExecutor.execute(() -> {
-            ShuffleServerMetrics.gaugeEventQueueSize.set(flushQueue.size());
-            ShuffleServerMetrics.gaugeWriteHandler.inc();
-            flushToFile(event);
-            ShuffleServerMetrics.gaugeWriteHandler.dec();
+            try {
+              ShuffleServerMetrics.gaugeEventQueueSize.set(flushQueue.size());
+              ShuffleServerMetrics.gaugeWriteHandler.inc();
+              flushToFile(event);
+              ShuffleServerMetrics.gaugeWriteHandler.dec();
+            } catch (Exception e) {
+              LOG.error("Exception happened when flush data for " + event, e);
+            }
           });
         } catch (Exception e) {
           LOG.error("Exception happened when process event.", e);
@@ -135,59 +139,62 @@ public class ShuffleFlushManager {
 
   private void flushToFile(ShuffleDataFlushEvent event) {
 
-    Storage storage = storageManager.selectStorage(event);
-    if (!storage.canWrite()) {
-      addPendingEvents(event);
-      return;
-    }
-
     long start = System.currentTimeMillis();
     List<ShufflePartitionedBlock> blocks = event.getShuffleBlocks();
     boolean writeSuccess = false;
     try {
-      if (blocks == null || blocks.isEmpty()) {
-        LOG.info("There is no block to be flushed: " + event);
-      } else if (!event.isValid()) {
-        //  avoid printing error log
-        writeSuccess = true;
-        LOG.warn("AppId {} was removed already, event {} should be dropped", event.getAppId(), event);
-      } else {
-        ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(new CreateShuffleWriteHandlerRequest(
-            storageType,
-            event.getAppId(),
-            event.getShuffleId(),
-            event.getStartPartition(),
-            event.getEndPartition(),
-            storageBasePaths,
-            shuffleServerId,
-            hadoopConf,
-            storageDataReplica));
+      Storage storage = storageManager.selectStorage(event);
+      // storage info maybe null if the application cache was cleared already
+      if (storage != null) {
+        if (!storage.canWrite()) {
+          addPendingEvents(event);
+          return;
+        }
 
-        do {
-          if (event.getRetryTimes() > retryMax) {
-            LOG.error("Failed to write data for " + event + " in " + retryMax + " times, shuffle data will be lost");
-            ShuffleServerMetrics.incStorageFailedCounter(storage.getStorageHost());
-            break;
-          }
-          if (!event.isValid()) {
-            LOG.warn("AppId {} was removed already, event {} should be dropped, may leak one handler",
-                event.getAppId(), event);
-            //  avoid printing error log
-            writeSuccess = true;
-            break;
-          }
+        if (blocks == null || blocks.isEmpty()) {
+          LOG.info("There is no block to be flushed: " + event);
+        } else if (!event.isValid()) {
+          //  avoid printing error log
+          writeSuccess = true;
+          LOG.warn("AppId {} was removed already, event {} should be dropped", event.getAppId(), event);
+        } else {
+          ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(new CreateShuffleWriteHandlerRequest(
+              storageType,
+              event.getAppId(),
+              event.getShuffleId(),
+              event.getStartPartition(),
+              event.getEndPartition(),
+              storageBasePaths,
+              shuffleServerId,
+              hadoopConf,
+              storageDataReplica));
 
-          writeSuccess = storageManager.write(storage, handler, event);
+          do {
+            if (event.getRetryTimes() > retryMax) {
+              LOG.error("Failed to write data for " + event + " in " + retryMax + " times, shuffle data will be lost");
+              ShuffleServerMetrics.incStorageFailedCounter(storage.getStorageHost());
+              break;
+            }
+            if (!event.isValid()) {
+              LOG.warn("AppId {} was removed already, event {} should be dropped, may leak one handler",
+                  event.getAppId(), event);
+              //  avoid printing error log
+              writeSuccess = true;
+              break;
+            }
 
-          if (writeSuccess) {
-            updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), blocks);
-            ShuffleServerMetrics.incStorageSuccessCounter(storage.getStorageHost());
-            break;
-          } else {
-            event.increaseRetryTimes();
-            ShuffleServerMetrics.incStorageRetryCounter(storage.getStorageHost());
-          }
-        } while (event.getRetryTimes() <= retryMax);
+            writeSuccess = storageManager.write(storage, handler, event);
+
+            if (writeSuccess) {
+              updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), blocks);
+              ShuffleServerMetrics.incStorageSuccessCounter(storage.getStorageHost());
+              break;
+            } else {
+              event.increaseRetryTimes();
+              ShuffleServerMetrics.incStorageRetryCounter(storage.getStorageHost());
+            }
+          } while (event.getRetryTimes() <= retryMax);
+        }
       }
     } catch (Exception e) {
       // just log the error, don't throw the exception and stop the flush thread
@@ -285,7 +292,9 @@ public class ShuffleFlushManager {
           pendingEventTimeoutSec, event.getEvent());
       return;
     }
-    if (storage.canWrite()) {
+    // storage maybe null if the application cache was cleared already
+    // add event to flush queue, and it will be released
+    if (storage == null || storage.canWrite()) {
       addToFlushQueue(event.getEvent());
       return;
     }

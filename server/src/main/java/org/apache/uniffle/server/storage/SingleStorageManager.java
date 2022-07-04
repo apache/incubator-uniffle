@@ -82,27 +82,35 @@ public abstract class SingleStorageManager implements StorageManager {
 
   @Override
   public void updateWriteMetrics(ShuffleDataFlushEvent event, long writeTime) {
-    // update shuffle server metrics, these metrics belong to server module
-    // we can't update them in storage module
-    StorageWriteMetrics metrics = createStorageWriteMetrics(event, writeTime);
-    ShuffleServerMetrics.counterTotalWriteTime.inc(metrics.getWriteTime());
-    ShuffleServerMetrics.counterWriteTotal.inc();
-    if (metrics.getWriteTime() > writeSlowThreshold) {
-      ShuffleServerMetrics.counterWriteSlow.inc();
+    // the metrics update shouldn't block normal process
+    // log the exception if error happen
+    try {
+      // update shuffle server metrics, these metrics belong to server module
+      // we can't update them in storage module
+      StorageWriteMetrics metrics = createStorageWriteMetrics(event, writeTime);
+      ShuffleServerMetrics.counterTotalWriteTime.inc(metrics.getWriteTime());
+      ShuffleServerMetrics.counterWriteTotal.inc();
+      if (metrics.getWriteTime() > writeSlowThreshold) {
+        ShuffleServerMetrics.counterWriteSlow.inc();
+      }
+      ShuffleServerMetrics.counterTotalWriteDataSize.inc(metrics.getEventSize());
+      ShuffleServerMetrics.counterTotalWriteBlockSize.inc(metrics.getWriteBlocks());
+      if (metrics.getEventSize() < eventSizeThresholdL1) {
+        ShuffleServerMetrics.counterEventSizeThresholdLevel1.inc();
+      } else if (metrics.getEventSize() < eventSizeThresholdL2) {
+        ShuffleServerMetrics.counterEventSizeThresholdLevel2.inc();
+      } else if (metrics.getEventSize() < eventSizeThresholdL3) {
+        ShuffleServerMetrics.counterEventSizeThresholdLevel3.inc();
+      } else {
+        ShuffleServerMetrics.counterEventSizeThresholdLevel4.inc();
+      }
+      Storage storage = selectStorage(event);
+      if (storage != null) {
+        storage.updateWriteMetrics(metrics);
+      }
+    } catch (Exception e) {
+      LOG.warn("Exception happened when update write metrics for " + event, e);
     }
-    ShuffleServerMetrics.counterTotalWriteDataSize.inc(metrics.getEventSize());
-    ShuffleServerMetrics.counterTotalWriteBlockSize.inc(metrics.getWriteBlocks());
-    if (metrics.getEventSize() < eventSizeThresholdL1) {
-      ShuffleServerMetrics.counterEventSizeThresholdLevel1.inc();
-    } else if (metrics.getEventSize() < eventSizeThresholdL2) {
-      ShuffleServerMetrics.counterEventSizeThresholdLevel2.inc();
-    } else if (metrics.getEventSize() < eventSizeThresholdL3) {
-      ShuffleServerMetrics.counterEventSizeThresholdLevel3.inc();
-    } else {
-      ShuffleServerMetrics.counterEventSizeThresholdLevel4.inc();
-    }
-    Storage storage = selectStorage(event);
-    storage.updateWriteMetrics(metrics);
   }
 
   public StorageWriteMetrics createStorageWriteMetrics(ShuffleDataFlushEvent event, long writeTime) {
