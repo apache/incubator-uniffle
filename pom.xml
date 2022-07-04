@@ -884,8 +884,6 @@
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
           <excludes>
-            <exclude>README.md</exclude>
-            <exclude>CONTRIBUTING.md</exclude>
             <exclude>LICENSE</exclude>
             <exclude>**/target/**</exclude>
             <exclude>src/test/resources/empty</exclude>
