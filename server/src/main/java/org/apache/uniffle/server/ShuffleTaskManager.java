@@ -18,6 +18,7 @@
 package org.apache.uniffle.server;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -399,9 +400,23 @@ public class ShuffleTaskManager {
     shuffleBufferManager.removeBuffer(appId);
     shuffleFlushManager.removeResources(appId);
     if (shuffleToCachedBlockIds != null) {
-      storageManager.removeResources(appId, shuffleToCachedBlockIds.keySet());
+      storageManager.removeResources(appId, shuffleToCachedBlockIds.keySet(), true);
     }
     LOG.info("Finish remove resource for appId[" + appId + "] cost " + (System.currentTimeMillis() - start) + " ms");
+  }
+
+  @VisibleForTesting
+  public void removeShuffleResources(String appId, int shuffleId) {
+    LOG.info("Start remove shuffle resource for appId[" + appId + "], shuffleId[" + shuffleId + "]");
+    final long start = System.currentTimeMillis();
+    final Map<Integer, Roaring64NavigableMap> shuffleToCachedBlockIds = cachedBlockIds.get(appId);
+    if (shuffleToCachedBlockIds.remove(shuffleId) != null) {
+      Set<Integer> set = new HashSet<>();
+      set.add(shuffleId);
+      storageManager.removeResources(appId, set, false);
+    }
+    LOG.info("Finish remove shuffle resource for appId[" + appId + "], shuffleId[" + shuffleId + "] cost "
+            + (System.currentTimeMillis() - start) + " ms");
   }
 
   public void refreshAppId(String appId) {

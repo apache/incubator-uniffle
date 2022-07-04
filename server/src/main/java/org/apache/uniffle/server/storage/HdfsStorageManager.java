@@ -17,12 +17,15 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.uniffle.common.util.RssUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,16 +72,27 @@ public class HdfsStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void removeResources(String appId, Set<Integer> shuffleSet) {
+  public void removeResources(String appId, Set<Integer> shuffleSet, boolean clean) {
     HdfsStorage storage = getStorageByAppId(appId);
-    if (storage != null) {
+    if (storage == null) {
+      return;
+    }
+    if (clean) {
       storage.removeHandlers(appId);
       appIdToStorages.remove(appId);
-      ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
-          .createShuffleDeleteHandler(
-              new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), storage.getConf()));
-      deleteHandler.delete(new String[] {storage.getStoragePath()}, appId);
     }
+    ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
+        .createShuffleDeleteHandler(new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), storage.getConf()));
+    Set<String> subPaths = new HashSet<>();
+    if (clean) {
+      subPaths.add(appId);
+    } else {
+      subPaths.addAll(shuffleSet.stream()
+              .map(shuffleId -> RssUtils.generateShuffleKey(appId, shuffleId))
+              .collect(Collectors.toSet())
+      );
+    }
+    deleteHandler.delete(new String[] {storage.getStoragePath()}, subPaths);
   }
 
   @Override

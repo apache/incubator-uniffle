@@ -17,6 +17,9 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import java.io.IOException;
+import java.util.Set;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -37,21 +40,31 @@ public class HdfsShuffleDeleteHandler implements ShuffleDeleteHandler {
   }
 
   @Override
-  public void delete(String[] storageBasePaths, String appId) {
-    Path path = new Path(ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePaths[0], appId));
+  public void delete(String[] storageBasePaths, Set<String> subPaths) {
+    try {
+      FileSystem fileSystem = ShuffleStorageUtils.getFileSystemForPath(new Path(storageBasePaths[0]), hadoopConf);
+      subPaths.forEach(subPath -> {
+        delete(storageBasePaths, subPath, fileSystem);
+      });
+    } catch (IOException e) {
+      LOG.warn("Failed to delete shuffle data in HDFS, get fileSystem error: {}", e);
+    }
+  }
+
+  public void delete(String[] storageBasePaths, String subPath, FileSystem fileSystem) {
+    Path path = new Path(ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePaths[0], subPath));
     boolean isSuccess = false;
     int times = 0;
     int retryMax = 5;
     long start = System.currentTimeMillis();
-    LOG.info("Try delete shuffle data in HDFS for appId[" + appId + "] with " + path);
+    LOG.info("Try delete shuffle data in HDFS for subPath[" + subPath + "] with " + path);
     while (!isSuccess && times < retryMax) {
       try {
-        FileSystem fileSystem = ShuffleStorageUtils.getFileSystemForPath(path, hadoopConf);
         fileSystem.delete(path, true);
         isSuccess = true;
       } catch (Exception e) {
         times++;
-        LOG.warn("Can't delete shuffle data for appId[" + appId + "] with " + times + " times", e);
+        LOG.warn("Can't delete shuffle data for subPath[" + subPath + "] with " + times + " times", e);
         try {
           Thread.sleep(1000);
         } catch (Exception ex) {
@@ -60,10 +73,10 @@ public class HdfsShuffleDeleteHandler implements ShuffleDeleteHandler {
       }
     }
     if (isSuccess) {
-      LOG.info("Delete shuffle data in HDFS for appId[" + appId + "] with " + path + " successfully in "
+      LOG.info("Delete shuffle data in HDFS for subPath[" + subPath + "] with " + path + " successfully in "
           + (System.currentTimeMillis() - start) + " ms");
     } else {
-      LOG.info("Failed to delete shuffle data in HDFS for appId[" + appId + "] with " + path + " in "
+      LOG.info("Failed to delete shuffle data in HDFS for subPath[" + subPath + "] with " + path + " in "
           + (System.currentTimeMillis() - start) + " ms");
     }
   }

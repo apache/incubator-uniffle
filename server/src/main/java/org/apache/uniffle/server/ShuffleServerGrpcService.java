@@ -68,6 +68,8 @@ import org.apache.uniffle.proto.RssProtos.ShuffleDataBlockSegment;
 import org.apache.uniffle.proto.RssProtos.ShufflePartitionRange;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterRequest;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterResponse;
+import org.apache.uniffle.proto.RssProtos.ShuffleUnregisterRequest;
+import org.apache.uniffle.proto.RssProtos.ShuffleUnregisterResponse;
 import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerImplBase;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 
@@ -562,6 +564,28 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     }
 
     responseObserver.onNext(reply);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void unregisterShuffle(ShuffleUnregisterRequest request,
+          StreamObserver<ShuffleUnregisterResponse> responseObserver) {
+    String appId = request.getAppId();
+    int shuffleId = request.getShuffleId();
+    shuffleServer.getShuffleTaskManager().removeShuffleResources(appId, shuffleId);
+    ShuffleUnregisterResponse response = ShuffleUnregisterResponse
+            .newBuilder()
+            .setRetMsg("")
+            .setStatus(valueOf(StatusCode.SUCCESS))
+            .build();
+
+    if (Context.current().isCancelled()) {
+      responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
+      LOG.warn("Cancelled by client {} for after deadline.", appId);
+      return;
+    }
+
+    responseObserver.onNext(response);
     responseObserver.onCompleted();
   }
 

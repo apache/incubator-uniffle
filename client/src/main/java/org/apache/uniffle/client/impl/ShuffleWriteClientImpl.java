@@ -34,6 +34,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
+import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
+import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +85,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
   private Set<ShuffleServerInfo> shuffleServerInfoSet = Sets.newConcurrentHashSet();
   private CoordinatorClientFactory coordinatorClientFactory;
-  private ExecutorService heartBeatExecutorService;
+  private ExecutorService clientExecutorService;
   private int replica;
   private int replicaWrite;
   private int replicaRead;
@@ -97,7 +100,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
     this.coordinatorClientFactory = new CoordinatorClientFactory(clientType);
-    this.heartBeatExecutorService = Executors.newFixedThreadPool(heartBeatThreadNum,
+    this.clientExecutorService = Executors.newFixedThreadPool(heartBeatThreadNum,
             new ThreadFactoryBuilder().setDaemon(true).setNameFormat("client-heartbeat-%d").build());
     this.replica = replica;
     this.replicaWrite = replicaWrite;
@@ -495,7 +498,39 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       });
     });
     try {
-      List<Future<Void>> futures = heartBeatExecutorService.invokeAll(callableList, timeoutMs, TimeUnit.MILLISECONDS);
+      List<Future<Void>> futures = clientExecutorService.invokeAll(callableList, 30000, TimeUnit.MILLISECONDS);
+      for (Future<Void> future : futures) {
+        if (!future.isDone()) {
+          future.cancel(true);
+        }
+      }
+    } catch (InterruptedException ie) {
+      LOG.warn("heartbeat is interrupted", ie);
+    }
+  }
+
+  @Override
+  public void unregisterShuffle(String appId, int shuffleId) {
+    RssUnregisterShuffleRequest request = new RssUnregisterShuffleRequest(appId, shuffleId);
+    List<Callable<Void>> callableList = Lists.newArrayList();
+    shuffleServerInfoSet.stream().forEach(shuffleServerInfo -> {
+              callableList.add(() -> {
+                try {
+                  ShuffleServerClient client =
+                          ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
+                  RssUnregisterShuffleResponse response = client.unregisterShuffle(request);
+                  if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
+                    LOG.warn("Failed to unregister shuffle to " + shuffleServerInfo);
+                  }
+                } catch (Exception e) {
+                  LOG.warn("Error happened when unregister shuffle to " + shuffleServerInfo, e);
+                }
+                return null;
+              });
+            }
+    );
+    try {
+      List<Future<Void>> futures = clientExecutorService.invokeAll(callableList);
       for (Future<Void> future : futures) {
         if (!future.isDone()) {
           future.cancel(true);
@@ -508,7 +543,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @Override
   public void close() {
-    heartBeatExecutorService.shutdownNow();
+    clientExecutorService.shutdownNow();
     coordinatorClients.forEach(CoordinatorClient::close);
   }
 

@@ -15,16 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.storage.handler.api;
+package org.apache.uniffle.client.response;
 
-import java.util.Set;
+public class RssUnregisterShuffleResponse extends ClientResponse {
 
-public interface ShuffleDeleteHandler {
-
-  /**
-   * Delete shuffle data with appId
-   *
-   * @param subPaths SubPaths for delete
-   */
-  void delete(String[] storageBasePaths, Set<String> subPaths);
+  public RssUnregisterShuffleResponse(ResponseStatusCode statusCode) {
+    super(statusCode);
+  }
 }

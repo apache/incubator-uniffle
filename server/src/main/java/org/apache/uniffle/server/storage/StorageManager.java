@@ -39,7 +39,7 @@ public interface StorageManager {
 
   // todo: add an interface for updateReadMetrics
 
-  void removeResources(String appId, Set<Integer> shuffleSet);
+  void removeResources(String appId, Set<Integer> shuffleSet, boolean clean);
 
   void start();
 

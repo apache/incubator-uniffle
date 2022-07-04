@@ -17,8 +17,10 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -119,10 +121,12 @@ public class LocalStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void removeResources(String appId, Set<Integer> shuffleSet) {
+  public void removeResources(String appId, Set<Integer> shuffleSet, boolean clean) {
     for (LocalStorage storage : localStorages) {
-      for (Integer shuffleId : shuffleSet) {
+      if (clean) {
         storage.removeHandlers(appId);
+      }
+      for (Integer shuffleId : shuffleSet) {
         storage.removeResources(RssUtils.generateShuffleKey(appId, shuffleId));
       }
     }
@@ -130,7 +134,17 @@ public class LocalStorageManager extends SingleStorageManager {
     ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
         .createShuffleDeleteHandler(
             new CreateShuffleDeleteHandlerRequest(StorageType.LOCALFILE.name(), new Configuration()));
-    deleteHandler.delete(storageBasePaths, appId);
+
+    Set<String> subPaths = new HashSet<>();
+    if (clean) {
+      subPaths.add(appId);
+    } else {
+      subPaths.addAll(shuffleSet.stream()
+              .map(shuffleId -> RssUtils.generateShuffleKey(appId, shuffleId))
+              .collect(Collectors.toSet())
+      );
+    }
+    deleteHandler.delete(storageBasePaths, subPaths);
   }
 
   @Override

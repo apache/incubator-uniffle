@@ -25,6 +25,9 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
+
+import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
+import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,6 +87,8 @@ import org.apache.uniffle.proto.RssProtos.ShuffleDataBlockSegment;
 import org.apache.uniffle.proto.RssProtos.ShufflePartitionRange;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterRequest;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterResponse;
+import org.apache.uniffle.proto.RssProtos.ShuffleUnregisterRequest;
+import org.apache.uniffle.proto.RssProtos.ShuffleUnregisterResponse;
 import org.apache.uniffle.proto.RssProtos.StatusCode;
 import org.apache.uniffle.proto.ShuffleServerGrpc;
 import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerBlockingStub;
@@ -544,6 +549,25 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             + " for " + requestInfo + ", errorMsg:" + rpcResponse.getRetMsg();
         LOG.error(msg);
         throw new RssException(msg);
+    }
+    return response;
+  }
+
+  @Override
+  public RssUnregisterShuffleResponse unregisterShuffle(RssUnregisterShuffleRequest request) {
+    ShuffleUnregisterRequest rpcRequest = ShuffleUnregisterRequest.newBuilder()
+            .setAppId(request.getAppId()).setShuffleId(request.getShuffleId()).build();
+    ShuffleUnregisterResponse rpcResponse = blockingStub.unregisterShuffle(rpcRequest);
+
+    RssUnregisterShuffleResponse response;
+    if (rpcResponse.getStatus() != StatusCode.SUCCESS) {
+      String msg = "Can't unregister shuffle process to " + host + ":" + port
+              + " for [appId=" + request.getAppId() + ", shuffleId=" + request.getShuffleId() + "], "
+              + "errorMsg:" + rpcResponse.getRetMsg();
+      LOG.error(msg);
+      throw new RssException(msg);
+    } else {
+      response = new RssUnregisterShuffleResponse(ResponseStatusCode.SUCCESS);
     }
     return response;
   }

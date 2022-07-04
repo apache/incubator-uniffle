@@ -35,6 +35,7 @@ service ShuffleServer {
   rpc finishShuffle (FinishShuffleRequest) returns (FinishShuffleResponse);
   rpc requireBuffer (RequireBufferRequest) returns (RequireBufferResponse);
   rpc appHeartbeat(AppHeartBeatRequest) returns (AppHeartBeatResponse);
+  rpc unregisterShuffle (ShuffleUnregisterRequest) returns (ShuffleUnregisterResponse);
 }
 
 message FinishShuffleRequest {
@@ -217,6 +218,16 @@ message ShuffleServerId {
 }
 
 message ShuffleServerResult {
+  StatusCode status = 1;
+  string retMsg = 2;
+}
+
+message ShuffleUnregisterRequest {
+  string appId = 1;
+  int32 shuffleId = 2;
+}
+
+message ShuffleUnregisterResponse {
   StatusCode status = 1;
   string retMsg = 2;
 }

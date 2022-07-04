@@ -18,6 +18,7 @@
 package org.apache.uniffle.storage.handler.impl;
 
 import java.io.File;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -31,17 +32,21 @@ public class LocalFileDeleteHandler implements ShuffleDeleteHandler {
   private static final Logger LOG = LoggerFactory.getLogger(LocalFileDeleteHandler.class);
 
   @Override
-  public void delete(String[] storageBasePaths, String appId) {
+  public void delete(String[] storageBasePaths, Set<String> subPaths) {
+    subPaths.forEach(subPath -> delete(storageBasePaths, subPath));
+  }
+
+  public void delete(String[] storageBasePaths, String subPath) {
     for (String basePath : storageBasePaths) {
-      String shufflePath = ShuffleStorageUtils.getFullShuffleDataFolder(basePath, appId);
+      String shufflePath = ShuffleStorageUtils.getFullShuffleDataFolder(basePath, subPath);
       long start = System.currentTimeMillis();
       try {
         File baseFolder = new File(shufflePath);
         FileUtils.deleteDirectory(baseFolder);
-        LOG.info("Delete shuffle data for appId[" + appId + "] with " + shufflePath
+        LOG.info("Delete shuffle data for subPath[" + subPath + "] with " + shufflePath
             + " cost " + (System.currentTimeMillis() - start) + " ms");
       } catch (Exception e) {
-        LOG.warn("Can't delete shuffle data for appId[" + appId + "] with " + shufflePath, e);
+        LOG.warn("Can't delete shuffle data for subPath[" + subPath + "] with " + shufflePath, e);
       }
     }
   }

@@ -15,16 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.storage.handler.api;
+package org.apache.uniffle.client.request;
 
-import java.util.Set;
+public class RssUnregisterShuffleRequest {
 
-public interface ShuffleDeleteHandler {
+  private String appId;
+  private int shuffleId;
 
-  /**
-   * Delete shuffle data with appId
-   *
-   * @param subPaths SubPaths for delete
-   */
-  void delete(String[] storageBasePaths, Set<String> subPaths);
+  public RssUnregisterShuffleRequest(String appId, int shuffleId) {
+    this.appId = appId;
+    this.shuffleId = shuffleId;
+  }
+
+  public String getAppId() {
+    return appId;
+  }
+
+  public int getShuffleId() {
+    return shuffleId;
+  }
 }
