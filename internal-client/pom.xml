@@ -30,6 +30,7 @@
   <artifactId>rss-internal-client</artifactId>
   <version>0.6.0-snapshot</version>
   <packaging>jar</packaging>
+  <name>Apache Uniffle Internal Client</name>
 
   <dependencies>
     <dependency>

@@ -27,7 +27,7 @@
 
   <artifactId>rss-common</artifactId>
   <packaging>jar</packaging>
-  <name>Remote Shuffle Service Common</name>
+  <name>Apache Uniffle Common</name>
 
   <dependencies>
     <dependency>

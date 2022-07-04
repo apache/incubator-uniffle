@@ -29,7 +29,7 @@
 
   <artifactId>shuffle-server</artifactId>
   <packaging>jar</packaging>
-  <name>Shuffle Server</name>
+  <name>Apache Uniffle Server</name>
 
   <dependencies>
     <dependency>

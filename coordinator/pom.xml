@@ -29,7 +29,7 @@
 
   <artifactId>coordinator</artifactId>
   <packaging>jar</packaging>
-  <name>Coordinator</name>
+  <name>Apache Uniffle Coordinator</name>
 
   <dependencies>
     <dependency>

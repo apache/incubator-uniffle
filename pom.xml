@@ -25,8 +25,8 @@
   <artifactId>uniffle-parent</artifactId>
   <version>0.6.0-snapshot</version>
   <packaging>pom</packaging>
-  <name>Remote Shuffle Service Project Parent POM</name>
-  <description>Remote Shuffle Service Project</description>
+  <name>Apache Uniffle</name>
+  <description>A high performance, general purpose Remote Shuffle Service.</description>
 
   <parent>
     <groupId>org.apache</groupId>

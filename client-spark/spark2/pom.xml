@@ -31,6 +31,7 @@
   <artifactId>rss-client-spark2</artifactId>
   <version>0.6.0-snapshot</version>
   <packaging>jar</packaging>
+  <name>Apache Uniffle Client (Spark 2)</name>
 
   <dependencies>
     <dependency>

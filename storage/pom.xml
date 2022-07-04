@@ -29,7 +29,7 @@
 
   <artifactId>shuffle-storage</artifactId>
   <packaging>jar</packaging>
-  <name>Shuffle Storage</name>
+  <name>Apache Uniffle Storage</name>
 
   <dependencies>
     <dependency>
