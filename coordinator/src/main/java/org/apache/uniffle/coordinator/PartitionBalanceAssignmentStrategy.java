@@ -135,7 +135,7 @@ public class PartitionBalanceAssignmentStrategy implements AssignmentStrategy {
     return serverToPartitions;
   }
 
-  class PartitionAssignmentInfo {
+  static class PartitionAssignmentInfo {
 
     PartitionAssignmentInfo() {
       partitionNum = 0;
