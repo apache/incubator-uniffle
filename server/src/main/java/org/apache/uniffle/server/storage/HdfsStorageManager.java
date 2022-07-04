@@ -71,11 +71,14 @@ public class HdfsStorageManager extends SingleStorageManager {
   @Override
   public void removeResources(String appId, Set<Integer> shuffleSet) {
     HdfsStorage storage = getStorageByAppId(appId);
-    storage.removeHandlers(appId);
-    appIdToStorages.remove(appId);
-    ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
-        .createShuffleDeleteHandler(new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), storage.getConf()));
-    deleteHandler.delete(new String[] {storage.getStoragePath()}, appId);
+    if (storage != null) {
+      storage.removeHandlers(appId);
+      appIdToStorages.remove(appId);
+      ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
+          .createShuffleDeleteHandler(
+              new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), storage.getConf()));
+      deleteHandler.delete(new String[] {storage.getStoragePath()}, appId);
+    }
   }
 
   @Override
@@ -109,7 +112,9 @@ public class HdfsStorageManager extends SingleStorageManager {
     if (!appIdToStorages.containsKey(appId)) {
       String msg = "Can't find HDFS storage for appId[" + appId + "]";
       LOG.error(msg);
-      throw new RuntimeException(msg);
+      // outside should deal with null situation
+      // todo: it's better to have a fake storage for null situation
+      return null;
     }
     return appIdToStorages.get(appId);
   }
