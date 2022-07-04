@@ -131,6 +131,20 @@ public class ConfigOptionTest {
     } catch (IllegalArgumentException illegalArgumentException) {
       fail();
     }
+
+    // test the empty list
+    final ConfigOption<List<String>> emptyListStringOption = ConfigOptions
+            .key("rss.key5")
+            .stringType()
+            .asList()
+            .noDefaultValue()
+            .withDescription("List config key5");
+    conf.setString(emptyListStringOption.key(), "");
+    assertEquals(conf.get(emptyListStringOption).size(), 0);
+    conf.setString(emptyListStringOption.key(), ", ");
+    assertEquals(conf.get(emptyListStringOption).size(), 0);
+    conf.setString(emptyListStringOption.key(), " ");
+    assertEquals(conf.get(emptyListStringOption).size(), 0);
   }
 
   @Test
