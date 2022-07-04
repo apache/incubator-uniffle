@@ -25,7 +25,7 @@
   </parent>
 
   <artifactId>rss-proto</artifactId>
-  <name>Remote Shuffle Service Protocols</name>
+  <name>Apache Uniffle Protocols</name>
 
   <dependencies>
     <dependency>
