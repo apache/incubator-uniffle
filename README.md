@@ -20,6 +20,9 @@
 Firestorm is a Remote Shuffle Service, and provides the capability for Apache Spark applications
 to store shuffle data on remote servers.
 
+[![Build](https://github.com/apache/incubator-uniffle/actions/workflows/build.yml/badge.svg?branch=master&event=push)](https://github.com/apache/incubator-uniffle/actions/workflows/build.yml)
+[![Codecov](https://codecov.io/gh/apache/incubator-uniffle/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/incubator-uniffle)
+
 ## Architecture
 ![Rss Architecture](docs/asset/rss_architecture.png)
 Firestorm contains coordinator cluster, shuffle server cluster and remote storage(eg, HDFS) if necessary.
