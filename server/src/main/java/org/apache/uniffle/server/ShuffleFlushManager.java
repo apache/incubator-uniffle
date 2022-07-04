@@ -282,23 +282,32 @@ public class ShuffleFlushManager {
   void processPendingEvents() throws Exception {
     PendingShuffleFlushEvent event = pendingEvents.take();
     Storage storage = storageManager.selectStorage(event.getEvent());
+    if (storage == null) {
+      dropPendingEvent(event);
+      LOG.error("Flush event cannot be flushed because of application related was cleared, {}", event.getEvent());
+      return;
+    }
     if (System.currentTimeMillis() - event.getCreateTimeStamp() > pendingEventTimeoutSec * 1000L) {
-      ShuffleServerMetrics.counterTotalDroppedEventNum.inc();
-      if (shuffleServer != null) {
-        shuffleServer.getShuffleBufferManager().releaseMemory(
-            event.getEvent().getSize(), true, false);
-      }
+      dropPendingEvent(event);
       LOG.error("Flush event cannot be flushed for {} sec, the event {} is dropped",
           pendingEventTimeoutSec, event.getEvent());
       return;
     }
     // storage maybe null if the application cache was cleared already
     // add event to flush queue, and it will be released
-    if (storage == null || storage.canWrite()) {
+    if (storage.canWrite()) {
       addToFlushQueue(event.getEvent());
       return;
     }
     addPendingEventsInternal(event);
+  }
+
+  private void dropPendingEvent(PendingShuffleFlushEvent event) {
+    ShuffleServerMetrics.counterTotalDroppedEventNum.inc();
+    if (shuffleServer != null) {
+      shuffleServer.getShuffleBufferManager().releaseMemory(
+          event.getEvent().getSize(), true, false);
+    }
   }
 
   @VisibleForTesting
