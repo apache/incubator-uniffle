@@ -61,7 +61,7 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC, 1);
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, HDFS_URI);
-    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
+    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
         "org.apache.uniffle.coordinator.AccessCandidatesChecker");
 
     // file load checking at startup
