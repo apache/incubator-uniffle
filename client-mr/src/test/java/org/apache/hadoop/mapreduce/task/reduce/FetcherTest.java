@@ -411,8 +411,8 @@ public class FetcherTest {
     }
 
     @Override
-    public void unregisterShuffle(String appId, int shuffleId) {
-
+    public boolean unregisterShuffle(String appId, int shuffleId) {
+      return true;
     }
 
     @Override

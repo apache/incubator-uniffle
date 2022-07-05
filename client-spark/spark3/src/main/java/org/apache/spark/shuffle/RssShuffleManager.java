@@ -539,7 +539,7 @@ public class RssShuffleManager implements ShuffleManager {
 
   @Override
   public boolean unregisterShuffle(int shuffleId) {
-    return true;
+    return shuffleWriteClient.unregisterShuffle(id.get(), shuffleId);
   }
 
   @Override

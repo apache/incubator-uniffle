@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
@@ -497,7 +498,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       });
     });
     try {
-      List<Future<Void>> futures = clientExecutorService.invokeAll(callableList, 30000, TimeUnit.MILLISECONDS);
+      List<Future<Void>> futures = clientExecutorService.invokeAll(callableList, timeoutMs, TimeUnit.MILLISECONDS);
       for (Future<Void> future : futures) {
         if (!future.isDone()) {
           future.cancel(true);
@@ -509,9 +510,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   @Override
-  public void unregisterShuffle(String appId, int shuffleId) {
+  public boolean unregisterShuffle(String appId, int shuffleId) {
     RssUnregisterShuffleRequest request = new RssUnregisterShuffleRequest(appId, shuffleId);
-    List<Callable<Void>> callableList = Lists.newArrayList();
+    List<Callable<Boolean>> callableList = Lists.newArrayList();
     shuffleServerInfoSet.stream().forEach(shuffleServerInfo -> {
       callableList.add(() -> {
         try {
@@ -520,22 +521,31 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           RssUnregisterShuffleResponse response = client.unregisterShuffle(request);
           if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
             LOG.warn("Failed to unregister shuffle to " + shuffleServerInfo);
+            return false;
           }
+          return true;
         } catch (Exception e) {
           LOG.warn("Error happened when unregister shuffle to " + shuffleServerInfo, e);
+          return false;
         }
-        return null;
       });
     });
     try {
-      List<Future<Void>> futures = clientExecutorService.invokeAll(callableList);
-      for (Future<Void> future : futures) {
+      // TODO make timeout configurable
+      List<Future<Boolean>> futures = clientExecutorService.invokeAll(callableList, 30000, TimeUnit.MILLISECONDS);
+      boolean result = true;
+      for (Future<Boolean> future : futures) {
         if (!future.isDone()) {
           future.cancel(true);
+          result = false;
+        } else {
+          result = result && future.get();
         }
       }
-    } catch (InterruptedException ie) {
+      return result;
+    } catch (InterruptedException | ExecutionException ie) {
       LOG.warn("heartbeat is interrupted", ie);
+      return false;
     }
   }
 

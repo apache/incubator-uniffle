@@ -65,7 +65,7 @@ public interface ShuffleWriteClient {
   Roaring64NavigableMap getShuffleResult(String clientType, Set<ShuffleServerInfo> shuffleServerInfoSet,
       String appId, int shuffleId, int partitionId);
 
-  void unregisterShuffle(String appId, int shuffleId);
+  boolean unregisterShuffle(String appId, int shuffleId);
 
   void close();
 }

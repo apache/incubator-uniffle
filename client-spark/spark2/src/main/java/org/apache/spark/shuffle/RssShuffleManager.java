@@ -370,7 +370,7 @@ public class RssShuffleManager implements ShuffleManager {
 
   @Override
   public boolean unregisterShuffle(int shuffleId) {
-    return true;
+    return shuffleWriteClient.unregisterShuffle(appId, shuffleId);
   }
 
   @Override
