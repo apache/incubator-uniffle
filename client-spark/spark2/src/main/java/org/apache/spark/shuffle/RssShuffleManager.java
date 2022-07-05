@@ -61,7 +61,6 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
 
 public class RssShuffleManager implements ShuffleManager {
