@@ -34,9 +34,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
-import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
-import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +53,7 @@ import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
+import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
 import org.apache.uniffle.client.response.ClientResponse;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
@@ -68,6 +66,7 @@ import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
+import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -514,21 +513,20 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     RssUnregisterShuffleRequest request = new RssUnregisterShuffleRequest(appId, shuffleId);
     List<Callable<Void>> callableList = Lists.newArrayList();
     shuffleServerInfoSet.stream().forEach(shuffleServerInfo -> {
-              callableList.add(() -> {
-                try {
-                  ShuffleServerClient client =
-                          ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
-                  RssUnregisterShuffleResponse response = client.unregisterShuffle(request);
-                  if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
-                    LOG.warn("Failed to unregister shuffle to " + shuffleServerInfo);
-                  }
-                } catch (Exception e) {
-                  LOG.warn("Error happened when unregister shuffle to " + shuffleServerInfo, e);
-                }
-                return null;
-              });
-            }
-    );
+      callableList.add(() -> {
+        try {
+          ShuffleServerClient client =
+                  ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
+          RssUnregisterShuffleResponse response = client.unregisterShuffle(request);
+          if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
+            LOG.warn("Failed to unregister shuffle to " + shuffleServerInfo);
+          }
+        } catch (Exception e) {
+          LOG.warn("Error happened when unregister shuffle to " + shuffleServerInfo, e);
+        }
+        return null;
+      });
+    });
     try {
       List<Future<Void>> futures = clientExecutorService.invokeAll(callableList);
       for (Future<Void> future : futures) {

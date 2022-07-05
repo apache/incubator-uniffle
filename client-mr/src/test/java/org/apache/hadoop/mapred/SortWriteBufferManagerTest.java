@@ -324,6 +324,11 @@ public class SortWriteBufferManagerTest {
     }
 
     @Override
+    public void unregisterShuffle(String appId, int shuffleId) {
+
+    }
+
+    @Override
     public void close() {
 
     }
