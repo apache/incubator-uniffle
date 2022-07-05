@@ -32,8 +32,13 @@ cd $COORDINATOR_HOME
 source "${COORDINATOR_HOME}/bin/rss-env.sh"
 source "${COORDINATOR_HOME}/bin/utils.sh"
 
+if [ -z "$HADOOP_HOME" ]; then
+  echo "No env HADOOP_HOME."
+  exit 1
+fi
+
 HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
-HADOOP_DEPENDENCY=$HADOOP_HOME/etc/hadoop:$HADOOP_HOME/share/hadoop/common/lib/*:$HADOOP_HOME/share/hadoop/common/*:$HADOOP_HOME/share/hadoop/hdfs:$HADOOP_HOME/share/hadoop/hdfs/lib/*:$HADOOP_HOME/share/hadoop/hdfs/*:$HADOOP_HOME/share/hadoop/yarn/lib/*:$HADOOP_HOME/share/hadoop/yarn/*:$HADOOP_HOME/share/hadoop/mapreduce/lib/*:$HADOOP_HOME/share/hadoop/mapreduce/*
+HADOOP_DEPENDENCY=`$HADOOP_HOME/bin/hadoop classpath --glob`
 
 echo "Check process existence"
 is_jvm_process_running $JPS $MAIN_CLASS
@@ -44,11 +49,6 @@ CLASSPATH=""
 for file in $(ls ${JAR_DIR}/coordinator/*.jar 2>/dev/null); do
   CLASSPATH=$CLASSPATH:$file
 done
-
-if [ -z "$HADOOP_HOME" ]; then
-  echo "No env HADOOP_HOME."
-  exit 1
-fi
 
 if [ -z "$HADOOP_CONF_DIR" ]; then
   echo "No env HADOOP_CONF_DIR."
@@ -71,13 +71,14 @@ JVM_ARGS=" -server \
           -XX:InitiatingHeapOccupancyPercent=45 "
 
 ARGS=""
-if [ -f ./conf/log4j.properties ]; then
-  ARGS="$ARGS -Dlog4j.configuration=file:./conf/log4j.properties"
+
+LOG_CONF_FILE="./conf/log4j.coordinator.properties"
+if [ -f ${LOG_CONF_FILE} ]; then
+  ARGS="$ARGS -Dlog4j.configuration=file:${LOG_CONF_FILE}"
 else
-  echo "Exit with error: $conf/log4j.properties file doesn't exist."
+  echo "Exit with error: ${LOG_CONF_FILE} file doesn't exist."
   exit 1
 fi
-
 $RUNNER $ARGS $JVM_ARGS -cp $CLASSPATH $MAIN_CLASS --conf $CONF_FILE $@ &
 
 echo $! >$COORDINATOR_HOME/currentpid
