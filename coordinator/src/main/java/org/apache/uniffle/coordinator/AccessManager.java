@@ -18,11 +18,10 @@
 package org.apache.uniffle.coordinator;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,14 +47,13 @@ public class AccessManager {
   }
 
   private void init() throws RuntimeException {
-    String checkers = coordinatorConf.get(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS);
-    if (StringUtils.isEmpty(checkers)) {
+    List<String> checkers = coordinatorConf.get(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS);
+    if (CollectionUtils.isEmpty(checkers)) {
       LOG.warn("Access checkers is empty, will not init any checkers.");
       return;
     }
 
-    String[] names = checkers.trim().split(",");
-    accessCheckers = RssUtils.loadExtensions(AccessChecker.class, Arrays.asList(names), this);
+    accessCheckers = RssUtils.loadExtensions(AccessChecker.class, checkers, this);
   }
 
   public AccessCheckResult handleAccessRequest(AccessInfo accessInfo) {

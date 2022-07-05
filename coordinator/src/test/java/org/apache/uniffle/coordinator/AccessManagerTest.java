@@ -46,14 +46,14 @@ public class AccessManagerTest {
   public void test() throws Exception {
     // test init
     CoordinatorConf conf = new CoordinatorConf();
-    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS, " , ");
+    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(), " , ");
     try {
       new AccessManager(conf, null, new Configuration());
     } catch (RuntimeException e) {
       String expectedMessage = "Empty classes";
       assertTrue(e.getMessage().startsWith(expectedMessage));
     }
-    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
+    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
         "com.Dummy,org.apache.uniffle.coordinator.AccessManagerTest$MockAccessChecker");
     try {
       new AccessManager(conf, null, new Configuration());
@@ -62,7 +62,7 @@ public class AccessManagerTest {
       assertTrue(e.getMessage().startsWith(expectedMessage));
     }
     // test empty checkers
-    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS, "");
+    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(), "");
     AccessManager accessManager = new AccessManager(conf, null, new Configuration());
     assertTrue(accessManager.handleAccessRequest(
             new AccessInfo(String.valueOf(new Random().nextInt()),
@@ -70,13 +70,13 @@ public class AccessManagerTest {
         .isSuccess());
     accessManager.close();
     // test mock checkers
-    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
+    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
         "org.apache.uniffle.coordinator.AccessManagerTest$MockAccessCheckerAlwaysTrue,");
     accessManager = new AccessManager(conf, null, new Configuration());
     assertEquals(1, accessManager.getAccessCheckers().size());
     assertTrue(accessManager.handleAccessRequest(new AccessInfo("mock1")).isSuccess());
     assertTrue(accessManager.handleAccessRequest(new AccessInfo("mock2")).isSuccess());
-    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
+    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
         "org.apache.uniffle.coordinator.AccessManagerTest$MockAccessCheckerAlwaysTrue,"
             + "org.apache.uniffle.coordinator.AccessManagerTest$MockAccessCheckerAlwaysFalse");
     accessManager = new AccessManager(conf, null, new Configuration());

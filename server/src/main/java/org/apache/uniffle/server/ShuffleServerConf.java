@@ -300,9 +300,10 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(false)
       .withDescription("The switch for the health check");
 
-  public static final ConfigOption<String> HEALTH_CHECKER_CLASS_NAMES = ConfigOptions
+  public static final ConfigOption<List<String>> HEALTH_CHECKER_CLASS_NAMES = ConfigOptions
       .key("rss.server.health.checker.class.names")
       .stringType()
+      .asList()
       .noDefaultValue()
       .withDescription("The list of the Checker's name");
 

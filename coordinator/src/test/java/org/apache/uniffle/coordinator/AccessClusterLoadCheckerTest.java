@@ -63,7 +63,7 @@ public class AccessClusterLoadCheckerTest {
     final String filePath = Objects.requireNonNull(
         getClass().getClassLoader().getResource("coordinator.conf")).getFile();
     CoordinatorConf conf = new CoordinatorConf(filePath);
-    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
+    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
         "org.apache.uniffle.coordinator.AccessClusterLoadChecker");
     AccessManager accessManager = new AccessManager(conf, clusterManager, new Configuration());
     AccessClusterLoadChecker accessClusterLoadChecker =

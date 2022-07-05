@@ -62,10 +62,11 @@ public class CoordinatorConf extends RssBaseConf {
       .intType()
       .defaultValue(9)
       .withDescription("The max number of shuffle server when do the assignment");
-  public static final ConfigOption<String> COORDINATOR_ACCESS_CHECKERS = ConfigOptions
+  public static final ConfigOption<List<String>> COORDINATOR_ACCESS_CHECKERS = ConfigOptions
       .key("rss.coordinator.access.checkers")
       .stringType()
-      .defaultValue("org.apache.uniffle.coordinator.AccessClusterLoadChecker")
+      .asList()
+      .defaultValues("org.apache.uniffle.coordinator.AccessClusterLoadChecker")
       .withDescription("Access checkers");
   public static final ConfigOption<Integer> COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC = ConfigOptions
       .key("rss.coordinator.access.candidates.updateIntervalSec")

@@ -33,7 +33,7 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-public class SparkSQLWithDelegationShuffleManager extends SparkSQLTest {
+public class SparkSQLWithDelegationShuffleManager extends org.apache.uniffle.test.SparkSQLTest {
 
   @BeforeAll
   public static void setupServers() throws Exception {
@@ -41,7 +41,7 @@ public class SparkSQLWithDelegationShuffleManager extends SparkSQLTest {
         SparkSQLWithDelegationShuffleManager.class.getClassLoader().getResource("candidates")).getFile();
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setString(
-        CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
+        CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
         "org.apache.uniffle.coordinator.AccessCandidatesChecker,org.apache.uniffle.coordinator.AccessClusterLoadChecker");
     coordinatorConf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, candidates);
     coordinatorConf.set(CoordinatorConf.COORDINATOR_APP_EXPIRED, 5000L);

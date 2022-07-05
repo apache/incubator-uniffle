@@ -18,10 +18,13 @@
 package org.apache.uniffle.common.config;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * {@code ConfigOptions} are used to build a {@link ConfigOption}.
@@ -237,7 +240,11 @@ public class ConfigOptions {
         if (v instanceof List) {
           return (List<E>) v;
         } else {
-          return Arrays.stream(v.toString().split(LIST_SPILTTER))
+          String trimmedVal = v.toString().trim();
+          if (StringUtils.isEmpty(trimmedVal)) {
+            return Collections.emptyList();
+          }
+          return Arrays.stream(trimmedVal.split(LIST_SPILTTER))
                   .map(s -> atomicConverter.apply(s)).collect(Collectors.toList());
         }
       };
