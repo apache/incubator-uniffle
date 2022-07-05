@@ -31,7 +31,7 @@
   <artifactId>rss-integration-spark-common-test</artifactId>
   <version>0.6.0-snapshot</version>
   <packaging>jar</packaging>
-  <name>Apache Uniffle Intergration Test (Spark Common)</name>
+  <name>Apache Uniffle Integration Test (Spark Common)</name>
 
   <dependencies>
     <dependency>
