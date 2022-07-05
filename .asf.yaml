@@ -23,6 +23,7 @@ github:
     - mapreduce
     - shuffle
     - remote-shuffle-service
+    - rss
   features:
     # Enable wiki for documentation
     wiki: true
@@ -43,6 +44,6 @@ github:
         required_approving_review_count: 1
 
   notifications:
-  commits: notifications@uniffle.apache.org
-  issues: dev@uniffle.apache.org
-  pullrequests: notifications@uniffle.apache.org
+    commits: commits@uniffle.apache.org
+    issues: dev@uniffle.apache.org
+    pullrequests: issues@uniffle.apache.org
