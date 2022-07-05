@@ -46,7 +46,7 @@ on:
         required: false
         type: string
       jdk-distro:
-        default: 'adopt'
+        default: 'temurin'
         required: false
         type: string
 
