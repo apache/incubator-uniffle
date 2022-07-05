@@ -36,6 +36,10 @@
 
   <properties>
     <checkstyle.version>9.3</checkstyle.version>
+    <commons-logging.version>1.2</commons-logging.version>
+    <commons-lang3.version>3.10</commons-lang3.version>
+    <commons-codec.version>1.9</commons-codec.version>
+    <codehaus.jackson.version>1.9.13</codehaus.jackson.version>
     <error_prone_annotations.version>2.3.4</error_prone_annotations.version>
     <execution.root>${user.dir}</execution.root>
     <fasterxml.jackson.version>2.10.0</fasterxml.jackson.version>
@@ -246,28 +250,28 @@
       <dependency>
         <groupId>commons-logging</groupId>
         <artifactId>commons-logging</artifactId>
-        <version>1.2</version>
+        <version>${commons-logging.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.5</version>
+        <version>${commons-lang3.version}</version>
       </dependency>
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.9</version>
+        <version>${commons-codec.version}</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.jackson</groupId>
         <artifactId>jackson-jaxrs</artifactId>
-        <version>1.9.13</version>
+        <version>${codehaus.jackson.version}</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.codehaus.jackson</groupId>
         <artifactId>jackson-xc</artifactId>
-        <version>1.9.13</version>
+        <version>${codehaus.jackson.version}</version>
         <scope>provided</scope>
       </dependency>
 
