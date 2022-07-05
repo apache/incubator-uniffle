@@ -33,7 +33,7 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-public class SparkSQLWithDelegationShuffleManager extends org.apache.uniffle.test.SparkSQLTest {
+public class SparkSQLWithDelegationShuffleManager extends SparkSQLTest {
 
   @BeforeAll
   public static void setupServers() throws Exception {
