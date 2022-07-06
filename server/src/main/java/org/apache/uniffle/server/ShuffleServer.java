@@ -27,7 +27,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.prometheus.client.CollectorRegistry;
-import org.apache.uniffle.server.api.ServerResource;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
@@ -42,6 +41,7 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.web.CommonMetricsServlet;
 import org.apache.uniffle.common.web.JettyServer;
+import org.apache.uniffle.server.api.ServerResource;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
@@ -200,6 +200,7 @@ public class ShuffleServer {
   }
 
   public static final String SERVLET_CONTEXT_KEY = "SHUFFLE_SERVER";
+
   private void registerApiResources() {
     ResourceConfig resourceConfig = new ResourceConfig();
     resourceConfig.register(ServerResource.class);
@@ -295,11 +296,15 @@ public class ShuffleServer {
   }
 
   private void startOfflineChecker() {
-    final long offlineCheckerInitialDelay = shuffleServerConf.getLong(ShuffleServerConf.SHUFFLE_SERVER_OFFLINE_CHECK_DELAY);
-    final long offlineCheckerInterval = shuffleServerConf.getLong(ShuffleServerConf.SHUFFLE_SERVER_OFFLINE_CHECK_INTERVAL);
-    final long offlineCheckerMaxTime = shuffleServerConf.getLong(ShuffleServerConf.SHUFFLE_SERVER_OFFLINE_CHECK_MAX_TIME);
+    final long offlineCheckerInitialDelay = shuffleServerConf
+            .getLong(ShuffleServerConf.SHUFFLE_SERVER_OFFLINE_CHECK_DELAY);
+    final long offlineCheckerInterval = shuffleServerConf
+            .getLong(ShuffleServerConf.SHUFFLE_SERVER_OFFLINE_CHECK_INTERVAL);
+    final long offlineCheckerMaxTime = shuffleServerConf
+            .getLong(ShuffleServerConf.SHUFFLE_SERVER_OFFLINE_CHECK_MAX_TIME);
     Thread thread = new Thread(() -> {
-      LOG.info("Start offline checker, delay: {}, interval: {}, maxTime: {}.", offlineCheckerInitialDelay, offlineCheckerInterval, offlineCheckerMaxTime);
+      LOG.info("Start offline checker, delay: {}, interval: {}, maxTime: {}.",
+              offlineCheckerInitialDelay, offlineCheckerInterval, offlineCheckerMaxTime);
       long startTime = System.currentTimeMillis();
       Uninterruptibles.sleepUninterruptibly(offlineCheckerInitialDelay, TimeUnit.MILLISECONDS);
       while (true) {
