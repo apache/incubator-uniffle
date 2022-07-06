@@ -51,6 +51,8 @@
     <httpcore.version>4.4.4</httpcore.version>
     <java.version>1.8</java.version>
     <jetty.version>9.3.24.v20180605</jetty.version>
+    <jersey.version>2.35</jersey.version>
+    <jakarta.servlet-api.version>4.0.4</jakarta.servlet-api.version>
     <junit.jupiter.version>5.8.2</junit.jupiter.version>
     <junit.platform.version>1.8.2</junit.platform.version>
     <system.stubs.version>2.0.1</system.stubs.version>
@@ -461,6 +463,16 @@
         <groupId>io.prometheus</groupId>
         <artifactId>simpleclient_jetty</artifactId>
         <version>${prometheus.simpleclient.version}</version>
+        <exclusions>
+          <exclusion>
+            <artifactId>jetty-server</artifactId>
+            <groupId>org.eclipse.jetty</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>jetty-servlet</artifactId>
+            <groupId>org.eclipse.jetty</groupId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>io.prometheus</groupId>
@@ -560,6 +572,54 @@
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
         <version>${mockito.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-server</artifactId>
+        <version>${jetty.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-servlet</artifactId>
+        <version>${jetty.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.glassfish.jersey.core</groupId>
+        <artifactId>jersey-server</artifactId>
+        <version>${jersey.version}</version>
+        <exclusions>
+          <exclusion>
+            <artifactId>javax.servlet-api</artifactId>
+            <groupId>javax.servlet</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>jakarta.servlet</groupId>
+        <artifactId>jakarta.servlet-api</artifactId>
+        <version>${jakarta.servlet-api.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.glassfish.jersey.containers</groupId>
+        <artifactId>jersey-container-servlet-core</artifactId>
+        <version>${jersey.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.glassfish.jersey.inject</groupId>
+        <artifactId>jersey-hk2</artifactId>
+        <version>${jersey.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.glassfish.jersey.media</groupId>
+        <artifactId>jersey-media-json-jackson</artifactId>
+        <version>${jersey.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

@@ -19,12 +19,17 @@ package org.apache.uniffle.server;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.Uninterruptibles;
 import io.prometheus.client.CollectorRegistry;
+import org.apache.uniffle.server.api.ServerResource;
+import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -61,6 +66,7 @@ public class ShuffleServer {
   private HealthCheck healthCheck;
   private Set<String> tags = Sets.newHashSet();
   private AtomicBoolean isHealthy = new AtomicBoolean(true);
+  private AtomicBoolean online = new AtomicBoolean(true);
   private GRPCMetrics grpcMetrics;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
@@ -136,6 +142,7 @@ public class ShuffleServer {
     LOG.info("Start to initialize server {}", id);
     jettyServer = new JettyServer(shuffleServerConf);
     registerMetrics();
+    registerApiResources();
 
     storageManager = StorageManagerFactory.getInstance().createStorageManager(id, shuffleServerConf);
     storageManager.start();
@@ -190,6 +197,14 @@ public class ShuffleServer {
     jettyServer.addServlet(
         new CommonMetricsServlet(JvmMetrics.getCollectorRegistry(), true),
         "/prometheus/metrics/jvm");
+  }
+
+  public static final String SERVLET_CONTEXT_KEY = "SHUFFLE_SERVER";
+  private void registerApiResources() {
+    ResourceConfig resourceConfig = new ResourceConfig();
+    resourceConfig.register(ServerResource.class);
+    jettyServer.addServlet(new ServletContainer(resourceConfig), "/*");
+    jettyServer.getServletContextHandler().setAttribute(SERVLET_CONTEXT_KEY, this);
   }
 
   /**
@@ -266,10 +281,54 @@ public class ShuffleServer {
   }
 
   public boolean isHealthy() {
-    return isHealthy.get();
+    return this.online.get() && isHealthy.get();
   }
 
   public GRPCMetrics getGrpcMetrics() {
     return grpcMetrics;
+  }
+
+  public void offline() {
+    if (this.online.compareAndSet(true, false)) {
+      startOfflineChecker();
+    }
+  }
+
+  private void startOfflineChecker() {
+    // TODO make configurable
+    final long offlineCheckerInitialDelay = 30 * 1000;
+    final long offlineCheckerInterval = 10 * 1000;
+    final long offlineCheckerMaxTime = 60 * 60 * 1000;
+    Thread thread = new Thread(() -> {
+      long startTime = System.currentTimeMillis();
+      Uninterruptibles.sleepUninterruptibly(offlineCheckerInitialDelay, TimeUnit.MILLISECONDS);
+      while (true) {
+        boolean canShutdown = getShuffleTaskManager().getAppIds().isEmpty();
+        if (canShutdown) {
+          try {
+            this.stopServer();
+            break;
+          } catch (Exception e) {
+            LOG.error("Stop server failed, exit with code -1.", e);
+            System.exit(-1);
+          }
+        } else {
+          if (System.currentTimeMillis() - startTime > offlineCheckerMaxTime) {
+            LOG.warn("Exceeded offline check maximum time [" + offlineCheckerMaxTime + "], stop server...");
+            try {
+              this.stopServer();
+              break;
+            } catch (Exception e) {
+              LOG.error("Stop server failed, exit with code -1.", e);
+              System.exit(-1);
+            }
+          }
+          Uninterruptibles.sleepUninterruptibly(offlineCheckerInterval, TimeUnit.MILLISECONDS);
+        }
+      }
+    });
+    thread.setName("OfflineCheckerThread");
+    thread.setDaemon(true);
+    thread.start();
   }
 }
