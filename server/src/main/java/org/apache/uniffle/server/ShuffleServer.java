@@ -159,10 +159,10 @@ public class ShuffleServer {
 
     setServer();
 
-    setServerTags();
+    initServerTags();
   }
 
-  private void setServerTags() {
+  private void initServerTags() {
     // it's the system tag for server's version
     tags.add(Constants.SHUFFLE_SERVER_VERSION);
 
