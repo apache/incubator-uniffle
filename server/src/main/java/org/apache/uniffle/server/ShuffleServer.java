@@ -295,11 +295,11 @@ public class ShuffleServer {
   }
 
   private void startOfflineChecker() {
-    // TODO make configurable
-    final long offlineCheckerInitialDelay = 30 * 1000;
-    final long offlineCheckerInterval = 10 * 1000;
-    final long offlineCheckerMaxTime = 60 * 60 * 1000;
+    final long offlineCheckerInitialDelay = shuffleServerConf.getLong(ShuffleServerConf.SHUFFLE_SERVER_OFFLINE_CHECK_DELAY);
+    final long offlineCheckerInterval = shuffleServerConf.getLong(ShuffleServerConf.SHUFFLE_SERVER_OFFLINE_CHECK_INTERVAL);
+    final long offlineCheckerMaxTime = shuffleServerConf.getLong(ShuffleServerConf.SHUFFLE_SERVER_OFFLINE_CHECK_MAX_TIME);
     Thread thread = new Thread(() -> {
+      LOG.info("Start offline checker, delay: {}, interval: {}, maxTime: {}.", offlineCheckerInitialDelay, offlineCheckerInterval, offlineCheckerMaxTime);
       long startTime = System.currentTimeMillis();
       Uninterruptibles.sleepUninterruptibly(offlineCheckerInitialDelay, TimeUnit.MILLISECONDS);
       while (true) {
@@ -326,6 +326,7 @@ public class ShuffleServer {
           Uninterruptibles.sleepUninterruptibly(offlineCheckerInterval, TimeUnit.MILLISECONDS);
         }
       }
+      LOG.info("End offline checker.");
     });
     thread.setName("OfflineCheckerThread");
     thread.setDaemon(true);

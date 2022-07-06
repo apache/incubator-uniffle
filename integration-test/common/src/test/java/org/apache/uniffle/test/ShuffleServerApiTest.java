@@ -49,6 +49,9 @@ public class ShuffleServerApiTest extends IntegrationTestBase {
         shuffleServerConf.set(RssBaseConf.RPC_METRICS_ENABLED, true);
         shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
         shuffleServerConf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED, 5000L);
+        shuffleServerConf.set(ShuffleServerConf.SHUFFLE_SERVER_OFFLINE_CHECK_DELAY, 3000L);
+        shuffleServerConf.set(ShuffleServerConf.SHUFFLE_SERVER_OFFLINE_CHECK_INTERVAL, 1000L);
+        shuffleServerConf.set(ShuffleServerConf.SHUFFLE_SERVER_OFFLINE_CHECK_MAX_TIME, 10000L);
         HTTP_PORT = shuffleServerConf.getInteger("rss.jetty.http.port", 0);
         if (HTTP_PORT == 0) {
             shuffleServerConf.setInteger("rss.jetty.http.port", HTTP_PORT_DEFAULT);
@@ -87,7 +90,7 @@ public class ShuffleServerApiTest extends IntegrationTestBase {
             assertEquals("false", entity3);
 
             // failed to get shuffle assignments
-            Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
+            Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
             GetShuffleAssignmentsResponse assignmentsResponse2 =
                     coordinatorClient.doGetShuffleAssignments("appId2", 0, 1, 1, 1, Collections.emptySet());
             assertTrue(assignmentsResponse2.getStatus() == StatusCode.INTERNAL_ERROR);

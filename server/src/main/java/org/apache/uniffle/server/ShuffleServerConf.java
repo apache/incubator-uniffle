@@ -337,6 +337,24 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(0L)
       .withDescription("For multistorage, fail times exceed the number, will switch storage");
 
+  public static final ConfigOption<Long> SHUFFLE_SERVER_OFFLINE_CHECK_DELAY = ConfigOptions
+          .key("rss.server.offline.check.delay")
+          .longType()
+          .defaultValue(30 * 1000L)
+          .withDescription("rss offline check initial delay (ms)");
+
+  public static final ConfigOption<Long> SHUFFLE_SERVER_OFFLINE_CHECK_INTERVAL = ConfigOptions
+          .key("rss.server.offline.check.interval")
+          .longType()
+          .defaultValue(10 * 1000L)
+          .withDescription("rss offline check interval (ms)");
+
+  public static final ConfigOption<Long> SHUFFLE_SERVER_OFFLINE_CHECK_MAX_TIME = ConfigOptions
+          .key("rss.server.offline.check.max.time")
+          .longType()
+          .defaultValue(60 * 60 * 1000L)
+          .withDescription("maximum time for rss offline check (ms)");
+
   public ShuffleServerConf() {
   }
 
