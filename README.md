@@ -15,9 +15,9 @@
   ~ limitations under the License.
   -->
 
-# What is Firestorm
+# What is Uniffle
 
-Firestorm is a Remote Shuffle Service, and provides the capability for Apache Spark applications
+Uniffle is a Remote Shuffle Service, and provides the capability for Apache Spark applications
 to store shuffle data on remote servers.
 
 [![Build](https://github.com/apache/incubator-uniffle/actions/workflows/build.yml/badge.svg?branch=master&event=push)](https://github.com/apache/incubator-uniffle/actions/workflows/build.yml)
@@ -25,15 +25,15 @@ to store shuffle data on remote servers.
 
 ## Architecture
 ![Rss Architecture](docs/asset/rss_architecture.png)
-Firestorm contains coordinator cluster, shuffle server cluster and remote storage(eg, HDFS) if necessary.
+Uniffle contains coordinator cluster, shuffle server cluster and remote storage(eg, HDFS) if necessary.
 
 Coordinator will collect status of shuffle server and do the assignment for the job.
 
 Shuffle server will receive the shuffle data, merge them and write to storage.
 
-Depend on different situation, Firestorm supports Memory & Local, Memory & Remote Storage(eg, HDFS), Memory & Local & Remote Storage(recommendation for production environment).
+Depend on different situation, Uniffle supports Memory & Local, Memory & Remote Storage(eg, HDFS), Memory & Local & Remote Storage(recommendation for production environment).
 
-## Shuffle Process with Firestorm
+## Shuffle Process with Uniffle
 
 * Spark driver ask coordinator to get shuffle server for shuffle process
 * Spark task write shuffle data to shuffle server with following step:
@@ -63,9 +63,9 @@ Note: To support dynamic allocation, the patch(which is included in client-spark
 ## Supported MapReduce Version
 Current support Hadoop 2.8.5's MapReduce framework.
 
-## Building Firestorm
+## Building Uniffle
 
-Firestorm is built using [Apache Maven](https://maven.apache.org/).
+Uniffle is built using [Apache Maven](https://maven.apache.org/).
 To build it, run:
 
     mvn -DskipTests clean package
@@ -82,7 +82,7 @@ Build against Spark 3.2.x
 
     mvn -DskipTests clean package -Pspark3.2
 
-To package the Firestorm, run:
+To package the Uniffle, run:
 
     ./build_distribution.sh
 
@@ -180,7 +180,7 @@ rss-xxx.tgz will be generated for deployment
 
    The jar for Spark3 is located in <RSS_HOME>/jars/client/spark3/rss-client-XXXXX-shaded.jar
 
-2. Update Spark conf to enable Firestorm, eg,
+2. Update Spark conf to enable Uniffle, eg,
 
    ```
    spark.shuffle.manager org.apache.spark.shuffle.RssShuffleManager
@@ -190,7 +190,7 @@ rss-xxx.tgz will be generated for deployment
 
 ### Support Spark dynamic allocation
 
-To support spark dynamic allocation with Firestorm, spark code should be updated.
+To support spark dynamic allocation with Uniffle, spark code should be updated.
 There are 3 patches for spark (2.4.6/3.1.2/3.2.1) in spark-patches folder for reference.
 
 After apply the patch and rebuild spark, add following configuration in spark conf to enable dynamic allocation:
@@ -205,7 +205,7 @@ After apply the patch and rebuild spark, add following configuration in spark co
 
 The jar for MapReduce is located in <RSS_HOME>/jars/client/mr/rss-client-mr-XXXXX-shaded.jar
 
-2. Update MapReduce conf to enable Firestorm, eg,
+2. Update MapReduce conf to enable Uniffle, eg,
 
    ```
    -Dmapreduce.rss.coordinator.quorum=<coordinatorIp1>:19999,<coordinatorIp2>:19999
@@ -255,16 +255,16 @@ The important configuration is listed as following.
 
 ### Shuffle Client
 
-For more details of advanced configuration, please see [Firestorm Shuffle Client Guide](https://github.com/Tencent/Firestorm/blob/master/docs/client_guide.md).
+For more details of advanced configuration, please see [Uniffle Shuffle Client Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/client_guide.md).
 
 ## LICENSE
 
-Firestorm is under the Apache License Version 2.0. See the [LICENSE](https://github.com/Tencent/Firestorm/blob/master/LICENSE) file for details.
+Uniffle is under the Apache License Version 2.0. See the [LICENSE](https://github.com/apache/incubator-uniffle/blob/master/LICENSE) file for details.
 
 ## Contributing
-For more information about contributing issues or pull requests, see [Firestorm Contributing Guide](https://github.com/Tencent/Firestorm/blob/master/CONTRIBUTING.md).
+For more information about contributing issues or pull requests, see [Uniffle Contributing Guide](https://github.com/apache/incubator-uniffle/blob/master/CONTRIBUTING.md).
 
 ## Support 
-We provide free support for users using this project. If you want to join user wechat group for further help and collaboration. You can scan the following QR code or search wechatID `xinghuojihua_01`, add our assistant on wechat, and remark `Firestorm`. The assistant will help you join our wechat group.
+We provide free support for users using this project. If you want to join user wechat group for further help and collaboration. You can scan the following QR code or search wechatID `xinghuojihua_01`, add our assistant on wechat, and remark `Uniffle`. The assistant will help you join our wechat group.
 
 ![Wechat](docs/asset/wechat.png)
