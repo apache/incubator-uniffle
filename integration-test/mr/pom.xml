@@ -30,7 +30,7 @@
     <artifactId>rss-integration-mr-test</artifactId>
     <version>0.6.0-snapshot</version>
     <packaging>jar</packaging>
-    <name>Apache Uniffle Intergration Test (MapReduce)</name>
+    <name>Apache Uniffle Integration Test (MapReduce)</name>
 
     <dependencies>
         <dependency>
