@@ -30,7 +30,7 @@ import org.apache.uniffle.storage.api.FileReader;
 
 public class LocalFileReader implements FileReader, Closeable {
 
-  private static final Logger LOG = LoggerFactory.getLogger(HdfsFileReader.class);
+  private static final Logger LOG = LoggerFactory.getLogger(LocalFileReader.class);
   private String path;
   private DataInputStream dataInputStream;
 

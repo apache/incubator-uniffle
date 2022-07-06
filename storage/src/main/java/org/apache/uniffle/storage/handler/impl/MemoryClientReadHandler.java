@@ -32,7 +32,7 @@ import org.apache.uniffle.common.util.Constants;
 
 public class MemoryClientReadHandler extends AbstractClientReadHandler {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MemoryQuorumClientReadHandler.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MemoryClientReadHandler.class);
   private long lastBlockId = Constants.INVALID_BLOCK_ID;
   private ShuffleServerClient shuffleServerClient;
 
