@@ -77,6 +77,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.Constants;
 
 public class RssMRAppMaster extends MRAppMaster {
 
@@ -117,19 +118,19 @@ public class RssMRAppMaster extends MRAppMaster {
       LOG.info("Registering coordinators {}", coordinators);
       client.registerCoordinators(coordinators);
 
-      // Get the configured data placement tags and it will also add default shuffle version tag.
-      Set<String> dataPlacementTags = new HashSet<>();
-      String tagsRaw = conf.get(RssMRConfig.RSS_CLIENT_DATA_PLACEMENT_TAGS,
-              RssMRConfig.RSS_CLIENT_DATA_PLACEMENT_TAGS_DEFAULT_VALUES);
-      if (StringUtils.isNotEmpty(tagsRaw)) {
-        tagsRaw = tagsRaw.trim();
-        dataPlacementTags.addAll(Arrays.asList(tagsRaw.split(",")));
+      // Get the configured server assignment tags and it will also add default shuffle version tag.
+      Set<String> assignmentTags = new HashSet<>();
+      String rawTags = conf.get(RssMRConfig.RSS_CLIENT_ASSIGNMENT_TAGS, "");
+      if (StringUtils.isNotEmpty(rawTags)) {
+        rawTags = rawTags.trim();
+        assignmentTags.addAll(Arrays.asList(rawTags.split(",")));
       }
+      assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
 
       ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
       String appId = applicationAttemptId.toString();
       ShuffleAssignmentsInfo response = client.getShuffleAssignments(
-          appId, 0, numReduceTasks, 1, Sets.newHashSet(dataPlacementTags));
+          appId, 0, numReduceTasks, 1, Sets.newHashSet(assignmentTags));
 
       Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges = response.getServerToPartitionRanges();
       final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(

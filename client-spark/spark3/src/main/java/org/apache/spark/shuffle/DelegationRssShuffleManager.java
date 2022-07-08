@@ -100,11 +100,11 @@ public class DelegationRssShuffleManager implements ShuffleManager {
 
     for (CoordinatorClient coordinatorClient : coordinatorClients) {
       try {
-        Set<String> placementTags = RssSparkShuffleUtils.getDataPlacementTags(sparkConf);
+        Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
 
         RssAccessClusterResponse response =
             coordinatorClient.accessCluster(new RssAccessClusterRequest(
-                accessId, placementTags, accessTimeoutMs));
+                accessId, assignmentTags, accessTimeoutMs));
         if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
           LOG.warn("Success to access cluster {} using {}", coordinatorClient.getDesc(), accessId);
           return true;

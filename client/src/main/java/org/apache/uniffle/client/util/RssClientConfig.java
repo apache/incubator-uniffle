@@ -17,8 +17,6 @@
 
 package org.apache.uniffle.client.util;
 
-import org.apache.uniffle.common.util.Constants;
-
 public class RssClientConfig {
 
   public static final String RSS_CLIENT_TYPE = "rss.client.type";
@@ -58,9 +56,8 @@ public class RssClientConfig {
   // When the size of read buffer reaches the half of JVM region (i.e., 32m),
   // it will incur humongous allocation, so we set it to 14m.
   public static String RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE = "14m";
-  // The tags specified by rss client to determine shuffle data placement.
-  public static String RSS_CLIENT_DATA_PLACEMENT_TAGS = "rss.client.data.placement.tags";
-  public static String RSS_CLIENT_DATA_PLACEMENT_TAGS_DEFAULT_VALUES = Constants.SHUFFLE_SERVER_VERSION;
+  // The tags specified by rss client to determine server assignment.
+  public static String RSS_CLIENT_ASSIGNMENT_TAGS = "rss.client.assignment.tags";
 
   public static String RSS_ACCESS_TIMEOUT_MS = "rss.access.timeout.ms";
   public static int RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE = 10000;

@@ -124,10 +124,8 @@ public class RssMRConfig {
   public static String RSS_ACCESS_TIMEOUT_MS = MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ACCESS_TIMEOUT_MS;
   public static int RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE = RssClientConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE;
 
-  public static final String RSS_CLIENT_DATA_PLACEMENT_TAGS =
-          MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_DATA_PLACEMENT_TAGS;
-  public static final String RSS_CLIENT_DATA_PLACEMENT_TAGS_DEFAULT_VALUES =
-      RssClientConfig.RSS_CLIENT_DATA_PLACEMENT_TAGS_DEFAULT_VALUES;
+  public static final String RSS_CLIENT_ASSIGNMENT_TAGS =
+          MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_TAGS;
 
   public static String RSS_CONF_FILE = "rss_conf.xml";
 

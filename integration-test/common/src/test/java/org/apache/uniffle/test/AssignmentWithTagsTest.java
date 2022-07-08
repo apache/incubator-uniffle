@@ -51,7 +51,7 @@ import com.google.common.io.Files;
 
 /**
  * This class is to test the conf of {@code org.apache.uniffle.server.ShuffleServerConf.Tags}
- * and {@code RssClientConfig.RSS_CLIENT_DATA_PLACEMENT_TAGS}
+ * and {@code RssClientConfig.RSS_CLIENT_ASSIGNMENT_TAGS}
  */
 public class AssignmentWithTagsTest extends CoordinatorTestBase {
     private static final Logger LOG = LoggerFactory.getLogger(AssignmentWithTagsTest.class);
@@ -127,11 +127,15 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
             createAndStartShuffleServerWithTags(Sets.newHashSet("fixed"));
         }
 
+        for (int i = 0; i < 2; i++) {
+            createAndStartShuffleServerWithTags(Sets.newHashSet("elastic"));
+        }
+
         // Wait all shuffle servers registering to coordinator
         long startTimeMS = System.currentTimeMillis();
         while (true) {
             int nodeSum = coordinators.get(0).getClusterManager().getNodesNum();
-            if (nodeSum == 4) {
+            if (nodeSum == 6) {
                 break;
             }
             if (System.currentTimeMillis() - startTimeMS > 1000 * 5) {
@@ -184,7 +188,7 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
         assertTrue(tagOfShufflePorts.get("fixed").contains(assignedServerPorts.get(0)));
 
         // case4: Set the multiple tags if exists
-        assignmentsInfo = shuffleWriteClient.getShuffleAssignments("app-3",
+        assignmentsInfo = shuffleWriteClient.getShuffleAssignments("app-4",
                 1, 1, 1, Sets.newHashSet("fixed", Constants.SHUFFLE_SERVER_VERSION));
         assignedServerPorts = assignmentsInfo
                 .getPartitionToServers()
@@ -195,5 +199,14 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
                 .collect(Collectors.toList());
         assertEquals(1, assignedServerPorts.size());
         assertTrue(tagOfShufflePorts.get("fixed").contains(assignedServerPorts.get(0)));
+
+        // case5: Set the multiple tags if non-exist
+        try {
+            assignmentsInfo = shuffleWriteClient.getShuffleAssignments("app-5",
+                    1, 1, 1, Sets.newHashSet("fixed", "elastic", Constants.SHUFFLE_SERVER_VERSION));
+            fail();
+        } catch (Exception e) {
+            assertTrue(e.getMessage().startsWith("Error happened when getShuffleAssignments with"));
+        }
     }
 }
