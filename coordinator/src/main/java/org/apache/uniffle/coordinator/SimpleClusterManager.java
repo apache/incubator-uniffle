@@ -22,6 +22,7 @@ import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -126,7 +127,7 @@ public class SimpleClusterManager implements ClusterManager {
 
   private void parseExcludeNodesFile(DataInputStream fsDataInputStream) throws IOException {
     Set<String> nodes = Sets.newConcurrentHashSet();
-    try (BufferedReader br = new BufferedReader(new InputStreamReader(fsDataInputStream))) {
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(fsDataInputStream, StandardCharsets.UTF_8))) {
       String line;
       while ((line = br.readLine()) != null) {
         if (!StringUtils.isEmpty(line)) {
