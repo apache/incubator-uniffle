@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.client.factory;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -58,7 +59,7 @@ public class CoordinatorClientFactory {
     for (String coordinator: coordinatorList) {
       String[] ipPort = coordinator.trim().split(":");
       if (ipPort.length != 2) {
-        String msg = "Invalid coordinator format " + ipPort;
+        String msg = "Invalid coordinator format " + Arrays.toString(ipPort);
         LOG.error(msg);
         throw new RuntimeException(msg);
       }
