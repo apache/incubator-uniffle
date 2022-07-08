@@ -75,7 +75,7 @@ ARGS=""
 LOG_CONF_FILE="./conf/log4j.properties"
 LOG_PATH="./logs/coordinator.log"
 if [ -f ${LOG_CONF_FILE} ]; then
-  ARGS="$ARGS -Dlog4j.configuration=file:${LOG_CONF_FILE} -DLOG_PATH=${LOG_PATH}"
+  ARGS="$ARGS -Dlog4j.configuration=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH}"
 else
   echo "Exit with error: ${LOG_CONF_FILE} file doesn't exist."
   exit 1
