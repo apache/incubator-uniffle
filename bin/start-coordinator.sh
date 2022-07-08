@@ -72,13 +72,15 @@ JVM_ARGS=" -server \
 
 ARGS=""
 
-LOG_CONF_FILE="./conf/log4j.coordinator.properties"
+LOG_CONF_FILE="./conf/log4j.properties"
+LOG_PATH="./logs/coordinator.log"
 if [ -f ${LOG_CONF_FILE} ]; then
-  ARGS="$ARGS -Dlog4j.configuration=file:${LOG_CONF_FILE}"
+  ARGS="$ARGS -Dlog4j.configuration=file:${LOG_CONF_FILE} -DLOG_PATH=${LOG_PATH}"
 else
   echo "Exit with error: ${LOG_CONF_FILE} file doesn't exist."
   exit 1
 fi
+
 $RUNNER $ARGS $JVM_ARGS -cp $CLASSPATH $MAIN_CLASS --conf $CONF_FILE $@ &
 
 echo $! >$COORDINATOR_HOME/currentpid
