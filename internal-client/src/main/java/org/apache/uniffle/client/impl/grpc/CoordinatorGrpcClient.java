@@ -250,6 +250,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         .newBuilder()
         .setAccessId(request.getAccessId())
         .addAllTags(request.getTags())
+        .putAllReservedData(request.getReservedData())
         .build();
     AccessClusterResponse rpcResponse;
     try {

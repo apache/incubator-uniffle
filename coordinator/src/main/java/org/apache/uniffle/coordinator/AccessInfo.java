@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
@@ -24,14 +26,16 @@ import com.google.common.collect.Sets;
 public class AccessInfo {
   private final String accessId;
   private final Set<String> tags;
+  private final Map<String, String> reservedData;
 
-  public AccessInfo(String accessId, Set<String> tags) {
+  public AccessInfo(String accessId, Set<String> tags, Map<String, String> reservedData) {
     this.accessId = accessId;
     this.tags = tags;
+    this.reservedData = reservedData;
   }
 
   public AccessInfo(String accessId) {
-    this(accessId, Sets.newHashSet());
+    this(accessId, Sets.newHashSet(), Collections.emptyMap());
   }
 
   public String getAccessId() {
@@ -42,11 +46,16 @@ public class AccessInfo {
     return tags;
   }
 
+  public Map<String, String> getReservedData() {
+    return reservedData;
+  }
+
   @Override
   public String toString() {
     return "AccessInfo{"
-        + "accessId='" + accessId + '\''
-        + ", tags=" + tags
-        + '}';
+            + "accessId='" + accessId + '\''
+            + ", tags=" + tags
+            + ", reservedData=" + reservedData
+            + '}';
   }
 }
