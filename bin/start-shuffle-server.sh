@@ -35,6 +35,8 @@ if [ -z "$HADOOP_HOME" ]; then
   exit 1
 fi
 
+export JAVA_HOME
+
 HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
 HADOOP_DEPENDENCY=`$HADOOP_HOME/bin/hadoop classpath --glob`
 

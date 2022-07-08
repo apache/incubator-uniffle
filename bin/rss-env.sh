@@ -24,7 +24,5 @@ JAVA_HOME=<java_home_dir>
 HADOOP_HOME=<hadoop_home_dir>
 XMX_SIZE="80g"
 
-export JAVA_HOME=${JAVA_HOME}
-
 RUNNER="${JAVA_HOME}/bin/java"
 JPS="${JAVA_HOME}/bin/jps"
