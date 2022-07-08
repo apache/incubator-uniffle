@@ -46,7 +46,7 @@ import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 public class ShuffleFlushManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleFlushManager.class);
-  public static AtomicLong ATOMIC_EVENT_ID = new AtomicLong(0);
+  public static final AtomicLong ATOMIC_EVENT_ID = new AtomicLong(0);
   private final ShuffleServer shuffleServer;
   private final BlockingQueue<ShuffleDataFlushEvent> flushQueue = Queues.newLinkedBlockingQueue();
   private final ThreadPoolExecutor threadPoolExecutor;
