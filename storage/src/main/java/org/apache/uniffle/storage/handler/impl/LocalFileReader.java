@@ -46,7 +46,7 @@ public class LocalFileReader implements FileReader, Closeable {
       // The skip method may, for a variety of reasons,
       // end up skipping over some smaller number of bytes, possibly 0
       // the result should be checked and try again until skip expectation length
-      while(at > 0) {
+      while (at > 0) {
         long realSkip = dataInputStream.skip(at);
         if (realSkip == -1) {
           throw new RuntimeException("Unexpected EOF when skip bytes");
