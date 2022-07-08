@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.common;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 public class ShufflePartitionedBlock {
@@ -61,12 +62,12 @@ public class ShufflePartitionedBlock {
     return length == that.length
         && crc == that.crc
         && blockId == that.blockId
-        && data.equals(that.data);
+        && Arrays.equals(data, that.data);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(length, crc, blockId, data);
+    return Objects.hash(length, crc, blockId, Arrays.hashCode(data));
   }
 
   public int getLength() {
