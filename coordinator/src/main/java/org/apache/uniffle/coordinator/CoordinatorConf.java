@@ -71,7 +71,7 @@ public class CoordinatorConf extends RssBaseConf {
   public static final ConfigOption<Integer> COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC = ConfigOptions
       .key("rss.coordinator.access.candidates.updateIntervalSec")
       .intType()
-      .checkValue(ConfigUtils.positiveIntegerValidator2, "access candidates update interval must be positive")
+      .checkValue(ConfigUtils.POSITIVE_INTEGER_VALIDATOR_2, "access candidates update interval must be positive")
       .defaultValue(120)
       .withDescription("Accessed candidates update interval in seconds");
   public static final ConfigOption<String> COORDINATOR_ACCESS_CANDIDATES_PATH = ConfigOptions
@@ -82,14 +82,14 @@ public class CoordinatorConf extends RssBaseConf {
   public static final ConfigOption<Double> COORDINATOR_ACCESS_LOADCHECKER_MEMORY_PERCENTAGE = ConfigOptions
       .key("rss.coordinator.access.loadChecker.memory.percentage")
       .doubleType()
-      .checkValue(ConfigUtils.percentageDoubleValidator,
+      .checkValue(ConfigUtils.PERCENTAGE_DOUBLE_VALIDATOR,
           "The recovery usage percentage must be between 0.0 and 100.0")
       .defaultValue(15.0)
       .withDescription("The minimal percentage of available memory percentage of a server");
   public static final ConfigOption<Integer> COORDINATOR_ACCESS_LOADCHECKER_SERVER_NUM_THRESHOLD = ConfigOptions
       .key("rss.coordinator.access.loadChecker.serverNum.threshold")
       .intType()
-      .checkValue(ConfigUtils.positiveIntegerValidator2, "load checker serverNum threshold must be positive")
+      .checkValue(ConfigUtils.POSITIVE_INTEGER_VALIDATOR_2, "load checker serverNum threshold must be positive")
       .noDefaultValue()
       .withDescription("The minimal required number of healthy shuffle servers when being accessed by client");
   public static final ConfigOption<Boolean> COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED = ConfigOptions
@@ -110,7 +110,7 @@ public class CoordinatorConf extends RssBaseConf {
   public static final ConfigOption<Integer> COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC = ConfigOptions
       .key("rss.coordinator.dynamicClientConf.updateIntervalSec")
       .intType()
-      .checkValue(ConfigUtils.positiveIntegerValidator2, "dynamic client conf update interval in seconds")
+      .checkValue(ConfigUtils.POSITIVE_INTEGER_VALIDATOR_2, "dynamic client conf update interval in seconds")
       .defaultValue(120)
       .withDescription("Accessed candidates update interval in seconds");
   public static final ConfigOption<String> COORDINATOR_REMOTE_STORAGE_CLUSTER_CONF = ConfigOptions

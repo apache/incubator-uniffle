@@ -149,28 +149,28 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Double> CLEANUP_THRESHOLD = ConfigOptions
       .key("rss.server.cleanup.threshold")
       .doubleType()
-      .checkValue(ConfigUtils.percentageDoubleValidator, "clean threshold must be between 0.0 and 100.0")
+      .checkValue(ConfigUtils.PERCENTAGE_DOUBLE_VALIDATOR, "clean threshold must be between 0.0 and 100.0")
       .defaultValue(10.0)
       .withDescription("Threshold for disk cleanup");
 
   public static final ConfigOption<Double> HIGH_WATER_MARK_OF_WRITE = ConfigOptions
       .key("rss.server.high.watermark.write")
       .doubleType()
-      .checkValue(ConfigUtils.percentageDoubleValidator, "high write watermark must be between 0.0 and 100.0")
+      .checkValue(ConfigUtils.PERCENTAGE_DOUBLE_VALIDATOR, "high write watermark must be between 0.0 and 100.0")
       .defaultValue(95.0)
       .withDescription("If disk usage is bigger than this value, disk cannot been written");
 
   public static final ConfigOption<Double> LOW_WATER_MARK_OF_WRITE = ConfigOptions
       .key("rss.server.low.watermark.write")
       .doubleType()
-      .checkValue(ConfigUtils.percentageDoubleValidator, "low write watermark must be between 0.0 and 100.0")
+      .checkValue(ConfigUtils.PERCENTAGE_DOUBLE_VALIDATOR, "low write watermark must be between 0.0 and 100.0")
       .defaultValue(85.0)
       .withDescription("If disk usage is smaller than this value, disk can been written again");
 
   public static final ConfigOption<Long> PENDING_EVENT_TIMEOUT_SEC = ConfigOptions
       .key("rss.server.pending.event.timeout.sec")
       .longType()
-      .checkValue(ConfigUtils.positiveLongValidator, "pending event timeout must be positive")
+      .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "pending event timeout must be positive")
       .defaultValue(600L)
       .withDescription("If disk cannot be written for timeout seconds, the flush data event will fail");
 
@@ -183,21 +183,21 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Integer> UPLOADER_THREAD_NUM = ConfigOptions
       .key("rss.server.uploader.thread.number")
       .intType()
-      .checkValue(ConfigUtils.positiveIntegerValidator2, "uploader thread number must be positive")
+      .checkValue(ConfigUtils.POSITIVE_INTEGER_VALIDATOR_2, "uploader thread number must be positive")
       .defaultValue(4)
       .withDescription("The thread number of the uploader");
 
   public static final ConfigOption<Long> UPLOADER_INTERVAL_MS = ConfigOptions
       .key("rss.server.uploader.interval.ms")
       .longType()
-      .checkValue(ConfigUtils.positiveLongValidator, "uploader interval must be positive")
+      .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "uploader interval must be positive")
       .defaultValue(3000L)
       .withDescription("The interval for the uploader");
 
   public static final ConfigOption<Long> UPLOAD_COMBINE_THRESHOLD_MB = ConfigOptions
       .key("rss.server.uploader.combine.threshold.mb")
       .longType()
-      .checkValue(ConfigUtils.positiveLongValidator, "uploader combine threshold must be positive")
+      .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "uploader combine threshold must be positive")
       .defaultValue(32L)
       .withDescription("The threshold of the combine mode");
 
@@ -216,28 +216,28 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Long> REFERENCE_UPLOAD_SPEED_MBS = ConfigOptions
       .key("rss.server.uploader.references.speed.mbps")
       .longType()
-      .checkValue(ConfigUtils.positiveLongValidator, "uploader reference speed must be positive")
+      .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "uploader reference speed must be positive")
       .defaultValue(8L)
       .withDescription("The speed for the uploader");
 
   public static final ConfigOption<Long> DISK_CAPACITY = ConfigOptions
       .key("rss.server.disk.capacity")
       .longType()
-      .checkValue(ConfigUtils.positiveLongValidator, "disk capacity must be positive")
+      .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "disk capacity must be positive")
       .defaultValue(1024L * 1024L * 1024L * 1024L)
       .withDescription("Disk capacity that shuffle server can use");
 
   public static final ConfigOption<Long> CLEANUP_INTERVAL_MS = ConfigOptions
       .key("rss.server.cleanup.interval.ms")
       .longType()
-      .checkValue(ConfigUtils.positiveLongValidator, "cleanup interval must be positive")
+      .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "cleanup interval must be positive")
       .defaultValue(3000L)
       .withDescription("The interval for cleanup");
 
   public static final ConfigOption<Long> SHUFFLE_EXPIRED_TIMEOUT_MS = ConfigOptions
       .key("rss.server.shuffle.expired.timeout.ms")
       .longType()
-      .checkValue(ConfigUtils.positiveLongValidator, "shuffle expired timeout must be positive")
+      .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "shuffle expired timeout must be positive")
       .defaultValue(60L * 1000 * 2)
       .withDescription("If the shuffle is not read for the long time, and shuffle is uploaded totally,"
           + " , we can delete the shuffle");
@@ -245,14 +245,14 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Long> SHUFFLE_MAX_UPLOAD_SIZE = ConfigOptions
       .key("rss.server.shuffle.max.upload.size")
       .longType()
-      .checkValue(ConfigUtils.positiveLongValidator, "max upload size must be positive")
+      .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "max upload size must be positive")
       .defaultValue(1024L * 1024L * 1024L)
       .withDescription("The max value of upload shuffle size");
 
   public static final ConfigOption<Double> SHUFFLE_MAX_FORCE_UPLOAD_TIME_RATIO = ConfigOptions
       .key("rss.server.shuffle.max.force.upload.time.ratio")
       .doubleType()
-      .checkValue(ConfigUtils.percentageDoubleValidator, "max upload time radio must between 0.0 and 100.0")
+      .checkValue(ConfigUtils.PERCENTAGE_DOUBLE_VALIDATOR, "max upload time radio must between 0.0 and 100.0")
       .defaultValue(95.0)
       .withDescription("The max upload time ratio in force mode");
 
@@ -265,7 +265,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Double> HEALTH_STORAGE_MAX_USAGE_PERCENTAGE = ConfigOptions
       .key("rss.server.health.max.storage.usage.percentage")
       .doubleType()
-      .checkValue(ConfigUtils.percentageDoubleValidator,
+      .checkValue(ConfigUtils.PERCENTAGE_DOUBLE_VALIDATOR,
           "The max usage percentage must be between 0.0 and 100.0")
       .defaultValue(90.0)
       .withDescription("The usage percentage of a storage exceed the value, the disk become unavailable");
@@ -273,7 +273,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Double> HEALTH_STORAGE_RECOVERY_USAGE_PERCENTAGE = ConfigOptions
       .key("rss.server.health.storage.recovery.usage.percentage")
       .doubleType()
-      .checkValue(ConfigUtils.percentageDoubleValidator,
+      .checkValue(ConfigUtils.PERCENTAGE_DOUBLE_VALIDATOR,
           "The recovery usage percentage must be between 0.0 and 100.0")
       .defaultValue(80.0)
       .withDescription("The usage percentage of an unavailable storage decline the value, the disk"
@@ -282,14 +282,14 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Long> HEALTH_CHECK_INTERVAL = ConfigOptions
       .key("rss.server.health.check.interval.ms")
       .longType()
-      .checkValue(ConfigUtils.positiveLongValidator,  "The interval for health check must be positive")
+      .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR,  "The interval for health check must be positive")
       .defaultValue(5000L)
       .withDescription("The interval for health check");
 
   public static final ConfigOption<Double> HEALTH_MIN_STORAGE_PERCENTAGE = ConfigOptions
       .key("rss.server.health.min.storage.percentage")
       .doubleType()
-      .checkValue(ConfigUtils.percentageDoubleValidator,
+      .checkValue(ConfigUtils.PERCENTAGE_DOUBLE_VALIDATOR,
           "The minimum for healthy storage percentage must be between 0.0 and 100.0")
       .defaultValue(80.0)
       .withDescription("The minimum fraction of storage that must pass the check mark the node as healthy");
@@ -310,7 +310,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Double> SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE = ConfigOptions
       .key("rss.server.memory.shuffle.lowWaterMark.percentage")
       .doubleType()
-      .checkValue(ConfigUtils.percentageDoubleValidator,
+      .checkValue(ConfigUtils.PERCENTAGE_DOUBLE_VALIDATOR,
           "The lowWaterMark for memory percentage must be between 0.0 and 100.0")
       .defaultValue(25.0)
       .withDescription("LowWaterMark of memory in percentage style");
@@ -318,7 +318,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Double> SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE = ConfigOptions
       .key("rss.server.memory.shuffle.highWaterMark.percentage")
       .doubleType()
-      .checkValue(ConfigUtils.percentageDoubleValidator,
+      .checkValue(ConfigUtils.PERCENTAGE_DOUBLE_VALIDATOR,
           "The highWaterMark for memory percentage must be between 0.0 and 100.0")
       .defaultValue(75.0)
       .withDescription("HighWaterMark of memory in percentage style");
@@ -326,14 +326,14 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Long> FLUSH_COLD_STORAGE_THRESHOLD_SIZE = ConfigOptions
       .key("rss.server.flush.cold.storage.threshold.size")
       .longType()
-      .checkValue(ConfigUtils.positiveLongValidator, "flush cold storage threshold must be positive")
+      .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "flush cold storage threshold must be positive")
       .defaultValue(64L * 1024L * 1024L)
       .withDescription("For multistorage, the event size exceed this value, flush data  to cold storage");
 
   public static final ConfigOption<Long> FALLBACK_MAX_FAIL_TIMES = ConfigOptions
       .key("rss.server.multistorage.fallback.max.fail.times")
       .longType()
-      .checkValue(ConfigUtils.non_negativeLongValidator, " fallback times must be non-negative")
+      .checkValue(ConfigUtils.NON_NEGATIVE_LONG_VALIDATOR, " fallback times must be non-negative")
       .defaultValue(0L)
       .withDescription("For multistorage, fail times exceed the number, will switch storage");
 

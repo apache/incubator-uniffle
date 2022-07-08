@@ -177,17 +177,17 @@ public class ConfigUtils {
     return configOptionList;
   }
 
-  public static final Function<Long, Boolean> positiveLongValidator = value -> value > 0;
+  public static final Function<Long, Boolean> POSITIVE_LONG_VALIDATOR = value -> value > 0;
 
-  public static final Function<Long, Boolean> non_negativeLongValidator = value -> value >= 0;
+  public static final Function<Long, Boolean> NON_NEGATIVE_LONG_VALIDATOR = value -> value >= 0;
 
-  public static final Function<Long, Boolean> positiveIntegerValidator =
+  public static final Function<Long, Boolean> POSITIVE_INTEGER_VALIDATOR =
       value -> value > 0L && value <= Integer.MAX_VALUE;
 
-  public static final Function<Integer, Boolean> positiveIntegerValidator2 =
+  public static final Function<Integer, Boolean> POSITIVE_INTEGER_VALIDATOR_2 =
       value -> value > 0;
 
-  public static final Function<Double, Boolean> percentageDoubleValidator =
+  public static final Function<Double, Boolean> PERCENTAGE_DOUBLE_VALIDATOR =
       (Function<Double, Boolean>) value -> Double.compare(value, 100.0) <= 0 && Double.compare(value, 0.0) >= 0;
   
 }
