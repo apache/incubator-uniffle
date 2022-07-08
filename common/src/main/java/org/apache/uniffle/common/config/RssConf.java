@@ -32,7 +32,7 @@ public class RssConf implements Cloneable {
   /**
    * Stores the concrete key/value pairs of this configuration object.
    */
-  private final ConcurrentHashMap<String, Object> settings;
+  private ConcurrentHashMap<String, Object> settings;
 
   /**
    * Creates a new empty configuration.
@@ -532,14 +532,9 @@ public class RssConf implements Cloneable {
   // --------------------------------------------------------------------------------------------
 
   @Override
-  public RssConf clone() {
-    RssConf config;
-    try {
-      config = (RssConf) super.clone();
-    } catch (CloneNotSupportedException e) {
-      config = new RssConf();
-    }
-    config.addAll(this);
+  public RssConf clone() throws CloneNotSupportedException {
+    RssConf config = (RssConf) super.clone();
+    config.settings = new ConcurrentHashMap<>(settings);
     return config;
   }
 
