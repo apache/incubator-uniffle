@@ -27,7 +27,7 @@ import com.google.common.collect.Sets;
 
 import org.apache.uniffle.common.util.UnitConverter;
 
-public class RssConf {
+public class RssConf implements Cloneable {
 
   /**
    * Stores the concrete key/value pairs of this configuration object.
@@ -533,7 +533,12 @@ public class RssConf {
 
   @Override
   public RssConf clone() {
-    RssConf config = new RssConf();
+    RssConf config;
+    try {
+      config = (RssConf) super.clone();
+    } catch (CloneNotSupportedException e) {
+      config = new RssConf();
+    }
     config.addAll(this);
     return config;
   }
