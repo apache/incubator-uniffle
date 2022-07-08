@@ -20,6 +20,7 @@ package org.apache.uniffle.storage.util;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 
@@ -199,7 +200,7 @@ public class ShuffleStorageUtils {
 
   public static int getStorageIndex(int max, String appId, int shuffleId, int startPartition) {
     String hash = appId + "_" + shuffleId + "_" + startPartition;
-    int index = MurmurHash.getInstance().hash(hash.getBytes()) % max;
+    int index = MurmurHash.getInstance().hash(hash.getBytes(StandardCharsets.UTF_8)) % max;
     if (index < 0) {
       index = -index;
     }
