@@ -37,7 +37,6 @@ jobs:
     uses: ./.github/workflows/sequential.yml
     with:
       maven-args: test-compile spotbugs:check
-      experimental: true
 
   build:
     uses: ./.github/workflows/parallel.yml

@@ -807,6 +807,7 @@
           </dependency>
         </dependencies>
         <configuration>
+          <threshold>high</threshold>
           <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
         </configuration>
       </plugin>
