@@ -18,9 +18,13 @@
 package org.apache.spark.shuffle;
 
 import java.lang.reflect.Constructor;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.deploy.SparkHadoopUtil;
@@ -30,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.util.Constants;
 
 public class RssSparkShuffleUtils {
 
@@ -122,5 +127,16 @@ public class RssSparkShuffleUtils {
       }
     }
     return readerHadoopConf;
+  }
+
+  public static Set<String> getAssignmentTags(SparkConf sparkConf) {
+    Set<String> assignmentTags = new HashSet<>();
+    String rawTags = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_TAGS, "");
+    if (StringUtils.isNotEmpty(rawTags)) {
+      rawTags = rawTags.trim();
+      assignmentTags.addAll(Arrays.asList(rawTags.split(",")));
+    }
+    assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
+    return assignmentTags;
   }
 }

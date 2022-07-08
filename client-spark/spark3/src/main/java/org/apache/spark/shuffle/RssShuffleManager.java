@@ -65,7 +65,6 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
 
 public class RssShuffleManager implements ShuffleManager {
@@ -276,12 +275,14 @@ public class RssShuffleManager implements ShuffleManager {
     remoteStorage = ClientUtils.fetchRemoteStorage(
         id.get(), remoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
 
+    Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
+
     ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
         id.get(),
         shuffleId,
         dependency.partitioner().numPartitions(),
         1,
-        Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+        assignmentTags);
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = response.getPartitionToServers();
 
     startHeartbeat();

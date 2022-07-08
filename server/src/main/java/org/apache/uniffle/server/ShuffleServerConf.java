@@ -337,6 +337,13 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(0L)
       .withDescription("For multistorage, fail times exceed the number, will switch storage");
 
+  public static final ConfigOption<List<String>> TAGS = ConfigOptions
+          .key("rss.server.tags")
+          .stringType()
+          .asList()
+          .noDefaultValue()
+          .withDescription("Tags list supported by shuffle server");
+
   public ShuffleServerConf() {
   }
 
