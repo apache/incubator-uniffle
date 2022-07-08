@@ -85,8 +85,9 @@ public class AccessManagerTest {
     accessManager.close();
   }
 
-  public static class MockAccessCheckerAlwaysTrue implements AccessChecker {
-    public MockAccessCheckerAlwaysTrue(AccessManager accessManager) {
+  public static class MockAccessCheckerAlwaysTrue extends AccessChecker {
+    public MockAccessCheckerAlwaysTrue(AccessManager accessManager) throws Exception {
+      super(accessManager);
     }
 
     public void close() {
@@ -97,8 +98,9 @@ public class AccessManagerTest {
     }
   }
 
-  public static class MockAccessCheckerAlwaysFalse implements AccessChecker {
-    public MockAccessCheckerAlwaysFalse() {
+  public static class MockAccessCheckerAlwaysFalse extends AccessChecker {
+    public MockAccessCheckerAlwaysFalse(AccessManager accessManager) throws Exception {
+      super(accessManager);
     }
 
     public void close() {}
