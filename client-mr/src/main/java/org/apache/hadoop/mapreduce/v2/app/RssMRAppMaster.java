@@ -19,8 +19,11 @@ package org.apache.hadoop.mapreduce.v2.app;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -115,11 +118,19 @@ public class RssMRAppMaster extends MRAppMaster {
       LOG.info("Registering coordinators {}", coordinators);
       client.registerCoordinators(coordinators);
 
+      // Get the configured server assignment tags and it will also add default shuffle version tag.
+      Set<String> assignmentTags = new HashSet<>();
+      String rawTags = conf.get(RssMRConfig.RSS_CLIENT_ASSIGNMENT_TAGS, "");
+      if (StringUtils.isNotEmpty(rawTags)) {
+        rawTags = rawTags.trim();
+        assignmentTags.addAll(Arrays.asList(rawTags.split(",")));
+      }
+      assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
+
       ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
       String appId = applicationAttemptId.toString();
       ShuffleAssignmentsInfo response = client.getShuffleAssignments(
-          appId, 0, numReduceTasks,
-          1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+          appId, 0, numReduceTasks, 1, Sets.newHashSet(assignmentTags));
 
       Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges = response.getServerToPartitionRanges();
       final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(

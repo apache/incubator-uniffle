@@ -124,6 +124,9 @@ public class RssMRConfig {
   public static final String RSS_ACCESS_TIMEOUT_MS = MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ACCESS_TIMEOUT_MS;
   public static final int RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE = RssClientConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE;
 
+  public static final String RSS_CLIENT_ASSIGNMENT_TAGS =
+          MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_TAGS;
+
   public static final String RSS_CONF_FILE = "rss_conf.xml";
 
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF = Sets.newHashSet(

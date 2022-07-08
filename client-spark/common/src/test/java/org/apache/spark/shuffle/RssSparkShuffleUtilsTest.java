@@ -17,11 +17,15 @@
 
 package org.apache.spark.shuffle;
 
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.collect.Maps;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
+import org.apache.uniffle.common.util.Constants;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.util.RssClientConfig;
@@ -32,6 +36,30 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RssSparkShuffleUtilsTest {
+
+  @Test
+  public void testAssignmentTags() {
+    SparkConf conf = new SparkConf();
+
+    /**
+     * Case1: dont set the tag implicitly and will return the {@code Constants.SHUFFLE_SERVER_VERSION}
+      */
+    Set<String> tags = RssSparkShuffleUtils.getAssignmentTags(conf);
+    assertEquals(Constants.SHUFFLE_SERVER_VERSION, tags.iterator().next());
+
+    /**
+     * Case2: set the multiple tags implicitly and will return the {@code Constants.SHUFFLE_SERVER_VERSION}
+     * and configured tags.
+     */
+    conf.set(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_TAGS, " a,b");
+    tags = RssSparkShuffleUtils.getAssignmentTags(conf);
+    assertEquals(3, tags.size());
+    Iterator<String> iterator = tags.iterator();
+    assertEquals("a", iterator.next());
+    assertEquals("b", iterator.next());
+    assertEquals(Constants.SHUFFLE_SERVER_VERSION, iterator.next());
+  }
+
   @Test
   public void odfsConfigurationTest() {
     SparkConf conf = new SparkConf();
