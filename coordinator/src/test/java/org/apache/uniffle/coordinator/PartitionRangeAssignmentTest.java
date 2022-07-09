@@ -33,7 +33,7 @@ public class PartitionRangeAssignmentTest {
 
   @Test
   public void test() {
-    SortedMap sortedMap = new TreeMap();
+    SortedMap<PartitionRange, List<ServerNode>> sortedMap = new TreeMap<>();
     for (int i = 0; i < 9; i = i + 3) {
       PartitionRange range = new PartitionRange(i, i + 2);
       List<ServerNode> nodes = Collections.singletonList(new ServerNode(

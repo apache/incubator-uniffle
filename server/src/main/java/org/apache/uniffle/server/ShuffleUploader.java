@@ -413,7 +413,7 @@ public class ShuffleUploader {
     return shuffleFileInfoList;
   }
 
-  private List getNotUploadedPartitions(String key) {
+  private List<Integer> getNotUploadedPartitions(String key) {
     RoaringBitmap bitmap = localStorage.getNotUploadedPartitions(key);
     List<Integer> partitionList = Lists.newArrayList();
     for (int p : bitmap) {

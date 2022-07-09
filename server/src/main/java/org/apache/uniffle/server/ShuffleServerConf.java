@@ -376,7 +376,7 @@ public class ShuffleServerConf extends RssBaseConf {
 
     loadCommonConf(properties);
 
-    List<ConfigOption> configOptions = ConfigUtils.getAllConfigOptions(ShuffleServerConf.class);
+    List<ConfigOption<Object>> configOptions = ConfigUtils.getAllConfigOptions(ShuffleServerConf.class);
 
     properties.forEach((k, v) -> {
       configOptions.forEach(config -> {
