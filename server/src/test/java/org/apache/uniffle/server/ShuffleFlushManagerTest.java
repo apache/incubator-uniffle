@@ -32,7 +32,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.prometheus.client.Gauge;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
@@ -101,8 +101,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     String appId = "writeTest_appId";
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
-    storageManager.registerRemoteStorage(appId, remoteStorage);
-    storageManager.registerRemoteStorage(appId, remoteStorage);
+    storageManager.registerRemoteStorage(appId, remoteStorage, StringUtils.EMPTY);
     String storageHost = "localhost";
     assertEquals(0.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.get(storageHost).get(), 0.5);
     assertEquals(0.0, ShuffleServerMetrics.counterRemoteStorageRetryWrite.get(storageHost).get(), 0.5);
@@ -150,7 +149,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     String appId = "complexWriteTest_appId";
-    storageManager.registerRemoteStorage(appId, remoteStorage);
+    storageManager.registerRemoteStorage(appId, remoteStorage, StringUtils.EMPTY);
     List<ShufflePartitionedBlock> expectedBlocks = Lists.newArrayList();
     List<ShuffleDataFlushEvent> flushEvents1 = Lists.newArrayList();
     List<ShuffleDataFlushEvent> flushEvents2 = Lists.newArrayList();
@@ -189,8 +188,8 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
         StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     String appId1 = "complexWriteTest_appId1";
     String appId2 = "complexWriteTest_appId2";
-    storageManager.registerRemoteStorage(appId1, remoteStorage);
-    storageManager.registerRemoteStorage(appId2, remoteStorage);
+    storageManager.registerRemoteStorage(appId1, remoteStorage, StringUtils.EMPTY);
+    storageManager.registerRemoteStorage(appId2, remoteStorage, StringUtils.EMPTY);
     ShuffleFlushManager manager =
         new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, storageManager);
     ShuffleDataFlushEvent event1 =

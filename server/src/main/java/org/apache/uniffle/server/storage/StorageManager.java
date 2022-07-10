@@ -45,9 +45,11 @@ public interface StorageManager {
 
   void stop();
 
-  void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo);
+  void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo, String user);
 
   Checker getStorageChecker();
+
+  String getStorageUser(String appId);
 
   // todo: add an interface that check storage isHealthy
 }

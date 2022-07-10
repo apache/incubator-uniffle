@@ -171,6 +171,11 @@ public class LocalStorageManager extends SingleStorageManager {
   }
 
   @Override
+  public String getStorageUser(String appId) {
+    return StringUtils.EMPTY;
+  }
+
+  @Override
   public void removeResources(String appId, Set<Integer> shuffleSet) {
     for (LocalStorage storage : localStorages) {
       for (Integer shuffleId : shuffleSet) {
@@ -186,7 +191,7 @@ public class LocalStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo) {
+  public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo, String user) {
     // ignore
   }
 

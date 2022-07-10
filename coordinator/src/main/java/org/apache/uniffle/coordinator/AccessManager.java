@@ -39,7 +39,8 @@ public class AccessManager {
   private List<AccessChecker> accessCheckers = Lists.newArrayList();
 
   public AccessManager(
-      CoordinatorConf conf, ClusterManager clusterManager, Configuration hadoopConf) throws RuntimeException {
+          CoordinatorConf conf, ClusterManager clusterManager,
+          Configuration hadoopConf) throws Exception {
     this.coordinatorConf = conf;
     this.clusterManager = clusterManager;
     this.hadoopConf = hadoopConf;

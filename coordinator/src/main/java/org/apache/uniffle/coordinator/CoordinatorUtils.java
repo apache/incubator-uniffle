@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.coordinator;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,10 +24,6 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalFileSystem;
-import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,23 +66,6 @@ public class CoordinatorUtils {
     }
 
     return ranges;
-  }
-
-  // TODO: the pure hdfs related classes and methods should be placed in a common module
-  public static FileSystem getFileSystemForPath(Path path, Configuration conf) throws IOException {
-    // For local file systems, return the raw local file system, such calls to flush()
-    // actually flushes the stream.
-    try {
-      FileSystem fs = path.getFileSystem(conf);
-      if (fs instanceof LocalFileSystem) {
-        LOG.debug("{} is local file system", path);
-        return ((LocalFileSystem) fs).getRawFileSystem();
-      }
-      return fs;
-    } catch (IOException e) {
-      LOG.error("Fail to get filesystem of {}", path);
-      throw e;
-    }
   }
 
   public static Map<String, Map<String, String>> extractRemoteStorageConf(String confString) {

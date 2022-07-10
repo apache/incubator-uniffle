@@ -18,7 +18,6 @@
 package org.apache.uniffle.storage;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -31,6 +30,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 
+import org.apache.uniffle.common.provider.HadoopAccessorProvider;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HdfsTestBase implements Serializable {
@@ -42,7 +43,7 @@ public class HdfsTestBase implements Serializable {
   protected static File baseDir;
 
   @BeforeAll
-  public static void setUpHdfs(@TempDir File tempDir) throws IOException {
+  public static void setUpHdfs(@TempDir File tempDir) throws Exception {
     conf = new Configuration();
     baseDir = tempDir;
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR,
@@ -50,10 +51,13 @@ public class HdfsTestBase implements Serializable {
     cluster = (new MiniDFSCluster.Builder(conf)).build();
     HDFS_URI = "hdfs://localhost:" + cluster.getNameNodePort() + "/";
     fs = (new Path(HDFS_URI)).getFileSystem(conf);
+
+    HadoopAccessorProvider.init();
   }
 
   @AfterAll
-  public static void tearDownHdfs() throws IOException {
+  public static void tearDownHdfs() throws Exception {
+    HadoopAccessorProvider.cleanup();
     fs.close();
     cluster.shutdown();
   }

@@ -65,6 +65,7 @@ import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.provider.HadoopAccessorProvider;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
@@ -139,6 +140,12 @@ public class RssShuffleManager implements ShuffleManager {
   };
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
+    try {
+      HadoopAccessorProvider.init();
+    } catch (Exception exception) {
+      throw new RuntimeException("Errors on initing the HadoopAccessorProvider.");
+    }
+
     this.sparkConf = conf;
 
     // set & check replica config
@@ -564,8 +571,11 @@ public class RssShuffleManager implements ShuffleManager {
   }
 
   @VisibleForTesting
-  protected void registerShuffleServers(String appId, int shuffleId,
-                                        Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges) {
+  protected void registerShuffleServers(
+      String appId,
+      int shuffleId,
+      Map<ShuffleServerInfo,
+      List<PartitionRange>> serverToPartitionRanges) {
     if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
       return;
     }

@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.Lists;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
@@ -80,9 +81,19 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     int shuffleId = 1;
 
     shuffleTaskManager.registerShuffle(
-        appId, shuffleId, Lists.newArrayList(new PartitionRange(0, 1)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+        appId,
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(0, 1)),
+        RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+        StringUtils.EMPTY
+    );
     shuffleTaskManager.registerShuffle(
-        appId, shuffleId, Lists.newArrayList(new PartitionRange(2, 3)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+        appId,
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(2, 3)),
+        RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+        StringUtils.EMPTY
+    );
 
     Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool =
         shuffleServer.getShuffleBufferManager().getBufferPool();
@@ -95,7 +106,12 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
 
     // register again
     shuffleTaskManager.registerShuffle(
-        appId, shuffleId, Lists.newArrayList(new PartitionRange(0, 1)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+        appId,
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(0, 1)),
+        RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+        StringUtils.EMPTY
+    );
     assertEquals(buffer, bufferPool.get(appId).get(shuffleId).get(0));
   }
 
@@ -120,9 +136,19 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(
         conf, shuffleFlushManager, shuffleBufferManager, storageManager);
     shuffleTaskManager.registerShuffle(
-        appId, shuffleId, Lists.newArrayList(new PartitionRange(1, 1)), new RemoteStorageInfo(remoteStorage));
+        appId,
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(1, 1)),
+        new RemoteStorageInfo(remoteStorage),
+        StringUtils.EMPTY
+    );
     shuffleTaskManager.registerShuffle(
-        appId, shuffleId, Lists.newArrayList(new PartitionRange(2, 2)), new RemoteStorageInfo(remoteStorage));
+        appId,
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(2, 2)),
+        new RemoteStorageInfo(remoteStorage),
+        StringUtils.EMPTY
+    );
     List<ShufflePartitionedBlock> expectedBlocks1 = Lists.newArrayList();
     List<ShufflePartitionedBlock> expectedBlocks2 = Lists.newArrayList();
     Map<Long, PreAllocatedBufferInfo> bufferIds = shuffleTaskManager.getRequireBufferIds();
@@ -247,11 +273,19 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     StorageManager storageManager = shuffleServer.getStorageManager();
     ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf, shuffleFlushManager, shuffleBufferManager, storageManager);
     shuffleTaskManager.registerShuffle(
-        "clearTest1", shuffleId,
-        Lists.newArrayList(new PartitionRange(0, 1)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+        "clearTest1",
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(0, 1)),
+        RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+        StringUtils.EMPTY
+    );
     shuffleTaskManager.registerShuffle(
-        "clearTest2", shuffleId,
-        Lists.newArrayList(new PartitionRange(0, 1)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+        "clearTest2",
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(0, 1)),
+        RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+        StringUtils.EMPTY
+    );
     shuffleTaskManager.refreshAppId("clearTest1");
     shuffleTaskManager.refreshAppId("clearTest2");
     assertEquals(2, shuffleTaskManager.getAppIds().size());
@@ -273,8 +307,12 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
 
     // register again
     shuffleTaskManager.registerShuffle(
-        "clearTest2", shuffleId,
-        Lists.newArrayList(new PartitionRange(0, 1)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+        "clearTest2",
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(0, 1)),
+        RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+        StringUtils.EMPTY
+    );
     shuffleTaskManager.refreshAppId("clearTest2");
     shuffleTaskManager.checkResourceStatus();
     assertEquals(Sets.newHashSet("clearTest1", "clearTest2"), shuffleTaskManager.getAppIds());

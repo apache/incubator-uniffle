@@ -26,9 +26,12 @@ import com.google.common.collect.Sets;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import org.apache.uniffle.common.provider.HadoopAccessorProvider;
 
 import static java.lang.Thread.sleep;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,6 +40,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AccessCandidatesCheckerTest {
+
+  @BeforeAll
+  public static void beforeAll() throws Exception {
+    HadoopAccessorProvider.init();
+  }
 
   @BeforeEach
   public void setUp() {

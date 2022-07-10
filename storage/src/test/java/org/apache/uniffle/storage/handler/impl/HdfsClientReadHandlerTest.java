@@ -23,23 +23,27 @@ import java.util.Set;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
-import org.apache.uniffle.storage.HdfsShuffleHandlerTestBase;
+import org.apache.uniffle.storage.HdfsTestBase;
 
+import static org.apache.uniffle.storage.HdfsShuffleHandlerTestBase.calcExpectedSegmentNum;
+import static org.apache.uniffle.storage.HdfsShuffleHandlerTestBase.checkData;
+import static org.apache.uniffle.storage.HdfsShuffleHandlerTestBase.writeTestData;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class HdfsClientReadHandlerTest extends HdfsShuffleHandlerTestBase {
+public class HdfsClientReadHandlerTest extends HdfsTestBase {
 
-  @Test
-  public void test() {
+  public static void createAndRunCases(String clusterPathPrefix, Configuration hadoopConf, String writeUser) {
     try {
-      String basePath = HDFS_URI + "clientReadTest1";
+      String basePath = clusterPathPrefix + "clientReadTest1";
       HdfsShuffleWriteHandler writeHandler =
           new HdfsShuffleWriteHandler(
               "appId",
@@ -48,7 +52,8 @@ public class HdfsClientReadHandlerTest extends HdfsShuffleHandlerTestBase {
               1,
               basePath,
               "test",
-              conf);
+              hadoopConf,
+              writeUser);
 
       Map<Long, byte[]> expectedData = Maps.newHashMap();
       Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
@@ -78,7 +83,7 @@ public class HdfsClientReadHandlerTest extends HdfsShuffleHandlerTestBase {
           expectBlockIds,
           processBlockIds,
           basePath,
-          conf);
+          hadoopConf);
       Set<Long> actualBlockIds = Sets.newHashSet();
 
       for (int i = 0; i < total; ++i) {
@@ -105,5 +110,10 @@ public class HdfsClientReadHandlerTest extends HdfsShuffleHandlerTestBase {
       e.printStackTrace();
       fail(e.getMessage());
     }
+  }
+
+  @Test
+  public void test() {
+    createAndRunCases(HDFS_URI, conf, StringUtils.EMPTY);
   }
 }

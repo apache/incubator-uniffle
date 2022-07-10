@@ -44,6 +44,7 @@ import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.provider.HadoopAccessorProvider;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public class SimpleClusterManager implements ClusterManager {
@@ -64,7 +65,7 @@ public class SimpleClusterManager implements ClusterManager {
   private long outputAliveServerCount = 0;
   private final long periodicOutputIntervalTimes;
 
-  public SimpleClusterManager(CoordinatorConf conf, Configuration hadoopConf) throws IOException {
+  public SimpleClusterManager(CoordinatorConf conf, Configuration hadoopConf) throws Exception {
     this.shuffleNodesMax = conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
     this.heartbeatTimeout = conf.getLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT);
     // the thread for checking if shuffle server report heartbeat in time
@@ -78,7 +79,7 @@ public class SimpleClusterManager implements ClusterManager {
 
     String excludeNodesPath = conf.getString(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH, "");
     if (!StringUtils.isEmpty(excludeNodesPath)) {
-      this.hadoopFileSystem = CoordinatorUtils.getFileSystemForPath(new Path(excludeNodesPath), hadoopConf);
+      this.hadoopFileSystem = HadoopAccessorProvider.getFileSystem(new Path(excludeNodesPath), hadoopConf);
       long updateNodesInterval = conf.getLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL);
       checkNodesExecutorService = Executors.newSingleThreadScheduledExecutor(
           ThreadUtils.getThreadFactory("UpdateExcludeNodes-%d"));

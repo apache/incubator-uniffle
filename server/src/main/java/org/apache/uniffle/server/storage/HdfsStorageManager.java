@@ -18,10 +18,12 @@
 package org.apache.uniffle.server.storage;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +48,7 @@ public class HdfsStorageManager extends SingleStorageManager {
   private final Configuration hadoopConf;
   private Map<String, HdfsStorage> appIdToStorages = Maps.newConcurrentMap();
   private Map<String, HdfsStorage> pathToStorages = Maps.newConcurrentMap();
+  private Map<String, String> appIdToUsers = Maps.newConcurrentMap();
 
   HdfsStorageManager(ShuffleServerConf conf) {
     super(conf);
@@ -79,6 +82,7 @@ public class HdfsStorageManager extends SingleStorageManager {
               new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), storage.getConf()));
       deleteHandler.delete(new String[] {storage.getStoragePath()}, appId);
     }
+    appIdToUsers.remove(appId);
   }
 
   @Override
@@ -87,9 +91,15 @@ public class HdfsStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo) {
+  public String getStorageUser(String appId) {
+    return appIdToUsers.get(appId);
+  }
+
+  @Override
+  public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo, String user) {
     String remoteStorage = remoteStorageInfo.getPath();
     Map<String, String> remoteStorageConf = remoteStorageInfo.getConfItems();
+    appIdToUsers.putIfAbsent(appId, Optional.ofNullable(user).orElse(StringUtils.EMPTY));
     if (!pathToStorages.containsKey(remoteStorage)) {
       Configuration remoteStorageHadoopConf = new Configuration(hadoopConf);
       if (remoteStorageConf != null && remoteStorageConf.size() > 0) {

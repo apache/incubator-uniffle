@@ -50,7 +50,7 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       int readBufferSize,
       Roaring64NavigableMap expectBlockIds,
       Roaring64NavigableMap processBlockIds,
-      Configuration conf) throws IOException {
+      Configuration conf) throws Exception {
     super(appId, shuffleId, partitionId, readBufferSize, expectBlockIds, processBlockIds);
     this.filePrefix = filePrefix;
     this.indexReader = createHdfsReader(ShuffleStorageUtils.generateIndexFileName(filePrefix), conf);
@@ -123,7 +123,7 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
   }
 
   protected HdfsFileReader createHdfsReader(
-      String fileName, Configuration hadoopConf) throws IOException, IllegalStateException {
+      String fileName, Configuration hadoopConf) throws Exception {
     Path path = new Path(fileName);
     return new HdfsFileReader(path, hadoopConf);
   }
