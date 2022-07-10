@@ -140,7 +140,7 @@ public class CoordinatorConf extends RssBaseConf {
 
     loadCommonConf(properties);
 
-    List<ConfigOption> configOptions = ConfigUtils.getAllConfigOptions(CoordinatorConf.class);
+    List<ConfigOption<Object>> configOptions = ConfigUtils.getAllConfigOptions(CoordinatorConf.class);
     properties.forEach((k, v) -> {
       configOptions.forEach(config -> {
         if (config.key().equalsIgnoreCase(k)) {

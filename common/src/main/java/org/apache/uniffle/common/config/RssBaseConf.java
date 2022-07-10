@@ -162,7 +162,7 @@ public class RssBaseConf extends RssConf {
       return false;
     }
 
-    List<ConfigOption> configOptions = ConfigUtils.getAllConfigOptions(RssBaseConf.class);
+    List<ConfigOption<Object>> configOptions = ConfigUtils.getAllConfigOptions(RssBaseConf.class);
     properties.forEach((k, v) -> {
       configOptions.forEach(config -> {
         if (config.key().equalsIgnoreCase(k)) {

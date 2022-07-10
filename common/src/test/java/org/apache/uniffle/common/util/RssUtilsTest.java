@@ -20,8 +20,8 @@ package org.apache.uniffle.common.util;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
@@ -153,26 +153,26 @@ public class RssUtilsTest {
 
   @Test
   public void testLoadExtentions() {
-    List<String> exts = Arrays.asList("Dummy");
+    List<String> exts = Collections.singletonList("Dummy");
     try {
       RssUtils.loadExtensions(RssUtilTestDummy.class, exts, 1);
     } catch (RuntimeException e) {
       assertTrue(e.getMessage().startsWith("java.lang.ClassNotFoundException: Dummy"));
     }
-    exts = Arrays.asList("org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummyFailNotSub");
+    exts = Collections.singletonList("org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummyFailNotSub");
     try {
       RssUtils.loadExtensions(RssUtilTestDummy.class, exts, 1);
     } catch (RuntimeException e) {
       assertTrue(e.getMessage().contains("RssUtilTestDummyFailNotSub is not subclass of "
           + "org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummy"));
     }
-    exts = Arrays.asList("org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummyNoConstructor");
+    exts = Collections.singletonList("org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummyNoConstructor");
     try {
       RssUtils.loadExtensions(RssUtilTestDummy.class, exts, "Test");
     } catch (RuntimeException e) {
       assertTrue(e.getMessage().contains("RssUtilTestDummyNoConstructor.<init>()"));
     }
-    exts = Arrays.asList("org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummySuccess");
+    exts = Collections.singletonList("org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummySuccess");
     String testStr = String.valueOf(new Random().nextInt());
     List<RssUtilTestDummy> extsObjs = RssUtils.loadExtensions(RssUtilTestDummy.class, exts, testStr);
     assertEquals(1, extsObjs.size());
@@ -197,6 +197,7 @@ public class RssUtilsTest {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public static void setEnv(String key, String value) {
     try {
       Map<String, String> env = System.getenv();
