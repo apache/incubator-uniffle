@@ -18,6 +18,7 @@
 package org.apache.uniffle.coordinator;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.uniffle.common.provider.HadoopAccessorProvider;
 
 public class ClusterManagerFactory {
 

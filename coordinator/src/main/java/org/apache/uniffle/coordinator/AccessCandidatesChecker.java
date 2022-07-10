@@ -34,6 +34,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.uniffle.common.provider.HadoopAccessorProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +59,7 @@ public class AccessCandidatesChecker implements AccessChecker {
     String pathStr = conf.get(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH);
     this.path = new Path(pathStr);
     Configuration hadoopConf = accessManager.getHadoopConf();
-    this.fileSystem = CoordinatorUtils.getFileSystemForPath(path, hadoopConf);
+    this.fileSystem = HadoopAccessorProvider.getFileSystem(path, hadoopConf);
 
     if (!fileSystem.isFile(path)) {
       String msg = String.format("Fail to init AccessCandidatesChecker, %s is not a file.", path.toUri());

@@ -21,4 +21,5 @@ metastore_db/
 derby.log
 dependency-reduced-pom.xml
 rss-*.tgz
+common/build/
 

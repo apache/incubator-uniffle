@@ -20,6 +20,8 @@ package org.apache.uniffle.common.config;
 import java.util.List;
 import java.util.Map;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
+
 
 public class RssBaseConf extends RssConf {
 
@@ -156,6 +158,24 @@ public class RssBaseConf extends RssConf {
       .booleanType()
       .defaultValue(true)
       .withDescription("The switch for jvm metrics verbose");
+
+  public static final ConfigOption<Boolean> RSS_ACCESS_HADOOP_KERBEROS_ENABLE = ConfigOptions
+          .key("rss.access.hadoop.kerberos.enable")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("");
+
+  public static final ConfigOption<String> RSS_ACCESS_HADOOP_KERBEROS_KEYTAB_FILE = ConfigOptions
+          .key("rss.access.hadoop.kerberos.keytab.file")
+          .stringType()
+          .noDefaultValue()
+          .withDescription("");
+
+  public static final ConfigOption<String> RSS_ACCESS_HADOOP_KERBEROS_PRINCIPAL = ConfigOptions
+          .key("rss.access.hadoop.kerberos.principal")
+          .stringType()
+          .noDefaultValue()
+          .withDescription("");
 
   public boolean loadCommonConf(Map<String, String> properties) {
     if (properties == null) {
