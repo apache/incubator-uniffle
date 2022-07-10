@@ -64,6 +64,7 @@ Note: To support dynamic allocation, the patch(which is included in client-spark
 Current support Hadoop 2.8.5's MapReduce framework.
 
 ## Building Uniffle
+> note: currently Uniffle requires JDK 1.8 to build, adding later JDK support is on our roadmap.
 
 Uniffle is built using [Apache Maven](https://maven.apache.org/).
 To build it, run:
