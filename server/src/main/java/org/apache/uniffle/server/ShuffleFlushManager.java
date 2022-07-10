@@ -167,8 +167,8 @@ public class ShuffleFlushManager {
               storageBasePaths,
               shuffleServerId,
               hadoopConf,
-              storageDataReplica));
-
+              storageDataReplica)
+          );
           do {
             if (event.getRetryTimes() > retryMax) {
               LOG.error("Failed to write data for " + event + " in " + retryMax + " times, shuffle data will be lost");

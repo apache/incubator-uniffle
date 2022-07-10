@@ -67,9 +67,10 @@ public class HadoopAccessorProviderTest {
     @TempDir
     private static Path tempDir;
     @TempDir
-    private static Path dfsBaseDir;
+    private static Path kerberizedDfsBaseDir;
 
-    private static MiniDFSCluster dfsCluster;
+    private static MiniDFSCluster kerberizedDfsCluster;
+    private static MiniDFSCluster nonKerberizedDfsCluster;
 
     // The super user for accessing HDFS
     private static String hdfsKeytab;
@@ -81,7 +82,7 @@ public class HadoopAccessorProviderTest {
     @BeforeAll
     public static void setup() throws Exception {
         startKDC();
-        startDFS();
+        startKerberizedDFS();
         setupDFSData();
     }
 
@@ -92,7 +93,7 @@ public class HadoopAccessorProviderTest {
         alexKeytab = keytab.getAbsolutePath();
         alexPrincipal = principal;
 
-        FileSystem writeFs = dfsCluster.getFileSystem();
+        FileSystem writeFs = kerberizedDfsCluster.getFileSystem();
         boolean ok = writeFs.exists(new org.apache.hadoop.fs.Path("/alex"));
         assertFalse(ok);
         ok = writeFs.mkdirs(new org.apache.hadoop.fs.Path("/alex"));
@@ -133,14 +134,14 @@ public class HadoopAccessorProviderTest {
         conf.set(DFS_ENCRYPT_DATA_TRANSFER_KEY, "true");
 
         // SSL conf.
-        String keystoresDir = dfsBaseDir.toFile().getAbsolutePath();
+        String keystoresDir = kerberizedDfsBaseDir.toFile().getAbsolutePath();
         String sslConfDir = KeyStoreTestUtil.getClasspathDir(HadoopAccessorProvider.class);
         KeyStoreTestUtil.setupSSLConfig(keystoresDir, sslConfDir, conf, false);
 
         return conf;
     }
 
-    private static void startDFS() throws Exception {
+    private static void startKerberizedDFS() throws Exception {
         String principal = "hdfs" + "/localhost";
         File keytab = new File(workDir, "hdfs.keytab");
         kdc.createPrincipal(keytab, principal);
@@ -152,10 +153,11 @@ public class HadoopAccessorProviderTest {
         hdfsConf.set("hadoop.proxyuser.hdfs.groups", "*");
         hdfsConf.set("hadoop.proxyuser.hdfs.hosts", "*");
 
-        dfsCluster = new MiniDFSCluster
+        kerberizedDfsCluster = new MiniDFSCluster
                 .Builder(hdfsConf)
+                .numDataNodes(1)
                 .checkDataNodeAddrConfig(true)
-                .build();;
+                .build();
     }
 
     private static void startKDC() throws Exception {
@@ -183,13 +185,13 @@ public class HadoopAccessorProviderTest {
         if (kdc != null) {
             kdc.stop();
         }
-        if (dfsCluster != null) {
-            dfsCluster.close();
+        if (kerberizedDfsCluster != null) {
+            kerberizedDfsCluster.close();
         }
     }
 
     @Test
-    public void testIllegalInitialization() {
+    public void testIllegalInitialization() throws Exception {
         RssBaseConf rssBaseConf = new RssBaseConf();
         rssBaseConf.setBoolean(RSS_ACCESS_HADOOP_KERBEROS_ENABLE, true);
         try {
@@ -197,7 +199,41 @@ public class HadoopAccessorProviderTest {
             fail();
         } catch (Exception e) {
             // ingore.
+        } finally {
+            HadoopAccessorProvider.cleanup();
         }
+    }
+
+    @Test
+    public void testIllegallyGetFsByIncorrectParams() throws Exception {
+        // case1: It should throw exception when provider is not initialized.
+        try {
+            HadoopAccessorProvider.getFilesystem("", false, new org.apache.hadoop.fs.Path(""), new Configuration(false));
+            fail();
+        } catch (Exception e) {
+            // ignore
+        }
+
+        RssBaseConf rssBaseConf = new RssBaseConf();
+        rssBaseConf.setBoolean(RSS_ACCESS_HADOOP_KERBEROS_ENABLE, false);
+        HadoopAccessorProvider.init(rssBaseConf);
+
+        // case2: when needing secured filesystem. but user is null. It should throw exception
+        try {
+            HadoopAccessorProvider.getFilesystem(null, true, new org.apache.hadoop.fs.Path("/user"), new Configuration());
+            fail();
+        } catch (Exception e) {
+            // ignore
+        }
+
+        // case3: when needing secured filesystem. but the initialized provider dont support kerberos.
+        try {
+            HadoopAccessorProvider.getFilesystem("alex", true, new org.apache.hadoop.fs.Path("/user"), new Configuration());
+        } catch (Exception e) {
+            // ignore
+        }
+
+        HadoopAccessorProvider.cleanup();
     }
 
     /**
@@ -233,12 +269,44 @@ public class HadoopAccessorProviderTest {
     }
 
     /**
-     * Test writing by proxy user and then reading by client.
+     * Write file by proxy user.
+     * @throws Exception
+     */
+    @Test
+    public void testWriteByProxyUser() throws Exception {
+        RssBaseConf conf = new RssBaseConf();
+        conf.setBoolean(RSS_ACCESS_HADOOP_KERBEROS_ENABLE, true);
+        conf.setString(RSS_ACCESS_HADOOP_KERBEROS_KEYTAB_FILE, hdfsKeytab);
+        conf.setString(RSS_ACCESS_HADOOP_KERBEROS_PRINCIPAL, hdfsPrincipal);
+        HadoopAccessorProvider.init(conf);
+
+        FileSystem proxyFs = HadoopAccessorProvider.getFilesystem(
+                "alex",
+                true,
+                new org.apache.hadoop.fs.Path("/alex"),
+                kerberizedDfsCluster.getFileSystem().getConf()
+        );
+
+        String fileContent = "hello world";
+        FSDataOutputStream fsDataOutputStream =
+                proxyFs.create(new org.apache.hadoop.fs.Path("/alex/proxy_user_written.txt"));
+        BufferedWriter br = new BufferedWriter(new OutputStreamWriter(fsDataOutputStream, "UTF-8"));
+        br.write(fileContent);
+        br.close();
+
+        FileStatus fileStatus =
+                kerberizedDfsCluster.getFileSystem()
+                        .getFileStatus(new org.apache.hadoop.fs.Path("/alex/proxy_user_written.txt"));
+        assertEquals("alex", fileStatus.getOwner());
+    }
+
+    /**
+     * Test writing by super user to proxy real-user and then reading by real user from client.
      * @throws Exception
      */
     @Test
     public void testWriteAndRead() throws Exception {
-        FileSystem fileSystem = dfsCluster.getFileSystem();
+        FileSystem fileSystem = kerberizedDfsCluster.getFileSystem();
         String scheme = fileSystem.getScheme();
         assertEquals("hdfs", scheme);
         assertTrue(UserGroupInformation.isSecurityEnabled());
@@ -260,8 +328,9 @@ public class HadoopAccessorProviderTest {
         assertTrue(ok);
         assertEquals("alex", writeFs.getFileStatus(new org.apache.hadoop.fs.Path("/alex")).getOwner());
 
-        FileSystem proxyFs = HadoopAccessorProvider.getFileSystemWithProxyUser(
+        FileSystem proxyFs = HadoopAccessorProvider.getFilesystem(
                 "alex",
+                true,
                 new org.apache.hadoop.fs.Path("/alex"),
                 fileSystem.getConf()
         );
@@ -291,31 +360,6 @@ public class HadoopAccessorProviderTest {
                 return null;
             }
         });
-
-        HadoopAccessorProvider.cleanup();
-    }
-
-    /**
-     * When reading hdfs data in spark/mr client, there is no need to retrieve credentials due to
-     * its credentials have been obtained by spark/mr's framework. HadoopAccessorProvider should
-     * cover this scenes.
-     * @throws Exception
-     */
-    @Test
-    public void testGetFilesystemWhenTokenObtained() throws Exception {
-        UserGroupInformation ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(alexPrincipal, alexKeytab);
-
-        RssBaseConf conf = new RssBaseConf();
-        conf.setBoolean(RSS_ACCESS_HADOOP_KERBEROS_ENABLE, true);
-        conf.setString(RSS_ACCESS_HADOOP_KERBEROS_KEYTAB_FILE, hdfsKeytab);
-        conf.setString(RSS_ACCESS_HADOOP_KERBEROS_PRINCIPAL, hdfsPrincipal);
-        HadoopAccessorProvider.init(conf);
-
-        FileSystem fs = HadoopAccessorProvider.getFileSystem(
-                new org.apache.hadoop.fs.Path("/alex/basic.txt"),
-                dfsCluster.getFileSystem().getConf());
-        FileStatus fileStatus = fs.getFileStatus(new org.apache.hadoop.fs.Path("/alex/basic.txt"));
-        assertEquals("alex", fileStatus.getOwner());
 
         HadoopAccessorProvider.cleanup();
     }

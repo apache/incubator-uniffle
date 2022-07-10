@@ -43,6 +43,7 @@ public class HdfsFileWriter implements Closeable {
   private Configuration hadoopConf;
   private FSDataOutputStream fsDataOutputStream;
   private long nextOffset;
+  private FileSystem fileSystem;
 
   public HdfsFileWriter(Path path, Configuration hadoopConf) throws IOException, IllegalStateException {
     // init fsDataOutputStream
@@ -51,23 +52,35 @@ public class HdfsFileWriter implements Closeable {
     initStream();
   }
 
+  public HdfsFileWriter(FileSystem fileSystem, Path path, Configuration hadoopConf) throws IOException {
+    this.path = path;
+    this.hadoopConf = hadoopConf;
+    this.fileSystem = fileSystem;
+    initStream();
+  }
+
   private void initStream() throws IOException, IllegalStateException {
-    FileSystem fileSystem = ShuffleStorageUtils.getFileSystemForPath(path, hadoopConf);
-    if (fileSystem.isFile(path)) {
+    FileSystem writerFs;
+    if (fileSystem != null) {
+      writerFs = fileSystem;
+    } else {
+      writerFs = ShuffleStorageUtils.getFileSystemForPath(path, hadoopConf);
+    }
+    if (writerFs.isFile(path)) {
       if (hadoopConf.getBoolean("dfs.support.append", true)) {
-        fsDataOutputStream = fileSystem.append(path);
+        fsDataOutputStream = writerFs.append(path);
         nextOffset = fsDataOutputStream.getPos();
       } else {
         String msg = path + " exists but append mode is not support!";
         LOG.error(msg);
         throw new IllegalStateException(msg);
       }
-    } else if (fileSystem.isDirectory(path)) {
+    } else if (writerFs.isDirectory(path)) {
       String msg = path + " is a directory!";
       LOG.error(msg);
       throw new IllegalStateException(msg);
     } else {
-      fsDataOutputStream = fileSystem.create(path);
+      fsDataOutputStream = writerFs.create(path);
       nextOffset = fsDataOutputStream.getPos();
     }
   }

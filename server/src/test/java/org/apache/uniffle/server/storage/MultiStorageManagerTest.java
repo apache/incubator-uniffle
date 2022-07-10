@@ -44,7 +44,7 @@ public class MultiStorageManagerTest {
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
     MultiStorageManager manager = new MultiStorageManager(conf);
-    manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
+    manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage), null, false);
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, null));
     ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
         1, appId, 1, 1, 1, 1000, blocks, null, null);

@@ -41,7 +41,7 @@ import java.util.Set;
 public class HdfsHandlerTest extends HdfsTestBase {
 
   @Test
-  public void initTest() throws IOException {
+  public void initTest() throws Exception {
     String basePath = HDFS_URI + "test_base";
     new HdfsShuffleWriteHandler("appId", 0, 0, 0, basePath, "test", conf);
     Path path = new Path(basePath);
@@ -49,7 +49,7 @@ public class HdfsHandlerTest extends HdfsTestBase {
   }
 
   @Test
-  public void writeTest() throws IOException, IllegalStateException {
+  public void writeTest() throws Exception {
     String basePath = HDFS_URI + "writeTest";
     HdfsShuffleWriteHandler writeHandler =
         new HdfsShuffleWriteHandler("appId", 1, 1, 1, basePath, "test", conf);

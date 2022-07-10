@@ -45,7 +45,7 @@ public interface StorageManager {
 
   void stop();
 
-  void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo);
+  void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo, String user, boolean securityEnable);
 
   Checker getStorageChecker();
 

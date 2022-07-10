@@ -47,6 +47,8 @@ import org.apache.spark.shuffle.writer.WriteBufferManager;
 import org.apache.spark.storage.BlockId;
 import org.apache.spark.storage.BlockManagerId;
 import org.apache.spark.util.EventLoop;
+import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.provider.HadoopAccessorProvider;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,6 +138,12 @@ public class RssShuffleManager implements ShuffleManager {
   };
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
+    try {
+      HadoopAccessorProvider.init(new RssBaseConf());
+    } catch (Exception exception) {
+      throw new RuntimeException("Errors on initing the HadoopAccessorProvider.");
+    }
+
     this.sparkConf = conf;
 
     // set & check replica config

@@ -131,7 +131,7 @@ public class HdfsShuffleHandlerTestBase extends HdfsTestBase {
   }
 
   protected HdfsFileReader createHdfsReader(
-      String folder, String fileName, Configuration hadoopConf) throws IOException, IllegalStateException {
+      String folder, String fileName, Configuration hadoopConf) throws Exception {
     Path path = new Path(folder, fileName);
     HdfsFileReader reader = new HdfsFileReader(path, hadoopConf);
     return reader;

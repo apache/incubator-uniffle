@@ -134,7 +134,7 @@ public class LocalStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo) {
+  public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo, String user, boolean securityEnable) {
     // ignore
   }
 

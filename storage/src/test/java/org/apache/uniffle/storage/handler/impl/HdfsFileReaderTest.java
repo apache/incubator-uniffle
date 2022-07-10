@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class HdfsFileReaderTest extends HdfsTestBase {
 
   @Test
-  public void createStreamTest() throws IOException {
+  public void createStreamTest() throws Exception {
     Path path = new Path(HDFS_URI, "createStreamTest");
     fs.create(path);
 
@@ -57,7 +57,7 @@ public class HdfsFileReaderTest extends HdfsTestBase {
   }
 
   @Test
-  public void readDataTest() throws IOException {
+  public void readDataTest() throws Exception {
     Path path = new Path(HDFS_URI, "readDataTest");
     byte[] data = new byte[160];
     int offset = 128;

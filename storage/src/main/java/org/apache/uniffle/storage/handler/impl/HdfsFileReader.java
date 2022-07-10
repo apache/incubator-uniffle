@@ -25,11 +25,11 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.uniffle.common.provider.HadoopAccessorProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.storage.api.FileReader;
-import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 public class HdfsFileReader implements FileReader, Closeable {
 
@@ -38,14 +38,14 @@ public class HdfsFileReader implements FileReader, Closeable {
   private Configuration hadoopConf;
   private FSDataInputStream fsDataInputStream;
 
-  public HdfsFileReader(Path path, Configuration hadoopConf) throws IOException, IllegalStateException {
+  public HdfsFileReader(Path path, Configuration hadoopConf) throws Exception {
     this.path = path;
     this.hadoopConf = hadoopConf;
     createStream();
   }
 
-  private void createStream() throws IOException, IllegalStateException {
-    FileSystem fileSystem = ShuffleStorageUtils.getFileSystemForPath(path, hadoopConf);
+  private void createStream() throws Exception {
+    FileSystem fileSystem = HadoopAccessorProvider.getFileSystem(path, hadoopConf);
 
     if (!fileSystem.isFile(path)) {
       String msg = path + " don't exist or is not a file.";

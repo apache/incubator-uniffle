@@ -37,10 +37,14 @@ public class HdfsStorage extends AbstractStorage {
   private final String storagePath;
   private final Configuration conf;
   private String storageHost;
+  private final String user;
+  private final boolean securityEnable;
 
-  public HdfsStorage(String path, Configuration conf) {
+  public HdfsStorage(String path, Configuration conf, String user, boolean securityEnable) {
     this.storagePath = path;
     this.conf = conf;
+    this.user = user;
+    this.securityEnable = securityEnable;
     try {
       URI uri = new URI(path);
       storageHost = uri.getHost();
@@ -105,7 +109,9 @@ public class HdfsStorage extends AbstractStorage {
           request.getEndPartition(),
           storagePath,
           request.getFileNamePrefix(),
-          conf
+          conf,
+          user,
+          securityEnable
       );
     } catch (Exception e) {
       throw new RuntimeException(e);

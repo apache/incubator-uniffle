@@ -46,6 +46,7 @@ public class HdfsStorageManager extends SingleStorageManager {
   private final Configuration hadoopConf;
   private Map<String, HdfsStorage> appIdToStorages = Maps.newConcurrentMap();
   private Map<String, HdfsStorage> pathToStorages = Maps.newConcurrentMap();
+  private Map<String, String> appUserMap = Maps.newConcurrentMap();
 
   HdfsStorageManager(ShuffleServerConf conf) {
     super(conf);
@@ -79,6 +80,7 @@ public class HdfsStorageManager extends SingleStorageManager {
               new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), storage.getConf()));
       deleteHandler.delete(new String[] {storage.getStoragePath()}, appId);
     }
+    appUserMap.remove(appId);
   }
 
   @Override
@@ -87,9 +89,10 @@ public class HdfsStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo) {
+  public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo, String user, boolean securityEnable) {
     String remoteStorage = remoteStorageInfo.getPath();
     Map<String, String> remoteStorageConf = remoteStorageInfo.getConfItems();
+    appUserMap.put(appId, user);
     if (!pathToStorages.containsKey(remoteStorage)) {
       Configuration remoteStorageHadoopConf = new Configuration(hadoopConf);
       if (remoteStorageConf != null && remoteStorageConf.size() > 0) {
@@ -97,7 +100,7 @@ public class HdfsStorageManager extends SingleStorageManager {
           remoteStorageHadoopConf.setStrings(entry.getKey(), entry.getValue());
         }
       }
-      pathToStorages.putIfAbsent(remoteStorage, new HdfsStorage(remoteStorage, remoteStorageHadoopConf));
+      pathToStorages.putIfAbsent(remoteStorage, new HdfsStorage(remoteStorage, remoteStorageHadoopConf, user, securityEnable));
       // registerRemoteStorage may be called in different threads,
       // make sure metrics won't be created duplicated
       // there shouldn't have performance issue because

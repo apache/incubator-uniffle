@@ -98,8 +98,8 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     String appId = "writeTest_appId";
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", shuffleServerConf);
-    storageManager.registerRemoteStorage(appId, remoteStorage);
-    storageManager.registerRemoteStorage(appId, remoteStorage);
+    storageManager.registerRemoteStorage(appId, remoteStorage, null, false);
+    storageManager.registerRemoteStorage(appId, remoteStorage, null, false);
     String storageHost = "localhost";
     assertEquals(0.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.get(storageHost).get(), 0.5);
     assertEquals(0.0, ShuffleServerMetrics.counterRemoteStorageRetryWrite.get(storageHost).get(), 0.5);
@@ -147,7 +147,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", shuffleServerConf);
     String appId = "complexWriteTest_appId";
-    storageManager.registerRemoteStorage(appId, remoteStorage);
+    storageManager.registerRemoteStorage(appId, remoteStorage, null, false);
     List<ShufflePartitionedBlock> expectedBlocks = Lists.newArrayList();
     List<ShuffleDataFlushEvent> flushEvents1 = Lists.newArrayList();
     List<ShuffleDataFlushEvent> flushEvents2 = Lists.newArrayList();
@@ -186,8 +186,8 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
         StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", shuffleServerConf);
     String appId1 = "complexWriteTest_appId1";
     String appId2 = "complexWriteTest_appId2";
-    storageManager.registerRemoteStorage(appId1, remoteStorage);
-    storageManager.registerRemoteStorage(appId2, remoteStorage);
+    storageManager.registerRemoteStorage(appId1, remoteStorage, null, false);
+    storageManager.registerRemoteStorage(appId2, remoteStorage, null, false);
     ShuffleFlushManager manager =
         new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, storageManager);
     ShuffleDataFlushEvent event1 =

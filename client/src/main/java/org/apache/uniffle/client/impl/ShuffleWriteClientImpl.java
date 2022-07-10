@@ -33,6 +33,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
+import org.apache.hadoop.security.UserGroupInformation;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -295,8 +298,17 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int shuffleId,
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorage) {
+    String user = null;
+    boolean securityEnable = false;
+    try {
+      securityEnable = UserGroupInformation.isSecurityEnabled();
+      user = securityEnable ? UserGroupInformation.getCurrentUser().getShortUserName() : null;
+    } catch (Exception e) {
+      LOG.error("Error on getting user from ugi.", e);
+    }
+    LOG.info("User: {}, security enable: {}", user, securityEnable);
     RssRegisterShuffleRequest request =
-        new RssRegisterShuffleRequest(appId, shuffleId, partitionRanges, remoteStorage);
+        new RssRegisterShuffleRequest(appId, shuffleId, partitionRanges, remoteStorage, user, securityEnable);
     RssRegisterShuffleResponse response = getShuffleServerClient(shuffleServerInfo).registerShuffle(request);
 
     String msg = "Error happened when registerShuffle with appId[" + appId + "], shuffleId[" + shuffleId

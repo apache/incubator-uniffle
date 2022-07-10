@@ -60,7 +60,7 @@ public class ShuffleServerMetricsTest {
     ssc.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "fake.coordinator:123");
     ssc.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 1000L);
     shuffleServer = new ShuffleServer(ssc);
-    shuffleServer.getStorageManager().registerRemoteStorage("metricsTest", new RemoteStorageInfo(REMOTE_STORAGE_PATH));
+    shuffleServer.getStorageManager().registerRemoteStorage("metricsTest", new RemoteStorageInfo(REMOTE_STORAGE_PATH), null, false);
     shuffleServer.start();
   }
 

@@ -49,8 +49,8 @@ public class MultiStorageManager implements StorageManager {
   }
 
   @Override
-  public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo) {
-    coldStorageManager.registerRemoteStorage(appId, remoteStorageInfo);
+  public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo, String user, boolean securityEnable) {
+    coldStorageManager.registerRemoteStorage(appId, remoteStorageInfo, user, securityEnable);
   }
 
   @Override
