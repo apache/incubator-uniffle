@@ -64,6 +64,7 @@ Note: To support dynamic allocation, the patch(which is included in client-spark
 Current support Hadoop 2.8.5's MapReduce framework.
 
 ## Building Uniffle
+> note: currently Uniffle requires JDK 1.8 to build, adding later JDK support is on our roadmap.
 
 Uniffle is built using [Apache Maven](https://maven.apache.org/).
 To build it, run:
@@ -251,7 +252,7 @@ The important configuration is listed as following.
 |rss.server.commit.timeout|600000|Timeout when commit shuffle data (ms)|
 |rss.storage.type|-|Supports MEMORY_LOCALFILE, MEMORY_HDFS, MEMORY_LOCALFILE_HDFS|
 |rss.server.flush.cold.storage.threshold.size|64M| The threshold of data size for LOACALFILE and HDFS if MEMORY_LOCALFILE_HDFS is used|
-
+|rss.server.tags|-|The comma-separated list of tags to indicate the shuffle server's attributes. It will be used as the assignment basis for the coordinator|
 
 ### Shuffle Client
 

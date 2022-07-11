@@ -160,15 +160,15 @@ public class ConfigUtils {
     return Double.parseDouble(o.toString());
   }
 
-  public static List<ConfigOption> getAllConfigOptions(Class confClass) {
-    List<ConfigOption> configOptionList = Lists.newArrayList();
+  public static List<ConfigOption<Object>> getAllConfigOptions(Class confClass) {
+    List<ConfigOption<Object>> configOptionList = Lists.newArrayList();
     try {
       Field[] fields = confClass.getFields();
       for (Field field : fields) {
         int modifiers = field.getModifiers();
         if (isStatic(modifiers) && isPublic(modifiers)
             && isFinal(modifiers) && field.getType().isAssignableFrom(ConfigOption.class)) {
-          configOptionList.add((ConfigOption) field.get(null));
+          configOptionList.add((ConfigOption<Object>) field.get(null));
         }
       }
     } catch (Exception e) {

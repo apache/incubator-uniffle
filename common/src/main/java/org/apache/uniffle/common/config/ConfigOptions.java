@@ -173,12 +173,12 @@ public class ConfigOptions {
       this.converter = converter;
     }
 
-    public ListConfigOptionBuilder asList() {
+    public ListConfigOptionBuilder<T> asList() {
       return new ListConfigOptionBuilder<T>(key, clazz, converter);
     }
 
     // todo: errorMsg shouldn't contain key
-    public TypedConfigOptionBuilder checkValue(Function<T, Boolean> checkValue, String errMsg) {
+    public TypedConfigOptionBuilder<T> checkValue(Function<T, Boolean> checkValue, String errMsg) {
       Function<Object, T> newConverter = (v) -> {
         T newValue = this.converter.apply(v);
         if (!checkValue.apply(newValue)) {
@@ -186,7 +186,7 @@ public class ConfigOptions {
         }
         return newValue;
       };
-      return new TypedConfigOptionBuilder(key, clazz, newConverter);
+      return new TypedConfigOptionBuilder<>(key, clazz, newConverter);
     }
 
     /**
@@ -250,7 +250,7 @@ public class ConfigOptions {
       };
     }
 
-    public ListConfigOptionBuilder checkValue(Function<E, Boolean> checkValueFunc, String errMsg) {
+    public ListConfigOptionBuilder<E> checkValue(Function<E, Boolean> checkValueFunc, String errMsg) {
       final Function<Object, List<E>> listConverFunc = asListConverter;
       Function<Object, List<E>> newConverter = (v) -> {
         List<E> list = listConverFunc.apply(v);
