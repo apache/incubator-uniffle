@@ -33,7 +33,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.roaringbitmap.longlong.LongIterator;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -48,6 +47,7 @@ import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.storage.StorageManager;
@@ -100,12 +100,12 @@ public class ShuffleTaskManager {
     this.preAllocationExpired = conf.getLong(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED);
     // the thread for checking application status
     this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-        new ThreadFactoryBuilder().setDaemon(true).setNameFormat("checkResource-%d").build());
+        ThreadUtils.getThreadFactory("checkResource-%d"));
     scheduledExecutorService.scheduleAtFixedRate(
         () -> preAllocatedBufferCheck(), preAllocationExpired / 2,
         preAllocationExpired / 2, TimeUnit.MILLISECONDS);
     this.expiredAppCleanupExecutorService = Executors.newSingleThreadScheduledExecutor(
-        new ThreadFactoryBuilder().setDaemon(true).setNameFormat("expiredAppCleaner").build());
+        ThreadUtils.getThreadFactory("expiredAppCleaner"));
     expiredAppCleanupExecutorService.scheduleAtFixedRate(
         () -> checkResourceStatus(), appExpiredWithoutHB / 2,
         appExpiredWithoutHB / 2, TimeUnit.MILLISECONDS);

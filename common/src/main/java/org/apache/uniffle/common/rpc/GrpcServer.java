@@ -23,7 +23,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Queues;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -34,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.util.ExitUtils;
+import org.apache.uniffle.common.util.ThreadUtils;
 
 public class GrpcServer implements ServerInterface {
 
@@ -52,7 +52,7 @@ public class GrpcServer implements ServerInterface {
         10,
         TimeUnit.MINUTES,
         Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
-        new ThreadFactoryBuilder().setDaemon(true).setNameFormat("Grpc-%d").build()
+        ThreadUtils.getThreadFactory("Grpc-%d")
     );
 
     boolean isMetricsEnabled = conf.getBoolean(RssBaseConf.RPC_METRICS_ENABLED);

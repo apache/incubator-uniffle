@@ -31,13 +31,13 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.ThreadUtils;
 
 public class ApplicationManager {
 
@@ -59,7 +59,7 @@ public class ApplicationManager {
     expired = conf.getLong(CoordinatorConf.COORDINATOR_APP_EXPIRED);
     // the thread for checking application status
     scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-        new ThreadFactoryBuilder().setDaemon(true).setNameFormat("ApplicationManager-%d").build());
+        ThreadUtils.getThreadFactory("ApplicationManager-%d"));
     scheduledExecutorService.scheduleAtFixedRate(
         () -> statusCheck(), expired / 2, expired / 2, TimeUnit.MILLISECONDS);
   }

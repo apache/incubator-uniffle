@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -39,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.ThreadUtils;
 
 /**
  * AccessCandidatesChecker maintain a list of candidate access id and update it periodically,
@@ -75,7 +75,7 @@ public class AccessCandidatesChecker implements AccessChecker {
 
     int updateIntervalS = conf.getInteger(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC);
     updateAccessCandidatesSES = Executors.newSingleThreadScheduledExecutor(
-        new ThreadFactoryBuilder().setDaemon(true).setNameFormat("UpdateAccessCandidates-%d").build());
+        ThreadUtils.getThreadFactory("UpdateAccessCandidates-%d"));
     updateAccessCandidatesSES.scheduleAtFixedRate(
         this::updateAccessCandidates, 0, updateIntervalS, TimeUnit.SECONDS);
   }
