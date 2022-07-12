@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.tencent.rss.storage.util.StorageType;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -198,6 +199,24 @@ public class RssMRAppMaster extends MRAppMaster {
       // set the remote storage with actual value
       extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_PATH, remoteStorage.getPath());
       extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_CONF, remoteStorage.getConfString());
+
+      // When containers have disk with very limited space, reduce is allowed to spill data to hdfs
+      if (extraConf.getBoolean(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
+        RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT)) {
+
+        if (storageType != StorageType.MEMORY_LOCALFILE_HDFS.name()) {
+          throw new IllegalArgumentException("Remote spill only supports "
+            + StorageType.MEMORY_LOCALFILE_HDFS.name() + " mode");
+        }
+
+        // Use minimized replica, because spilled data can be recomputed by reduce task.
+        // And task re-computation is much cheaper job re-computation
+        conf.setInt("dfs.replication", 1);
+
+        // When remote spill is enabled, reduce task is more easy to crash.
+        // We allow more attempts to avoid recomputing job.
+        conf.setInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, 5);
+      }
 
       LOG.info("Start to register shuffle");
       long start = System.currentTimeMillis();

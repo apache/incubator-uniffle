@@ -23,8 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RawKeyValueIterator;
 import org.apache.hadoop.mapred.Reporter;
@@ -98,7 +101,6 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
     this.copyPhase = context.getCopyPhase();
     this.taskStatus = context.getStatus();
     this.reduceTask = context.getReduceTask();
-    this.merger = createMergeManager(context);
 
     // rss init
     this.appId = RssMRUtils.getApplicationAttemptId().toString();
@@ -122,17 +124,34 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
             RssMRConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE));
     String remoteStorageConf = RssMRUtils.getString(rssJobConf, mrJobConf, RssMRConfig.RSS_REMOTE_STORAGE_CONF, "");
     this.remoteStorageInfo = new RemoteStorageInfo(basePath, remoteStorageConf);
+    this.merger = createMergeManager(context);
   }
 
   protected MergeManager<K, V> createMergeManager(
-      ShuffleConsumerPlugin.Context context) {
-    return new MergeManagerImpl<K, V>(reduceId, mrJobConf, context.getLocalFS(),
+    ShuffleConsumerPlugin.Context context) {
+    boolean useRemoteSpill = RssMRUtils.getBoolean(rssJobConf, mrJobConf,
+      RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED, RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT);
+    if (useRemoteSpill) {
+      return new RssRemoteMergeManagerImpl(appId, reduceId, mrJobConf,
+        basePath,
+        context.getLocalFS(),
+        context.getLocalDirAllocator(), reporter, context.getCodec(),
+        context.getCombinerClass(), context.getCombineCollector(),
+        context.getSpilledRecordsCounter(),
+        context.getReduceCombineInputCounter(),
+        context.getMergedMapOutputsCounter(), this, context.getMergePhase(),
+        context.getMapOutputFile(),
+        getRemoteConf()
+      );
+    } else {
+      return new MergeManagerImpl<K, V>(reduceId, mrJobConf, context.getLocalFS(),
         context.getLocalDirAllocator(), reporter, context.getCodec(),
         context.getCombinerClass(), context.getCombineCollector(),
         context.getSpilledRecordsCounter(),
         context.getReduceCombineInputCounter(),
         context.getMergedMapOutputsCounter(), this, context.getMergePhase(),
         context.getMapOutputFile());
+    }
   }
 
   @Override
@@ -163,13 +182,8 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
     // start fetcher to fetch blocks from RSS servers
     if (!taskIdBitmap.isEmpty()) {
       LOG.info("In reduce: " + reduceId
-          + ", Rss MR client starts to fetch blocks from RSS server");
-      JobConf readerJobConf = new JobConf((mrJobConf));
-      if (!remoteStorageInfo.isEmpty()) {
-        for (Map.Entry<String, String> entry : remoteStorageInfo.getConfItems().entrySet()) {
-          readerJobConf.set(entry.getKey(), entry.getValue());
-        }
-      }
+        + ", Rss MR client starts to fetch blocks from RSS server");
+      JobConf readerJobConf = getRemoteConf();
       CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
           appId, 0, reduceId.getTaskID().getId(), storageType, basePath, indexReadLimit, readBufferSize,
           partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, serverInfoList,
@@ -206,6 +220,16 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
         + ", Rss MR client returns sorted data to reduce successfully");
 
     return kvIter;
+  }
+
+  private JobConf getRemoteConf() {
+    JobConf readerJobConf = new JobConf((mrJobConf));
+    if (!remoteStorageInfo.isEmpty()) {
+      for (Map.Entry<String, String> entry : remoteStorageInfo.getConfItems().entrySet()) {
+        readerJobConf.set(entry.getKey(), entry.getValue());
+      }
+    }
+    return readerJobConf;
   }
 
   @Override

@@ -156,6 +156,10 @@ public class RssMRUtils {
     return rssJobConf.getLong(key, mrJobConf.getLong(key, defaultValue));
   }
 
+  public static boolean getBoolean(JobConf rssJobConf, JobConf mrJobConf, String key, boolean defaultValue) {
+    return rssJobConf.getBoolean(key, mrJobConf.getBoolean(key, defaultValue));
+  }
+
   public static double getDouble(JobConf rssJobConf, JobConf mrJobConf, String key, double defaultValue) {
     return rssJobConf.getDouble(key, mrJobConf.getDouble(key, defaultValue));
   }
