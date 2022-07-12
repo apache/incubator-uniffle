@@ -34,7 +34,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.serializer.Serializer;
@@ -49,6 +48,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ChecksumUtils;
+import org.apache.uniffle.common.util.ThreadUtils;
 
 public class SortWriteBufferManager<K, V> {
 
@@ -139,10 +139,7 @@ public class SortWriteBufferManager<K, V> {
     this.maxBufferSize = maxBufferSize;
     this.sendExecutorService  = Executors.newFixedThreadPool(
         sendThreadNum,
-        new ThreadFactoryBuilder()
-            .setDaemon(true)
-            .setNameFormat("send-thread-%d")
-            .build());
+        ThreadUtils.getThreadFactory("send-thread-%d"));
   }
 
   // todo: Single Buffer should also have its size limit

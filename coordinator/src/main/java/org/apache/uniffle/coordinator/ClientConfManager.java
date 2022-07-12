@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -37,6 +36,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.uniffle.common.util.ThreadUtils;
 
 public class ClientConfManager implements Closeable {
   private static final Logger LOG = LoggerFactory.getLogger(ClientConfManager.class);
@@ -73,7 +74,7 @@ public class ClientConfManager implements Closeable {
 
     int updateIntervalS = conf.getInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC);
     updateClientConfSES = Executors.newSingleThreadScheduledExecutor(
-        new ThreadFactoryBuilder().setDaemon(true).setNameFormat("ClientConfManager-%d").build());
+        ThreadUtils.getThreadFactory("ClientConfManager-%d"));
     updateClientConfSES.scheduleAtFixedRate(
         this::updateClientConf, 0, updateIntervalS, TimeUnit.SECONDS);
   }
