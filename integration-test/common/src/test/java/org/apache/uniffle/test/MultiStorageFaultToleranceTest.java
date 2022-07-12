@@ -98,9 +98,6 @@ public class MultiStorageFaultToleranceTest extends ShuffleReadWriteBase {
     assertEquals(0, cluster.getDataNodes().size());
     sendSinglePartitionToShuffleServer(appId, 0, 0, 0, blocks);
     validateResult(appId, 0, 0, blockBitmap, Roaring64NavigableMap.bitmapOf(0), expectedData);
-    cluster.startDataNodes(conf, 1, true, HdfsServerConstants.StartupOption.REGULAR,
-        null, null, null, false, true);
-    assertEquals(1, cluster.getDataNodes().size());
   }
 
   private void registerShuffle(String appId, Map<Integer, List<Integer>> registerMap) {
