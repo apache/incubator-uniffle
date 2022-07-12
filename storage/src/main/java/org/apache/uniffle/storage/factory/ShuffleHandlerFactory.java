@@ -32,7 +32,6 @@ import org.apache.uniffle.storage.handler.impl.HdfsShuffleDeleteHandler;
 import org.apache.uniffle.storage.handler.impl.LocalFileDeleteHandler;
 import org.apache.uniffle.storage.handler.impl.LocalFileQuorumClientReadHandler;
 import org.apache.uniffle.storage.handler.impl.MemoryQuorumClientReadHandler;
-import org.apache.uniffle.storage.handler.impl.UploadedHdfsClientReadHandler;
 import org.apache.uniffle.storage.request.CreateShuffleDeleteHandlerRequest;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.util.StorageType;
@@ -94,52 +93,6 @@ public class ShuffleHandlerFactory {
             shuffleServerClients);
       }, () -> {
         return new HdfsClientReadHandler(
-            request.getAppId(),
-            request.getShuffleId(),
-            request.getPartitionId(),
-            request.getIndexReadLimit(),
-            request.getPartitionNumPerRange(),
-            request.getPartitionNum(),
-            request.getReadBufferSize(),
-            request.getExpectBlockIds(),
-            request.getProcessBlockIds(),
-            request.getStorageBasePath(),
-            request.getHadoopConf());
-      });
-    } else if (StorageType.LOCALFILE_HDFS_2.name().equals(request.getStorageType())) {
-      List<ShuffleServerInfo> shuffleServerInfoList = request.getShuffleServerInfoList();
-      List<ShuffleServerClient> shuffleServerClients = shuffleServerInfoList.stream().map(
-          ssi -> ShuffleServerClientFactory.getInstance().getShuffleServerClient(
-              ClientType.GRPC.name(), ssi)).collect(
-          Collectors.toList());
-
-      return new ComposedClientReadHandler(() -> {
-        return new LocalFileQuorumClientReadHandler(
-          request.getAppId(),
-          request.getShuffleId(),
-          request.getPartitionId(),
-          request.getIndexReadLimit(),
-          request.getPartitionNumPerRange(),
-          request.getPartitionNum(),
-          request.getReadBufferSize(),
-          request.getExpectBlockIds(),
-          request.getProcessBlockIds(),
-          shuffleServerClients);
-      }, () -> {
-        return new HdfsClientReadHandler(
-            request.getAppId(),
-            request.getShuffleId(),
-            request.getPartitionId(),
-            request.getIndexReadLimit(),
-            request.getPartitionNumPerRange(),
-            request.getPartitionNum(),
-            request.getReadBufferSize(),
-            request.getExpectBlockIds(),
-            request.getProcessBlockIds(),
-            request.getStorageBasePath(),
-            request.getHadoopConf());
-      }, () -> {
-        return new UploadedHdfsClientReadHandler(
             request.getAppId(),
             request.getShuffleId(),
             request.getPartitionId(),

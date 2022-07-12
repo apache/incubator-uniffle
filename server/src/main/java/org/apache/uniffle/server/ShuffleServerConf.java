@@ -174,65 +174,12 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(600L)
       .withDescription("If disk cannot be written for timeout seconds, the flush data event will fail");
 
-  public static final ConfigOption<Boolean> UPLOADER_ENABLE = ConfigOptions
-      .key("rss.server.uploader.enable")
-      .booleanType()
-      .defaultValue(false)
-      .withDescription("A switch of the uploader");
-
-  public static final ConfigOption<Integer> UPLOADER_THREAD_NUM = ConfigOptions
-      .key("rss.server.uploader.thread.number")
-      .intType()
-      .checkValue(ConfigUtils.positiveIntegerValidator2, "uploader thread number must be positive")
-      .defaultValue(4)
-      .withDescription("The thread number of the uploader");
-
-  public static final ConfigOption<Long> UPLOADER_INTERVAL_MS = ConfigOptions
-      .key("rss.server.uploader.interval.ms")
-      .longType()
-      .checkValue(ConfigUtils.positiveLongValidator, "uploader interval must be positive")
-      .defaultValue(3000L)
-      .withDescription("The interval for the uploader");
-
-  public static final ConfigOption<Long> UPLOAD_COMBINE_THRESHOLD_MB = ConfigOptions
-      .key("rss.server.uploader.combine.threshold.mb")
-      .longType()
-      .checkValue(ConfigUtils.positiveLongValidator, "uploader combine threshold must be positive")
-      .defaultValue(32L)
-      .withDescription("The threshold of the combine mode");
-
-  public static final ConfigOption<String> UPLOADER_BASE_PATH = ConfigOptions
-      .key("rss.server.uploader.base.path")
-      .stringType()
-      .noDefaultValue()
-      .withDescription("The base path of the uploader");
-
-  public static final ConfigOption<String> UPLOAD_STORAGE_TYPE = ConfigOptions
-      .key("rss.server.uploader.remote.storage.type")
-      .stringType()
-      .defaultValue("HDFS")
-      .withDescription("The remote storage type of the uploader");
-
-  public static final ConfigOption<Long> REFERENCE_UPLOAD_SPEED_MBS = ConfigOptions
-      .key("rss.server.uploader.references.speed.mbps")
-      .longType()
-      .checkValue(ConfigUtils.positiveLongValidator, "uploader reference speed must be positive")
-      .defaultValue(8L)
-      .withDescription("The speed for the uploader");
-
   public static final ConfigOption<Long> DISK_CAPACITY = ConfigOptions
       .key("rss.server.disk.capacity")
       .longType()
       .checkValue(ConfigUtils.positiveLongValidator, "disk capacity must be positive")
       .defaultValue(1024L * 1024L * 1024L * 1024L)
       .withDescription("Disk capacity that shuffle server can use");
-
-  public static final ConfigOption<Long> CLEANUP_INTERVAL_MS = ConfigOptions
-      .key("rss.server.cleanup.interval.ms")
-      .longType()
-      .checkValue(ConfigUtils.positiveLongValidator, "cleanup interval must be positive")
-      .defaultValue(3000L)
-      .withDescription("The interval for cleanup");
 
   public static final ConfigOption<Long> SHUFFLE_EXPIRED_TIMEOUT_MS = ConfigOptions
       .key("rss.server.shuffle.expired.timeout.ms")
@@ -241,20 +188,6 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(60L * 1000 * 2)
       .withDescription("If the shuffle is not read for the long time, and shuffle is uploaded totally,"
           + " , we can delete the shuffle");
-
-  public static final ConfigOption<Long> SHUFFLE_MAX_UPLOAD_SIZE = ConfigOptions
-      .key("rss.server.shuffle.max.upload.size")
-      .longType()
-      .checkValue(ConfigUtils.positiveLongValidator, "max upload size must be positive")
-      .defaultValue(1024L * 1024L * 1024L)
-      .withDescription("The max value of upload shuffle size");
-
-  public static final ConfigOption<Double> SHUFFLE_MAX_FORCE_UPLOAD_TIME_RATIO = ConfigOptions
-      .key("rss.server.shuffle.max.force.upload.time.ratio")
-      .doubleType()
-      .checkValue(ConfigUtils.percentageDoubleValidator, "max upload time radio must between 0.0 and 100.0")
-      .defaultValue(95.0)
-      .withDescription("The max upload time ratio in force mode");
 
   public static final ConfigOption<Long> SERVER_SHUFFLE_INDEX_SIZE_HINT = ConfigOptions
       .key("rss.server.index.size.hint")

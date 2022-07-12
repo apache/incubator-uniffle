@@ -18,10 +18,8 @@
 package org.apache.uniffle.server.storage;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +28,6 @@ import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
-import org.apache.uniffle.server.ShuffleUploader;
-import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
@@ -42,30 +38,14 @@ public class MultiStorageManager implements StorageManager {
 
   private final StorageManager warmStorageManager;
   private final StorageManager coldStorageManager;
-  private final List<ShuffleUploader> uploaders  = Lists.newArrayList();
-  private final boolean uploadShuffleEnable;
   private final long flushColdStorageThresholdSize;
   private final long fallBackTimes;
 
-  MultiStorageManager(ShuffleServerConf conf, String shuffleServerId) {
+  MultiStorageManager(ShuffleServerConf conf) {
     warmStorageManager = new LocalStorageManager(conf);
     coldStorageManager = new HdfsStorageManager(conf);
-    uploadShuffleEnable = conf.get(ShuffleServerConf.UPLOADER_ENABLE);
     fallBackTimes = conf.get(ShuffleServerConf.FALLBACK_MAX_FAIL_TIMES);
     flushColdStorageThresholdSize = conf.getSizeAsBytes(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE);
-    if (uploadShuffleEnable) {
-      if (!(warmStorageManager instanceof LocalStorageManager)) {
-        throw new IllegalArgumentException("Only LOCALFILE type support upload shuffle");
-      }
-      LocalStorageManager localStorageManager = (LocalStorageManager) warmStorageManager;
-      for (LocalStorage storage :localStorageManager.getStorages()) {
-        uploaders.add(new ShuffleUploader.Builder()
-            .configuration(conf)
-            .serverId(shuffleServerId)
-            .localStorage(storage)
-            .build());
-      }
-    }
   }
 
   @Override
@@ -121,19 +101,9 @@ public class MultiStorageManager implements StorageManager {
   }
 
   public void start() {
-    if (uploadShuffleEnable) {
-      for (ShuffleUploader uploader : uploaders) {
-        uploader.start();
-      }
-    }
   }
 
   public void stop() {
-    if (uploadShuffleEnable) {
-      for (ShuffleUploader uploader : uploaders) {
-        uploader.stop();
-      }
-    }
   }
 
   @Override
