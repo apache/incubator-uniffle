@@ -42,7 +42,22 @@ public class LocalFileReader implements FileReader, Closeable {
 
   public byte[] read(long offset, int length) {
     try {
-      dataInputStream.skip(offset);
+      long targetSkip = offset;
+      // comments from skip API:
+      // The skip method may, for a variety of reasons,
+      // end up skipping over some smaller number of bytes, possibly 0
+      // the result should be checked and try again until skip expectation length
+      while (targetSkip > 0) {
+        long realSkip = dataInputStream.skip(targetSkip);
+        if (realSkip == -1) {
+          throw new RuntimeException("Unexpected EOF when skip bytes");
+        }
+        targetSkip -= realSkip;
+        if (targetSkip > 0) {
+          LOG.warn("Got unexpected skip for path:" + path + " with offset["
+              + offset + "], length[" + length + "], remain[" + targetSkip + "]");
+        }
+      }
       byte[] buf = new byte[length];
       dataInputStream.readFully(buf);
       return buf;
