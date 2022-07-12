@@ -74,7 +74,6 @@ public class ClientUtils {
     return StorageType.MEMORY_HDFS.name().equals(storageType)
         || StorageType.MEMORY_LOCALFILE_HDFS.name().equals(storageType)
         || StorageType.HDFS.name().equals(storageType)
-        || StorageType.LOCALFILE_HDFS.name().equals(storageType)
-        || StorageType.LOCALFILE_HDFS_2.name().equals(storageType);
+        || StorageType.LOCALFILE_HDFS.name().equals(storageType);
   }
 }

@@ -384,7 +384,6 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
       shuffleServerConf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, tempDir.getAbsolutePath());
       shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
       shuffleServerConf.set(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 5L);
-      shuffleServerConf.set(ShuffleServerConf.UPLOADER_BASE_PATH, "test");
       StorageManager storageManager =
           StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", shuffleServerConf);
       ShuffleFlushManager manager =
