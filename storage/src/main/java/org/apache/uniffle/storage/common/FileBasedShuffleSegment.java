@@ -21,7 +21,7 @@ import java.util.Objects;
 
 public class FileBasedShuffleSegment extends ShuffleSegment implements Comparable<FileBasedShuffleSegment> {
 
-  public static int SEGMENT_SIZE = 4 * Long.BYTES + 2 * Integer.BYTES;
+  public static final int SEGMENT_SIZE = 4 * Long.BYTES + 2 * Integer.BYTES;
   private long offset;
   private int length;
   private int uncompressLength;

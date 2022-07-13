@@ -61,7 +61,7 @@ public class RssMRConfig {
       RssClientConfig.RSS_CLIENT_DEFAULT_SEND_NUM;
   public static final String RSS_CLIENT_SEND_THRESHOLD = MR_RSS_CONFIG_PREFIX + "rss.client.send.threshold";
   public static final double RSS_CLIENT_DEFAULT_SEND_THRESHOLD = 0.2f;
-  public static boolean RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE =
+  public static final boolean RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE =
       RssClientConfig.RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE;
   public static final String RSS_HEARTBEAT_INTERVAL =
       MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_HEARTBEAT_INTERVAL;
@@ -109,26 +109,26 @@ public class RssMRConfig {
       MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_INDEX_READ_LIMIT;
   public static final int RSS_INDEX_READ_LIMIT_DEFAULT_VALUE =
       RssClientConfig.RSS_INDEX_READ_LIMIT_DEFAULT_VALUE;
-  public static String RSS_CLIENT_READ_BUFFER_SIZE =
+  public static final String RSS_CLIENT_READ_BUFFER_SIZE =
       MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE;
 
   // When the size of read buffer reaches the half of JVM region (i.e., 32m),
   // it will incur humongous allocation, so we set it to 14m.
-  public static String RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE =
+  public static final String RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE =
       RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE;
 
-  public static String RSS_DYNAMIC_CLIENT_CONF_ENABLED =
+  public static final String RSS_DYNAMIC_CLIENT_CONF_ENABLED =
       MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED;
-  public static boolean RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE =
+  public static final boolean RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE =
       RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE;
-  public static String RSS_ACCESS_TIMEOUT_MS = MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ACCESS_TIMEOUT_MS;
-  public static int RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE = RssClientConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE;
+  public static final String RSS_ACCESS_TIMEOUT_MS = MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ACCESS_TIMEOUT_MS;
+  public static final int RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE = RssClientConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE;
 
   public static final String RSS_CLIENT_ASSIGNMENT_TAGS =
           MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_TAGS;
 
-  public static String RSS_CONF_FILE = "rss_conf.xml";
+  public static final String RSS_CONF_FILE = "rss_conf.xml";
 
-  public static Set<String> RSS_MANDATORY_CLUSTER_CONF = Sets.newHashSet(
+  public static final Set<String> RSS_MANDATORY_CLUSTER_CONF = Sets.newHashSet(
       RSS_STORAGE_TYPE, RSS_REMOTE_STORAGE_PATH);
 }

@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.common;
 
+import java.util.Arrays;
+
 public class ShufflePartitionedData {
 
   private int partitionId;
@@ -29,7 +31,7 @@ public class ShufflePartitionedData {
 
   @Override
   public String toString() {
-    return "ShufflePartitionedData{partitionId=" + partitionId + ", blockList=" + blockList + '}';
+    return "ShufflePartitionedData{partitionId=" + partitionId + ", blockList=" + Arrays.toString(blockList) + '}';
   }
 
   public int getPartitionId() {

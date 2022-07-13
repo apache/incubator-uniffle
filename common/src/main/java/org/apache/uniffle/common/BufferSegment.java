@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.common;
 
+import java.util.Objects;
+
 public class BufferSegment {
 
   private long blockId;
@@ -46,6 +48,11 @@ public class BufferSegment {
           && taskAttemptId == ((BufferSegment) obj).getTaskAttemptId();
     }
     return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(blockId, offset, length, uncompressLength, crc, taskAttemptId);
   }
 
   @Override

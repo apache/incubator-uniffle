@@ -27,12 +27,12 @@ import com.google.common.collect.Sets;
 
 import org.apache.uniffle.common.util.UnitConverter;
 
-public class RssConf {
+public class RssConf implements Cloneable {
 
   /**
    * Stores the concrete key/value pairs of this configuration object.
    */
-  private final ConcurrentHashMap<String, Object> settings;
+  private ConcurrentHashMap<String, Object> settings;
 
   /**
    * Creates a new empty configuration.
@@ -532,9 +532,9 @@ public class RssConf {
   // --------------------------------------------------------------------------------------------
 
   @Override
-  public RssConf clone() {
-    RssConf config = new RssConf();
-    config.addAll(this);
+  public RssConf clone() throws CloneNotSupportedException {
+    RssConf config = (RssConf) super.clone();
+    config.settings = new ConcurrentHashMap<>(settings);
     return config;
   }
 

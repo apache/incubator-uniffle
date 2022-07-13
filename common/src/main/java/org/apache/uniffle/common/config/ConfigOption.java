@@ -163,6 +163,11 @@ public class ConfigOption<T> {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(key, defaultValue);
+  }
+
+  @Override
   public String toString() {
     return String.format("Key: '%s' , default: %s", key, defaultValue);
   }
