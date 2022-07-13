@@ -43,7 +43,6 @@ public class ShuffleServerConfTest {
     assertFalse(shuffleServerConf.loadConfFromFile(null));
     assertEquals("GRPC", shuffleServerConf.getString(ShuffleServerConf.RPC_SERVER_TYPE));
     assertEquals(256, shuffleServerConf.getInteger(ShuffleServerConf.JETTY_CORE_POOL_SIZE));
-    assertFalse(shuffleServerConf.getBoolean(ShuffleServerConf.UPLOADER_ENABLE));
   }
 
   @Test
@@ -67,13 +66,7 @@ public class ShuffleServerConfTest {
     assertEquals(2, shuffleServerConf.getLong(ShuffleServerConf.SERVER_BUFFER_CAPACITY));
     assertEquals("value1", shuffleServerConf.getString("rss.server.hadoop.a.b", ""));
     assertEquals("", shuffleServerConf.getString("rss.server.had.a.b", ""));
-    assertEquals("COS", shuffleServerConf.getString(ShuffleServerConf.UPLOAD_STORAGE_TYPE));
     assertEquals("GRPC", shuffleServerConf.getString(ShuffleServerConf.RPC_SERVER_TYPE));
-    assertTrue(shuffleServerConf.getBoolean(ShuffleServerConf.UPLOADER_ENABLE));
-    assertEquals(8L, shuffleServerConf.getLong(ShuffleServerConf.REFERENCE_UPLOAD_SPEED_MBS));
-    assertEquals(
-        1024L * 1024L * 1024L, shuffleServerConf.getLong(ShuffleServerConf.SHUFFLE_MAX_UPLOAD_SIZE));
-    assertEquals(13, shuffleServerConf.getInteger(ShuffleServerConf.UPLOADER_THREAD_NUM));
   }
 
   @Test
@@ -92,7 +85,6 @@ public class ShuffleServerConfTest {
     assertEquals(shuffleServerConf.getSizeAsBytes(ShuffleServerConf.SERVER_EVENT_SIZE_THRESHOLD_L2), 90 * MB);
     assertEquals(shuffleServerConf.getSizeAsBytes(ShuffleServerConf.SERVER_EVENT_SIZE_THRESHOLD_L3), 120 * MB);
     assertEquals(shuffleServerConf.getSizeAsBytes(ShuffleServerConf.DISK_CAPACITY), 120 * GB);
-    assertEquals(shuffleServerConf.getSizeAsBytes(ShuffleServerConf.SHUFFLE_MAX_UPLOAD_SIZE), 45 * MB);
 
     // set conf in memory
     shuffleServerConf.setSizeAsBytes(ShuffleServerConf.SERVER_BUFFER_CAPACITY, "10KB");
@@ -102,7 +94,6 @@ public class ShuffleServerConfTest {
     shuffleServerConf.setSizeAsBytes(ShuffleServerConf.SERVER_EVENT_SIZE_THRESHOLD_L2, "90MB");
     shuffleServerConf.setSizeAsBytes(ShuffleServerConf.SERVER_EVENT_SIZE_THRESHOLD_L3, "120MB");
     shuffleServerConf.setSizeAsBytes(ShuffleServerConf.DISK_CAPACITY, "120GB");
-    shuffleServerConf.setSizeAsBytes(ShuffleServerConf.SHUFFLE_MAX_UPLOAD_SIZE, "45MB");
 
     assertEquals(shuffleServerConf.getSizeAsBytes(ShuffleServerConf.SERVER_BUFFER_CAPACITY), 10 * KB);
     assertEquals(shuffleServerConf.getSizeAsBytes(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY), 32 * KB);
@@ -111,7 +102,6 @@ public class ShuffleServerConfTest {
     assertEquals(shuffleServerConf.getSizeAsBytes(ShuffleServerConf.SERVER_EVENT_SIZE_THRESHOLD_L2), 90 * MB);
     assertEquals(shuffleServerConf.getSizeAsBytes(ShuffleServerConf.SERVER_EVENT_SIZE_THRESHOLD_L3), 120 * MB);
     assertEquals(shuffleServerConf.getSizeAsBytes(ShuffleServerConf.DISK_CAPACITY), 120 * GB);
-    assertEquals(shuffleServerConf.getSizeAsBytes(ShuffleServerConf.SHUFFLE_MAX_UPLOAD_SIZE), 45 * MB);
 
     // test the compatibility of old style
     assertEquals(shuffleServerConf.getLong(ShuffleServerConf.SERVER_BUFFER_CAPACITY), 10 * KB);
@@ -121,6 +111,5 @@ public class ShuffleServerConfTest {
     assertEquals(shuffleServerConf.getLong(ShuffleServerConf.SERVER_EVENT_SIZE_THRESHOLD_L2), 90 * MB);
     assertEquals(shuffleServerConf.getLong(ShuffleServerConf.SERVER_EVENT_SIZE_THRESHOLD_L3), 120 * MB);
     assertEquals(shuffleServerConf.getLong(ShuffleServerConf.DISK_CAPACITY), 120 * GB);
-    assertEquals(shuffleServerConf.getLong(ShuffleServerConf.SHUFFLE_MAX_UPLOAD_SIZE), 45 * MB);
   }
 }

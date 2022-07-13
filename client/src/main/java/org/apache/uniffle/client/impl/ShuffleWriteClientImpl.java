@@ -33,7 +33,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,6 +71,7 @@ import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.ThreadUtils;
 
 public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
@@ -98,7 +98,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     this.retryIntervalMax = retryIntervalMax;
     this.coordinatorClientFactory = new CoordinatorClientFactory(clientType);
     this.heartBeatExecutorService = Executors.newFixedThreadPool(heartBeatThreadNum,
-            new ThreadFactoryBuilder().setDaemon(true).setNameFormat("client-heartbeat-%d").build());
+        ThreadUtils.getThreadFactory("client-heartbeat-%d"));
     this.replica = replica;
     this.replicaWrite = replicaWrite;
     this.replicaRead = replicaRead;

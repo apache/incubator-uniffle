@@ -32,7 +32,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
@@ -66,6 +65,7 @@ import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.common.util.ThreadUtils;
 
 public class RssShuffleManager implements ShuffleManager {
 
@@ -200,7 +200,7 @@ public class RssShuffleManager implements ShuffleManager {
         Queues.newLinkedBlockingQueue(Integer.MAX_VALUE));
     if (isDriver) {
       heartBeatScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-              new ThreadFactoryBuilder().setDaemon(true).setNameFormat("rss-heartbeat-%d").build());
+          ThreadUtils.getThreadFactory("rss-heartbeat-%d"));
     }
   }
 

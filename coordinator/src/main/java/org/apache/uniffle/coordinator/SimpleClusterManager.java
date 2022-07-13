@@ -35,7 +35,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -43,6 +42,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.uniffle.common.util.ThreadUtils;
 
 public class SimpleClusterManager implements ClusterManager {
 
@@ -64,7 +65,7 @@ public class SimpleClusterManager implements ClusterManager {
     this.heartbeatTimeout = conf.getLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT);
     // the thread for checking if shuffle server report heartbeat in time
     scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-        new ThreadFactoryBuilder().setDaemon(true).setNameFormat("SimpleClusterManager-%d").build());
+        ThreadUtils.getThreadFactory("SimpleClusterManager-%d"));
     scheduledExecutorService.scheduleAtFixedRate(
         () -> nodesCheck(), heartbeatTimeout / 3,
         heartbeatTimeout / 3, TimeUnit.MILLISECONDS);
@@ -74,7 +75,7 @@ public class SimpleClusterManager implements ClusterManager {
       this.hadoopFileSystem = CoordinatorUtils.getFileSystemForPath(new Path(excludeNodesPath), hadoopConf);
       long updateNodesInterval = conf.getLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL);
       checkNodesExecutorService = Executors.newSingleThreadScheduledExecutor(
-          new ThreadFactoryBuilder().setDaemon(true).setNameFormat("UpdateExcludeNodes-%d").build());
+          ThreadUtils.getThreadFactory("UpdateExcludeNodes-%d"));
       checkNodesExecutorService.scheduleAtFixedRate(
           () -> updateExcludeNodes(excludeNodesPath), updateNodesInterval, updateNodesInterval, TimeUnit.MILLISECONDS);
     }

@@ -15,13 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.storage.util;
+package org.apache.uniffle.common.util;
 
-public enum StorageType {
-  HDFS,
-  LOCALFILE,
-  LOCALFILE_HDFS,
-  MEMORY_LOCALFILE,
-  MEMORY_HDFS,
-  MEMORY_LOCALFILE_HDFS
+import java.util.concurrent.ThreadFactory;
+
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
+/**
+ * Provide a general method to create a thread factory to make the code more standardized
+ */
+public class ThreadUtils {
+
+  public static ThreadFactory getThreadFactory(String factoryName) {
+    return new ThreadFactoryBuilder().setDaemon(true).setNameFormat(factoryName).build();
+  }
 }
