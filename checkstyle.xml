@@ -22,8 +22,6 @@
 <module name = "Checker">
     <property name="charset" value="UTF-8"/>
 
-    <property name="severity" value="warning"/>
-
     <property name="fileExtensions" value="java, properties, xml"/>
     <!-- Excludes all 'module-info.java' files              -->
     <!-- See https://checkstyle.org/config_filefilters.html -->
@@ -288,7 +286,6 @@
         <module name="VariableDeclarationUsageDistance"/>
         <module name="CustomImportOrder">
              <!-- new add -->
-            <property name="severity" value="WARNING"/>
             <property name="sortImportsInGroupAlphabetically" value="true"/>
             <property name="specialImportsRegExp" value="^org\.apache\.uniffle"/>
             <property name="standardPackageRegExp" value="^java\.|^javax\."/>
