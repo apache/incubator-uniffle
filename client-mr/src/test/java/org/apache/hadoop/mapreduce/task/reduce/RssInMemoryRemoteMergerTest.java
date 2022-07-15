@@ -100,7 +100,7 @@ public class RssInMemoryRemoteMergerTest {
     mapOutputs1.add(mapOutput1);
     mapOutputs1.add(mapOutput2);
 
-    String filePath = Task.MERGED_OUTPUT_PREFIX + Path.SEPARATOR + "test" + Path.SEPARATOR + mapId1;
+    String filePath = "spill" + Path.SEPARATOR + "test" + Path.SEPARATOR + mapId1;
     Path mergePath = new Path(spillPath, filePath);
     inMemoryMerger.merge(mapOutputs1);
     assertTrue(fs.exists(mergePath));

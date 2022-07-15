@@ -141,8 +141,8 @@ public class RssInMemoryRemoteMerger<K, V> extends MergeThread<InMemoryMapOutput
           + remoteFs.getFileStatus(outputPath).getLen()
           + " cost time " + (System.currentTimeMillis() - start) + " ms");
     } catch (IOException e) {
-      //make sure that we delete the ondisk file that we created
-      //earlier when we invoked cloneFileAttributes
+      // make sure that we delete the ondisk file that we created
+      // earlier when we invoked cloneFileAttributes
       remoteFs.delete(outputPath, true);
       throw e;
     }

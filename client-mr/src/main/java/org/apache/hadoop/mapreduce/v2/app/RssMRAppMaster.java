@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.tencent.rss.storage.util.StorageType;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -79,6 +78,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.storage.util.StorageType;
 
 public class RssMRAppMaster extends MRAppMaster {
 
@@ -201,21 +201,22 @@ public class RssMRAppMaster extends MRAppMaster {
       extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_CONF, remoteStorage.getConfString());
 
       // When containers have disk with very limited space, reduce is allowed to spill data to hdfs
-      if (extraConf.getBoolean(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
+      if (conf.getBoolean(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
         RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT)) {
 
-        if (storageType != StorageType.MEMORY_LOCALFILE_HDFS.name()) {
+        if (storageType != StorageType.MEMORY_LOCALFILE_HDFS.name()
+            || remoteStorage.isEmpty()) {
           throw new IllegalArgumentException("Remote spill only supports "
-            + StorageType.MEMORY_LOCALFILE_HDFS.name() + " mode");
+            + StorageType.MEMORY_LOCALFILE_HDFS.name() + " mode with " + remoteStorage);
         }
 
-        // Use minimized replica, because spilled data can be recomputed by reduce task.
-        // And task re-computation is much cheaper job re-computation
-        conf.setInt("dfs.replication", 1);
 
         // When remote spill is enabled, reduce task is more easy to crash.
         // We allow more attempts to avoid recomputing job.
-        conf.setInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, 5);
+        int originalAttempts = conf.getInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, 4);
+        int inc = conf.getInt(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC,
+          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC_DEFAULT);
+        conf.setInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, originalAttempts + inc);
       }
 
       LOG.info("Start to register shuffle");

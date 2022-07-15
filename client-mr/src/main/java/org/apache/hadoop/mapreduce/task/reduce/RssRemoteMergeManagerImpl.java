@@ -25,8 +25,8 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.LocalDirAllocator;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.mapred.Counters;
@@ -38,11 +38,12 @@ import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.Task;
 import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.mapreduce.RssMRConfig;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.util.Progress;
 
-import com.tencent.rss.common.exception.RssException;
-import com.tencent.rss.storage.util.ShuffleStorageUtils;
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 public class RssRemoteMergeManagerImpl<K, V> extends MergeManagerImpl<K, V> {
 
@@ -140,6 +141,14 @@ public class RssRemoteMergeManagerImpl<K, V> extends MergeManagerImpl<K, V> {
     this.mergedMapOutputsCounter = mergedMapOutputsCounter;
 
     try {
+      // Use minimized replica, because spilled data can be recomputed by reduce task.
+      // Instead, we use more retries on HDFS client.
+      int replication = remoteConf.getInt(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION,
+          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION_DEFAULT);
+      int retries = remoteConf.getInt(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES,
+          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES_DEFAULT);
+      remoteConf.setInt("dfs.replication", replication);
+      remoteConf.setInt("dfs.client.block.write.retries", retries); // origin=3
       this.remoteFS = ShuffleStorageUtils.getFileSystemForPath(new Path(basePath), remoteConf);
     } catch (IOException e) {
       throw new RuntimeException("Cannot init remoteFS on path:" + basePath);

@@ -23,11 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.tencent.rss.storage.util.ShuffleStorageUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RawKeyValueIterator;
 import org.apache.hadoop.mapred.Reporter;
