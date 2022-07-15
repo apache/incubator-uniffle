@@ -74,58 +74,58 @@ public class PartitionBalanceAssignmentStrategy implements AssignmentStrategy {
 
     SortedMap<PartitionRange, List<ServerNode>> assignments = new TreeMap<>();
     synchronized (this) {
-        List<ServerNode> nodes = clusterManager.getServerList(requiredTags);
-        Map<ServerNode, PartitionAssignmentInfo> newPartitionInfos = Maps.newConcurrentMap();
-        for (ServerNode node : nodes) {
-          PartitionAssignmentInfo partitionInfo;
-          if (serverToPartitions.containsKey(node)) {
-            partitionInfo = serverToPartitions.get(node);
-            if (partitionInfo.getTimestamp() < node.getTimestamp()) {
-              partitionInfo.resetPartitionNum();
-              partitionInfo.setTimestamp(node.getTimestamp());
-            }
-          } else {
-            partitionInfo = new PartitionAssignmentInfo();
+      List<ServerNode> nodes = clusterManager.getServerList(requiredTags);
+      Map<ServerNode, PartitionAssignmentInfo> newPartitionInfos = Maps.newConcurrentMap();
+      for (ServerNode node : nodes) {
+        PartitionAssignmentInfo partitionInfo;
+        if (serverToPartitions.containsKey(node)) {
+          partitionInfo = serverToPartitions.get(node);
+          if (partitionInfo.getTimestamp() < node.getTimestamp()) {
+            partitionInfo.resetPartitionNum();
+            partitionInfo.setTimestamp(node.getTimestamp());
           }
-          newPartitionInfos.putIfAbsent(node, partitionInfo);
+        } else {
+          partitionInfo = new PartitionAssignmentInfo();
         }
-        serverToPartitions = newPartitionInfos;
-        int averagePartitions = totalPartitionNum * replica / clusterManager.getShuffleNodesMax();
-        int assignPartitions = averagePartitions < 1 ? 1 : averagePartitions;
-        nodes.sort(new Comparator<ServerNode>() {
-          @Override
-          public int compare(ServerNode o1, ServerNode o2) {
-            PartitionAssignmentInfo partitionInfo1 = serverToPartitions.get(o1);
-            PartitionAssignmentInfo partitionInfo2 = serverToPartitions.get(o2);
-            double v1 = o1.getAvailableMemory() * 1.0 / (partitionInfo1.getPartitionNum() + assignPartitions);
-            double v2 = o2.getAvailableMemory() * 1.0 / (partitionInfo2.getPartitionNum() + assignPartitions);
-            return -Double.compare(v1, v2);
-          }
-        });
+        newPartitionInfos.putIfAbsent(node, partitionInfo);
+      }
+      serverToPartitions = newPartitionInfos;
+      int averagePartitions = totalPartitionNum * replica / clusterManager.getShuffleNodesMax();
+      int assignPartitions = averagePartitions < 1 ? 1 : averagePartitions;
+      nodes.sort(new Comparator<ServerNode>() {
+        @Override
+        public int compare(ServerNode o1, ServerNode o2) {
+          PartitionAssignmentInfo partitionInfo1 = serverToPartitions.get(o1);
+          PartitionAssignmentInfo partitionInfo2 = serverToPartitions.get(o2);
+          double v1 = o1.getAvailableMemory() * 1.0 / (partitionInfo1.getPartitionNum() + assignPartitions);
+          double v2 = o2.getAvailableMemory() * 1.0 / (partitionInfo2.getPartitionNum() + assignPartitions);
+          return -Double.compare(v1, v2);
+        }
+      });
 
-        if (nodes.isEmpty() || nodes.size() < replica) {
-          throw new RuntimeException("There isn't enough shuffle servers");
-        }
+      if (nodes.isEmpty() || nodes.size() < replica) {
+        throw new RuntimeException("There isn't enough shuffle servers");
+      }
 
-        int expectNum = clusterManager.getShuffleNodesMax();
-        if (nodes.size() < clusterManager.getShuffleNodesMax()) {
-          LOG.warn("Can't get expected servers [" + expectNum + "] and found only [" + nodes.size() + "]");
-          expectNum = nodes.size();
-        }
+      int expectNum = clusterManager.getShuffleNodesMax();
+      if (nodes.size() < clusterManager.getShuffleNodesMax()) {
+        LOG.warn("Can't get expected servers [" + expectNum + "] and found only [" + nodes.size() + "]");
+        expectNum = nodes.size();
+      }
 
-        List<ServerNode> candidatesNodes = nodes.subList(0, expectNum);
-        int idx = 0;
-        List<PartitionRange> ranges = CoordinatorUtils.generateRanges(totalPartitionNum, 1);
-        for (PartitionRange range : ranges) {
-          List<ServerNode> assignNodes = Lists.newArrayList();
-          for (int rc = 0; rc < replica; rc++) {
-            ServerNode node =  candidatesNodes.get(idx);
-            idx = CoordinatorUtils.nextIdx(idx,  candidatesNodes.size());
-            serverToPartitions.get(node).incrementPartitionNum();
-            assignNodes.add(node);
-          }
-          assignments.put(range, assignNodes);
+      List<ServerNode> candidatesNodes = nodes.subList(0, expectNum);
+      int idx = 0;
+      List<PartitionRange> ranges = CoordinatorUtils.generateRanges(totalPartitionNum, 1);
+      for (PartitionRange range : ranges) {
+        List<ServerNode> assignNodes = Lists.newArrayList();
+        for (int rc = 0; rc < replica; rc++) {
+          ServerNode node =  candidatesNodes.get(idx);
+          idx = CoordinatorUtils.nextIdx(idx,  candidatesNodes.size());
+          serverToPartitions.get(node).incrementPartitionNum();
+          assignNodes.add(node);
         }
+        assignments.put(range, assignNodes);
+      }
     }
     return new PartitionRangeAssignment(assignments);
   }

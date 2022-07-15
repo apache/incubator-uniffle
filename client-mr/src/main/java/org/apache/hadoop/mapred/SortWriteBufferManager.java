@@ -176,7 +176,7 @@ public class SortWriteBufferManager<K, V> {
       }
     }
     if (memoryUsedSize.get() > maxMemSize * memoryThreshold
-      && inSendListBytes.get() <= maxMemSize * sendThreshold) {
+        && inSendListBytes.get() <= maxMemSize * sendThreshold) {
       sendBuffersToServers();
     }
     mapOutputRecordCounter.increment(1);

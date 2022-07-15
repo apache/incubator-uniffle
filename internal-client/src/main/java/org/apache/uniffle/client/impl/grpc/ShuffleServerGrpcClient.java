@@ -416,8 +416,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setPartitionId(request.getPartitionId())
         .build();
     GetShuffleResultResponse rpcResponse = blockingStub
-      .withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS)
-      .getShuffleResult(rpcRequest);
+        .withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS)
+        .getShuffleResult(rpcRequest);
     StatusCode statusCode = rpcResponse.getStatus();
 
     RssGetShuffleResultResponse response;

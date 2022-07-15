@@ -54,7 +54,7 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
     ShuffleDataResult result = null;
 
     RssGetInMemoryShuffleDataRequest request = new RssGetInMemoryShuffleDataRequest(
-      appId,shuffleId, partitionId, lastBlockId, readBufferSize);
+        appId,shuffleId, partitionId, lastBlockId, readBufferSize);
 
     try {
       RssGetInMemoryShuffleDataResponse response =

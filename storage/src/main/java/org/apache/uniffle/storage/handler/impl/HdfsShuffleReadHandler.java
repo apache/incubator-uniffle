@@ -82,14 +82,14 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
     byte[] data = readShuffleData(shuffleDataSegment.getOffset(), expectedLength);
     if (data.length == 0) {
       LOG.warn("Fail to read expected[{}] data, actual[{}] and segment is {} from file {}.data",
-        expectedLength, data.length, shuffleDataSegment, filePrefix);
+          expectedLength, data.length, shuffleDataSegment, filePrefix);
       return null;
     }
 
     ShuffleDataResult shuffleDataResult = new ShuffleDataResult(data, shuffleDataSegment.getBufferSegments());
     if (shuffleDataResult.isEmpty()) {
       LOG.warn("Shuffle data is empty, expected length {}, data length {}, segment {} in file {}.data",
-        expectedLength, data.length, shuffleDataSegment, filePrefix);
+          expectedLength, data.length, shuffleDataSegment, filePrefix);
       return null;
     }
 

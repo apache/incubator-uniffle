@@ -100,17 +100,17 @@ public class RssFetcher<K,V> {
     this.metrics = metrics;
     this.reduceId = reduceId;
     ioErrs = reporter.getCounter(SHUFFLE_ERR_GRP_NAME,
-      RssFetcher.ShuffleErrors.IO_ERROR.toString());
+        RssFetcher.ShuffleErrors.IO_ERROR.toString());
     wrongLengthErrs = reporter.getCounter(SHUFFLE_ERR_GRP_NAME,
-      RssFetcher.ShuffleErrors.WRONG_LENGTH.toString());
+        RssFetcher.ShuffleErrors.WRONG_LENGTH.toString());
     badIdErrs = reporter.getCounter(SHUFFLE_ERR_GRP_NAME,
-      RssFetcher.ShuffleErrors.BAD_ID.toString());
+        RssFetcher.ShuffleErrors.BAD_ID.toString());
     wrongMapErrs = reporter.getCounter(SHUFFLE_ERR_GRP_NAME,
-      RssFetcher.ShuffleErrors.WRONG_MAP.toString());
+        RssFetcher.ShuffleErrors.WRONG_MAP.toString());
     connectionErrs = reporter.getCounter(SHUFFLE_ERR_GRP_NAME,
-      RssFetcher.ShuffleErrors.CONNECTION.toString());
+        RssFetcher.ShuffleErrors.CONNECTION.toString());
     wrongReduceErrs = reporter.getCounter(SHUFFLE_ERR_GRP_NAME,
-      RssFetcher.ShuffleErrors.WRONG_REDUCE.toString());
+        RssFetcher.ShuffleErrors.WRONG_REDUCE.toString());
 
     this.shuffleReadClient = shuffleReadClient;
     this.totalBlockCount = totalBlockCount;
@@ -151,7 +151,7 @@ public class RssFetcher<K,V> {
     if (!hasPendingData && compressedData != null) {
       final long startDecompress = System.currentTimeMillis();
       uncompressedData = RssShuffleUtils.decompressData(
-        compressedData, compressedBlock.getUncompressLength(), false).array();
+          compressedData, compressedBlock.getUncompressLength(), false).array();
       unCompressionLength += compressedBlock.getUncompressLength();
       long decompressDuration = System.currentTimeMillis() - startDecompress;
       decompressTime += decompressDuration;
@@ -187,9 +187,9 @@ public class RssFetcher<K,V> {
       shuffleReadClient.logStatics();
       metrics.inputBytes(unCompressionLength);
       LOG.info("reduce task " + reduceId.toString() + " cost " + readTime + " ms to fetch and "
-        + decompressTime + " ms to decompress with unCompressionLength["
-        + unCompressionLength + "] and " + serializeTime + " ms to serialize and "
-        + waitTime + " ms to wait resource");
+          + decompressTime + " ms to decompress with unCompressionLength["
+          + unCompressionLength + "] and " + serializeTime + " ms to serialize and "
+          + waitTime + " ms to wait resource");
       stopFetch();
     }
   }
@@ -226,13 +226,13 @@ public class RssFetcher<K,V> {
       mapOutput.commit();
       if (mapOutput instanceof OnDiskMapOutput) {
         LOG.info("Reduce: " + reduceId + " allocates disk to accept block "
-          + " with byte sizes: " + uncompressedData.length);
+            + " with byte sizes: " + uncompressedData.length);
       }
     } catch (Throwable t) {
       ioErrs.increment(1);
       mapOutput.abort();
       throw new RssException("Reduce: " + reduceId + " cannot write block to "
-        + mapOutput.getClass().getSimpleName() + " due to: " + t.getClass().getName());
+          + mapOutput.getClass().getSimpleName() + " due to: " + t.getClass().getName());
     }
     return true;
   }
@@ -258,7 +258,7 @@ public class RssFetcher<K,V> {
     double transferRate = bytesPerMillis * BYTES_PER_MILLIS_TO_MBS;
 
     progress.setStatus("copy(" + copyBlockCount + " of " + totalBlockCount + " at "
-      + mbpsFormat.format(transferRate) + " MB/s)");
+        + mbpsFormat.format(transferRate) + " MB/s)");
   }
 
   @VisibleForTesting

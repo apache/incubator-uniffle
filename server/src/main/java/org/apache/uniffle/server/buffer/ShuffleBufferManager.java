@@ -290,8 +290,8 @@ public class ShuffleBufferManager {
 
   // flush the buffer with required map which is <appId -> shuffleId>
   public synchronized void flush(Map<String, Set<Integer>> requiredFlush) {
-    for (Map.Entry<String, Map<Integer, RangeMap<Integer,
-        ShuffleBuffer>>> appIdToBuffers : bufferPool.entrySet()) {
+    for (Map.Entry<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>>
+        appIdToBuffers : bufferPool.entrySet()) {
       String appId = appIdToBuffers.getKey();
       if (requiredFlush.containsKey(appId)) {
         for (Map.Entry<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers :

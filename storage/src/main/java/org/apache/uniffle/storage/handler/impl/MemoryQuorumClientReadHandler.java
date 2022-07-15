@@ -45,8 +45,8 @@ public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
     this.partitionId = partitionId;
     this.readBufferSize = readBufferSize;
     shuffleServerClients.forEach(client ->
-      handlers.add(new MemoryClientReadHandler(
-          appId, shuffleId, partitionId, readBufferSize, client))
+        handlers.add(new MemoryClientReadHandler(
+            appId, shuffleId, partitionId, readBufferSize, client))
     );
   }
 

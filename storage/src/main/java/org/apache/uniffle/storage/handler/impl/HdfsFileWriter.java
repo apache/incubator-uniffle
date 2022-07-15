@@ -109,12 +109,12 @@ public class HdfsFileWriter implements Closeable {
     fsDataOutputStream.writeInt(partitionList.size());
     headerContentBuf.putInt(partitionList.size());
     for (int i = 0; i < partitionList.size(); i++) {
-        fsDataOutputStream.writeInt(partitionList.get(i));
-        fsDataOutputStream.writeLong(indexFileSizeList.get(i));
-        fsDataOutputStream.writeLong(dataFileSizeList.get(i));
-        headerContentBuf.putInt(partitionList.get(i));
-        headerContentBuf.putLong(indexFileSizeList.get(i));
-        headerContentBuf.putLong(dataFileSizeList.get(i));
+      fsDataOutputStream.writeInt(partitionList.get(i));
+      fsDataOutputStream.writeLong(indexFileSizeList.get(i));
+      fsDataOutputStream.writeLong(dataFileSizeList.get(i));
+      headerContentBuf.putInt(partitionList.get(i));
+      headerContentBuf.putLong(indexFileSizeList.get(i));
+      headerContentBuf.putLong(dataFileSizeList.get(i));
     }
     headerContentBuf.flip();
     fsDataOutputStream.writeLong(ChecksumUtils.getCrc32(headerContentBuf));
