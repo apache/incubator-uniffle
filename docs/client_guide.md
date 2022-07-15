@@ -161,3 +161,21 @@ The important configuration is listed as following.
 |---|---|---|
 |mapreduce.rss.client.max.buffer.size|3k|The max buffer size in map side|
 |mapreduce.rss.client.batch.trigger.num|50|The max batch of buffers to send data in map side|
+
+
+
+
+### Remote Spill (Experimental)
+
+In cloud environment, VM may have very limited disk space and performance.
+This experimental feature allows reduce tasks to spill data to remote storage (e.g., hdfs)
+
+|Property Name|Default|Description|
+|---|---|---|
+|mapreduce.rss.reduce.remote.spill.enable|false|Whether to use remote spill|
+|mapreduce.rss.reduce.remote.spill.attempt.inc|1|Increase reduce attempts as hdfs is easier to crash than disk|
+|mapreduce.rss.reduce.remote.spill.replication|1|The replication number to spill data to hdfs|
+|mapreduce.rss.reduce.remote.spill.retries|5|The retry number to spill data to hdfs|
+
+Notice: this feature requires the MEMORY_LOCAL_HDFS mode.
+ 
