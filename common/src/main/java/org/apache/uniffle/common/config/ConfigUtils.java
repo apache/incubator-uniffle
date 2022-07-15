@@ -83,8 +83,8 @@ public class ConfigUtils {
         return (int) value;
       } else {
         throw new IllegalArgumentException(String.format(
-          "Configuration value %s overflows/underflows the integer type.",
-          value));
+            "Configuration value %s overflows/underflows the integer type.",
+            value));
       }
     }
     return Integer.parseInt(o.toString());
@@ -126,8 +126,8 @@ public class ConfigUtils {
         return false;
       default:
         throw new IllegalArgumentException(String.format(
-          "Unrecognized option for boolean: %s. Expected either true or false(case insensitive)",
-          o));
+            "Unrecognized option for boolean: %s. Expected either true or false(case insensitive)",
+            o));
     }
   }
 
@@ -137,13 +137,13 @@ public class ConfigUtils {
     } else if (o.getClass() == Double.class) {
       double value = ((Double) o);
       if (value == 0.0
-        || (value >= Float.MIN_VALUE && value <= Float.MAX_VALUE)
-        || (value >= -Float.MAX_VALUE && value <= -Float.MIN_VALUE)) {
+          || (value >= Float.MIN_VALUE && value <= Float.MAX_VALUE)
+          || (value >= -Float.MAX_VALUE && value <= -Float.MIN_VALUE)) {
         return (float) value;
       } else {
         throw new IllegalArgumentException(String.format(
-          "Configuration value %s overflows/underflows the float type.",
-          value));
+            "Configuration value %s overflows/underflows the float type.",
+            value));
       }
     }
 
@@ -189,5 +189,5 @@ public class ConfigUtils {
 
   public static final Function<Double, Boolean> PERCENTAGE_DOUBLE_VALIDATOR =
       (Function<Double, Boolean>) value -> Double.compare(value, 100.0) <= 0 && Double.compare(value, 0.0) >= 0;
-  
+
 }

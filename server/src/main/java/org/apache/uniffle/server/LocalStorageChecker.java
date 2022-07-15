@@ -165,18 +165,18 @@ public class LocalStorageChecker extends Checker {
         byte[] readData = new byte[1024];
         int readBytes = -1;
         try (FileInputStream fis = new FileInputStream(writeFile)) {
-            int hasReadBytes = 0;
-            do {
-              readBytes = fis.read(readData);
-              if (hasReadBytes < 1024) {
-                for (int i = 0; i < readBytes; i++) {
-                  if (data[hasReadBytes + i] != readData[i]) {
-                    return false;
-                  }
+          int hasReadBytes = 0;
+          do {
+            readBytes = fis.read(readData);
+            if (hasReadBytes < 1024) {
+              for (int i = 0; i < readBytes; i++) {
+                if (data[hasReadBytes + i] != readData[i]) {
+                  return false;
                 }
               }
-              hasReadBytes += readBytes;
-            } while (readBytes != -1);
+            }
+            hasReadBytes += readBytes;
+          } while (readBytes != -1);
         }
       } catch (Exception e) {
         LOG.error("Storage read and write error ", e);

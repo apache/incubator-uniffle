@@ -39,12 +39,12 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
   protected Roaring64NavigableMap processBlockIds;
 
   public DataSkippableReadHandler(
-    String appId,
-    int shuffleId,
-    int partitionId,
-    int readBufferSize,
-    Roaring64NavigableMap expectBlockIds,
-    Roaring64NavigableMap processBlockIds) {
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int readBufferSize,
+      Roaring64NavigableMap expectBlockIds,
+      Roaring64NavigableMap processBlockIds) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;

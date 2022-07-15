@@ -95,13 +95,13 @@ public class RssMRUtils {
         .getInstance()
         .createShuffleWriteClient(clientType, retryMax, retryIntervalMax,
             heartBeatThreadNum, replica, replicaWrite, replicaRead, replicaSkipEnabled,
-                dataTransferPoolSize);
+            dataTransferPoolSize);
     return client;
   }
 
   public static Set<ShuffleServerInfo> getAssignedServers(JobConf jobConf, int reduceID) {
     String servers = jobConf.get(RssMRConfig.RSS_ASSIGNMENT_PREFIX
-      + String.valueOf(reduceID));
+        + String.valueOf(reduceID));
     String[] splitServers = servers.split(",");
     Set<ShuffleServerInfo> assignServers = Sets.newHashSet();
     for (String splitServer : splitServers) {
@@ -110,7 +110,7 @@ public class RssMRUtils {
         throw new RssException("partition " + reduceID + " server info isn't right");
       }
       ShuffleServerInfo sever = new ShuffleServerInfo(StringUtils.join(serverInfo, "-"),
-        serverInfo[0], Integer.parseInt(serverInfo[1]));
+          serverInfo[0], Integer.parseInt(serverInfo[1]));
       assignServers.add(sever);
     }
     return assignServers;
@@ -118,7 +118,7 @@ public class RssMRUtils {
 
   public static ApplicationAttemptId getApplicationAttemptId() {
     String containerIdStr =
-      System.getenv(ApplicationConstants.Environment.CONTAINER_ID.name());
+        System.getenv(ApplicationConstants.Environment.CONTAINER_ID.name());
     ContainerId containerId = ContainerId.fromString(containerIdStr);
     return containerId.getApplicationAttemptId();
   }

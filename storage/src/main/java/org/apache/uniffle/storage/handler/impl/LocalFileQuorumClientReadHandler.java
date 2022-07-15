@@ -40,22 +40,22 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
   private long readUncompressLength = 0L;
 
   public LocalFileQuorumClientReadHandler(
-    String appId,
-    int shuffleId,
-    int partitionId,
-    int indexReadLimit,
-    int partitionNumPerRange,
-    int partitionNum,
-    int readBufferSize,
-    Roaring64NavigableMap expectBlockIds,
-    Roaring64NavigableMap processBlockIds,
-    List<ShuffleServerClient> shuffleServerClients) {
-      this.appId = appId;
-      this.shuffleId = shuffleId;
-      this.partitionId = partitionId;
-      this.readBufferSize = readBufferSize;
-      for (ShuffleServerClient client: shuffleServerClients) {
-        handlers.add(new LocalFileClientReadHandler(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int indexReadLimit,
+      int partitionNumPerRange,
+      int partitionNum,
+      int readBufferSize,
+      Roaring64NavigableMap expectBlockIds,
+      Roaring64NavigableMap processBlockIds,
+      List<ShuffleServerClient> shuffleServerClients) {
+    this.appId = appId;
+    this.shuffleId = shuffleId;
+    this.partitionId = partitionId;
+    this.readBufferSize = readBufferSize;
+    for (ShuffleServerClient client: shuffleServerClients) {
+      handlers.add(new LocalFileClientReadHandler(
           appId,
           shuffleId,
           partitionId,
@@ -66,8 +66,8 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
           expectBlockIds,
           processBlockIds,
           client
-        ));
-      }
+      ));
+    }
   }
 
   @Override
@@ -85,7 +85,7 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
     }
     if (!readSuccessful) {
       throw new RssException("Failed to read all replicas for appId[" + appId + "], shuffleId["
-        + shuffleId + "], partitionId[" + partitionId + "]");
+          + shuffleId + "], partitionId[" + partitionId + "]");
     }
     return result;
   }

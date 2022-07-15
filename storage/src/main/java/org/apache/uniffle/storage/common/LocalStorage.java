@@ -133,16 +133,16 @@ public class LocalStorage extends AbstractStorage {
 
   @Override
   public void updateWriteMetrics(StorageWriteMetrics metrics) {
-      updateWrite(RssUtils.generateShuffleKey(metrics.getAppId(), metrics.getShuffleId()),
-          metrics.getDataSize(),
-          metrics.getPartitions());
+    updateWrite(RssUtils.generateShuffleKey(metrics.getAppId(), metrics.getShuffleId()),
+        metrics.getDataSize(),
+        metrics.getPartitions());
   }
 
   @Override
   public void updateReadMetrics(StorageReadMetrics metrics) {
-      String shuffleKey = RssUtils.generateShuffleKey(metrics.getAppId(), metrics.getShuffleId());
-      prepareStartRead(shuffleKey);
-      updateShuffleLastReadTs(shuffleKey);
+    String shuffleKey = RssUtils.generateShuffleKey(metrics.getAppId(), metrics.getShuffleId());
+    prepareStartRead(shuffleKey);
+    updateShuffleLastReadTs(shuffleKey);
   }
 
   @Override

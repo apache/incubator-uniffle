@@ -231,30 +231,30 @@ public class ComposedClientReadHandler implements ClientReadHandler {
   @VisibleForTesting
   public String getReadBlokNumInfo() {
     long totalBlockNum = hotReadBlockNum + warmReadBlockNum
-      + coldReadBlockNum + frozenReadBlockNum;
+        + coldReadBlockNum + frozenReadBlockNum;
     return "Client read " + totalBlockNum + " blocks ["
-      + " hot:" + hotReadBlockNum + " warm:" + warmReadBlockNum
-      + " cold:" + coldReadBlockNum + " frozen:" + frozenReadBlockNum + " ]";
+        + " hot:" + hotReadBlockNum + " warm:" + warmReadBlockNum
+        + " cold:" + coldReadBlockNum + " frozen:" + frozenReadBlockNum + " ]";
   }
 
   @VisibleForTesting
   public String getReadLengthInfo() {
     long totalReadLength = hotReadLength + warmReadLength
-      + coldReadLength + frozenReadLength;
+        + coldReadLength + frozenReadLength;
     return "Client read " + totalReadLength + " bytes ["
-      + " hot:" + hotReadLength + " warm:" + warmReadLength
-      + " cold:" + coldReadLength + " frozen:" + frozenReadLength + " ]";
+        + " hot:" + hotReadLength + " warm:" + warmReadLength
+        + " cold:" + coldReadLength + " frozen:" + frozenReadLength + " ]";
   }
 
   @VisibleForTesting
   public String getReadUncompressLengthInfo() {
     long totalReadUncompressLength = hotReadUncompressLength + warmReadUncompressLength
-      + coldReadUncompressLength + frozenReadUncompressLength;
+        + coldReadUncompressLength + frozenReadUncompressLength;
     return "Client read " + totalReadUncompressLength + " uncompressed bytes ["
-      + " hot:" + hotReadUncompressLength
-      + " warm:" + warmReadUncompressLength
-      + " cold:" + coldReadUncompressLength
-      + " frozen:" + frozenReadUncompressLength + " ]";
+        + " hot:" + hotReadUncompressLength
+        + " warm:" + warmReadUncompressLength
+        + " cold:" + coldReadUncompressLength
+        + " frozen:" + frozenReadUncompressLength + " ]";
   }
 
 }

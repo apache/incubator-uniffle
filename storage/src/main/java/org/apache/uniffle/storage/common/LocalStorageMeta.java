@@ -55,11 +55,11 @@ public class LocalStorageMeta {
         .filter(e -> (!checkRead || e.getValue().isStartRead.get()) && e.getValue().getNotUploadedSize() > 0)
         .collect(Collectors.toList());
 
-      shuffleMetaList.sort((Entry<String, ShuffleMeta> o1, Entry<String, ShuffleMeta> o2) -> {
-        long sz1 = o1.getValue().getSize().longValue();
-        long sz2 = o2.getValue().getSize().longValue();
-        return -Long.compare(sz1, sz2);
-      });
+    shuffleMetaList.sort((Entry<String, ShuffleMeta> o1, Entry<String, ShuffleMeta> o2) -> {
+      long sz1 = o1.getValue().getSize().longValue();
+      long sz2 = o2.getValue().getSize().longValue();
+      return -Long.compare(sz1, sz2);
+    });
 
     return shuffleMetaList
         .subList(0, Math.min(shuffleMetaList.size(), hint))
@@ -82,7 +82,7 @@ public class LocalStorageMeta {
       uploadedPartitionBitmap = shuffleMeta.uploadedPartitionBitmap.clone();
     }
     for (int partition : uploadedPartitionBitmap) {
-        partitionBitmap.remove(partition);
+      partitionBitmap.remove(partition);
     }
     return partitionBitmap;
   }
