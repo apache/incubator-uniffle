@@ -97,6 +97,20 @@ public class RssMRConfig {
   public static final long RSS_CLIENT_DEFAULT_MAX_SEGMENT_SIZE = 3 * 1024;
   public static final String RSS_STORAGE_TYPE = MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_STORAGE_TYPE;
 
+  public static final String RSS_REDUCE_REMOTE_SPILL_ENABLED = MR_RSS_CONFIG_PREFIX
+      + "rss.reduce.remote.spill.enable";
+  public static final boolean RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT = false;
+  public static final String RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC = MR_RSS_CONFIG_PREFIX
+      + "rss.reduce.remote.spill.attempt.inc";
+  public static final int RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC_DEFAULT = 1;
+  public static final String RSS_REDUCE_REMOTE_SPILL_REPLICATION = MR_RSS_CONFIG_PREFIX
+      + "rss.reduce.remote.spill.replication";
+  public static final int RSS_REDUCE_REMOTE_SPILL_REPLICATION_DEFAULT = 1;
+  public static final String RSS_REDUCE_REMOTE_SPILL_RETRIES = MR_RSS_CONFIG_PREFIX
+      + "rss.reduce.remote.spill.retries";
+  public static final int RSS_REDUCE_REMOTE_SPILL_RETRIES_DEFAULT = 5;
+
+
   public static final String RSS_PARTITION_NUM_PER_RANGE =
       MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_PARTITION_NUM_PER_RANGE;
   public static final int RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE =

@@ -101,6 +101,12 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     runRssApp(appConf);
     String rssPath = appConf.get("mapreduce.output.fileoutputformat.outputdir");
     verifyResults(originPath, rssPath);
+
+    appConf = new JobConf(mrYarnCluster.getConfig());
+    appConf.set("mapreduce.rss.reduce.remote.spill.enable", "true");
+    runRssApp(appConf);
+    String rssRemoteSpillPath = appConf.get("mapreduce.output.fileoutputformat.outputdir");
+    verifyResults(originPath, rssRemoteSpillPath);
   }
 
   private void updateCommonConfiguration(Configuration jobConf) {
@@ -126,6 +132,8 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     jobConf.setInt(MRJobConfig.IO_SORT_MB, 128);
     jobConf.set(MRJobConfig.MAP_OUTPUT_COLLECTOR_CLASS_ATTR, "org.apache.hadoop.mapred.RssMapOutputCollector");
     jobConf.set(MRConfig.SHUFFLE_CONSUMER_PLUGIN, "org.apache.hadoop.mapreduce.task.reduce.RssShuffle");
+    jobConf.set(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED, "true");
+
     File file = new File(parentPath, "client-mr/target/shaded");
     File[] jars = file.listFiles();
     File localFile = null;

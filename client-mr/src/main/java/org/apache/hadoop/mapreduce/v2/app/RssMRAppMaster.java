@@ -78,6 +78,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.storage.util.StorageType;
 
 public class RssMRAppMaster extends MRAppMaster {
 
@@ -198,6 +199,27 @@ public class RssMRAppMaster extends MRAppMaster {
       // set the remote storage with actual value
       extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_PATH, remoteStorage.getPath());
       extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_CONF, remoteStorage.getConfString());
+
+      // When containers have disk with very limited space, reduce is allowed to spill data to hdfs
+      if (conf.getBoolean(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
+          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT)) {
+
+        if (remoteStorage.isEmpty()) {
+          throw new IllegalArgumentException("Remote spill only supports "
+            + StorageType.MEMORY_LOCALFILE_HDFS.name() + " mode with " + remoteStorage);
+        }
+
+        // When remote spill is enabled, reduce task is more easy to crash.
+        // We allow more attempts to avoid recomputing job.
+        int originalAttempts = conf.getInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, 4);
+        int inc = conf.getInt(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC,
+            RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC_DEFAULT);
+        if (inc < 0) {
+          throw new IllegalArgumentException(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC
+              + " cannot be negative");
+        }
+        conf.setInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, originalAttempts + inc);
+      }
 
       LOG.info("Start to register shuffle");
       long start = System.currentTimeMillis();
