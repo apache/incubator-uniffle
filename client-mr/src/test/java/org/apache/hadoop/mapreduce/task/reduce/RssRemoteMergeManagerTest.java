@@ -73,7 +73,7 @@ public class RssRemoteMergeManagerTest {
     jobConf.set("mapreduce.reduce.shuffle.merge.percent", "0.1");
 
     RssRemoteMergeManagerImpl<Text, Text> mergeManager = new RssRemoteMergeManagerImpl<Text, Text>(
-      appId, reduceId1, jobConf, tmpDir.toString(), fs, lda, Reporter.NULL,
+      appId, reduceId1, jobConf, tmpDir.toString(), 1, 5, fs, lda, Reporter.NULL,
       null, null, null, null, null,
       null, null, new Progress(), new MROutputFiles(), new JobConf());
 

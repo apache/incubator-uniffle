@@ -202,20 +202,22 @@ public class RssMRAppMaster extends MRAppMaster {
 
       // When containers have disk with very limited space, reduce is allowed to spill data to hdfs
       if (conf.getBoolean(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
-        RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT)) {
+          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT)) {
 
-        if (storageType != StorageType.MEMORY_LOCALFILE_HDFS.name()
-            || remoteStorage.isEmpty()) {
+        if (remoteStorage.isEmpty()) {
           throw new IllegalArgumentException("Remote spill only supports "
             + StorageType.MEMORY_LOCALFILE_HDFS.name() + " mode with " + remoteStorage);
         }
-
 
         // When remote spill is enabled, reduce task is more easy to crash.
         // We allow more attempts to avoid recomputing job.
         int originalAttempts = conf.getInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, 4);
         int inc = conf.getInt(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC,
-          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC_DEFAULT);
+            RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC_DEFAULT);
+        if (inc < 0) {
+          throw new IllegalArgumentException(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC
+              + " cannot be negative");
+        }
         conf.setInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, originalAttempts + inc);
       }
 

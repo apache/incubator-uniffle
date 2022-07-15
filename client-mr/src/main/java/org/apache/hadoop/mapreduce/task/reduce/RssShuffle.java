@@ -125,12 +125,22 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
   }
 
   protected MergeManager<K, V> createMergeManager(
-    ShuffleConsumerPlugin.Context context) {
+      ShuffleConsumerPlugin.Context context) {
     boolean useRemoteSpill = RssMRUtils.getBoolean(rssJobConf, mrJobConf,
-      RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED, RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT);
+        RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED, RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT);
     if (useRemoteSpill) {
+      // Use minimized replica, because spilled data can be recomputed by reduce task.
+      // Instead, we use more retries on HDFS client.
+      int replication = RssMRUtils.getInt(rssJobConf, mrJobConf,
+          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION,
+          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION_DEFAULT);
+      int retries = RssMRUtils.getInt(rssJobConf, mrJobConf,
+          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES,
+          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES_DEFAULT);
       return new RssRemoteMergeManagerImpl(appId, reduceId, mrJobConf,
         basePath,
+        replication,
+        retries,
         context.getLocalFS(),
         context.getLocalDirAllocator(), reporter, context.getCodec(),
         context.getCombinerClass(), context.getCombineCollector(),
@@ -179,7 +189,7 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
     // start fetcher to fetch blocks from RSS servers
     if (!taskIdBitmap.isEmpty()) {
       LOG.info("In reduce: " + reduceId
-        + ", Rss MR client starts to fetch blocks from RSS server");
+          + ", Rss MR client starts to fetch blocks from RSS server");
       JobConf readerJobConf = getRemoteConf();
       CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
           appId, 0, reduceId.getTaskID().getId(), storageType, basePath, indexReadLimit, readBufferSize,

@@ -69,7 +69,7 @@ public class RssInMemoryRemoteMergerTest {
     TaskAttemptID reduceId1 = new TaskAttemptID(
         new TaskID(jobId, TaskType.REDUCE, 0), 0);
     RssRemoteMergeManagerImpl<Text, Text> mergeManager = new RssRemoteMergeManagerImpl<Text, Text>(
-        "app", reduceId1, jobConf, tmpDir.toString(), fs, lda, Reporter.NULL,
+        "app", reduceId1, jobConf, tmpDir.toString(),  1,5,  fs, lda, Reporter.NULL,
       null, null, null, null, null,
         null, null, new Progress(), new MROutputFiles(), new JobConf());
 
