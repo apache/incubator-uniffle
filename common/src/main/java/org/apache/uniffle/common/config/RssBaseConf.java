@@ -160,19 +160,27 @@ public class RssBaseConf extends RssConf {
       .key("rss.access.hadoop.kerberos.enable")
       .booleanType()
       .defaultValue(false)
-      .withDescription("");
+      .withDescription("Whether enable visiting secured hadoop cluster.");
 
   public static final ConfigOption<String> RSS_ACCESS_HADOOP_KERBEROS_KEYTAB_FILE = ConfigOptions
       .key("rss.access.hadoop.kerberos.keytab.file")
       .stringType()
       .noDefaultValue()
-      .withDescription("");
+      .withDescription("The kerberos keytab file path. And only when "
+          + RSS_ACCESS_HADOOP_KERBEROS_ENABLE.key() + " enabled, the option will be valid.");
 
   public static final ConfigOption<String> RSS_ACCESS_HADOOP_KERBEROS_PRINCIPAL = ConfigOptions
       .key("rss.access.hadoop.kerberos.principal")
       .stringType()
       .noDefaultValue()
-      .withDescription("");
+      .withDescription("The kerberos keytab principal. And only when "
+          + RSS_ACCESS_HADOOP_KERBEROS_ENABLE.key() + " enabled, the option will be valid.");
+
+  public static final ConfigOption<Long> RSS_ACCESS_HADOOP_KERBEROS_RELOGIN_INTERVAL = ConfigOptions
+      .key("rss.access.hadoop.kerberos.relogin.interval")
+      .longType()
+      .defaultValue(60L)
+      .withDescription("The kerberos authentication relogin interval. unit: sec");
 
   public boolean loadCommonConf(Map<String, String> properties) {
     if (properties == null) {

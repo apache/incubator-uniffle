@@ -20,7 +20,10 @@ package org.apache.uniffle.common.provider;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_ACCESS_HADOOP_KERBEROS_ENABLE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_ACCESS_HADOOP_KERBEROS_KEYTAB_FILE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_ACCESS_HADOOP_KERBEROS_PRINCIPAL;
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_ACCESS_HADOOP_KERBEROS_RELOGIN_INTERVAL;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.Closeable;
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
@@ -29,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -39,9 +41,6 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * The HadoopAccessorProvider will provide the only entrypoint to get the hadoop filesystem whether
@@ -53,7 +52,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  */
 public class HadoopAccessorProvider implements Closeable {
   private static final Logger LOGGER = LoggerFactory.getLogger(HadoopAccessorProvider.class);
-  private static final long RELOGIN_CHECK_INTERVAL_SEC = 60L;
 
   private static volatile HadoopAccessorProvider provider;
 
@@ -61,6 +59,7 @@ public class HadoopAccessorProvider implements Closeable {
   private ScheduledExecutorService scheduledExecutorService;
   private boolean kerberosEnabled = false;
   private RssBaseConf rssBaseConf;
+  private long reLoginIntervalSec;
 
   private HadoopAccessorProvider(RssBaseConf rssConf) throws Exception {
     this.rssBaseConf = rssConf;
@@ -79,6 +78,8 @@ public class HadoopAccessorProvider implements Closeable {
             + RSS_ACCESS_HADOOP_KERBEROS_PRINCIPAL.key() + " must be set");
       }
 
+      this.reLoginIntervalSec = rssConf.getLong(RSS_ACCESS_HADOOP_KERBEROS_RELOGIN_INTERVAL);
+
       Configuration conf = new Configuration(false);
       conf.set("hadoop.security.authentication", "kerberos");
 
@@ -95,8 +96,8 @@ public class HadoopAccessorProvider implements Closeable {
               .setDaemon(true).setNameFormat("Kerberos-Relogin-%d").build());
       scheduledExecutorService.scheduleAtFixedRate(
           HadoopAccessorProvider::kerberosRelogin,
-          RELOGIN_CHECK_INTERVAL_SEC,
-          RELOGIN_CHECK_INTERVAL_SEC,
+          reLoginIntervalSec,
+          reLoginIntervalSec,
           TimeUnit.SECONDS);
     }
   }
