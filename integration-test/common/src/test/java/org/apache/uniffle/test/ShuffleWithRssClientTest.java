@@ -88,7 +88,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
   @BeforeEach
   public void createClient() {
     shuffleWriteClientImpl = new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1,
-      1, 1, 1, true, 1);
+      1, 1, 1, true, 1, 1);
   }
 
   @AfterEach

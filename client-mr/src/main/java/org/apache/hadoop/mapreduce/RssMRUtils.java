@@ -91,11 +91,13 @@ public class RssMRUtils {
         RssMRConfig.RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE);
     int dataTransferPoolSize = jobConf.getInt(RssMRConfig.RSS_DATA_TRANSFER_POOL_SIZE,
         RssMRConfig.RSS_DATA_TRANSFER_POOL_SIZE_DEFAULT_VALUE);
+    int commitSenderPoolSize = jobConf.getInt(RssMRConfig.RSS_COMMIT_SENDER_POOL_SIZE,
+        RssMRConfig.RSS_COMMIT_SENDER_POOL_SIZE_DEFAULT_VALUE);
     ShuffleWriteClient client = ShuffleClientFactory
         .getInstance()
         .createShuffleWriteClient(clientType, retryMax, retryIntervalMax,
             heartBeatThreadNum, replica, replicaWrite, replicaRead, replicaSkipEnabled,
-            dataTransferPoolSize);
+            dataTransferPoolSize, commitSenderPoolSize);
     return client;
   }
 

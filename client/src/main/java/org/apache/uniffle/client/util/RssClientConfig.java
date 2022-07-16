@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.client.util;
 
+import org.apache.hadoop.io.OutputBuffer;
+
 public class RssClientConfig {
 
   public static final String RSS_CLIENT_TYPE = "rss.client.type";
@@ -36,6 +38,8 @@ public class RssClientConfig {
   public static final boolean RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE = true;
   public static final String RSS_DATA_TRANSFER_POOL_SIZE = "rss.client.data.transfer.pool.size";
   public static final int RSS_DATA_TRANFER_POOL_SIZE_DEFAULT_VALUE = Runtime.getRuntime().availableProcessors();
+  public static final String RSS_COMMIT_SENDER_POOL_SIZE = "rss.client.commit.sender.pool.size";
+  public static final int RSS_COMMIT_SENDER_POOL_SIZE_DEFAULT_VALUE = -1;
   public static final String RSS_HEARTBEAT_INTERVAL = "rss.heartbeat.interval";
   public static final long RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE = 10 * 1000L;
   public static final String RSS_HEARTBEAT_TIMEOUT = "rss.heartbeat.timeout";
