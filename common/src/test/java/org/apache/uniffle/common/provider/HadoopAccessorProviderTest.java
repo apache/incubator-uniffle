@@ -62,305 +62,307 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 public class HadoopAccessorProviderTest {
-    private static MiniKdc kdc;
-    private static File workDir;
-    @TempDir
-    private static Path tempDir;
-    @TempDir
-    private static Path kerberizedDfsBaseDir;
+  private static MiniKdc kdc;
+  private static File workDir;
+  @TempDir
+  private static Path tempDir;
+  @TempDir
+  private static Path kerberizedDfsBaseDir;
 
-    private static MiniDFSCluster kerberizedDfsCluster;
-    private static MiniDFSCluster nonKerberizedDfsCluster;
+  private static MiniDFSCluster kerberizedDfsCluster;
+  private static MiniDFSCluster nonKerberizedDfsCluster;
 
-    // The super user for accessing HDFS
-    private static String hdfsKeytab;
-    private static String hdfsPrincipal;
-    // The normal user of alex for accessing HDFS
-    private static String alexKeytab;
-    private static String alexPrincipal;
+  // The super user for accessing HDFS
+  private static String hdfsKeytab;
+  private static String hdfsPrincipal;
+  // The normal user of alex for accessing HDFS
+  private static String alexKeytab;
+  private static String alexPrincipal;
 
-    @BeforeAll
-    public static void setup() throws Exception {
-        startKDC();
-        startKerberizedDFS();
-        setupDFSData();
+  @BeforeAll
+  public static void setup() throws Exception {
+    startKDC();
+    startKerberizedDFS();
+    setupDFSData();
+  }
+
+  private static void setupDFSData() throws Exception {
+    String principal = "alex/localhost";
+    File keytab = new File(workDir, "alex.keytab");
+    kdc.createPrincipal(keytab, principal);
+    alexKeytab = keytab.getAbsolutePath();
+    alexPrincipal = principal;
+
+    FileSystem writeFs = kerberizedDfsCluster.getFileSystem();
+    boolean ok = writeFs.exists(new org.apache.hadoop.fs.Path("/alex"));
+    assertFalse(ok);
+    ok = writeFs.mkdirs(new org.apache.hadoop.fs.Path("/alex"));
+    assertTrue(ok);
+
+    writeFs.setOwner(new org.apache.hadoop.fs.Path("/alex"), "alex", "alex");
+    FsPermission permission = new FsPermission(FsAction.ALL, FsAction.ALL, FsAction.NONE, false);
+    writeFs.setPermission(new org.apache.hadoop.fs.Path("/alex"), permission);
+
+    String oneFileContent = "test content";
+    FSDataOutputStream fsDataOutputStream =
+        writeFs.create(new org.apache.hadoop.fs.Path("/alex/basic.txt"));
+    BufferedWriter br = new BufferedWriter(new OutputStreamWriter(fsDataOutputStream, "UTF-8"));
+    br.write(oneFileContent);
+    br.close();
+
+    writeFs.setOwner(new org.apache.hadoop.fs.Path("/alex/basic.txt"), "alex", "alex");
+    writeFs.setPermission(new org.apache.hadoop.fs.Path("/alex/basic.txt"), permission);
+  }
+
+  private static Configuration createSecureDFSConfig() throws Exception {
+    HdfsConfiguration conf = new HdfsConfiguration();
+    SecurityUtil.setAuthenticationMethod(UserGroupInformation.AuthenticationMethod.KERBEROS, conf);
+
+    conf.set(DFS_NAMENODE_KERBEROS_PRINCIPAL_KEY, hdfsPrincipal);
+    conf.set(DFS_NAMENODE_KEYTAB_FILE_KEY, hdfsKeytab);
+    conf.set(DFS_DATANODE_KERBEROS_PRINCIPAL_KEY, hdfsPrincipal);
+    conf.set(DFS_DATANODE_KEYTAB_FILE_KEY, hdfsKeytab);
+    conf.set(DFS_WEB_AUTHENTICATION_KERBEROS_PRINCIPAL_KEY, hdfsPrincipal);
+    conf.setBoolean(DFS_BLOCK_ACCESS_TOKEN_ENABLE_KEY, true);
+    conf.set(DFS_DATA_TRANSFER_PROTECTION_KEY, "authentication");
+    conf.set(DFS_HTTP_POLICY_KEY, HttpConfig.Policy.HTTPS_ONLY.name());
+    conf.set(DFS_NAMENODE_HTTPS_ADDRESS_KEY, "localhost:0");
+    conf.set(DFS_DATANODE_HTTPS_ADDRESS_KEY, "localhost:0");
+    conf.setInt(IPC_CLIENT_CONNECT_MAX_RETRIES_ON_SASL_KEY, 10);
+
+    // https://issues.apache.org/jira/browse/HDFS-7431
+    conf.set(DFS_ENCRYPT_DATA_TRANSFER_KEY, "true");
+
+    // SSL conf.
+    String keystoresDir = kerberizedDfsBaseDir.toFile().getAbsolutePath();
+    String sslConfDir = KeyStoreTestUtil.getClasspathDir(HadoopAccessorProvider.class);
+    KeyStoreTestUtil.setupSSLConfig(keystoresDir, sslConfDir, conf, false);
+
+    return conf;
+  }
+
+  private static void startKerberizedDFS() throws Exception {
+    String principal = "hdfs" + "/localhost";
+    File keytab = new File(workDir, "hdfs.keytab");
+    kdc.createPrincipal(keytab, principal);
+    hdfsKeytab = keytab.getPath();
+    hdfsPrincipal = principal + "@" + kdc.getRealm();
+
+    UserGroupInformation.loginUserFromKeytab(hdfsPrincipal, hdfsKeytab);
+    Configuration hdfsConf = createSecureDFSConfig();
+    hdfsConf.set("hadoop.proxyuser.hdfs.groups", "*");
+    hdfsConf.set("hadoop.proxyuser.hdfs.hosts", "*");
+
+    kerberizedDfsCluster = new MiniDFSCluster
+        .Builder(hdfsConf)
+        .numDataNodes(1)
+        .checkDataNodeAddrConfig(true)
+        .build();
+  }
+
+  private static void startKDC() throws Exception {
+    Properties kdcConf = MiniKdc.createConf();
+    String hostName = "localhost";
+    kdcConf.setProperty(MiniKdc.INSTANCE, HadoopAccessorProviderTest.class.getSimpleName());
+    kdcConf.setProperty(MiniKdc.ORG_NAME, HadoopAccessorProviderTest.class.getSimpleName());
+    kdcConf.setProperty(MiniKdc.ORG_DOMAIN, "COM");
+    kdcConf.setProperty(MiniKdc.KDC_BIND_ADDRESS, hostName);
+    kdcConf.setProperty(MiniKdc.KDC_PORT, "0");
+    workDir = tempDir.toFile();
+    kdc = new MiniKdc(kdcConf, workDir);
+    kdc.start();
+
+    Configuration conf = new Configuration();
+    conf.set(HADOOP_SECURITY_AUTHENTICATION, "kerberos");
+    String krb5Conf = kdc.getKrb5conf().getAbsolutePath();
+    System.setProperty("java.security.krb5.conf", krb5Conf);
+    UserGroupInformation.setConfiguration(conf);
+    UserGroupInformation.setShouldRenewImmediatelyForTests(true);
+  }
+
+  @AfterAll
+  public static void tearDown() {
+    if (kdc != null) {
+      kdc.stop();
+    }
+    if (kerberizedDfsCluster != null) {
+      kerberizedDfsCluster.close();
+    }
+  }
+
+  @Test
+  public void testIllegalInitialization() throws Exception {
+    RssBaseConf rssBaseConf = new RssBaseConf();
+    rssBaseConf.setBoolean(RSS_ACCESS_HADOOP_KERBEROS_ENABLE, true);
+    try {
+      HadoopAccessorProvider.init(rssBaseConf);
+      fail();
+    } catch (Exception e) {
+      // ingore.
+    } finally {
+      HadoopAccessorProvider.cleanup();
+    }
+  }
+
+  @Test
+  public void testIllegallyGetFsByIncorrectParams() throws Exception {
+    // case1: It should throw exception when provider is not initialized.
+    try {
+      HadoopAccessorProvider.getFilesystem("", false, new org.apache.hadoop.fs.Path(""), new Configuration(false));
+      fail();
+    } catch (Exception e) {
+      // ignore
     }
 
-    private static void setupDFSData() throws Exception {
-        String principal = "alex/localhost";
-        File keytab = new File(workDir, "alex.keytab");
-        kdc.createPrincipal(keytab, principal);
-        alexKeytab = keytab.getAbsolutePath();
-        alexPrincipal = principal;
+    RssBaseConf rssBaseConf = new RssBaseConf();
+    rssBaseConf.setBoolean(RSS_ACCESS_HADOOP_KERBEROS_ENABLE, false);
+    HadoopAccessorProvider.init(rssBaseConf);
 
-        FileSystem writeFs = kerberizedDfsCluster.getFileSystem();
-        boolean ok = writeFs.exists(new org.apache.hadoop.fs.Path("/alex"));
-        assertFalse(ok);
-        ok = writeFs.mkdirs(new org.apache.hadoop.fs.Path("/alex"));
-        assertTrue(ok);
-
-        writeFs.setOwner(new org.apache.hadoop.fs.Path("/alex"), "alex", "alex");
-        FsPermission permission = new FsPermission(FsAction.ALL, FsAction.ALL, FsAction.NONE, false);
-        writeFs.setPermission(new org.apache.hadoop.fs.Path("/alex"), permission);
-
-        String oneFileContent = "test content";
-        FSDataOutputStream fsDataOutputStream =
-                writeFs.create(new org.apache.hadoop.fs.Path("/alex/basic.txt"));
-        BufferedWriter br = new BufferedWriter(new OutputStreamWriter(fsDataOutputStream, "UTF-8"));
-        br.write(oneFileContent);
-        br.close();
-
-        writeFs.setOwner(new org.apache.hadoop.fs.Path("/alex/basic.txt"), "alex", "alex");
-        writeFs.setPermission(new org.apache.hadoop.fs.Path("/alex/basic.txt"), permission);
+    // case2: when needing secured filesystem. but user is null. It should throw exception
+    try {
+      HadoopAccessorProvider.getFilesystem(null, true, new org.apache.hadoop.fs.Path("/user"), new Configuration());
+      fail();
+    } catch (Exception e) {
+      // ignore
     }
 
-    private static Configuration createSecureDFSConfig() throws Exception {
-        HdfsConfiguration conf = new HdfsConfiguration();
-        SecurityUtil.setAuthenticationMethod(UserGroupInformation.AuthenticationMethod.KERBEROS, conf);
-
-        conf.set(DFS_NAMENODE_KERBEROS_PRINCIPAL_KEY, hdfsPrincipal);
-        conf.set(DFS_NAMENODE_KEYTAB_FILE_KEY, hdfsKeytab);
-        conf.set(DFS_DATANODE_KERBEROS_PRINCIPAL_KEY, hdfsPrincipal);
-        conf.set(DFS_DATANODE_KEYTAB_FILE_KEY, hdfsKeytab);
-        conf.set(DFS_WEB_AUTHENTICATION_KERBEROS_PRINCIPAL_KEY, hdfsPrincipal);
-        conf.setBoolean(DFS_BLOCK_ACCESS_TOKEN_ENABLE_KEY, true);
-        conf.set(DFS_DATA_TRANSFER_PROTECTION_KEY, "authentication");
-        conf.set(DFS_HTTP_POLICY_KEY, HttpConfig.Policy.HTTPS_ONLY.name());
-        conf.set(DFS_NAMENODE_HTTPS_ADDRESS_KEY, "localhost:0");
-        conf.set(DFS_DATANODE_HTTPS_ADDRESS_KEY, "localhost:0");
-        conf.setInt(IPC_CLIENT_CONNECT_MAX_RETRIES_ON_SASL_KEY, 10);
-
-        // https://issues.apache.org/jira/browse/HDFS-7431
-        conf.set(DFS_ENCRYPT_DATA_TRANSFER_KEY, "true");
-
-        // SSL conf.
-        String keystoresDir = kerberizedDfsBaseDir.toFile().getAbsolutePath();
-        String sslConfDir = KeyStoreTestUtil.getClasspathDir(HadoopAccessorProvider.class);
-        KeyStoreTestUtil.setupSSLConfig(keystoresDir, sslConfDir, conf, false);
-
-        return conf;
+    // case3: when needing secured filesystem. but the initialized provider dont support kerberos.
+    try {
+      HadoopAccessorProvider.getFilesystem("alex", true, new org.apache.hadoop.fs.Path("/user"), new Configuration());
+    } catch (Exception e) {
+      // ignore
     }
 
-    private static void startKerberizedDFS() throws Exception {
-        String principal = "hdfs" + "/localhost";
-        File keytab = new File(workDir, "hdfs.keytab");
-        kdc.createPrincipal(keytab, principal);
-        hdfsKeytab = keytab.getPath();
-        hdfsPrincipal = principal + "@" + kdc.getRealm();
+    HadoopAccessorProvider.cleanup();
+  }
 
-        UserGroupInformation.loginUserFromKeytab(hdfsPrincipal, hdfsKeytab);
-        Configuration hdfsConf = createSecureDFSConfig();
-        hdfsConf.set("hadoop.proxyuser.hdfs.groups", "*");
-        hdfsConf.set("hadoop.proxyuser.hdfs.hosts", "*");
+  /**
+   * Start the miniKdc to test the proxy user login.
+   */
+  @Test
+  public void testUGILogin() throws Exception {
+    assertTrue(UserGroupInformation.isSecurityEnabled());
 
-        kerberizedDfsCluster = new MiniDFSCluster
-                .Builder(hdfsConf)
-                .numDataNodes(1)
-                .checkDataNodeAddrConfig(true)
-                .build();
-    }
+    String principal = "foo";
+    File keytab = new File(workDir, "foo.keytab");
+    kdc.createPrincipal(keytab, principal);
 
-    private static void startKDC() throws Exception {
-        Properties kdcConf = MiniKdc.createConf();
-        String hostName = "localhost";
-        kdcConf.setProperty(MiniKdc.INSTANCE, HadoopAccessorProviderTest.class.getSimpleName());
-        kdcConf.setProperty(MiniKdc.ORG_NAME, HadoopAccessorProviderTest.class.getSimpleName());
-        kdcConf.setProperty(MiniKdc.ORG_DOMAIN, "COM");
-        kdcConf.setProperty(MiniKdc.KDC_BIND_ADDRESS, hostName);
-        kdcConf.setProperty(MiniKdc.KDC_PORT, "0");
-        workDir = tempDir.toFile();
-        kdc = new MiniKdc(kdcConf, workDir);
-        kdc.start();
+    RssBaseConf conf = new RssBaseConf();
+    conf.setBoolean(RSS_ACCESS_HADOOP_KERBEROS_ENABLE, true);
+    conf.setString(RSS_ACCESS_HADOOP_KERBEROS_KEYTAB_FILE, keytab.getAbsolutePath());
+    conf.setString(RSS_ACCESS_HADOOP_KERBEROS_PRINCIPAL, principal);
 
-        Configuration conf = new Configuration();
-        conf.set(HADOOP_SECURITY_AUTHENTICATION, "kerberos");
-        String krb5Conf = kdc.getKrb5conf().getAbsolutePath();
-        System.setProperty("java.security.krb5.conf", krb5Conf);
-        UserGroupInformation.setConfiguration(conf);
-        UserGroupInformation.setShouldRenewImmediatelyForTests(true);
-    }
+    HadoopAccessorProvider.init(conf);
+    assertTrue(UserGroupInformation.isLoginKeytabBased());
+    assertEquals("foo", UserGroupInformation.getCurrentUser().getShortUserName());
 
-    @AfterAll
-    public static void tearDown() {
-        if (kdc != null) {
-            kdc.stop();
-        }
-        if (kerberizedDfsCluster != null) {
-            kerberizedDfsCluster.close();
-        }
-    }
+    UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+    UserGroupInformation proxyUserUgi = UserGroupInformation.createProxyUser("boo", ugi);
+    assertEquals("boo", proxyUserUgi.getShortUserName());
 
-    @Test
-    public void testIllegalInitialization() throws Exception {
-        RssBaseConf rssBaseConf = new RssBaseConf();
-        rssBaseConf.setBoolean(RSS_ACCESS_HADOOP_KERBEROS_ENABLE, true);
-        try {
-            HadoopAccessorProvider.init(rssBaseConf);
-            fail();
-        } catch (Exception e) {
-            // ingore.
-        } finally {
-            HadoopAccessorProvider.cleanup();
-        }
-    }
+    // relogin
+    HadoopAccessorProvider.kerberosRelogin();
+    assertTrue(UserGroupInformation.isLoginKeytabBased());
+    assertEquals("foo", UserGroupInformation.getCurrentUser().getShortUserName());
 
-    @Test
-    public void testIllegallyGetFsByIncorrectParams() throws Exception {
-        // case1: It should throw exception when provider is not initialized.
-        try {
-            HadoopAccessorProvider.getFilesystem("", false, new org.apache.hadoop.fs.Path(""), new Configuration(false));
-            fail();
-        } catch (Exception e) {
-            // ignore
-        }
+    HadoopAccessorProvider.cleanup();
+  }
 
-        RssBaseConf rssBaseConf = new RssBaseConf();
-        rssBaseConf.setBoolean(RSS_ACCESS_HADOOP_KERBEROS_ENABLE, false);
-        HadoopAccessorProvider.init(rssBaseConf);
+  /**
+   * Write file by proxy user.
+   *
+   * @throws Exception
+   */
+  @Test
+  public void testWriteByProxyUser() throws Exception {
+    RssBaseConf conf = new RssBaseConf();
+    conf.setBoolean(RSS_ACCESS_HADOOP_KERBEROS_ENABLE, true);
+    conf.setString(RSS_ACCESS_HADOOP_KERBEROS_KEYTAB_FILE, hdfsKeytab);
+    conf.setString(RSS_ACCESS_HADOOP_KERBEROS_PRINCIPAL, hdfsPrincipal);
+    HadoopAccessorProvider.init(conf);
 
-        // case2: when needing secured filesystem. but user is null. It should throw exception
-        try {
-            HadoopAccessorProvider.getFilesystem(null, true, new org.apache.hadoop.fs.Path("/user"), new Configuration());
-            fail();
-        } catch (Exception e) {
-            // ignore
-        }
+    FileSystem proxyFs = HadoopAccessorProvider.getFilesystem(
+        "alex",
+        true,
+        new org.apache.hadoop.fs.Path("/alex"),
+        kerberizedDfsCluster.getFileSystem().getConf()
+    );
 
-        // case3: when needing secured filesystem. but the initialized provider dont support kerberos.
-        try {
-            HadoopAccessorProvider.getFilesystem("alex", true, new org.apache.hadoop.fs.Path("/user"), new Configuration());
-        } catch (Exception e) {
-            // ignore
-        }
+    String fileContent = "hello world";
+    FSDataOutputStream fsDataOutputStream =
+        proxyFs.create(new org.apache.hadoop.fs.Path("/alex/proxy_user_written.txt"));
+    BufferedWriter br = new BufferedWriter(new OutputStreamWriter(fsDataOutputStream, "UTF-8"));
+    br.write(fileContent);
+    br.close();
 
-        HadoopAccessorProvider.cleanup();
-    }
+    FileStatus fileStatus =
+        kerberizedDfsCluster.getFileSystem()
+            .getFileStatus(new org.apache.hadoop.fs.Path("/alex/proxy_user_written.txt"));
+    assertEquals("alex", fileStatus.getOwner());
+  }
 
-    /**
-     * Start the miniKdc to test the proxy user login.
-     */
-    @Test
-    public void testUGILogin() throws Exception {
-        assertTrue(UserGroupInformation.isSecurityEnabled());
+  /**
+   * Test writing by super user to proxy real-user and then reading by real user from client.
+   *
+   * @throws Exception
+   */
+  @Test
+  public void testWriteAndRead() throws Exception {
+    FileSystem fileSystem = kerberizedDfsCluster.getFileSystem();
+    String scheme = fileSystem.getScheme();
+    assertEquals("hdfs", scheme);
+    assertTrue(UserGroupInformation.isSecurityEnabled());
 
-        String principal = "foo";
-        File keytab = new File(workDir, "foo.keytab");
-        kdc.createPrincipal(keytab, principal);
+    RssBaseConf conf = new RssBaseConf();
+    conf.setBoolean(RSS_ACCESS_HADOOP_KERBEROS_ENABLE, true);
+    conf.setString(RSS_ACCESS_HADOOP_KERBEROS_KEYTAB_FILE, hdfsKeytab);
+    conf.setString(RSS_ACCESS_HADOOP_KERBEROS_PRINCIPAL, hdfsPrincipal);
+    HadoopAccessorProvider.init(conf);
 
-        RssBaseConf conf = new RssBaseConf();
-        conf.setBoolean(RSS_ACCESS_HADOOP_KERBEROS_ENABLE, true);
-        conf.setString(RSS_ACCESS_HADOOP_KERBEROS_KEYTAB_FILE, keytab.getAbsolutePath());
-        conf.setString(RSS_ACCESS_HADOOP_KERBEROS_PRINCIPAL, principal);
-
-        HadoopAccessorProvider.init(conf);
-        assertTrue(UserGroupInformation.isLoginKeytabBased());
-        assertEquals("foo", UserGroupInformation.getCurrentUser().getShortUserName());
-
-        UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
-        UserGroupInformation proxyUserUgi = UserGroupInformation.createProxyUser("boo", ugi);
-        assertEquals("boo", proxyUserUgi.getShortUserName());
-
-        // relogin
-        HadoopAccessorProvider.kerberosRelogin();
-        assertTrue(UserGroupInformation.isLoginKeytabBased());
-        assertEquals("foo", UserGroupInformation.getCurrentUser().getShortUserName());
-
-        HadoopAccessorProvider.cleanup();
-    }
-
-    /**
-     * Write file by proxy user.
-     * @throws Exception
-     */
-    @Test
-    public void testWriteByProxyUser() throws Exception {
-        RssBaseConf conf = new RssBaseConf();
-        conf.setBoolean(RSS_ACCESS_HADOOP_KERBEROS_ENABLE, true);
-        conf.setString(RSS_ACCESS_HADOOP_KERBEROS_KEYTAB_FILE, hdfsKeytab);
-        conf.setString(RSS_ACCESS_HADOOP_KERBEROS_PRINCIPAL, hdfsPrincipal);
-        HadoopAccessorProvider.init(conf);
-
-        FileSystem proxyFs = HadoopAccessorProvider.getFilesystem(
-                "alex",
-                true,
-                new org.apache.hadoop.fs.Path("/alex"),
-                kerberizedDfsCluster.getFileSystem().getConf()
+    // Write contents to file
+    String fileContent = "hello world";
+    FileSystem writeFs = HadoopAccessorProvider
+        .getFileSystem(
+            new org.apache.hadoop.fs.Path("/"),
+            fileSystem.getConf()
         );
+    boolean ok = writeFs.exists(new org.apache.hadoop.fs.Path("/alex"));
+    assertTrue(ok);
+    assertEquals("alex", writeFs.getFileStatus(new org.apache.hadoop.fs.Path("/alex")).getOwner());
 
-        String fileContent = "hello world";
-        FSDataOutputStream fsDataOutputStream =
-                proxyFs.create(new org.apache.hadoop.fs.Path("/alex/proxy_user_written.txt"));
-        BufferedWriter br = new BufferedWriter(new OutputStreamWriter(fsDataOutputStream, "UTF-8"));
-        br.write(fileContent);
-        br.close();
+    FileSystem proxyFs = HadoopAccessorProvider.getFilesystem(
+        "alex",
+        true,
+        new org.apache.hadoop.fs.Path("/alex"),
+        fileSystem.getConf()
+    );
+    FSDataOutputStream fsDataOutputStream =
+        proxyFs.create(new org.apache.hadoop.fs.Path("/alex/test.txt"));
+    BufferedWriter br = new BufferedWriter(new OutputStreamWriter(fsDataOutputStream, "UTF-8"));
+    br.write(fileContent);
+    br.close();
 
-        FileStatus fileStatus =
-                kerberizedDfsCluster.getFileSystem()
-                        .getFileStatus(new org.apache.hadoop.fs.Path("/alex/proxy_user_written.txt"));
-        assertEquals("alex", fileStatus.getOwner());
-    }
+    boolean exists = proxyFs.exists(new org.apache.hadoop.fs.Path("/alex/test.txt"));
+    assertTrue(exists);
+    FileStatus fileStatus = proxyFs.getFileStatus(new org.apache.hadoop.fs.Path("/alex/test.txt"));
+    assertEquals("alex", fileStatus.getOwner());
 
-    /**
-     * Test writing by super user to proxy real-user and then reading by real user from client.
-     * @throws Exception
-     */
-    @Test
-    public void testWriteAndRead() throws Exception {
-        FileSystem fileSystem = kerberizedDfsCluster.getFileSystem();
-        String scheme = fileSystem.getScheme();
-        assertEquals("hdfs", scheme);
-        assertTrue(UserGroupInformation.isSecurityEnabled());
+    // Read content from HDFS
+    UserGroupInformation readerUGI = UserGroupInformation.loginUserFromKeytabAndReturnUGI(
+        alexPrincipal + "@" + kdc.getRealm(),
+        alexKeytab
+    );
+    readerUGI.doAs(new PrivilegedExceptionAction<Object>() {
+      @Override
+      public Object run() throws Exception {
+        FileSystem fs = FileSystem.get(fileSystem.getConf());
+        FSDataInputStream inputStream = fs.open(new org.apache.hadoop.fs.Path("/alex/test.txt"));
+        String fetchedResult = IOUtils.toString(inputStream);
+        assertEquals(fileContent, fetchedResult);
+        return null;
+      }
+    });
 
-        RssBaseConf conf = new RssBaseConf();
-        conf.setBoolean(RSS_ACCESS_HADOOP_KERBEROS_ENABLE, true);
-        conf.setString(RSS_ACCESS_HADOOP_KERBEROS_KEYTAB_FILE, hdfsKeytab);
-        conf.setString(RSS_ACCESS_HADOOP_KERBEROS_PRINCIPAL, hdfsPrincipal);
-        HadoopAccessorProvider.init(conf);
-
-        // Write contents to file
-        String fileContent = "hello world";
-        FileSystem writeFs = HadoopAccessorProvider
-                .getFileSystem(
-                        new org.apache.hadoop.fs.Path("/"),
-                        fileSystem.getConf()
-                );
-        boolean ok = writeFs.exists(new org.apache.hadoop.fs.Path("/alex"));
-        assertTrue(ok);
-        assertEquals("alex", writeFs.getFileStatus(new org.apache.hadoop.fs.Path("/alex")).getOwner());
-
-        FileSystem proxyFs = HadoopAccessorProvider.getFilesystem(
-                "alex",
-                true,
-                new org.apache.hadoop.fs.Path("/alex"),
-                fileSystem.getConf()
-        );
-        FSDataOutputStream fsDataOutputStream =
-                proxyFs.create(new org.apache.hadoop.fs.Path("/alex/test.txt"));
-        BufferedWriter br = new BufferedWriter(new OutputStreamWriter(fsDataOutputStream, "UTF-8"));
-        br.write(fileContent);
-        br.close();
-
-        boolean exists = proxyFs.exists(new org.apache.hadoop.fs.Path("/alex/test.txt"));
-        assertTrue(exists);
-        FileStatus fileStatus = proxyFs.getFileStatus(new org.apache.hadoop.fs.Path("/alex/test.txt"));
-        assertEquals("alex", fileStatus.getOwner());
-
-        // Read content from HDFS
-        UserGroupInformation readerUGI = UserGroupInformation.loginUserFromKeytabAndReturnUGI(
-                alexPrincipal + "@" + kdc.getRealm(),
-                alexKeytab
-        );
-        readerUGI.doAs(new PrivilegedExceptionAction<Object>() {
-            @Override
-            public Object run() throws Exception {
-                FileSystem fs = FileSystem.get(fileSystem.getConf());
-                FSDataInputStream inputStream = fs.open(new org.apache.hadoop.fs.Path("/alex/test.txt"));
-                String fetchedResult = IOUtils.toString(inputStream);
-                assertEquals(fileContent, fetchedResult);
-                return null;
-            }
-        });
-
-        HadoopAccessorProvider.cleanup();
-    }
+    HadoopAccessorProvider.cleanup();
+  }
 }

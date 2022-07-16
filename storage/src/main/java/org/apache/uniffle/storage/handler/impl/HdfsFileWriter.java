@@ -39,18 +39,12 @@ public class HdfsFileWriter implements Closeable {
 
   private static final Logger LOG = LoggerFactory.getLogger(HdfsFileWriter.class);
 
+  private final FileSystem fileSystem;
+
   private Path path;
   private Configuration hadoopConf;
   private FSDataOutputStream fsDataOutputStream;
   private long nextOffset;
-  private FileSystem fileSystem;
-
-  public HdfsFileWriter(Path path, Configuration hadoopConf) throws IOException, IllegalStateException {
-    // init fsDataOutputStream
-    this.path = path;
-    this.hadoopConf = hadoopConf;
-    initStream();
-  }
 
   public HdfsFileWriter(FileSystem fileSystem, Path path, Configuration hadoopConf) throws IOException {
     this.path = path;
@@ -60,12 +54,7 @@ public class HdfsFileWriter implements Closeable {
   }
 
   private void initStream() throws IOException, IllegalStateException {
-    FileSystem writerFs;
-    if (fileSystem != null) {
-      writerFs = fileSystem;
-    } else {
-      writerFs = ShuffleStorageUtils.getFileSystemForPath(path, hadoopConf);
-    }
+    final FileSystem writerFs = fileSystem;
     if (writerFs.isFile(path)) {
       if (hadoopConf.getBoolean("dfs.support.append", true)) {
         fsDataOutputStream = writerFs.append(path);

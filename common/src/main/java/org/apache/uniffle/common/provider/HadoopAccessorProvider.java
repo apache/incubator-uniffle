@@ -52,175 +52,177 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  * like Spark/MR.
  */
 public class HadoopAccessorProvider implements Closeable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HadoopAccessorProvider.class);
-    private static final long RELOGIN_CHECK_INTERVAL_SEC = 60L;
+  private static final Logger LOGGER = LoggerFactory.getLogger(HadoopAccessorProvider.class);
+  private static final long RELOGIN_CHECK_INTERVAL_SEC = 60L;
 
-    private static volatile HadoopAccessorProvider provider;
+  private static volatile HadoopAccessorProvider provider;
 
-    private Map<String, UserGroupInformation> cache = new ConcurrentHashMap<>();
-    private ScheduledExecutorService scheduledExecutorService;
-    private boolean kerberosEnabled = false;
-    private RssBaseConf rssBaseConf;
+  private Map<String, UserGroupInformation> cache = new ConcurrentHashMap<>();
+  private ScheduledExecutorService scheduledExecutorService;
+  private boolean kerberosEnabled = false;
+  private RssBaseConf rssBaseConf;
 
-    private HadoopAccessorProvider(RssBaseConf rssConf) throws Exception {
-        this.rssBaseConf = rssConf;
-        this.kerberosEnabled = rssConf.getBoolean(RSS_ACCESS_HADOOP_KERBEROS_ENABLE);
+  private HadoopAccessorProvider(RssBaseConf rssConf) throws Exception {
+    this.rssBaseConf = rssConf;
+    this.kerberosEnabled = rssConf.getBoolean(RSS_ACCESS_HADOOP_KERBEROS_ENABLE);
 
-        if (kerberosEnabled) {
-            String keytabFile = rssConf.getString(RSS_ACCESS_HADOOP_KERBEROS_KEYTAB_FILE);
-            if (StringUtils.isEmpty(keytabFile)) {
-                throw new Exception("When hadoop kerberos is enabled. the conf of "
-                        + RSS_ACCESS_HADOOP_KERBEROS_KEYTAB_FILE.key() + " must be set");
-            }
+    if (kerberosEnabled) {
+      String keytabFile = rssConf.getString(RSS_ACCESS_HADOOP_KERBEROS_KEYTAB_FILE);
+      if (StringUtils.isEmpty(keytabFile)) {
+        throw new Exception("When hadoop kerberos is enabled. the conf of "
+            + RSS_ACCESS_HADOOP_KERBEROS_KEYTAB_FILE.key() + " must be set");
+      }
 
-            String principal = rssConf.getString(RSS_ACCESS_HADOOP_KERBEROS_PRINCIPAL);
-            if (StringUtils.isEmpty(principal)) {
-                throw new Exception("When hadoop kerberos is enabled. the conf of "
-                        + RSS_ACCESS_HADOOP_KERBEROS_PRINCIPAL.key() + " must be set");
-            }
+      String principal = rssConf.getString(RSS_ACCESS_HADOOP_KERBEROS_PRINCIPAL);
+      if (StringUtils.isEmpty(principal)) {
+        throw new Exception("When hadoop kerberos is enabled. the conf of "
+            + RSS_ACCESS_HADOOP_KERBEROS_PRINCIPAL.key() + " must be set");
+      }
 
-            Configuration conf = new Configuration(false);
-            conf.set("hadoop.security.authentication", "kerberos");
+      Configuration conf = new Configuration(false);
+      conf.set("hadoop.security.authentication", "kerberos");
 
-            UserGroupInformation.setConfiguration(conf);
-            UserGroupInformation.loginUserFromKeytab(principal, keytabFile);
+      UserGroupInformation.setConfiguration(conf);
+      UserGroupInformation.loginUserFromKeytab(principal, keytabFile);
 
-            cache = new ConcurrentHashMap<>();
+      cache = new ConcurrentHashMap<>();
 
-            LOGGER.info("Got Kerberos ticket, keytab [{}], principal [{}], user [{}]",
-                    keytabFile, principal, UserGroupInformation.getLoginUser());
+      LOGGER.info("Got Kerberos ticket, keytab [{}], principal [{}], user [{}]",
+          keytabFile, principal, UserGroupInformation.getLoginUser());
 
-            scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-                    new ThreadFactoryBuilder()
-                            .setDaemon(true).setNameFormat("Kerberos-Relogin-%d").build());
-            scheduledExecutorService.scheduleAtFixedRate(
-                    HadoopAccessorProvider::kerberosRelogin,
-                    RELOGIN_CHECK_INTERVAL_SEC,
-                    RELOGIN_CHECK_INTERVAL_SEC,
-                    TimeUnit.SECONDS);
-        }
+      scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
+          new ThreadFactoryBuilder()
+              .setDaemon(true).setNameFormat("Kerberos-Relogin-%d").build());
+      scheduledExecutorService.scheduleAtFixedRate(
+          HadoopAccessorProvider::kerberosRelogin,
+          RELOGIN_CHECK_INTERVAL_SEC,
+          RELOGIN_CHECK_INTERVAL_SEC,
+          TimeUnit.SECONDS);
+    }
+  }
+
+  @VisibleForTesting
+  static void kerberosRelogin() {
+    try {
+      LOGGER.info("Renewing kerberos token.");
+      UserGroupInformation.getLoginUser().checkTGTAndReloginFromKeytab();
+    } catch (Throwable t) {
+      LOGGER.error("Error in token renewal task: ", t);
+    }
+  }
+
+  private static UserGroupInformation getProxyUser(String user) throws IOException {
+    provider.cache.putIfAbsent(
+        user,
+        UserGroupInformation.createProxyUser(
+            user, UserGroupInformation.getLoginUser()
+        )
+    );
+    return provider.cache.get(user);
+  }
+
+  /**
+   * The method is to return the Hadoop Filesystem directly which is not retrieved by
+   * ugi proxy user.
+   *
+   * @param path
+   * @param configuration
+   * @return
+   * @throws Exception
+   */
+  public static FileSystem getFileSystem(
+      final Path path,
+      final Configuration configuration) throws Exception {
+    return getFilesystem(null, false, path, configuration);
+  }
+
+  /**
+   * The only entrypoint is to get the hadoop filesystem instance and is compatible with
+   * the kerberos security.
+   *
+   * @param user
+   * @param path
+   * @param conf
+   * @return
+   * @throws Exception
+   */
+  public static FileSystem getFilesystem(
+      final String user,
+      final boolean needSecuredFilesystem,
+      final Path path,
+      final Configuration conf) throws Exception {
+    if (provider == null) {
+      throw new Exception("HadoopAccessorProvider should be initialized");
+    }
+    if (needSecuredFilesystem && StringUtils.isEmpty(user)) {
+      throw new Exception("User must be set when security is enabled");
+    }
+    if (needSecuredFilesystem && !provider.kerberosEnabled) {
+      String msg = String.format("There is need to be interactive with secured DFS by user: %s, path: %s "
+          + "but the HadoopAccessProvider's kerberos config is disabled and can't retrieve the "
+          + "secured filesyste", user, path);
+      throw new Exception(msg);
     }
 
-    @VisibleForTesting
-    static void kerberosRelogin() {
-        try {
-            LOGGER.info("Renewing kerberos token.");
-            UserGroupInformation.getLoginUser().checkTGTAndReloginFromKeytab();
-        } catch (Throwable t) {
-            LOGGER.error("Error in token renewal task: ", t);
-        }
+    // For local file systems, return the raw local file system, such calls to flush()
+    // actually flushes the stream.
+    try {
+      FileSystem fs;
+      if (needSecuredFilesystem) {
+        LOGGER.info("Fetched the proxy user ugi of {}", user);
+        UserGroupInformation proxyUserUGI = provider.getProxyUser(user);
+        fs = proxyUserUGI.doAs(new PrivilegedExceptionAction<FileSystem>() {
+          @Override
+          public FileSystem run() throws Exception {
+            return path.getFileSystem(conf);
+          }
+        });
+      } else {
+        fs = path.getFileSystem(conf);
+      }
+      if (fs instanceof LocalFileSystem) {
+        LOGGER.debug("{} is local file system", path);
+        return ((LocalFileSystem) fs).getRawFileSystem();
+      }
+      return fs;
+    } catch (IOException e) {
+      LOGGER.error("Fail to get filesystem of {}", path);
+      throw e;
     }
+  }
 
-    private static UserGroupInformation getProxyUser(String user) throws IOException {
-        provider.cache.putIfAbsent(
-                user,
-                UserGroupInformation.createProxyUser(
-                        user, UserGroupInformation.getLoginUser()
-                )
-        );
-        return provider.cache.get(user);
-    }
-
-    /**
-     * The method is to return the Hadoop Filesystem directly which is not retrieved by
-     * ugi proxy user.
-     * @param path
-     * @param configuration
-     * @return
-     * @throws Exception
-     */
-    public static FileSystem getFileSystem(
-            final Path path,
-            final Configuration configuration) throws Exception {
-        return getFilesystem(null, false, path, configuration);
-    }
-
-    /**
-     * The only entrypoint is to get the hadoop filesystem instance and is compatible with
-     * the kerberos security.
-     * @param user
-     * @param path
-     * @param conf
-     * @return
-     * @throws Exception
-     */
-    public static FileSystem getFilesystem(
-            final String user,
-            final boolean needSecuredFilesystem,
-            final Path path,
-            final Configuration conf) throws Exception {
+  public static void init(RssBaseConf rssBaseConf) throws Exception {
+    if (provider == null) {
+      synchronized (HadoopAccessorProvider.class) {
         if (provider == null) {
-            throw new Exception("HadoopAccessorProvider should be initialized");
+          final HadoopAccessorProvider hadoopAccessorProvider = new HadoopAccessorProvider(rssBaseConf);
+          provider = hadoopAccessorProvider;
         }
-        if (needSecuredFilesystem && StringUtils.isEmpty(user)) {
-            throw new Exception("User must be set when security is enabled");
-        }
-        if (needSecuredFilesystem && !provider.kerberosEnabled) {
-            String msg = String.format("There is need to be interactive with secured DFS by user: %s, path: %s "
-                    + "but the HadoopAccessProvider's kerberos config is disabled and can't retrieve the "
-                    + "secured filesyste", user, path);
-            throw new Exception(msg);
-        }
-
-        // For local file systems, return the raw local file system, such calls to flush()
-        // actually flushes the stream.
-        try {
-            FileSystem fs;
-            if (needSecuredFilesystem) {
-                LOGGER.info("Fetched the proxy user ugi of {}", user);
-                UserGroupInformation proxyUserUGI = provider.getProxyUser(user);
-                fs = proxyUserUGI.doAs(new PrivilegedExceptionAction<FileSystem>() {
-                    @Override
-                    public FileSystem run() throws Exception {
-                        return path.getFileSystem(conf);
-                    }
-                });
-            } else {
-                fs = path.getFileSystem(conf);
-            }
-            if (fs instanceof LocalFileSystem) {
-                LOGGER.debug("{} is local file system", path);
-                return ((LocalFileSystem) fs).getRawFileSystem();
-            }
-            return fs;
-        } catch (IOException e) {
-            LOGGER.error("Fail to get filesystem of {}", path);
-            throw e;
-        }
+      }
     }
+    LOGGER.info("The {} has been initialized, kerberos enable: {}",
+        HadoopAccessorProvider.class.getSimpleName(),
+        provider.kerberosEnabled);
+  }
 
-    public static void init(RssBaseConf rssBaseConf) throws Exception {
-        if (provider == null) {
-            synchronized (HadoopAccessorProvider.class) {
-                if (provider == null) {
-                    final HadoopAccessorProvider hadoopAccessorProvider = new HadoopAccessorProvider(rssBaseConf);
-                    provider = hadoopAccessorProvider;
-                }
-            }
-        }
-        LOGGER.info("The {} has been initialized, kerberos enable: {}",
-                HadoopAccessorProvider.class.getSimpleName(),
-                provider.kerberosEnabled);
+  @VisibleForTesting
+  static void cleanup() throws Exception {
+    if (provider != null) {
+      provider.close();
+      provider = null;
     }
+  }
 
-    @VisibleForTesting
-    static void cleanup() throws Exception {
-        if (provider != null) {
-            provider.close();
-            provider = null;
-        }
+  @Override
+  public void close() throws IOException {
+    if (cache != null) {
+      for (UserGroupInformation ugi : cache.values()) {
+        FileSystem.closeAllForUGI(ugi);
+      }
+      cache.clear();
     }
-
-    @Override
-    public void close() throws IOException {
-        if (cache != null) {
-            for (UserGroupInformation ugi : cache.values()) {
-                FileSystem.closeAllForUGI(ugi);
-            }
-            cache.clear();
-        }
-        if (scheduledExecutorService != null) {
-            scheduledExecutorService.shutdown();
-        }
+    if (scheduledExecutorService != null) {
+      scheduledExecutorService.shutdown();
     }
+  }
 }

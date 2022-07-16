@@ -52,7 +52,7 @@ public class ClientConfManager implements Closeable {
   private ApplicationManager applicationManager;
 
   public ClientConfManager(CoordinatorConf conf, Configuration hadoopConf,
-          ApplicationManager applicationManager) throws Exception {
+      ApplicationManager applicationManager) throws Exception {
     if (conf.getBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED)) {
       this.applicationManager = applicationManager;
       init(conf, hadoopConf);
