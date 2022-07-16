@@ -44,7 +44,7 @@ import org.apache.uniffle.common.util.ThreadUtils;
  * AccessCandidatesChecker maintain a list of candidate access id and update it periodically,
  * it checks the access id in the access request and reject if the id is not in the candidate list.
  */
-public class AccessCandidatesChecker extends AccessChecker {
+public class AccessCandidatesChecker extends AbstractAccessChecker {
   private static final Logger LOG = LoggerFactory.getLogger(AccessCandidatesChecker.class);
 
   private final AtomicReference<Set<String>> candidates = new AtomicReference<>();

@@ -85,7 +85,7 @@ public class AccessManagerTest {
     accessManager.close();
   }
 
-  public static class MockAccessCheckerAlwaysTrue extends AccessChecker {
+  public static class MockAccessCheckerAlwaysTrue extends AbstractAccessChecker {
     public MockAccessCheckerAlwaysTrue(AccessManager accessManager) throws Exception {
       super(accessManager);
     }
@@ -98,7 +98,7 @@ public class AccessManagerTest {
     }
   }
 
-  public static class MockAccessCheckerAlwaysFalse extends AccessChecker {
+  public static class MockAccessCheckerAlwaysFalse extends AbstractAccessChecker {
     public MockAccessCheckerAlwaysFalse(AccessManager accessManager) throws Exception {
       super(accessManager);
     }
