@@ -20,7 +20,10 @@ package org.apache.uniffle.storage.common;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.security.SecurityUtil;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,14 +40,10 @@ public class HdfsStorage extends AbstractStorage {
   private final String storagePath;
   private final Configuration conf;
   private String storageHost;
-  private final String user;
-  private final boolean securityEnable;
 
-  public HdfsStorage(String path, Configuration conf, String user, boolean securityEnable) {
+  public HdfsStorage(String path, Configuration conf) {
     this.storagePath = path;
     this.conf = conf;
-    this.user = user;
-    this.securityEnable = securityEnable;
     try {
       URI uri = new URI(path);
       storageHost = uri.getHost();
@@ -102,6 +101,12 @@ public class HdfsStorage extends AbstractStorage {
   @Override
   ShuffleWriteHandler newWriteHandler(CreateShuffleWriteHandlerRequest request) {
     try {
+      String user = request.getUser();
+      boolean securityEnable = false;
+      if (StringUtils.isNotEmpty(user)) {
+        UserGroupInformation.AuthenticationMethod authenticationMethod = SecurityUtil.getAuthenticationMethod(conf);
+        securityEnable = authenticationMethod != UserGroupInformation.AuthenticationMethod.SIMPLE;
+      }
       return new HdfsShuffleWriteHandler(
           request.getAppId(),
           request.getShuffleId(),

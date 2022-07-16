@@ -133,23 +133,13 @@ public class ShuffleTaskManager {
           int shuffleId,
           List<PartitionRange> partitionRanges,
           RemoteStorageInfo remoteStorageInfo) {
-    return registerShuffle(appId, shuffleId, partitionRanges, remoteStorageInfo, null, false);
-  }
-
-  public StatusCode registerShuffle(
-      String appId,
-      int shuffleId,
-      List<PartitionRange> partitionRanges,
-      RemoteStorageInfo remoteStorageInfo,
-      String user, boolean securityEnable) {
     refreshAppId(appId);
-    appUserMap.put(appId, user);
     partitionsToBlockIds.putIfAbsent(appId, Maps.newConcurrentMap());
     for (PartitionRange partitionRange : partitionRanges) {
       shuffleBufferManager.registerBuffer(appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
     }
     if (!remoteStorageInfo.isEmpty()) {
-      storageManager.registerRemoteStorage(appId, remoteStorageInfo, user, securityEnable);
+      storageManager.registerRemoteStorage(appId, remoteStorageInfo);
     }
     return StatusCode.SUCCESS;
   }

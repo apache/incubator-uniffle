@@ -34,6 +34,8 @@ public class RemoteStorageInfo implements Serializable {
   private final String path;
   private final Map<String, String> confItems;
 
+  private String user;
+
   public RemoteStorageInfo(String path) {
     this(path, Maps.newHashMap());
   }
@@ -45,6 +47,11 @@ public class RemoteStorageInfo implements Serializable {
     } else {
       this.confItems = confItems;
     }
+  }
+
+  public RemoteStorageInfo(String path, Map<String, String> confItems, String user) {
+    this(path, confItems);
+    this.user = user;
   }
 
   public RemoteStorageInfo(String path, String confString) {
@@ -83,6 +90,14 @@ public class RemoteStorageInfo implements Serializable {
         .stream()
         .map(e -> String.join("=", e.getKey(), e.getValue()))
         .collect(Collectors.joining(","));
+  }
+
+  public String getUser() {
+    return user;
+  }
+
+  public void setUser(String user) {
+    this.user = user;
   }
 
   @Override

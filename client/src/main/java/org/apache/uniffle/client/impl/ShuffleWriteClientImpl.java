@@ -299,16 +299,15 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorage) {
     String user = null;
-    boolean securityEnable = false;
     try {
-      securityEnable = UserGroupInformation.isSecurityEnabled();
-      user = securityEnable ? UserGroupInformation.getCurrentUser().getShortUserName() : null;
+      user = UserGroupInformation.getCurrentUser().getShortUserName();
     } catch (Exception e) {
       LOG.error("Error on getting user from ugi.", e);
     }
-    LOG.info("User: {}, security enable: {}", user, securityEnable);
+    LOG.info("User: {}", user);
+
     RssRegisterShuffleRequest request =
-        new RssRegisterShuffleRequest(appId, shuffleId, partitionRanges, remoteStorage, user, securityEnable);
+        new RssRegisterShuffleRequest(appId, shuffleId, partitionRanges, remoteStorage);
     RssRegisterShuffleResponse response = getShuffleServerClient(shuffleServerInfo).registerShuffle(request);
 
     String msg = "Error happened when registerShuffle with appId[" + appId + "], shuffleId[" + shuffleId

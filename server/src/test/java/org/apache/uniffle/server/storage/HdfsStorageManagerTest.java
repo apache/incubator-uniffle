@@ -61,14 +61,13 @@ public class HdfsStorageManagerTest {
     final String remoteStoragePath3 = "hdfs://path3";
     hdfsStorageManager.registerRemoteStorage(
         "app1",
-        new RemoteStorageInfo(remoteStoragePath1, ImmutableMap.of("k1", "v1", "k2", "v2")),
-            null, false);
+        new RemoteStorageInfo(remoteStoragePath1, ImmutableMap.of("k1", "v1", "k2", "v2")));
     hdfsStorageManager.registerRemoteStorage(
         "app2",
-        new RemoteStorageInfo(remoteStoragePath2, ImmutableMap.of("k3", "v3")), null, false);
+        new RemoteStorageInfo(remoteStoragePath2, ImmutableMap.of("k3", "v3")));
     hdfsStorageManager.registerRemoteStorage(
         "app3",
-        new RemoteStorageInfo(remoteStoragePath3, Maps.newHashMap()), null, false);
+        new RemoteStorageInfo(remoteStoragePath3, Maps.newHashMap()));
     Map<String, HdfsStorage> appStorageMap =  hdfsStorageManager.getAppIdToStorages();
     assertEquals(3, appStorageMap.size());
     assertEquals(Sets.newHashSet("app1", "app2", "app3"), appStorageMap.keySet());

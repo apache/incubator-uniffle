@@ -151,8 +151,6 @@ message ShuffleRegisterRequest {
   int32 shuffleId = 2;
   repeated ShufflePartitionRange partitionRanges = 3;
   RemoteStorage remoteStorage = 4;
-  string user = 5;
-  google.protobuf.BoolValue securityEnable = 6;
 }
 
 message ShuffleRegisterResponse {
@@ -367,6 +365,7 @@ message RemoteStorageConfItem {
 message RemoteStorage {
   string path = 1;
   repeated RemoteStorageConfItem remoteStorageConf = 2;
+  string user = 3;
 }
 
 message FetchRemoteStorageResponse {

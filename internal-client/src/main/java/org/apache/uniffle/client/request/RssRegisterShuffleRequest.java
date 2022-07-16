@@ -28,8 +28,6 @@ public class RssRegisterShuffleRequest {
   private int shuffleId;
   private List<PartitionRange> partitionRanges;
   private RemoteStorageInfo remoteStorageInfo;
-  private String user;
-  private boolean securityEnable;
 
   public RssRegisterShuffleRequest(
       String appId,
@@ -50,13 +48,6 @@ public class RssRegisterShuffleRequest {
     this(appId, shuffleId, partitionRanges, new RemoteStorageInfo(remoteStoragePath));
   }
 
-  public RssRegisterShuffleRequest(String appId, int shuffleId, List<PartitionRange> partitionRanges,
-          RemoteStorageInfo remoteStorage, String user, boolean securityEnable) {
-    this(appId, shuffleId, partitionRanges, remoteStorage);
-    this.user = user;
-    this.securityEnable = securityEnable;
-  }
-
   public String getAppId() {
     return appId;
   }
@@ -71,21 +62,5 @@ public class RssRegisterShuffleRequest {
 
   public RemoteStorageInfo getRemoteStorageInfo() {
     return remoteStorageInfo;
-  }
-
-  public String getUser() {
-    return user;
-  }
-
-  public void setUser(String user) {
-    this.user = user;
-  }
-
-  public boolean isSecurityEnable() {
-    return securityEnable;
-  }
-
-  public void setSecurityEnable(boolean securityEnable) {
-    this.securityEnable = securityEnable;
   }
 }

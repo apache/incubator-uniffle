@@ -79,11 +79,9 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     int shuffleId = 1;
 
     shuffleTaskManager.registerShuffle(
-        appId, shuffleId, Lists.newArrayList(new PartitionRange(0, 1)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
-            null, false);
+        appId, shuffleId, Lists.newArrayList(new PartitionRange(0, 1)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
     shuffleTaskManager.registerShuffle(
-        appId, shuffleId, Lists.newArrayList(new PartitionRange(2, 3)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
-            null, false);
+        appId, shuffleId, Lists.newArrayList(new PartitionRange(2, 3)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
 
     Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool =
         shuffleServer.getShuffleBufferManager().getBufferPool();

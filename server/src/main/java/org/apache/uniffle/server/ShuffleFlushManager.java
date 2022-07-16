@@ -158,6 +158,7 @@ public class ShuffleFlushManager {
           writeSuccess = true;
           LOG.warn("AppId {} was removed already, event {} should be dropped", event.getAppId(), event);
         } else {
+          String user = storageManager.getStorageUser(event.getAppId());
           ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(new CreateShuffleWriteHandlerRequest(
               storageType,
               event.getAppId(),
@@ -167,7 +168,8 @@ public class ShuffleFlushManager {
               storageBasePaths,
               shuffleServerId,
               hadoopConf,
-              storageDataReplica)
+              storageDataReplica,
+              user)
           );
           do {
             if (event.getRetryTimes() > retryMax) {

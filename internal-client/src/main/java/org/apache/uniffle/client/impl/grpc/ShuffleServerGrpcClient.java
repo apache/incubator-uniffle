@@ -119,16 +119,15 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       String appId,
       int shuffleId,
       List<PartitionRange> partitionRanges,
-      RemoteStorageInfo remoteStorageInfo, String user, boolean securityEnable) {
+      RemoteStorageInfo remoteStorageInfo) {
     ShuffleRegisterRequest.Builder reqBuilder = ShuffleRegisterRequest.newBuilder();
     reqBuilder
         .setAppId(appId)
         .setShuffleId(shuffleId)
-        .setUser(user)
-        .setSecurityEnable(BoolValue.of(securityEnable))
         .addAllPartitionRanges(toShufflePartitionRanges(partitionRanges));
     RemoteStorage.Builder rsBuilder = RemoteStorage.newBuilder();
     rsBuilder.setPath(remoteStorageInfo.getPath());
+    rsBuilder.setUser(remoteStorageInfo.getUser());
     Map<String, String> remoteStorageConf = remoteStorageInfo.getConfItems();
     if (!remoteStorageConf.isEmpty()) {
       RemoteStorageConfItem.Builder rsConfBuilder = RemoteStorageConfItem.newBuilder();
@@ -203,9 +202,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         request.getAppId(),
         request.getShuffleId(),
         request.getPartitionRanges(),
-        request.getRemoteStorageInfo(),
-        request.getUser(),
-        request.isSecurityEnable()
+        request.getRemoteStorageInfo()
     );
 
     RssRegisterShuffleResponse response;

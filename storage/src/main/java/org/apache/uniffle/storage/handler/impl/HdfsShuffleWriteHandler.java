@@ -48,6 +48,7 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
   private boolean securityEnable = false;
   private FileSystem fileSystem;
 
+  // Only for test cases when using non-kerberized dfs cluster.
   public HdfsShuffleWriteHandler(
       String appId,
       int shuffleId,
