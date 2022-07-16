@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -206,9 +207,10 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     AccessClusterResponse response;
     AccessManager accessManager = coordinatorServer.getAccessManager();
 
+    Map<String, String> extraProperties = request.getExtraPropertiesMap();
     AccessInfo accessInfo =
             new AccessInfo(request.getAccessId(), Sets.newHashSet(request.getTagsList()),
-                    request.getExtraPropertiesMap());
+                    extraProperties == null ? Collections.emptyMap() : extraProperties);
     AccessCheckResult result = accessManager.handleAccessRequest(accessInfo);
     if (!result.isSuccess()) {
       statusCode = StatusCode.ACCESS_DENIED;
