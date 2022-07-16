@@ -258,8 +258,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .build();
         long start = System.currentTimeMillis();
         SendShuffleDataResponse response = doSendData(rpcRequest);
-        LOG.info("Do sendShuffleData rpc cost:" + (System.currentTimeMillis() - start)
-            + " ms for " + size + " bytes with " + blockNum + " blocks");
+        LOG.info("Do sendShuffleData to {}:{} rpc cost:" + (System.currentTimeMillis() - start)
+            + " ms for " + size + " bytes with " + blockNum + " blocks", host, port);
 
         if (response.getStatus() != StatusCode.SUCCESS) {
           String msg = "Can't send shuffle data with " + blockNum
@@ -337,6 +337,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   public RssFinishShuffleResponse finishShuffle(RssFinishShuffleRequest request) {
     FinishShuffleRequest rpcRequest = FinishShuffleRequest.newBuilder()
         .setAppId(request.getAppId()).setShuffleId(request.getShuffleId()).build();
+    long start = System.currentTimeMillis();
     FinishShuffleResponse rpcResponse = blockingStub.finishShuffle(rpcRequest);
 
     RssFinishShuffleResponse response;
@@ -347,6 +348,10 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       LOG.error(msg);
       throw new RssException(msg);
     } else {
+      String requestInfo = "appId[" + request.getAppId() + "], shuffleId["
+          + request.getShuffleId() + "]";
+      LOG.info("FinishShuffle to {}:{} for {} cost {} ms", host, port, requestInfo,
+          System.currentTimeMillis() - start);
       response = new RssFinishShuffleResponse(ResponseStatusCode.SUCCESS);
     }
     return response;
@@ -457,7 +462,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     GetLocalShuffleDataResponse rpcResponse = blockingStub.getLocalShuffleData(rpcRequest);
     String requestInfo = "appId[" + request.getAppId() + "], shuffleId["
         + request.getShuffleId() + "], partitionId[" + request.getPartitionId() + "]";
-    LOG.info("GetShuffleData for " + requestInfo + " cost " + (System.currentTimeMillis() - start) + " ms");
+    LOG.info("GetShuffleData from {}:{} for {} cost {} ms", host, port, requestInfo,
+        System.currentTimeMillis() - start);
 
     StatusCode statusCode = rpcResponse.getStatus();
 
@@ -491,7 +497,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     GetLocalShuffleIndexResponse rpcResponse = blockingStub.getLocalShuffleIndex(rpcRequest);
     String requestInfo = "appId[" + request.getAppId() + "], shuffleId["
         + request.getShuffleId() + "], partitionId[" + request.getPartitionId() + "]";
-    LOG.info("GetShuffleIndex for " + requestInfo + " cost " + (System.currentTimeMillis() - start) + " ms");
+    LOG.info("GetShuffleIndex from {}:{} for {} cost {} ms", host, port,
+        requestInfo, System.currentTimeMillis() - start);
 
     StatusCode statusCode = rpcResponse.getStatus();
 
@@ -527,8 +534,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     GetMemoryShuffleDataResponse rpcResponse = blockingStub.getMemoryShuffleData(rpcRequest);
     String requestInfo = "appId[" + request.getAppId() + "], shuffleId["
         + request.getShuffleId() + "], partitionId[" + request.getPartitionId() + "]";
-    LOG.info("GetInMemoryShuffleData for " + requestInfo + " cost "
-        + (System.currentTimeMillis() - start) + " ms");
+    LOG.info("GetInMemoryShuffleData from {}:{} for " + requestInfo + " cost "
+        + (System.currentTimeMillis() - start) + " ms", host, port);
 
     StatusCode statusCode = rpcResponse.getStatus();
 
