@@ -30,20 +30,21 @@ public class RssAccessClusterRequest {
    * The map is to pass the extra data to the coordinator and to
    * extend more pluggable {@code AccessCheckers} easily.
    */
-  private final Map<String, String> reservedData;
+  private final Map<String, String> extraProperties;
 
   public RssAccessClusterRequest(String accessId, Set<String> tags, int timeoutMs) {
     this.accessId = accessId;
     this.tags = tags;
     this.timeoutMs = timeoutMs;
-    this.reservedData = Collections.emptyMap();
+    this.extraProperties = Collections.emptyMap();
   }
 
-  public RssAccessClusterRequest(String accessId, Set<String> tags, int timeoutMs, Map<String, String> reservedData) {
+  public RssAccessClusterRequest(String accessId, Set<String> tags, int timeoutMs,
+          Map<String, String> extraProperties) {
     this.accessId = accessId;
     this.tags = tags;
     this.timeoutMs = timeoutMs;
-    this.reservedData = reservedData;
+    this.extraProperties = extraProperties;
   }
 
   public String getAccessId() {
@@ -58,7 +59,7 @@ public class RssAccessClusterRequest {
     return timeoutMs;
   }
 
-  public Map<String, String> getReservedData() {
-    return reservedData;
+  public Map<String, String> getExtraProperties() {
+    return extraProperties;
   }
 }

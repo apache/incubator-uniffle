@@ -26,12 +26,12 @@ import com.google.common.collect.Sets;
 public class AccessInfo {
   private final String accessId;
   private final Set<String> tags;
-  private final Map<String, String> reservedData;
+  private final Map<String, String> extraProperties;
 
-  public AccessInfo(String accessId, Set<String> tags, Map<String, String> reservedData) {
+  public AccessInfo(String accessId, Set<String> tags, Map<String, String> extraProperties) {
     this.accessId = accessId;
     this.tags = tags;
-    this.reservedData = reservedData;
+    this.extraProperties = extraProperties;
   }
 
   public AccessInfo(String accessId) {
@@ -46,8 +46,8 @@ public class AccessInfo {
     return tags;
   }
 
-  public Map<String, String> getReservedData() {
-    return reservedData;
+  public Map<String, String> getExtraProperties() {
+    return extraProperties;
   }
 
   @Override
@@ -55,7 +55,7 @@ public class AccessInfo {
     return "AccessInfo{"
             + "accessId='" + accessId + '\''
             + ", tags=" + tags
-            + ", reservedData=" + reservedData
+            + ", extraProperties=" + extraProperties
             + '}';
   }
 }

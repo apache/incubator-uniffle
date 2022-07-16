@@ -207,7 +207,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     AccessManager accessManager = coordinatorServer.getAccessManager();
 
     AccessInfo accessInfo =
-            new AccessInfo(request.getAccessId(), Sets.newHashSet(request.getTagsList()), request.getReservedData());
+            new AccessInfo(request.getAccessId(), Sets.newHashSet(request.getTagsList()),
+                    request.getExtraPropertiesMap());
     AccessCheckResult result = accessManager.handleAccessRequest(accessInfo);
     if (!result.isSuccess()) {
       statusCode = StatusCode.ACCESS_DENIED;

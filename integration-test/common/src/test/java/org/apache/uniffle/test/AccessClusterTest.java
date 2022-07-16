@@ -61,7 +61,7 @@ public class AccessClusterTest extends CoordinatorTestBase {
 
     @Override
     public AccessCheckResult check(AccessInfo accessInfo) {
-      Map<String, String> reservedData = accessInfo.getReservedData();
+      Map<String, String> reservedData = accessInfo.getExtraProperties();
       if (legalNames.contains(reservedData.get(key))) {
         return new AccessCheckResult(true, "");
       }
@@ -75,7 +75,7 @@ public class AccessClusterTest extends CoordinatorTestBase {
   }
 
   @Test
-  public void testReservedData() throws Exception {
+  public void testUsingCustomExtraProperties() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setString(
             "rss.coordinator.access.checkers",
@@ -92,20 +92,22 @@ public class AccessClusterTest extends CoordinatorTestBase {
     assertEquals(ResponseStatusCode.ACCESS_DENIED, response.getStatusCode());
 
     // case2: illegal names
-    Map<String, String> reservedData = new HashMap<>();
-    reservedData.put("key", "illegalName");
+    Map<String, String> extraProperties = new HashMap<>();
+    extraProperties.put("key", "illegalName");
     request = new RssAccessClusterRequest(
-            accessID, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, reservedData);
+            accessID, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, extraProperties);
     response = coordinatorClient.accessCluster(request);
     assertEquals(ResponseStatusCode.ACCESS_DENIED, response.getStatusCode());
 
     // case3: legal names
-    reservedData.clear();
-    reservedData.put("key", "v1");
+    extraProperties.clear();
+    extraProperties.put("key", "v1");
     request = new RssAccessClusterRequest(
-            accessID, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, reservedData);
+            accessID, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, extraProperties);
     response = coordinatorClient.accessCluster(request);
     assertEquals(ResponseStatusCode.SUCCESS, response.getStatusCode());
+
+    shutdownServers();
   }
 
   @Test
@@ -165,6 +167,7 @@ public class AccessClusterTest extends CoordinatorTestBase {
     assertEquals(ResponseStatusCode.SUCCESS, response.getStatusCode());
     assertTrue(response.getMessage().startsWith("SUCCESS"));
     shuffleServer.stopServer();
+    shutdownServers();
   }
 }
 
