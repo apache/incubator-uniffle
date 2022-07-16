@@ -22,5 +22,7 @@ package org.apache.uniffle.coordinator;
  */
 public abstract class AbstractAccessChecker implements AccessChecker {
 
-  protected AbstractAccessChecker(AccessManager accessManager) throws Exception {}
+  protected AbstractAccessChecker(AccessManager accessManager) throws Exception {
+    
+  }
 }
