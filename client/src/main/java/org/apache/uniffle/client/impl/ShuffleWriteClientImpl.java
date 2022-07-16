@@ -88,7 +88,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private int replicaRead;
   private boolean replicaSkipEnabled;
   private int dataTranferPoolSize;
-  private int commitSenderPoolSize = -1;
+  private int dataCommitPoolSize = -1;
   private final ForkJoinPool dataTransferPool;
 
   public ShuffleWriteClientImpl(
@@ -101,7 +101,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int replicaRead,
       boolean replicaSkipEnabled,
       int dataTranferPoolSize,
-      int commitSenderPoolSize) {
+      int dataCommitPoolSize) {
     this.clientType = clientType;
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
@@ -114,7 +114,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     this.replicaSkipEnabled = replicaSkipEnabled;
     this.dataTranferPoolSize = dataTranferPoolSize;
     this.dataTransferPool = new ForkJoinPool(dataTranferPoolSize);
-    this.commitSenderPoolSize = commitSenderPoolSize;
+    this.dataCommitPoolSize = dataCommitPoolSize;
   }
 
   private boolean sendShuffleDataAsync(
@@ -269,46 +269,50 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   @Override
   public boolean sendCommit(Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps) {
     ForkJoinPool forkJoinPool = new ForkJoinPool(
-        commitSenderPoolSize == -1 ? shuffleServerInfoSet.size() : commitSenderPoolSize
+        dataCommitPoolSize == -1 ? shuffleServerInfoSet.size() : dataCommitPoolSize
     );
     AtomicInteger successfulCommit = new AtomicInteger(0);
-    forkJoinPool.submit(() -> {
-      shuffleServerInfoSet.parallelStream().forEach(ssi -> {
-        RssSendCommitRequest request = new RssSendCommitRequest(appId, shuffleId);
-        String errorMsg = "Failed to commit shuffle data to " + ssi + " for shuffleId[" + shuffleId + "]";
-        long startTime = System.currentTimeMillis();
-        try {
-          RssSendCommitResponse response = getShuffleServerClient(ssi).sendCommit(request);
-          if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
-            int commitCount = response.getCommitCount();
-            LOG.info("Successfully sendCommit for appId[" + appId + "], shuffleId[" + shuffleId
-                + "] to ShuffleServer[" + ssi.getId() + "], cost "
-                + (System.currentTimeMillis() - startTime) + " ms, got committed maps["
-                + commitCount + "], map number of stage is " + numMaps);
-            if (commitCount >= numMaps) {
-              RssFinishShuffleResponse rfsResponse =
-                  getShuffleServerClient(ssi).finishShuffle(new RssFinishShuffleRequest(appId, shuffleId));
-              if (rfsResponse.getStatusCode() != ResponseStatusCode.SUCCESS) {
-                String msg = "Failed to finish shuffle to " + ssi + " for shuffleId[" + shuffleId
-                    + "] with statusCode " + rfsResponse.getStatusCode();
-                LOG.error(msg);
-                throw new Exception(msg);
-              } else {
-                LOG.info("Successfully finish shuffle to " + ssi + " for shuffleId[" + shuffleId + "]");
+    try {
+      forkJoinPool.submit(() -> {
+        shuffleServerInfoSet.parallelStream().forEach(ssi -> {
+          RssSendCommitRequest request = new RssSendCommitRequest(appId, shuffleId);
+          String errorMsg = "Failed to commit shuffle data to " + ssi + " for shuffleId[" + shuffleId + "]";
+          long startTime = System.currentTimeMillis();
+          try {
+            RssSendCommitResponse response = getShuffleServerClient(ssi).sendCommit(request);
+            if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+              int commitCount = response.getCommitCount();
+              LOG.info("Successfully sendCommit for appId[" + appId + "], shuffleId[" + shuffleId
+                  + "] to ShuffleServer[" + ssi.getId() + "], cost "
+                  + (System.currentTimeMillis() - startTime) + " ms, got committed maps["
+                  + commitCount + "], map number of stage is " + numMaps);
+              if (commitCount >= numMaps) {
+                RssFinishShuffleResponse rfsResponse =
+                    getShuffleServerClient(ssi).finishShuffle(new RssFinishShuffleRequest(appId, shuffleId));
+                if (rfsResponse.getStatusCode() != ResponseStatusCode.SUCCESS) {
+                  String msg = "Failed to finish shuffle to " + ssi + " for shuffleId[" + shuffleId
+                      + "] with statusCode " + rfsResponse.getStatusCode();
+                  LOG.error(msg);
+                  throw new Exception(msg);
+                } else {
+                  LOG.info("Successfully finish shuffle to " + ssi + " for shuffleId[" + shuffleId + "]");
+                }
               }
+            } else {
+              String msg = errorMsg + " with statusCode " + response.getStatusCode();
+              LOG.error(msg);
+              throw new Exception(msg);
             }
-          } else {
-            String msg = errorMsg + " with statusCode " + response.getStatusCode();
-            LOG.error(msg);
-            throw new Exception(msg);
+            successfulCommit.incrementAndGet();
+          } catch (Exception e) {
+            LOG.error(errorMsg, e);
           }
-          successfulCommit.incrementAndGet();
-        } catch (Exception e) {
-          LOG.error(errorMsg, e);
-        }
-      });
-    }).join();
-    forkJoinPool.shutdownNow();
+        });
+      }).join();
+    } catch (Exception e) {
+      forkJoinPool.shutdownNow();
+    }
+
     // check if every commit/finish call is successful
     return successfulCommit.get() == shuffleServerInfoSet.size();
   }
