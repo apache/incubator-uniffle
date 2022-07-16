@@ -309,6 +309,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
   private ServerNode toServerNode(ShuffleServerHeartBeatRequest request) {
     boolean isHealthy = true;
     if (request.hasIsHealthy()) {
+      request.hasServerId()
       isHealthy = request.getIsHealthy().getValue();
     }
     return new ServerNode(request.getServerId().getId(),

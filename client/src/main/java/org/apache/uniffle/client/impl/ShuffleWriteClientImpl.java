@@ -309,7 +309,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           }
         });
       }).join();
-    } catch (Exception e) {
+    } finally {
       forkJoinPool.shutdownNow();
     }
 
