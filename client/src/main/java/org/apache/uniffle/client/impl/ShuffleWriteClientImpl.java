@@ -91,9 +91,17 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private int commitSenderPoolSize = -1;
   private final ForkJoinPool dataTransferPool;
 
-  public ShuffleWriteClientImpl(String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
-                                int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled,
-                                int dataTranferPoolSize, int commitSenderPoolSize) {
+  public ShuffleWriteClientImpl(
+      String clientType,
+      int retryMax,
+      long retryIntervalMax,
+      int heartBeatThreadNum,
+      int replica,
+      int replicaWrite,
+      int replicaRead,
+      boolean replicaSkipEnabled,
+      int dataTranferPoolSize,
+      int commitSenderPoolSize) {
     this.clientType = clientType;
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
@@ -250,7 +258,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   /**
-   * This method will wait until all shuffle data have been spilled
+   * This method will wait until all shuffle data have been flushed
    * to durable storage in assigned shuffle servers.
    * @param shuffleServerInfoSet
    * @param appId
@@ -300,6 +308,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         }
       });
     }).join();
+    forkJoinPool.shutdownNow();
     // check if every commit/finish call is successful
     return successfulCommit.get() == shuffleServerInfoSet.size();
   }
@@ -524,6 +533,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   public void close() {
     heartBeatExecutorService.shutdownNow();
     coordinatorClients.forEach(CoordinatorClient::close);
+    dataTransferPool.shutdownNow();
   }
 
   private void throwExceptionIfNecessary(ClientResponse response, String errorMsg) {

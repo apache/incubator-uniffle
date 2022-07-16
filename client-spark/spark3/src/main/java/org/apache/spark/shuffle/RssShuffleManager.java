@@ -170,8 +170,8 @@ public class RssShuffleManager implements ShuffleManager {
 
     this.dataTransferPoolSize = sparkConf.getInt(RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE,
         RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE_DEFAULT_VALUE);
-    this.commitSenderPoolSize = sparkConf.getInt(RssSparkConfig.RSS_COMMIT_SENDER_POOL_SIZE,
-        RssSparkConfig.RSS_COMMIT_SENDER_POOL_SIZE_DEFAULT_VALUE);
+    this.commitSenderPoolSize = sparkConf.getInt(RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE,
+        RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE_DEFAULT_VALUE);
 
     shuffleWriteClient = ShuffleClientFactory
         .getInstance()
@@ -242,8 +242,8 @@ public class RssShuffleManager implements ShuffleManager {
         RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM_DEFAULT_VALUE);
     this.dataTransferPoolSize = sparkConf.getInt(RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE,
         RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE_DEFAULT_VALUE);
-    this.commitSenderPoolSize = sparkConf.getInt(RssSparkConfig.RSS_COMMIT_SENDER_POOL_SIZE,
-        RssSparkConfig.RSS_COMMIT_SENDER_POOL_SIZE_DEFAULT_VALUE);
+    this.commitSenderPoolSize = sparkConf.getInt(RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE,
+        RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE_DEFAULT_VALUE);
 
     shuffleWriteClient = ShuffleClientFactory
         .getInstance()
