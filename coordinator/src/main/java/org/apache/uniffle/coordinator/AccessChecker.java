@@ -19,6 +19,9 @@ package org.apache.uniffle.coordinator;
 
 import java.io.Closeable;
 
+/**
+ * Interface for checking the access info from the client-side.
+ */
 public interface AccessChecker extends Closeable {
 
   /**
