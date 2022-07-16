@@ -18,6 +18,7 @@
 package org.apache.uniffle.server.storage;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -97,7 +98,7 @@ public class HdfsStorageManager extends SingleStorageManager {
   public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo) {
     String remoteStorage = remoteStorageInfo.getPath();
     Map<String, String> remoteStorageConf = remoteStorageInfo.getConfItems();
-    appIdToUsers.putIfAbsent(appId, remoteStorageInfo.getUser());
+    appIdToUsers.putIfAbsent(appId, Optional.ofNullable(remoteStorageInfo.getUser()).orElse(""));
     if (!pathToStorages.containsKey(remoteStorage)) {
       Configuration remoteStorageHadoopConf = new Configuration(hadoopConf);
       if (remoteStorageConf != null && remoteStorageConf.size() > 0) {
