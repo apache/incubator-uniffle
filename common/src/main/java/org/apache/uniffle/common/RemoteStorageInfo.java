@@ -37,7 +37,7 @@ public class RemoteStorageInfo implements Serializable {
   private String user;
 
   public RemoteStorageInfo(String path) {
-    this(path, Maps.newHashMap());
+    this(path, Maps.newHashMap(), StringUtils.EMPTY);
   }
 
   public RemoteStorageInfo(String path, Map<String, String> confItems) {
