@@ -81,6 +81,7 @@ public class RssShuffleManager implements ShuffleManager {
   private final int dataReplicaRead;
   private final boolean dataReplicaSkipEnabled;
   private final int dataTransferPoolSize;
+  private final int dataCommitPoolSize;
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
   private RemoteStorageInfo remoteStorage;
@@ -168,10 +169,13 @@ public class RssShuffleManager implements ShuffleManager {
         RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
     int heartBeatThreadNum = sparkConf.getInt(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM,
         RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM_DEFAULT_VALUE);
-    shuffleWriteClient = ShuffleClientFactory
+    this.dataCommitPoolSize = sparkConf.getInt(RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE,
+        RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE_DEFAULT_VALUE);
+    this.shuffleWriteClient = ShuffleClientFactory
         .getInstance()
         .createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum,
-            dataReplica, dataReplicaWrite, dataReplicaRead, dataReplicaSkipEnabled, dataTransferPoolSize);
+            dataReplica, dataReplicaWrite, dataReplicaRead, dataReplicaSkipEnabled, dataTransferPoolSize,
+            dataCommitPoolSize);
     registerCoordinator();
     // fetch client conf and apply them if necessary and disable ESS
     if (isDriver && dynamicConfEnabled) {

@@ -42,7 +42,7 @@ public class ShuffleWriteClientImplTest {
   @Test
   public void testSendData() {
     ShuffleWriteClientImpl shuffleWriteClient =
-        new ShuffleWriteClientImpl("GRPC", 3, 2000, 4, 1, 1, 1, true, 1);
+        new ShuffleWriteClientImpl("GRPC", 3, 2000, 4, 1, 1, 1, true, 1, 1);
     ShuffleServerClient mockShuffleServerClient = mock(ShuffleServerClient.class);
     ShuffleWriteClientImpl spyClient = Mockito.spy(shuffleWriteClient);
     doReturn(mockShuffleServerClient).when(spyClient).getShuffleServerClient(any());
