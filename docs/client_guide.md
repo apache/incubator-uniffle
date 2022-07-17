@@ -87,6 +87,7 @@ These configurations are shared by all types of clients.
 |<client_type>.rss.client.read.buffer.size|14m|The max data size read from storage|
 |<client_type>.rss.client.send.threadPool.size|5|The thread size for send shuffle data to shuffle server|
 |<client_type>.rss.client.assignment.tags|-|The comma-separated list of tags for deciding assignment shuffle servers. Notice that the SHUFFLE_SERVER_VERSION will always as the assignment tag whether this conf is set or not|
+|<client_type>.rss.client.data.commit.pool.size|The number of assigned shuffle servers|The thread size for sending commit to shuffle servers|
 Notice:
 
 1. `<client_type>` should be `spark` or `mapreduce`
