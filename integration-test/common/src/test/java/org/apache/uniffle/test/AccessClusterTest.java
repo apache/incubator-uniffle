@@ -18,13 +18,19 @@
 package org.apache.uniffle.test;
 
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.File;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
@@ -32,15 +38,77 @@ import org.apache.uniffle.client.request.RssAccessClusterRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.coordinator.AccessCheckResult;
+import org.apache.uniffle.coordinator.AccessChecker;
+import org.apache.uniffle.coordinator.AccessInfo;
+import org.apache.uniffle.coordinator.AccessManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
-import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AccessClusterTest extends CoordinatorTestBase {
+
+  public static class MockedAccessChecker implements AccessChecker {
+    final String key = "key";
+    final List<String> legalNames = Arrays.asList("v1", "v2", "v3");
+
+    public MockedAccessChecker(AccessManager accessManager) throws Exception {
+      // ignore
+    }
+
+    @Override
+    public AccessCheckResult check(AccessInfo accessInfo) {
+      Map<String, String> reservedData = accessInfo.getExtraProperties();
+      if (legalNames.contains(reservedData.get(key))) {
+        return new AccessCheckResult(true, "");
+      }
+      return new AccessCheckResult(false, "");
+    }
+
+    @Override
+    public void close() throws IOException {
+      // ignore.
+    }
+  }
+
+  @Test
+  public void testUsingCustomExtraProperties() throws Exception {
+    CoordinatorConf coordinatorConf = getCoordinatorConf();
+    coordinatorConf.setString(
+            "rss.coordinator.access.checkers",
+            "org.apache.uniffle.test.AccessClusterTest$MockedAccessChecker");
+    createCoordinatorServer(coordinatorConf);
+    startServers();
+    Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
+
+    // case1: empty map
+    String accessID = "acessid";
+    RssAccessClusterRequest request = new RssAccessClusterRequest(
+            accessID, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000);
+    RssAccessClusterResponse response = coordinatorClient.accessCluster(request);
+    assertEquals(ResponseStatusCode.ACCESS_DENIED, response.getStatusCode());
+
+    // case2: illegal names
+    Map<String, String> extraProperties = new HashMap<>();
+    extraProperties.put("key", "illegalName");
+    request = new RssAccessClusterRequest(
+            accessID, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, extraProperties);
+    response = coordinatorClient.accessCluster(request);
+    assertEquals(ResponseStatusCode.ACCESS_DENIED, response.getStatusCode());
+
+    // case3: legal names
+    extraProperties.clear();
+    extraProperties.put("key", "v1");
+    request = new RssAccessClusterRequest(
+            accessID, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, extraProperties);
+    response = coordinatorClient.accessCluster(request);
+    assertEquals(ResponseStatusCode.SUCCESS, response.getStatusCode());
+
+    shutdownServers();
+  }
 
   @Test
   public void test(@TempDir File tempDir) throws Exception {
@@ -57,14 +125,13 @@ public class AccessClusterTest extends CoordinatorTestBase {
     coordinatorConf.setInteger("rss.coordinator.access.loadChecker.serverNum.threshold", 2);
     coordinatorConf.setString("rss.coordinator.access.candidates.path", cfgFile.getAbsolutePath());
     coordinatorConf.setString(
-        "rss.coordinator.access.checkers",
-        "org.apache.uniffle.coordinator.AccessCandidatesChecker,org.apache.uniffle.coordinator.AccessClusterLoadChecker");
+            "rss.coordinator.access.checkers",
+            "org.apache.uniffle.coordinator.AccessCandidatesChecker,org.apache.uniffle.coordinator.AccessClusterLoadChecker");
     createCoordinatorServer(coordinatorConf);
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     createShuffleServer(shuffleServerConf);
     startServers();
-
     Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
     String accessId = "111111";
     RssAccessClusterRequest request = new RssAccessClusterRequest(
@@ -100,6 +167,7 @@ public class AccessClusterTest extends CoordinatorTestBase {
     assertEquals(ResponseStatusCode.SUCCESS, response.getStatusCode());
     assertTrue(response.getMessage().startsWith("SUCCESS"));
     shuffleServer.stopServer();
+    shutdownServers();
   }
 }
 

@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.util.Collections;
 import java.util.Random;
 
 import com.google.common.collect.Sets;
@@ -66,7 +67,7 @@ public class AccessManagerTest {
     AccessManager accessManager = new AccessManager(conf, null, new Configuration());
     assertTrue(accessManager.handleAccessRequest(
             new AccessInfo(String.valueOf(new Random().nextInt()),
-                Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION)))
+                Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), Collections.emptyMap()))
         .isSuccess());
     accessManager.close();
     // test mock checkers

@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.client.request;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 public class RssAccessClusterRequest {
@@ -24,11 +26,28 @@ public class RssAccessClusterRequest {
   private final String accessId;
   private final Set<String> tags;
   private final int timeoutMs;
+  /**
+   * The map is to pass the extra data to the coordinator and to
+   * extend more pluggable {@code AccessCheckers} easily.
+   */
+  private final Map<String, String> extraProperties;
 
   public RssAccessClusterRequest(String accessId, Set<String> tags, int timeoutMs) {
     this.accessId = accessId;
     this.tags = tags;
     this.timeoutMs = timeoutMs;
+    this.extraProperties = Collections.emptyMap();
+  }
+
+  public RssAccessClusterRequest(
+      String accessId,
+      Set<String> tags,
+      int timeoutMs,
+      Map<String, String> extraProperties) {
+    this.accessId = accessId;
+    this.tags = tags;
+    this.timeoutMs = timeoutMs;
+    this.extraProperties = extraProperties;
   }
 
   public String getAccessId() {
@@ -41,5 +60,9 @@ public class RssAccessClusterRequest {
 
   public int getTimeoutMs() {
     return timeoutMs;
+  }
+
+  public Map<String, String> getExtraProperties() {
+    return extraProperties;
   }
 }
