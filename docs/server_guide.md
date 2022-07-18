@@ -1,8 +1,8 @@
 ---
 layout: page
-displayTitle: Firestorm Shuffle Server Guide
-title: Firestorm Shuffle Server Guide
-description: Firestorm Shuffle Server Guide
+displayTitle: Uniffle Shuffle Server Guide
+title: Uniffle Shuffle Server Guide
+description: Uniffle Shuffle Server Guide
 license: |
   Licensed to the Apache Software Foundation (ASF) under one or more
   contributor license agreements.  See the NOTICE file distributed with
@@ -19,4 +19,4 @@ license: |
   See the License for the specific language governing permissions and
   limitations under the License.
 ---
-# Firestorm Shuffle Server Guide
+# Uniffle Shuffle Server Guide
