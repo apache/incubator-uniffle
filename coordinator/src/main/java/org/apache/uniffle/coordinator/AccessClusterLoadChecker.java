@@ -29,7 +29,7 @@ import org.apache.uniffle.common.util.Constants;
  * AccessClusterLoadChecker use the cluster load metrics including memory and healthy to
  * filter and count available nodes numbers and reject if the number do not reach the threshold.
  */
-public class AccessClusterLoadChecker implements AccessChecker {
+public class AccessClusterLoadChecker extends AbstractAccessChecker {
 
   private static final Logger LOG = LoggerFactory.getLogger(AccessClusterLoadChecker.class);
 
@@ -37,7 +37,8 @@ public class AccessClusterLoadChecker implements AccessChecker {
   private final double memoryPercentThreshold;
   private final int availableServerNumThreshold;
 
-  public AccessClusterLoadChecker(AccessManager accessManager) {
+  public AccessClusterLoadChecker(AccessManager accessManager) throws Exception {
+    super(accessManager);
     clusterManager = accessManager.getClusterManager();
     CoordinatorConf conf = accessManager.getCoordinatorConf();
     this.memoryPercentThreshold = conf.getDouble(CoordinatorConf.COORDINATOR_ACCESS_LOADCHECKER_MEMORY_PERCENTAGE);

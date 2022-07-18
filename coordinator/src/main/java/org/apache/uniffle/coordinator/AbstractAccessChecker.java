@@ -17,18 +17,12 @@
 
 package org.apache.uniffle.coordinator;
 
-import java.io.Closeable;
-
 /**
- * Interface for checking the access info from the client-side.
+ *  Abstract class for checking the access info from the client-side.
  */
-public interface AccessChecker extends Closeable {
+public abstract class AbstractAccessChecker implements AccessChecker {
 
-  /**
-   * Called when the AccessManager handle the access request.
-   *
-   * @param accessInfo access info of the client
-   * @return  access check result
-   */
-  AccessCheckResult check(AccessInfo accessInfo);
+  protected AbstractAccessChecker(AccessManager accessManager) throws Exception {
+    
+  }
 }
