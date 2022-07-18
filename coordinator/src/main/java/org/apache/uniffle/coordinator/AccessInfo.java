@@ -31,7 +31,7 @@ public class AccessInfo {
   public AccessInfo(String accessId, Set<String> tags, Map<String, String> extraProperties) {
     this.accessId = accessId;
     this.tags = tags;
-    this.extraProperties = extraProperties;
+    this.extraProperties = extraProperties == null ? Collections.emptyMap() : extraProperties;
   }
 
   public AccessInfo(String accessId) {
