@@ -39,8 +39,11 @@ public class RssAccessClusterRequest {
     this.extraProperties = Collections.emptyMap();
   }
 
-  public RssAccessClusterRequest(String accessId, Set<String> tags, int timeoutMs,
-          Map<String, String> extraProperties) {
+  public RssAccessClusterRequest(
+      String accessId,
+      Set<String> tags,
+      int timeoutMs,
+      Map<String, String> extraProperties) {
     this.accessId = accessId;
     this.tags = tags;
     this.timeoutMs = timeoutMs;
