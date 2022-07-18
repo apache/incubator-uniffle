@@ -1,8 +1,8 @@
 ---
 layout: page
-displayTitle: Firestorm Coordinator Guide
-title: Firestorm Coordinator Guide
-description: Firestorm Coordinator Guide
+displayTitle: Uniffle Coordinator Guide
+title: Uniffle Coordinator Guide
+description: Uniffle Coordinator Guide
 license: |
   Licensed to the Apache Software Foundation (ASF) under one or more
   contributor license agreements.  See the NOTICE file distributed with
@@ -20,4 +20,4 @@ license: |
   limitations under the License.
 ---
 
-# Firestorm Coordinator Guide
+# Uniffle Coordinator Guide

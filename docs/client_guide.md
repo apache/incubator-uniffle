@@ -1,8 +1,8 @@
 ---
 layout: page
-displayTitle: Firestorm Shuffle Client Guide
-title: Firestorm Shuffle Client Guide
-description: Firestorm Shuffle Client Guide
+displayTitle: Uniffle Shuffle Client Guide
+title: Uniffle Shuffle Client Guide
+description: Uniffle Shuffle Client Guide
 license: |
   Licensed to the Apache Software Foundation (ASF) under one or more
   contributor license agreements.  See the NOTICE file distributed with
@@ -19,13 +19,13 @@ license: |
   See the License for the specific language governing permissions and
   limitations under the License.
 ---
-# Firestorm Shuffle Client Guide
+# Uniffle Shuffle Client Guide
 
-Firestorm is designed as a unified shuffle engine for multiple computing frameworks, including Apache Spark and Apache Hadoop.
-Firestorm has provided pluggable client plugins to enable remote shuffle in Spark and MapReduce.
+Uniffle is designed as a unified shuffle engine for multiple computing frameworks, including Apache Spark and Apache Hadoop.
+Uniffle has provided pluggable client plugins to enable remote shuffle in Spark and MapReduce.
 
 ## Deploy
-This document will introduce how to deploy Firestorm client plugins with Spark and MapReduce.
+This document will introduce how to deploy Uniffle client plugins with Spark and MapReduce.
 
 ### Deploy Spark Client Plugin
 
@@ -35,7 +35,7 @@ This document will introduce how to deploy Firestorm client plugins with Spark a
 
    The jar for Spark3 is located in <RSS_HOME>/jars/client/spark3/rss-client-XXXXX-shaded.jar
 
-2. Update Spark conf to enable Firestorm, eg,
+2. Update Spark conf to enable Uniffle, eg,
 
    ```
    spark.shuffle.manager org.apache.spark.shuffle.RssShuffleManager
@@ -45,7 +45,7 @@ This document will introduce how to deploy Firestorm client plugins with Spark a
 
 ### Support Spark Dynamic Allocation
 
-To support spark dynamic allocation with Firestorm, spark code should be updated.
+To support spark dynamic allocation with Uniffle, spark code should be updated.
 There are 2 patches for spark-2.4.6 and spark-3.1.2 in spark-patches folder for reference.
 
 After apply the patch and rebuild spark, add following configuration in spark conf to enable dynamic allocation:
@@ -60,7 +60,7 @@ After apply the patch and rebuild spark, add following configuration in spark co
 
 The jar for MapReduce is located in <RSS_HOME>/jars/client/mr/rss-client-mr-XXXXX-shaded.jar
 
-2. Update MapReduce conf to enable Firestorm, eg,
+2. Update MapReduce conf to enable Uniffle, eg,
 
    ```
    -Dmapreduce.rss.coordinator.quorum=<coordinatorIp1>:19999,<coordinatorIp2>:19999
@@ -96,7 +96,7 @@ Notice:
 
 ### Adaptive Remote Shuffle Enabling 
 
-To select build-in shuffle or remote shuffle in a smart manner, Firestorm support adaptive enabling. 
+To select build-in shuffle or remote shuffle in a smart manner, Uniffle support adaptive enabling. 
 The client should use `DelegationRssShuffleManager` and provide its unique <access_id> so that the coordinator could distinguish whether it should enable remote shuffle.
 
 ```
@@ -111,12 +111,12 @@ Other configuration:
 
 |Property Name|Default|Description|
 |---|---|---|
-|spark.rss.access.timeout.ms|10000|The timeout to access Firestorm coordinator|
+|spark.rss.access.timeout.ms|10000|The timeout to access Uniffle coordinator|
   
 
 ### Client Quorum Setting 
 
-Firestorm supports client-side quorum protocol to tolerant shuffle server crash. 
+Uniffle supports client-side quorum protocol to tolerant shuffle server crash. 
 This feature is client-side behaviour, in which shuffle writer sends each block to multiple servers, and shuffle readers could fetch block data from one of server.
 Since sending multiple replicas of blocks can reduce the shuffle performance and resource consumption, we designed it as an optional feature.
 

@@ -1,8 +1,8 @@
 ---
 layout: page
-displayTitle: Firestorm Overview
+displayTitle: Uniffle Overview
 title: Overview
-description: Firestorm documentation homepage
+description: Uniffle documentation homepage
 license: |
   Licensed to the Apache Software Foundation (ASF) under one or more
   contributor license agreements.  See the NOTICE file distributed with
@@ -20,22 +20,22 @@ license: |
   limitations under the License.
 ---
 
-Firestorm is a Remote Shuffle Service, and provides the capability for Apache Spark applications
+Uniffle is a Remote Shuffle Service, and provides the capability for Apache Spark applications
 to store shuffle data on remote servers.
 
 
 ![Rss Architecture](asset/rss_architecture.png)
 
 
-More advanced details for Firestorm users are available in the following:
+More advanced details for Uniffle users are available in the following:
 
-- [Firestorm Coordinator Guide](coordinator_guide.html)
+- [Uniffle Coordinator Guide](coordinator_guide.html)
 
-- [Firestorm Shuffle Server Guide](server_guide.html)
+- [Uniffle Shuffle Server Guide](server_guide.html)
 
-- [Firestorm Shuffle Client Guide](client_guide.html)
+- [Uniffle Shuffle Client Guide](client_guide.html)
 
 
-Here you can read API docs for Firestorm along with its submodules.
+Here you can read API docs for Uniffle along with its submodules.
 
 - [Java API (Javadoc)](apidocs/index.html)
