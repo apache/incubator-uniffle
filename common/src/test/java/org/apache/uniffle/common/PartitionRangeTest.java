@@ -44,7 +44,9 @@ public class PartitionRangeTest {
     PartitionRange partitionRange3 = new PartitionRange(1, 1);
     PartitionRange partitionRange4 = new PartitionRange(2, 2);
     assertEquals(partitionRange1, partitionRange1);
+    assertEquals(partitionRange1.hashCode(), partitionRange1.hashCode());
     assertEquals(partitionRange1, partitionRange2);
+    assertEquals(partitionRange1.hashCode(), partitionRange2.hashCode());
     assertNotEquals(partitionRange1, partitionRange3);
     assertNotEquals(partitionRange1, partitionRange4);
     assertNotEquals(partitionRange1, null);

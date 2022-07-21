@@ -18,29 +18,36 @@
 package org.apache.uniffle.common;
 
 import com.google.common.collect.Lists;
+import java.nio.ByteBuffer;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Random;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 public class RssShuffleUtilsTest {
-  @Test
-  public void compressionTest() {
-    List<Integer> testSizes = Lists.newArrayList(
-      1, 1024, 128 * 1024, 512 * 1024, 1024 * 1024, 4 * 1024 * 1024);
-    for (int size : testSizes) {
-      singleTest(size);
-    }
+
+  @ParameterizedTest
+  @ValueSource(ints = {1, 1024, 128 * 1024, 512 * 1024, 1024 * 1024, 4 * 1024 * 1024})
+  public void testCompression(int size) {
+    byte[] data = RandomUtils.nextBytes(size);
+    byte[] compressed = RssShuffleUtils.compressData(data);
+    byte[] decompressed = RssShuffleUtils.decompressData(compressed, size);
+    assertArrayEquals(data, decompressed);
+
+    ByteBuffer decompressedBB = RssShuffleUtils.decompressData(ByteBuffer.wrap(compressed), size);
+    byte[] buffer = new byte[size];
+    decompressedBB.get(buffer);
+    assertArrayEquals(data, buffer);
+
+    ByteBuffer decompressedBB2 = RssShuffleUtils.decompressData(ByteBuffer.wrap(compressed), size, false);
+    byte[] buffer2 = new byte[size];
+    decompressedBB2.get(buffer2);
+    assertArrayEquals(data, buffer2);
   }
 
-  private void singleTest(int size) {
-    byte[] buf = new byte[size];
-    new Random().nextBytes(buf);
-
-    byte[] compressed = RssShuffleUtils.compressData(buf);
-    byte[] uncompressed = RssShuffleUtils.decompressData(compressed, size);
-    assertArrayEquals(buf, uncompressed);
-  }
 }
