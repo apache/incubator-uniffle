@@ -17,13 +17,9 @@
 
 package org.apache.uniffle.common;
 
-import com.google.common.collect.Lists;
 import java.nio.ByteBuffer;
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.jupiter.api.Test;
 
-import java.util.List;
-import java.util.Random;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
