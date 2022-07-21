@@ -32,6 +32,7 @@ public class BufferSegmentTest {
     BufferSegment segment1 = new BufferSegment(0, 1, 2, 3, 4, 5);
     BufferSegment segment2 = new BufferSegment(0, 1, 2, 3, 4, 5);
     assertEquals(segment1, segment2);
+    assertEquals(segment1.hashCode(), segment2.hashCode());
     assertNotEquals(segment1, null);
     assertNotEquals(segment1, new Object());
   }
