@@ -135,16 +135,16 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           long s = System.currentTimeMillis();
           RssSendShuffleDataResponse response = getShuffleServerClient(ssi).sendShuffleData(request);
 
-          String msgPrefix = String.format("ShuffleWriteClientImpl sendShuffleData with %s blocks to %s cost: %s(ms)",
+          String logMsg = String.format("ShuffleWriteClientImpl sendShuffleData with %s blocks to %s cost: %s(ms)",
               serverToBlockIds.get(ssi).size(), ssi.getId(), System.currentTimeMillis() - s);
 
           if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
             // mark a replica of block that has been sent
             serverToBlockIds.get(ssi).forEach(block -> blockIdsTracker.get(block).incrementAndGet());
-            LOG.info("{} successfully.", msgPrefix);
+            LOG.info("{} successfully.", logMsg);
           } else {
             isAllServersSuccess.set(false);
-            LOG.warn("{}, it failed wth statusCode[{}]", msgPrefix, response.getStatusCode());
+            LOG.warn("{}, it failed wth statusCode[{}]", logMsg, response.getStatusCode());
           }
         } catch (Exception e) {
           isAllServersSuccess.set(false);
