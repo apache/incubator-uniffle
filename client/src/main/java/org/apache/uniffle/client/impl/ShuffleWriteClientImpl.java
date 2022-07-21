@@ -134,17 +134,17 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               appId, retryMax, retryIntervalMax, shuffleIdToBlocks);
           long s = System.currentTimeMillis();
           RssSendShuffleDataResponse response = getShuffleServerClient(ssi).sendShuffleData(request);
-          LOG.info("ShuffleWriteClientImpl sendShuffleData cost:" + (System.currentTimeMillis() - s) + "(ms)");
+
+          String msgPrefix = String.format("ShuffleWriteClientImpl sendShuffleData with %s blocks to %s cost: %s(ms)",
+              serverToBlockIds.get(ssi).size(), ssi.getId(), System.currentTimeMillis() - s);
 
           if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
             // mark a replica of block that has been sent
             serverToBlockIds.get(ssi).forEach(block -> blockIdsTracker.get(block).incrementAndGet());
-            LOG.info("Send: " + serverToBlockIds.get(ssi).size()
-                + " blocks to [" + ssi.getId() + "] successfully");
+            LOG.info("{} successfully.", msgPrefix);
           } else {
             isAllServersSuccess.set(false);
-            LOG.warn("Send: " + serverToBlockIds.get(ssi).size() + " blocks to [" + ssi.getId()
-                + "] failed with statusCode[" + response.getStatusCode() + "], ");
+            LOG.warn("{}, it failed wth statusCode[{}]", msgPrefix, response.getStatusCode());
           }
         } catch (Exception e) {
           isAllServersSuccess.set(false);

@@ -163,6 +163,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
 
   public long requirePreAllocation(int requireSize, int retryMax, long retryIntervalMax) {
     RequireBufferRequest rpcRequest = RequireBufferRequest.newBuilder().setRequireSize(requireSize).build();
+    long start = System.currentTimeMillis();
     RequireBufferResponse rpcResponse = blockingStub.withDeadlineAfter(
         RPC_TIMEOUT_DEFAULT_MS, TimeUnit.MILLISECONDS).requireBuffer(rpcRequest);
     int retry = 0;
@@ -174,7 +175,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
           + retry + "] again");
       if (retry >= retryMax) {
         LOG.warn("ShuffleServer " + host + ":" + port + " is full and can't send shuffle"
-            + " data successfully after retry " + retryMax + " times");
+            + " data successfully after retry " + retryMax + " times, cost: {}(ms)",
+            System.currentTimeMillis() - start);
         return result;
       }
       try {
@@ -182,13 +184,15 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             Math.min(retryIntervalMax, backOffBase * (1 << Math.min(retry, 16)) + random.nextInt(backOffBase));
         Thread.sleep(backoffTime);
       } catch (Exception e) {
-        LOG.warn("Exception happened when require pre allocation", e);
+        LOG.warn("Exception happened when require pre allocation from " + host + ":" + port, e);
       }
       rpcResponse = blockingStub.withDeadlineAfter(
           RPC_TIMEOUT_DEFAULT_MS, TimeUnit.MILLISECONDS).requireBuffer(rpcRequest);
       retry++;
     }
     if (rpcResponse.getStatus() == StatusCode.SUCCESS) {
+      LOG.info("Require preAllocated size of {} from {}:{}, cost: {}(ms)",
+          requireSize, host, port, System.currentTimeMillis() - start);
       result = rpcResponse.getRequireBufferId();
     }
     return result;
