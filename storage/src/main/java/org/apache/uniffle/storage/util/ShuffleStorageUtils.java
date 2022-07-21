@@ -18,9 +18,10 @@
 package org.apache.uniffle.storage.util;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
 
@@ -232,7 +233,7 @@ public class ShuffleStorageUtils {
   }
 
   public static long uploadFile(File file, HdfsFileWriter writer, int bufferSize) throws IOException {
-    try (FileInputStream inputStream = new FileInputStream(file)) {
+    try (InputStream inputStream = Files.newInputStream(file.toPath())) {
       return writer.copy(inputStream, bufferSize);
     } catch (IOException e) {
       LOG.error("Fail to upload file {}, {}", file.getAbsolutePath(), e);

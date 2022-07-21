@@ -18,8 +18,8 @@
 package org.apache.uniffle.storage.handler.impl;
 
 import java.io.Closeable;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.List;
 
@@ -141,7 +141,7 @@ public class HdfsFileWriter implements Closeable {
     }
   }
 
-  public long copy(FileInputStream inputStream, int bufferSize) throws IOException {
+  public long copy(InputStream inputStream, int bufferSize) throws IOException {
     long start = fsDataOutputStream.getPos();
     IOUtils.copyBytes(inputStream, fsDataOutputStream, bufferSize);
     return fsDataOutputStream.getPos() - start;

@@ -20,19 +20,23 @@ package org.apache.uniffle.storage.handler.impl;
 import java.io.Closeable;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
 
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
+
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
 
 public class LocalFileWriter implements Closeable {
 
   private DataOutputStream dataOutputStream;
-  private FileOutputStream fileOutputStream;
+  private OutputStream fileOutputStream;
   private long nextOffset;
 
   public LocalFileWriter(File file) throws IOException {
-    fileOutputStream = new FileOutputStream(file, true);
+    fileOutputStream = Files.newOutputStream(file.toPath(), CREATE, APPEND);
     // init fsDataOutputStream
     dataOutputStream = new DataOutputStream(fileOutputStream);
     nextOffset = file.length();

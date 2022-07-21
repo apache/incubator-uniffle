@@ -18,9 +18,10 @@
 package org.apache.uniffle.server;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -164,7 +165,7 @@ public class LocalStorageChecker extends Checker {
         }
         byte[] readData = new byte[1024];
         int readBytes = -1;
-        try (FileInputStream fis = new FileInputStream(writeFile)) {
+        try (InputStream fis = Files.newInputStream(writeFile.toPath())) {
           int hasReadBytes = 0;
           do {
             readBytes = fis.read(readData);
