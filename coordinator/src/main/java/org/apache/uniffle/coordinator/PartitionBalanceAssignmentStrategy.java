@@ -44,9 +44,9 @@ import org.apache.uniffle.common.PartitionRange;
  * First round, we request one partition, then
  * S1 (2G, 0) S2 (5G, 1) S3(1G, 0)
  * Second round, we request one partition, then
- * S1 (2, 0) S2 (5G, 2) s3(1G, 0), we request one partition, then
+ * S1 (2G, 0) S2 (5G, 2) s3(1G, 0), we request one partition, then
  * Third round, we request one partition, then
- * S1 (2, 1) S2 (5G, 2) s3(1G, 0)
+ * S1 (2G, 1) S2 (5G, 2) s3(1G, 0)
  * ....
  **/
 
