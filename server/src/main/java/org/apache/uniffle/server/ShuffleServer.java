@@ -67,7 +67,12 @@ public class ShuffleServer {
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
-    initialization();
+    try {
+      initialization();
+    } catch (Exception e) {
+      LOG.error("Errors on initializing shuffle server.", e);
+      throw e;
+    }
   }
 
   /**

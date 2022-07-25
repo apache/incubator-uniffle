@@ -307,6 +307,7 @@ message PartitionRangeAssignment {
 message GetShuffleAssignmentsResponse {
   StatusCode status = 1;
   repeated PartitionRangeAssignment assignments = 2;
+  string retMsg = 3;
 }
 
 message ReportShuffleClientOpRequest {

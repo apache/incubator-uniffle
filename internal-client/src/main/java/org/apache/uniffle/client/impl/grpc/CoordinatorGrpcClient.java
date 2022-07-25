@@ -238,7 +238,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         response = new RssGetShuffleAssignmentsResponse(ResponseStatusCode.TIMEOUT);
         break;
       default:
-        response = new RssGetShuffleAssignmentsResponse(ResponseStatusCode.INTERNAL_ERROR);
+        response = new RssGetShuffleAssignmentsResponse(ResponseStatusCode.INTERNAL_ERROR, rpcResponse.getRetMsg());
     }
 
     return response;
