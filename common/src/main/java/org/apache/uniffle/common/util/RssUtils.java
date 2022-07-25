@@ -22,7 +22,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
@@ -33,6 +32,7 @@ import java.net.NetworkInterface;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -86,7 +86,8 @@ public class RssUtils {
     LOGGER.info("Load config from {}", filename);
     final Map<String, String> result = new HashMap<>();
 
-    try (InputStreamReader inReader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
+    try (InputStreamReader inReader =
+             new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8)) {
       Properties properties = new Properties();
       properties.load(inReader);
       properties.stringPropertyNames().forEach(k -> result.put(k, properties.getProperty(k).trim()));
