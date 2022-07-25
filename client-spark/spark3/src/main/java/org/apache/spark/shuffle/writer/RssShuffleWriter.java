@@ -58,9 +58,8 @@ import org.apache.uniffle.storage.util.StorageType;
 public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleWriter.class);
-  private static final String DUMMY_HOST = "dummy_host";
-  private static final int DUMMY_PORT = 99999;
-
+  private final String dummyHost;
+  private final int dummyPort;
   private final String appId;
   private final int shuffleId;
   private final WriteBufferManager bufferManager;
@@ -114,6 +113,10 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT_DEFAULT_VALUE);
     this.bitmapSplitNum = sparkConf.getInt(RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM,
         RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM_DEFAULT_VALUE);
+    this.dummyHost = sparkConf.get(RssSparkConfig.RSS_WRITER_BLOCKMANAGER_HOST,
+        RssSparkConfig.RSS_WRITER_BLOCKMANAGER_HOST_DEFAULT_VALUE);
+    this.dummyPort =  sparkConf.getInt(RssSparkConfig.RSS_WRITER_BLOCKMANAGER_PORT,
+        RssSparkConfig.RSS_WRITER_BLOCKMANAGER_PORT_DEFAULT_VALUE);
     this.partitionToBlockIds = Maps.newConcurrentMap();
     this.shuffleWriteClient = shuffleWriteClient;
     this.shuffleServersForData = rssHandle.getShuffleServersForData();
@@ -294,10 +297,10 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             taskAttemptId, ptb, bitmapSplitNum);
         LOG.info("Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
             taskAttemptId, bitmapSplitNum, (System.currentTimeMillis() - start));
-        // todo: we can replace the dummy host and port with the real shuffle server which we prefer to read
+
         final BlockManagerId blockManagerId = BlockManagerId.apply(appId + "_" + taskId,
-            DUMMY_HOST,
-            DUMMY_PORT,
+            dummyHost,
+            dummyPort,
             Option.apply(Long.toString(taskAttemptId)));
         MapStatus mapStatus = MapStatus.apply(blockManagerId, partitionLengths, taskAttemptId);
         return Option.apply(mapStatus);

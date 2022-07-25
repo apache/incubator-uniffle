@@ -51,6 +51,12 @@ public class RssSparkConfig {
   public static final String RSS_WRITER_REQUIRE_MEMORY_INTERVAL =
       SPARK_RSS_CONFIG_PREFIX + "rss.writer.require.memory.interval";
   public static final long RSS_WRITER_REQUIRE_MEMORY_INTERVAL_DEFAULT_VALUE = 1000; // 1s
+  public static final String RSS_WRITER_BLOCKMANAGER_HOST =
+      SPARK_RSS_CONFIG_PREFIX + "rss.writer.blockManager.host";
+  public static final String RSS_WRITER_BLOCKMANAGER_HOST_DEFAULT_VALUE = "dummy_host";
+  public static final String RSS_WRITER_BLOCKMANAGER_PORT =
+      SPARK_RSS_CONFIG_PREFIX + "rss.writer.blockManager.port";
+  public static final int RSS_WRITER_BLOCKMANAGER_PORT_DEFAULT_VALUE = 99999;
   public static final String RSS_COORDINATOR_QUORUM =
       SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_COORDINATOR_QUORUM;
   public static final String RSS_CLIENT_SEND_CHECK_TIMEOUT_MS =
