@@ -26,6 +26,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.uniffle.common.provider.HadoopAccessorProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +44,11 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
   private String fileNamePrefix;
   private Lock writeLock = new ReentrantLock();
   private int failTimes = 0;
+  private String user;
+  private boolean securityEnable = false;
+  private FileSystem fileSystem;
 
+  // Only for test cases when using non-kerberized dfs cluster.
   public HdfsShuffleWriteHandler(
       String appId,
       int shuffleId,
@@ -51,7 +56,7 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
       int endPartition,
       String storageBasePath,
       String fileNamePrefix,
-      Configuration hadoopConf) throws IOException, IllegalStateException {
+      Configuration hadoopConf) throws Exception {
     this.hadoopConf = hadoopConf;
     this.fileNamePrefix = fileNamePrefix;
     this.basePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
@@ -59,9 +64,27 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
     initialize();
   }
 
-  private void initialize() throws IOException, IllegalStateException {
+  public HdfsShuffleWriteHandler(
+          String appId,
+          int shuffleId,
+          int startPartition,
+          int endPartition,
+          String storageBasePath,
+          String fileNamePrefix,
+          Configuration hadoopConf, String user, boolean securityEnable) throws Exception {
+    this.hadoopConf = hadoopConf;
+    this.fileNamePrefix = fileNamePrefix;
+    this.basePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
+            ShuffleStorageUtils.getShuffleDataPath(appId, shuffleId, startPartition, endPartition));
+    this.user = user;
+    this.securityEnable = securityEnable;
+    initialize();
+  }
+
+  private void initialize() throws Exception {
     Path path = new Path(basePath);
-    FileSystem fileSystem = ShuffleStorageUtils.getFileSystemForPath(path, hadoopConf);
+    LOG.info("User: {}, security enable: {}", user, securityEnable);
+    this.fileSystem = HadoopAccessorProvider.getFilesystem(user, securityEnable, path, hadoopConf);
     // check if shuffle folder exist
     if (!fileSystem.exists(path)) {
       try {
@@ -131,7 +154,7 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
 
   private HdfsFileWriter createWriter(String fileName) throws IOException, IllegalStateException {
     Path path = new Path(basePath, fileName);
-    HdfsFileWriter writer = new HdfsFileWriter(path, hadoopConf);
+    HdfsFileWriter writer = new HdfsFileWriter(fileSystem, path, hadoopConf);
     return writer;
   }
 

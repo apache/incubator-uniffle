@@ -27,6 +27,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.provider.HadoopAccessorProvider;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
@@ -42,7 +44,7 @@ public class HdfsTestBase implements Serializable {
   protected static File baseDir;
 
   @BeforeAll
-  public static void setUpHdfs(@TempDir File tempDir) throws IOException {
+  public static void setUpHdfs(@TempDir File tempDir) throws Exception {
     conf = new Configuration();
     baseDir = tempDir;
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR,
@@ -50,6 +52,8 @@ public class HdfsTestBase implements Serializable {
     cluster = (new MiniDFSCluster.Builder(conf)).build();
     HDFS_URI = "hdfs://localhost:" + cluster.getNameNodePort() + "/";
     fs = (new Path(HDFS_URI)).getFileSystem(conf);
+
+    HadoopAccessorProvider.init(new RssBaseConf());
   }
 
   @AfterAll

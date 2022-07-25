@@ -33,6 +33,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkEnv;
@@ -47,6 +48,8 @@ import org.apache.spark.shuffle.writer.WriteBufferManager;
 import org.apache.spark.storage.BlockId;
 import org.apache.spark.storage.BlockManagerId;
 import org.apache.spark.util.EventLoop;
+import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.provider.HadoopAccessorProvider;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,6 +140,12 @@ public class RssShuffleManager implements ShuffleManager {
   };
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
+    try {
+      HadoopAccessorProvider.init(new RssBaseConf());
+    } catch (Exception exception) {
+      throw new RuntimeException("Errors on initing the HadoopAccessorProvider.");
+    }
+
     this.sparkConf = conf;
 
     // set & check replica config
@@ -276,11 +285,19 @@ public class RssShuffleManager implements ShuffleManager {
     }
     LOG.info("Generate application id used in rss: " + id.get());
 
+    String user = null;
+    try {
+      user = UserGroupInformation.getCurrentUser().getShortUserName();
+    } catch (Exception e) {
+      LOG.warn("Errors on getting user from ugi.", e);
+    }
+
     String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE);
     remoteStorage = new RemoteStorageInfo(
         sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH, ""));
     remoteStorage = ClientUtils.fetchRemoteStorage(
         id.get(), remoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
+    remoteStorage.setUser(user);
 
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
 

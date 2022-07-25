@@ -88,7 +88,7 @@ public class ShuffleBufferManager {
       bufferRangeMap.put(Range.closed(startPartition, endPartition), new ShuffleBuffer(bufferSize));
     } else {
       LOG.warn("Already register for appId[" + appId + "], shuffleId[" + shuffleId + "], startPartition["
-          + startPartition + "], endPartition[" + endPartition + "]");
+              + startPartition + "], endPartition[" + endPartition + "]");
     }
 
     return StatusCode.SUCCESS;

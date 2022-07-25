@@ -30,6 +30,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkEnv;
@@ -224,10 +225,18 @@ public class RssShuffleManager implements ShuffleManager {
       LOG.info("Generate application id used in rss: " + appId);
     }
 
+    String user = null;
+    try {
+      user = UserGroupInformation.getCurrentUser().getShortUserName();
+    } catch (Exception e) {
+      LOG.warn("Errors on getting user from ugi.", e);
+    }
+
     String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE);
     remoteStorage = new RemoteStorageInfo(sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH, ""));
     remoteStorage = ClientUtils.fetchRemoteStorage(
         appId, remoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
+    remoteStorage.setUser(user);
 
     int partitionNumPerRange = sparkConf.getInt(RssSparkConfig.RSS_PARTITION_NUM_PER_RANGE,
         RssSparkConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);

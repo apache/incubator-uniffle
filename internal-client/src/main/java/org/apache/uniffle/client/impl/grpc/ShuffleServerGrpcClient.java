@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,6 +127,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .addAllPartitionRanges(toShufflePartitionRanges(partitionRanges));
     RemoteStorage.Builder rsBuilder = RemoteStorage.newBuilder();
     rsBuilder.setPath(remoteStorageInfo.getPath());
+    rsBuilder.setUser(remoteStorageInfo.getUser());
     Map<String, String> remoteStorageConf = remoteStorageInfo.getConfItems();
     if (!remoteStorageConf.isEmpty()) {
       RemoteStorageConfItem.Builder rsConfBuilder = RemoteStorageConfItem.newBuilder();
@@ -204,7 +206,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         request.getAppId(),
         request.getShuffleId(),
         request.getPartitionRanges(),
-        request.getRemoteStorageInfo());
+        request.getRemoteStorageInfo()
+    );
 
     RssRegisterShuffleResponse response;
     StatusCode statusCode = rpcResponse.getStatus();

@@ -366,6 +366,7 @@ message RemoteStorageConfItem {
 message RemoteStorage {
   string path = 1;
   repeated RemoteStorageConfItem remoteStorageConf = 2;
+  string user = 3;
 }
 
 message FetchRemoteStorageResponse {

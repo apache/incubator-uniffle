@@ -47,7 +47,7 @@ public class ShuffleHdfsStorageUtilsTest extends HdfsTestBase {
       dataOut.close();
       fileOut.close();
       String path = HDFS_URI + "test";
-      HdfsFileWriter writer = new HdfsFileWriter(new Path(path), conf);
+      HdfsFileWriter writer = new HdfsFileWriter(fs, new Path(path), conf);
       long size = ShuffleStorageUtils.uploadFile(file, writer, 1024);
       assertEquals(2096, size);
       size = ShuffleStorageUtils.uploadFile(file, writer, 100);

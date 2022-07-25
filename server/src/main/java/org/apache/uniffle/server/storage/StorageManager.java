@@ -49,5 +49,7 @@ public interface StorageManager {
 
   Checker getStorageChecker();
 
+  String getStorageUser(String appId);
+
   // todo: add an interface that check storage isHealthy
 }

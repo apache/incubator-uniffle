@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
-import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 
@@ -26,6 +25,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.uniffle.common.provider.HadoopAccessorProvider;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,8 +82,8 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
     FileSystem fs;
     Path baseFolder = new Path(fullShufflePath);
     try {
-      fs = ShuffleStorageUtils.getFileSystemForPath(baseFolder, hadoopConf);
-    } catch (IOException ioe) {
+      fs = HadoopAccessorProvider.getFileSystem(baseFolder, hadoopConf);
+    } catch (Exception ioe) {
       throw new RuntimeException("Can't get FileSystem for " + baseFolder);
     }
 

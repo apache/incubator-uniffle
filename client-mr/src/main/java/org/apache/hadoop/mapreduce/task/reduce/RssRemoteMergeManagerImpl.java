@@ -21,6 +21,10 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.provider.HadoopAccessorProvider;
+
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -40,9 +44,6 @@ import org.apache.hadoop.mapred.Task;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.util.Progress;
-
-import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 public class RssRemoteMergeManagerImpl<K, V> extends MergeManagerImpl<K, V> {
 
@@ -144,8 +145,9 @@ public class RssRemoteMergeManagerImpl<K, V> extends MergeManagerImpl<K, V> {
     try {
       remoteConf.setInt("dfs.replication", replication);
       remoteConf.setInt("dfs.client.block.write.retries", retries); // origin=3
-      this.remoteFS = ShuffleStorageUtils.getFileSystemForPath(new Path(basePath), remoteConf);
-    } catch (IOException e) {
+      HadoopAccessorProvider.init(new RssBaseConf());
+      this.remoteFS = HadoopAccessorProvider.getFileSystem(new Path(basePath), remoteConf);
+    } catch (Exception e) {
       throw new RuntimeException("Cannot init remoteFS on path:" + basePath);
     }
 

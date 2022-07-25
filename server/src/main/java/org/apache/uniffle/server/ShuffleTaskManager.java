@@ -83,6 +83,8 @@ public class ShuffleTaskManager {
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = Maps.newConcurrentMap();
   private Runnable clearResourceThread;
   private BlockingQueue<String> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
+  // appId -> user
+  private Map<String, String> appUserMap = Maps.newConcurrentMap();
   // appId -> shuffleId -> serverReadHandler
 
   public ShuffleTaskManager(
@@ -127,10 +129,10 @@ public class ShuffleTaskManager {
   }
 
   public StatusCode registerShuffle(
-      String appId,
-      int shuffleId,
-      List<PartitionRange> partitionRanges,
-      RemoteStorageInfo remoteStorageInfo) {
+          String appId,
+          int shuffleId,
+          List<PartitionRange> partitionRanges,
+          RemoteStorageInfo remoteStorageInfo) {
     refreshAppId(appId);
     partitionsToBlockIds.putIfAbsent(appId, Maps.newConcurrentMap());
     for (PartitionRange partitionRange : partitionRanges) {
@@ -398,6 +400,7 @@ public class ShuffleTaskManager {
     commitLocks.remove(appId);
     shuffleBufferManager.removeBuffer(appId);
     shuffleFlushManager.removeResources(appId);
+    appUserMap.remove(appId);
     if (shuffleToCachedBlockIds != null) {
       storageManager.removeResources(appId, shuffleToCachedBlockIds.keySet());
     }
@@ -434,6 +437,10 @@ public class ShuffleTaskManager {
       return 0;
     }
     return pabi.getRequireSize();
+  }
+
+  public String getUserByAppID(String appid) {
+    return appUserMap.get(appid);
   }
 
   @VisibleForTesting

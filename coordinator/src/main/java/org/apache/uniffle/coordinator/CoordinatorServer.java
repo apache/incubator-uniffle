@@ -19,6 +19,7 @@ package org.apache.uniffle.coordinator;
 
 import io.prometheus.client.CollectorRegistry;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.uniffle.common.provider.HadoopAccessorProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -50,7 +51,6 @@ public class CoordinatorServer {
   public CoordinatorServer(CoordinatorConf coordinatorConf) throws Exception {
     this.coordinatorConf = coordinatorConf;
     initialization();
-
   }
 
   public static void main(String[] args) throws Exception {
@@ -109,6 +109,8 @@ public class CoordinatorServer {
     // register metrics first to avoid NPE problem when add dynamic metrics
     registerMetrics();
     this.applicationManager = new ApplicationManager(coordinatorConf);
+
+    HadoopAccessorProvider.init(coordinatorConf);
 
     ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(coordinatorConf, new Configuration());
     this.clusterManager = clusterManagerFactory.getClusterManager();
