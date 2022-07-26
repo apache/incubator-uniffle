@@ -393,7 +393,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       }
     }
     String msg = "Error happened when getShuffleAssignments with appId[" + appId + "], shuffleId[" + shuffleId
-        + "], numMaps[" + partitionNum + "], partitionNumPerRange[" + partitionNumPerRange + "] to coordinator";
+        + "], numMaps[" + partitionNum + "], partitionNumPerRange[" + partitionNumPerRange + "] to coordinator. "
+        + "Error message: " + response.getMessage();
     throwExceptionIfNecessary(response, msg);
 
     return new ShuffleAssignmentsInfo(response.getPartitionToServers(), response.getServerToPartitionRanges());

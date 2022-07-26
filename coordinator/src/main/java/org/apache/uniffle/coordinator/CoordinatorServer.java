@@ -49,8 +49,12 @@ public class CoordinatorServer {
 
   public CoordinatorServer(CoordinatorConf coordinatorConf) throws Exception {
     this.coordinatorConf = coordinatorConf;
-    initialization();
-
+    try {
+      initialization();
+    } catch (Exception e) {
+      LOG.error("Errors on initializing coordinator server.", e);
+      throw e;
+    }
   }
 
   public static void main(String[] args) throws Exception {

@@ -123,8 +123,14 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       logAssignmentResult(appId, shuffleId, pra);
       responseObserver.onNext(response);
     } catch (Exception e) {
-      LOG.error(e.getMessage());
-      response = GetShuffleAssignmentsResponse.newBuilder().setStatus(StatusCode.INTERNAL_ERROR).build();
+      LOG.error("Errors on getting shuffle assignments for app: {}, shuffleId: {}, partitionNum: {}, "
+          + "partitionNumPerRange: {}, replica: {}, requiredTags: {}",
+          appId, shuffleId, partitionNum, partitionNumPerRange, replica, requiredTags, e);
+      response = GetShuffleAssignmentsResponse
+          .newBuilder()
+          .setStatus(StatusCode.INTERNAL_ERROR)
+          .setRetMsg(e.getMessage())
+          .build();
       responseObserver.onNext(response);
     } finally {
       responseObserver.onCompleted();
