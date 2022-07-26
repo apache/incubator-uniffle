@@ -19,6 +19,8 @@ package org.apache.uniffle.server.storage;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -63,16 +65,41 @@ public class LocalStorageManager extends SingleStorageManager {
     if (highWaterMarkOfWrite < lowWaterMarkOfWrite) {
       throw new IllegalArgumentException("highWaterMarkOfWrite must be larger than lowWaterMarkOfWrite");
     }
+
+    CountDownLatch countDownLatch = new CountDownLatch(storageBasePaths.length);
+    AtomicInteger successCount = new AtomicInteger();
     for (String storagePath : storageBasePaths) {
-      localStorages.add(LocalStorage.newBuilder()
-          .basePath(storagePath)
-          .capacity(capacity)
-          .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
-          .highWaterMarkOfWrite(highWaterMarkOfWrite)
-          .shuffleExpiredTimeoutMs(shuffleExpiredTimeoutMs)
-          .build());
+      new Thread(() -> {
+        try {
+          addLocalStorage(LocalStorage.newBuilder()
+                  .basePath(storagePath)
+                  .capacity(capacity)
+                  .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
+                  .highWaterMarkOfWrite(highWaterMarkOfWrite)
+                  .shuffleExpiredTimeoutMs(shuffleExpiredTimeoutMs)
+                  .build());
+          successCount.incrementAndGet();
+        } finally {
+          countDownLatch.countDown();
+        }
+      }).start();
     }
+    try {
+      countDownLatch.await();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+
+    int failedCount = storageBasePaths.length - successCount.get();
+    if (failedCount > 0) {
+      throw new RuntimeException(String.format("[%s] local storage init failed!", failedCount));
+    }
+
     this.checker = new LocalStorageChecker(conf, localStorages);
+  }
+
+  private synchronized void addLocalStorage(LocalStorage localStorage) {
+    localStorages.add(localStorage);
   }
 
   @Override
