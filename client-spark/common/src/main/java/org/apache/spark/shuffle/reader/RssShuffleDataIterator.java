@@ -38,6 +38,7 @@ import scala.collection.Iterator;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.common.RssShuffleUtils;
+import sun.nio.ch.DirectBuffer;
 
 public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C>> {
 
@@ -54,6 +55,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
   private DeserializationStream deserializationStream = null;
   private ByteBufInputStream byteBufInputStream = null;
   private long unCompressionLength = 0;
+  private ByteBuffer uncompressedData;
 
   public RssShuffleDataIterator(
       Serializer serializer,
@@ -106,8 +108,11 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       shuffleReadMetrics.incFetchWaitTime(fetchDuration);
       if (compressedData != null) {
         shuffleReadMetrics.incRemoteBytesRead(compressedData.limit() - compressedData.position());
+        if (uncompressedData != null && uncompressedData.isDirect()) {
+          ((DirectBuffer)uncompressedData).cleaner().clean();
+        }
         long startDecompress = System.currentTimeMillis();
-        ByteBuffer uncompressedData = RssShuffleUtils.decompressData(
+        uncompressedData = RssShuffleUtils.decompressData(
             compressedData, compressedBlock.getUncompressLength());
         unCompressionLength += compressedBlock.getUncompressLength();
         long decompressDuration = System.currentTimeMillis() - startDecompress;
