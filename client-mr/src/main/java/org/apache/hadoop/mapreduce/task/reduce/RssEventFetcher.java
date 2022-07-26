@@ -85,16 +85,29 @@ public class RssEventFetcher<K,V> {
           if (mapIndex < totalMapsCount) {
             mapIndexBitmap.addLong(mapIndex);
           } else {
+            LOG.error(taskAttemptID + " has overflowed mapIndex");
             throw new IllegalStateException(errMsg);
           }
+        } else {
+          LOG.warn(taskAttemptID + " is redundant on index: " + mapIndex);
         }
+      } else {
+        LOG.warn(taskAttemptID + " is successful but cancelled by obsolete event");
       }
     }
     // each map should have only one success attempt
     if (mapIndexBitmap.getLongCardinality() != taskIdBitmap.getLongCardinality()) {
       throw new IllegalStateException(errMsg);
     }
+    if (tipFailedCount != 0) {
+      LOG.warn("There are " + tipFailedCount + " tipFailed tasks");
+    }
     if (taskIdBitmap.getLongCardinality() + tipFailedCount != totalMapsCount) {
+      for (int index = 0; index < totalMapsCount; index++) {
+        if (!mapIndexBitmap.contains(index)) {
+          LOG.error("Fail to fetch " + " map task on index: " + index);
+        }
+      }
       throw new IllegalStateException(errMsg);
     }
     return taskIdBitmap;
