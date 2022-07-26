@@ -41,12 +41,13 @@ public class GrpcServer implements ServerInterface {
 
   private final Server server;
   private final int port;
+  private final ExecutorService pool;
 
   public GrpcServer(RssBaseConf conf, BindableService service, GRPCMetrics grpcMetrics) {
     this.port = conf.getInteger(RssBaseConf.RPC_SERVER_PORT);
     long maxInboundMessageSize = conf.getLong(RssBaseConf.RPC_MESSAGE_MAX_SIZE);
     int rpcExecutorSize = conf.getInteger(RssBaseConf.RPC_EXECUTOR_SIZE);
-    ExecutorService pool = new ThreadPoolExecutor(
+    pool = new ThreadPoolExecutor(
         rpcExecutorSize,
         rpcExecutorSize * 2,
         10,
@@ -88,6 +89,9 @@ public class GrpcServer implements ServerInterface {
     if (server != null) {
       server.shutdown().awaitTermination(10, TimeUnit.SECONDS);
       LOG.info("GRPC server stopped!");
+    }
+    if (pool != null) {
+      pool.shutdown();
     }
   }
 
