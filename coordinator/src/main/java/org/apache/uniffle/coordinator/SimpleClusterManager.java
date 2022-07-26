@@ -23,6 +23,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -195,6 +197,11 @@ public class SimpleClusterManager implements ClusterManager {
   @Override
   public int getShuffleNodesMax() {
     return shuffleNodesMax;
+  }
+
+  @Override
+  public List<String> getDecommissionServerIdList() {
+    return Collections.unmodifiableList(new ArrayList<>(excludeNodes));
   }
 
   @Override

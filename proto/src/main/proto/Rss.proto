@@ -232,6 +232,7 @@ enum StatusCode {
   INTERNAL_ERROR = 6;
   TIMEOUT = 7;
   ACCESS_DENIED = 8;
+  GRACEFUL_DECOMMISSION = 9;
   // add more status
 }
 

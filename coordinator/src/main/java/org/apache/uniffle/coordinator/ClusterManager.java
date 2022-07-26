@@ -49,4 +49,9 @@ public interface ClusterManager extends Closeable {
   List<ServerNode> list();
 
   int getShuffleNodesMax();
+
+  /**
+   * @return all decommission server ids in the cluster
+   */
+  List<String> getDecommissionServerIdList();
 }

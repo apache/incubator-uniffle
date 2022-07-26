@@ -83,7 +83,6 @@ public class ShuffleTaskManager {
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = Maps.newConcurrentMap();
   private Runnable clearResourceThread;
   private BlockingQueue<String> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
-  // appId -> shuffleId -> serverReadHandler
 
   public ShuffleTaskManager(
       ShuffleServerConf conf,

@@ -136,11 +136,15 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       ShuffleServerHeartBeatRequest request,
       StreamObserver<ShuffleServerHeartBeatResponse> responseObserver) {
     final ServerNode serverNode = toServerNode(request);
-    coordinatorServer.getClusterManager().add(serverNode);
+    ClusterManager clusterManager = coordinatorServer.getClusterManager();
+    clusterManager.add(serverNode);
     final ShuffleServerHeartBeatResponse response = ShuffleServerHeartBeatResponse
         .newBuilder()
         .setRetMsg("")
-        .setStatus(StatusCode.SUCCESS)
+        .setStatus(
+            clusterManager.getDecommissionServerIdList()
+                .contains(serverNode.getId()) ? StatusCode.GRACEFUL_DECOMMISSION : StatusCode.SUCCESS
+        )
         .build();
     LOG.debug("Got heartbeat from " + serverNode);
     responseObserver.onNext(response);

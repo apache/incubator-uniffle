@@ -64,6 +64,7 @@ public class ShuffleServer {
   private Set<String> tags = Sets.newHashSet();
   private AtomicBoolean isHealthy = new AtomicBoolean(true);
   private GRPCMetrics grpcMetrics;
+  private volatile boolean inGracefulDecommissionState = false;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -84,7 +85,13 @@ public class ShuffleServer {
     final ShuffleServer shuffleServer = new ShuffleServer(shuffleServerConf);
     shuffleServer.start();
 
-    shuffleServer.blockUntilShutdown();
+    while (true) {
+      if (shuffleServer.inGracefulDecommissionState && shuffleServer.shuffleTaskManager.getAppIds().isEmpty()) {
+        LOG.info("All apps finished. Graceful decommission successfully!");
+        System.exit(0);
+      }
+      Thread.sleep(1000 * 1);
+    }
   }
 
   public void start() throws Exception {
@@ -283,5 +290,15 @@ public class ShuffleServer {
 
   public GRPCMetrics getGrpcMetrics() {
     return grpcMetrics;
+  }
+
+  @VisibleForTesting
+  public void makeGracefulDecommission() {
+    this.inGracefulDecommissionState = true;
+  }
+
+  @VisibleForTesting
+  public void makeRecommission() {
+    this.inGracefulDecommissionState = false;
   }
 }

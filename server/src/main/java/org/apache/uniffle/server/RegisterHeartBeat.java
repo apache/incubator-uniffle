@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
+import jdk.jfr.internal.EventWriter;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +81,7 @@ public class RegisterHeartBeat {
             shuffleServer.getTags(),
             shuffleServer.isHealthy());
       } catch (Exception e) {
-        LOG.warn("Error happened when send heart beat to coordinator");
+        LOG.warn("Error happened when send heart beat to coordinator", e);
       }
     };
     service.scheduleAtFixedRate(runnable, heartBeatInitialDelay, heartBeatInterval, TimeUnit.MILLISECONDS);
@@ -113,20 +115,25 @@ public class RegisterHeartBeat {
         .map(client -> heartBeatExecutorService.submit(() -> client.sendHeartBeat(request)))
         .collect(Collectors.toList());
 
-    String msg = "";
+    String msg = null;
     for (Future<RssSendHeartBeatResponse> rf : respFutures) {
       try {
-        if (rf.get(request.getTimeout() * 2, TimeUnit.MILLISECONDS).getStatusCode()
-            == ResponseStatusCode.SUCCESS) {
+        ResponseStatusCode statusCode = rf.get(request.getTimeout() * 2, TimeUnit.MILLISECONDS).getStatusCode();
+        if (statusCode == ResponseStatusCode.SUCCESS) {
+          shuffleServer.makeRecommission();
           sendSuccessfully = true;
+        }
+        if (statusCode == ResponseStatusCode.GRACEFUL_DECOMMISSION) {
+          sendSuccessfully = true;
+          shuffleServer.makeGracefulDecommission();
         }
       } catch (Exception e) {
         msg = e.getMessage();
       }
     }
 
-    if (!sendSuccessfully) {
-      LOG.error(msg);
+    if (StringUtils.isNotEmpty(msg)) {
+      LOG.error("Errors on heartbeat with coordinators. Error msg: {}", msg);
     }
 
     return sendSuccessfully;

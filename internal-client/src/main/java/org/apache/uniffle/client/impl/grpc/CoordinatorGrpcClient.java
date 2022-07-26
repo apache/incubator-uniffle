@@ -190,6 +190,9 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       case TIMEOUT:
         response = new RssSendHeartBeatResponse(ResponseStatusCode.TIMEOUT);
         break;
+      case GRACEFUL_DECOMMISSION:
+        response = new RssSendHeartBeatResponse(ResponseStatusCode.GRACEFUL_DECOMMISSION);
+        break;
       default:
         response = new RssSendHeartBeatResponse(ResponseStatusCode.INTERNAL_ERROR);
     }
