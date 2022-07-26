@@ -28,16 +28,20 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 
 public class ShuffleServerClientFactory {
 
-  private static ShuffleServerClientFactory INSTANCE;
+  private static volatile ShuffleServerClientFactory INSTANCE;
   private Map<String, Map<ShuffleServerInfo, ShuffleServerClient>> clients;
 
   private ShuffleServerClientFactory() {
     clients = Maps.newConcurrentMap();
   }
 
-  public static synchronized ShuffleServerClientFactory getInstance() {
+  public static ShuffleServerClientFactory getInstance() {
     if (INSTANCE == null) {
-      INSTANCE = new ShuffleServerClientFactory();
+      synchronized (ShuffleServerClientFactory.class) {
+        if (INSTANCE == null) {
+          INSTANCE = new ShuffleServerClientFactory();
+        }
+      }
     }
     return INSTANCE;
   }
