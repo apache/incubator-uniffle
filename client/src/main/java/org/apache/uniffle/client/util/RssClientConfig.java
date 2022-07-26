@@ -54,15 +54,15 @@ public class RssClientConfig {
   public static final int RSS_INDEX_READ_LIMIT_DEFAULT_VALUE = 500;
   public static final String RSS_CLIENT_SEND_THREAD_NUM = "rss.client.send.thread.num";
   public static final int RSS_CLIENT_DEFAULT_SEND_NUM = 5;
-  public static String RSS_CLIENT_READ_BUFFER_SIZE = "rss.client.read.buffer.size";
+  public static final String RSS_CLIENT_READ_BUFFER_SIZE = "rss.client.read.buffer.size";
   // When the size of read buffer reaches the half of JVM region (i.e., 32m),
   // it will incur humongous allocation, so we set it to 14m.
-  public static String RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE = "14m";
+  public static final String RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE = "14m";
   // The tags specified by rss client to determine server assignment.
-  public static String RSS_CLIENT_ASSIGNMENT_TAGS = "rss.client.assignment.tags";
+  public static final String RSS_CLIENT_ASSIGNMENT_TAGS = "rss.client.assignment.tags";
 
-  public static String RSS_ACCESS_TIMEOUT_MS = "rss.access.timeout.ms";
-  public static int RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE = 10000;
+  public static final String RSS_ACCESS_TIMEOUT_MS = "rss.access.timeout.ms";
+  public static final int RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE = 10000;
   public static final String RSS_DYNAMIC_CLIENT_CONF_ENABLED = "rss.dynamicClientConf.enabled";
   public static final boolean RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE = true;
 }
