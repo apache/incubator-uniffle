@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -68,22 +69,21 @@ public class LocalStorageManager extends SingleStorageManager {
 
     CountDownLatch countDownLatch = new CountDownLatch(storageBasePaths.length);
     AtomicInteger successCount = new AtomicInteger();
-    for (String storagePath : storageBasePaths) {
-      new Thread(() -> {
-        try {
-          addLocalStorage(LocalStorage.newBuilder()
-                  .basePath(storagePath)
-                  .capacity(capacity)
-                  .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
-                  .highWaterMarkOfWrite(highWaterMarkOfWrite)
-                  .shuffleExpiredTimeoutMs(shuffleExpiredTimeoutMs)
-                  .build());
-          successCount.incrementAndGet();
-        } finally {
-          countDownLatch.countDown();
-        }
-      }).start();
-    }
+    Arrays.asList(storageBasePaths).parallelStream().forEach((storagePath) -> {
+      try {
+        addLocalStorage(LocalStorage.newBuilder()
+                .basePath(storagePath)
+                .capacity(capacity)
+                .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
+                .highWaterMarkOfWrite(highWaterMarkOfWrite)
+                .shuffleExpiredTimeoutMs(shuffleExpiredTimeoutMs)
+                .build());
+        successCount.incrementAndGet();
+      } finally {
+        countDownLatch.countDown();
+      }
+    });
+
     try {
       countDownLatch.await();
     } catch (InterruptedException e) {
