@@ -15,10 +15,12 @@
   ~ limitations under the License.
   -->
 
-# What is Uniffle
+# Apache Uniffle (Incubating)
 
-Uniffle is a Remote Shuffle Service, and provides the capability for Apache Spark applications
-to store shuffle data on remote servers.
+Uniffle is a unified remote shuffle service for analytics engines.
+It provides the ability to aggregate and store shuffle data on remote servers,
+thus making large jobs run faster and stabler.
+Currently it supports [Apache Spark](https://spark.apache.org) and [MapReduce](https://hadoop.apache.org).
 
 [![Build](https://github.com/apache/incubator-uniffle/actions/workflows/build.yml/badge.svg?branch=master&event=push)](https://github.com/apache/incubator-uniffle/actions/workflows/build.yml)
 [![Codecov](https://codecov.io/gh/apache/incubator-uniffle/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/incubator-uniffle)
