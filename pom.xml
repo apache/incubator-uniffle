@@ -1374,6 +1374,11 @@
         </dependencies>
       </dependencyManagement>
     </profile>
+    <profile>
+      <id>kubernetes</id>
+      <modules>
+        <module>deploy/kubernetes</module>
+      </modules>
+    </profile>
   </profiles>
-
 </project>
