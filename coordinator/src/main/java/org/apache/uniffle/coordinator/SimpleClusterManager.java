@@ -160,6 +160,9 @@ public class SimpleClusterManager implements ClusterManager {
   public List<ServerNode> getServerList(Set<String> requiredTags) {
     List<ServerNode> availableNodes = Lists.newArrayList();
     for (ServerNode node : servers.values()) {
+      if (node.isDecommissioned()) {
+        continue;
+      }
       if (!excludeNodes.contains(node.getId())
           && node.getTags().containsAll(requiredTags)
           && node.isHealthy()) {

@@ -31,6 +31,7 @@ public class RssSendHeartBeatRequest {
   private final Set<String> tags;
   private final long timeout;
   private final boolean isHealthy;
+  private final boolean decommissioned;
 
   public RssSendHeartBeatRequest(
       String shuffleServerId,
@@ -42,7 +43,8 @@ public class RssSendHeartBeatRequest {
       int eventNumInFlush,
       long timeout,
       Set<String> tags,
-      boolean isHealthy) {
+      boolean isHealthy,
+      boolean decommissioned) {
     this.shuffleServerId = shuffleServerId;
     this.shuffleServerIp = shuffleServerIp;
     this.shuffleServerPort = shuffleServerPort;
@@ -53,6 +55,7 @@ public class RssSendHeartBeatRequest {
     this.tags = tags;
     this.timeout = timeout;
     this.isHealthy = isHealthy;
+    this.decommissioned = decommissioned;
   }
 
   public String getShuffleServerId() {
@@ -93,5 +96,9 @@ public class RssSendHeartBeatRequest {
 
   public boolean isHealthy() {
     return isHealthy;
+  }
+
+  public boolean isDecommissioned() {
+    return decommissioned;
   }
 }

@@ -113,7 +113,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       int eventNumInFlush,
       long timeout,
       Set<String> tags,
-      boolean isHealthy) {
+      boolean isHealthy,
+      boolean decommissioned) {
     ShuffleServerId serverId =
         ShuffleServerId.newBuilder().setId(id).setIp(ip).setPort(port).build();
     ShuffleServerHeartBeatRequest request =
@@ -125,6 +126,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             .setEventNumInFlush(eventNumInFlush)
             .addAllTags(tags)
             .setIsHealthy(BoolValue.newBuilder().setValue(isHealthy).build())
+            .setDecommissioned(BoolValue.newBuilder().setValue(decommissioned).build())
             .build();
 
     StatusCode status;
@@ -179,7 +181,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         request.getEventNumInFlush(),
         request.getTimeout(),
         request.getTags(),
-        request.isHealthy());
+        request.isHealthy(),
+        request.isDecommissioned());
 
     RssSendHeartBeatResponse response;
     StatusCode statusCode = rpcResponse.getStatus();

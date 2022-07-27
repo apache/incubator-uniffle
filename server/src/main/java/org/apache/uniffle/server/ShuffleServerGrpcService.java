@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.Context;
@@ -42,6 +43,8 @@ import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
+import org.apache.uniffle.proto.RssProtos.DecommissionRequest;
+import org.apache.uniffle.proto.RssProtos.DecommissionResponse;
 import org.apache.uniffle.proto.RssProtos.FinishShuffleRequest;
 import org.apache.uniffle.proto.RssProtos.FinishShuffleResponse;
 import org.apache.uniffle.proto.RssProtos.GetLocalShuffleDataRequest;
@@ -303,6 +306,18 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     }
 
     LOG.info("Get heartbeat from {}", appId);
+    responseObserver.onNext(response);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void decommission(DecommissionRequest request, StreamObserver<DecommissionResponse> responseObserver) {
+    shuffleServer.setDecommissioned(request.getOn().getValue());
+    DecommissionResponse response = DecommissionResponse
+        .newBuilder()
+        .setStatus(valueOf(StatusCode.SUCCESS))
+        .setOn(BoolValue.newBuilder().setValue(shuffleServer.isDecommissioned()).build())
+        .build();
     responseObserver.onNext(response);
     responseObserver.onCompleted();
   }

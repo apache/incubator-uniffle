@@ -19,6 +19,7 @@ package org.apache.uniffle.coordinator;
 
 import java.util.Set;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
 
 public class ServerNode implements Comparable<ServerNode> {
@@ -33,6 +34,21 @@ public class ServerNode implements Comparable<ServerNode> {
   private long timestamp;
   private Set<String> tags;
   private boolean isHealthy;
+  private boolean decommissioned;
+
+  @VisibleForTesting
+  ServerNode(
+      String id,
+      String ip,
+      int port,
+      long usedMemory,
+      long preAllocatedMemory,
+      long availableMemory,
+      int eventNumInFlush,
+      Set<String> tags,
+      boolean isHealthy) {
+    this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags ,isHealthy, false);
+  }
 
   public ServerNode(
       String id,
@@ -43,7 +59,8 @@ public class ServerNode implements Comparable<ServerNode> {
       long availableMemory,
       int eventNumInFlush,
       Set<String> tags,
-      boolean isHealthy) {
+      boolean isHealthy,
+      boolean decommissioned) {
     this.id = id;
     this.ip = ip;
     this.port = port;
@@ -54,6 +71,7 @@ public class ServerNode implements Comparable<ServerNode> {
     this.timestamp = System.currentTimeMillis();
     this.tags = tags;
     this.isHealthy = isHealthy;
+    this.decommissioned = decommissioned;
   }
 
   public ShuffleServerId convertToGrpcProto() {
@@ -100,6 +118,10 @@ public class ServerNode implements Comparable<ServerNode> {
     return isHealthy;
   }
 
+  public boolean isDecommissioned() {
+    return decommissioned;
+  }
+
   @Override
   public String toString() {
     return "ServerNode with id[" + id
@@ -110,8 +132,9 @@ public class ServerNode implements Comparable<ServerNode> {
         + "], availableMemory[" + availableMemory
         + "], eventNumInFlush[" + eventNumInFlush
         + "], timestamp[" + timestamp
-        + "], tags" + tags.toString() + ""
-        + ", healthy[" + isHealthy + "]";
+        + "], tags" + tags.toString()
+        + ", healthy[" + isHealthy + "]"
+        + ", decommissioned[" + decommissioned + "]";
   }
 
   /**

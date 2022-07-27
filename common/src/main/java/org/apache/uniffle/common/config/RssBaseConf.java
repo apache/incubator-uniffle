@@ -20,6 +20,7 @@ package org.apache.uniffle.common.config;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.uniffle.common.util.RssUtils;
 
 public class RssBaseConf extends RssConf {
 
@@ -156,6 +157,23 @@ public class RssBaseConf extends RssConf {
       .booleanType()
       .defaultValue(true)
       .withDescription("The switch for jvm metrics verbose");
+
+  public RssBaseConf() {
+  }
+
+  public RssBaseConf(String fileName) {
+    super();
+    Map<String, String> properties = RssUtils.getPropertiesFromFile(fileName);
+
+    if (properties == null) {
+      return;
+    }
+
+    boolean ret = loadCommonConf(properties);
+    if (!ret) {
+      throw new IllegalStateException("Fail to load config file " + fileName);
+    }
+  }
 
   public boolean loadCommonConf(Map<String, String> properties) {
     if (properties == null) {

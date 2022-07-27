@@ -24,12 +24,14 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
+import org.apache.uniffle.client.request.RssDecommissionRequest;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssGetInMemoryShuffleDataRequest;
 import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
@@ -41,6 +43,7 @@ import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
+import org.apache.uniffle.client.response.RssDecommissionResponse;
 import org.apache.uniffle.client.response.RssFinishShuffleResponse;
 import org.apache.uniffle.client.response.RssGetInMemoryShuffleDataResponse;
 import org.apache.uniffle.client.response.RssGetShuffleDataResponse;
@@ -57,6 +60,8 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
+import org.apache.uniffle.proto.RssProtos.DecommissionRequest;
+import org.apache.uniffle.proto.RssProtos.DecommissionResponse;
 import org.apache.uniffle.proto.RssProtos.FinishShuffleRequest;
 import org.apache.uniffle.proto.RssProtos.FinishShuffleResponse;
 import org.apache.uniffle.proto.RssProtos.GetLocalShuffleDataRequest;
@@ -553,6 +558,30 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       default:
         String msg = "Can't get shuffle in memory data from " + host + ":" + port
             + " for " + requestInfo + ", errorMsg:" + rpcResponse.getRetMsg();
+        LOG.error(msg);
+        throw new RssException(msg);
+    }
+    return response;
+  }
+
+  @Override
+  public RssDecommissionResponse decommission(RssDecommissionRequest request) {
+    DecommissionRequest protoRequest =
+        DecommissionRequest.newBuilder().setOn(BoolValue.newBuilder().setValue(request.isOn()).build())
+            .build();
+    DecommissionResponse rpcResponse =
+        blockingStub.withDeadlineAfter(RPC_TIMEOUT_DEFAULT_MS, TimeUnit.MILLISECONDS).decommission(protoRequest);
+    StatusCode statusCode = rpcResponse.getStatus();
+
+    RssDecommissionResponse response;
+    switch (statusCode) {
+      case SUCCESS:
+        response = new RssDecommissionResponse(
+            ResponseStatusCode.SUCCESS, rpcResponse.getOn().getValue());
+        break;
+      default:
+        String msg = "Can't " + (request.isOn() ? "enable" : "disable") + " decommission to "
+            + host + ":" + port + ", errorMsg:" + rpcResponse.getRetMsg();
         LOG.error(msg);
         throw new RssException(msg);
     }

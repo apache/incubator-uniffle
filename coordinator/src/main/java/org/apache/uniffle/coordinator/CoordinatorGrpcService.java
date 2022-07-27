@@ -322,6 +322,11 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     if (request.hasIsHealthy()) {
       isHealthy = request.getIsHealthy().getValue();
     }
+
+    boolean decommissioned = false;
+    if (request.hasDecommissioned()) {
+      decommissioned = request.getDecommissioned().getValue();
+    }
     return new ServerNode(request.getServerId().getId(),
         request.getServerId().getIp(),
         request.getServerId().getPort(),
@@ -330,6 +335,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         request.getAvailableMemory(),
         request.getEventNumInFlush(),
         Sets.newHashSet(request.getTagsList()),
-        isHealthy);
+        isHealthy,
+        decommissioned);
   }
 }

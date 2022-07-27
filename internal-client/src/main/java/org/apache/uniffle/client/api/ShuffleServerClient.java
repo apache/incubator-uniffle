@@ -18,6 +18,7 @@
 package org.apache.uniffle.client.api;
 
 import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
+import org.apache.uniffle.client.request.RssDecommissionRequest;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssGetInMemoryShuffleDataRequest;
 import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
@@ -28,6 +29,7 @@ import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
+import org.apache.uniffle.client.response.RssDecommissionResponse;
 import org.apache.uniffle.client.response.RssFinishShuffleResponse;
 import org.apache.uniffle.client.response.RssGetInMemoryShuffleDataResponse;
 import org.apache.uniffle.client.response.RssGetShuffleDataResponse;
@@ -61,6 +63,7 @@ public interface ShuffleServerClient {
   RssGetInMemoryShuffleDataResponse getInMemoryShuffleData(
       RssGetInMemoryShuffleDataRequest request);
 
+  RssDecommissionResponse decommission(RssDecommissionRequest request);
   String getDesc();
 
   void close();

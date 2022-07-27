@@ -37,6 +37,7 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
+import org.apache.uniffle.client.request.RssDecommissionRequest;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
 import org.apache.uniffle.client.request.RssGetShuffleIndexRequest;
@@ -46,6 +47,7 @@ import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
+import org.apache.uniffle.client.response.RssDecommissionResponse;
 import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.util.ClientUtils;
@@ -611,6 +613,14 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     assertNotEquals(shuffleServerClient.requirePreAllocation(10, 0, 10), -1);
     newValue = ShuffleServerMetrics.counterTotalRequireBufferFailed.get();
     assertEquals((int)newValue, (int)oldValue + 2);
+  }
+
+  @Test
+  public void decommissionTest() {
+    RssDecommissionResponse response = shuffleServerClient.decommission(new RssDecommissionRequest(false));
+    assertTrue(!response.isOn());
+    response = shuffleServerClient.decommission(new RssDecommissionRequest(true));
+    assertTrue(response.isOn());
   }
 
   private List<Long> getBlockIdList(int partitionId, int blockNum) {

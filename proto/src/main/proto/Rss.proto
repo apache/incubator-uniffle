@@ -35,6 +35,7 @@ service ShuffleServer {
   rpc finishShuffle (FinishShuffleRequest) returns (FinishShuffleResponse);
   rpc requireBuffer (RequireBufferRequest) returns (RequireBufferResponse);
   rpc appHeartbeat(AppHeartBeatRequest) returns (AppHeartBeatResponse);
+  rpc decommission(DecommissionRequest) returns (DecommissionResponse);
 }
 
 message FinishShuffleRequest {
@@ -203,11 +204,22 @@ message ShuffleServerHeartBeatRequest {
   int32 eventNumInFlush = 5;
   repeated string tags = 6;
   google.protobuf.BoolValue isHealthy = 7;
+  google.protobuf.BoolValue decommissioned = 8;
 }
 
 message ShuffleServerHeartBeatResponse {
   StatusCode status = 1;
   string retMsg = 2;
+}
+
+message DecommissionRequest {
+  google.protobuf.BoolValue on = 1;
+}
+
+message DecommissionResponse {
+  StatusCode status = 1;
+  google.protobuf.BoolValue on = 2;
+  string retMsg = 3;
 }
 
 message ShuffleServerId {
