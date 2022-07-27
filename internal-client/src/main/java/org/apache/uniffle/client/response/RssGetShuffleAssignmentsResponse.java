@@ -32,6 +32,10 @@ public class RssGetShuffleAssignmentsResponse extends ClientResponse {
     super(statusCode);
   }
 
+  public RssGetShuffleAssignmentsResponse(ResponseStatusCode statusCode, String message) {
+    super(statusCode, message);
+  }
+
   public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
     return partitionToServers;
   }
