@@ -19,7 +19,7 @@
 
 Uniffle is a unified remote shuffle service for analytics engines.
 It provides the ability to aggregate and store shuffle data on remote servers,
-thus improving the speed and stability of large jobs.
+thus improving the speed and reliability of large jobs.
 Currently it supports [Apache Spark](https://spark.apache.org) and [MapReduce](https://hadoop.apache.org).
 
 [![Build](https://github.com/apache/incubator-uniffle/actions/workflows/build.yml/badge.svg?branch=master&event=push)](https://github.com/apache/incubator-uniffle/actions/workflows/build.yml)
