@@ -18,6 +18,7 @@
 package org.apache.spark.shuffle.reader;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 
 import com.esotericsoftware.kryo.io.Input;
@@ -38,7 +39,6 @@ import scala.collection.Iterator;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.common.RssShuffleUtils;
-import sun.nio.ch.DirectBuffer;
 
 public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C>> {
 
@@ -108,8 +108,14 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       shuffleReadMetrics.incFetchWaitTime(fetchDuration);
       if (compressedData != null) {
         shuffleReadMetrics.incRemoteBytesRead(compressedData.limit() - compressedData.position());
+        // Directbytebuffers are not collected in time will cause executor easy 
+        // be killed by cluster managers(such as YARN) for using too much offheap memory
         if (uncompressedData != null && uncompressedData.isDirect()) {
-          ((DirectBuffer)uncompressedData).cleaner().clean();
+          try {
+            RssShuffleUtils.destroyDirectByteBuffer(uncompressedData);
+          } catch (Exception e) {
+            throw new RuntimeException("Destroy DirectByteBuffer failed!", e);
+          }
         }
         long startDecompress = System.currentTimeMillis();
         uncompressedData = RssShuffleUtils.decompressData(
