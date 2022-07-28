@@ -18,7 +18,6 @@
 package org.apache.spark.shuffle.reader;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 
 import com.esotericsoftware.kryo.io.Input;
