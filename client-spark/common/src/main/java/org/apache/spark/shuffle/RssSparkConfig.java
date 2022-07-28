@@ -30,6 +30,9 @@ public class RssSparkConfig {
       SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_PARTITION_NUM_PER_RANGE;
   public static final int RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE =
       RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE;
+  /**
+   * Controls the buffer flushing size during shuffle write
+   */
   public static final String RSS_WRITER_BUFFER_SIZE =
       SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_WRITER_BUFFER_SIZE;
   public static final String RSS_WRITER_BUFFER_SIZE_DEFAULT_VALUE = "3m";
@@ -51,12 +54,21 @@ public class RssSparkConfig {
   public static final String RSS_WRITER_REQUIRE_MEMORY_INTERVAL =
       SPARK_RSS_CONFIG_PREFIX + "rss.writer.require.memory.interval";
   public static final long RSS_WRITER_REQUIRE_MEMORY_INTERVAL_DEFAULT_VALUE = 1000; // 1s
+  /**
+   * Address of the coordinator node which can be more than one.
+   */
   public static final String RSS_COORDINATOR_QUORUM =
       SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_COORDINATOR_QUORUM;
+  /**
+   * Maximum timeout when the client sends data.
+   */
   public static final String RSS_CLIENT_SEND_CHECK_TIMEOUT_MS =
       SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS;
   public static final long RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE =
       RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE; // 10 min
+  /**
+   * Maximum waiting time when the client sends data.
+   */
   public static final String RSS_CLIENT_SEND_CHECK_INTERVAL_MS =
       SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS;
   public static final long RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE =
@@ -80,23 +92,34 @@ public class RssSparkConfig {
   public static final String RSS_CLIENT_HEARTBEAT_THREAD_NUM =
       SPARK_RSS_CONFIG_PREFIX + "rss.client.heartBeat.threadNum";
   public static final int RSS_CLIENT_HEARTBEAT_THREAD_NUM_DEFAULT_VALUE = 4;
+  /**
+   * Limit the size of blocks sent to the ShuffleServer.
+   */
   public static final String RSS_CLIENT_SEND_SIZE_LIMIT = SPARK_RSS_CONFIG_PREFIX + "rss.client.send.size.limit";
   public static final String RSS_CLIENT_SEND_SIZE_LIMIT_DEFAULT_VALUE = "16m";
+  /**
+   * When the size of read buffer reaches the half of JVM region (i.e., 32m),
+   * it will incur humongous allocation, so we set it to 14m.
+   */
   public static final String RSS_CLIENT_READ_BUFFER_SIZE =
       SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE;
-  // When the size of read buffer reaches the half of JVM region (i.e., 32m),
-  // it will incur humongous allocation, so we set it to 14m.
   public static final String RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE =
       RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE;
   public static final String RSS_HEARTBEAT_INTERVAL = SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_HEARTBEAT_INTERVAL;
   public static final long RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE = RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE;
   public static final String RSS_HEARTBEAT_TIMEOUT = SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_HEARTBEAT_TIMEOUT;
+  /**
+   * The size of the thread pool when the client send data to the ShuffleServer.
+   */
   public static final String RSS_CLIENT_SEND_THREAD_POOL_SIZE =
       SPARK_RSS_CONFIG_PREFIX + "rss.client.send.threadPool.size";
   public static final int RSS_CLIENT_SEND_THREAD_POOL_SIZE_DEFAULT_VALUE = 10;
   public static final String RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE =
       SPARK_RSS_CONFIG_PREFIX + "rss.client.send.threadPool.keepalive";
   public static final int RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE_DEFAULT_VALUE = 60;
+  /**
+   * Number of copies stored in the ShuffleServer.
+   */
   public static final String RSS_DATA_REPLICA = SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA;
   public static final int RSS_DATA_REPLICA_DEFAULT_VALUE = RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE;
   public static final String RSS_DATA_REPLICA_WRITE = SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_WRITE;
