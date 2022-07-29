@@ -62,13 +62,13 @@ public class PartitionBalanceAssignmentStrategyTest {
     updateServerResource(list);
     boolean isThrown = false;
     try {
-      strategy.assign(100, 2, 1, tags, 1);
+      strategy.assign(100, 2, 1, tags, -1);
     } catch (Exception e) {
       isThrown = true;
     }
     assertTrue(isThrown);
     try {
-      strategy.assign(0, 1, 1, tags, 1);
+      strategy.assign(0, 1, 1, tags, -1);
     } catch (Exception e) {
       fail();
     }
@@ -79,15 +79,15 @@ public class PartitionBalanceAssignmentStrategyTest {
       isThrown = true;
     }
     assertTrue(isThrown);
-    strategy.assign(100, 1, 1, tags, 1);
+    strategy.assign(100, 1, 1, tags, -1);
     List<Long> expect = Lists.newArrayList(20L, 20L, 20L, 20L, 20L, 0L, 0L, 0L, 0L,
         0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
     valid(expect);
-    strategy.assign(75, 1, 1, tags, 1);
+    strategy.assign(75, 1, 1, tags, -1);
     expect = Lists.newArrayList(20L, 20L, 20L, 20L, 20L, 15L, 15L, 15L, 15L,
         15L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
     valid(expect);
-    strategy.assign(100, 1, 1, tags, 1);
+    strategy.assign(100, 1, 1, tags, -1);
     expect = Lists.newArrayList(20L, 20L, 20L, 20L, 20L, 15L, 15L, 15L, 15L,
         15L, 20L, 20L, 20L, 20L, 20L, 0L, 0L, 0L, 0L, 0L);
     valid(expect);
@@ -96,16 +96,16 @@ public class PartitionBalanceAssignmentStrategyTest {
     list = Lists.newArrayList(7L, 18L, 7L, 3L, 19L, 15L, 11L, 10L, 16L, 11L,
         14L, 17L, 15L, 17L, 8L, 1L, 3L, 3L, 6L, 12L);
     updateServerResource(list);
-    strategy.assign(100, 1, 1, tags, 1);
+    strategy.assign(100, 1, 1, tags, -1);
     expect = Lists.newArrayList(0L, 20L, 0L, 0L, 20L, 0L, 0L, 0L, 20L, 0L,
         0L, 20L, 0L, 20L, 0L, 0L, 0L, 0L, 0L, 0L);
     valid(expect);
-    strategy.assign(50, 1, 1, tags, 1);
+    strategy.assign(50, 1, 1, tags, -1);
     expect = Lists.newArrayList(0L, 20L, 0L, 0L, 20L, 10L, 10L, 0L, 20L, 0L,
         10L, 20L, 10L, 20L, 0L, 0L, 0L, 0L, 0L, 10L);
     valid(expect);
 
-    strategy.assign(75, 1, 1, tags, 1);
+    strategy.assign(75, 1, 1, tags, -1);
     expect = Lists.newArrayList(0L, 20L, 0L, 0L, 20L, 25L, 10L, 15L, 20L, 15L,
         25L, 20L, 25L, 20L, 0L, 0L, 0L, 0L, 0L, 10L);
     valid(expect);
@@ -114,15 +114,15 @@ public class PartitionBalanceAssignmentStrategyTest {
     list = Lists.newArrayList(7L, 18L, 7L, 3L, 19L, 15L, 11L, 10L, 16L, 11L,
         14L, 17L, 15L, 17L, 8L, 1L, 3L, 3L, 6L, 12L);
     updateServerResource(list);
-    strategy.assign(50, 1, 2, tags, 1);
+    strategy.assign(50, 1, 2, tags, -1);
     expect = Lists.newArrayList(0L, 20L, 0L, 0L, 20L, 0L, 0L, 0L, 20L, 0L,
         0L, 20L, 0L, 20L, 0L, 0L, 0L, 0L, 0L, 0L);
     valid(expect);
-    strategy.assign(75, 1, 2, tags, 1);
+    strategy.assign(75, 1, 2, tags, -1);
     expect = Lists.newArrayList(0L, 20L, 0L, 0L, 50L, 30L, 0L, 0L, 20L, 0L,
         30L, 20L, 30L, 20L, 0L, 0L, 0L, 0L, 0L, 30L);
     valid(expect);
-    strategy.assign(33, 1, 2, tags, 1);
+    strategy.assign(33, 1, 2, tags, -1);
     expect = Lists.newArrayList(0L, 33L, 0L, 0L, 50L, 30L, 14L, 13L, 20L, 13L,
         30L, 20L, 30L, 20L, 13L, 0L, 0L, 0L, 0L, 30L);
     valid(expect);
@@ -138,19 +138,19 @@ public class PartitionBalanceAssignmentStrategyTest {
 
     Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
     updateServerResource(list);
-    strategy.assign(33, 1, 1, tags, 1);
+    strategy.assign(33, 1, 1, tags, -1);
     expect = Lists.newArrayList(0L, 7L, 0L, 7L, 0L, 7L, 0L, 6L, 0L, 6L, 0L, 0L,
         0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
     valid(expect);
-    strategy.assign(41, 1, 2, tags, 1);
+    strategy.assign(41, 1, 2, tags, -1);
     expect = Lists.newArrayList(0L, 7L, 0L, 7L, 0L, 7L, 0L, 6L, 0L, 6L, 0L, 17L,
         0L, 17L, 0L, 16L, 0L, 16L, 0L, 16L);
     valid(expect);
-    strategy.assign(23, 1, 1, tags, 1);
+    strategy.assign(23, 1, 1, tags, -1);
     expect = Lists.newArrayList(5L, 7L, 5L, 7L, 5L, 7L, 4L, 6L, 4L, 6L, 0L, 17L,
         0L, 17L, 0L, 16L, 0L, 16L, 0L, 16L);
     valid(expect);
-    strategy.assign(11, 1, 3, tags, 1);
+    strategy.assign(11, 1, 3, tags, -1);
     expect = Lists.newArrayList(5L, 7L, 5L, 7L, 5L, 7L, 4L, 13L, 4L, 13L, 7L, 17L,
         6L, 17L, 6L, 16L, 0L, 16L, 0L, 16L);
     valid(expect);

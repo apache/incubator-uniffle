@@ -66,7 +66,7 @@ public class BasicAssignmentStrategyTest {
           20 - i, 0, tags, true));
     }
 
-    PartitionRangeAssignment pra = strategy.assign(100, 10, 2, tags, 1);
+    PartitionRangeAssignment pra = strategy.assign(100, 10, 2, tags, -1);
     SortedMap<PartitionRange, List<ServerNode>> assignments = pra.getAssignments();
     assertEquals(10, assignments.size());
 
@@ -92,14 +92,14 @@ public class BasicAssignmentStrategyTest {
       clusterManager.add(new ServerNode(String.valueOf(i), "", 0, 0, 0,
           0, 0, tags, true));
     }
-    PartitionRangeAssignment pra = strategy.assign(100, 10, 2, tags, 1);
+    PartitionRangeAssignment pra = strategy.assign(100, 10, 2, tags, -1);
     SortedMap<PartitionRange, List<ServerNode>> assignments = pra.getAssignments();
     Set<ServerNode> serverNodes1 = Sets.newHashSet();
     for (Map.Entry<PartitionRange, List<ServerNode>> assignment : assignments.entrySet()) {
       serverNodes1.addAll(assignment.getValue());
     }
 
-    pra = strategy.assign(100, 10, 2, tags, 1);
+    pra = strategy.assign(100, 10, 2, tags, -1);
     assignments = pra.getAssignments();
     Set<ServerNode> serverNodes2 = Sets.newHashSet();
     for (Map.Entry<PartitionRange, List<ServerNode>> assignment : assignments.entrySet()) {
@@ -120,13 +120,13 @@ public class BasicAssignmentStrategyTest {
         0, 0, tags, true);
 
     clusterManager.add(sn1);
-    PartitionRangeAssignment pra = strategy.assign(100, 10, 2, tags, 1);
+    PartitionRangeAssignment pra = strategy.assign(100, 10, 2, tags, -1);
     // nodeNum < replica
     assertNull(pra.getAssignments());
 
     // nodeNum = replica
     clusterManager.add(sn2);
-    pra = strategy.assign(100, 10, 2, tags, 1);
+    pra = strategy.assign(100, 10, 2, tags, -1);
     SortedMap<PartitionRange, List<ServerNode>> assignments = pra.getAssignments();
     Set<ServerNode> serverNodes = Sets.newHashSet();
     for (Map.Entry<PartitionRange, List<ServerNode>> assignment : assignments.entrySet()) {
@@ -138,7 +138,7 @@ public class BasicAssignmentStrategyTest {
 
     // nodeNum > replica & nodeNum < shuffleNodesMax
     clusterManager.add(sn3);
-    pra = strategy.assign(100, 10, 2, tags, 1);
+    pra = strategy.assign(100, 10, 2, tags, -1);
     assignments = pra.getAssignments();
     serverNodes = Sets.newHashSet();
     for (Map.Entry<PartitionRange, List<ServerNode>> assignment : assignments.entrySet()) {
