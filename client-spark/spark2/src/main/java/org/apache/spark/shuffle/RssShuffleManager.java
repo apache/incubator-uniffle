@@ -150,6 +150,7 @@ public class RssShuffleManager implements ShuffleManager {
     this.dataTransferPoolSize = sparkConf.getInt(RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE.key,
         RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE.getValue());
     this.dataReplicaSkipEnabled = sparkConf.getBoolean(RssSparkConfig.RSS_DATA_REPLICA_SKIP_ENABLED.key,
+        RssSparkConfig.RSS_DATA_REPLICA_SKIP_ENABLED.getValue());
     LOG.info("Check quorum config ["
         + dataReplica + ":" + dataReplicaWrite + ":" + dataReplicaRead + ":" + dataReplicaSkipEnabled + "]");
     RssUtils.checkQuorumSetting(dataReplica, dataReplicaWrite, dataReplicaRead);

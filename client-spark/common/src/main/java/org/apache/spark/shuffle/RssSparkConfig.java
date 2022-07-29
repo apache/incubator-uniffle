@@ -283,6 +283,12 @@ public class RssSparkConfig {
           .stringConf()
           .createWithDefault(""));
 
+  public static final RssConfigEntry<String> RSS_DATA_COMMIT_POOL_SIZE = new RssConfigEntry(
+      SparkConfigBuilder
+          .key("spark.rss.client.data.commit.pool.size")
+          .intConf()
+          .createWithDefault(-1));
+
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
       Sets.newHashSet(RSS_STORAGE_TYPE.key, RSS_REMOTE_STORAGE_PATH.key);
 
