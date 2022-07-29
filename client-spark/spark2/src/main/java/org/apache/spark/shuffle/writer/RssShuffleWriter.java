@@ -105,20 +105,20 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.partitioner = shuffleDependency.partitioner();
     this.shuffleManager = shuffleManager;
     this.shouldPartition = partitioner.numPartitions() > 1;
-    this.sendCheckTimeout = sparkConf.getLong(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
-        RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE);
-    this.sendCheckInterval = sparkConf.getLong(RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS,
-        RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE);
-    this.sendSizeLimit = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT,
-        RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT_DEFAULT_VALUE);
-    this.bitmapSplitNum = sparkConf.getInt(RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM,
-        RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM_DEFAULT_VALUE);
+    this.sendCheckTimeout = sparkConf.getLong(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key,
+        RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.getValue());
+    this.sendCheckInterval = sparkConf.getLong(RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key,
+        RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.getValue());
+    this.sendSizeLimit = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT.key,
+        RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT.getValue());
+    this.bitmapSplitNum = sparkConf.getInt(RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM.key,
+        RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM.getValue());
     this.partitionToBlockIds = Maps.newConcurrentMap();
     this.shuffleWriteClient = shuffleWriteClient;
     this.shuffleServersForData = rssHandle.getShuffleServersForData();
     this.partitionToServers = rssHandle.getPartitionToServers();
     this.isMemoryShuffleEnabled = isMemoryShuffleEnabled(
-        sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE));
+        sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key));
   }
 
   private boolean isMemoryShuffleEnabled(String storageType) {

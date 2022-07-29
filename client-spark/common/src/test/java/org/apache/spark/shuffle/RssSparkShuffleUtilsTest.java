@@ -51,7 +51,7 @@ public class RssSparkShuffleUtilsTest {
      * Case2: set the multiple tags implicitly and will return the {@code Constants.SHUFFLE_SERVER_VERSION}
      * and configured tags.
      */
-    conf.set(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_TAGS, " a,b");
+    conf.set(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_TAGS.key, " a,b");
     tags = RssSparkShuffleUtils.getAssignmentTags(conf);
     assertEquals(3, tags.size());
     Iterator<String> iterator = tags.iterator();
@@ -67,14 +67,14 @@ public class RssSparkShuffleUtilsTest {
     assertFalse(conf1.getBoolean("dfs.namenode.odfs.enable", false));
     assertEquals("org.apache.hadoop.fs.Hdfs", conf1.get("fs.AbstractFileSystem.hdfs.impl"));
 
-    conf.set(RssSparkConfig.RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE, "true");
+    conf.set(RssSparkConfig.RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE.key, "true");
     conf1 = RssSparkShuffleUtils.newHadoopConfiguration(conf);
     assertTrue(conf1.getBoolean("dfs.namenode.odfs.enable", false));
     assertEquals("org.apache.hadoop.odfs.HdfsOdfsFilesystem", conf1.get("fs.hdfs.impl"));
     assertEquals("org.apache.hadoop.odfs.HdfsOdfs", conf1.get("fs.AbstractFileSystem.hdfs.impl"));
 
-    conf.set(RssSparkConfig.RSS_OZONE_FS_HDFS_IMPL, "expect_odfs_impl");
-    conf.set(RssSparkConfig.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL, "expect_odfs_abstract_impl");
+    conf.set(RssSparkConfig.RSS_OZONE_FS_HDFS_IMPL.key, "expect_odfs_impl");
+    conf.set(RssSparkConfig.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL.key, "expect_odfs_abstract_impl");
     conf1 = RssSparkShuffleUtils.newHadoopConfiguration(conf);
     assertEquals("expect_odfs_impl", conf1.get("fs.hdfs.impl"));
     assertEquals("expect_odfs_abstract_impl", conf1.get("fs.AbstractFileSystem.hdfs.impl"));
@@ -116,47 +116,47 @@ public class RssSparkShuffleUtilsTest {
     clientConf.put(mockKey, mockValue);
 
     RssSparkShuffleUtils.applyDynamicClientConf(conf, clientConf);
-    assertEquals(remoteStoragePath, conf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH));
+    assertEquals(remoteStoragePath, conf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key));
     assertEquals(RssClientConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE,
-        conf.get(RssSparkConfig.RSS_CLIENT_TYPE));
+        conf.get(RssSparkConfig.RSS_CLIENT_TYPE.key));
     assertEquals(Integer.toString(RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE),
-        conf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX));
+        conf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX.key));
     assertEquals(Long.toString(RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE),
-        conf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX));
+        conf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.key));
     assertEquals(Integer.toString(RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE),
-        conf.get(RssSparkConfig.RSS_DATA_REPLICA));
+        conf.get(RssSparkConfig.RSS_DATA_REPLICA.key));
     assertEquals(Integer.toString(RssClientConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE),
-        conf.get(RssSparkConfig.RSS_DATA_REPLICA_WRITE));
+        conf.get(RssSparkConfig.RSS_DATA_REPLICA_WRITE.key));
     assertEquals(Integer.toString(RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE),
-        conf.get(RssSparkConfig.RSS_DATA_REPLICA_READ));
+        conf.get(RssSparkConfig.RSS_DATA_REPLICA_READ.key));
     assertEquals(Long.toString(RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE),
-        conf.get(RssSparkConfig.RSS_HEARTBEAT_INTERVAL));
-    assertEquals(StorageType.MEMORY_LOCALFILE_HDFS.name(), conf.get(RssSparkConfig.RSS_STORAGE_TYPE));
+        conf.get(RssSparkConfig.RSS_HEARTBEAT_INTERVAL.key));
+    assertEquals(StorageType.MEMORY_LOCALFILE_HDFS.name(), conf.get(RssSparkConfig.RSS_STORAGE_TYPE.key));
     assertEquals(Long.toString(RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE),
-        conf.get(RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS));
+        conf.get(RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key));
     assertEquals(Long.toString(RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE),
-        conf.get(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS));
+        conf.get(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key));
     assertEquals(Integer.toString(RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE),
-        conf.get(RssSparkConfig.RSS_PARTITION_NUM_PER_RANGE));
+        conf.get(RssSparkConfig.RSS_PARTITION_NUM_PER_RANGE.key));
     assertEquals(Integer.toString(RssClientConfig.RSS_INDEX_READ_LIMIT_DEFAULT_VALUE),
-        conf.get(RssSparkConfig.RSS_INDEX_READ_LIMIT));
+        conf.get(RssSparkConfig.RSS_INDEX_READ_LIMIT.key));
     assertEquals(RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE,
-        conf.get(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE));
+        conf.get(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key));
     assertEquals(mockValue, conf.get(mockKey));
 
     String remoteStoragePath2 = "hdfs://path2";
     clientConf = Maps.newHashMap();
     clientConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_HDFS.name());
-    clientConf.put(RssSparkConfig.RSS_REMOTE_STORAGE_PATH, remoteStoragePath2);
+    clientConf.put(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key, remoteStoragePath2);
     clientConf.put(mockKey, "won't be rewrite");
     clientConf.put(RssClientConfig.RSS_CLIENT_RETRY_MAX, "99999");
     RssSparkShuffleUtils.applyDynamicClientConf(conf, clientConf);
     // overwrite
-    assertEquals(remoteStoragePath2, conf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH));
-    assertEquals(StorageType.MEMORY_HDFS.name(), conf.get(RssSparkConfig.RSS_STORAGE_TYPE));
+    assertEquals(remoteStoragePath2, conf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key));
+    assertEquals(StorageType.MEMORY_HDFS.name(), conf.get(RssSparkConfig.RSS_STORAGE_TYPE.key));
     // won't be overwrite
     assertEquals(mockValue, conf.get(mockKey));
     assertEquals(Integer.toString(RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE),
-        conf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX));
+        conf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX.key));
   }
 }
