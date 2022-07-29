@@ -248,7 +248,7 @@ public class RssShuffleManager implements ShuffleManager {
   }
 
   private void startHeartbeat() {
-    if (!sparkConf.getBoolean(RssSparkConfig.RSS_TEST_FLAG, false) && !heartbeatStarted) {
+    if (!sparkConf.getBoolean(RssSparkConfig.RSS_TEST_FLAG.key, false) && !heartbeatStarted) {
       heartBeatScheduledExecutorService.scheduleAtFixedRate(
           () -> {
             try {

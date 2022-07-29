@@ -283,7 +283,7 @@ public class RssSparkConfig {
           .stringConf()
           .createWithDefault(""));
 
-  public static final RssConfigEntry<String> RSS_DATA_COMMIT_POOL_SIZE = new RssConfigEntry(
+  public static final RssConfigEntry<Integer> RSS_DATA_COMMIT_POOL_SIZE = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.client.data.commit.pool.size")
           .intConf()
