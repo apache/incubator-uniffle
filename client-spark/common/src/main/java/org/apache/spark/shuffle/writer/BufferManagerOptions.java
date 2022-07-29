@@ -36,19 +36,19 @@ public class BufferManagerOptions {
 
   public BufferManagerOptions(SparkConf sparkConf) {
     bufferSize = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_WRITER_BUFFER_SIZE.key,
-        RssSparkConfig.RSS_WRITER_BUFFER_SIZE.getValue());
+        RssSparkConfig.RSS_WRITER_BUFFER_SIZE.getDefaultValue());
     serializerBufferSize = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE.key,
-        RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE.getValue());
+        RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE.getDefaultValue());
     bufferSegmentSize = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE.key,
-        RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE.getValue());
+        RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE.getDefaultValue());
     bufferSpillThreshold = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.key,
-        RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.getValue());
+        RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.getDefaultValue());
     preAllocatedBufferSize = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE.key,
-        RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE.getValue());
+        RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE.getDefaultValue());
     requireMemoryInterval = sparkConf.getLong(RssSparkConfig.RSS_WRITER_REQUIRE_MEMORY_INTERVAL.key,
-        RssSparkConfig.RSS_WRITER_REQUIRE_MEMORY_INTERVAL.getValue());
+        RssSparkConfig.RSS_WRITER_REQUIRE_MEMORY_INTERVAL.getDefaultValue());
     requireMemoryRetryMax = sparkConf.getInt(RssSparkConfig.RSS_WRITER_REQUIRE_MEMORY_RETRY_MAX.key,
-        RssSparkConfig.RSS_WRITER_REQUIRE_MEMORY_RETRY_MAX.getValue());
+        RssSparkConfig.RSS_WRITER_REQUIRE_MEMORY_RETRY_MAX.getDefaultValue());
     LOG.info(RssSparkConfig.RSS_WRITER_BUFFER_SIZE.key + "=" + bufferSize);
     LOG.info(RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.key + "=" + bufferSpillThreshold);
     LOG.info(RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE.key + "=" + preAllocatedBufferSize);

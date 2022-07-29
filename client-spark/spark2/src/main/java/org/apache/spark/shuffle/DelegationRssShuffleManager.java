@@ -48,7 +48,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     this.sparkConf = sparkConf;
     accessTimeoutMs = sparkConf.getInt(
         RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.key,
-        RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.getValue());
+        RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.getDefaultValue());
     if (isDriver) {
       coordinatorClients = RssSparkShuffleUtils.createCoordinatorClients(sparkConf);
       delegate = createShuffleManagerInDriver();

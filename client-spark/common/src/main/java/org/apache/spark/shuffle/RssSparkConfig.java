@@ -44,7 +44,7 @@ public class RssSparkConfig {
       this.key = entry.key();
     }
 
-    public T getValue() {
+    public T getDefaultValue() {
       return (T) entry.defaultValue().get();
     }
   }
