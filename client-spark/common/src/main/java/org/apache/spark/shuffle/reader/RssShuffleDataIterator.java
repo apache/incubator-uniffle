@@ -28,6 +28,7 @@ import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.serializer.DeserializationStream;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.serializer.SerializerInstance;
+import org.apache.uniffle.common.exception.RssException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Product2;
@@ -113,7 +114,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
           try {
             RssShuffleUtils.destroyDirectByteBuffer(uncompressedData);
           } catch (Exception e) {
-            throw new RuntimeException("Destroy DirectByteBuffer failed!", e);
+            throw new RssException("Destroy DirectByteBuffer failed!", e);
           }
         }
         long startDecompress = System.currentTimeMillis();
