@@ -44,7 +44,7 @@ public class RssSparkConfig {
     }
 
     public T getValue() {
-      return (T) entry.defaultValue(). get();
+      return (T) entry.defaultValue().get();
     }
   }
 
