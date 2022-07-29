@@ -47,10 +47,10 @@ public class ShuffleServerInfoTest {
   @Test
   public void testToString() {
     ShuffleServerInfo info = new ShuffleServerInfo("1", "localhost", 1234);
-    assertEquals("ShuffleServerInfo{id[" + info.getId() +
-        "], host[" + info.getHost() +
-        "], port[" + info.getPort() +
-        "]}", info.toString());
+    assertEquals("ShuffleServerInfo{id[" + info.getId()
+        + "], host[" + info.getHost()
+        + "], port[" + info.getPort()
+        + "]}", info.toString());
   }
 
 }

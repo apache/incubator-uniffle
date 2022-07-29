@@ -41,13 +41,13 @@ public class PartitionRangeTest {
   public void testEquals() {
     PartitionRange partitionRange1 = new PartitionRange(1, 2);
     PartitionRange partitionRange2 = new PartitionRange(1, 2);
-    PartitionRange partitionRange3 = new PartitionRange(1, 1);
-    PartitionRange partitionRange4 = new PartitionRange(2, 2);
     assertEquals(partitionRange1, partitionRange1);
     assertEquals(partitionRange1.hashCode(), partitionRange1.hashCode());
     assertEquals(partitionRange1, partitionRange2);
     assertEquals(partitionRange1.hashCode(), partitionRange2.hashCode());
+    PartitionRange partitionRange3 = new PartitionRange(1, 1);
     assertNotEquals(partitionRange1, partitionRange3);
+    PartitionRange partitionRange4 = new PartitionRange(2, 2);
     assertNotEquals(partitionRange1, partitionRange4);
     assertNotEquals(partitionRange1, null);
     assertNotEquals(partitionRange1, new Object());

@@ -17,6 +17,10 @@
 
 package org.apache.uniffle.common.config;
 
+import java.util.List;
+import java.util.function.Function;
+
+import com.google.common.collect.Lists;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,11 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-
-import java.util.List;
-import java.util.function.Function;
-
-import com.google.common.collect.Lists;
 
 public class ConfigOptionTest {
 
@@ -123,6 +122,7 @@ public class ConfigOptionTest {
       conf.get(checkLongValsOptions);
       fail();
     } catch (IllegalArgumentException illegalArgumentException) {
+      // no op
     }
 
     conf.set(checkLongValsOptions, Lists.newArrayList(1, 2, 3));
@@ -187,7 +187,9 @@ public class ConfigOptionTest {
     final ConfigOption<Integer> positiveInt = ConfigOptions
         .key("key5")
         .intType()
-        .checkValue((v) -> {return v > 0;}, "The value of key5 must be positive")
+        .checkValue((v) -> {
+          return v > 0;
+        }, "The value of key5 must be positive")
         .defaultValue(1)
         .withDescription("Positive integer key");
     RssBaseConf conf = new RssBaseConf();
