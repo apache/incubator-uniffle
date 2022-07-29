@@ -19,12 +19,16 @@ package org.apache.uniffle.server.storage;
 
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
+import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.util.StorageType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class LocalStorageManagerTest {
 
@@ -48,7 +52,12 @@ public class LocalStorageManagerTest {
 
   @Test
   public void testInitLocalStorageManager() {
-    assertTrue(localStorageManager.getStorages().size() == storagePaths.length) ;
+    List<LocalStorage> storages = localStorageManager.getStorages();
+    assertNotNull(storages);
+    assertTrue(storages.size() == storagePaths.length);
+    for (int i = 0; i < storagePaths.length; i++) {
+      assertTrue(storagePaths[i].equals(storages.get(i).getBasePath()));
+    }
   }
 }
 
