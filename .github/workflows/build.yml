@@ -46,16 +46,14 @@ jobs:
   
   java-11:
     name: 'java 11'
-    uses: ./.github/workflows/parallel.yml
+    uses: ./.github/workflows/sequential.yml
     with:
       maven-args: package -DskipTests
       java-version: '11'
-      coverage: false
 
   java-17:
     name: 'java 17'
-    uses: ./.github/workflows/parallel.yml
+    uses: ./.github/workflows/sequential.yml
     with:
       maven-args: package -DskipTests
       java-version: '17'
-      coverage: false

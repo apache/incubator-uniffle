@@ -29,10 +29,6 @@ on:
         default: false
         required: false
         type: boolean
-      coverage:
-        default: true
-        required: false
-        type: boolean
       summary:
         default: "grep -e '^\\[ERROR\\]' /tmp/maven.log || true"
         required: false
@@ -97,5 +93,4 @@ jobs:
         path: ${{ inputs.reports-path }}
       continue-on-error: true
     - name: Upload coverage to Codecov
-      if: ${{ inputs.coverage }}
       uses: codecov/codecov-action@v3
