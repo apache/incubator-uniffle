@@ -17,11 +17,11 @@
 
 package org.apache.spark.shuffle;
 
+import java.util.Set;
+
 import com.google.common.collect.Sets;
 import org.apache.spark.internal.config.ConfigBuilder;
 import org.apache.spark.internal.config.ConfigEntry;
-
-import java.util.Set;
 
 public class RssSparkConfig {
 
