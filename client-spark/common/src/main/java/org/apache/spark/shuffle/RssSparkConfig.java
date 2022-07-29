@@ -288,6 +288,6 @@ public class RssSparkConfig {
 
   public static final String SPARK_RSS_CONFIG_PREFIX = "spark.";
 
-  public static final boolean RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE_DEFAULT_VALUE = false;
+  public static final boolean RSS_USE_RSS_SHUFFLE_MANAGER_DEFAULT_VALUE = false;
 
 }
