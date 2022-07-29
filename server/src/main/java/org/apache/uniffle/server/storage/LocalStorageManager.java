@@ -104,6 +104,7 @@ public class LocalStorageManager extends SingleStorageManager {
       e.printStackTrace();
     }
 
+    executorService.shutdown();
     int failedCount = storageBasePaths.length - successCount.get();
     if (failedCount > 0) {
       throw new RuntimeException(String.format("[%s] local storage init failed!", failedCount));
