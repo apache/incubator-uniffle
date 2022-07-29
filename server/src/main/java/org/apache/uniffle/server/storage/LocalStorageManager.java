@@ -17,13 +17,20 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.RssUtils;
@@ -42,8 +49,9 @@ import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
 public class LocalStorageManager extends SingleStorageManager {
+  private static final Logger LOG = LoggerFactory.getLogger(LocalStorageManager.class);
 
-  private final List<LocalStorage> localStorages = Lists.newArrayList();
+  private final List<LocalStorage> localStorages;
   private final String[] storageBasePaths;
   private final LocalStorageChecker checker;
   private List<LocalStorage> unCorruptedStorages = Lists.newArrayList();
@@ -63,15 +71,46 @@ public class LocalStorageManager extends SingleStorageManager {
     if (highWaterMarkOfWrite < lowWaterMarkOfWrite) {
       throw new IllegalArgumentException("highWaterMarkOfWrite must be larger than lowWaterMarkOfWrite");
     }
-    for (String storagePath : storageBasePaths) {
-      localStorages.add(LocalStorage.newBuilder()
-          .basePath(storagePath)
-          .capacity(capacity)
-          .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
-          .highWaterMarkOfWrite(highWaterMarkOfWrite)
-          .shuffleExpiredTimeoutMs(shuffleExpiredTimeoutMs)
-          .build());
+
+    // We must make sure the order of `storageBasePaths` and `localStorages` is same, or some unit test may be fail
+    CountDownLatch countDownLatch = new CountDownLatch(storageBasePaths.length);
+    AtomicInteger successCount = new AtomicInteger();
+    ExecutorService executorService = Executors.newCachedThreadPool();
+    LocalStorage[] localStorageArray = new LocalStorage[storageBasePaths.length];
+    for (int i = 0; i < storageBasePaths.length; i++) {
+      final int idx = i;
+      String storagePath = storageBasePaths[i];
+      executorService.submit(() -> {
+        try {
+          localStorageArray[idx] = LocalStorage.newBuilder()
+              .basePath(storagePath)
+              .capacity(capacity)
+              .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
+              .highWaterMarkOfWrite(highWaterMarkOfWrite)
+              .shuffleExpiredTimeoutMs(shuffleExpiredTimeoutMs)
+              .build();
+          successCount.incrementAndGet();
+        } catch (Exception e) {
+          LOG.error("LocalStorage init failed!", e);
+        } finally {
+          countDownLatch.countDown();
+        }
+      });
     }
+
+    try {
+      countDownLatch.await();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+
+    executorService.shutdown();
+    int failedCount = storageBasePaths.length - successCount.get();
+    if (failedCount > 0) {
+      throw new RuntimeException(String.format("[%s] local storage init failed!", failedCount));
+    }
+
+    localStorages = Arrays.asList(localStorageArray);
     this.checker = new LocalStorageChecker(conf, localStorages);
   }
 
