@@ -36,6 +36,7 @@ import org.apache.uniffle.common.ShuffleIndexResult;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -86,6 +87,14 @@ public class RssUtilsTest {
     Roaring64NavigableMap bitmap2 = RssUtils.deserializeBitMap(bytes);
     assertEquals(bitmap1, bitmap2);
     assertEquals(Roaring64NavigableMap.bitmapOf(), RssUtils.deserializeBitMap(new byte[]{}));
+  }
+
+  @Test
+  public void testCloneBitmap() {
+    Roaring64NavigableMap bitmap1 = Roaring64NavigableMap.bitmapOf(1, 2, 100, 10000);
+    Roaring64NavigableMap bitmap2 = RssUtils.cloneBitMap(bitmap1);
+    assertNotSame(bitmap1, bitmap2);
+    assertEquals(bitmap1, bitmap2);
   }
 
   @Test

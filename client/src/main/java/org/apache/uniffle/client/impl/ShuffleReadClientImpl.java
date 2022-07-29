@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.client.impl;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Queue;
@@ -110,11 +109,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     }
 
     // copy blockIdBitmap to track all pending blocks
-    try {
-      pendingBlockIds = RssUtils.deserializeBitMap(RssUtils.serializeBitMap(blockIdBitmap));
-    } catch (IOException ioe) {
-      throw new RuntimeException("Can't create pending blockIds.", ioe);
-    }
+    pendingBlockIds = RssUtils.cloneBitMap(blockIdBitmap);
 
     clientReadHandler = ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
   }
@@ -213,11 +208,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   @Override
   public void checkProcessedBlockIds() {
     Roaring64NavigableMap cloneBitmap;
-    try {
-      cloneBitmap = RssUtils.deserializeBitMap(RssUtils.serializeBitMap(blockIdBitmap));
-    } catch (IOException ioe) {
-      throw new RuntimeException("Can't validate processed blockIds.", ioe);
-    }
+    cloneBitmap = RssUtils.cloneBitMap(blockIdBitmap);
     cloneBitmap.and(processedBlockIds);
     if (!blockIdBitmap.equals(cloneBitmap)) {
       throw new RssException("Blocks read inconsistent: expected " + blockIdBitmap.getLongCardinality()
