@@ -317,8 +317,7 @@ public class LocalStorage extends AbstractStorage {
     private long cleanIntervalMs;
     private long shuffleExpiredTimeoutMs;
 
-    @VisibleForTesting
-    protected Builder() {
+    private Builder() {
     }
 
     public Builder capacity(long capacity) {
@@ -354,11 +353,6 @@ public class LocalStorage extends AbstractStorage {
     public Builder shuffleExpiredTimeoutMs(long shuffleExpiredTimeoutMs) {
       this.shuffleExpiredTimeoutMs = shuffleExpiredTimeoutMs;
       return this;
-    }
-
-    @VisibleForTesting
-    public String getBasePath() {
-      return basePath;
     }
 
     public LocalStorage build() {
