@@ -19,6 +19,8 @@ package org.apache.uniffle.client.request;
 
 import java.util.Set;
 
+import com.google.common.annotations.VisibleForTesting;
+
 public class RssGetShuffleAssignmentsRequest {
 
   private String appId;
@@ -27,15 +29,23 @@ public class RssGetShuffleAssignmentsRequest {
   private int partitionNumPerRange;
   private int dataReplica;
   private Set<String> requiredTags;
+  private int assignmentShuffleServerNumber;
 
+  @VisibleForTesting
   public RssGetShuffleAssignmentsRequest(String appId, int shuffleId, int partitionNum,
       int partitionNumPerRange, int dataReplica, Set<String> requiredTags) {
+    this(appId, shuffleId, partitionNum, partitionNumPerRange, dataReplica, requiredTags, -1);
+  }
+
+  public RssGetShuffleAssignmentsRequest(String appId, int shuffleId, int partitionNum,
+      int partitionNumPerRange, int dataReplica, Set<String> requiredTags, int assignmentShuffleServerNumber) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionNum = partitionNum;
     this.partitionNumPerRange = partitionNumPerRange;
     this.dataReplica = dataReplica;
     this.requiredTags = requiredTags;
+    this.assignmentShuffleServerNumber = assignmentShuffleServerNumber;
   }
 
   public String getAppId() {
@@ -60,5 +70,9 @@ public class RssGetShuffleAssignmentsRequest {
 
   public Set<String> getRequiredTags() {
     return requiredTags;
+  }
+
+  public int getAssignmentShuffleServerNumber() {
+    return assignmentShuffleServerNumber;
   }
 }

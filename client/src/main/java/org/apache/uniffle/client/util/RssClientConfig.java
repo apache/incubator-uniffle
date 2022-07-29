@@ -65,4 +65,8 @@ public class RssClientConfig {
   public static final int RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE = 10000;
   public static final String RSS_DYNAMIC_CLIENT_CONF_ENABLED = "rss.dynamicClientConf.enabled";
   public static final boolean RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE = true;
+
+  public static final String RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER =
+      "rss.client.assignment.shuffle.server.number";
+  public static final int RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER_DEFAULT_VALUE = -1;
 }

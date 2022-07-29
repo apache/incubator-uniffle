@@ -41,10 +41,14 @@ public class BasicAssignmentStrategy implements AssignmentStrategy {
 
   @Override
   public PartitionRangeAssignment assign(int totalPartitionNum, int partitionNumPerRange,
-      int replica, Set<String> requiredTags) {
+      int replica, Set<String> requiredTags, int requiredShuffleServerNumber) {
     List<PartitionRange> ranges = CoordinatorUtils.generateRanges(totalPartitionNum, partitionNumPerRange);
     int shuffleNodesMax = clusterManager.getShuffleNodesMax();
-    List<ServerNode> servers = getRequiredServers(requiredTags, shuffleNodesMax);
+    int expectedShuffleNodesNum = shuffleNodesMax;
+    if (requiredShuffleServerNumber < shuffleNodesMax && requiredShuffleServerNumber > 0) {
+      expectedShuffleNodesNum = requiredShuffleServerNumber;
+    }
+    List<ServerNode> servers = getRequiredServers(requiredTags, expectedShuffleNodesNum);
     if (servers.isEmpty() || servers.size() < replica) {
       return new PartitionRangeAssignment(null);
     }

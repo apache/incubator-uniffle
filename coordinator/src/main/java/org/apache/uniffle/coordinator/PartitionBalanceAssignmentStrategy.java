@@ -66,7 +66,8 @@ public class PartitionBalanceAssignmentStrategy implements AssignmentStrategy {
       int totalPartitionNum,
       int partitionNumPerRange,
       int replica,
-      Set<String> requiredTags) {
+      Set<String> requiredTags,
+      int requiredShuffleServerNumber) {
 
     if (partitionNumPerRange != 1) {
       throw new RuntimeException("PartitionNumPerRange must be one");
@@ -107,8 +108,13 @@ public class PartitionBalanceAssignmentStrategy implements AssignmentStrategy {
         throw new RuntimeException("There isn't enough shuffle servers");
       }
 
-      int expectNum = clusterManager.getShuffleNodesMax();
-      if (nodes.size() < clusterManager.getShuffleNodesMax()) {
+      final int assignmentMaxNum = clusterManager.getShuffleNodesMax();
+      int expectNum = assignmentMaxNum;
+      if (requiredShuffleServerNumber < assignmentMaxNum && requiredShuffleServerNumber > 0) {
+        expectNum = requiredShuffleServerNumber;
+      }
+
+      if (nodes.size() < expectNum) {
         LOG.warn("Can't get expected servers [" + expectNum + "] and found only [" + nodes.size() + "]");
         expectNum = nodes.size();
       }
