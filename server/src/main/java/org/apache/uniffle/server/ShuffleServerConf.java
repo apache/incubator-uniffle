@@ -271,11 +271,17 @@ public class ShuffleServerConf extends RssBaseConf {
       .withDescription("For multistorage, fail times exceed the number, will switch storage");
 
   public static final ConfigOption<List<String>> TAGS = ConfigOptions
-          .key("rss.server.tags")
-          .stringType()
-          .asList()
-          .noDefaultValue()
-          .withDescription("Tags list supported by shuffle server");
+      .key("rss.server.tags")
+      .stringType()
+      .asList()
+      .noDefaultValue()
+      .withDescription("Tags list supported by shuffle server");
+
+  public static final ConfigOption<Integer> LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER = ConfigOptions
+      .key("rss.server.localstorage.initialize.max.fail.number")
+      .intType()
+      .defaultValue(0)
+      .withDescription("For localstorage, it will exit when the failed initialized local storage exceed the number");
 
   public ShuffleServerConf() {
   }

@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.server.storage;
 
+import static org.apache.uniffle.server.ShuffleServerConf.LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -24,7 +26,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
@@ -57,7 +61,8 @@ public class LocalStorageManager extends SingleStorageManager {
   private List<LocalStorage> unCorruptedStorages = Lists.newArrayList();
   private final Set<String> corruptedStorages = Sets.newConcurrentHashSet();
 
-  LocalStorageManager(ShuffleServerConf conf) {
+  @VisibleForTesting
+  LocalStorageManager(ShuffleServerConf conf, LocalStorage.Builder localStorageBuilder) {
     super(conf);
     String storageBasePathStr = conf.getString(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
     if (StringUtils.isEmpty(storageBasePathStr)) {
@@ -101,17 +106,29 @@ public class LocalStorageManager extends SingleStorageManager {
     try {
       countDownLatch.await();
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      LOG.error("Failed to wait initializing local storage.", e);
     }
-
     executorService.shutdown();
-    int failedCount = storageBasePaths.length - successCount.get();
-    if (failedCount > 0) {
-      throw new RuntimeException(String.format("[%s] local storage init failed!", failedCount));
-    }
 
+    int failedCount = storageBasePaths.length - successCount.get();
+    int maxFailedNumber = conf.getInteger(LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER);
+    if (failedCount > maxFailedNumber || successCount.get() == 0) {
+      throw new RuntimeException(
+          String.format("Initialize %s local storage(s) failed, "
+              + "specified local storage paths size: %s, the conf of %s:%s",
+              failedCount, localStorageArray.length, LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER, maxFailedNumber)
+      );
+    }
     localStorages = Arrays.asList(localStorageArray);
+    LOG.info(
+        "Succeed to initialize storage paths: {}",
+        StringUtils.join(localStorages.stream().map(LocalStorage::getBasePath).collect(Collectors.toList()))
+    );
     this.checker = new LocalStorageChecker(conf, localStorages);
+  }
+
+  LocalStorageManager(ShuffleServerConf conf) {
+    this(conf, LocalStorage.newBuilder());
   }
 
   @Override
@@ -130,7 +147,6 @@ public class LocalStorageManager extends SingleStorageManager {
     }
     return storage;
   }
-
 
   @Override
   public Storage selectStorage(ShuffleDataReadEvent event) {

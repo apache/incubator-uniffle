@@ -77,7 +77,7 @@ public class LocalStorage extends AbstractStorage {
     }
     long freeSpace = baseFolder.getFreeSpace();
     if (freeSpace < capacity) {
-      throw new IllegalArgumentException("Disk Available Capacity " + freeSpace
+      throw new IllegalArgumentException("The Disk of " + basePath + " Available Capacity " + freeSpace
           + " is smaller than configuration");
     }
   }
@@ -317,7 +317,8 @@ public class LocalStorage extends AbstractStorage {
     private long cleanIntervalMs;
     private long shuffleExpiredTimeoutMs;
 
-    private Builder() {
+    @VisibleForTesting
+    protected Builder() {
     }
 
     public Builder capacity(long capacity) {
@@ -353,6 +354,11 @@ public class LocalStorage extends AbstractStorage {
     public Builder shuffleExpiredTimeoutMs(long shuffleExpiredTimeoutMs) {
       this.shuffleExpiredTimeoutMs = shuffleExpiredTimeoutMs;
       return this;
+    }
+
+    @VisibleForTesting
+    public String getBasePath() {
+      return basePath;
     }
 
     public LocalStorage build() {
