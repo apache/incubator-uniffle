@@ -20,10 +20,12 @@ package org.apache.uniffle.common;
 import java.nio.ByteBuffer;
 import org.apache.commons.lang3.RandomUtils;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RssShuffleUtilsTest {
 
@@ -46,4 +48,27 @@ public class RssShuffleUtilsTest {
     assertArrayEquals(data, buffer2);
   }
 
+  @Test
+  public void testDestroyDirectByteBuffer() throws Exception {
+    int size = 10;
+    byte b = 1;
+    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(size);
+    for (int i = 0; i < size; i++) {
+      byteBuffer.put(b);
+    }
+    byteBuffer.flip();
+    RssShuffleUtils.destroyDirectByteBuffer(byteBuffer);
+    // The memory may not be released fast enough.
+    Thread.sleep(200);
+    boolean same = true;
+    byte[] read = new byte[size];
+    byteBuffer.get(read);
+    for (byte br : read) {
+      if (b != br) {
+        same = false;
+        break;
+      }
+    }
+    assertTrue(!same);
+  }
 }

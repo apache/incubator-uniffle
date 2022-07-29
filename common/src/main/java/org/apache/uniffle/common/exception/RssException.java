@@ -23,4 +23,8 @@ public class RssException extends RuntimeException {
   public RssException(String message) {
     super(message);
   }
+
+  public RssException(String message, Throwable e) {
+    super(message, e);
+  }
 }
