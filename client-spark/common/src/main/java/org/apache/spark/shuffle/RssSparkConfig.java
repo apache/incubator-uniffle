@@ -48,236 +48,236 @@ public class RssSparkConfig {
     }
   }
 
-  public static RssConfigEntry<Integer> RSS_PARTITION_NUM_PER_RANGE = new RssConfigEntry(
+  public static final RssConfigEntry<Integer> RSS_PARTITION_NUM_PER_RANGE = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.partitionNum.per.range")
           .intConf()
           .createWithDefault(1));
 
-  public static RssConfigEntry<String> RSS_WRITER_BUFFER_SIZE = new RssConfigEntry(
+  public static final RssConfigEntry<String> RSS_WRITER_BUFFER_SIZE = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.writer.buffer.size")
           .doc("controls the buffer flushing size during shuffle write")
           .stringConf()
           .createWithDefault("3m"));
 
-  public static RssConfigEntry<String> RSS_WRITER_SERIALIZER_BUFFER_SIZE = new RssConfigEntry(
+  public static final RssConfigEntry<String> RSS_WRITER_SERIALIZER_BUFFER_SIZE = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.writer.serializer.buffer.size")
           .stringConf()
           .createWithDefault("3k"));
 
-  public static RssConfigEntry<String> RSS_WRITER_BUFFER_SEGMENT_SIZE = new RssConfigEntry(
+  public static final RssConfigEntry<String> RSS_WRITER_BUFFER_SEGMENT_SIZE = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.writer.buffer.segment.size")
           .stringConf()
           .createWithDefault("3k"));
 
-  public static RssConfigEntry<String> RSS_WRITER_BUFFER_SPILL_SIZE = new RssConfigEntry(
+  public static final RssConfigEntry<String> RSS_WRITER_BUFFER_SPILL_SIZE = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.writer.buffer.spill.size")
           .stringConf()
           .createWithDefault("128m"));
 
-  public static RssConfigEntry<String> RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE = new RssConfigEntry(
+  public static final RssConfigEntry<String> RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.writer.pre.allocated.buffer.size")
           .stringConf()
           .createWithDefault("16m"));
 
-  public static RssConfigEntry<Integer> RSS_WRITER_REQUIRE_MEMORY_RETRY_MAX = new RssConfigEntry(
+  public static final RssConfigEntry<Integer> RSS_WRITER_REQUIRE_MEMORY_RETRY_MAX = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.writer.require.memory.retryMax")
           .intConf()
           .createWithDefault(1200));
 
-  public static RssConfigEntry<Long> RSS_WRITER_REQUIRE_MEMORY_INTERVAL = new RssConfigEntry(
+  public static final RssConfigEntry<Long> RSS_WRITER_REQUIRE_MEMORY_INTERVAL = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.writer.require.memory.interval")
           .longConf()
           .createWithDefault(1000));
 
-  public static RssConfigEntry<Long> RSS_CLIENT_SEND_CHECK_TIMEOUT_MS = new RssConfigEntry(
+  public static final RssConfigEntry<Long> RSS_CLIENT_SEND_CHECK_TIMEOUT_MS = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.client.send.check.timeout.ms")
           .longConf()
           .createWithDefault(60 * 1000 * 10));
 
-  public static RssConfigEntry<Long> RSS_CLIENT_SEND_CHECK_INTERVAL_MS = new RssConfigEntry(
+  public static final RssConfigEntry<Long> RSS_CLIENT_SEND_CHECK_INTERVAL_MS = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.client.send.check.interval.ms")
           .longConf()
           .createWithDefault(500));
 
-  public static RssConfigEntry<String> RSS_TEST_FLAG = new RssConfigEntry(
+  public static final RssConfigEntry<String> RSS_TEST_FLAG = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.test")
           .stringConf()
           .createWithDefault(""));
 
-  public static RssConfigEntry<String> RSS_REMOTE_STORAGE_PATH = new RssConfigEntry(
+  public static final RssConfigEntry<String> RSS_REMOTE_STORAGE_PATH = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.remote.storage.path")
           .stringConf()
           .createWithDefault(""));
 
-  public static RssConfigEntry<Integer> RSS_INDEX_READ_LIMIT = new RssConfigEntry(
+  public static final RssConfigEntry<Integer> RSS_INDEX_READ_LIMIT = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.index.read.limit")
           .intConf()
           .createWithDefault(500));
 
-  public static RssConfigEntry<String> RSS_CLIENT_TYPE = new RssConfigEntry(
+  public static final RssConfigEntry<String> RSS_CLIENT_TYPE = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.client.type")
           .stringConf()
           .createWithDefault("GRPC"));
 
-  public static RssConfigEntry<String> RSS_STORAGE_TYPE = new RssConfigEntry(
+  public static final RssConfigEntry<String> RSS_STORAGE_TYPE = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.storage.type")
           .stringConf()
           .createWithDefault(""));
 
-  public static RssConfigEntry<Integer> RSS_CLIENT_RETRY_MAX = new RssConfigEntry(
+  public static final RssConfigEntry<Integer> RSS_CLIENT_RETRY_MAX = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.client.retry.max")
           .intConf()
           .createWithDefault(100));
 
-  public static RssConfigEntry<Long> RSS_CLIENT_RETRY_INTERVAL_MAX = new RssConfigEntry(
+  public static final RssConfigEntry<Long> RSS_CLIENT_RETRY_INTERVAL_MAX = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.client.retry.interval.max")
           .longConf()
           .createWithDefault(10000));
 
-  public static RssConfigEntry<Integer> RSS_CLIENT_HEARTBEAT_THREAD_NUM = new RssConfigEntry(
+  public static final RssConfigEntry<Integer> RSS_CLIENT_HEARTBEAT_THREAD_NUM = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.client.heartBeat.threadNum")
           .intConf()
           .createWithDefault(4));
 
-  public static RssConfigEntry<String> RSS_CLIENT_SEND_SIZE_LIMIT = new RssConfigEntry(
+  public static final RssConfigEntry<String> RSS_CLIENT_SEND_SIZE_LIMIT = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.client.send.size.limit")
           .stringConf()
           .createWithDefault("16m"));
 
-  public static RssConfigEntry<String> RSS_CLIENT_READ_BUFFER_SIZE = new RssConfigEntry(
+  public static final RssConfigEntry<String> RSS_CLIENT_READ_BUFFER_SIZE = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.client.read.buffer.size")
           .stringConf()
           .createWithDefault("14m"));
 
-  public static RssConfigEntry<Long> RSS_HEARTBEAT_INTERVAL = new RssConfigEntry(
+  public static final RssConfigEntry<Long> RSS_HEARTBEAT_INTERVAL = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.heartbeat.interval")
           .longConf()
           .createWithDefault(10 * 1000L));
 
-  public static RssConfigEntry<Long> RSS_HEARTBEAT_TIMEOUT = new RssConfigEntry(
+  public static final RssConfigEntry<Long> RSS_HEARTBEAT_TIMEOUT = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.heartbeat.timeout")
           .longConf()
           .createWithDefault(5 * 1000L));
 
-  public static RssConfigEntry<Integer> RSS_CLIENT_SEND_THREAD_POOL_SIZE = new RssConfigEntry(
+  public static final RssConfigEntry<Integer> RSS_CLIENT_SEND_THREAD_POOL_SIZE = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.client.send.threadPool.size")
           .intConf()
           .createWithDefault(10));
 
-  public static RssConfigEntry<Integer> RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE = new RssConfigEntry(
+  public static final RssConfigEntry<Integer> RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.client.send.threadPool.keepalive")
           .intConf()
           .createWithDefault(60));
 
-  public static RssConfigEntry<Integer> RSS_DATA_REPLICA = new RssConfigEntry(
+  public static final RssConfigEntry<Integer> RSS_DATA_REPLICA = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.data.replica")
           .intConf()
           .createWithDefault(1));
 
-  public static RssConfigEntry<Integer> RSS_DATA_REPLICA_WRITE = new RssConfigEntry(
+  public static final RssConfigEntry<Integer> RSS_DATA_REPLICA_WRITE = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.data.replica.write")
           .intConf()
           .createWithDefault(1));
 
-  public static RssConfigEntry<Integer> RSS_DATA_REPLICA_READ = new RssConfigEntry(
+  public static final RssConfigEntry<Integer> RSS_DATA_REPLICA_READ = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.data.replica.read")
           .intConf()
           .createWithDefault(1));
 
-  public static RssConfigEntry<Boolean> RSS_DATA_REPLICA_SKIP_ENABLED = new RssConfigEntry(
+  public static final RssConfigEntry<Boolean> RSS_DATA_REPLICA_SKIP_ENABLED = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.data.replica.skip.enabled")
           .booleanConf()
           .createWithDefault(true));
 
-  public static RssConfigEntry<Integer> RSS_DATA_TRANSFER_POOL_SIZE = new RssConfigEntry(
+  public static final RssConfigEntry<Integer> RSS_DATA_TRANSFER_POOL_SIZE = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.client.data.transfer.pool.size")
           .intConf()
           .createWithDefault(Runtime.getRuntime().availableProcessors()));
 
-  public static RssConfigEntry<Boolean> RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE = new RssConfigEntry(
+  public static final RssConfigEntry<Boolean> RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.ozone.dfs.namenode.odfs.enable")
           .booleanConf()
           .createWithDefault(false));
 
-  public static RssConfigEntry<String> RSS_OZONE_FS_HDFS_IMPL = new RssConfigEntry(
+  public static final RssConfigEntry<String> RSS_OZONE_FS_HDFS_IMPL = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.ozone.fs.hdfs.impl")
           .stringConf()
           .createWithDefault("org.apache.hadoop.odfs.HdfsOdfsFilesystem"));
 
-  public static RssConfigEntry<String> RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL = new RssConfigEntry(
+  public static final RssConfigEntry<String> RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.ozone.fs.AbstractFileSystem.hdfs.impl")
           .stringConf()
           .createWithDefault("org.apache.hadoop.odfs.HdfsOdfs"));
 
-  public static RssConfigEntry<Integer> RSS_CLIENT_BITMAP_SPLIT_NUM = new RssConfigEntry(
+  public static final RssConfigEntry<Integer> RSS_CLIENT_BITMAP_SPLIT_NUM = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.client.bitmap.splitNum")
           .intConf()
           .createWithDefault(1));
 
-  public static RssConfigEntry<String> RSS_ACCESS_ID = new RssConfigEntry(
+  public static final RssConfigEntry<String> RSS_ACCESS_ID = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.access.id")
           .stringConf()
           .createWithDefault(""));
 
-  public static RssConfigEntry<Integer> RSS_ACCESS_TIMEOUT_MS = new RssConfigEntry(
+  public static final RssConfigEntry<Integer> RSS_ACCESS_TIMEOUT_MS = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.access.timeout.ms")
           .intConf()
           .createWithDefault(10000));
 
-  public static RssConfigEntry<Boolean> RSS_ENABLED = new RssConfigEntry(
+  public static final RssConfigEntry<Boolean> RSS_ENABLED = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.enabled")
           .booleanConf()
           .createWithDefault(false));
 
-  public static RssConfigEntry<Boolean> RSS_DYNAMIC_CLIENT_CONF_ENABLED = new RssConfigEntry(
+  public static final RssConfigEntry<Boolean> RSS_DYNAMIC_CLIENT_CONF_ENABLED = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.dynamicClientConf.enabled")
           .booleanConf()
           .createWithDefault(true));
 
-  public static RssConfigEntry<String> RSS_CLIENT_ASSIGNMENT_TAGS = new RssConfigEntry(
+  public static final RssConfigEntry<String> RSS_CLIENT_ASSIGNMENT_TAGS = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.client.assignment.tags")
           .stringConf()
           .createWithDefault(""));
 
-  public static RssConfigEntry<String> RSS_COORDINATOR_QUORUM = new RssConfigEntry(
+  public static final RssConfigEntry<String> RSS_COORDINATOR_QUORUM = new RssConfigEntry(
       SparkConfigBuilder
           .key("spark.rss.coordinator.quorum")
           .stringConf()
