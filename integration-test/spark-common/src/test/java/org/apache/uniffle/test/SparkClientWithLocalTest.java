@@ -318,7 +318,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     ShuffleReadClientImpl readClient;
 
     createTestData(testAppId, expectedData, blockIdBitmap, taskIdBitmap);
-    Roaring64NavigableMap beforeAdded = RssUtils.deserializeBitMap(RssUtils.serializeBitMap(blockIdBitmap));
+    Roaring64NavigableMap beforeAdded = RssUtils.cloneBitMap(blockIdBitmap);
     // write data by another task, read data again, the cache for index file should be updated
     blocks = createShuffleBlockList(
         0, 0, 1, 3, 25, blockIdBitmap, Maps.newHashMap(), mockSSI);

@@ -172,6 +172,12 @@ public class RssUtils {
     return bitmap;
   }
 
+  public static Roaring64NavigableMap cloneBitMap(Roaring64NavigableMap bitmap) {
+    Roaring64NavigableMap clone = Roaring64NavigableMap.bitmapOf();
+    clone.or(bitmap);
+    return clone;
+  }
+
   public static List<ShuffleDataSegment> transIndexDataToSegments(
       ShuffleIndexResult shuffleIndexResult, int readBufferSize) {
     if (shuffleIndexResult == null || shuffleIndexResult.isEmpty()) {
