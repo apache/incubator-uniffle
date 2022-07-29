@@ -105,5 +105,15 @@ public class LocalStorageManagerTest {
     } catch (Exception e) {
       // ignore
     }
+
+    // case5: if failed=2, but lower than rss.server.localstorage.initialize.max.fail.number, should exit
+    conf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, "/a/rss-data,/b/rss-data-1");
+    conf.setLong(ShuffleServerConf.LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER, 10L);
+    try {
+      localStorageManager = new LocalStorageManager(conf);
+      fail();
+    } catch (Exception e) {
+      // ignore
+    }
   }
 }
