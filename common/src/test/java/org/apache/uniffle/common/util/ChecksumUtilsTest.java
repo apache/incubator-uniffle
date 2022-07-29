@@ -17,8 +17,6 @@
 
 package org.apache.uniffle.common.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
@@ -28,7 +26,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Random;
 import java.util.zip.CRC32;
+
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ChecksumUtilsTest {
 
@@ -64,7 +65,6 @@ public class ChecksumUtilsTest {
       outputStream.write(data);
     }
 
-    long expectedChecksum = ChecksumUtils.getCrc32(data);
 
     // test direct ByteBuffer
     Path path = Paths.get(file.getAbsolutePath());
@@ -74,6 +74,7 @@ public class ChecksumUtilsTest {
     fileChannel.close();
     assertEquals(length, bytesRead);
     buffer.flip();
+    long expectedChecksum = ChecksumUtils.getCrc32(data);
     assertEquals(expectedChecksum, ChecksumUtils.getCrc32(buffer));
     assertEquals(length, buffer.position());
 

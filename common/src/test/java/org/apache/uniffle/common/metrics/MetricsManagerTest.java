@@ -17,19 +17,20 @@
 
 package org.apache.uniffle.common.metrics;
 
-import static io.prometheus.client.Collector.MetricFamilySamples;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.Gauge;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.Gauge;
 import org.junit.jupiter.api.Test;
+
+import static io.prometheus.client.Collector.MetricFamilySamples;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MetricsManagerTest {
 
@@ -43,11 +44,9 @@ public class MetricsManagerTest {
     assertEquals(expectedRegistry, metricsManager.getCollectorRegistry());
 
     String expectedName1 = "counter";
-    String expectedHelp1 = "Counter " + expectedName1;
     metricsManager.addCounter(expectedName1);
 
     String expectedName2 = "name2";
-    String expectedHelp2 = "Gauge " + expectedName2;
     String label = "gaugeLabel";
     Gauge gauge = metricsManager.addGauge(expectedName2, label);
     gauge.labels("lv1").inc();
@@ -60,9 +59,11 @@ public class MetricsManagerTest {
       metricsSamples.put(cur.name, cur);
     }
 
+    String expectedHelp1 = "Counter " + expectedName1;
     assertEquals(expectedHelp1, metricsSamples.get(expectedName1).help);
     assertEquals(1, metricsSamples.get(expectedName1).samples.size());
 
+    String expectedHelp2 = "Gauge " + expectedName2;
     assertEquals(expectedHelp2, metricsSamples.get(expectedName2).help);
     List<MetricFamilySamples.Sample> f = metricsSamples.get(expectedName2).samples;
     assertEquals(2, metricsSamples.get(expectedName2).samples.size());

@@ -17,8 +17,12 @@
 
 package org.apache.uniffle.common;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
+
 import com.google.common.collect.ImmutableMap;
-import org.apache.uniffle.common.util.Constants;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -26,10 +30,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Stream;
+import org.apache.uniffle.common.util.Constants;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

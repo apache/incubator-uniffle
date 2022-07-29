@@ -19,6 +19,7 @@ package org.apache.uniffle.common;
 
 import java.util.Collections;
 import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,15 +33,15 @@ public class ShuffleRegisterInfoTest {
     List<PartitionRange> partitionRanges = Collections.singletonList(new PartitionRange(2, 3));
     ShuffleRegisterInfo info1 = new ShuffleRegisterInfo(shuffleServerInfo, partitionRanges);
     ShuffleRegisterInfo info2 = new ShuffleRegisterInfo(info1.getShuffleServerInfo(), info1.getPartitionRanges());
-    ShuffleRegisterInfo info3 = new ShuffleRegisterInfo(info1.getShuffleServerInfo(), null);
-    ShuffleRegisterInfo info4 = new ShuffleRegisterInfo(null, info1.getPartitionRanges());
     assertEquals(info1, info1);
     assertEquals(info1.hashCode(), info1.hashCode());
     assertEquals(info1, info2);
     assertEquals(info1.hashCode(), info2.hashCode());
     assertNotEquals(info1, null);
     assertNotEquals(info1, new Object());
+    ShuffleRegisterInfo info3 = new ShuffleRegisterInfo(info1.getShuffleServerInfo(), null);
     assertNotEquals(info1, info3);
+    ShuffleRegisterInfo info4 = new ShuffleRegisterInfo(null, info1.getPartitionRanges());
     assertNotEquals(info1, info4);
   }
 
