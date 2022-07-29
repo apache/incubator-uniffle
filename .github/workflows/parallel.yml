@@ -51,7 +51,7 @@ on:
         type: string
 
 jobs:
-  mvn:
+  maven:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -63,6 +63,7 @@ jobs:
           - spark3.2
           - mr
       fail-fast: false
+    name: -P${{ matrix.profile }}
     steps:
     - name: Checkout project
       uses: actions/checkout@v2
