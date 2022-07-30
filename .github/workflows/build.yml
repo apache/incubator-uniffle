@@ -37,23 +37,23 @@ jobs:
     uses: ./.github/workflows/sequential.yml
     with:
       maven-args: test-compile spotbugs:check
-
-  package:
-    uses: ./.github/workflows/parallel.yml
-    with:
-      maven-args: package
-      reports-path: "**/target/surefire-reports/*.txt"
   
   java-11:
-    name: 'java 11'
+    name: 'compile'
     uses: ./.github/workflows/sequential.yml
     with:
       maven-args: package -DskipTests
       java-version: '11'
 
   java-17:
-    name: 'java 17'
+    name: 'compile'
     uses: ./.github/workflows/sequential.yml
     with:
       maven-args: package -DskipTests
       java-version: '17'
+
+  package:
+    uses: ./.github/workflows/parallel.yml
+    with:
+      maven-args: package
+      reports-path: "**/target/surefire-reports/*.txt"

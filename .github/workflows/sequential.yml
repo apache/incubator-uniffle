@@ -55,6 +55,7 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       PROFILE: 'spark2 spark2.3 spark3.0 spark3 spark3.2 mr'
+    name: java ${{ inputs.java-version }}
     steps:
     - name: Checkout project
       uses: actions/checkout@v2
