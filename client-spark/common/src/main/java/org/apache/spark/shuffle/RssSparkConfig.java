@@ -24,11 +24,10 @@ import org.apache.spark.internal.config.ConfigBuilder;
 import org.apache.spark.internal.config.ConfigEntry;
 import org.apache.spark.internal.config.TypedConfigBuilder;
 
-import scala.Serializable;
 import scala.runtime.AbstractFunction1;
 
-import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.client.util.RssClientConfig;
+import org.apache.uniffle.common.config.ConfigUtils;
 
 public class RssSparkConfig {
 
@@ -240,7 +239,7 @@ public class RssSparkConfig {
   public static final boolean RSS_USE_RSS_SHUFFLE_MANAGER_DEFAULT_VALUE = false;
 
   public static TypedConfigBuilder<Integer> createIntegerBuilder(ConfigBuilder builder) {
-    scala.Function1<String, Integer> f = new SerializableFunction1<String, Integer>() {
+    scala.Function1<String, Integer> f = new AbstractFunction1<String, Integer>() {
       @Override
       public Integer apply(String in) {
         return ConfigUtils.convertValue(in, Integer.class);
@@ -250,7 +249,7 @@ public class RssSparkConfig {
   }
 
   public static TypedConfigBuilder<Long> createLongBuilder(ConfigBuilder builder) {
-    scala.Function1<String, Long> f = new SerializableFunction1<String, Long>() {
+    scala.Function1<String, Long> f = new AbstractFunction1<String, Long>() {
       @Override
       public Long apply(String in) {
         return ConfigUtils.convertValue(in, Long.class);
@@ -260,7 +259,7 @@ public class RssSparkConfig {
   }
 
   public static TypedConfigBuilder<Boolean> createBooleanBuilder(ConfigBuilder builder) {
-    scala.Function1<String, Boolean> f = new SerializableFunction1<String, Boolean>() {
+    scala.Function1<String, Boolean> f = new AbstractFunction1<String, Boolean>() {
       @Override
       public Boolean apply(String in) {
         return ConfigUtils.convertValue(in, Boolean.class);
@@ -270,7 +269,7 @@ public class RssSparkConfig {
   }
 
   public static TypedConfigBuilder<Double> createDoubleBuilder(ConfigBuilder builder) {
-    scala.Function1<String, Double> f = new SerializableFunction1<String, Double>() {
+    scala.Function1<String, Double> f = new AbstractFunction1<String, Double>() {
       @Override
       public Double apply(String in) {
         return ConfigUtils.convertValue(in, Double.class);
@@ -282,7 +281,4 @@ public class RssSparkConfig {
   public static TypedConfigBuilder<String> createStringBuilder(ConfigBuilder builder) {
     return builder.stringConf();
   }
-}
-
-abstract class SerializableFunction1<T1, R> extends AbstractFunction1<T1, R> implements Serializable {
 }

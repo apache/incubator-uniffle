@@ -100,7 +100,7 @@ public class AutoAccessTest extends IntegrationTestBase {
     ShuffleManager shuffleManager = delegationRssShuffleManager.getDelegate();
     assertTrue(shuffleManager instanceof SortShuffleManager);
     assertTrue(sparkConf.getBoolean("spark.shuffle.service.enabled", true));
-    assertEquals("overwrite-path", sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key));
+    assertEquals("overwrite-path", sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key()));
     assertFalse(sparkConf.contains("spark.rss.storage.type"));
 
     // wrong access id
@@ -108,7 +108,7 @@ public class AutoAccessTest extends IntegrationTestBase {
     delegationRssShuffleManager = new DelegationRssShuffleManager(sparkConf, true);
     shuffleManager = delegationRssShuffleManager.getDelegate();
     assertTrue(shuffleManager instanceof SortShuffleManager);
-    assertEquals("overwrite-path", sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key));
+    assertEquals("overwrite-path", sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key()));
     assertTrue(sparkConf.getBoolean("spark.shuffle.service.enabled", true));
     assertFalse(sparkConf.contains("spark.rss.storage.type"));
 
@@ -122,7 +122,7 @@ public class AutoAccessTest extends IntegrationTestBase {
     assertEquals("no-overwrite-conf", sparkConf.get("spark.mock.2"));
     assertTrue(sparkConf.getBoolean("spark.mock.3", false));
     assertEquals(StorageType.MEMORY_LOCALFILE_HDFS.name(), sparkConf.get("spark.rss.storage.type"));
-    assertEquals("expectedPath", sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key));
+    assertEquals("expectedPath", sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key()));
     assertFalse(sparkConf.getBoolean("spark.shuffle.service.enabled", true));
 
     // update candidates file
@@ -149,7 +149,7 @@ public class AutoAccessTest extends IntegrationTestBase {
     assertEquals("no-overwrite-conf", sparkConf.get("spark.mock.2"));
     assertTrue(sparkConf.getBoolean("spark.mock.3", false));
     assertEquals(StorageType.MEMORY_LOCALFILE_HDFS.name(), sparkConf.get("spark.rss.storage.type"));
-    assertEquals("expectedPath", sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key));
+    assertEquals("expectedPath", sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key()));
     assertFalse(sparkConf.getBoolean("spark.shuffle.service.enabled", true));
 
     // update client conf file
@@ -177,7 +177,7 @@ public class AutoAccessTest extends IntegrationTestBase {
     assertEquals("overwrite-conf", sparkConf.get("spark.mock.2"));
     assertTrue(sparkConf.getBoolean("spark.mock.3", false));
     assertEquals(StorageType.MEMORY_LOCALFILE_HDFS.name(), sparkConf.get("spark.rss.storage.type"));
-    assertEquals("expectedPathNew", sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key));
+    assertEquals("expectedPathNew", sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key()));
     assertFalse(sparkConf.getBoolean("spark.shuffle.service.enabled", true));
   }
 }
