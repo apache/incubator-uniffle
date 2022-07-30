@@ -413,7 +413,7 @@ public class RssShuffleManager implements ShuffleManager {
     long readBufferSize = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key(),
         RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.defaultValue().get());
     if (readBufferSize > Integer.MAX_VALUE) {
-      LOG.warn(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key()+ " can support 2g as max");
+      LOG.warn(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key() + " can support 2g as max");
       readBufferSize = Integer.MAX_VALUE;
     }
     int shuffleId = rssShuffleHandle.getShuffleId();
