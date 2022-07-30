@@ -44,20 +44,20 @@ public class RssSparkShuffleUtils {
     SparkHadoopUtil util = new SparkHadoopUtil();
     Configuration conf = util.newConfiguration(sparkConf);
 
-    boolean useOdfs = sparkConf.getBoolean(RssSparkConfig.RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE.key,
-        RssSparkConfig.RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE.getDefaultValue());
+    boolean useOdfs = sparkConf.getBoolean(RssSparkConfig.RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE.key(),
+        RssSparkConfig.RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE.defaultValue().get());
     if (useOdfs) {
       final int OZONE_PREFIX_LEN = "spark.rss.ozone.".length();
-      conf.setBoolean(RssSparkConfig.RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE.key.substring(OZONE_PREFIX_LEN), useOdfs);
+      conf.setBoolean(RssSparkConfig.RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE.key().substring(OZONE_PREFIX_LEN), useOdfs);
       conf.set(
-          RssSparkConfig.RSS_OZONE_FS_HDFS_IMPL.key.substring(OZONE_PREFIX_LEN),
-          sparkConf.get(RssSparkConfig.RSS_OZONE_FS_HDFS_IMPL.key,
-              RssSparkConfig.RSS_OZONE_FS_HDFS_IMPL.getDefaultValue()));
+          RssSparkConfig.RSS_OZONE_FS_HDFS_IMPL.key().substring(OZONE_PREFIX_LEN),
+          sparkConf.get(RssSparkConfig.RSS_OZONE_FS_HDFS_IMPL.key(),
+              RssSparkConfig.RSS_OZONE_FS_HDFS_IMPL.defaultValue().get()));
       conf.set(
-          RssSparkConfig.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL.key.substring(OZONE_PREFIX_LEN),
+          RssSparkConfig.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL.key().substring(OZONE_PREFIX_LEN),
           sparkConf.get(
-              RssSparkConfig.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL.key,
-              RssSparkConfig.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL.getDefaultValue()));
+              RssSparkConfig.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL.key(),
+              RssSparkConfig.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL.defaultValue().get()));
     }
 
     return conf;
@@ -78,9 +78,9 @@ public class RssSparkShuffleUtils {
   }
 
   public static List<CoordinatorClient> createCoordinatorClients(SparkConf sparkConf) throws RuntimeException {
-    String clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE.key,
-        RssSparkConfig.RSS_CLIENT_TYPE.getDefaultValue());
-    String coordinators = sparkConf.get(RssSparkConfig.RSS_COORDINATOR_QUORUM.key);
+    String clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE.key(),
+        RssSparkConfig.RSS_CLIENT_TYPE.defaultValue().get());
+    String coordinators = sparkConf.get(RssSparkConfig.RSS_COORDINATOR_QUORUM.key());
     CoordinatorClientFactory coordinatorClientFactory = new CoordinatorClientFactory(clientType);
     return coordinatorClientFactory.createCoordinatorClient(coordinators);
   }
@@ -111,7 +111,7 @@ public class RssSparkShuffleUtils {
 
   public static void validateRssClientConf(SparkConf sparkConf) {
     String msgFormat = "%s must be set by the client or fetched from coordinators.";
-    if (!sparkConf.contains(RssSparkConfig.RSS_STORAGE_TYPE.key)) {
+    if (!sparkConf.contains(RssSparkConfig.RSS_STORAGE_TYPE.key())) {
       String msg = String.format(msgFormat, "Storage type");
       LOG.error(msg);
       throw new IllegalArgumentException(msg);
@@ -132,7 +132,7 @@ public class RssSparkShuffleUtils {
 
   public static Set<String> getAssignmentTags(SparkConf sparkConf) {
     Set<String> assignmentTags = new HashSet<>();
-    String rawTags = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_TAGS.key, "");
+    String rawTags = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_TAGS.key(), "");
     if (StringUtils.isNotEmpty(rawTags)) {
       rawTags = rawTags.trim();
       assignmentTags.addAll(Arrays.asList(rawTags.split(",")));

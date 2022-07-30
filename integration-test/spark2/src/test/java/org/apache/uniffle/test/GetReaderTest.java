@@ -55,7 +55,7 @@ public class GetReaderTest extends IntegrationTestBase {
   public void test() throws Exception {
     SparkConf sparkConf = new SparkConf();
     sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.RssShuffleManager");
-    sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key, COORDINATOR_QUORUM);
+    sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
     sparkConf.setMaster("local[4]");
     final String remoteStorage1 = "hdfs://h1/p1";
     final String remoteStorage2 = "hdfs://h2/p2";

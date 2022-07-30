@@ -141,36 +141,36 @@ public class RssShuffleManager implements ShuffleManager {
     this.sparkConf = sparkConf;
 
     // set & check replica config
-    this.dataReplica = sparkConf.getInt(RssSparkConfig.RSS_DATA_REPLICA.key,
-        RssSparkConfig.RSS_DATA_REPLICA.getDefaultValue());
-    this.dataReplicaWrite =  sparkConf.getInt(RssSparkConfig.RSS_DATA_REPLICA_WRITE.key,
-        RssSparkConfig.RSS_DATA_REPLICA_WRITE.getDefaultValue());
-    this.dataReplicaRead =  sparkConf.getInt(RssSparkConfig.RSS_DATA_REPLICA_READ.key,
-        RssSparkConfig.RSS_DATA_REPLICA_READ.getDefaultValue());
-    this.dataTransferPoolSize = sparkConf.getInt(RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE.key,
-        RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE.getDefaultValue());
-    this.dataReplicaSkipEnabled = sparkConf.getBoolean(RssSparkConfig.RSS_DATA_REPLICA_SKIP_ENABLED.key,
-        RssSparkConfig.RSS_DATA_REPLICA_SKIP_ENABLED.getDefaultValue());
+    this.dataReplica = sparkConf.getInt(RssSparkConfig.RSS_DATA_REPLICA.key(),
+        RssSparkConfig.RSS_DATA_REPLICA.defaultValue().get());
+    this.dataReplicaWrite =  sparkConf.getInt(RssSparkConfig.RSS_DATA_REPLICA_WRITE.key(),
+        RssSparkConfig.RSS_DATA_REPLICA_WRITE.defaultValue().get());
+    this.dataReplicaRead =  sparkConf.getInt(RssSparkConfig.RSS_DATA_REPLICA_READ.key(),
+        RssSparkConfig.RSS_DATA_REPLICA_READ.defaultValue().get());
+    this.dataTransferPoolSize = sparkConf.getInt(RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE.key(),
+        RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE.defaultValue().get());
+    this.dataReplicaSkipEnabled = sparkConf.getBoolean(RssSparkConfig.RSS_DATA_REPLICA_SKIP_ENABLED.key(),
+        RssSparkConfig.RSS_DATA_REPLICA_SKIP_ENABLED.defaultValue().get());
     LOG.info("Check quorum config ["
         + dataReplica + ":" + dataReplicaWrite + ":" + dataReplicaRead + ":" + dataReplicaSkipEnabled + "]");
     RssUtils.checkQuorumSetting(dataReplica, dataReplicaWrite, dataReplicaRead);
 
-    this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE.key,
-        RssSparkConfig.RSS_CLIENT_TYPE.getDefaultValue());
-    this.heartbeatInterval = sparkConf.getLong(RssSparkConfig.RSS_HEARTBEAT_INTERVAL.key,
-        RssSparkConfig.RSS_HEARTBEAT_INTERVAL.getDefaultValue());
-    this.heartbeatTimeout = sparkConf.getLong(RssSparkConfig.RSS_HEARTBEAT_TIMEOUT.key, heartbeatInterval / 2);
+    this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE.key(),
+        RssSparkConfig.RSS_CLIENT_TYPE.defaultValue().get());
+    this.heartbeatInterval = sparkConf.getLong(RssSparkConfig.RSS_HEARTBEAT_INTERVAL.key(),
+        RssSparkConfig.RSS_HEARTBEAT_INTERVAL.defaultValue().get());
+    this.heartbeatTimeout = sparkConf.getLong(RssSparkConfig.RSS_HEARTBEAT_TIMEOUT.key(), heartbeatInterval / 2);
     this.dynamicConfEnabled = sparkConf.getBoolean(
-        RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.key,
-        RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.getDefaultValue());
-    int retryMax = sparkConf.getInt(RssSparkConfig.RSS_CLIENT_RETRY_MAX.key,
-        RssSparkConfig.RSS_CLIENT_RETRY_MAX.getDefaultValue());
-    long retryIntervalMax = sparkConf.getLong(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.key,
-        RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.getDefaultValue());
-    int heartBeatThreadNum = sparkConf.getInt(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM.key,
-        RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM.getDefaultValue());
-    this.dataCommitPoolSize = sparkConf.getInt(RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE.key,
-        RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE.getDefaultValue());
+        RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.key(),
+        RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.defaultValue().get());
+    int retryMax = sparkConf.getInt(RssSparkConfig.RSS_CLIENT_RETRY_MAX.key(),
+        RssSparkConfig.RSS_CLIENT_RETRY_MAX.defaultValue().get());
+    long retryIntervalMax = sparkConf.getLong(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.key(),
+        RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.defaultValue().get());
+    int heartBeatThreadNum = sparkConf.getInt(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM.key(),
+        RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM.defaultValue().get());
+    this.dataCommitPoolSize = sparkConf.getInt(RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE.key(),
+        RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE.defaultValue().get());
     this.shuffleWriteClient = ShuffleClientFactory
         .getInstance()
         .createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum,
@@ -180,22 +180,22 @@ public class RssShuffleManager implements ShuffleManager {
     // fetch client conf and apply them if necessary and disable ESS
     if (isDriver && dynamicConfEnabled) {
       Map<String, String> clusterClientConf = shuffleWriteClient.fetchClientConf(
-          sparkConf.getInt(RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.key,
-              RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.getDefaultValue()));
+          sparkConf.getInt(RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.key(),
+              RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.defaultValue().get()));
       RssSparkShuffleUtils.applyDynamicClientConf(sparkConf, clusterClientConf);
     }
     RssSparkShuffleUtils.validateRssClientConf(sparkConf);
     // External shuffle service is not supported when using remote shuffle service
     sparkConf.set("spark.shuffle.service.enabled", "false");
     LOG.info("Disable external shuffle service in RssShuffleManager.");
-    if (!sparkConf.getBoolean(RssSparkConfig.RSS_TEST_FLAG.key, false)) {
+    if (!sparkConf.getBoolean(RssSparkConfig.RSS_TEST_FLAG.key(), false)) {
       // for non-driver executor, start a thread for sending shuffle data to shuffle server
       LOG.info("RSS data send thread is starting");
       eventLoop.start();
-      int poolSize = sparkConf.getInt(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_SIZE.key,
-          RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_SIZE.getDefaultValue());
-      int keepAliveTime = sparkConf.getInt(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE.key,
-          RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE.getDefaultValue());
+      int poolSize = sparkConf.getInt(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_SIZE.key(),
+          RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_SIZE.defaultValue().get());
+      int keepAliveTime = sparkConf.getInt(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE.key(),
+          RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE.defaultValue().get());
       threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize * 2, keepAliveTime, TimeUnit.SECONDS,
           Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
           ThreadUtils.getThreadFactory("SendData"));
@@ -224,13 +224,13 @@ public class RssShuffleManager implements ShuffleManager {
       LOG.info("Generate application id used in rss: " + appId);
     }
 
-    String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key);
-    remoteStorage = new RemoteStorageInfo(sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key, ""));
+    String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
+    remoteStorage = new RemoteStorageInfo(sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""));
     remoteStorage = ClientUtils.fetchRemoteStorage(
         appId, remoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
 
-    int partitionNumPerRange = sparkConf.getInt(RssSparkConfig.RSS_PARTITION_NUM_PER_RANGE.key,
-        RssSparkConfig.RSS_PARTITION_NUM_PER_RANGE.getDefaultValue());
+    int partitionNumPerRange = sparkConf.getInt(RssSparkConfig.RSS_PARTITION_NUM_PER_RANGE.key(),
+        RssSparkConfig.RSS_PARTITION_NUM_PER_RANGE.defaultValue().get());
 
     // get all register info according to coordinator's response
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
@@ -248,7 +248,7 @@ public class RssShuffleManager implements ShuffleManager {
   }
 
   private void startHeartbeat() {
-    if (!sparkConf.getBoolean(RssSparkConfig.RSS_TEST_FLAG.key, false) && !heartbeatStarted) {
+    if (!sparkConf.getBoolean(RssSparkConfig.RSS_TEST_FLAG.key(), false) && !heartbeatStarted) {
       heartBeatScheduledExecutorService.scheduleAtFixedRate(
           () -> {
             try {
@@ -286,7 +286,7 @@ public class RssShuffleManager implements ShuffleManager {
 
   @VisibleForTesting
   protected void registerCoordinator() {
-    String coordinators = sparkConf.get(RssSparkConfig.RSS_COORDINATOR_QUORUM.key);
+    String coordinators = sparkConf.get(RssSparkConfig.RSS_COORDINATOR_QUORUM.key());
     LOG.info("Registering coordinators {}", coordinators);
     shuffleWriteClient.registerCoordinators(coordinators);
   }
@@ -323,15 +323,15 @@ public class RssShuffleManager implements ShuffleManager {
   public <K, C> ShuffleReader<K, C> getReader(ShuffleHandle handle,
       int startPartition, int endPartition, TaskContext context) {
     if (handle instanceof RssShuffleHandle) {
-      final String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key);
-      final int indexReadLimit = sparkConf.getInt(RssSparkConfig.RSS_INDEX_READ_LIMIT.key,
-          RssSparkConfig.RSS_INDEX_READ_LIMIT.getDefaultValue());
+      final String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
+      final int indexReadLimit = sparkConf.getInt(RssSparkConfig.RSS_INDEX_READ_LIMIT.key(),
+          RssSparkConfig.RSS_INDEX_READ_LIMIT.defaultValue().get());
       RssShuffleHandle rssShuffleHandle = (RssShuffleHandle) handle;
-      final int partitionNumPerRange = sparkConf.getInt(RssSparkConfig.RSS_PARTITION_NUM_PER_RANGE.key,
-          RssSparkConfig.RSS_PARTITION_NUM_PER_RANGE.getDefaultValue());
+      final int partitionNumPerRange = sparkConf.getInt(RssSparkConfig.RSS_PARTITION_NUM_PER_RANGE.key(),
+          RssSparkConfig.RSS_PARTITION_NUM_PER_RANGE.defaultValue().get());
       final int partitionNum = rssShuffleHandle.getDependency().partitioner().numPartitions();
-      long readBufferSize = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key,
-          RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.getDefaultValue());
+      long readBufferSize = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key(),
+          RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.defaultValue().get());
       if (readBufferSize > Integer.MAX_VALUE) {
         LOG.warn(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE + " can support 2g as max");
         readBufferSize = Integer.MAX_VALUE;

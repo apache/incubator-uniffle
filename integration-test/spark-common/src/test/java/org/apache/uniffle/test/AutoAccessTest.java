@@ -48,9 +48,9 @@ public class AutoAccessTest extends IntegrationTestBase {
   public void test() throws Exception {
     SparkConf sparkConf = new SparkConf();
     sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.DelegationRssShuffleManager");
-    sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key, COORDINATOR_QUORUM);
+    sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
     sparkConf.set("spark.mock.2", "no-overwrite-conf");
-    sparkConf.set(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key, "overwrite-path");
+    sparkConf.set(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), "overwrite-path");
     sparkConf.set("spark.shuffle.service.enabled", "true");
 
     String cfgFile = HDFS_URI + "/test/client_conf";
@@ -61,7 +61,7 @@ public class AutoAccessTest extends IntegrationTestBase {
     printWriter.println(" spark.mock.2 overwrite-conf ");
     printWriter.println(" spark.mock.3 true ");
     printWriter.println("spark.rss.storage.type " + StorageType.MEMORY_LOCALFILE_HDFS.name());
-    printWriter.println(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key + " expectedPath");
+    printWriter.println(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key()+ " expectedPath");
     printWriter.flush();
     printWriter.close();
 
@@ -162,7 +162,7 @@ public class AutoAccessTest extends IntegrationTestBase {
     printWriter.println(" spark.mock.2 overwrite-conf ");
     printWriter.println(" spark.mock.3 false ");
     printWriter.println("spark.rss.storage.type " + StorageType.MEMORY_LOCALFILE_HDFS.name());
-    printWriter.println(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key + " expectedPathNew");
+    printWriter.println(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key()+ " expectedPathNew");
     printWriter.flush();
     printWriter.close();
     fs.rename(tmpPath, path);

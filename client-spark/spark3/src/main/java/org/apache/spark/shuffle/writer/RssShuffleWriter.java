@@ -106,14 +106,14 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.shuffleDependency = rssHandle.getDependency();
     this.partitioner = shuffleDependency.partitioner();
     this.shouldPartition = partitioner.numPartitions() > 1;
-    this.sendCheckTimeout = sparkConf.getLong(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key,
-        RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.getDefaultValue());
-    this.sendCheckInterval = sparkConf.getLong(RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key,
-        RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.getDefaultValue());
-    this.sendSizeLimit = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT.key,
-        RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT.getDefaultValue());
-    this.bitmapSplitNum = sparkConf.getInt(RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM.key,
-        RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM.getDefaultValue());
+    this.sendCheckTimeout = sparkConf.getLong(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(),
+        RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.defaultValue().get());
+    this.sendCheckInterval = sparkConf.getLong(RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key(),
+        RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.defaultValue().get());
+    this.sendSizeLimit = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT.key(),
+        RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT.defaultValue().get());
+    this.bitmapSplitNum = sparkConf.getInt(RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM.key(),
+        RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM.defaultValue().get());
     this.partitionToBlockIds = Maps.newConcurrentMap();
     this.shuffleWriteClient = shuffleWriteClient;
     this.shuffleServersForData = rssHandle.getShuffleServersForData();
@@ -121,7 +121,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     Arrays.fill(partitionLengths, 0);
     partitionToServers = rssHandle.getPartitionToServers();
     this.isMemoryShuffleEnabled = isMemoryShuffleEnabled(
-        sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key));
+        sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
   }
 
   private boolean isMemoryShuffleEnabled(String storageType) {
