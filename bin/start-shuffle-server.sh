@@ -98,6 +98,7 @@ else
   exit 1
 fi
 
-$RUNNER $ARGS $JVM_ARGS $JAVA_LIB_PATH -cp $CLASSPATH $MAIN_CLASS --conf $CONF_FILE $@ &
+LOGOUT="./logs/shuffle_server.out"
+nohup $RUNNER $ARGS $JVM_ARGS $JAVA_LIB_PATH -cp $CLASSPATH $MAIN_CLASS --conf $CONF_FILE $@ > ${LOGOUT} 2>&1 &
 
 echo $! >$SHUFFLE_SERVER_HOME/currentpid

@@ -83,6 +83,7 @@ else
   exit 1
 fi
 
-$RUNNER $ARGS $JVM_ARGS -cp $CLASSPATH $MAIN_CLASS --conf $CONF_FILE $@ &
+LOGOUT="./logs/coordinator.out"
+nohup $RUNNER $ARGS $JVM_ARGS -cp $CLASSPATH $MAIN_CLASS --conf $CONF_FILE $@ > ${LOGOUT} 2>&1 &
 
 echo $! >$COORDINATOR_HOME/currentpid
