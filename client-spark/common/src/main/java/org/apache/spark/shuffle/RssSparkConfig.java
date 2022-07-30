@@ -24,6 +24,7 @@ import org.apache.spark.internal.config.ConfigBuilder;
 import org.apache.spark.internal.config.ConfigEntry;
 import org.apache.spark.internal.config.TypedConfigBuilder;
 
+
 import scala.runtime.AbstractFunction1;
 
 import org.apache.uniffle.client.util.RssClientConfig;
@@ -34,7 +35,7 @@ public class RssSparkConfig {
   public static final ConfigEntry<Integer> RSS_PARTITION_NUM_PER_RANGE = createIntegerBuilder(
       new ConfigBuilder("spark.rss.partitionNum.per.range")
           .doc("xxxxxx"))
-      .createWithDefault(10);
+      .createWithDefault(1);
 
   public static final ConfigEntry<String> RSS_WRITER_BUFFER_SIZE = createStringBuilder(
       new ConfigBuilder("spark.rss.writer.buffer.size")
