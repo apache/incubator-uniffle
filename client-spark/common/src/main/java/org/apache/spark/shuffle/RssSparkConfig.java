@@ -34,7 +34,7 @@ public class RssSparkConfig {
 
   public static final ConfigEntry<Integer> RSS_PARTITION_NUM_PER_RANGE = createIntegerBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_PARTITION_NUM_PER_RANGE)
-          .doc("xxxxxx"))
+          .doc(""))
       .createWithDefault(RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
 
   public static final ConfigEntry<String> RSS_WRITER_BUFFER_SIZE = createStringBuilder(
