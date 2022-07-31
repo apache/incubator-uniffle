@@ -39,7 +39,7 @@ public class RssSparkConfig {
 
   public static final ConfigEntry<String> RSS_WRITER_BUFFER_SIZE = createStringBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_WRITER_BUFFER_SIZE)
-          .doc("controls the buffer flushing size during shuffle write"))
+          .doc("Buffer size for single partition data"))
       .createWithDefault("3m");
 
   public static final ConfigEntry<String> RSS_WRITER_SERIALIZER_BUFFER_SIZE = createStringBuilder(
@@ -54,7 +54,7 @@ public class RssSparkConfig {
 
   public static final ConfigEntry<String> RSS_WRITER_BUFFER_SPILL_SIZE = createStringBuilder(
       new ConfigBuilder("spark.rss.writer.buffer.spill.size")
-          .doc(""))
+          .doc("Buffer size for total partition data"))
       .createWithDefault("128m");
 
   public static final ConfigEntry<String> RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE = createStringBuilder(
@@ -104,7 +104,7 @@ public class RssSparkConfig {
 
   public static final ConfigEntry<String> RSS_STORAGE_TYPE = createStringBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_STORAGE_TYPE)
-          .doc(""))
+          .doc("Supports MEMORY_LOCALFILE, MEMORY_HDFS, MEMORY_LOCALFILE_HDFS"))
       .createWithDefault("");
 
   public static final ConfigEntry<Integer> RSS_CLIENT_RETRY_MAX = createIntegerBuilder(
@@ -124,13 +124,14 @@ public class RssSparkConfig {
 
   public static final ConfigEntry<String> RSS_CLIENT_SEND_SIZE_LIMIT = createStringBuilder(
       new ConfigBuilder("spark.rss.client.send.size.limit")
-          .doc(""))
+          .doc("The max data size sent to shuffle server"))
       .createWithDefault("16m");
 
-
+  // When the size of read buffer reaches the half of JVM region (i.e., 32m),
+  // it will incur humongous allocation, so we set it to 14m.
   public static final ConfigEntry<String> RSS_CLIENT_READ_BUFFER_SIZE = createStringBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE)
-          .doc(""))
+          .doc("The max data size read from storage"))
       .createWithDefault(RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE);
 
   public static final ConfigEntry<Long> RSS_HEARTBEAT_INTERVAL = createLongBuilder(
@@ -145,7 +146,7 @@ public class RssSparkConfig {
 
   public static final ConfigEntry<Integer> RSS_CLIENT_SEND_THREAD_POOL_SIZE = createIntegerBuilder(
       new ConfigBuilder("spark.rss.client.send.threadPool.size")
-          .doc(""))
+          .doc("The thread size for send shuffle data to shuffle server"))
       .createWithDefault(10);
 
   public static final ConfigEntry<Integer> RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE = createIntegerBuilder(
@@ -155,17 +156,17 @@ public class RssSparkConfig {
 
   public static final ConfigEntry<Integer> RSS_DATA_REPLICA = createIntegerBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA)
-          .doc(""))
+          .doc("The max server number that each block can be send by client in quorum protocol"))
       .createWithDefault(RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
 
   public static final ConfigEntry<Integer> RSS_DATA_REPLICA_WRITE = createIntegerBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_WRITE)
-          .doc(""))
+          .doc("The min server number that each block should be send by client successfully"))
       .createWithDefault(RssClientConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE);
 
   public static final ConfigEntry<Integer> RSS_DATA_REPLICA_READ = createIntegerBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_READ)
-          .doc(""))
+          .doc("The min server number that metadata should be fetched by client successfully"))
       .createWithDefault(RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE);
 
   public static final ConfigEntry<Boolean> RSS_DATA_REPLICA_SKIP_ENABLED = createBooleanBuilder(
@@ -180,7 +181,7 @@ public class RssSparkConfig {
 
   public static final ConfigEntry<Integer> RSS_DATA_COMMIT_POOL_SIZE = createIntegerBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_COMMIT_POOL_SIZE)
-          .doc(""))
+          .doc("The thread size for sending commit to shuffle servers"))
       .createWithDefault(RssClientConfig.RSS_DATA_COMMIT_POOL_SIZE_DEFAULT_VALUE);
 
   public static final ConfigEntry<Boolean> RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE = createBooleanBuilder(
@@ -225,12 +226,14 @@ public class RssSparkConfig {
 
   public static final ConfigEntry<String> RSS_CLIENT_ASSIGNMENT_TAGS = createStringBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_TAGS)
-          .doc(""))
+          .doc("The comma-separated list of tags for deciding assignment shuffle servers. " +
+              "Notice that the SHUFFLE_SERVER_VERSION will always as the assignment tag " +
+              "whether this conf is set or not"))
       .createWithDefault("");
 
   public static final ConfigEntry<String> RSS_COORDINATOR_QUORUM = createStringBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_COORDINATOR_QUORUM)
-          .doc(""))
+          .doc("Coordinator quorum"))
       .createWithDefault("");
 
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
