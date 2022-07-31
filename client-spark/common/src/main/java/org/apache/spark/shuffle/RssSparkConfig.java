@@ -31,12 +31,12 @@ import org.apache.uniffle.common.config.ConfigUtils;
 public class RssSparkConfig {
 
   public static final ConfigEntry<Integer> RSS_PARTITION_NUM_PER_RANGE = createIntegerBuilder(
-      new ConfigBuilder("spark.rss.partitionNum.per.range")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_PARTITION_NUM_PER_RANGE)
           .doc("xxxxxx"))
-      .createWithDefault(1);
+      .createWithDefault(RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
 
   public static final ConfigEntry<String> RSS_WRITER_BUFFER_SIZE = createStringBuilder(
-      new ConfigBuilder("spark.rss.writer.buffer.size")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_WRITER_BUFFER_SIZE)
           .doc("controls the buffer flushing size during shuffle write"))
       .createWithDefault("3m");
 
@@ -71,52 +71,52 @@ public class RssSparkConfig {
       .createWithDefault(1000L);
 
   public static final ConfigEntry<Long> RSS_CLIENT_SEND_CHECK_TIMEOUT_MS = createLongBuilder(
-      new ConfigBuilder("spark.rss.client.send.check.timeout.ms")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS)
           .doc(""))
       .createWithDefault(RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE);
 
   public static final ConfigEntry<Long> RSS_CLIENT_SEND_CHECK_INTERVAL_MS = createLongBuilder(
-      new ConfigBuilder("spark.rss.client.send.check.interval.ms")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS)
           .doc(""))
       .createWithDefault(RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE);
 
-  public static final ConfigEntry<String> RSS_TEST_FLAG = createStringBuilder(
+  public static final ConfigEntry<Boolean> RSS_TEST_FLAG = createStringBuilder(
       new ConfigBuilder("spark.rss.test")
           .doc(""))
-      .createWithDefault("");
+      .createWithDefault(false);
 
   public static final ConfigEntry<String> RSS_REMOTE_STORAGE_PATH = createStringBuilder(
-      new ConfigBuilder("spark.rss.remote.storage.path")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_STORAGE_PATH)
           .doc(""))
       .createWithDefault("");
 
   public static final ConfigEntry<Integer> RSS_INDEX_READ_LIMIT = createIntegerBuilder(
-      new ConfigBuilder("spark.rss.index.read.limit")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_INDEX_READ_LIMIT)
           .doc(""))
-      .createWithDefault(500);
+      .createWithDefault(RssClientConfig.RSS_INDEX_READ_LIMIT_DEFAULT_VALUE);
 
   public static final ConfigEntry<String> RSS_CLIENT_TYPE = createStringBuilder(
-      new ConfigBuilder("spark.rss.client.type")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_TYPE)
           .doc(""))
       .createWithDefault(RssClientConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
 
   public static final ConfigEntry<String> RSS_STORAGE_TYPE = createStringBuilder(
-      new ConfigBuilder("spark.rss.storage.type")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_STORAGE_TYPE)
           .doc(""))
       .createWithDefault("");
 
   public static final ConfigEntry<Integer> RSS_CLIENT_RETRY_MAX = createIntegerBuilder(
-      new ConfigBuilder("spark.rss.client.retry.max")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_RETRY_MAX)
           .doc(""))
       .createWithDefault(RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
 
   public static final ConfigEntry<Long> RSS_CLIENT_RETRY_INTERVAL_MAX = createLongBuilder(
-      new ConfigBuilder("spark.rss.client.retry.interval.max")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX)
           .doc(""))
       .createWithDefault(RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
 
   public static final ConfigEntry<Integer> RSS_CLIENT_HEARTBEAT_THREAD_NUM = createIntegerBuilder(
-      new ConfigBuilder("spark.rss.client.heartBeat.threadNum")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM)
           .doc(""))
       .createWithDefault(4);
 
@@ -125,18 +125,19 @@ public class RssSparkConfig {
           .doc(""))
       .createWithDefault("16m");
 
+
   public static final ConfigEntry<String> RSS_CLIENT_READ_BUFFER_SIZE = createStringBuilder(
-      new ConfigBuilder("spark.rss.client.read.buffer.size")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE)
           .doc(""))
       .createWithDefault(RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE);
 
   public static final ConfigEntry<Long> RSS_HEARTBEAT_INTERVAL = createLongBuilder(
-      new ConfigBuilder("spark.rss.heartbeat.interval")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_HEARTBEAT_INTERVAL)
           .doc(""))
       .createWithDefault(RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
 
   public static final ConfigEntry<Long> RSS_HEARTBEAT_TIMEOUT = createLongBuilder(
-      new ConfigBuilder("spark.rss.heartbeat.timeout")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_HEARTBEAT_TIMEOUT)
           .doc(""))
       .createWithDefault(5 * 1000L);
 
@@ -151,32 +152,32 @@ public class RssSparkConfig {
       .createWithDefault(60);
 
   public static final ConfigEntry<Integer> RSS_DATA_REPLICA = createIntegerBuilder(
-      new ConfigBuilder("spark.rss.data.replica")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA)
           .doc(""))
       .createWithDefault(RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
 
   public static final ConfigEntry<Integer> RSS_DATA_REPLICA_WRITE = createIntegerBuilder(
-      new ConfigBuilder("spark.rss.data.replica.write")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_WRITE)
           .doc(""))
       .createWithDefault(RssClientConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE);
 
   public static final ConfigEntry<Integer> RSS_DATA_REPLICA_READ = createIntegerBuilder(
-      new ConfigBuilder("spark.rss.data.replica.read")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_READ)
           .doc(""))
       .createWithDefault(RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE);
 
   public static final ConfigEntry<Boolean> RSS_DATA_REPLICA_SKIP_ENABLED = createBooleanBuilder(
-      new ConfigBuilder("spark.rss.data.replica.skip.enabled")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_SKIP_ENABLED)
           .doc(""))
       .createWithDefault(RssClientConfig.RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE);
 
   public static final ConfigEntry<Integer> RSS_DATA_TRANSFER_POOL_SIZE = createIntegerBuilder(
-      new ConfigBuilder("spark.rss.client.data.transfer.pool.size")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_TRANSFER_POOL_SIZE)
           .doc(""))
       .createWithDefault(RssClientConfig.RSS_DATA_TRANFER_POOL_SIZE_DEFAULT_VALUE);
 
   public static final ConfigEntry<Integer> RSS_DATA_COMMIT_POOL_SIZE = createIntegerBuilder(
-      new ConfigBuilder("spark.rss.client.data.commit.pool.size")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_COMMIT_POOL_SIZE)
           .doc(""))
       .createWithDefault(RssClientConfig.RSS_DATA_COMMIT_POOL_SIZE_DEFAULT_VALUE);
 
@@ -206,7 +207,7 @@ public class RssSparkConfig {
       .createWithDefault("");
 
   public static final ConfigEntry<Integer> RSS_ACCESS_TIMEOUT_MS = createIntegerBuilder(
-      new ConfigBuilder("spark.rss.access.timeout.ms")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ACCESS_TIMEOUT_MS)
           .doc(""))
       .createWithDefault(RssClientConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE);
 
@@ -216,17 +217,17 @@ public class RssSparkConfig {
       .createWithDefault(false);
 
   public static final ConfigEntry<Boolean> RSS_DYNAMIC_CLIENT_CONF_ENABLED = createBooleanBuilder(
-      new ConfigBuilder("spark.rss.dynamicClientConf.enabled")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED)
           .doc(""))
       .createWithDefault(RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
 
   public static final ConfigEntry<String> RSS_CLIENT_ASSIGNMENT_TAGS = createStringBuilder(
-      new ConfigBuilder("spark.rss.client.assignment.tags")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_TAGS)
           .doc(""))
       .createWithDefault("");
 
   public static final ConfigEntry<String> RSS_COORDINATOR_QUORUM = createStringBuilder(
-      new ConfigBuilder("spark.rss.coordinator.quorum")
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX +RssClientConfig.RSS_COORDINATOR_QUORUM)
           .doc(""))
       .createWithDefault("");
 
