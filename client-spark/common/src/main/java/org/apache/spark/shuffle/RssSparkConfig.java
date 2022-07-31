@@ -226,9 +226,9 @@ public class RssSparkConfig {
 
   public static final ConfigEntry<String> RSS_CLIENT_ASSIGNMENT_TAGS = createStringBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_TAGS)
-          .doc("The comma-separated list of tags for deciding assignment shuffle servers. " +
-              "Notice that the SHUFFLE_SERVER_VERSION will always as the assignment tag " +
-              "whether this conf is set or not"))
+          .doc("The comma-separated list of tags for deciding assignment shuffle servers. "
+              + "Notice that the SHUFFLE_SERVER_VERSION will always as the assignment tag "
+              + "whether this conf is set or not"))
       .createWithDefault("");
 
   public static final ConfigEntry<String> RSS_COORDINATOR_QUORUM = createStringBuilder(
