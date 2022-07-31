@@ -30,6 +30,8 @@ import org.apache.uniffle.common.config.ConfigUtils;
 
 public class RssSparkConfig {
 
+  public static final String SPARK_RSS_CONFIG_PREFIX = "spark.";
+
   public static final ConfigEntry<Integer> RSS_PARTITION_NUM_PER_RANGE = createIntegerBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_PARTITION_NUM_PER_RANGE)
           .doc("xxxxxx"))
@@ -80,7 +82,7 @@ public class RssSparkConfig {
           .doc(""))
       .createWithDefault(RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE);
 
-  public static final ConfigEntry<Boolean> RSS_TEST_FLAG = createStringBuilder(
+  public static final ConfigEntry<Boolean> RSS_TEST_FLAG = createBooleanBuilder(
       new ConfigBuilder("spark.rss.test")
           .doc(""))
       .createWithDefault(false);
@@ -116,7 +118,7 @@ public class RssSparkConfig {
       .createWithDefault(RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
 
   public static final ConfigEntry<Integer> RSS_CLIENT_HEARTBEAT_THREAD_NUM = createIntegerBuilder(
-      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM)
+      new ConfigBuilder("spark.rss.client.heartBeat.threadNum")
           .doc(""))
       .createWithDefault(4);
 
@@ -227,14 +229,12 @@ public class RssSparkConfig {
       .createWithDefault("");
 
   public static final ConfigEntry<String> RSS_COORDINATOR_QUORUM = createStringBuilder(
-      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX +RssClientConfig.RSS_COORDINATOR_QUORUM)
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_COORDINATOR_QUORUM)
           .doc(""))
       .createWithDefault("");
 
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
       Sets.newHashSet(RSS_STORAGE_TYPE.key(), RSS_REMOTE_STORAGE_PATH.key());
-
-  public static final String SPARK_RSS_CONFIG_PREFIX = "spark.";
 
   public static final boolean RSS_USE_RSS_SHUFFLE_MANAGER_DEFAULT_VALUE = false;
 
