@@ -223,5 +223,20 @@ public class BasicAssignmentStrategyTest {
             .collect(Collectors.toSet())
             .size()
     );
+
+    /**
+     * case5: user specify the illegal shuffle node num(==0)
+     * it will use the default shuffle nodes num when having enough servers.
+     */
+    pra = strategy.assign(100, 10, 1, serverTags, 0);
+    assertEquals(
+        shuffleNodesMax,
+        pra.getAssignments()
+            .values()
+            .stream()
+            .flatMap(Collection::stream)
+            .collect(Collectors.toSet())
+            .size()
+    );
   }
 }

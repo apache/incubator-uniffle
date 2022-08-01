@@ -83,14 +83,21 @@ public class AssignmentServerNodesNumberTest extends CoordinatorTestBase {
     assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
 
     /**
-     * case2: user specify the illegal shuffle node num(>default max limitation)
+     * case2: user specify the illegal shuffle node num(==0)
+     * it will use the default shuffle nodes num when having enough servers.
+     */
+    info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, 0);
+    assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
+
+    /**
+     * case3: user specify the illegal shuffle node num(>default max limitation)
      * it will use the default shuffle nodes num when having enough servers
      */
     info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM + 10);
     assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
 
     /**
-     * case3: user specify the legal shuffle node num,
+     * case4: user specify the legal shuffle node num,
      * it will use the customized shuffle nodes num when having enough servers
      */
     info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM - 1);
