@@ -266,15 +266,15 @@ public class RssShuffleManager implements ShuffleManager {
     Map<Integer, List<ShuffleServerInfo>> partitionToServers;
     try {
       partitionToServers = RetryUtils.retry(() -> {
-          ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
-                  id.get(),
-                  shuffleId,
-                  dependency.partitioner().numPartitions(),
-                  1,
-                  assignmentTags,
-                  requiredShuffleServerNumber);
-          registerShuffleServers(id.get(), shuffleId, response.getServerToPartitionRanges());
-          return response.getPartitionToServers();
+        ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
+                id.get(),
+                shuffleId,
+                dependency.partitioner().numPartitions(),
+                1,
+                assignmentTags,
+                requiredShuffleServerNumber);
+        registerShuffleServers(id.get(), shuffleId, response.getServerToPartitionRanges());
+        return response.getPartitionToServers();
       }, retryInterval, retryTimes);
     } catch (Throwable throwable) {
       throw new RssException("registerShuffle failed!", throwable);
