@@ -62,7 +62,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 4000);
+    shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 30000);
     File tmpDir = Files.createTempDir();
     tmpDir.deleteOnExit();
     File dataDir1 = new File(tmpDir, "data1");
