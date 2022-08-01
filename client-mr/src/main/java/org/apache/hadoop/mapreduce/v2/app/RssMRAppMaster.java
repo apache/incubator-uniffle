@@ -128,10 +128,23 @@ public class RssMRAppMaster extends MRAppMaster {
       }
       assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
 
+      int requiredAssignmentShuffleServersNum = conf.getInt(
+          RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER,
+          RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER_DEFAULT_VALUE
+      );
+
       ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
       String appId = applicationAttemptId.toString();
-      ShuffleAssignmentsInfo response = client.getShuffleAssignments(
-          appId, 0, numReduceTasks, 1, Sets.newHashSet(assignmentTags));
+
+      ShuffleAssignmentsInfo response =
+          client.getShuffleAssignments(
+              appId,
+              0,
+              numReduceTasks,
+              1,
+              Sets.newHashSet(assignmentTags),
+              requiredAssignmentShuffleServersNum
+          );
 
       Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges = response.getServerToPartitionRanges();
       final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
