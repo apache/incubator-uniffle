@@ -59,11 +59,13 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
@@ -284,16 +286,23 @@ public class RssShuffleManager implements ShuffleManager {
 
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
 
-    ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
-        id.get(),
-        shuffleId,
-        dependency.partitioner().numPartitions(),
-        1,
-        assignmentTags);
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = response.getPartitionToServers();
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers;
+    try {
+      partitionToServers = RetryUtils.retry(() -> {
+        ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
+            id.get(),
+            shuffleId,
+            dependency.partitioner().numPartitions(),
+            1,
+            assignmentTags);
+        registerShuffleServers(id.get(), shuffleId, response.getServerToPartitionRanges());
+        return response.getPartitionToServers();
+      }, 1000, 3);
+    } catch (Throwable throwable) {
+      throw new RssException("registerShuffle failed!", throwable);
+    }
 
     startHeartbeat();
-    registerShuffleServers(id.get(), shuffleId, response.getServerToPartitionRanges());
 
     LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum[" + partitionToServers.size()
         + "], shuffleServerForResult: " + partitionToServers);
