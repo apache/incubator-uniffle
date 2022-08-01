@@ -188,7 +188,12 @@ public class RssMRAppMaster extends MRAppMaster {
         }
         conf.setInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, originalAttempts + inc);
       }
-
+      
+      int requiredAssignmentShuffleServersNum = conf.getInt(
+              RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER,
+              RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER_DEFAULT_VALUE
+      );
+      
       // retryInterval must bigger than `rss.server.heartbeat.timeout`, or maybe it will return the same result
       long retryInterval = conf.getLong(RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL,
               RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE);
@@ -197,8 +202,15 @@ public class RssMRAppMaster extends MRAppMaster {
       ShuffleAssignmentsInfo response;
       try {
         response = RetryUtils.retry(() -> {
-          ShuffleAssignmentsInfo shuffleAssignments = client.getShuffleAssignments(
-              appId, 0, numReduceTasks, 1, Sets.newHashSet(assignmentTags));
+          ShuffleAssignmentsInfo shuffleAssignments =
+                  client.getShuffleAssignments(
+                          appId,
+                          0,
+                          numReduceTasks,
+                          1,
+                          Sets.newHashSet(assignmentTags),
+                          requiredAssignmentShuffleServersNum
+                  );
 
           Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
               shuffleAssignments.getServerToPartitionRanges();

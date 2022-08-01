@@ -295,6 +295,7 @@ message GetShuffleServerRequest {
   int32 partitionNumPerRange = 7;
   int32 dataReplica = 8;
   repeated string requireTags = 9;
+  int32 assignmentShuffleServerNumber = 10;
 }
 
 message PartitionRangeAssignment {
