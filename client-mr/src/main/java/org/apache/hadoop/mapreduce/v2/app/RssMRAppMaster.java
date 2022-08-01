@@ -143,8 +143,6 @@ public class RssMRAppMaster extends MRAppMaster {
             }
           }
       );
-      long heartbeatInterval = conf.getLong(RssMRConfig.RSS_HEARTBEAT_INTERVAL,
-          RssMRConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
 
       JobConf extraConf = new JobConf();
       extraConf.clear();
@@ -191,6 +189,8 @@ public class RssMRAppMaster extends MRAppMaster {
         conf.setInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, originalAttempts + inc);
       }
 
+      // retryInterval must bigger than `rss.server.heartbeat.timeout`, or maybe it will return the same result
+      int retryInterval = 12000;
       ShuffleAssignmentsInfo response;
       try {
         response = RetryUtils.retry(() -> {
@@ -211,7 +211,7 @@ public class RssMRAppMaster extends MRAppMaster {
           });
           LOG.info("Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
           return shuffleAssignments;
-        }, heartbeatInterval, 3);
+        }, retryInterval, 3);
       } catch (Throwable throwable) {
         throw new RssException("registerShuffle failed!", throwable);
       }
@@ -219,7 +219,8 @@ public class RssMRAppMaster extends MRAppMaster {
       if (response == null) {
         return;
       }
-
+      long heartbeatInterval = conf.getLong(RssMRConfig.RSS_HEARTBEAT_INTERVAL,
+          RssMRConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
       long heartbeatTimeout = conf.getLong(RssMRConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
       scheduledExecutorService.scheduleAtFixedRate(
           () -> {

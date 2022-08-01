@@ -20,12 +20,15 @@ package org.apache.uniffle.test;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import org.apache.uniffle.client.util.DefaultIdHelper;
+import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.RetryUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -39,6 +42,7 @@ import org.apache.uniffle.client.util.ClientType;
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -47,6 +51,7 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -272,5 +277,46 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     commitResult = shuffleWriteClientImpl
         .sendCommit(Sets.newHashSet(shuffleServerInfo2), testAppId, 0, 2);
     assertFalse(commitResult);
+  }
+
+  @Test
+  public void testRetryAssgin() throws Throwable {
+    int maxTryTime = shuffleServers.size();
+    AtomicInteger tryTime = new AtomicInteger();
+    String appId = "app-1";
+    RemoteStorageInfo remoteStorage = new RemoteStorageInfo("");
+    ShuffleAssignmentsInfo response = null;
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    int heartbeatTimeout = shuffleServerConf.getInteger("rss.server.heartbeat.timeout", 2000);
+    int heartbeatInterval = shuffleServerConf.getInteger("rss.server.heartbeat.interval", 1000);
+    Thread.sleep(heartbeatInterval * 2);
+    shuffleWriteClientImpl.registerCoordinators(COORDINATOR_QUORUM);
+    response = RetryUtils.retry(() -> {
+      int currentTryTime = tryTime.incrementAndGet();
+      ShuffleAssignmentsInfo shuffleAssignments = shuffleWriteClientImpl.getShuffleAssignments(appId,
+          1, 1, 1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+
+      Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
+          shuffleAssignments.getServerToPartitionRanges();
+
+      serverToPartitionRanges.entrySet().forEach(entry -> {
+        if (currentTryTime < maxTryTime) {
+          shuffleServers.forEach((ss) -> {
+            if (ss.getId().equals(entry.getKey().getId())) {
+              try {
+                ss.stopServer();
+              } catch (Exception e) {
+                e.printStackTrace();
+              }
+            }
+          });
+        }
+        shuffleWriteClientImpl.registerShuffle(
+            entry.getKey(), appId, 0, entry.getValue(), remoteStorage);
+      });
+      return shuffleAssignments;
+    }, heartbeatTimeout, maxTryTime);
+
+    assertNotNull(response);
   }
 }
