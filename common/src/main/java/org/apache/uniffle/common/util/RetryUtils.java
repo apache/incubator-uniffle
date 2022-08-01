@@ -25,8 +25,8 @@ import org.slf4j.LoggerFactory;
 public class RetryUtils {
   private static final Logger LOG = LoggerFactory.getLogger(RetryUtils.class);
 
-  public static <T> T retry(RetryCmd<T> cmd, int intervalms, int retryTimes) throws Throwable {
-    return retry(cmd, null, intervalms, retryTimes, null);
+  public static <T> T retry(RetryCmd<T> cmd, long intervalMs, int retryTimes) throws Throwable {
+    return retry(cmd, null, intervalMs, retryTimes, null);
   }
 
   /**
@@ -39,7 +39,7 @@ public class RetryUtils {
    * @return
    * @throws Throwable
    */
-  public static <T> T retry(RetryCmd<T> cmd, RetryCallBack callBack, int intervalMs,
+  public static <T> T retry(RetryCmd<T> cmd, RetryCallBack callBack, long intervalMs,
                             int retryTimes, Set<Class> exceptionClasses) throws Throwable {
     int retry = 0;
     while (true) {

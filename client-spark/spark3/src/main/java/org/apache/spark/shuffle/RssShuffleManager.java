@@ -297,7 +297,7 @@ public class RssShuffleManager implements ShuffleManager {
             assignmentTags);
         registerShuffleServers(id.get(), shuffleId, response.getServerToPartitionRanges());
         return response.getPartitionToServers();
-      }, 1000, 3);
+      }, heartbeatInterval, 3);
     } catch (Throwable throwable) {
       throw new RssException("registerShuffle failed!", throwable);
     }

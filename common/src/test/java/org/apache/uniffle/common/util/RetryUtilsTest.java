@@ -28,40 +28,40 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class RetryUtilsTest {
   @Test
   public void testRetry() {
-    AtomicInteger retryTimes = new AtomicInteger();
+    AtomicInteger tryTimes = new AtomicInteger();
     AtomicInteger callbackTime = new AtomicInteger();
-    int maxRetryTime = 3;
+    int maxTryTime = 3;
     try {
       RetryUtils.retry(() -> {
-        retryTimes.incrementAndGet();
+        tryTimes.incrementAndGet();
         throw new RssException("");
       }, () -> {
         callbackTime.incrementAndGet();
-      }, 10, maxRetryTime, Sets.newHashSet(RssException.class));
+      }, 10, maxTryTime, Sets.newHashSet(RssException.class));
     } catch (Throwable throwable) {
     }
-    assertEquals(retryTimes.get(), maxRetryTime);
-    assertEquals(callbackTime.get(), maxRetryTime - 1);
+    assertEquals(tryTimes.get(), maxTryTime);
+    assertEquals(callbackTime.get(), maxTryTime - 1);
 
-    retryTimes.set(0);
+    tryTimes.set(0);
     try {
       RetryUtils.retry(() -> {
-        retryTimes.incrementAndGet();
+        tryTimes.incrementAndGet();
         throw new Exception("");
-      }, 10, maxRetryTime);
+      }, 10, maxTryTime);
     } catch (Throwable throwable) {
     }
-    assertEquals(retryTimes.get(), maxRetryTime);
+    assertEquals(tryTimes.get(), maxTryTime);
 
-    retryTimes.set(0);
+    tryTimes.set(0);
     try {
       int ret = RetryUtils.retry(() -> {
-        retryTimes.incrementAndGet();
+        tryTimes.incrementAndGet();
         return 1;
-      }, 10, maxRetryTime);
+      }, 10, maxTryTime);
       assertEquals(ret, 1);
     } catch (Throwable throwable) {
     }
-    assertEquals(retryTimes.get(), 1);
+    assertEquals(tryTimes.get(), 1);
   }
 }

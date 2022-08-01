@@ -245,7 +245,7 @@ public class RssShuffleManager implements ShuffleManager {
             partitionNumPerRange, assignmentTags);
         registerShuffleServers(appId, shuffleId, response.getServerToPartitionRanges());
         return response.getPartitionToServers();
-      }, 1000, 3);
+      }, heartbeatInterval, 3);
     } catch (Throwable throwable) {
       throw new RssException("registerShuffle failed!", throwable);
     }
