@@ -175,7 +175,22 @@ public class BasicAssignmentStrategyTest {
     );
 
     /**
-     * case2: user specify the illegal shuffle node num(>default max limitation)
+     * case2: user specify the illegal shuffle node num(==0)
+     * it will use the default shuffle nodes num when having enough servers.
+     */
+    pra = strategy.assign(100, 10, 1, serverTags, 0);
+    assertEquals(
+        shuffleNodesMax,
+        pra.getAssignments()
+            .values()
+            .stream()
+            .flatMap(Collection::stream)
+            .collect(Collectors.toSet())
+            .size()
+    );
+
+    /**
+     * case3: user specify the illegal shuffle node num(>default max limitation)
      * it will use the default shuffle nodes num when having enough servers
      */
     pra = strategy.assign(100, 10, 1, serverTags, shuffleNodesMax + 10);
@@ -190,7 +205,7 @@ public class BasicAssignmentStrategyTest {
     );
 
     /**
-     * case3: user specify the legal shuffle node num,
+     * case4: user specify the legal shuffle node num,
      * it will use the customized shuffle nodes num when having enough servers
      */
     pra = strategy.assign(100, 10, 1, serverTags, shuffleNodesMax - 1);
@@ -205,7 +220,7 @@ public class BasicAssignmentStrategyTest {
     );
 
     /**
-     * case4: user specify the legal shuffle node num, but cluster dont have enough servers,
+     * case5: user specify the legal shuffle node num, but cluster dont have enough servers,
      * it will return the remaining servers.
      */
     serverTags = Sets.newHashSet("tag-2");
@@ -216,21 +231,6 @@ public class BasicAssignmentStrategyTest {
     pra = strategy.assign(100, 10, 1, serverTags, shuffleNodesMax);
     assertEquals(
         shuffleNodesMax - 1,
-        pra.getAssignments()
-            .values()
-            .stream()
-            .flatMap(Collection::stream)
-            .collect(Collectors.toSet())
-            .size()
-    );
-
-    /**
-     * case5: user specify the illegal shuffle node num(==0)
-     * it will use the default shuffle nodes num when having enough servers.
-     */
-    pra = strategy.assign(100, 10, 1, serverTags, 0);
-    assertEquals(
-        shuffleNodesMax,
         pra.getAssignments()
             .values()
             .stream()
