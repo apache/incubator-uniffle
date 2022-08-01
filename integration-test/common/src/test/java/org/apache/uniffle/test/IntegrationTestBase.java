@@ -103,7 +103,6 @@ abstract public class IntegrationTestBase extends HdfsTestBase {
     serverConf.setString("rss.coordinator.quorum", COORDINATOR_QUORUM);
     serverConf.setString("rss.server.heartbeat.delay", "1000");
     serverConf.setString("rss.server.heartbeat.interval", "1000");
-    serverConf.setInteger("rss.server.heartbeat.timeout", 10000);
     serverConf.setInteger("rss.jetty.http.port", 18080);
     serverConf.setInteger("rss.jetty.corePool.size", 64);
     serverConf.setInteger("rss.rpc.executor.size", 10);

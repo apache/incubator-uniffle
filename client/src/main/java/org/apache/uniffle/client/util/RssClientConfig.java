@@ -60,6 +60,11 @@ public class RssClientConfig {
   public static final String RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE = "14m";
   // The tags specified by rss client to determine server assignment.
   public static final String RSS_CLIENT_ASSIGNMENT_TAGS = "rss.client.assignment.tags";
+  
+  public static final String RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL = "rss.client.assignment.retry.interval";
+  public static final int RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE = 65000;
+  public static final String RSS_CLIENT_ASSIGNMENT_RETRY_TIMES = "rss.client.assignment.retry.times";
+  public static final int RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE = 3;
 
   public static final String RSS_ACCESS_TIMEOUT_MS = "rss.access.timeout.ms";
   public static final int RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE = 10000;

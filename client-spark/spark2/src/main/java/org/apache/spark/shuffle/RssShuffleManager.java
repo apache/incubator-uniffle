@@ -238,7 +238,10 @@ public class RssShuffleManager implements ShuffleManager {
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
 
     // retryInterval must bigger than `rss.server.heartbeat.timeout`, or maybe it will return the same result
-    int retryInterval = 12000;
+    long retryInterval = sparkConf.getLong(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL,
+            RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE);
+    int retryTimes = sparkConf.getInt(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES,
+            RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE);
     Map<Integer, List<ShuffleServerInfo>> partitionToServers;
     try {
       partitionToServers = RetryUtils.retry(() -> {
@@ -247,7 +250,7 @@ public class RssShuffleManager implements ShuffleManager {
             partitionNumPerRange, assignmentTags);
         registerShuffleServers(appId, shuffleId, response.getServerToPartitionRanges());
         return response.getPartitionToServers();
-      }, retryInterval, 3);
+      }, retryInterval, retryTimes);
     } catch (Throwable throwable) {
       throw new RssException("registerShuffle failed!", throwable);
     }

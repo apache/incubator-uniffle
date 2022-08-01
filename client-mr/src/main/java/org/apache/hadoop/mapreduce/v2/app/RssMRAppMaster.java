@@ -190,7 +190,10 @@ public class RssMRAppMaster extends MRAppMaster {
       }
 
       // retryInterval must bigger than `rss.server.heartbeat.timeout`, or maybe it will return the same result
-      int retryInterval = 12000;
+      long retryInterval = conf.getLong(RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL,
+              RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE);
+      int retryTimes = conf.getInt(RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES,
+              RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE);
       ShuffleAssignmentsInfo response;
       try {
         response = RetryUtils.retry(() -> {
@@ -211,7 +214,7 @@ public class RssMRAppMaster extends MRAppMaster {
           });
           LOG.info("Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
           return shuffleAssignments;
-        }, retryInterval, 3);
+        }, retryInterval, retryTimes);
       } catch (Throwable throwable) {
         throw new RssException("registerShuffle failed!", throwable);
       }
