@@ -148,7 +148,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     int retryNum = 0;
     while (retryNum <= maxRetryAttempts) {
       try {
-        ShuffleCommitResponse response = getBlockingStub().commitShuffleTask(request);
+        ShuffleCommitResponse response = blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS).commitShuffleTask(request);
         return response;
       } catch (Exception e) {
         retryNum++;
