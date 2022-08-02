@@ -152,11 +152,11 @@ public class QuorumTest extends ShuffleReadWriteBase {
     // spark.rss.data.replica.write=2
     // spark.rss.data.replica.read=2
     ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo0)).adjustTimeout(10000);
+      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo0)).adjustTimeout(200);
     ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo1)).adjustTimeout(10000);
+      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo1)).adjustTimeout(200);
     ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(10000);
+      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(200);
   }
 
   @AfterEach
@@ -166,6 +166,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
     }
     cleanCluster();
     initCluster();
+    // we need recovery `rpcTime`, or some unit tests may fail
+    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
+            .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo0)).adjustTimeout(60000);
+    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
+            .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo1)).adjustTimeout(60000);
+    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
+            .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(60000);
   }
 
 
