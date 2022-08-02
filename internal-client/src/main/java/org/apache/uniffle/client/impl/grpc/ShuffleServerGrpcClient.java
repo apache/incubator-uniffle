@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
+import io.grpc.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,8 +110,10 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
   }
   
-  private ShuffleServerBlockingStub getBlockingStub() { 
-    return blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
+  private ShuffleServerBlockingStub getBlockingStub() {
+    ShuffleServerBlockingStub stub =  blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
+    LOG.info("deadline:" + stub.getCallOptions().getDeadline() + " context deadline:"   + Context.current().getDeadline());
+    return stub;
   }
 
   @Override
@@ -148,7 +151,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     int retryNum = 0;
     while (retryNum <= maxRetryAttempts) {
       try {
-        ShuffleCommitResponse response = blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS).commitShuffleTask(request);
+        ShuffleCommitResponse response = getBlockingStub().commitShuffleTask(request);
         return response;
       } catch (Exception e) {
         retryNum++;
