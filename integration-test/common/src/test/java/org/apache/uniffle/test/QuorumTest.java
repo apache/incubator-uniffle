@@ -152,11 +152,11 @@ public class QuorumTest extends ShuffleReadWriteBase {
     // spark.rss.data.replica.write=2
     // spark.rss.data.replica.read=2
     ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo0)).adjustTimeout(100);
+      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo0)).adjustTimeout(10000);
     ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo1)).adjustTimeout(100);
+      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo1)).adjustTimeout(10000);
     ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(100);
+      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(10000);
   }
 
   @AfterEach

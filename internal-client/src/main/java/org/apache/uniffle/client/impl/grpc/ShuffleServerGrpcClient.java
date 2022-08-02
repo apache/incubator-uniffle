@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
-import io.grpc.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,9 +110,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   }
   
   private ShuffleServerBlockingStub getBlockingStub() {
-    ShuffleServerBlockingStub stub = blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
-    LOG.info("deadline:" + stub.getCallOptions().getDeadline() + " context deadline:"   + Context.current().getDeadline());
-    return stub;
+    return blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
   }
 
   @Override
