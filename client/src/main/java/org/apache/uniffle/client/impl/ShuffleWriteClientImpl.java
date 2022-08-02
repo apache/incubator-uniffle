@@ -306,6 +306,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             successfulCommit.incrementAndGet();
           } catch (Exception e) {
             LOG.error(errorMsg, e);
+            throw new RuntimeException("sendCommit failed", e);
           }
         });
       }).join();
