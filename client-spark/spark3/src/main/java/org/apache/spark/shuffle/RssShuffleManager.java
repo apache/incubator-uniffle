@@ -64,6 +64,8 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
@@ -258,17 +260,26 @@ public class RssShuffleManager implements ShuffleManager {
 
     int requiredShuffleServerNumber = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER);
 
-    ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
-        id.get(),
-        shuffleId,
-        dependency.partitioner().numPartitions(),
-        1,
-        assignmentTags,
-        requiredShuffleServerNumber);
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = response.getPartitionToServers();
-
+    // retryInterval must bigger than `rss.server.heartbeat.timeout`, or maybe it will return the same result
+    long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL);
+    int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES);
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers;
+    try {
+      partitionToServers = RetryUtils.retry(() -> {
+        ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
+                id.get(),
+                shuffleId,
+                dependency.partitioner().numPartitions(),
+                1,
+                assignmentTags,
+                requiredShuffleServerNumber);
+        registerShuffleServers(id.get(), shuffleId, response.getServerToPartitionRanges());
+        return response.getPartitionToServers();
+      }, retryInterval, retryTimes);
+    } catch (Throwable throwable) {
+      throw new RssException("registerShuffle failed!", throwable);
+    }
     startHeartbeat();
-    registerShuffleServers(id.get(), shuffleId, response.getServerToPartitionRanges());
 
     LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum[" + partitionToServers.size()
         + "], shuffleServerForResult: " + partitionToServers);
