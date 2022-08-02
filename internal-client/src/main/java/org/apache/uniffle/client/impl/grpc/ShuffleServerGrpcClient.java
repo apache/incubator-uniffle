@@ -111,7 +111,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   }
   
   private ShuffleServerBlockingStub getBlockingStub() {
-    ShuffleServerBlockingStub stub =  blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
+    ShuffleServerBlockingStub stub = blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
     LOG.info("deadline:" + stub.getCallOptions().getDeadline() + " context deadline:"   + Context.current().getDeadline());
     return stub;
   }

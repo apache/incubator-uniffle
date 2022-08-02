@@ -25,6 +25,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
+import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,6 +85,10 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         new ShuffleServerInfo("127.0.0.1-20001", shuffleServers.get(0).getIp(), SHUFFLE_SERVER_PORT);
     shuffleServerInfo2 =
         new ShuffleServerInfo("127.0.0.1-20001", shuffleServers.get(1).getIp(), SHUFFLE_SERVER_PORT + 1);
+    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
+        .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo1)).adjustTimeout(60000);
+    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
+        .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(60000);
   }
 
   @BeforeEach
