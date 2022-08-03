@@ -62,6 +62,8 @@ public class LocalStorageManager extends SingleStorageManager {
   private final LocalStorageChecker checker;
   private List<LocalStorage> unCorruptedStorages = Lists.newArrayList();
   private final Set<String> corruptedStorages = Sets.newConcurrentHashSet();
+  private final ExecutorService executorService = Executors.newCachedThreadPool(
+      ThreadUtils.getThreadFactory("LocalStorageManager-%d"));
 
   @VisibleForTesting
   LocalStorageManager(ShuffleServerConf conf) {
@@ -82,8 +84,6 @@ public class LocalStorageManager extends SingleStorageManager {
     // We must make sure the order of `storageBasePaths` and `localStorages` is same, or some unit test may be fail
     CountDownLatch countDownLatch = new CountDownLatch(storageBasePaths.length);
     AtomicInteger successCount = new AtomicInteger();
-    ExecutorService executorService = Executors.newCachedThreadPool(
-        ThreadUtils.getThreadFactory("LocalStorageManager-%d"));
     LocalStorage[] localStorageArray = new LocalStorage[storageBasePaths.length];
     for (int i = 0; i < storageBasePaths.length; i++) {
       final int idx = i;

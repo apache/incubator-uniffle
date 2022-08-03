@@ -321,7 +321,7 @@ public class SortWriteBufferManager<K, V> {
   }
 
   protected void sendCommit() {
-    ExecutorService executor = Executors.newSingleThreadExecutor(ThreadUtils.getThreadFactory("bufferManagerSend-%d"));
+    ExecutorService executor = Executors.newSingleThreadExecutor();
     Set<ShuffleServerInfo> serverInfos = Sets.newHashSet();
     for (List<ShuffleServerInfo> serverInfoLists : partitionToServers.values()) {
       for (ShuffleServerInfo serverInfo : serverInfoLists) {

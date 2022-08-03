@@ -223,7 +223,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   @VisibleForTesting
   protected void sendCommit() {
-    ExecutorService executor = Executors.newSingleThreadExecutor(ThreadUtils.getThreadFactory("sendCommit-%d"));
+    ExecutorService executor = Executors.newSingleThreadExecutor();
     Future<Boolean> future = executor.submit(
         () -> shuffleWriteClient.sendCommit(shuffleServersForData, appId, shuffleId, numMaps));
     long start = System.currentTimeMillis();
