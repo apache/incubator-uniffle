@@ -114,13 +114,15 @@ public class CoordinatorServer {
     registerMetrics();
     this.applicationManager = new ApplicationManager(coordinatorConf);
 
-    ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(coordinatorConf, new Configuration());
+    // load default hadoop configuration
+    Configuration hadoopConf = new Configuration();
+    ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(coordinatorConf, hadoopConf);
     this.clusterManager = clusterManagerFactory.getClusterManager();
-    this.clientConfManager = new ClientConfManager(coordinatorConf, new Configuration(), applicationManager);
+    this.clientConfManager = new ClientConfManager(coordinatorConf, hadoopConf, applicationManager);
     AssignmentStrategyFactory assignmentStrategyFactory =
         new AssignmentStrategyFactory(coordinatorConf, clusterManager);
     this.assignmentStrategy = assignmentStrategyFactory.getAssignmentStrategy();
-    this.accessManager = new AccessManager(coordinatorConf, clusterManager, new Configuration());
+    this.accessManager = new AccessManager(coordinatorConf, clusterManager, hadoopConf);
 
     CoordinatorFactory coordinatorFactory = new CoordinatorFactory(this);
     server = coordinatorFactory.getServer();
