@@ -23,12 +23,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
-
-import java.util.stream.Collectors;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -128,7 +127,7 @@ public class PartitionBalanceAssignmentStrategyTest {
     valid(expect);
 
     list = Lists.newArrayList();
-    for (int i = 0; i< 20; i++) {
+    for (int i = 0; i < 20; i++) {
       if (i % 2 == 0) {
         list.add(10L);
       } else {

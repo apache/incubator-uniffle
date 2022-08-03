@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
-
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -117,7 +116,7 @@ public class SimpleClusterManagerTest {
           try {
             Thread.sleep(800);
           } catch (Exception e) {
-
+            // ignore
           }
         }
 

@@ -104,7 +104,9 @@ public class AccessManagerTest {
       super(accessManager);
     }
 
-    public void close() {}
+    public void close() {
+
+    }
 
     public AccessCheckResult check(AccessInfo accessInfo) {
       return new AccessCheckResult(false, "MockAccessCheckerAlwaysFalse");

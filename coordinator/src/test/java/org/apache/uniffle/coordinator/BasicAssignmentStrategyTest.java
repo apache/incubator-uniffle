@@ -17,26 +17,27 @@
 
 package org.apache.uniffle.coordinator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import com.google.common.collect.Sets;
-import java.util.Collection;
-import java.util.stream.Collectors;
-import org.apache.uniffle.common.PartitionRange;
-
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.stream.Collectors;
 
+import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import org.apache.uniffle.common.PartitionRange;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BasicAssignmentStrategyTest {
 
@@ -112,11 +113,11 @@ public class BasicAssignmentStrategyTest {
 
   @Test
   public void testAssignWithDifferentNodeNum() {
-    ServerNode sn1 = new ServerNode("sn1", "", 0, 0, 0,
+    final ServerNode sn1 = new ServerNode("sn1", "", 0, 0, 0,
         20, 0, tags, true);
-    ServerNode sn2 = new ServerNode("sn2", "", 0, 0, 0,
+    final ServerNode sn2 = new ServerNode("sn2", "", 0, 0, 0,
         10, 0, tags, true);
-    ServerNode sn3 = new ServerNode("sn3", "", 0, 0, 0,
+    final ServerNode sn3 = new ServerNode("sn3", "", 0, 0, 0,
         0, 0, tags, true);
 
     clusterManager.add(sn1);
