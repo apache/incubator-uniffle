@@ -53,6 +53,7 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
 public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
@@ -222,7 +223,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   @VisibleForTesting
   protected void sendCommit() {
-    ExecutorService executor = Executors.newSingleThreadExecutor();
+    ExecutorService executor = Executors.newSingleThreadExecutor(ThreadUtils.getThreadFactory("sendCommit-%d"));
     Future<Boolean> future = executor.submit(
         () -> shuffleWriteClient.sendCommit(shuffleServersForData, appId, shuffleId, numMaps));
     long start = System.currentTimeMillis();

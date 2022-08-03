@@ -186,7 +186,8 @@ public class RssShuffleManager implements ShuffleManager {
     int poolSize = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_SIZE);
     int keepAliveTime = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE);
     threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize * 2, keepAliveTime, TimeUnit.SECONDS,
-        Queues.newLinkedBlockingQueue(Integer.MAX_VALUE));
+        Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
+        ThreadUtils.getThreadFactory("SendData-%d"));
     if (isDriver) {
       heartBeatScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
           ThreadUtils.getThreadFactory("rss-heartbeat-%d"));

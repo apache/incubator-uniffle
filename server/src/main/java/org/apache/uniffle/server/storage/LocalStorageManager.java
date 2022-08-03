@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.LocalStorageChecker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
@@ -81,7 +82,8 @@ public class LocalStorageManager extends SingleStorageManager {
     // We must make sure the order of `storageBasePaths` and `localStorages` is same, or some unit test may be fail
     CountDownLatch countDownLatch = new CountDownLatch(storageBasePaths.length);
     AtomicInteger successCount = new AtomicInteger();
-    ExecutorService executorService = Executors.newCachedThreadPool();
+    ExecutorService executorService = Executors.newCachedThreadPool(
+        ThreadUtils.getThreadFactory("LocalStorageManager-%d"));
     LocalStorage[] localStorageArray = new LocalStorage[storageBasePaths.length];
     for (int i = 0; i < storageBasePaths.length; i++) {
       final int idx = i;

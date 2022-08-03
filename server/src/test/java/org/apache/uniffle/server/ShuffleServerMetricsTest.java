@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.metrics.TestUtils;
+import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -150,7 +151,8 @@ public class ShuffleServerMetricsTest {
 
   @Test
   public void testServerMetricsConcurrently() throws Exception {
-    ExecutorService executorService = Executors.newFixedThreadPool(3);
+    ExecutorService executorService = Executors.newCachedThreadPool(
+        ThreadUtils.getThreadFactory("ShuffleServerMetricsTest-%d"));
     List<Callable<Void>> calls = new ArrayList<>();
     ShuffleServerMetrics.gaugeBufferDataSize.set(0);
 
