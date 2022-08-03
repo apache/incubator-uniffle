@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.metrics.TestUtils;
-import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.util.StorageType;
 
