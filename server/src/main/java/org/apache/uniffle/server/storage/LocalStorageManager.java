@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.RssUtils;
-import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.LocalStorageChecker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
