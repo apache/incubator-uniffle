@@ -329,7 +329,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   @Test
   public void bufferSizeTest() throws Exception {
     ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
-    StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager("serverId", conf);
+    StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(conf);
     ShuffleFlushManager shuffleFlushManager = new ShuffleFlushManager(conf, "serverId", mockShuffleServer, storageManager);
     shuffleBufferManager = new ShuffleBufferManager(conf, shuffleFlushManager);
 

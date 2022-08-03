@@ -30,7 +30,7 @@ public class StorageManagerFactory {
     return LazyHolder.INSTANCE;
   }
 
-  public StorageManager createStorageManager(String serverId, ShuffleServerConf conf) {
+  public StorageManager createStorageManager(ShuffleServerConf conf) {
     StorageType type = StorageType.valueOf(conf.get(ShuffleServerConf.RSS_STORAGE_TYPE));
     if (StorageType.LOCALFILE.equals(type) || StorageType.MEMORY_LOCALFILE.equals(type)) {
       return new LocalStorageManager(conf);

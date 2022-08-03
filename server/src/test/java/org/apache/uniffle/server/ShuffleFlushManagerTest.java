@@ -86,7 +86,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     shuffleServerConf.setString("rss.server.hadoop.dfs.replication", "2");
     shuffleServerConf.setString("rss.server.hadoop.a.b", "value");
     StorageManager storageManager =
-        StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", shuffleServerConf);
+        StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     ShuffleFlushManager manager =
         new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, storageManager);
     assertEquals("2", manager.getHadoopConf().get("dfs.replication"));
@@ -97,7 +97,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   public void writeTest() throws Exception {
     String appId = "writeTest_appId";
     StorageManager storageManager =
-        StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", shuffleServerConf);
+        StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     storageManager.registerRemoteStorage(appId, remoteStorage);
     storageManager.registerRemoteStorage(appId, remoteStorage);
     String storageHost = "localhost";
@@ -145,7 +145,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   public void complexWriteTest() throws Exception {
     shuffleServerConf.setString("rss.server.flush.handler.expired", "3");
     StorageManager storageManager =
-        StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", shuffleServerConf);
+        StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     String appId = "complexWriteTest_appId";
     storageManager.registerRemoteStorage(appId, remoteStorage);
     List<ShufflePartitionedBlock> expectedBlocks = Lists.newArrayList();
@@ -183,7 +183,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   @Test
   public void clearTest() throws Exception {
     StorageManager storageManager =
-        StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", shuffleServerConf);
+        StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     String appId1 = "complexWriteTest_appId1";
     String appId2 = "complexWriteTest_appId2";
     storageManager.registerRemoteStorage(appId1, remoteStorage);
@@ -240,7 +240,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     serverConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     serverConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     StorageManager storageManager =
-        StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", serverConf);
+        StorageManagerFactory.getInstance().createStorageManager(serverConf);
     ShuffleFlushManager manager =
         new ShuffleFlushManager(serverConf, "shuffleServerId", null, storageManager);
     ShuffleDataFlushEvent event1 =
@@ -385,7 +385,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
       shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
       shuffleServerConf.set(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 5L);
       StorageManager storageManager =
-          StorageManagerFactory.getInstance().createStorageManager("shuffleServerId", shuffleServerConf);
+          StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
       ShuffleFlushManager manager =
           new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", null, storageManager);
       ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(1, "1", 1, 1,1, 100, null, null, null);

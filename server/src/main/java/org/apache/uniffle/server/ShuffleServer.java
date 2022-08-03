@@ -144,7 +144,7 @@ public class ShuffleServer {
     jettyServer = new JettyServer(shuffleServerConf);
     registerMetrics();
 
-    storageManager = StorageManagerFactory.getInstance().createStorageManager(id, shuffleServerConf);
+    storageManager = StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     storageManager.start();
 
 
