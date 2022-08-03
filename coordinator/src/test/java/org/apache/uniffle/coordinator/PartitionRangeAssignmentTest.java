@@ -17,17 +17,19 @@
 
 package org.apache.uniffle.coordinator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import com.google.common.collect.Sets;
-import org.apache.uniffle.common.PartitionRange;
-import org.apache.uniffle.proto.RssProtos;
 import java.util.Collections;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
+
+import com.google.common.collect.Sets;
 import org.junit.jupiter.api.Test;
+
+import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.proto.RssProtos;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PartitionRangeAssignmentTest {
 

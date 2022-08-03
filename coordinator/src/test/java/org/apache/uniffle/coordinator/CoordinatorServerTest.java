@@ -17,12 +17,13 @@
 
 package org.apache.uniffle.coordinator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.ExitUtils.ExitException;
-import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class CoordinatorServerTest {
 

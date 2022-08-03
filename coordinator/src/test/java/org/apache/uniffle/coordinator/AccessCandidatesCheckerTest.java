@@ -51,7 +51,7 @@ public class AccessCandidatesCheckerTest {
   @Test
   public void test(@TempDir File tempDir) throws Exception {
     File cfgFile = File.createTempFile("tmp", ".conf", tempDir);
-    String cfgFileName = cfgFile.getAbsolutePath();
+    final String cfgFileName = cfgFile.getAbsolutePath();
     final String filePath = Objects.requireNonNull(
         getClass().getClassLoader().getResource("coordinator.conf")).getFile();
     CoordinatorConf conf = new CoordinatorConf(filePath);

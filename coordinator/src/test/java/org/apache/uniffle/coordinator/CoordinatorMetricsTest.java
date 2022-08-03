@@ -107,7 +107,7 @@ public class CoordinatorMetricsTest {
     assertEquals(6, actualObj.get("metrics").size());
   }
 
-  static private void writeRemoteStorageConf(File cfgFile, String value) throws Exception {
+  private static void writeRemoteStorageConf(File cfgFile, String value) throws Exception {
     FileWriter fileWriter = new FileWriter(cfgFile);
     PrintWriter printWriter = new PrintWriter(fileWriter);
     printWriter.println(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key() + " " + value);

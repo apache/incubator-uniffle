@@ -17,11 +17,12 @@
 
 package org.apache.uniffle.common.util;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.google.common.collect.Sets;
-import org.apache.uniffle.common.exception.RssException;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.uniffle.common.exception.RssException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -39,6 +40,7 @@ public class RetryUtilsTest {
         callbackTime.incrementAndGet();
       }, 10, maxTryTime, Sets.newHashSet(RssException.class));
     } catch (Throwable throwable) {
+      // ignore
     }
     assertEquals(tryTimes.get(), maxTryTime);
     assertEquals(callbackTime.get(), maxTryTime - 1);
@@ -50,6 +52,7 @@ public class RetryUtilsTest {
         throw new Exception("");
       }, 10, maxTryTime);
     } catch (Throwable throwable) {
+      // ignore
     }
     assertEquals(tryTimes.get(), maxTryTime);
 
@@ -61,6 +64,7 @@ public class RetryUtilsTest {
       }, 10, maxTryTime);
       assertEquals(ret, 1);
     } catch (Throwable throwable) {
+      // ignore
     }
     assertEquals(tryTimes.get(), 1);
   }
