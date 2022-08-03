@@ -150,7 +150,7 @@ public class ShuffleServerMetricsTest {
 
   @Test
   public void testServerMetricsConcurrently() throws Exception {
-    ExecutorService executorService = Executors.newCachedThreadPool();
+    ExecutorService executorService = Executors.newFixedThreadPool(3);
     List<Callable<Void>> calls = new ArrayList<>();
     ShuffleServerMetrics.gaugeBufferDataSize.set(0);
 
