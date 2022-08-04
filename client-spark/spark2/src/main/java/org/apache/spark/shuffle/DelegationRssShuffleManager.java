@@ -72,6 +72,9 @@ public class DelegationRssShuffleManager implements ShuffleManager {
         LOG.info("Use RssShuffleManager");
         return shuffleManager;
       } catch (Exception exception) {
+        if (sparkConf.getBoolean("spark.sql.adaptive.enabled", false)) {
+          throw new IllegalArgumentException("Spark2 doesn't support AQE, spark.sql.adaptive.enabled should be false.");
+        }
         LOG.warn("Fail to create RssShuffleManager, fallback to SortShuffleManager {}", exception.getMessage());
       }
     }
