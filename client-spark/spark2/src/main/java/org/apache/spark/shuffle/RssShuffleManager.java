@@ -180,8 +180,16 @@ public class RssShuffleManager implements ShuffleManager {
       if (isDriver) {
         heartBeatScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
             ThreadUtils.getThreadFactory("rss-heartbeat-%d"));
-      } else {
-        // for non-driver executor, start a thread for sending shuffle data to shuffle server
+      }
+
+      if (!isDriver || String.valueOf(true).equals(System.getProperty("TEST"))) {
+        /**
+         * For non-driver executor, start a thread for sending shuffle data to shuffle server
+         *
+         * Tips:
+         * When in local spark test cases, only one driver(sharable for executor) will be launched,
+         * so it should launch the threadPool executors to send data.
+         */
         LOG.info("RSS data send thread is starting");
         eventLoop.start();
         int poolSize = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_SIZE);
