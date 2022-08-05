@@ -75,7 +75,7 @@ public class RssShuffleManager implements ShuffleManager {
   private final String clientType;
   private final long heartbeatInterval;
   private final long heartbeatTimeout;
-  private final ThreadPoolExecutor threadPoolExecutor;
+  private ThreadPoolExecutor threadPoolExecutor;
   private AtomicReference<String> id = new AtomicReference<>();
   private SparkConf sparkConf;
   private final int dataReplica;
@@ -92,7 +92,7 @@ public class RssShuffleManager implements ShuffleManager {
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
   private RemoteStorageInfo remoteStorage;
-  private final EventLoop eventLoop;
+  private EventLoop eventLoop;
   private final EventLoop defaultEventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
 
     @Override
@@ -179,18 +179,20 @@ public class RssShuffleManager implements ShuffleManager {
     LOG.info("Disable external shuffle service in RssShuffleManager.");
     taskToSuccessBlockIds = Maps.newConcurrentMap();
     taskToFailedBlockIds = Maps.newConcurrentMap();
-    // for non-driver executor, start a thread for sending shuffle data to shuffle server
-    LOG.info("RSS data send thread is starting");
-    eventLoop = defaultEventLoop;
-    eventLoop.start();
-    int poolSize = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_SIZE);
-    int keepAliveTime = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE);
-    threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize * 2, keepAliveTime, TimeUnit.SECONDS,
-        Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
-        ThreadUtils.getThreadFactory("SendData-%d"));
+
     if (isDriver) {
       heartBeatScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
           ThreadUtils.getThreadFactory("rss-heartbeat-%d"));
+    } else {
+      // for non-driver executor, start a thread for sending shuffle data to shuffle server
+      LOG.info("RSS data send thread is starting");
+      eventLoop = defaultEventLoop;
+      eventLoop.start();
+      int poolSize = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_SIZE);
+      int keepAliveTime = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE);
+      threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize * 2, keepAliveTime, TimeUnit.SECONDS,
+          Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
+          ThreadUtils.getThreadFactory("SendData-%d"));
     }
   }
 

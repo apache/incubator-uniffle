@@ -177,18 +177,18 @@ public class RssShuffleManager implements ShuffleManager {
     sparkConf.set("spark.shuffle.service.enabled", "false");
     LOG.info("Disable external shuffle service in RssShuffleManager.");
     if (!sparkConf.getBoolean(RssSparkConfig.RSS_TEST_FLAG.key(), false)) {
-      // for non-driver executor, start a thread for sending shuffle data to shuffle server
-      LOG.info("RSS data send thread is starting");
-      eventLoop.start();
-      int poolSize = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_SIZE);
-      int keepAliveTime = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE);
-      threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize * 2, keepAliveTime, TimeUnit.SECONDS,
-          Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
-          ThreadUtils.getThreadFactory("SendData-%d"));
-
       if (isDriver) {
         heartBeatScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
             ThreadUtils.getThreadFactory("rss-heartbeat-%d"));
+      } else {
+        // for non-driver executor, start a thread for sending shuffle data to shuffle server
+        LOG.info("RSS data send thread is starting");
+        eventLoop.start();
+        int poolSize = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_SIZE);
+        int keepAliveTime = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE);
+        threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize * 2, keepAliveTime, TimeUnit.SECONDS,
+            Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
+            ThreadUtils.getThreadFactory("SendData-%d"));
       }
     }
   }
