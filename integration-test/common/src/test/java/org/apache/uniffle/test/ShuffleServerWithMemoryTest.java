@@ -114,7 +114,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
         .getShuffleBuffer(testAppId, shuffleId, 0).getBlocks().size());
     // create memory handler to read data,
     MemoryQuorumClientReadHandler memoryQuorumClientReadHandler = new MemoryQuorumClientReadHandler(
-        testAppId, shuffleId, partitionId, 20, Lists.newArrayList(shuffleServerClient));
+        testAppId, shuffleId, partitionId, 20, Lists.newArrayList(shuffleServerClient), Roaring64NavigableMap.bitmapOf());
     // start to read data, one block data for every call
     ShuffleDataResult sdr  = memoryQuorumClientReadHandler.readShuffleData();
     Map<Long, byte[]> expectedData = Maps.newHashMap();
@@ -137,7 +137,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
 
     // case: read with ComposedClientReadHandler
     memoryQuorumClientReadHandler = new MemoryQuorumClientReadHandler(
-        testAppId, shuffleId, partitionId, 50, Lists.newArrayList(shuffleServerClient));
+        testAppId, shuffleId, partitionId, 50, Lists.newArrayList(shuffleServerClient), Roaring64NavigableMap.bitmapOf());
     LocalFileQuorumClientReadHandler localFileQuorumClientReadHandler = new LocalFileQuorumClientReadHandler(
         testAppId, shuffleId, partitionId, 0, 1, 3,
         50, expectBlockIds, processBlockIds, Lists.newArrayList(shuffleServerClient));
@@ -235,7 +235,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
 
     // read the 1-th segment from memory
     MemoryQuorumClientReadHandler memoryQuorumClientReadHandler = new MemoryQuorumClientReadHandler(
-      testAppId, shuffleId, partitionId, 150, Lists.newArrayList(shuffleServerClient));
+      testAppId, shuffleId, partitionId, 150, Lists.newArrayList(shuffleServerClient), Roaring64NavigableMap.bitmapOf());
     LocalFileQuorumClientReadHandler localFileQuorumClientReadHandler = new LocalFileQuorumClientReadHandler(
       testAppId, shuffleId, partitionId, 0, 1, 3,
       75, expectBlockIds, processBlockIds, Lists.newArrayList(shuffleServerClient));

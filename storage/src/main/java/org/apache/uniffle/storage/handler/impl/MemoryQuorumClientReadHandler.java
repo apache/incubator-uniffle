@@ -20,54 +20,58 @@ package org.apache.uniffle.storage.handler.impl;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.common.ShuffleDataResult;
-import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.RetryUtils;
 
 public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(MemoryQuorumClientReadHandler.class);
   private long lastBlockId = Constants.INVALID_BLOCK_ID;
   private List<MemoryClientReadHandler> handlers = Lists.newLinkedList();
+  private int currentHandlerIdx = 0;
 
   public MemoryQuorumClientReadHandler(
       String appId,
       int shuffleId,
       int partitionId,
       int readBufferSize,
-      List<ShuffleServerClient> shuffleServerClients) {
+      List<ShuffleServerClient> shuffleServerClients, Roaring64NavigableMap processBlockIds) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.readBufferSize = readBufferSize;
     shuffleServerClients.forEach(client ->
         handlers.add(new MemoryClientReadHandler(
-            appId, shuffleId, partitionId, readBufferSize, client))
+            appId, shuffleId, partitionId, readBufferSize, client, processBlockIds))
     );
   }
 
   @Override
   public ShuffleDataResult readShuffleData() {
-    boolean readSuccessful = false;
     ShuffleDataResult result = null;
-
-    for (MemoryClientReadHandler handler: handlers) {
+    while (currentHandlerIdx < handlers.size()) {
       try {
-        result = handler.readShuffleData();
-        readSuccessful = true;
-        break;
-      } catch (Exception e) {
-        LOG.warn("Failed to read a replica due to ", e);
+        result = RetryUtils.retry(() -> {
+          MemoryClientReadHandler handler = handlers.get(currentHandlerIdx);
+          ShuffleDataResult shuffleDataResult = handler.readShuffleData();
+          return shuffleDataResult;
+        }, 1000, 3);
+      } catch (Throwable e) {
+        LOG.warn("Failed to read a replica for appId[" + appId + "], shuffleId["
+            + shuffleId + "], partitionId[" + partitionId + "] due to ", e);
       }
-    }
 
-    if (!readSuccessful) {
-      throw new RssException("Failed to read in memory shuffle data for appId[" + appId
-          + "], shuffleId[" + shuffleId + "], partitionId[" + partitionId + "]");
+      if (result == null || result.isEmpty()) {
+        currentHandlerIdx++;
+        continue;
+      }
+      return result;
     }
 
     return result;

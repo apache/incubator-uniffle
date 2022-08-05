@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
-import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.RetryUtils;
 
 public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler {
 
@@ -38,6 +38,7 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
   private long readBlockNum = 0L;
   private long readLength = 0L;
   private long readUncompressLength = 0L;
+  private int currentHandlerIdx = 0;
 
   public LocalFileQuorumClientReadHandler(
       String appId,
@@ -72,20 +73,24 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
 
   @Override
   public ShuffleDataResult readShuffleData() {
-    boolean readSuccessful = false;
     ShuffleDataResult result = null;
-    for (LocalFileClientReadHandler handler : handlers) {
+    while (currentHandlerIdx < handlers.size()) {
       try {
-        result = handler.readShuffleData();
-        readSuccessful = true;
-        break;
-      } catch (Exception e) {
-        LOG.warn("Failed to read a replica due to ", e);
+        result = RetryUtils.retry(() -> {
+          LocalFileClientReadHandler handler = handlers.get(currentHandlerIdx);
+          ShuffleDataResult shuffleDataResult = handler.readShuffleData();
+          return shuffleDataResult;
+        }, 1000, 3);
+      } catch (Throwable e) {
+        LOG.warn("Failed to read a replica for appId[" + appId + "], shuffleId["
+            + shuffleId + "], partitionId[" + partitionId + "] due to ", e);
       }
-    }
-    if (!readSuccessful) {
-      throw new RssException("Failed to read all replicas for appId[" + appId + "], shuffleId["
-          + shuffleId + "], partitionId[" + partitionId + "]");
+
+      if (result == null || result.isEmpty()) {
+        currentHandlerIdx++;
+        continue;
+      }
+      return result;
     }
     return result;
   }

@@ -32,6 +32,7 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.TreeRangeMap;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -144,6 +145,12 @@ public class ShuffleBufferManager {
   public ShuffleDataResult getShuffleData(
       String appId, int shuffleId, int partitionId, long blockId,
       int readBufferSize) {
+    return getShuffleData(appId, shuffleId, partitionId, blockId, readBufferSize, Roaring64NavigableMap.bitmapOf());
+  }
+
+  public ShuffleDataResult getShuffleData(
+      String appId, int shuffleId, int partitionId, long blockId,
+      int readBufferSize, Roaring64NavigableMap processedBlockIds) {
     Map.Entry<Range<Integer>, ShuffleBuffer> entry = getShuffleBufferEntry(
         appId, shuffleId, partitionId);
     if (entry == null) {
@@ -154,7 +161,7 @@ public class ShuffleBufferManager {
     if (buffer == null) {
       return null;
     }
-    return buffer.getShuffleData(blockId, readBufferSize);
+    return buffer.getShuffleData(blockId, readBufferSize, processedBlockIds);
   }
 
   void flushIfNecessary() {

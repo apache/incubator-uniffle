@@ -116,7 +116,8 @@ public class ShuffleHandlerFactory {
           request.getShuffleId(),
           request.getPartitionId(),
           request.getReadBufferSize(),
-          shuffleServerClients);
+          shuffleServerClients,
+          request.getProcessBlockIds());
       ClientReadHandler localClientReadHandler = new LocalFileQuorumClientReadHandler(request.getAppId(),
           request.getShuffleId(), request.getPartitionId(), request.getIndexReadLimit(),
           request.getPartitionNumPerRange(), request.getPartitionNum(),
@@ -135,7 +136,8 @@ public class ShuffleHandlerFactory {
           request.getShuffleId(),
           request.getPartitionId(),
           request.getReadBufferSize(),
-          shuffleServerClients);
+          shuffleServerClients,
+          request.getProcessBlockIds());
       }, () -> {
         return new HdfsClientReadHandler(
             request.getAppId(),
@@ -162,7 +164,8 @@ public class ShuffleHandlerFactory {
             request.getShuffleId(),
             request.getPartitionId(),
             request.getReadBufferSize(),
-            shuffleServerClients);
+            shuffleServerClients,
+            request.getProcessBlockIds());
       }, () -> {
         return new LocalFileQuorumClientReadHandler(request.getAppId(),
             request.getShuffleId(), request.getPartitionId(), request.getIndexReadLimit(),

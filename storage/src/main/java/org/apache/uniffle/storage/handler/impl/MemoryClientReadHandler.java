@@ -19,6 +19,7 @@ package org.apache.uniffle.storage.handler.impl;
 
 import java.util.List;
 
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,7 @@ import org.apache.uniffle.common.util.Constants;
 public class MemoryClientReadHandler extends AbstractClientReadHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(MemoryClientReadHandler.class);
+  private final Roaring64NavigableMap processBlockIds;
   private long lastBlockId = Constants.INVALID_BLOCK_ID;
   private ShuffleServerClient shuffleServerClient;
 
@@ -41,12 +43,14 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
       int shuffleId,
       int partitionId,
       int readBufferSize,
-      ShuffleServerClient shuffleServerClient) {
+      ShuffleServerClient shuffleServerClient,
+      Roaring64NavigableMap processBlockIds) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.readBufferSize = readBufferSize;
     this.shuffleServerClient = shuffleServerClient;
+    this.processBlockIds = processBlockIds;
   }
 
   @Override
@@ -54,7 +58,7 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
     ShuffleDataResult result = null;
 
     RssGetInMemoryShuffleDataRequest request = new RssGetInMemoryShuffleDataRequest(
-        appId,shuffleId, partitionId, lastBlockId, readBufferSize);
+        appId,shuffleId, partitionId, lastBlockId, readBufferSize, processBlockIds);
 
     try {
       RssGetInMemoryShuffleDataResponse response =
