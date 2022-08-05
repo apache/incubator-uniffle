@@ -17,16 +17,18 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
-import org.apache.uniffle.storage.HdfsTestBase;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Random;
+
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.jupiter.api.Test;
+
+import org.apache.uniffle.storage.HdfsTestBase;
+import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

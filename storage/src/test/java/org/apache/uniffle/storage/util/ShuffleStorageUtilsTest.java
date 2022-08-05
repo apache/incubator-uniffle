@@ -17,19 +17,20 @@
 
 package org.apache.uniffle.storage.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import org.apache.uniffle.common.BufferSegment;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
-import org.apache.uniffle.storage.handler.impl.DataFileSegment;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.junit.jupiter.api.Test;
+
+import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
+import org.apache.uniffle.storage.handler.impl.DataFileSegment;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleStorageUtilsTest {
 

@@ -17,26 +17,27 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import org.apache.uniffle.common.BufferSegment;
-import org.apache.uniffle.common.ShuffleDataResult;
-import org.apache.uniffle.common.ShufflePartitionedBlock;
-import org.apache.uniffle.storage.HdfsTestBase;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.junit.jupiter.api.Test;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.junit.jupiter.api.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
+import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.storage.HdfsTestBase;
+import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HdfsHandlerTest extends HdfsTestBase {
 
