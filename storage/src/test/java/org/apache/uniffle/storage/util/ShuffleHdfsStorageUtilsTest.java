@@ -17,16 +17,17 @@
 
 package org.apache.uniffle.storage.util;
 
-import org.apache.uniffle.storage.HdfsTestBase;
-import org.apache.uniffle.storage.handler.impl.HdfsFileWriter;
-import org.apache.hadoop.fs.Path;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Random;
+
+import org.apache.hadoop.fs.Path;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import org.apache.uniffle.storage.HdfsTestBase;
+import org.apache.uniffle.storage.handler.impl.HdfsFileWriter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
