@@ -144,7 +144,6 @@
                         <useFile>${test.redirectToFile}</useFile>
                         <argLine>-ea -Xmx3g</argLine>
                         <failIfNoTests>false</failIfNoTests>
-                        <trimStackTrace>${trimStackTrace}</trimStackTrace>
                     </configuration>
                 </plugin>
             </plugins>
