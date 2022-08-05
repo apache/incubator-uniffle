@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RetryUtils;
 
@@ -35,6 +36,7 @@ public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
   private long lastBlockId = Constants.INVALID_BLOCK_ID;
   private List<MemoryClientReadHandler> handlers = Lists.newLinkedList();
   private int currentHandlerIdx = 0;
+  private int successCount = 0;
 
   public MemoryQuorumClientReadHandler(
       String appId,
@@ -60,6 +62,7 @@ public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
         result = RetryUtils.retry(() -> {
           MemoryClientReadHandler handler = handlers.get(currentHandlerIdx);
           ShuffleDataResult shuffleDataResult = handler.readShuffleData();
+          successCount++;
           return shuffleDataResult;
         }, 1000, 3);
       } catch (Throwable e) {
@@ -72,6 +75,11 @@ public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
         continue;
       }
       return result;
+    }
+    
+    if (successCount == 0) {
+      throw new RssException("Failed to read in memory shuffle data for appId[" + appId
+              + "], shuffleId[" + shuffleId + "], partitionId[" + partitionId + "]");
     }
 
     return result;

@@ -26,6 +26,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
+import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RetryUtils;
@@ -52,6 +53,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -234,8 +236,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         Lists.newArrayList(shuffleServerInfo1, shuffleServerInfo2), null, new DefaultIdHelper());
 
     try {
-      readClient.readShuffleBlockData();
-      fail(EXPECTED_EXCEPTION_MESSAGE);
+      CompressedShuffleBlock compressedShuffleBlock = readClient.readShuffleBlockData();
+      assertNull(compressedShuffleBlock);
     } catch (Exception e) {
       assertTrue(e.getMessage().contains("Failed to read all replicas for"));
     }
