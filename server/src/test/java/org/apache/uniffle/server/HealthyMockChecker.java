@@ -18,13 +18,12 @@
 package org.apache.uniffle.server;
 
 class HealthyMockChecker extends Checker {
+  HealthyMockChecker(ShuffleServerConf conf) {
+    super(conf);
+  }
 
-    public HealthyMockChecker(ShuffleServerConf conf) {
-      super(conf);
-    }
-
-    @Override
-    boolean checkIsHealthy() {
-      return true;
-    }
+  @Override
+  boolean checkIsHealthy() {
+    return true;
+  }
 }

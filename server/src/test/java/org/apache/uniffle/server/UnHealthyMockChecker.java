@@ -19,7 +19,7 @@ package org.apache.uniffle.server;
 
 class UnHealthyMockChecker extends Checker {
 
-  public UnHealthyMockChecker(ShuffleServerConf conf) {
+  UnHealthyMockChecker(ShuffleServerConf conf) {
     super(conf);
   }
 

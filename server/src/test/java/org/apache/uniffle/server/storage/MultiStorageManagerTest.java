@@ -37,8 +37,8 @@ public class MultiStorageManagerTest {
 
   @Test
   public void selectStorageManagerTest() {
-    String remoteStorage = "test";
-    String appId = "selectStorageManagerTest_appId";
+    final String remoteStorage = "test";
+    final String appId = "selectStorageManagerTest_appId";
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 2000L);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("test"));

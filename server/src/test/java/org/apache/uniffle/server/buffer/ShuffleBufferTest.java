@@ -17,17 +17,18 @@
 
 package org.apache.uniffle.server.buffer;
 
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+
 import com.google.common.collect.Lists;
+import org.junit.jupiter.api.Test;
+
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -141,7 +142,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     spd2 = createData(15);
     shuffleBuffer.append(spd1);
     shuffleBuffer.append(spd2);
-    ShuffleDataFlushEvent event1 = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);
+    final ShuffleDataFlushEvent event1 = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);
     assertEquals(0, shuffleBuffer.getBlocks().size());
     sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 20);
     expectedData = getExpectedData(spd1, spd2);
@@ -174,21 +175,21 @@ public class ShuffleBufferTest extends BufferTestBase {
     shuffleBuffer.append(spd4);
     shuffleBuffer.append(spd5);
     shuffleBuffer.append(spd6);
-    ShuffleDataFlushEvent event2 = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);
+    final ShuffleDataFlushEvent event2 = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);
     ShufflePartitionedData spd7 = createData(15);
     ShufflePartitionedData spd8 = createData(15);
     ShufflePartitionedData spd9 = createData(15);
     shuffleBuffer.append(spd7);
     shuffleBuffer.append(spd8);
     shuffleBuffer.append(spd9);
-    ShuffleDataFlushEvent event3 = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);
+    final ShuffleDataFlushEvent event3 = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);
     ShufflePartitionedData spd10 = createData(15);
     ShufflePartitionedData spd11 = createData(15);
     ShufflePartitionedData spd12 = createData(15);
     shuffleBuffer.append(spd10);
     shuffleBuffer.append(spd11);
     shuffleBuffer.append(spd12);
-    ShuffleDataFlushEvent event4 = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);
+    final ShuffleDataFlushEvent event4 = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);
     ShufflePartitionedData spd13 = createData(15);
     ShufflePartitionedData spd14 = createData(15);
     ShufflePartitionedData spd15 = createData(15);
@@ -430,7 +431,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     assertArrayEquals(expectedData, sdr.getData());
   }
 
-  private byte[] getExpectedData(ShufflePartitionedData... spds ) {
+  private byte[] getExpectedData(ShufflePartitionedData... spds) {
     int size = 0;
     for (ShufflePartitionedData spd : spds) {
       size += spd.getBlockList()[0].getLength();
