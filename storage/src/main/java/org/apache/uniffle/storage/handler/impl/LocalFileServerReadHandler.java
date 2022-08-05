@@ -20,6 +20,7 @@ package org.apache.uniffle.storage.handler.impl;
 import java.io.File;
 import java.io.FilenameFilter;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +81,8 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
     File baseFolder = new File(fullShufflePath);
     if (!baseFolder.exists()) {
       // the partition doesn't exist in this base folder, skip
-      throw new RuntimeException("Can't find folder " + fullShufflePath);
+      LOG.warn("Can't find folder " + fullShufflePath);
+      return;
     }
     File[] indexFiles;
     String failedGetIndexFileMsg = "No index file found in  " + storageBasePath;
@@ -117,6 +119,9 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
 
   @Override
   public ShuffleDataResult getShuffleData(long offset, int length) {
+    if (StringUtils.isBlank(dataFileName)) {
+      throw new RuntimeException(dataFileName + "is empty!");
+    }
     byte[] readBuffer = new byte[0];
 
     try {
@@ -136,6 +141,9 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
 
   @Override
   public ShuffleIndexResult getShuffleIndex() {
+    if (StringUtils.isBlank(indexFileName)) {
+      return new ShuffleIndexResult();
+    }
     int indexNum = 0;
     int len = 0;
     try (LocalFileReader reader = createFileReader(indexFileName)) {
