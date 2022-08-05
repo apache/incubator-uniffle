@@ -139,9 +139,10 @@ public class RssBaseConf extends RssConf {
       .defaultValue(1)
       .withDescription("Data replica in storage");
 
-  public static final ConfigOption<String> RSS_STORAGE_BASE_PATH = ConfigOptions
+  public static final ConfigOption<List<String>> RSS_STORAGE_BASE_PATH = ConfigOptions
       .key("rss.storage.basePath")
       .stringType()
+      .asList()
       .noDefaultValue()
       .withDescription("Common storage path for remote shuffle data");
 

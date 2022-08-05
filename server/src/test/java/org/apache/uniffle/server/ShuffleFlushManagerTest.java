@@ -19,6 +19,8 @@ package org.apache.uniffle.server;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -30,6 +32,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.prometheus.client.Gauge;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
@@ -71,7 +74,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   @BeforeEach
   public void prepare() {
     ShuffleServerMetrics.register();
-    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, "");
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.emptyList());
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     LogManager.getRootLogger().setLevel(Level.INFO);
   }
@@ -236,7 +239,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     String appId1 = "clearLocalTest_appId1";
     String appId2 = "clearLocalTest_appId2";
     ShuffleServerConf serverConf = new ShuffleServerConf();
-    serverConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, tempDir.getAbsolutePath());
+    serverConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
     serverConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     serverConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     StorageManager storageManager =
@@ -381,7 +384,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   public void processPendingEventsTest(@TempDir File tempDir) {
     try {
       shuffleServerConf.set(RssBaseConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.toString());
-      shuffleServerConf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, tempDir.getAbsolutePath());
+      shuffleServerConf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
       shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
       shuffleServerConf.set(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 5L);
       StorageManager storageManager =

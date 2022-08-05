@@ -17,15 +17,16 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import org.apache.uniffle.server.ShuffleDataFlushEvent;
-import org.apache.uniffle.server.ShuffleServerConf;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.server.ShuffleDataFlushEvent;
+import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.common.HdfsStorage;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.util.StorageType;
@@ -40,7 +41,7 @@ public class MultiStorageManagerTest {
     String appId = "selectStorageManagerTest_appId";
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 2000L);
-    conf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, "test");
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("test"));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
     MultiStorageManager manager = new MultiStorageManager(conf);

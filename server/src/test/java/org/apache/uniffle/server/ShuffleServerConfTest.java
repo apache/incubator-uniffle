@@ -17,18 +17,18 @@
 
 package org.apache.uniffle.server;
 
-import org.apache.uniffle.common.util.ByteUnit;
+import java.io.File;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
-import java.io.File;
+import org.apache.uniffle.common.util.ByteUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(SystemStubsExtension.class)
 public class ShuffleServerConfTest {
@@ -51,7 +51,7 @@ public class ShuffleServerConfTest {
     ShuffleServerConf shuffleServerConf = new ShuffleServerConf(null);
     assertEquals(1234, shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
     assertEquals("HDFS", shuffleServerConf.getString(ShuffleServerConf.RSS_STORAGE_TYPE));
-    assertEquals("/var/tmp/test", shuffleServerConf.getString(ShuffleServerConf.RSS_STORAGE_BASE_PATH));
+    assertEquals("/var/tmp/test", shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0));
     environmentVariables.set("RSS_HOME", (new File(confFile)).getParent() + "/wrong_dir/");
     assertFalse(shuffleServerConf.loadConfFromFile(null));
   }
@@ -61,7 +61,7 @@ public class ShuffleServerConfTest {
     ShuffleServerConf shuffleServerConf = new ShuffleServerConf(confFile);
     assertEquals(1234, shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
     assertEquals("FILE", shuffleServerConf.getString(ShuffleServerConf.RSS_STORAGE_TYPE));
-    assertEquals("/var/tmp/test", shuffleServerConf.getString(ShuffleServerConf.RSS_STORAGE_BASE_PATH));
+    assertEquals("/var/tmp/test", shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0));
     assertFalse(shuffleServerConf.loadConfFromFile("/var/tmp/null"));
     assertEquals(2, shuffleServerConf.getLong(ShuffleServerConf.SERVER_BUFFER_CAPACITY));
     assertEquals("value1", shuffleServerConf.getString("rss.server.hadoop.a.b", ""));

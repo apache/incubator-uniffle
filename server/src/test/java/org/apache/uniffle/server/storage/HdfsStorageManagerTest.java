@@ -17,20 +17,21 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.uniffle.server.ShuffleServerConf;
-import org.apache.uniffle.server.ShuffleServerMetrics;
-
-import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.storage.common.HdfsStorage;
-import org.apache.uniffle.storage.util.StorageType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.server.ShuffleServerMetrics;
+import org.apache.uniffle.storage.common.HdfsStorage;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -52,7 +53,7 @@ public class HdfsStorageManagerTest {
   public void testRegisterRemoteStorage() {
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 2000L);
-    conf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, "test");
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("test"));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
     HdfsStorageManager hdfsStorageManager = new HdfsStorageManager(conf);

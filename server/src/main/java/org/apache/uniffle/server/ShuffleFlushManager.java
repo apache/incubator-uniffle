@@ -50,7 +50,7 @@ public class ShuffleFlushManager {
   private final ShuffleServer shuffleServer;
   private final BlockingQueue<ShuffleDataFlushEvent> flushQueue = Queues.newLinkedBlockingQueue();
   private final ThreadPoolExecutor threadPoolExecutor;
-  private final String[] storageBasePaths;
+  private final List<String> storageBasePaths;
   private final String shuffleServerId;
   private final String storageType;
   private final int storageDataReplica;
@@ -85,7 +85,7 @@ public class ShuffleFlushManager {
     long keepAliveTime = shuffleServerConf.getLong(ShuffleServerConf.SERVER_FLUSH_THREAD_ALIVE);
     threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize, keepAliveTime, TimeUnit.SECONDS, waitQueue,
         ThreadUtils.getThreadFactory("FlushEventThreadPool"));
-    storageBasePaths = shuffleServerConf.getString(ShuffleServerConf.RSS_STORAGE_BASE_PATH).split(",");
+    storageBasePaths = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
     pendingEventTimeoutSec = shuffleServerConf.getLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC);
     // the thread for flush data
     Runnable processEventRunnable = () -> {
@@ -164,7 +164,7 @@ public class ShuffleFlushManager {
               event.getShuffleId(),
               event.getStartPartition(),
               event.getEndPartition(),
-              storageBasePaths,
+              storageBasePaths.toArray(new String[storageBasePaths.size()]),
               shuffleServerId,
               hadoopConf,
               storageDataReplica));

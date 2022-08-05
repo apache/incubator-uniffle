@@ -23,6 +23,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,7 +38,7 @@ public class StorageCheckerTest {
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.setBoolean(ShuffleServerConf.HEALTH_CHECK_ENABLE, true);
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
-    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, "st1,st2,st3");
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("st1", "st2", "st3"));
     conf.set(ShuffleServerConf.HEALTH_MIN_STORAGE_PERCENTAGE, 55.0);
     List<LocalStorage> storages = Lists.newArrayList();
     storages.add(LocalStorage.newBuilder().basePath("st1").build());

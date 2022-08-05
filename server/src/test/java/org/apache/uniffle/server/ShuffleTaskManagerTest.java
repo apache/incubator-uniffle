@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -26,22 +27,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.Lists;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
-import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
-import org.apache.uniffle.server.buffer.ShuffleBuffer;
-import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
+import org.apache.uniffle.server.buffer.ShuffleBuffer;
+import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.storage.HdfsTestBase;
 import org.apache.uniffle.storage.handler.impl.HdfsClientReadHandler;
@@ -234,7 +235,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 128L);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
-    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, storageBasePath);
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storageBasePath));
     conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);

@@ -17,8 +17,16 @@
 
 package org.apache.uniffle.server.buffer;
 
+import java.io.File;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+
 import com.google.common.collect.RangeMap;
 import com.google.common.io.Files;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.util.Constants;
@@ -30,12 +38,6 @@ import org.apache.uniffle.server.StatusCode;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
 import org.apache.uniffle.storage.util.StorageType;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.File;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,7 +61,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     File tmpDir = Files.createTempDir();
     File dataDir = new File(tmpDir, "data");
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
-    conf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, dataDir.getAbsolutePath());
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(dataDir.getAbsolutePath()));
     conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 500L);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 80.0);
