@@ -18,6 +18,7 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -68,8 +69,10 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
-    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH,
-        data1.getAbsolutePath() + "," + data2.getAbsolutePath());
+    shuffleServerConf.set(
+        ShuffleServerConf.RSS_STORAGE_BASE_PATH,
+        Arrays.asList(data1.getAbsolutePath(), data2.getAbsolutePath())
+    );
     shuffleServerConf.setBoolean(ShuffleServerConf.HEALTH_CHECK_ENABLE, true);
     createShuffleServer(shuffleServerConf);
     startServers();

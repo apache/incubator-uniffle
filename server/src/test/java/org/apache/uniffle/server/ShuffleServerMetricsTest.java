@@ -18,6 +18,7 @@
 package org.apache.uniffle.server;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -54,7 +55,7 @@ public class ShuffleServerMetricsTest {
     ssc.set(ShuffleServerConf.JETTY_HTTP_PORT, 12345);
     ssc.set(ShuffleServerConf.JETTY_CORE_POOL_SIZE, 128);
     ssc.set(ShuffleServerConf.RPC_SERVER_PORT, 12346);
-    ssc.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, "tmp");
+    ssc.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("tmp"));
     ssc.set(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     ssc.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
     ssc.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "fake.coordinator:123");

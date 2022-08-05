@@ -17,13 +17,18 @@
 
 package org.apache.uniffle.test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashSet;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.client.util.ClientType;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
@@ -31,10 +36,8 @@ import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AssignmentServerNodesNumberTest extends CoordinatorTestBase {
   private static final Logger LOG = LoggerFactory.getLogger(AssignmentServerNodesNumberTest.class);
@@ -55,7 +58,7 @@ public class AssignmentServerNodesNumberTest extends CoordinatorTestBase {
       File dataDir1 = new File(tmpDir, "data1");
       String basePath = dataDir1.getAbsolutePath();
       shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
-      shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, basePath);
+      shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
       shuffleServerConf.set(RssBaseConf.RPC_METRICS_ENABLED, true);
       shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
       shuffleServerConf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED, 5000L);

@@ -17,10 +17,11 @@
 
 package org.apache.uniffle.server;
 
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -36,7 +37,7 @@ public class HealthCheckTest {
     conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(), "");
     assertConf(conf);
     conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(), "org.apache.uniffle.server.LocalStorageChecker");
-    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, "s1");
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("s1"));
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     assertConf(conf);
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
