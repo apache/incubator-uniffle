@@ -75,6 +75,7 @@
     <spotbugs-maven-plugin.version>4.7.0.0</spotbugs-maven-plugin.version>
     <system-rules.version>1.19.0</system-rules.version>
     <test.redirectToFile>true</test.redirectToFile>
+    <trimStackTrace>false</trimStackTrace>
   </properties>
 
   <repositories>
@@ -697,6 +698,7 @@
             <useFile>${test.redirectToFile}</useFile>
             <argLine>${argLine} -ea -Xmx3g</argLine>
             <failIfNoTests>false</failIfNoTests>
+            <trimStackTrace>${trimStackTrace}</trimStackTrace>
           </configuration>
         </plugin>
 
