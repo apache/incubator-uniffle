@@ -214,7 +214,17 @@ public class RssSparkConfig {
   public static final ConfigEntry<Integer> RSS_CLIENT_ASSIGNMENT_RETRY_TIMES = createIntegerBuilder(
           new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES))
           .createWithDefault(RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE);
-  
+
+  public static final ConfigEntry<Long> RSS_CLIENT_FALLBACK_RETRY_INTERVAL = createLongBuilder(
+      new ConfigBuilder("spark.rss.client.fallback.retry.interval")
+          .doc("Interval between retries fallback to SortShuffleManager"))
+      .createWithDefault(20000L);
+
+  public static final ConfigEntry<Integer> RSS_CLIENT_FALLBACK_RETRY_TIMES = createIntegerBuilder(
+      new ConfigBuilder("spark.rss.client.fallback.retry.times")
+          .doc("Number of retries fallback to SortShuffleManager"))
+      .createWithDefault(3);
+
   public static final ConfigEntry<String> RSS_COORDINATOR_QUORUM = createStringBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_COORDINATOR_QUORUM)
           .doc("Coordinator quorum"))
