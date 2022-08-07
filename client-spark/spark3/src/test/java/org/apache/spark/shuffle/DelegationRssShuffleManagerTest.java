@@ -33,6 +33,8 @@ import org.mockito.Mockito;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.RetryUtils;
 
 import static org.apache.uniffle.client.response.ResponseStatusCode.ACCESS_DENIED;
 import static org.apache.uniffle.client.response.ResponseStatusCode.SUCCESS;
@@ -138,16 +140,16 @@ public class DelegationRssShuffleManagerTest {
   @Test
   public void testTryAccessCluster() {
     SparkConf conf = new SparkConf();
-    long retryInterval = conf.get(RssSparkConfig.RSS_CLIENT_FALLBACK_RETRY_INTERVAL);
-    int retryTimes = conf.get(RssSparkConfig.RSS_CLIENT_FALLBACK_RETRY_TIMES);
+    long retryInterval = conf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS);
+    int retryTimes = conf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_TIMES);
     boolean canAccess = false;
     String message = null;
     try {
       canAccess = RetryUtils.retry(() -> {
         RssAccessClusterResponse response = new RssAccessClusterResponse(ACCESS_DENIED, "");
-        if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+        if (response.getStatusCode() == SUCCESS) {
           return true;
-        } else if (response.getStatusCode() == ResponseStatusCode.ACCESS_DENIED) {
+        } else if (response.getStatusCode() == ACCESS_DENIED) {
           throw new RssException("Request to access cluster m1 is denied");
         } else {
           throw new RssException("Fail to reach cluster");
