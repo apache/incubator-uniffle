@@ -134,6 +134,31 @@ public class DelegationRssShuffleManagerTest {
     assertTrue(hasException);
   }
 
+  @Test
+  public void testTryAccessCluster() {
+    SparkConf conf = new SparkConf();
+    long retryInterval = conf.get(RssSparkConfig.RSS_CLIENT_FALLBACK_RETRY_INTERVAL);
+    int retryTimes = conf.get(RssSparkConfig.RSS_CLIENT_FALLBACK_RETRY_TIMES);
+    boolean canAccess = false;
+    String message = null;
+    try {
+      canAccess = RetryUtils.retry(() -> {
+        RssAccessClusterResponse response = new RssAccessClusterResponse(ACCESS_DENIED, "")
+        if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+          return true;
+        } else if (response.getStatusCode() == ResponseStatusCode.ACCESS_DENIED) {
+          throw new RssException("Request to access cluster m1 is denied");
+        } else {
+          throw new RssException("Fail to reach cluster");
+        }
+      }, retryInterval, retryTimes);
+    } catch (Throwable e) {
+      message = e.getMessage();
+    }
+    assertTrue(message.startsWith("Request to access cluster m1 is denied"))
+    assertFalse(canAccess);
+  }
+
   private DelegationRssShuffleManager assertCreateSortShuffleManager(SparkConf conf) throws Exception {
     DelegationRssShuffleManager delegationRssShuffleManager = new DelegationRssShuffleManager(conf, true);
     assertTrue(delegationRssShuffleManager.getDelegate() instanceof SortShuffleManager);
