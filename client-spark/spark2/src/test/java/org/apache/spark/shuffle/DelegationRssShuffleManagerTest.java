@@ -143,7 +143,7 @@ public class DelegationRssShuffleManagerTest {
     String message = null;
     try {
       canAccess = RetryUtils.retry(() -> {
-        RssAccessClusterResponse response = new RssAccessClusterResponse(ACCESS_DENIED, "")
+        RssAccessClusterResponse response = new RssAccessClusterResponse(ACCESS_DENIED, "");
         if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
           return true;
         } else if (response.getStatusCode() == ResponseStatusCode.ACCESS_DENIED) {
@@ -155,7 +155,7 @@ public class DelegationRssShuffleManagerTest {
     } catch (Throwable e) {
       message = e.getMessage();
     }
-    assertTrue(message.startsWith("Request to access cluster m1 is denied"))
+    assertTrue(message.startsWith("Request to access cluster m1 is denied"));
     assertFalse(canAccess);
   }
 
