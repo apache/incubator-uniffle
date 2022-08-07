@@ -96,8 +96,8 @@ public class DelegationRssShuffleManager implements ShuffleManager {
       LOG.warn("Access id key is empty");
       return false;
     }
-    long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_FALLBACK_RETRY_INTERVAL);
-    int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_FALLBACK_RETRY_TIMES);
+    long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS);
+    int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_TIMES);
 
     for (CoordinatorClient coordinatorClient : coordinatorClients) {
       Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);

@@ -215,12 +215,12 @@ public class RssSparkConfig {
           new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES))
           .createWithDefault(RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE);
 
-  public static final ConfigEntry<Long> RSS_CLIENT_FALLBACK_RETRY_INTERVAL = createLongBuilder(
+  public static final ConfigEntry<Long> RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS = createLongBuilder(
       new ConfigBuilder("spark.rss.client.access.retry.interval.ms")
           .doc("Interval between retries fallback to SortShuffleManager"))
       .createWithDefault(20000L);
 
-  public static final ConfigEntry<Integer> RSS_CLIENT_FALLBACK_RETRY_TIMES = createIntegerBuilder(
+  public static final ConfigEntry<Integer> RSS_CLIENT_ACCESS_RETRY_TIMES = createIntegerBuilder(
       new ConfigBuilder("spark.rss.client.access.retry.times")
           .doc("Number of retries fallback to SortShuffleManager"))
       .createWithDefault(0);

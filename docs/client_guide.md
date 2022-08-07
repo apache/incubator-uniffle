@@ -113,6 +113,8 @@ Other configuration:
 |Property Name|Default|Description|
 |---|---|---|
 |spark.rss.access.timeout.ms|10000|The timeout to access Uniffle coordinator|
+|spark.rss.client.access.retry.interval.ms|20000|The interval between retries fallback to SortShuffleManager|
+|spark.rss.client.access.retry.times|0|The number of retries fallback to SortShuffleManager|
   
 
 ### Client Quorum Setting 
