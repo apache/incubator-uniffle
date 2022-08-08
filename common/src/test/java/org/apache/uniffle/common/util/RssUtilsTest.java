@@ -18,7 +18,9 @@
 package org.apache.uniffle.common.util;
 
 import java.lang.reflect.Field;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
@@ -35,7 +37,7 @@ import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -57,12 +59,12 @@ public class RssUtilsTest {
   @Test
   public void testGetHostIp() {
     try {
-      String address = InetAddress.getLocalHost().getHostAddress();
       String realIp = RssUtils.getHostIp();
-      assertNotEquals("127.0.0.1", realIp);
-      if (!address.equals("127.0.0.1")) {
-        assertEquals(address, realIp);
-      }
+      InetAddress ia = InetAddress.getByName(realIp);
+      assertTrue(ia instanceof Inet4Address);
+      assertFalse(ia.isLinkLocalAddress() || ia.isAnyLocalAddress() || ia.isLoopbackAddress());
+      assertTrue(NetworkInterface.getByInetAddress(ia) != null);
+      assertTrue(ia.isReachable(5000));
       setEnv("RSS_IP", "8.8.8.8");
       assertEquals("8.8.8.8", RssUtils.getHostIp());
       setEnv("RSS_IP", "xxxx");
