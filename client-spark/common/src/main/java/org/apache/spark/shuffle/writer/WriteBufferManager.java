@@ -120,11 +120,7 @@ public class WriteBufferManager extends MemoryConsumer {
     if (buffers.containsKey(partitionId)) {
       WriterBuffer wb = buffers.get(partitionId);
       if (wb.askForMemory(serializedDataLength)) {
-        if (serializedDataLength > bufferSegmentSize) {
-          requestMemory(serializedDataLength);
-        } else {
-          requestMemory(bufferSegmentSize);
-        }
+        requestMemory(Math.max(bufferSegmentSize, serializedDataLength));
       }
       wb.addRecord(serializedData, serializedDataLength);
       if (wb.getMemoryUsed() > bufferSize) {
@@ -136,7 +132,7 @@ public class WriteBufferManager extends MemoryConsumer {
             + "], dataLength[" + wb.getDataLength() + "]");
       }
     } else {
-      requestMemory(bufferSegmentSize);
+      requestMemory(Math.max(bufferSegmentSize, serializedDataLength));
       WriterBuffer wb = new WriterBuffer(bufferSegmentSize);
       wb.addRecord(serializedData, serializedDataLength);
       buffers.put(partitionId, wb);
