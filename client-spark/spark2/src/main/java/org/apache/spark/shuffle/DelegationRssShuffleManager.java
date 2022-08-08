@@ -34,6 +34,7 @@ import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.RetryUtils;
 
 public class DelegationRssShuffleManager implements ShuffleManager {
 
@@ -95,25 +96,29 @@ public class DelegationRssShuffleManager implements ShuffleManager {
       LOG.warn("Access id key is empty");
       return false;
     }
+    long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS);
+    int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_TIMES);
 
     for (CoordinatorClient coordinatorClient : coordinatorClients) {
+      Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
+      boolean canAccess;
       try {
-        Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
-
-        RssAccessClusterResponse response =
-            coordinatorClient.accessCluster(new RssAccessClusterRequest(
-                accessId, assignmentTags, accessTimeoutMs));
-        if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
-          LOG.warn("Success to access cluster {} using {}", coordinatorClient.getDesc(), accessId);
-          return true;
-        } else if (response.getStatusCode() == ResponseStatusCode.ACCESS_DENIED) {
-          LOG.warn("Request to access cluster {} is denied using {} for {}",
-              coordinatorClient.getDesc(), accessId, response.getMessage());
-          return false;
-        } else {
-          LOG.warn("Fail to reach cluster {} for {}", coordinatorClient.getDesc(), response.getMessage());
-        }
-      } catch (Exception e) {
+        canAccess = RetryUtils.retry(() -> {
+          RssAccessClusterResponse response = coordinatorClient.accessCluster(new RssAccessClusterRequest(
+              accessId, assignmentTags, accessTimeoutMs));
+          if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+            LOG.warn("Success to access cluster {} using {}", coordinatorClient.getDesc(), accessId);
+            return true;
+          } else if (response.getStatusCode() == ResponseStatusCode.ACCESS_DENIED) {
+            throw new RssException("Request to access cluster " + coordinatorClient.getDesc() + " is denied using "
+                + accessId + " for " + response.getMessage());
+          } else {
+            throw new RssException("Fail to reach cluster " + coordinatorClient.getDesc()
+                + " for " + response.getMessage());
+          }
+        }, retryInterval, retryTimes);
+        return canAccess;
+      } catch (Throwable e) {
         LOG.warn("Fail to access cluster {} using {} for {}",
             coordinatorClient.getDesc(), accessId, e.getMessage());
       }
