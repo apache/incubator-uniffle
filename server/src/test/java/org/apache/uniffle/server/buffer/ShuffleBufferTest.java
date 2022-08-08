@@ -142,10 +142,10 @@ public class ShuffleBufferTest extends BufferTestBase {
     spd2 = createData(15);
     shuffleBuffer.append(spd1);
     shuffleBuffer.append(spd2);
-    final ShuffleDataFlushEvent event1 = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);
     assertEquals(0, shuffleBuffer.getBlocks().size());
     sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 20);
     expectedData = getExpectedData(spd1, spd2);
+    ShuffleDataFlushEvent event1 = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);
     compareBufferSegment(shuffleBuffer.getInFlushBlockMap().get(event1.getEventId()),
         sdr.getBufferSegments(), 0, 2);
     assertArrayEquals(expectedData, sdr.getData());
