@@ -138,28 +138,24 @@ public class DelegationRssShuffleManagerTest {
   }
 
   @Test
-  public void testTryAccessCluster() {
+  public void testTryAccessCluster() throws Exception {
+    CoordinatorClient mockDeniedCoordinatorClient = mock(CoordinatorClient.class);
+    when(mockDeniedCoordinatorClient.accessCluster(any()))
+        .thenReturn(new RssAccessClusterResponse(ACCESS_DENIED, ""))
+        .thenReturn(new RssAccessClusterResponse(ACCESS_DENIED, ""))
+        .thenReturn(new RssAccessClusterResponse(SUCCESS, ""));
+    List<CoordinatorClient> coordinatorClients = Lists.newArrayList();
+    coordinatorClients.add(mockDeniedCoordinatorClient);
+    mockedStaticRssShuffleUtils.when(() ->
+        RssSparkShuffleUtils.createCoordinatorClients(any())).thenReturn(coordinatorClients);
     SparkConf conf = new SparkConf();
-    long retryInterval = conf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS);
-    int retryTimes = conf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_TIMES);
-    boolean canAccess = false;
-    String message = null;
-    try {
-      canAccess = RetryUtils.retry(() -> {
-        RssAccessClusterResponse response = new RssAccessClusterResponse(ACCESS_DENIED, "");
-        if (response.getStatusCode() == SUCCESS) {
-          return true;
-        } else if (response.getStatusCode() == ACCESS_DENIED) {
-          throw new RssException("Request to access cluster m1 is denied");
-        } else {
-          throw new RssException("Fail to reach cluster");
-        }
-      }, retryInterval, retryTimes);
-    } catch (Throwable e) {
-      message = e.getMessage();
-    }
-    assertTrue(message.startsWith("Request to access cluster m1 is denied"));
-    assertFalse(canAccess);
+    conf.set(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS, 3000L);
+    conf.set(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_TIMES, 3);
+    conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.key(), "false");
+    conf.set(RssSparkConfig.RSS_ACCESS_ID.key(), "mockId");
+    conf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "m1:8001,m2:8002");
+    conf.set("spark.rss.storage.type", StorageType.LOCALFILE.name());
+    assertCreateRssShuffleManager(conf);
   }
 
   private DelegationRssShuffleManager assertCreateSortShuffleManager(SparkConf conf) throws Exception {
