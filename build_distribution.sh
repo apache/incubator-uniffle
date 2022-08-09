@@ -102,6 +102,20 @@ VERSION=$("$MVN" help:evaluate -Dexpression=project.version $@ 2>/dev/null |
   grep -v "WARNING" |
   tail -n 1)
 
+# Dependencies version
+HADOOP_VERSION=$("$MVN" help:evaluate -Dexpression=hadoop.version $@ 2>/dev/null\
+    | grep -v "INFO"\
+    | grep -v "WARNING"\
+    | tail -n 1)
+SPARK2_VERSION=$("$MVN" help:evaluate -Dexpression=spark.version -P$SPARK2_PROFILE_ID $@ $SPARK2_MVN_OPTS 2>/dev/null\
+    | grep -v "INFO"\
+    | grep -v "WARNING"\
+    | tail -n 1)
+SPARK3_VERSION=$("$MVN" help:evaluate -Dexpression=spark.version -P$SPARK3_PROFILE_ID $@ $SPARK3_MVN_OPTS 2>/dev/null\
+    | grep -v "INFO"\
+    | grep -v "WARNING"\
+    | tail -n 1)
+
 echo "RSS version is $VERSION"
 
 export MAVEN_OPTS="${MAVEN_OPTS:--Xmx2g -XX:ReservedCodeCacheSize=1g}"
@@ -122,8 +136,8 @@ echo -e "\$ ${BUILD_COMMAND[@]}\n"
 DISTDIR="rss-$VERSION"
 rm -rf "$DISTDIR"
 mkdir -p "${DISTDIR}/jars"
-echo "RSS ${VERSION}${GITREVSTRING} built" >"${DISTDIR}/RELEASE"
-echo "Build flags: $@" >>"$DISTDIR/RELEASE"
+echo "RSS ${VERSION}${GITREVSTRING} built for Hadoop ${HADOOP_VERSION} Spark2 ${SPARK2_VERSION} Spark3 ${SPARK3_VERSION}" >"${DISTDIR}/RELEASE"
+echo "Build flags: --spark2-profile '$SPARK2_PROFILE_ID' --spark2-mvn '$SPARK2_MVN_OPTS' --spark3-profile '$SPARK3_PROFILE_ID' --spark3-mvn '$SPARK3_MVN_OPTS' $@" >>"$DISTDIR/RELEASE"
 mkdir -p "${DISTDIR}/logs"
 
 SERVER_JAR_DIR="${DISTDIR}/jars/server"
@@ -155,6 +169,7 @@ SPARK_CLIENT2_JAR_DIR="${CLIENT_JAR_DIR}/spark2"
 mkdir -p $SPARK_CLIENT2_JAR_DIR
 
 SPARK_CLIENT2_JAR="${RSS_HOME}/client-spark/spark2/target/shaded/rss-client-spark2-${VERSION}-shaded.jar"
+SPARK_CLIENT2_JAR_DIR="$SPARK_CLIENT2_JAR_DIR/rss-client-spark${SPARK2_VERSION}-${VERSION}-shaded.jar"
 echo "copy $SPARK_CLIENT2_JAR to ${SPARK_CLIENT2_JAR_DIR}"
 cp $SPARK_CLIENT2_JAR ${SPARK_CLIENT2_JAR_DIR}
 
@@ -167,6 +182,7 @@ echo -e "\$ ${BUILD_COMMAND_SPARK3[@]}\n"
 SPARK_CLIENT3_JAR_DIR="${CLIENT_JAR_DIR}/spark3"
 mkdir -p $SPARK_CLIENT3_JAR_DIR
 SPARK_CLIENT3_JAR="${RSS_HOME}/client-spark/spark3/target/shaded/rss-client-spark3-${VERSION}-shaded.jar"
+SPARK_CLIENT3_JAR_DIR="$SPARK_CLIENT3_JAR_DIR/rss-client-spark${SPARK3_VERSION}-${VERSION}-shaded.jar"
 echo "copy $SPARK_CLIENT3_JAR to ${SPARK_CLIENT3_JAR_DIR}"
 cp $SPARK_CLIENT3_JAR $SPARK_CLIENT3_JAR_DIR
 
@@ -177,6 +193,7 @@ echo -e "\$ ${BUILD_COMMAND_MR[@]}\n"
 MR_CLIENT_JAR_DIR="${CLIENT_JAR_DIR}/mr"
 mkdir -p $MR_CLIENT_JAR_DIR
 MR_CLIENT_JAR="${RSS_HOME}/client-mr/target/shaded/rss-client-mr-${VERSION}-shaded.jar"
+MR_CLIENT_JAR_DIR="$MR_CLIENT_JAR_DIR/rss-client-mr${HADOOP_VERSION}-${VERSION}-shaded.jar"
 echo "copy $MR_CLIENT_JAR to ${MR_CLIENT_JAR_DIR}"
 cp $MR_CLIENT_JAR $MR_CLIENT_JAR_DIR
 
