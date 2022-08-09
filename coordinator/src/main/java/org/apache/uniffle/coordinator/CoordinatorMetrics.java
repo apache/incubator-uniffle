@@ -35,6 +35,7 @@ public class CoordinatorMetrics {
   private static final String RUNNING_APP_NUM = "running_app_num";
   private static final String TOTAL_APP_NUM = "total_app_num";
   private static final String EXCLUDE_SERVER_NUM = "exclude_server_num";
+  private static final String UNHEALTHY_SERVER_NUM = "unhealthy_server_num";
   private static final String TOTAL_ACCESS_REQUEST = "total_access_request";
   private static final String TOTAL_CANDIDATES_DENIED_REQUEST = "total_candidates_denied_request";
   private static final String TOTAL_LOAD_DENIED_REQUEST = "total_load_denied_request";
@@ -42,6 +43,7 @@ public class CoordinatorMetrics {
 
   static Gauge gaugeTotalServerNum;
   static Gauge gaugeExcludeServerNum;
+  static Gauge gaugeUnhealthyServerNum;
   static Gauge gaugeRunningAppNum;
   static Counter counterTotalAppNum;
   static Counter counterTotalAccessRequest;
@@ -95,6 +97,7 @@ public class CoordinatorMetrics {
   private static void setUpMetrics() {
     gaugeTotalServerNum = metricsManager.addGauge(TOTAL_SERVER_NUM);
     gaugeExcludeServerNum = metricsManager.addGauge(EXCLUDE_SERVER_NUM);
+    gaugeUnhealthyServerNum = metricsManager.addGauge(UNHEALTHY_SERVER_NUM);
     gaugeRunningAppNum = metricsManager.addGauge(RUNNING_APP_NUM);
     counterTotalAppNum = metricsManager.addCounter(TOTAL_APP_NUM);
     counterTotalAccessRequest = metricsManager.addCounter(TOTAL_ACCESS_REQUEST);
