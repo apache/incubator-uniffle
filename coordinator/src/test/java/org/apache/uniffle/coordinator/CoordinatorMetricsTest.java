@@ -104,7 +104,7 @@ public class CoordinatorMetricsTest {
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
-    assertEquals(6, actualObj.get("metrics").size());
+    assertEquals(9, actualObj.get("metrics").size());
   }
 
   private static void writeRemoteStorageConf(File cfgFile, String value) throws Exception {
