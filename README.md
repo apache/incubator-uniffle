@@ -179,9 +179,9 @@ rss-xxx.tgz will be generated for deployment
 ### Deploy Spark Client
 1. Add client jar to Spark classpath, eg, SPARK_HOME/jars/
 
-   The jar for Spark2 is located in <RSS_HOME>/jars/client/spark2/rss-client-XXXXX-shaded.jar
+   The jar for Spark2 is located in <RSS_HOME>/jars/client/spark2/rss-client-sparkXX-XXXXX-shaded.jar
 
-   The jar for Spark3 is located in <RSS_HOME>/jars/client/spark3/rss-client-XXXXX-shaded.jar
+   The jar for Spark3 is located in <RSS_HOME>/jars/client/spark3/rss-client-sparkXX-XXXXX-shaded.jar
 
 2. Update Spark conf to enable Uniffle, eg,
 
@@ -206,7 +206,7 @@ After apply the patch and rebuild spark, add following configuration in spark co
 
 1. Add client jar to the classpath of each NodeManager, e.g., <HADOOP>/share/hadoop/mapreduce/
 
-The jar for MapReduce is located in <RSS_HOME>/jars/client/mr/rss-client-mr-XXXXX-shaded.jar
+The jar for MapReduce is located in <RSS_HOME>/jars/client/mr/rss-client-mrXX-XXXXX-shaded.jar
 
 2. Update MapReduce conf to enable Uniffle, eg,
 
