@@ -85,10 +85,14 @@ public class SimpleClusterManager implements ClusterManager {
     try {
       long timestamp = System.currentTimeMillis();
       Set<String> deleteIds = Sets.newHashSet();
+      Set<String> unhealthyNode = Sets.newHashSet();
       for (ServerNode sn : servers.values()) {
         if (timestamp - sn.getTimestamp() > heartbeatTimeout) {
           LOG.warn("Heartbeat timeout detect, " + sn + " will be removed from node list.");
           deleteIds.add(sn.getId());
+        } else if (!sn.isHealthy()) {
+          LOG.warn("Found server {} was unhealthy, will not assign it.", sn);
+          unhealthyNode.add(sn.getId());
         }
       }
       for (String serverId : deleteIds) {
@@ -100,6 +104,7 @@ public class SimpleClusterManager implements ClusterManager {
         }
       }
 
+      CoordinatorMetrics.gaugeUnhealthyServerNum.set(unhealthyNode.size());
       CoordinatorMetrics.gaugeTotalServerNum.set(servers.size());
     } catch (Exception e) {
       LOG.warn("Error happened in nodesCheck", e);
