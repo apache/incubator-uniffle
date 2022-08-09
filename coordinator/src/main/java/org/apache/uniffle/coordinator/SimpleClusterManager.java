@@ -30,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -59,6 +60,7 @@ public class SimpleClusterManager implements ClusterManager {
   private ScheduledExecutorService scheduledExecutorService;
   private ScheduledExecutorService checkNodesExecutorService;
   private FileSystem hadoopFileSystem;
+  private long outputAliveServerCount = 0;
 
   public SimpleClusterManager(CoordinatorConf conf, Configuration hadoopConf) throws IOException {
     this.shuffleNodesMax = conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
@@ -99,6 +101,13 @@ public class SimpleClusterManager implements ClusterManager {
           }
         }
       }
+      if (!deleteIds.isEmpty() || outputAliveServerCount % 30 == 0) {
+        LOG.info("Alive servers number: {}, ids: {}",
+            servers.size(),
+            servers.keySet().stream().collect(Collectors.toList())
+        );
+      }
+      outputAliveServerCount++;
 
       CoordinatorMetrics.gaugeTotalServerNum.set(servers.size());
     } catch (Exception e) {
@@ -107,6 +116,7 @@ public class SimpleClusterManager implements ClusterManager {
   }
 
   private void updateExcludeNodes(String path) {
+    int originalExcludeNodesNumber = excludeNodes.size();
     try {
       Path hadoopPath = new Path(path);
       FileStatus fileStatus = hadoopFileSystem.getFileStatus(hadoopPath);
@@ -118,12 +128,16 @@ public class SimpleClusterManager implements ClusterManager {
       } else {
         excludeNodes = Sets.newConcurrentHashSet();
       }
-      CoordinatorMetrics.gaugeExcludeServerNum.set(excludeNodes.size());
     } catch (FileNotFoundException fileNotFoundException) {
       excludeNodes = Sets.newConcurrentHashSet();
     } catch (Exception e) {
       LOG.warn("Error when updating exclude nodes, the exclude nodes file path: " + path, e);
     }
+    int newlyExcludeNodesNumber = excludeNodes.size();
+    if (newlyExcludeNodesNumber != originalExcludeNodesNumber) {
+      LOG.info("Exclude nodes number: {}, nodes list: {}", newlyExcludeNodesNumber, excludeNodes);
+    }
+    CoordinatorMetrics.gaugeExcludeServerNum.set(excludeNodes.size());
   }
 
   private void parseExcludeNodesFile(DataInputStream fsDataInputStream) throws IOException {
@@ -143,6 +157,9 @@ public class SimpleClusterManager implements ClusterManager {
 
   @Override
   public void add(ServerNode node) {
+    if (!servers.containsKey(node.getId())) {
+      LOG.info("Newly registering node: {}", node.getId());
+    }
     servers.put(node.getId(), node);
     Set<String> tags = node.getTags();
     // remove node with all tags to deal with the situation of tag change
