@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.conf.Configuration;
@@ -79,12 +80,19 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
 
   @Override
   public void write(
-      List<ShufflePartitionedBlock> shuffleBlocks) throws IOException, IllegalStateException {
+      List<ShufflePartitionedBlock> shuffleBlocks,
+      Supplier<Boolean> valid) throws IOException, IllegalStateException {
     final long start = System.currentTimeMillis();
     HdfsFileWriter dataWriter = null;
     HdfsFileWriter indexWriter = null;
     writeLock.lock();
     try {
+      if (!valid.get()) {
+        LOG.warn("Event is invalid, the app with basePath {}, fileNamePrefix {} was removed already", this.basePath,
+            this.fileNamePrefix);
+        return;
+      }
+
       try {
         final long ss = System.currentTimeMillis();
         // Write to HDFS will be failed with lease problem, and can't write the same file again

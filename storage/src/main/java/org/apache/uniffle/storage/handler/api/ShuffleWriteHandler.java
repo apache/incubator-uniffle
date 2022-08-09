@@ -19,6 +19,7 @@ package org.apache.uniffle.storage.handler.api;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 
@@ -28,8 +29,11 @@ public interface ShuffleWriteHandler {
    * Write the blocks to storage
    *
    * @param shuffleBlocks blocks to storage
+   * @param valid function to check blocks valid or not
    * @throws IOException
    * @throws IllegalStateException
    */
-  void write(List<ShufflePartitionedBlock> shuffleBlocks) throws IOException, IllegalStateException;
+  void write(
+      List<ShufflePartitionedBlock> shuffleBlocks,
+      Supplier<Boolean> valid) throws IOException, IllegalStateException;
 }

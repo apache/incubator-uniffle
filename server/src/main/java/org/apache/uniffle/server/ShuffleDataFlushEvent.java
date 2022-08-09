@@ -90,6 +90,10 @@ public class ShuffleDataFlushEvent {
     return shuffleBuffer;
   }
 
+  public Supplier<Boolean> getValidSupplier() {
+    return valid;
+  }
+
   public boolean isValid() {
     if (valid == null) {
       return true;
