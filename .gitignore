@@ -21,4 +21,5 @@ metastore_db/
 derby.log
 dependency-reduced-pom.xml
 rss-*.tgz
-
+hadoop-*.tar.gz
+deploy/kubernetes/docker/hadoopconfig/*
