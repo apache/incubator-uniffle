@@ -60,7 +60,9 @@ public class SimpleClusterManager implements ClusterManager {
   private ScheduledExecutorService scheduledExecutorService;
   private ScheduledExecutorService checkNodesExecutorService;
   private FileSystem hadoopFileSystem;
+
   private long outputAliveServerCount = 0;
+  private final long periodicOutputIntervalTimes;
 
   public SimpleClusterManager(CoordinatorConf conf, Configuration hadoopConf) throws IOException {
     this.shuffleNodesMax = conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
@@ -68,6 +70,8 @@ public class SimpleClusterManager implements ClusterManager {
     // the thread for checking if shuffle server report heartbeat in time
     scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("SimpleClusterManager-%d"));
+
+    periodicOutputIntervalTimes = conf.get(CoordinatorConf.COORDINATOR_NODES_PERIODIC_OUTPUT_INTERVAL_TIMES);
     scheduledExecutorService.scheduleAtFixedRate(
         () -> nodesCheck(), heartbeatTimeout / 3,
         heartbeatTimeout / 3, TimeUnit.MILLISECONDS);
@@ -101,7 +105,7 @@ public class SimpleClusterManager implements ClusterManager {
           }
         }
       }
-      if (!deleteIds.isEmpty() || outputAliveServerCount % 30 == 0) {
+      if (!deleteIds.isEmpty() || outputAliveServerCount % periodicOutputIntervalTimes == 0) {
         LOG.info("Alive servers number: {}, ids: {}",
             servers.size(),
             servers.keySet().stream().collect(Collectors.toList())
