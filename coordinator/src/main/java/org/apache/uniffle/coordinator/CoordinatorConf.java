@@ -50,6 +50,7 @@ public class CoordinatorConf extends RssBaseConf {
   public static final ConfigOption<Long> COORDINATOR_NODES_PERIODIC_OUTPUT_INTERVAL_TIMES = ConfigOptions
       .key("rss.coordinator.server.periodic.output.interval.times")
       .longType()
+      .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "output server list interval times must be positive")
       .defaultValue(30L)
       .withDescription("The periodic interval times of output alive nodes. The interval sec can be calculated by ("
           + COORDINATOR_HEARTBEAT_TIMEOUT.key() + "/3 * rss.coordinator.server.periodic.output.interval.times)");
