@@ -102,6 +102,20 @@ VERSION=$("$MVN" help:evaluate -Dexpression=project.version $@ 2>/dev/null |
   grep -v "WARNING" |
   tail -n 1)
 
+# Dependencies version
+HADOOP_VERSION=$("$MVN" help:evaluate -Dexpression=hadoop.version $@ 2>/dev/null\
+    | grep -v "INFO"\
+    | grep -v "WARNING"\
+    | tail -n 1)
+SPARK2_VERSION=$("$MVN" help:evaluate -Dexpression=spark.version -P$SPARK2_PROFILE_ID $@ $SPARK2_MVN_OPTS 2>/dev/null\
+    | grep -v "INFO"\
+    | grep -v "WARNING"\
+    | tail -n 1)
+SPARK3_VERSION=$("$MVN" help:evaluate -Dexpression=spark.version -P$SPARK3_PROFILE_ID $@ $SPARK3_MVN_OPTS 2>/dev/null\
+    | grep -v "INFO"\
+    | grep -v "WARNING"\
+    | tail -n 1)
+
 echo "RSS version is $VERSION"
 
 export MAVEN_OPTS="${MAVEN_OPTS:--Xmx2g -XX:ReservedCodeCacheSize=1g}"
@@ -122,8 +136,8 @@ echo -e "\$ ${BUILD_COMMAND[@]}\n"
 DISTDIR="rss-$VERSION"
 rm -rf "$DISTDIR"
 mkdir -p "${DISTDIR}/jars"
-echo "RSS ${VERSION}${GITREVSTRING} built" >"${DISTDIR}/RELEASE"
-echo "Build flags: $@" >>"$DISTDIR/RELEASE"
+echo "RSS ${VERSION}${GITREVSTRING} built for Hadoop ${HADOOP_VERSION} Spark2 ${SPARK2_VERSION} Spark3 ${SPARK3_VERSION}" >"${DISTDIR}/RELEASE"
+echo "Build flags: --spark2-profile '$SPARK2_PROFILE_ID' --spark2-mvn '$SPARK2_MVN_OPTS' --spark3-profile '$SPARK3_PROFILE_ID' --spark3-mvn '$SPARK3_MVN_OPTS' $@" >>"$DISTDIR/RELEASE"
 mkdir -p "${DISTDIR}/logs"
 
 SERVER_JAR_DIR="${DISTDIR}/jars/server"
