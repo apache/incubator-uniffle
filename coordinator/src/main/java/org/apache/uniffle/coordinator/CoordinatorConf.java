@@ -48,11 +48,11 @@ public class CoordinatorConf extends RssBaseConf {
       .defaultValue(30 * 1000L)
       .withDescription("timeout if can't get heartbeat from shuffle server");
   public static final ConfigOption<Long> COORDINATOR_NODES_PERIODIC_OUTPUT_INTERVAL_TIMES = ConfigOptions
-      .key("rss.coordinator.nodes.periodic.output.interval.times")
+      .key("rss.coordinator.server.periodic.output.interval.times")
       .longType()
       .defaultValue(30L)
       .withDescription("The periodic interval times of output alive nodes. The interval sec can be calculated by ("
-          + COORDINATOR_HEARTBEAT_TIMEOUT.key() + "/3 * rss.coordinator.nodes.periodic.output.interval.times)");
+          + COORDINATOR_HEARTBEAT_TIMEOUT.key() + "/3 * rss.coordinator.server.periodic.output.interval.times)");
   public static final ConfigOption<String> COORDINATOR_ASSIGNMENT_STRATEGY = ConfigOptions
       .key("rss.coordinator.assignment.strategy")
       .stringType()
