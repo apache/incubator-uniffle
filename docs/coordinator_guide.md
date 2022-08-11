@@ -61,7 +61,15 @@ This document will introduce how to deploy Uniffle coordinators.
     rss.writer.send.check.timeout 600000
     rss.client.read.buffer.size 14m
    ```
-5. start Coordinator
+   
+5. update <RSS_HOME>/conf/exclude_nodes, coordinator will update excluded node by this file eg,
+   ```
+    # shuffleServer's ip and port, connected with "-"
+    110.23.15.36-19999
+    110.23.15.35-19996
+   ```
+
+6. start Coordinator
    ```
     bash RSS_HOME/bin/start-coordnator.sh
    ```

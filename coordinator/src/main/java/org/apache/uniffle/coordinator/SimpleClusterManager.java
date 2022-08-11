@@ -155,7 +155,7 @@ public class SimpleClusterManager implements ClusterManager {
       String line;
       while ((line = br.readLine()) != null) {
         if (!StringUtils.isEmpty(line)) {
-          nodes.add(line);
+          nodes.add(line.trim());
         }
       }
     }
