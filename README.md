@@ -226,17 +226,7 @@ The important configuration is listed as following.
 
 ### Coordinator
 
-|Property Name|Default|	Description|
-|---|---|---|
-|rss.coordinator.server.heartbeat.timeout|30000|Timeout if can't get heartbeat from shuffle server|
-|rss.coordinator.assignment.strategy|PARTITION_BALANCE|Strategy for assigning shuffle server, PARTITION_BALANCE should be used for workload balance|
-|rss.coordinator.app.expired|60000|Application expired time (ms), the heartbeat interval should be less than it|
-|rss.coordinator.shuffle.nodes.max|9|The max number of shuffle server when do the assignment|
-|rss.coordinator.dynamicClientConf.path|-|The path of configuration file which have default conf for rss client|
-|rss.coordinator.exclude.nodes.file.path|-|The path of configuration file which have exclude nodes|
-|rss.coordinator.exclude.nodes.check.interval.ms|60000|Update interval (ms) for exclude nodes|
-|rss.rpc.server.port|-|RPC port for coordinator|
-|rss.jetty.http.port|-|Http port for coordinator|
+For more details of advanced configuration, please see [Uniffle Coordinator Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/coordinator_guide.md).
 
 ### Shuffle Server
 
