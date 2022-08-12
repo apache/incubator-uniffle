@@ -117,28 +117,19 @@ public class WriteBufferManager extends MemoryConsumer {
       return null;
     }
     List<ShuffleBlockInfo> result = Lists.newArrayList();
-    if (buffers.containsKey(partitionId)) {
-      WriterBuffer wb = buffers.get(partitionId);
-      if (wb.askForMemory(serializedDataLength)) {
-        requestMemory(Math.max(bufferSegmentSize, serializedDataLength));
-      }
-      wb.addRecord(serializedData, serializedDataLength);
-      if (wb.getMemoryUsed() > bufferSize) {
-        result.add(createShuffleBlock(partitionId, wb));
-        copyTime += wb.getCopyTime();
-        buffers.remove(partitionId);
-        LOG.debug("Single buffer is full for shuffleId[" + shuffleId
-            + "] partition[" + partitionId + "] with memoryUsed[" + wb.getMemoryUsed()
-            + "], dataLength[" + wb.getDataLength() + "]");
-      }
-    } else {
-      requestMemory(Math.max(bufferSegmentSize, serializedDataLength));
-      WriterBuffer wb = new WriterBuffer(bufferSegmentSize);
-      wb.addRecord(serializedData, serializedDataLength);
-      buffers.put(partitionId, wb);
-    }
+    WriterBuffer wb = buffers.computeIfAbsent(partitionId,
+            k -> new WriterBuffer(bufferSegmentSize));
+    requestMemory(wb.calculateMemoryCost(serializedDataLength));
+    wb.addRecord(serializedData, serializedDataLength);
     shuffleWriteMetrics.incRecordsWritten(1L);
-
+    if (wb.getMemoryUsed() > bufferSize) {
+      result.add(createShuffleBlock(partitionId, wb));
+      copyTime += wb.getCopyTime();
+      buffers.remove(partitionId);
+      LOG.debug("Single buffer is full for shuffleId[" + shuffleId
+              + "] partition[" + partitionId + "] with memoryUsed[" + wb.getMemoryUsed()
+              + "], dataLength[" + wb.getDataLength() + "]");
+    }
     // check buffer size > spill threshold
     if (usedBytes.get() - inSendListBytes.get() > spillSize) {
       result.addAll(clear());

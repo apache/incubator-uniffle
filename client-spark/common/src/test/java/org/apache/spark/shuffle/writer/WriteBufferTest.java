@@ -58,7 +58,7 @@ public class WriteBufferTest {
     wb.addRecord(serializedData, serializedDataLength);
     // case: data size > output buffer size, when getData(), 2 buffer + output with 12b = 60b
     assertEquals(60, wb.getData().length);
-    assertEquals(96, wb.getMemoryUsed());
+    assertEquals(64, wb.getMemoryUsed());
 
     wb = new WriterBuffer(32);
 

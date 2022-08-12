@@ -78,6 +78,7 @@ public class WriteBufferManagerTest {
     wbm.addRecord(0, testKey, testValue);
     wbm.addRecord(0, testKey, testValue);
     wbm.addRecord(0, testKey, testValue);
+    wbm.addRecord(0, testKey, testValue);
     result = wbm.addRecord(0, testKey, testValue);
     // single buffer is full
     assertEquals(1, result.size());
@@ -108,7 +109,7 @@ public class WriteBufferManagerTest {
     assertEquals(192, wbm.getUsedBytes());
     assertEquals(192, wbm.getInSendListBytes());
 
-    assertEquals(11, wbm.getShuffleWriteMetrics().recordsWritten());
+    assertEquals(12, wbm.getShuffleWriteMetrics().recordsWritten());
     assertTrue(wbm.getShuffleWriteMetrics().bytesWritten() > 0);
 
     wbm.freeAllocatedMemory(192);

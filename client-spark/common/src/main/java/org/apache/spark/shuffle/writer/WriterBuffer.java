@@ -39,35 +39,34 @@ public class WriterBuffer {
   }
 
   public void addRecord(byte[] recordBuffer, int length) {
-    if (askForMemory(length)) {
-      // buffer has data already, add buffer to list
-      if (nextOffset > 0) {
-        buffers.add(new WrappedBuffer(buffer, nextOffset));
-        nextOffset = 0;
-      }
-      if (length > bufferSize) {
-        buffer = new byte[length];
-        memoryUsed += length;
-      } else {
-        buffer = new byte[bufferSize];
-        memoryUsed += bufferSize;
-      }
+    int require = calculateMemoryCost(length);
+    int hasCopied = 0;
+    if (require > 0 && buffer != null && buffer.length - nextOffset > 0) {
+      hasCopied = buffer.length - nextOffset;
+      System.arraycopy(recordBuffer, 0, buffer, nextOffset, hasCopied);
     }
-
-    try {
-      System.arraycopy(recordBuffer, 0, buffer, nextOffset, length);
-    } catch (Exception e) {
-      LOG.error("Unexpect exception for System.arraycopy, length[" + length + "], nextOffset["
-          + nextOffset + "], bufferSize[" + bufferSize + "]");
-      throw e;
+    if (require > 0 && buffer != null) {
+      buffers.add(new WrappedBuffer(buffer, buffer.length));
     }
-
-    nextOffset += length;
+    if (require > 0) {
+      buffer = new byte[require];
+      nextOffset = 0;
+    }
+    System.arraycopy(recordBuffer, hasCopied, buffer, nextOffset, length - hasCopied);
+    nextOffset += length - hasCopied;
+    memoryUsed += require;
     dataLength += length;
   }
 
-  public boolean askForMemory(long length) {
-    return buffer == null || nextOffset + length > bufferSize;
+  public int calculateMemoryCost(int length) {
+    if (buffer == null) {
+      return Math.max(length, bufferSize);
+    }
+    int require = length + nextOffset - buffer.length;
+    if (require <= 0) {
+      return 0;
+    }
+    return Math.max(require, bufferSize);
   }
 
   public byte[] getData() {
