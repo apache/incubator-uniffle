@@ -19,13 +19,16 @@ package org.apache.uniffle.coordinator;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -119,25 +122,8 @@ public class ApplicationManager {
 
     // create list for sort
     List<Map.Entry<String, AtomicInteger>> sizeList =
-        Lists.newArrayList(remoteStoragePathCounter.entrySet());
-
-    sizeList.sort((entry1, entry2) -> {
-      if (entry1 == null && entry2 == null) {
-        return 0;
-      }
-      if (entry1 == null) {
-        return -1;
-      }
-      if (entry2 == null) {
-        return 1;
-      }
-      if (entry1.getValue().get() > entry2.getValue().get()) {
-        return 1;
-      } else if (entry1.getValue().get() == entry2.getValue().get()) {
-        return 0;
-      }
-      return -1;
-    });
+        Lists.newArrayList(remoteStoragePathCounter.entrySet()).stream().filter(Objects::nonNull)
+            .sorted(Comparator.comparingInt(entry -> entry.getValue().get())).collect(Collectors.toList());
 
     for (Map.Entry<String, AtomicInteger> entry : sizeList) {
       String storagePath = entry.getKey();
