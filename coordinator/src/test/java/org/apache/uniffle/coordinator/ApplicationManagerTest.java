@@ -99,24 +99,6 @@ public class ApplicationManagerTest {
   }
 
   @Test
-  public void pickRemoteStorageTest() {
-    String remoteStoragePath = remotePath1 + Constants.COMMA_SPLIT_CHAR + remotePath2;
-    Set<String> expectedAvailablePath = Sets.newHashSet(remotePath1, remotePath2);
-    applicationManager.refreshRemoteStorage(remoteStoragePath, "");
-
-    applicationManager.incRemoteStorageCounter(remotePath2);
-    applicationManager.incRemoteStorageCounter(remotePath1);
-    String testApp1 = "testApp1";
-    applicationManager.refreshAppId(testApp1);
-    applicationManager.incRemoteStorageCounter(remotePath2);
-    String testApp2 = "testApp2";
-    applicationManager.refreshAppId(testApp2);
-    assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
-    assertEquals(remotePath1, applicationManager.pickRemoteStorage(testApp2).getPath());
-    assertEquals(remotePath2, applicationManager.pickRemoteStorage(testApp1).getPath());
-  }
-
-  @Test
   public void storageCounterTest() throws Exception {
     String remoteStoragePath = remotePath1 + Constants.COMMA_SPLIT_CHAR + remotePath2;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
