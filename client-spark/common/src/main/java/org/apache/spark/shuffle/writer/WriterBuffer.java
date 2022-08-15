@@ -41,14 +41,15 @@ public class WriterBuffer {
   public void addRecord(byte[] recordBuffer, int length) {
     int require = calculateMemoryCost(length);
     int hasCopied = 0;
-    if (require > 0 && buffer != null && buffer.length - nextOffset > 0) {
-      hasCopied = buffer.length - nextOffset;
-      System.arraycopy(recordBuffer, 0, buffer, nextOffset, hasCopied);
-    }
-    if (require > 0 && buffer != null) {
-      buffers.add(new WrappedBuffer(buffer, buffer.length));
-    }
     if (require > 0) {
+      if (buffer != null) {
+        int toCopy = buffer.length - nextOffset;
+        if (toCopy > 0) {
+          hasCopied = toCopy;
+          System.arraycopy(recordBuffer, 0, buffer, nextOffset, hasCopied);
+        }
+        buffers.add(new WrappedBuffer(buffer, buffer.length));
+      }
       buffer = new byte[require];
       nextOffset = 0;
     }
