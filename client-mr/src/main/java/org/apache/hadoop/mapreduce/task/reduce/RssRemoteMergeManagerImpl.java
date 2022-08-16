@@ -42,7 +42,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.util.Progress;
 
 import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.common.provider.HadoopAccessorProvider;
+import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 
 public class RssRemoteMergeManagerImpl<K, V> extends MergeManagerImpl<K, V> {
 
@@ -144,8 +144,10 @@ public class RssRemoteMergeManagerImpl<K, V> extends MergeManagerImpl<K, V> {
     try {
       remoteConf.setInt("dfs.replication", replication);
       remoteConf.setInt("dfs.client.block.write.retries", retries); // origin=3
-      HadoopAccessorProvider.init();
-      this.remoteFS = HadoopAccessorProvider.getFileSystem(new Path(basePath), remoteConf);
+      this.remoteFS = HadoopFilesystemProvider.getFilesystem(
+          new Path(basePath),
+          remoteConf
+      );
     } catch (Exception e) {
       throw new RuntimeException("Cannot init remoteFS on path:" + basePath);
     }

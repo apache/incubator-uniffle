@@ -28,7 +28,7 @@ import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.provider.HadoopAccessorProvider;
+import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.storage.api.FileReader;
 
 public class HdfsFileReader implements FileReader, Closeable {
@@ -45,7 +45,7 @@ public class HdfsFileReader implements FileReader, Closeable {
   }
 
   private void createStream() throws Exception {
-    FileSystem fileSystem = HadoopAccessorProvider.getFileSystem(path, hadoopConf);
+    FileSystem fileSystem = HadoopFilesystemProvider.getFilesystem(path, hadoopConf);
 
     if (!fileSystem.isFile(path)) {
       String msg = path + " don't exist or is not a file.";

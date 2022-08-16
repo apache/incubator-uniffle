@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 public class SecurityContextFactory {
   private static final Logger LOGGER = LoggerFactory.getLogger(SecurityContextFactory.class);
 
-  private SecurityContext securityContext;
+  private SecurityContext securityContext = new NoOpSecurityContext();
 
   static class LazyHolder {
     static final SecurityContextFactory SECURITY_CONTEXT_FACTORY = new SecurityContextFactory();
@@ -35,7 +35,6 @@ public class SecurityContextFactory {
 
   public void install(SecurityConfig securityConfig) throws Exception {
     if (securityConfig == null) {
-      this.securityContext = new NoOpSecurityContext();
       return;
     }
 
@@ -45,6 +44,7 @@ public class SecurityContextFactory {
         securityConfig.getPrincipal(),
         securityConfig.getReloginIntervalSec()
     );
+    LOGGER.info("Initialized security context: {}", securityContext.getClass().getSimpleName());
   }
 
   public SecurityContext getSecurityContext() {

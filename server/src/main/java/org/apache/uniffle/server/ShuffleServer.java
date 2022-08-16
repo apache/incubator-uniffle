@@ -34,9 +34,9 @@ import picocli.CommandLine;
 import org.apache.uniffle.common.Arguments;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
-import org.apache.uniffle.common.provider.HadoopAccessorProvider;
-import org.apache.uniffle.common.provider.SecurityInfo;
 import org.apache.uniffle.common.rpc.ServerInterface;
+import org.apache.uniffle.common.security.SecurityConfig;
+import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.web.CommonMetricsServlet;
@@ -136,7 +136,7 @@ public class ShuffleServer {
       healthCheck.stop();
       LOG.info("HealthCheck stopped!");
     }
-    HadoopAccessorProvider.cleanup();
+    SecurityContextFactory.get().getSecurityContext().close();
     server.stop();
     LOG.info("RPC Server Stopped!");
   }
@@ -152,15 +152,15 @@ public class ShuffleServer {
     jettyServer = new JettyServer(shuffleServerConf);
     registerMetrics();
 
-    SecurityInfo securityInfo = null;
+    SecurityConfig securityConfig = null;
     if (shuffleServerConf.getBoolean(RSS_SECURITY_HADOOP_KERBEROS_ENABLE)) {
-      securityInfo = SecurityInfo.newBuilder()
+      securityConfig = securityConfig.newBuilder()
           .keytabFilePath(shuffleServerConf.getString(RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE))
           .principal(shuffleServerConf.getString(RSS_SECURITY_HADOOP_KERBEROS_PRINCIPAL))
           .reloginIntervalSec(shuffleServerConf.getLong(RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC))
           .build();
     }
-    HadoopAccessorProvider.init(securityInfo);
+    SecurityContextFactory.get().install(securityConfig);
 
     storageManager = StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     storageManager.start();

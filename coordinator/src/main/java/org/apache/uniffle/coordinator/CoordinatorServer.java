@@ -26,9 +26,9 @@ import picocli.CommandLine;
 import org.apache.uniffle.common.Arguments;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
-import org.apache.uniffle.common.provider.HadoopAccessorProvider;
-import org.apache.uniffle.common.provider.SecurityInfo;
 import org.apache.uniffle.common.rpc.ServerInterface;
+import org.apache.uniffle.common.security.SecurityConfig;
+import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.web.CommonMetricsServlet;
 import org.apache.uniffle.common.web.JettyServer;
 
@@ -112,7 +112,7 @@ public class CoordinatorServer {
     if (clientConfManager != null) {
       clientConfManager.close();
     }
-    HadoopAccessorProvider.cleanup();
+    SecurityContextFactory.get().getSecurityContext().close();
     server.stop();
   }
 
@@ -122,15 +122,15 @@ public class CoordinatorServer {
     registerMetrics();
     this.applicationManager = new ApplicationManager(coordinatorConf);
 
-    SecurityInfo securityInfo = null;
+    SecurityConfig securityConfig = null;
     if (coordinatorConf.getBoolean(RSS_SECURITY_HADOOP_KERBEROS_ENABLE)) {
-      securityInfo = SecurityInfo.newBuilder()
+      securityConfig = SecurityConfig.newBuilder()
           .keytabFilePath(coordinatorConf.getString(RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE))
           .principal(coordinatorConf.getString(RSS_SECURITY_HADOOP_KERBEROS_PRINCIPAL))
           .reloginIntervalSec(coordinatorConf.getLong(RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC))
           .build();
     }
-    HadoopAccessorProvider.init(securityInfo);
+    SecurityContextFactory.get().install(securityConfig);
 
     // load default hadoop configuration
     Configuration hadoopConf = new Configuration();

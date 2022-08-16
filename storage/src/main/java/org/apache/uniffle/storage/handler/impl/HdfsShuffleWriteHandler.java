@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
-import org.apache.uniffle.common.provider.HadoopAccessorProvider;
+import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -84,7 +84,7 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
   private void initialize() throws Exception {
     Path path = new Path(basePath);
     LOG.info("User: {}, Path: {}", user, path);
-    this.fileSystem = HadoopAccessorProvider.getFilesystem(user, path, hadoopConf);
+    this.fileSystem = HadoopFilesystemProvider.getFilesystem(user, path, hadoopConf);
     // check if shuffle folder exist
     if (!fileSystem.exists(path)) {
       try {

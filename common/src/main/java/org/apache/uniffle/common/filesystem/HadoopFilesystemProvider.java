@@ -30,8 +30,16 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.security.SecurityContextFactory;
 
+/**
+ * This HadoopFilesystemProvider will provide the only entrypoint to get the hadoop filesystem whether
+ * the dfs cluster is kerberized or not.
+ */
 public class HadoopFilesystemProvider {
   private static final Logger LOGGER = LoggerFactory.getLogger(HadoopFilesystemProvider.class);
+
+  public static FileSystem getFilesystem(Path path, Configuration configuration) throws Exception {
+    return getFilesystem(UserGroupInformation.getCurrentUser().getShortUserName(), path, configuration);
+  }
 
   public static FileSystem getFilesystem(String user, Path path, Configuration configuration) throws Exception {
     UserGroupInformation.AuthenticationMethod authenticationMethod =
@@ -40,7 +48,7 @@ public class HadoopFilesystemProvider {
 
     Callable<FileSystem> callable = () -> FileSystem.get(path.toUri(), configuration);
 
-    FileSystem fileSystem = null;
+    FileSystem fileSystem;
     if (needSecurity) {
       fileSystem = SecurityContextFactory
           .get()
