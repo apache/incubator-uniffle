@@ -160,7 +160,7 @@ public class ShuffleFlushManager {
           LOG.warn("AppId {} was removed already, event {} should be dropped", event.getAppId(), event);
         } else {
           String user = StringUtils.defaultString(
-              storageManager.getStorageUser(event.getAppId()),
+              shuffleServer.getShuffleTaskManager().getUserByAppId(event.getAppId()),
               StringUtils.EMPTY
           );
           ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(new CreateShuffleWriteHandlerRequest(

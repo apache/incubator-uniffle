@@ -65,8 +65,7 @@ public class ShuffleServerMetricsTest {
     shuffleServer.getStorageManager()
         .registerRemoteStorage(
             "metricsTest",
-            new RemoteStorageInfo(REMOTE_STORAGE_PATH),
-            StringUtils.EMPTY
+            new RemoteStorageInfo(REMOTE_STORAGE_PATH)
         );
     shuffleServer.start();
   }

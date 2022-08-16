@@ -130,12 +130,13 @@ public class ShuffleTaskManager {
       RemoteStorageInfo remoteStorageInfo,
       String user) {
     refreshAppId(appId);
+    appUserMap.putIfAbsent(appId, user);
     partitionsToBlockIds.putIfAbsent(appId, Maps.newConcurrentMap());
     for (PartitionRange partitionRange : partitionRanges) {
       shuffleBufferManager.registerBuffer(appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
     }
     if (!remoteStorageInfo.isEmpty()) {
-      storageManager.registerRemoteStorage(appId, remoteStorageInfo, user);
+      storageManager.registerRemoteStorage(appId, remoteStorageInfo);
     }
     return StatusCode.SUCCESS;
   }
@@ -422,8 +423,8 @@ public class ShuffleTaskManager {
     return pabi.getRequireSize();
   }
 
-  public String getUserByAppID(String appid) {
-    return appUserMap.get(appid);
+  public String getUserByAppId(String appId) {
+    return appUserMap.get(appId);
   }
 
   @VisibleForTesting

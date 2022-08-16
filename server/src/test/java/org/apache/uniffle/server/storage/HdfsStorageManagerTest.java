@@ -62,18 +62,15 @@ public class HdfsStorageManagerTest {
     final String remoteStoragePath3 = "hdfs://path3";
     hdfsStorageManager.registerRemoteStorage(
         "app1",
-        new RemoteStorageInfo(remoteStoragePath1, ImmutableMap.of("k1", "v1", "k2", "v2")),
-        "user-1"
+        new RemoteStorageInfo(remoteStoragePath1, ImmutableMap.of("k1", "v1", "k2", "v2"))
     );
     hdfsStorageManager.registerRemoteStorage(
         "app2",
-        new RemoteStorageInfo(remoteStoragePath2, ImmutableMap.of("k3", "v3")),
-        "user-2"
+        new RemoteStorageInfo(remoteStoragePath2, ImmutableMap.of("k3", "v3"))
     );
     hdfsStorageManager.registerRemoteStorage(
         "app3",
-        new RemoteStorageInfo(remoteStoragePath3, Maps.newHashMap()),
-        "user-3"
+        new RemoteStorageInfo(remoteStoragePath3, Maps.newHashMap())
     );
     Map<String, HdfsStorage> appStorageMap =  hdfsStorageManager.getAppIdToStorages();
     assertEquals(3, appStorageMap.size());
@@ -93,11 +90,6 @@ public class HdfsStorageManagerTest {
     assertNull(hs3.getConf().get("k1"));
     assertNull(hs3.getConf().get("k2"));
     assertNull(hs3.getConf().get("k3"));
-
-    // Test the storage with user
-    assertEquals("user-1", hdfsStorageManager.getStorageUser("app1"));
-    assertEquals("user-2", hdfsStorageManager.getStorageUser("app2"));
-    assertEquals("user-3", hdfsStorageManager.getStorageUser("app3"));
   }
 }
 

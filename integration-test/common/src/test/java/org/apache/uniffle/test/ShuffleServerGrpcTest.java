@@ -671,21 +671,4 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
       bitmap.addLong(blockIds.get(i));
     }
   }
-
-  @Test
-  public void testGettingUserWhenUsingHdfsStorage() throws Exception {
-    String appID = "testGettingUser-app-1";
-    final ShuffleWriteClient shuffleWriteClient =
-        ShuffleClientFactory.getInstance().createShuffleWriteClient(
-            "GRPC", 2, 10000L, 4, 1, 1, 1, true, 1, 1);
-    shuffleWriteClient.registerCoordinators("127.0.0.1:19999");
-    shuffleWriteClient.registerShuffle(
-        new ShuffleServerInfo("127.0.0.1-20001", "127.0.0.1", 20001),
-        appID,
-        0,
-        Lists.newArrayList(new PartitionRange(0, 1)), new RemoteStorageInfo("hdfs://cluster1"));
-
-    String user = shuffleServers.get(0).getStorageManager().getStorageUser(appID);
-    assertEquals(UserGroupInformation.getCurrentUser().getUserName(), user);
-  }
 }
