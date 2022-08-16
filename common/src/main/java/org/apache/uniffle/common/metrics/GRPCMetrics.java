@@ -27,11 +27,11 @@ import io.prometheus.client.Gauge;
 public abstract class GRPCMetrics {
   // Grpc server internal executor metrics
   public static final String GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_TAG = "grpcServerExecutorActiveThreads";
-  public static final String GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_TAG = "grpcServerExecutorBlockingQueueSize";
   private static final String GRPC_SERVER_EXECUTOR_ACTIVE_THREADS = "grpc_server_executor_active_threads";
+  public static final String GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_TAG = "grpcServerExecutorBlockingQueueSize";
   private static final String GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE = "grpc_server_executor_blocking_queue_size";
-  public static final String GRCP_SERVER_CONNECTION_SIZE_TAG = "grpc_server_connection_size";
-  private static final String GRCP_SERVER_CONNECTION_SOCKETS_SIZE = "grpc_server_connection_size";
+  public static final String GRCP_SERVER_CONNECTION_NUMBER_TAG = "grpcServerConnectionNumber";
+  private static final String GRCP_SERVER_CONNECTION_NUMBER = "grpc_server_connection_number";
 
   private boolean isRegister = false;
   protected Map<String, Counter> counterMap = Maps.newConcurrentMap();
@@ -61,8 +61,8 @@ public abstract class GRPCMetrics {
         metricsManager.addGauge(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE)
     );
     gaugeMap.putIfAbsent(
-        GRCP_SERVER_CONNECTION_SIZE_TAG,
-        metricsManager.addGauge(GRCP_SERVER_CONNECTION_SOCKETS_SIZE)
+        GRCP_SERVER_CONNECTION_NUMBER_TAG,
+        metricsManager.addGauge(GRCP_SERVER_CONNECTION_NUMBER)
     );
   }
 

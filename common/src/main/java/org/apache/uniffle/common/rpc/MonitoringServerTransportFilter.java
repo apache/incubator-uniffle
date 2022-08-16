@@ -24,7 +24,7 @@ import io.grpc.ServerTransportFilter;
 
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 
-import static org.apache.uniffle.common.metrics.GRPCMetrics.GRCP_SERVER_CONNECTION_SIZE_TAG;
+import static org.apache.uniffle.common.metrics.GRPCMetrics.GRCP_SERVER_CONNECTION_NUMBER_TAG;
 
 public class MonitoringServerTransportFilter extends ServerTransportFilter {
   private final AtomicLong connectionSize = new AtomicLong(0);
@@ -35,11 +35,12 @@ public class MonitoringServerTransportFilter extends ServerTransportFilter {
   }
 
   public Attributes transportReady(Attributes transportAttrs) {
-    grpcMetrics.setGauge(GRCP_SERVER_CONNECTION_SIZE_TAG, connectionSize.incrementAndGet());
+    grpcMetrics.setGauge(GRCP_SERVER_CONNECTION_NUMBER_TAG, connectionSize.incrementAndGet());
     return super.transportReady(transportAttrs);
   }
 
   public void transportTerminated(Attributes transportAttrs) {
-    grpcMetrics.setGauge(GRCP_SERVER_CONNECTION_SIZE_TAG, connectionSize.decrementAndGet());
+    grpcMetrics.setGauge(GRCP_SERVER_CONNECTION_NUMBER_TAG, connectionSize.decrementAndGet());
+    super.transportTerminated(transportAttrs);
   }
 }
