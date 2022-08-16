@@ -74,7 +74,7 @@ public class ShuffleTaskManager {
   // but when get blockId, performance will degrade a little which can be optimized by client configuration
   private Map<String, Map<Integer, Roaring64NavigableMap[]>> partitionsToBlockIds;
   private ShuffleBufferManager shuffleBufferManager;
-  private Map<String, ShuffleTaskInfo> shuffleTaskInfo = Maps.newConcurrentMap();
+  private Map<String, ShuffleTaskInfos> shuffleTaskInfo = Maps.newConcurrentMap();
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = Maps.newConcurrentMap();
   private Runnable clearResourceThread;
   private BlockingQueue<String> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
@@ -156,9 +156,8 @@ public class ShuffleTaskManager {
     refreshAppId(appId);
     Roaring64NavigableMap cachedBlockIds = getCachedBlockIds(appId, shuffleId);
     Roaring64NavigableMap cloneBlockIds;
-    shuffleTaskInfo.computeIfAbsent(appId, x -> new ShuffleTaskInfo())
-        .getCommitLocks().putIfAbsent(shuffleId, new Object());
-    Object lock = shuffleTaskInfo.get(appId).getCommitLocks().get(shuffleId);
+    ShuffleTaskInfos shuffleTaskInfos = shuffleTaskInfo.computeIfAbsent(appId, x -> new ShuffleTaskInfos());
+    Object lock = shuffleTaskInfos.getCommitLocks().computeIfAbsent(shuffleId, x -> new Object());
     synchronized (lock) {
       long commitTimeout = conf.get(ShuffleServerConf.SERVER_COMMIT_TIMEOUT);
       if (System.currentTimeMillis() - start > commitTimeout) {
@@ -221,9 +220,9 @@ public class ShuffleTaskManager {
   }
 
   public int updateAndGetCommitCount(String appId, int shuffleId) {
-    shuffleTaskInfo.computeIfAbsent(appId, x -> new ShuffleTaskInfo())
-        .getCommitCounts().putIfAbsent(shuffleId, new AtomicInteger(0));
-    AtomicInteger commitNum = shuffleTaskInfo.get(appId).getCommitCounts().get(shuffleId);
+    ShuffleTaskInfos shuffleTaskInfos = shuffleTaskInfo.computeIfAbsent(appId, x -> new ShuffleTaskInfos());
+    AtomicInteger commitNum = shuffleTaskInfos.getCommitCounts()
+        .computeIfAbsent(shuffleId, x -> new AtomicInteger(0));
     return commitNum.incrementAndGet();
   }
 
@@ -231,9 +230,9 @@ public class ShuffleTaskManager {
     if (spbs == null || spbs.length == 0) {
       return;
     }
-    shuffleTaskInfo.computeIfAbsent(appId, x -> new ShuffleTaskInfo())
-        .getCachedBlockIds().putIfAbsent(shuffleId, Roaring64NavigableMap.bitmapOf());
-    Roaring64NavigableMap bitmap = shuffleTaskInfo.get(appId).getCachedBlockIds().get(shuffleId);
+    ShuffleTaskInfos shuffleTaskInfos = shuffleTaskInfo.computeIfAbsent(appId, x -> new ShuffleTaskInfos());
+    Roaring64NavigableMap bitmap = shuffleTaskInfos.getCachedBlockIds()
+        .computeIfAbsent(shuffleId, x -> Roaring64NavigableMap.bitmapOf());
     synchronized (bitmap) {
       for (ShufflePartitionedBlock spb : spbs) {
         bitmap.addLong(spb.getBlockId());
@@ -243,7 +242,7 @@ public class ShuffleTaskManager {
 
   public Roaring64NavigableMap getCachedBlockIds(String appId, int shuffleId) {
     Map<Integer, Roaring64NavigableMap> shuffleIdToBlockIds = shuffleTaskInfo
-        .getOrDefault(appId, new ShuffleTaskInfo()).getCachedBlockIds();
+        .getOrDefault(appId, new ShuffleTaskInfos()).getCachedBlockIds();
     Roaring64NavigableMap blockIds = shuffleIdToBlockIds.get(shuffleId);
     if (blockIds == null) {
       LOG.warn("Unexpected value when getCachedBlockIds for appId[" + appId + "], shuffleId[" + shuffleId + "]");
@@ -388,7 +387,7 @@ public class ShuffleTaskManager {
   }
 
   public void refreshAppId(String appId) {
-    shuffleTaskInfo.computeIfAbsent(appId, x -> new ShuffleTaskInfo()).setCurrentTimes(System.currentTimeMillis());
+    shuffleTaskInfo.computeIfAbsent(appId, x -> new ShuffleTaskInfos()).setCurrentTimes(System.currentTimeMillis());
   }
 
   // check pre allocated buffer, release the memory if it expired

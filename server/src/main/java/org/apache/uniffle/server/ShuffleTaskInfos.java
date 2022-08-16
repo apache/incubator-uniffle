@@ -24,10 +24,10 @@ import com.google.common.collect.Maps;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 /**
- * ShuffleTaskInfo contains the information of submitting the shuffle,
+ * ShuffleTaskInfos contains the information of submitting the shuffle,
  * the information of the cache block, and the timestamp corresponding to the app
  */
-public class ShuffleTaskInfo {
+public class ShuffleTaskInfos {
 
   private Long currentTimes;
   /**
@@ -40,7 +40,7 @@ public class ShuffleTaskInfo {
     */
   private Map<Integer, Roaring64NavigableMap> cachedBlockIds;
 
-  public ShuffleTaskInfo() {
+  public ShuffleTaskInfos() {
     this.currentTimes = System.currentTimeMillis();
     this.commitCounts = Maps.newConcurrentMap();
     this.commitLocks = Maps.newConcurrentMap();
