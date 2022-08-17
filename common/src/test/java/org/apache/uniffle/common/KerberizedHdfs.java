@@ -144,7 +144,7 @@ public class KerberizedHdfs implements Serializable {
 
     conf.set(
         CommonConfigurationKeysPublic.HADOOP_SECURITY_IMPERSONATION_PROVIDER_CLASS,
-        "org.apache.uniffle.common.provider.KerberizedHdfsTestBase$TestDummyImpersonationProvider");
+        "org.apache.uniffle.common.KerberizedHdfs$TestDummyImpersonationProvider");
 
     String keystoresDir = kerberizedDfsBaseDir.toFile().getAbsolutePath();
     String sslConfDir = KeyStoreTestUtil.getClasspathDir(testRunnerCls);
@@ -154,6 +154,9 @@ public class KerberizedHdfs implements Serializable {
   }
 
   private void startKerberizedDFS() throws Exception {
+    String krb5Conf = kdc.getKrb5conf().getAbsolutePath();
+    System.setProperty("java.security.krb5.conf", krb5Conf);
+
     String principal = "hdfs" + "/localhost";
     File keytab = new File(workDir, "hdfs.keytab");
     kdc.createPrincipal(keytab, principal);
@@ -162,8 +165,7 @@ public class KerberizedHdfs implements Serializable {
 
     Configuration conf = new Configuration();
     conf.set(HADOOP_SECURITY_AUTHENTICATION, "kerberos");
-    String krb5Conf = kdc.getKrb5conf().getAbsolutePath();
-    System.setProperty("java.security.krb5.conf", krb5Conf);
+    
     UserGroupInformation.setConfiguration(conf);
     UserGroupInformation.setShouldRenewImmediatelyForTests(true);
     UserGroupInformation ugi =
@@ -190,8 +192,8 @@ public class KerberizedHdfs implements Serializable {
   private void startKDC() throws Exception {
     Properties kdcConf = MiniKdc.createConf();
     String hostName = "localhost";
-    kdcConf.setProperty(MiniKdc.INSTANCE, KerberizedHdfs.class.getSimpleName());
-    kdcConf.setProperty(MiniKdc.ORG_NAME, KerberizedHdfs.class.getSimpleName());
+    kdcConf.setProperty(MiniKdc.INSTANCE, "DefaultKrbServer");
+    kdcConf.setProperty(MiniKdc.ORG_NAME, "EXAMPLE");
     kdcConf.setProperty(MiniKdc.ORG_DOMAIN, "COM");
     kdcConf.setProperty(MiniKdc.KDC_BIND_ADDRESS, hostName);
     kdcConf.setProperty(MiniKdc.KDC_PORT, "0");
@@ -274,7 +276,7 @@ public class KerberizedHdfs implements Serializable {
     @Override
     public void authorize(UserGroupInformation userGroupInformation, String s) throws AuthorizationException {
       UserGroupInformation superUser = userGroupInformation.getRealUser();
-      LOGGER.info("Proxy: {}", superUser);
+      LOGGER.info("Proxy: {}", superUser.getShortUserName());
     }
 
     @Override

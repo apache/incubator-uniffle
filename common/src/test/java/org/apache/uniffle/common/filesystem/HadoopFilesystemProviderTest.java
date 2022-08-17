@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.KerberizedHdfsBase;
@@ -37,12 +38,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HadoopFilesystemProviderTest extends KerberizedHdfsBase {
 
+  @BeforeAll
+  public static void beforeAll() throws Exception {
+    KerberizedHdfsBase.beforeAll();
+    UserGroupInformation.reset();
+  }
+
   /**
    * When visiting secured HDFS but not initialize hadoop security context, it will throw exception
    */
   @Test
   public void testGetSecuredFilesystemButNotInitializeHadoopSecurityContext() throws Exception {
-    UserGroupInformation.reset();
 
     removeHadoopSecurityContext();
 

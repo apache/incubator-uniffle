@@ -18,12 +18,10 @@
 package org.apache.uniffle.server.storage;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
