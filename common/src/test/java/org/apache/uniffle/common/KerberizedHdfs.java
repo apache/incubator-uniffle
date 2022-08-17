@@ -45,8 +45,6 @@ import org.apache.hadoop.security.ssl.KeyStoreTestUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.provider.HadoopAccessorProviderTest;
-
 import static org.apache.hadoop.fs.CommonConfigurationKeys.IPC_CLIENT_CONNECT_MAX_RETRIES_ON_SASL_KEY;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_BLOCK_ACCESS_TOKEN_ENABLE_KEY;
@@ -192,8 +190,8 @@ public class KerberizedHdfs implements Serializable {
   private void startKDC() throws Exception {
     Properties kdcConf = MiniKdc.createConf();
     String hostName = "localhost";
-    kdcConf.setProperty(MiniKdc.INSTANCE, HadoopAccessorProviderTest.class.getSimpleName());
-    kdcConf.setProperty(MiniKdc.ORG_NAME, HadoopAccessorProviderTest.class.getSimpleName());
+    kdcConf.setProperty(MiniKdc.INSTANCE, KerberizedHdfs.class.getSimpleName());
+    kdcConf.setProperty(MiniKdc.ORG_NAME, KerberizedHdfs.class.getSimpleName());
     kdcConf.setProperty(MiniKdc.ORG_DOMAIN, "COM");
     kdcConf.setProperty(MiniKdc.KDC_BIND_ADDRESS, hostName);
     kdcConf.setProperty(MiniKdc.KDC_PORT, "0");
