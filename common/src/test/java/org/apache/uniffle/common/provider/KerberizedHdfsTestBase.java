@@ -79,6 +79,8 @@ public class KerberizedHdfsTestBase implements Serializable {
   // The normal user of alex for accessing HDFS
   protected static String alexKeytab;
   protected static String alexPrincipal;
+  // krb5.conf file path
+  protected static String krb5ConfFile;
 
   public static void setup() throws Exception {
     tempDir = Files.createTempDirectory("tempDir").toFile().toPath();
@@ -97,6 +99,8 @@ public class KerberizedHdfsTestBase implements Serializable {
     alexPrincipal = principal;
 
     FileSystem writeFs = kerberizedDfsCluster.getFileSystem();
+    assertTrue(writeFs.mkdirs(new org.apache.hadoop.fs.Path("/hdfs")));
+
     boolean ok = writeFs.exists(new org.apache.hadoop.fs.Path("/alex"));
     assertFalse(ok);
     ok = writeFs.mkdirs(new org.apache.hadoop.fs.Path("/alex"));
@@ -194,6 +198,9 @@ public class KerberizedHdfsTestBase implements Serializable {
     workDir = tempDir.toFile();
     kdc = new MiniKdc(kdcConf, workDir);
     kdc.start();
+
+    krb5ConfFile = kdc.getKrb5conf().getAbsolutePath();
+    System.setProperty("java.security.krb5.conf", krb5ConfFile);
   }
 
   public static void tearDown() throws IOException {

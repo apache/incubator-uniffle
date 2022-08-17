@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.uniffle.common;
 
 import java.io.BufferedWriter;
@@ -25,8 +42,6 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authorize.AuthorizationException;
 import org.apache.hadoop.security.authorize.ImpersonationProvider;
 import org.apache.hadoop.security.ssl.KeyStoreTestUtil;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +64,7 @@ import static org.apache.hadoop.hdfs.client.HdfsClientConfigKeys.DFS_DATA_TRANSF
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class KerberizedHdfsTestBaseV2 implements Serializable {
+public class KerberizedHdfs implements Serializable {
   private static final Logger LOGGER = LoggerFactory.getLogger(KerberizedHdfsTestBase.class);
 
   private MiniKdc kdc;
@@ -70,27 +85,7 @@ public class KerberizedHdfsTestBaseV2 implements Serializable {
   // krb5.conf file path
   private String krb5ConfFile;
 
-  protected static KerberizedHdfsTestBaseV2 kerberizedHdfs;
-
-  @BeforeAll
-  public static void beforeAll() throws Exception {
-    new KerberizedHdfsTestBaseV2();
-  }
-
-  @AfterAll
-  public static void afterAll() throws Exception {
-
-  }
-
-  private static class LazyHolder {
-    private static final KerberizedHdfsTestBaseV2 TEST_BASE = new KerberizedHdfsTestBaseV2();
-  }
-
-  public static KerberizedHdfsTestBaseV2 get() {
-    return KerberizedHdfsTestBaseV2.LazyHolder.TEST_BASE;
-  }
-
-  public KerberizedHdfsTestBaseV2() {
+  public KerberizedHdfs() {
     try {
       setup();
     } catch (Exception e) {
@@ -221,12 +216,12 @@ public class KerberizedHdfsTestBaseV2 implements Serializable {
 
   public void tearDown() throws IOException {
     if (kerberizedDfsCluster != null) {
-      kerberizedDfsCluster.close();
+      kerberizedDfsCluster.shutdown(true);
     }
     if (kdc != null) {
       kdc.stop();
     }
-    setTestRunner(KerberizedHdfsTestBase.class);
+    setTestRunner(KerberizedHdfs.class);
     UserGroupInformation.reset();
   }
 
@@ -263,6 +258,10 @@ public class KerberizedHdfsTestBaseV2 implements Serializable {
 
   public String getKrb5ConfFile() {
     return krb5ConfFile;
+  }
+
+  public MiniKdc getKdc() {
+    return kdc;
   }
 
   /**
