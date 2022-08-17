@@ -253,29 +253,17 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .build());
       }
 
-      long requireId = requirePreAllocation(size, request.getRetryMax(), request.getRetryIntervalMax());
-      if (requireId != FAILED_REQUIRE_ID) {
-        SendShuffleDataRequest rpcRequest = SendShuffleDataRequest.newBuilder()
-            .setAppId(appId)
-            .setShuffleId(stb.getKey())
-            .setRequireBufferId(requireId)
-            .addAllShuffleData(shuffleData)
-            .build();
-        long start = System.currentTimeMillis();
-        SendShuffleDataResponse response = doSendData(rpcRequest);
-        LOG.info("Do sendShuffleData to {}:{} rpc cost:" + (System.currentTimeMillis() - start)
-            + " ms for " + size + " bytes with " + blockNum + " blocks", host, port);
+      long start = System.currentTimeMillis();
+      SendShuffleDataResponse response = doSendData(appId, size, request, stb, shuffleData);
+      LOG.info("Do sendShuffleData to {}:{} rpc cost:" + (System.currentTimeMillis() - start)
+          + " ms for " + size + " bytes with " + blockNum + " blocks", host, port);
 
-        if (response.getStatus() != StatusCode.SUCCESS) {
-          String msg = "Can't send shuffle data with " + blockNum
-              + " blocks to " + host + ":" + port
-              + ", statusCode=" + response.getStatus()
-              + ", errorMsg:" + response.getRetMsg();
-          LOG.warn(msg);
-          isSuccessful = false;
-          break;
-        }
-      } else {
+      if (response.getStatus() != StatusCode.SUCCESS) {
+        String msg = "Can't send shuffle data with " + blockNum
+            + " blocks to " + host + ":" + port
+            + ", statusCode=" + response.getStatus()
+            + ", errorMsg:" + response.getRetMsg();
+        LOG.warn(msg);
         isSuccessful = false;
         break;
       }
@@ -290,10 +278,22 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     return response;
   }
 
-  private SendShuffleDataResponse doSendData(SendShuffleDataRequest rpcRequest) {
+  private SendShuffleDataResponse doSendData(String appId, int size, RssSendShuffleDataRequest request,
+                                             Map.Entry<Integer, Map<Integer, List<ShuffleBlockInfo>>> stb,
+                                             List<ShuffleData> shuffleData) {
     int retryNum = 0;
     while (retryNum < maxRetryAttempts) {
       try {
+        long requireId = requirePreAllocation(size, request.getRetryMax(), request.getRetryIntervalMax());
+        if (requireId == FAILED_REQUIRE_ID) {
+          continue;
+        }
+        SendShuffleDataRequest rpcRequest = SendShuffleDataRequest.newBuilder()
+            .setAppId(appId)
+            .setShuffleId(stb.getKey())
+            .setRequireBufferId(requireId)
+            .addAllShuffleData(shuffleData)
+            .build();
         SendShuffleDataResponse response = getBlockingStub().sendShuffleData(rpcRequest);
         return response;
       } catch (Exception e) {
