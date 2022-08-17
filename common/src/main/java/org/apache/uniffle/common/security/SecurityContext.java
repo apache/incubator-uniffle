@@ -24,4 +24,6 @@ import java.util.concurrent.Callable;
 public interface SecurityContext extends Closeable {
 
   <T> T runSecured(String user, Callable<T> securedCallable) throws Exception;
+
+  String getContextLoginUser();
 }

@@ -160,7 +160,7 @@ public class ShuffleServer {
           .reloginIntervalSec(shuffleServerConf.getLong(RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC))
           .build();
     }
-    SecurityContextFactory.get().install(securityConfig);
+    SecurityContextFactory.get().init(securityConfig);
 
     storageManager = StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     storageManager.start();

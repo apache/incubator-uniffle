@@ -29,6 +29,11 @@ public class NoOpSecurityContext implements SecurityContext {
   }
 
   @Override
+  public String getContextLoginUser() {
+    return null;
+  }
+
+  @Override
   public void close() throws IOException {
     // ignore
   }

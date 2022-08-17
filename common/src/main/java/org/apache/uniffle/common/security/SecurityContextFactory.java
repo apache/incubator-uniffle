@@ -33,8 +33,9 @@ public class SecurityContextFactory {
     return LazyHolder.SECURITY_CONTEXT_FACTORY;
   }
 
-  public void install(SecurityConfig securityConfig) throws Exception {
+  public void init(SecurityConfig securityConfig) throws Exception {
     if (securityConfig == null) {
+      this.securityContext = new NoOpSecurityContext();
       return;
     }
 

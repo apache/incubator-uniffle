@@ -130,7 +130,7 @@ public class CoordinatorServer {
           .reloginIntervalSec(coordinatorConf.getLong(RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC))
           .build();
     }
-    SecurityContextFactory.get().install(securityConfig);
+    SecurityContextFactory.get().init(securityConfig);
 
     // load default hadoop configuration
     Configuration hadoopConf = new Configuration();

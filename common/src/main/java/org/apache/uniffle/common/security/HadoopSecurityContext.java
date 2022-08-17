@@ -91,8 +91,8 @@ public class HadoopSecurityContext implements SecurityContext {
 
   @Override
   public <T> T runSecured(String user, Callable<T> securedCallable) throws Exception {
-    if (user == null) {
-      throw new Exception("User must be not null");
+    if (StringUtils.isEmpty(user)) {
+      throw new Exception("User must be not null or empty");
     }
 
     // Run with the proxy user.
@@ -105,6 +105,11 @@ public class HadoopSecurityContext implements SecurityContext {
 
     // Run with the current login user.
     return executeWithUgiWrapper(loginUgi, securedCallable);
+  }
+
+  @Override
+  public String getContextLoginUser() {
+    return loginUgi.getShortUserName();
   }
 
   private <T> T executeWithUgiWrapper(UserGroupInformation ugi, Callable<T> callable) throws Exception {

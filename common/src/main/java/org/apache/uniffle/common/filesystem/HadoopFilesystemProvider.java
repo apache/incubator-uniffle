@@ -38,7 +38,11 @@ public class HadoopFilesystemProvider {
   private static final Logger LOGGER = LoggerFactory.getLogger(HadoopFilesystemProvider.class);
 
   public static FileSystem getFilesystem(Path path, Configuration configuration) throws Exception {
-    return getFilesystem(UserGroupInformation.getCurrentUser().getShortUserName(), path, configuration);
+    return getFilesystem(
+        SecurityContextFactory.get().getSecurityContext().getContextLoginUser(),
+        path,
+        configuration
+    );
   }
 
   public static FileSystem getFilesystem(String user, Path path, Configuration configuration) throws Exception {
