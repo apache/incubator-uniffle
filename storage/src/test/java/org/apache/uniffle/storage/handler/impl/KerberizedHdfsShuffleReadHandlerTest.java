@@ -30,7 +30,7 @@ public class KerberizedHdfsShuffleReadHandlerTest extends KerberizedHdfsBase {
   @BeforeAll
   public static void beforeAll() throws Exception {
     testRunner = KerberizedHdfsShuffleReadHandlerTest.class;
-    KerberizedHdfsBase.beforeAll();
+    KerberizedHdfsBase.init();
   }
 
   @BeforeEach

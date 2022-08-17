@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.KerberizedHdfsBase;
@@ -31,6 +32,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class HadoopSecurityContextTest extends KerberizedHdfsBase {
+
+  @BeforeAll
+  public static void beforeAll() throws Exception {
+    testRunner = HadoopSecurityContextTest.class;
+    KerberizedHdfsBase.init();
+  }
 
   @Test
   public void testSecuredCallable() throws Exception {

@@ -30,7 +30,7 @@ public class KerberizedHdfsClientReadHandlerTest extends KerberizedHdfsBase {
   @BeforeAll
   public static void beforeAll() throws Exception {
     testRunner = KerberizedHdfsClientReadHandlerTest.class;
-    KerberizedHdfsBase.beforeAll();
+    KerberizedHdfsBase.init();
   }
 
   @BeforeEach

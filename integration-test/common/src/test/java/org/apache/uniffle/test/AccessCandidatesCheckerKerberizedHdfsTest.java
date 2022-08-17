@@ -30,7 +30,7 @@ public class AccessCandidatesCheckerKerberizedHdfsTest extends KerberizedHdfsBas
   @BeforeAll
   public static void beforeAll() throws Exception {
     testRunner = AccessCandidatesCheckerKerberizedHdfsTest.class;
-    KerberizedHdfsBase.beforeAll();
+    KerberizedHdfsBase.init();
   }
 
   @BeforeEach
@@ -40,7 +40,7 @@ public class AccessCandidatesCheckerKerberizedHdfsTest extends KerberizedHdfsBas
   }
 
   @AfterEach
-  public void clear() throws Exception {
+  public void afterEach() throws Exception {
     CoordinatorMetrics.clear();
     removeHadoopSecurityContext();
   }

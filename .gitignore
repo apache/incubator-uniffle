@@ -26,3 +26,4 @@ deploy/kubernetes/docker/hadoopconfig/*
 common/build/
 integration-test/common/build/
 storage/build/
+build/

@@ -30,7 +30,7 @@ public class ShuffleKerberizedHdfsStorageUtilsTest extends KerberizedHdfsBase {
   @BeforeAll
   public static void beforeAll() throws Exception {
     testRunner = ShuffleKerberizedHdfsStorageUtilsTest.class;
-    KerberizedHdfsBase.beforeAll();
+    KerberizedHdfsBase.init();
   }
 
   @Test

@@ -18,6 +18,7 @@
 package org.apache.uniffle.common.security;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.KerberizedHdfsBase;
@@ -27,8 +28,14 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class SecurityContextFactoryTest extends KerberizedHdfsBase {
 
+  @BeforeAll
+  public static void beforeAll() throws Exception {
+    testRunner = SecurityContextFactoryTest.class;
+    KerberizedHdfsBase.init();
+  }
+
   @AfterEach
-  public void clear() throws Exception {
+  public void afterEach() throws Exception {
     SecurityContextFactory.get().init(null);
   }
 

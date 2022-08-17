@@ -94,7 +94,7 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
   @BeforeAll
   public static void setup() throws Exception {
     testRunner = ShuffleServerWithKerberizedHdfsTest.class;
-    KerberizedHdfsBase.beforeAll();
+    KerberizedHdfsBase.init();
 
     CoordinatorConf coordinatorConf = new CoordinatorConf();
     coordinatorConf.setInteger(CoordinatorConf.RPC_SERVER_PORT, 19999);
@@ -109,7 +109,7 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
   }
 
   @AfterAll
-  public static void clear() throws Exception {
+  public static void afterAll() throws Exception {
     if (coordinatorServer != null) {
       coordinatorServer.stopServer();
     }

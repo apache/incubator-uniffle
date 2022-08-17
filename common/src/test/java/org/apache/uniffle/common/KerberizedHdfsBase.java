@@ -18,7 +18,6 @@
 package org.apache.uniffle.common;
 
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 
 import org.apache.uniffle.common.security.HadoopSecurityContext;
 import org.apache.uniffle.common.security.NoOpSecurityContext;
@@ -31,20 +30,19 @@ public class KerberizedHdfsBase {
   protected static KerberizedHdfs kerberizedHdfs;
   protected static Class<?> testRunner = KerberizedHdfsBase.class;
 
-  @BeforeAll
-  public static void beforeAll() throws Exception {
+  public static void init() throws Exception {
     kerberizedHdfs = new KerberizedHdfs();
     kerberizedHdfs.setTestRunner(testRunner);
     kerberizedHdfs.setup();
   }
 
   @AfterAll
-  public static void afterAll() throws Exception {
+  public static void clear() throws Exception {
     kerberizedHdfs.tearDown();
     kerberizedHdfs = null;
   }
 
-  public void initHadoopSecurityContext() throws Exception {
+  public static void initHadoopSecurityContext() throws Exception {
     // init the security context
     SecurityConfig securityConfig = SecurityConfig
         .newBuilder()
@@ -57,7 +55,7 @@ public class KerberizedHdfsBase {
     assertEquals(HadoopSecurityContext.class, SecurityContextFactory.get().getSecurityContext().getClass());
   }
 
-  public void removeHadoopSecurityContext() throws Exception {
+  public static void removeHadoopSecurityContext() throws Exception {
     SecurityContextFactory.get().init(null);
     assertEquals(NoOpSecurityContext.class, SecurityContextFactory.get().getSecurityContext().getClass());
   }

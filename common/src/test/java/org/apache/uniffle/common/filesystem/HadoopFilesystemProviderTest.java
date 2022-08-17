@@ -40,7 +40,8 @@ public class HadoopFilesystemProviderTest extends KerberizedHdfsBase {
 
   @BeforeAll
   public static void beforeAll() throws Exception {
-    KerberizedHdfsBase.beforeAll();
+    testRunner = HadoopFilesystemProvider.class;
+    KerberizedHdfsBase.init();
     UserGroupInformation.reset();
   }
 

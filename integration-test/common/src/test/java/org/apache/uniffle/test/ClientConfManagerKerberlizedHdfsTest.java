@@ -27,7 +27,7 @@ public class ClientConfManagerKerberlizedHdfsTest extends KerberizedHdfsBase {
   @BeforeAll
   public static void beforeAll() throws Exception {
     testRunner = ClientConfManagerKerberlizedHdfsTest.class;
-    KerberizedHdfsBase.beforeAll();
+    KerberizedHdfsBase.init();
   }
 
   @Test
