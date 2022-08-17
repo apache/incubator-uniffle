@@ -19,48 +19,28 @@ package org.apache.uniffle.storage.util;
 
 import java.io.File;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import org.apache.uniffle.common.provider.HadoopAccessorProvider;
-import org.apache.uniffle.common.provider.KerberizedHdfsTestBase;
-import org.apache.uniffle.common.provider.SecurityInfo;
+import org.apache.uniffle.common.KerberizedHdfsBase;
 
-public class ShuffleKerberizedHdfsStorageUtilsTest extends KerberizedHdfsTestBase {
-
-  static {
-    KerberizedHdfsTestBase.setTestRunner(ShuffleKerberizedHdfsStorageUtilsTest.class);
-  }
+public class ShuffleKerberizedHdfsStorageUtilsTest extends KerberizedHdfsBase {
 
   @BeforeAll
   public static void beforeAll() throws Exception {
-    KerberizedHdfsTestBase.setup();
-    HadoopAccessorProvider.init(
-        SecurityInfo
-            .newBuilder()
-            .keytabFilePath(hdfsKeytab)
-            .principal(hdfsPrincipal)
-            .reloginIntervalSec(1000L * 1000L)
-            .build()
-    );
-  }
-
-  @AfterAll
-  public static void afterAll() throws Exception {
-    HadoopAccessorProvider.cleanup();
-    KerberizedHdfsTestBase.tearDown();
+    testRunner = ShuffleKerberizedHdfsStorageUtilsTest.class;
+    KerberizedHdfsBase.beforeAll();
   }
 
   @Test
   public void testUploadFile(@TempDir File tempDir) throws Exception {
+    initHadoopSecurityContext();
     ShuffleHdfsStorageUtilsTest.createAndRunCases(
         tempDir,
-        getFileSystem(),
-        getSchemeAndAuthorityPrefix(),
-        getConf()
+        kerberizedHdfs.getFileSystem(),
+        kerberizedHdfs.getSchemeAndAuthorityPrefix(),
+        kerberizedHdfs.getConf()
     );
   }
-
 }

@@ -42,12 +42,10 @@ import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.client.util.DefaultIdHelper;
+import org.apache.uniffle.common.KerberizedHdfsBase;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
-import org.apache.uniffle.common.provider.HadoopAccessorProvider;
-import org.apache.uniffle.common.provider.KerberizedHdfsTestBase;
-import org.apache.uniffle.common.provider.SecurityInfo;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.server.ShuffleServer;
@@ -59,11 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsTestBase {
-
-  static {
-    KerberizedHdfsTestBase.setTestRunner(ShuffleServerWithKerberizedHdfsTest.class);
-  }
+public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
 
   private static final int COORDINATOR_RPC_PROT = 19999;
   private static final int SHUFFLE_SERVER_PORT = 29999;
@@ -99,7 +93,8 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsTestBase 
 
   @BeforeAll
   public static void setup() throws Exception {
-    KerberizedHdfsTestBase.setup();
+    testRunner = ShuffleServerWithKerberizedHdfsTest.class;
+    KerberizedHdfsBase.beforeAll();
 
     CoordinatorConf coordinatorConf = new CoordinatorConf();
     coordinatorConf.setInteger(CoordinatorConf.RPC_SERVER_PORT, 19999);
@@ -111,15 +106,6 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsTestBase 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServer = new ShuffleServer(shuffleServerConf);
     shuffleServer.start();
-
-    HadoopAccessorProvider.cleanup();
-    HadoopAccessorProvider.init(
-        SecurityInfo.newBuilder()
-            .keytabFilePath(hdfsKeytab)
-            .principal(hdfsPrincipal)
-            .reloginIntervalSec(1000L * 1000L)
-            .build()
-    );
   }
 
   @AfterAll
@@ -130,18 +116,17 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsTestBase 
     if (shuffleServer != null) {
       shuffleServer.stopServer();
     }
-    HadoopAccessorProvider.cleanup();
-
-    KerberizedHdfsTestBase.tearDown();
   }
 
   @BeforeEach
   public void beforeEach() throws Exception {
+    initHadoopSecurityContext();
     shuffleServerClient = new ShuffleServerGrpcClient("localhost", SHUFFLE_SERVER_PORT);
   }
 
   @AfterEach
   public void clearEach() throws Exception {
+    removeHadoopSecurityContext();
     shuffleServerClient.close();
   }
 
@@ -177,7 +162,7 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsTestBase 
 
   @Test
   public void hdfsWriteReadTest() throws Exception {
-    String alexDir = getSchemeAndAuthorityPrefix() + "/alex/";
+    String alexDir = kerberizedHdfs.getSchemeAndAuthorityPrefix() + "/alex/";
 
     String user = "alex";
     String appId = "app_hdfs_read_write";
@@ -185,7 +170,7 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsTestBase 
 
     RemoteStorageInfo remoteStorageInfo = new RemoteStorageInfo(
         dataBasePath,
-        conf2Map(getConf())
+        conf2Map(kerberizedHdfs.getConf())
     );
 
     RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest(

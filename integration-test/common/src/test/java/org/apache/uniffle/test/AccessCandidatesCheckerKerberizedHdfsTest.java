@@ -17,59 +17,42 @@
 
 package org.apache.uniffle.test;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.common.provider.HadoopAccessorProvider;
-import org.apache.uniffle.common.provider.KerberizedHdfsTestBase;
-import org.apache.uniffle.common.provider.SecurityInfo;
+import org.apache.uniffle.common.KerberizedHdfsBase;
 import org.apache.uniffle.coordinator.CoordinatorMetrics;
 
-public class AccessCandidatesCheckerKerberizedHdfsTest extends KerberizedHdfsTestBase {
-  static {
-    KerberizedHdfsTestBase.setTestRunner(ShuffleServerWithKerberizedHdfsTest.class);
-  }
+public class AccessCandidatesCheckerKerberizedHdfsTest extends KerberizedHdfsBase {
 
   @BeforeAll
   public static void beforeAll() throws Exception {
-    KerberizedHdfsTestBase.setup();
-  }
-
-  @AfterAll
-  public static void afterAll() throws Exception {
-    KerberizedHdfsTestBase.tearDown();
+    testRunner = AccessCandidatesCheckerKerberizedHdfsTest.class;
+    KerberizedHdfsBase.beforeAll();
   }
 
   @BeforeEach
   public void setUp() throws Exception {
     CoordinatorMetrics.register();
-    HadoopAccessorProvider.init(
-        SecurityInfo
-            .newBuilder()
-            .keytabFilePath(hdfsKeytab)
-            .principal(hdfsPrincipal)
-            .reloginIntervalSec(1000L * 1000L)
-            .build()
-    );
+    initHadoopSecurityContext();
   }
 
   @AfterEach
   public void clear() throws Exception {
     CoordinatorMetrics.clear();
-    HadoopAccessorProvider.cleanup();
+    removeHadoopSecurityContext();
   }
 
   @Test
   public void test() throws Exception {
-    String candidatesFile =  getSchemeAndAuthorityPrefix() + "/test/access_checker_candidates";
+    String candidatesFile =  kerberizedHdfs.getSchemeAndAuthorityPrefix() + "/test/access_checker_candidates";
     AccessCandidatesCheckerHdfsTest.createAndRunCases(
-        getSchemeAndAuthorityPrefix(),
+        kerberizedHdfs.getSchemeAndAuthorityPrefix(),
         candidatesFile,
-        kerberizedDfsCluster.getFileSystem(),
-        getConf()
+        kerberizedHdfs.getFileSystem(),
+        kerberizedHdfs.getConf()
     );
   }
 }

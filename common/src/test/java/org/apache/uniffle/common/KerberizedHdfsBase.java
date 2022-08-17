@@ -20,18 +20,46 @@ package org.apache.uniffle.common;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
+import org.apache.uniffle.common.security.HadoopSecurityContext;
+import org.apache.uniffle.common.security.NoOpSecurityContext;
+import org.apache.uniffle.common.security.SecurityConfig;
+import org.apache.uniffle.common.security.SecurityContextFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class KerberizedHdfsBase {
   protected static KerberizedHdfs kerberizedHdfs;
+  protected static Class<?> testRunner = KerberizedHdfsBase.class;
 
   @BeforeAll
   public static void beforeAll() throws Exception {
     kerberizedHdfs = new KerberizedHdfs();
+    kerberizedHdfs.setTestRunner(testRunner);
+    kerberizedHdfs.setup();
   }
 
   @AfterAll
   public static void afterAll() throws Exception {
     kerberizedHdfs.tearDown();
     kerberizedHdfs = null;
+  }
+
+  public void initHadoopSecurityContext() throws Exception {
+    // init the security context
+    SecurityConfig securityConfig = SecurityConfig
+        .newBuilder()
+        .keytabFilePath(kerberizedHdfs.getHdfsKeytab())
+        .principal(kerberizedHdfs.getHdfsPrincipal())
+        .reloginIntervalSec(1000)
+        .build();
+    SecurityContextFactory.get().init(securityConfig);
+
+    assertEquals(HadoopSecurityContext.class, SecurityContextFactory.get().getSecurityContext().getClass());
+  }
+
+  public void removeHadoopSecurityContext() throws Exception {
+    SecurityContextFactory.get().init(null);
+    assertEquals(NoOpSecurityContext.class, SecurityContextFactory.get().getSecurityContext().getClass());
   }
 }
 

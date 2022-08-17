@@ -17,47 +17,27 @@
 
 package org.apache.uniffle.test;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.common.provider.HadoopAccessorProvider;
-import org.apache.uniffle.common.provider.KerberizedHdfsTestBase;
-import org.apache.uniffle.common.provider.SecurityInfo;
+import org.apache.uniffle.common.KerberizedHdfsBase;
 
-public class ClientConfManagerKerberlizedHdfsTest extends KerberizedHdfsTestBase {
-
-  static {
-    KerberizedHdfsTestBase.setTestRunner(ShuffleServerWithKerberizedHdfsTest.class);
-  }
+public class ClientConfManagerKerberlizedHdfsTest extends KerberizedHdfsBase {
 
   @BeforeAll
   public static void beforeAll() throws Exception {
-    KerberizedHdfsTestBase.setup();
-    HadoopAccessorProvider.init(
-        SecurityInfo
-            .newBuilder()
-            .keytabFilePath(hdfsKeytab)
-            .principal(hdfsPrincipal)
-            .reloginIntervalSec(1000L * 1000L)
-            .build()
-    );
-  }
-
-  @AfterAll
-  public static void afterAll() throws Exception {
-    KerberizedHdfsTestBase.tearDown();
-    HadoopAccessorProvider.cleanup();
+    testRunner = ClientConfManagerKerberlizedHdfsTest.class;
+    KerberizedHdfsBase.beforeAll();
   }
 
   @Test
   public void testConfInHDFS() throws Exception {
-      String cfgFile = getSchemeAndAuthorityPrefix() + "/test/client_conf";
+      String cfgFile = kerberizedHdfs.getSchemeAndAuthorityPrefix() + "/test/client_conf";
       ClientConfManagerHdfsTest.createAndRunClientConfManagerCases(
-          getSchemeAndAuthorityPrefix(),
+          kerberizedHdfs.getSchemeAndAuthorityPrefix(),
           cfgFile,
-          kerberizedDfsCluster.getFileSystem(),
-          getConf()
+          kerberizedHdfs.getFileSystem(),
+          kerberizedHdfs.getConf()
       );
   }
 }

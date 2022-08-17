@@ -28,15 +28,12 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.common.provider.HadoopAccessorProvider;
 import org.apache.uniffle.common.util.Constants;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,16 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClientConfManagerTest {
-
-  @BeforeAll
-  public static void before() throws Exception {
-    HadoopAccessorProvider.init();
-  }
-
-  @AfterAll
-  public static void after() throws Exception {
-    HadoopAccessorProvider.cleanup();
-  }
 
   @BeforeEach
   public void setUp() {

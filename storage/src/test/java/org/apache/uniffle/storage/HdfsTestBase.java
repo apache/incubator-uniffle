@@ -30,8 +30,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 
-import org.apache.uniffle.common.provider.HadoopAccessorProvider;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HdfsTestBase implements Serializable {
@@ -51,13 +49,10 @@ public class HdfsTestBase implements Serializable {
     cluster = (new MiniDFSCluster.Builder(conf)).build();
     HDFS_URI = "hdfs://localhost:" + cluster.getNameNodePort() + "/";
     fs = (new Path(HDFS_URI)).getFileSystem(conf);
-
-    HadoopAccessorProvider.init();
   }
 
   @AfterAll
   public static void tearDownHdfs() throws Exception {
-    HadoopAccessorProvider.cleanup();
     fs.close();
     cluster.shutdown();
   }

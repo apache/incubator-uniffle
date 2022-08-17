@@ -31,33 +31,11 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.KerberizedHdfsBase;
-import org.apache.uniffle.common.security.HadoopSecurityContext;
-import org.apache.uniffle.common.security.NoOpSecurityContext;
-import org.apache.uniffle.common.security.SecurityConfig;
-import org.apache.uniffle.common.security.SecurityContextFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HadoopFilesystemProviderTest extends KerberizedHdfsBase {
-
-  private void initHadoopSecurityContext() throws Exception {
-    // init the security context
-    SecurityConfig securityConfig = SecurityConfig
-        .newBuilder()
-        .keytabFilePath(kerberizedHdfs.getHdfsKeytab())
-        .principal(kerberizedHdfs.getHdfsPrincipal())
-        .reloginIntervalSec(1000)
-        .build();
-    SecurityContextFactory.get().init(securityConfig);
-
-    assertEquals(HadoopSecurityContext.class, SecurityContextFactory.get().getSecurityContext().getClass());
-  }
-
-  private void removeHadoopSecurityContext() throws Exception {
-    SecurityContextFactory.get().init(null);
-    assertEquals(NoOpSecurityContext.class, SecurityContextFactory.get().getSecurityContext().getClass());
-  }
 
   /**
    * When visiting secured HDFS but not initialize hadoop security context, it will throw exception

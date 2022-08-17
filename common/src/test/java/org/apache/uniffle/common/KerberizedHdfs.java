@@ -46,7 +46,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.provider.HadoopAccessorProviderTest;
-import org.apache.uniffle.common.provider.KerberizedHdfsTestBase;
 
 import static org.apache.hadoop.fs.CommonConfigurationKeys.IPC_CLIENT_CONNECT_MAX_RETRIES_ON_SASL_KEY;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
@@ -65,7 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class KerberizedHdfs implements Serializable {
-  private static final Logger LOGGER = LoggerFactory.getLogger(KerberizedHdfsTestBase.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(KerberizedHdfs.class);
 
   private MiniKdc kdc;
   private File workDir;
@@ -74,7 +73,7 @@ public class KerberizedHdfs implements Serializable {
 
   private MiniDFSCluster kerberizedDfsCluster;
 
-  private Class testRunnerCls = KerberizedHdfsTestBase.class;
+  private static Class testRunnerCls = KerberizedHdfs.class;
 
   // The super user for accessing HDFS
   private String hdfsKeytab;
@@ -85,15 +84,7 @@ public class KerberizedHdfs implements Serializable {
   // krb5.conf file path
   private String krb5ConfFile;
 
-  public KerberizedHdfs() {
-    try {
-      setup();
-    } catch (Exception e) {
-      throw new RuntimeException("Errors on initializing " + this.getClass().getSimpleName());
-    }
-  }
-
-  private void setup() throws Exception {
+  protected void setup() throws Exception {
     tempDir = Files.createTempDirectory("tempDir").toFile().toPath();
     kerberizedDfsBaseDir = Files.createTempDirectory("kerberizedDfsBaseDir").toFile().toPath();
 
@@ -267,11 +258,9 @@ public class KerberizedHdfs implements Serializable {
   /**
    * Should be invoked by extending class to solve the NPE.
    * refer to: https://github.com/apache/hbase/pull/1207
-   *
-   * @param testRunnerCls
    */
-  public void setTestRunner(Class testRunnerCls) {
-    this.testRunnerCls = testRunnerCls;
+  public static void setTestRunner(Class cls) {
+    testRunnerCls = cls;
   }
 
   static class TestDummyImpersonationProvider implements ImpersonationProvider {

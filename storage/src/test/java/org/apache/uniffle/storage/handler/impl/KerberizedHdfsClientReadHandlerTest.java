@@ -19,43 +19,30 @@ package org.apache.uniffle.storage.handler.impl;
 
 import java.io.IOException;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.common.provider.HadoopAccessorProvider;
-import org.apache.uniffle.common.provider.KerberizedHdfsTestBase;
-import org.apache.uniffle.common.provider.SecurityInfo;
+import org.apache.uniffle.common.KerberizedHdfsBase;
 
-public class KerberizedHdfsClientReadHandlerTest extends KerberizedHdfsTestBase {
-  static {
-    KerberizedHdfsTestBase.setTestRunner(KerberizedHdfsClientReadHandlerTest.class);
-  }
+public class KerberizedHdfsClientReadHandlerTest extends KerberizedHdfsBase {
 
   @BeforeAll
   public static void beforeAll() throws Exception {
-    KerberizedHdfsTestBase.setup();
-    HadoopAccessorProvider.init(
-        SecurityInfo
-            .newBuilder()
-            .keytabFilePath(hdfsKeytab)
-            .principal(hdfsPrincipal)
-            .reloginIntervalSec(1000L * 1000L)
-            .build()
-    );
+    testRunner = KerberizedHdfsClientReadHandlerTest.class;
+    KerberizedHdfsBase.beforeAll();
   }
 
-  @AfterAll
-  public static void afterAll() throws Exception {
-    HadoopAccessorProvider.cleanup();
-    KerberizedHdfsTestBase.tearDown();
+  @BeforeEach
+  public void beforeEach() throws Exception {
+    initHadoopSecurityContext();
   }
 
   @Test
   public void test() throws IOException {
     HdfsClientReadHandlerTest.createAndRunCases(
-        getSchemeAndAuthorityPrefix(),
-        getConf(),
+        kerberizedHdfs.getSchemeAndAuthorityPrefix(),
+        kerberizedHdfs.getConf(),
         "alex"
     );
   }
