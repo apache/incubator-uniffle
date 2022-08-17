@@ -44,9 +44,6 @@ public class HadoopSecurityContext implements SecurityContext {
       String keytabFile,
       String principal,
       long refreshIntervalSec) throws Exception {
-    if (StringUtils.isEmpty(krb5ConfPath) && System.getProperty(KRB5_CONF_KEY) == null) {
-      throw new IllegalArgumentException("krb5ConfPath must be not null or empty");
-    }
     if (StringUtils.isEmpty(keytabFile)) {
       throw new IllegalArgumentException("KeytabFilePath must be not null or empty");
     }

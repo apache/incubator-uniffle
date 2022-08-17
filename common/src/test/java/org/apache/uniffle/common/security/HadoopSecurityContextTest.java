@@ -34,6 +34,8 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
 
   @Test
   public void testSecuredCallable() throws Exception {
+    String val = System.getProperty("java.security.krb5.conf");
+
     HadoopSecurityContext context = new HadoopSecurityContext(
         null,
         kerberizedHdfs.getHdfsKeytab(),
@@ -98,22 +100,7 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
       assertTrue(e.getMessage().contains("KeytabFilePath must be not null or empty"));
     }
 
-    // case3: lack krb5Conf, should throw exception
-    System.clearProperty("java.security.krb5.conf");
-    try {
-      HadoopSecurityContext context = new HadoopSecurityContext(
-          null,
-          kerberizedHdfs.getHdfsKeytab(),
-          kerberizedHdfs.getHdfsPrincipal(),
-          1000
-      );
-      fail();
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("krb5ConfPath must be not null or empty"));
-    }
-    System.setProperty("java.security.krb5.conf", kerberizedHdfs.getKrb5ConfFile());
-
-    // case4: illegal relogin interval sec
+    // case3: illegal relogin interval sec
     try {
       HadoopSecurityContext context = new HadoopSecurityContext(
           null,
