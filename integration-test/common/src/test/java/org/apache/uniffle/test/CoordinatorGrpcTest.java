@@ -48,7 +48,7 @@ import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 
-import static org.apache.uniffle.common.metrics.GRPCMetrics.GRCP_SERVER_CONNECTION_NUMBER_TAG;
+import static org.apache.uniffle.common.metrics.GRPCMetrics.GRCP_SERVER_CONNECTION_NUMBER_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -268,7 +268,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
             .get(CoordinatorGrpcMetrics.GET_SHUFFLE_ASSIGNMENTS_METHOD).get(), 0.5);
 
     double connectionSize = coordinators.get(0)
-        .getGrpcMetrics().getGaugeMap().get(GRCP_SERVER_CONNECTION_NUMBER_TAG).get();
+        .getGrpcMetrics().getGaugeMap().get(GRCP_SERVER_CONNECTION_NUMBER_KEY).get();
     assertTrue(connectionSize > 0);
   }
 

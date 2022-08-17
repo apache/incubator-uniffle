@@ -30,8 +30,8 @@ import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.rpc.GrpcServer;
 import org.apache.uniffle.common.util.ThreadUtils;
 
-import static org.apache.uniffle.common.metrics.GRPCMetrics.GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_TAG;
-import static org.apache.uniffle.common.metrics.GRPCMetrics.GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_TAG;
+import static org.apache.uniffle.common.metrics.GRPCMetrics.GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY;
+import static org.apache.uniffle.common.metrics.GRPCMetrics.GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GrpcServerTest {
@@ -73,15 +73,15 @@ public class GrpcServerTest {
     }
 
     Thread.sleep(1000L);
-    double activeThreads = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_TAG).get();
+    double activeThreads = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY).get();
     assertEquals(2, activeThreads);
-    double queueSize = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_TAG).get();
+    double queueSize = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY).get();
     assertEquals(1, queueSize);
 
     countDownLatch.await();
-    activeThreads = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_TAG).get();
+    activeThreads = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY).get();
     assertEquals(0, activeThreads);
-    queueSize = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_TAG).get();
+    queueSize = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY).get();
     assertEquals(0, queueSize);
 
     executor.shutdown();

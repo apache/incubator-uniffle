@@ -30,7 +30,7 @@ import org.apache.uniffle.coordinator.CoordinatorGrpcMetrics;
 import org.apache.uniffle.proto.CoordinatorServerGrpc;
 import org.apache.uniffle.proto.RssProtos;
 
-import static org.apache.uniffle.common.metrics.GRPCMetrics.GRCP_SERVER_CONNECTION_NUMBER_TAG;
+import static org.apache.uniffle.common.metrics.GRPCMetrics.GRCP_SERVER_CONNECTION_NUMBER_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -65,13 +65,13 @@ public class CoordinatorGrpcServerTest {
     grpcServer.start();
 
     // case1: test the single one connection metric
-    double connSize = grpcMetrics.getGaugeMap().get(GRCP_SERVER_CONNECTION_NUMBER_TAG).get();
+    double connSize = grpcMetrics.getGaugeMap().get(GRCP_SERVER_CONNECTION_NUMBER_KEY).get();
     assertEquals(0, connSize);
 
     CoordinatorGrpcClient coordinatorGrpcClient = new CoordinatorGrpcClient("localhost", 20001);
     coordinatorGrpcClient.sendAppHeartBeat(new RssAppHeartBeatRequest("testGrpcConnectionSize", 10000));
 
-    connSize = grpcMetrics.getGaugeMap().get(GRCP_SERVER_CONNECTION_NUMBER_TAG).get();
+    connSize = grpcMetrics.getGaugeMap().get(GRCP_SERVER_CONNECTION_NUMBER_KEY).get();
     assertEquals(1, connSize);
 
     // case2: test the multiple connections
@@ -80,7 +80,7 @@ public class CoordinatorGrpcServerTest {
     client1.sendAppHeartBeat(new RssAppHeartBeatRequest("testGrpcConnectionSize", 10000));
     client2.sendAppHeartBeat(new RssAppHeartBeatRequest("testGrpcConnectionSize", 10000));
 
-    connSize = grpcMetrics.getGaugeMap().get(GRCP_SERVER_CONNECTION_NUMBER_TAG).get();
+    connSize = grpcMetrics.getGaugeMap().get(GRCP_SERVER_CONNECTION_NUMBER_KEY).get();
     assertEquals(3, connSize);
 
     grpcServer.stop();
