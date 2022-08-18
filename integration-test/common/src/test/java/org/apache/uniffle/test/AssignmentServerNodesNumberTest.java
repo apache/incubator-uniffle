@@ -65,6 +65,7 @@ public class AssignmentServerNodesNumberTest extends CoordinatorTestBase {
       shuffleServerConf.setInteger(RssBaseConf.RPC_SERVER_PORT, 18001 + i);
       shuffleServerConf.setInteger(RssBaseConf.JETTY_HTTP_PORT, 19010 + i);
       shuffleServerConf.set(ShuffleServerConf.TAGS, new ArrayList<>(TAGS));
+      shuffleServerConf.set(ShuffleServerConf.RSS_SERVER_IP, "127.0.0." + i);
       createShuffleServer(shuffleServerConf);
     }
     startServers();

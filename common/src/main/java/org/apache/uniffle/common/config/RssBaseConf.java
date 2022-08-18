@@ -158,6 +158,12 @@ public class RssBaseConf extends RssConf {
       .defaultValue(true)
       .withDescription("The switch for jvm metrics verbose");
 
+  public static final ConfigOption<String> RSS_SERVER_IP = ConfigOptions
+          .key("rss.server.ip")
+          .stringType()
+          .noDefaultValue()
+          .withDescription("Server ip");
+
   public boolean loadCommonConf(Map<String, String> properties) {
     if (properties == null) {
       return false;
