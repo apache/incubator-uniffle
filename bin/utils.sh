@@ -115,3 +115,13 @@ function is_jvm_process_running {
   fi
 
 }
+
+function is_port_in_use {
+  local port=$1
+  local tmp=$(lsof -i:$port | grep LISTEN)
+  if [[ "$tmp" != "" ]]; then
+    echo "port[$port] is already in use"
+    exit 1
+  fi
+}
+

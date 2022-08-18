@@ -20,7 +20,9 @@ package org.apache.uniffle.coordinator;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -36,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class PartitionBalanceAssignmentStrategyTest {
 
@@ -181,7 +184,7 @@ public class PartitionBalanceAssignmentStrategyTest {
     for (int i = 0; i < 20; i++) {
       ServerNode node = new ServerNode(
           String.valueOf((char)('a' + i)),
-          "",
+          "127.0.0." + i,
           0,
           10L,
           5L,
@@ -198,7 +201,7 @@ public class PartitionBalanceAssignmentStrategyTest {
     Set<String> serverTags = Sets.newHashSet("tag-1");
 
     for (int i = 0; i < 20; ++i) {
-      clusterManager.add(new ServerNode("t1-" + i, "", 0, 0, 0,
+      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
           20 - i, 0, serverTags, true));
     }
 
@@ -268,7 +271,7 @@ public class PartitionBalanceAssignmentStrategyTest {
      */
     serverTags = Sets.newHashSet("tag-2");
     for (int i = 0; i < shuffleNodesMax - 1; ++i) {
-      clusterManager.add(new ServerNode("t2-" + i, "", 0, 0, 0,
+      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 0, 0, 0,
           20 - i, 0, serverTags, true));
     }
     pra = strategy.assign(100, 1, 1, serverTags, shuffleNodesMax);
@@ -281,5 +284,30 @@ public class PartitionBalanceAssignmentStrategyTest {
             .collect(Collectors.toSet())
             .size()
     );
+  }
+
+
+  @Test
+  public void testAssignmentWithSameIP() {
+    Set<String> serverTags = Sets.newHashSet("tag-1");
+
+    for (int i = 0; i < 10; ++i) {
+      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
+          20 - i, 0, serverTags, true));
+    }
+    for (int i = 0; i < 10; ++i) {
+      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0,
+          20 - i, 0, serverTags, true));
+    }
+    PartitionRangeAssignment pra = strategy.assign(100, 1, 5, serverTags, -1);
+    pra.getAssignments().values().forEach((nodeList) -> {
+      Map<String, ServerNode> nodeMap = new HashMap<>();
+      nodeList.forEach((node) -> {
+        ServerNode serverNode = nodeMap.get(node.getIp());
+        assertNull(serverNode);
+        nodeMap.put(node.getIp(), node);
+      });
+    });
+
   }
 }

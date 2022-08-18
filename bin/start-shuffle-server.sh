@@ -44,7 +44,8 @@ CONF_FILE="./conf/server.conf "
 MAIN_CLASS="org.apache.uniffle.server.ShuffleServer"
 
 echo "Check process existence"
-is_jvm_process_running $JPS $MAIN_CLASS
+RPC_PORT=`grep '^rss.rpc.server.port' $CONF_FILE |awk '{print $2}'`
+is_port_in_use $RPC_PORT
 
 JAR_DIR="./jars"
 CLASSPATH=""

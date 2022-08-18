@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.PartitionRange;
 
-public class BasicAssignmentStrategy implements AssignmentStrategy {
+public class BasicAssignmentStrategy extends AbstractAssignmentStrategy {
 
   private static final Logger LOG = LoggerFactory.getLogger(BasicAssignmentStrategy.class);
 
@@ -81,6 +81,11 @@ public class BasicAssignmentStrategy implements AssignmentStrategy {
       LOG.warn("Can't get expected servers [" + expectedNum + "] and found only [" + servers.size() + "]");
       return servers;
     }
-    return servers.subList(0, expectedNum);
+
+    List<ServerNode> candidateNodes = getCandidateNodes(servers, expectedNum);
+    if (candidateNodes.isEmpty() || candidateNodes.size() < expectedNum) {
+      LOG.warn("Can't get expected servers [" + expectedNum + "] and found only [" + candidateNodes.size() + "]");
+    }
+    return candidateNodes;
   }
 }

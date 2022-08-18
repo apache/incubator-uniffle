@@ -50,7 +50,7 @@ import org.apache.uniffle.common.PartitionRange;
  * ....
  **/
 
-public class PartitionBalanceAssignmentStrategy implements AssignmentStrategy {
+public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrategy {
 
   private static final Logger LOG = LoggerFactory.getLogger(PartitionBalanceAssignmentStrategy.class);
 
@@ -119,7 +119,10 @@ public class PartitionBalanceAssignmentStrategy implements AssignmentStrategy {
         expectNum = nodes.size();
       }
 
-      List<ServerNode> candidatesNodes = nodes.subList(0, expectNum);
+      List<ServerNode> candidatesNodes = getCandidateNodes(nodes, expectNum);
+      if (candidatesNodes.isEmpty() || candidatesNodes.size() < replica) {
+        throw new RuntimeException("There isn't enough shuffle servers");
+      }
       int idx = 0;
       List<PartitionRange> ranges = CoordinatorUtils.generateRanges(totalPartitionNum, 1);
       for (PartitionRange range : ranges) {
