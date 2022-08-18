@@ -85,7 +85,7 @@ public class ShuffleServerConf extends RssBaseConf {
       .longType()
       .defaultValue(120L)
       .withDescription("thread idle time in pool (s)");
-  
+
   public static final ConfigOption<Long> SERVER_COMMIT_TIMEOUT = ConfigOptions
       .key("rss.server.commit.timeout")
       .longType()
@@ -290,7 +290,7 @@ public class ShuffleServerConf extends RssBaseConf {
       .checkValue(ConfigUtils.NON_NEGATIVE_LONG_VALIDATOR, " max fail times must be non-negative")
       .defaultValue(0L)
       .withDescription("For localstorage, it will exit when the failed initialized local storage exceed the number");
-  
+
   public ShuffleServerConf() {
   }
 
