@@ -100,4 +100,5 @@ fi
 
 $RUNNER $ARGS $JVM_ARGS $JAVA_LIB_PATH -cp $CLASSPATH $MAIN_CLASS --conf $CONF_FILE $@ &
 
-echo $! >$SHUFFLE_SERVER_HOME/currentpid
+get_pid_file_name shuffle-server
+echo $! >$SHUFFLE_SERVER_HOME/${pid_file}
