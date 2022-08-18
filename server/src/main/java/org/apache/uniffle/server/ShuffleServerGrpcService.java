@@ -213,7 +213,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int commitCount = 0;
 
     try {
-      if (!shuffleServer.getShuffleTaskManager().getAppIds().containsKey(appId)) {
+      if (!shuffleServer.getShuffleTaskManager().getAppIds().contains(appId)) {
         throw new IllegalStateException("AppId " + appId + " was removed already");
       }
       commitCount = shuffleServer.getShuffleTaskManager().updateAndGetCommitCount(appId, shuffleId);

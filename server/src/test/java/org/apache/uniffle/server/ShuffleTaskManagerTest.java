@@ -268,7 +268,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
       retry++;
     }
     // application "clearTest2" was removed according to rss.server.app.expired.withoutHeartbeat
-    assertEquals(Sets.newHashSet("clearTest1"), shuffleTaskManager.getAppIds().keySet());
+    assertEquals(Sets.newHashSet("clearTest1"), shuffleTaskManager.getAppIds());
     assertEquals(1, shuffleTaskManager.getCachedBlockIds("clearTest1", shuffleId).getLongCardinality());
 
     // register again
@@ -277,12 +277,12 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
         Lists.newArrayList(new PartitionRange(0, 1)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
     shuffleTaskManager.refreshAppId("clearTest2");
     shuffleTaskManager.checkResourceStatus();
-    assertEquals(Sets.newHashSet("clearTest1", "clearTest2"), shuffleTaskManager.getAppIds().keySet());
+    assertEquals(Sets.newHashSet("clearTest1", "clearTest2"), shuffleTaskManager.getAppIds());
     Thread.sleep(5000);
     shuffleTaskManager.checkResourceStatus();
     // wait resource delete
     Thread.sleep(3000);
-    assertEquals(Sets.newHashSet(), shuffleTaskManager.getAppIds().keySet());
+    assertEquals(Sets.newHashSet(), shuffleTaskManager.getAppIds());
     assertTrue(shuffleTaskManager.getCachedBlockIds("clearTest1", shuffleId).isEmpty());
   }
 

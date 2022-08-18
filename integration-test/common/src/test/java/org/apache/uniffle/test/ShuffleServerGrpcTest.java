@@ -120,7 +120,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
         Lists.newArrayList(new PartitionRange(0, 1)), "");
     shuffleServerClient.registerShuffle(rrsr);
     assertEquals(Sets.newHashSet("clearResourceTest1", "clearResourceTest2"),
-        shuffleServers.get(0).getShuffleTaskManager().getAppIds().keySet());
+        shuffleServers.get(0).getShuffleTaskManager().getAppIds());
 
     // Thread will keep refresh clearResourceTest1 in coordinator
     Thread t = new Thread(() -> {
@@ -146,7 +146,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     // clearResourceTest2 will be removed because of rss.server.app.expired.withoutHeartbeat
     Thread.sleep(2000);
     assertEquals(Sets.newHashSet("clearResourceTest1"),
-        shuffleServers.get(0).getShuffleTaskManager().getAppIds().keySet());
+        shuffleServers.get(0).getShuffleTaskManager().getAppIds());
 
     // clearResourceTest1 will be removed because of rss.server.app.expired.withoutHeartbeat
     t.interrupt();
