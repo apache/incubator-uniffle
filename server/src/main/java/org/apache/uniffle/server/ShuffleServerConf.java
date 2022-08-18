@@ -85,7 +85,7 @@ public class ShuffleServerConf extends RssBaseConf {
       .longType()
       .defaultValue(120L)
       .withDescription("thread idle time in pool (s)");
-
+  
   public static final ConfigOption<Long> SERVER_COMMIT_TIMEOUT = ConfigOptions
       .key("rss.server.commit.timeout")
       .longType()
@@ -173,7 +173,14 @@ public class ShuffleServerConf extends RssBaseConf {
       .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "pending event timeout must be positive")
       .defaultValue(600L)
       .withDescription("If disk cannot be written for timeout seconds, the flush data event will fail");
-
+  
+  public static final ConfigOption<Long> PENDING_EVENT_CHECK_INTERVAL = ConfigOptions
+          .key("rss.server.pending.event.check.interval.ms")
+          .longType()
+          .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR,  "The interval for pending event check must be positive")
+          .defaultValue(1000L)
+          .withDescription("The interval for pending event check");
+  
   public static final ConfigOption<Long> DISK_CAPACITY = ConfigOptions
       .key("rss.server.disk.capacity")
       .longType()
@@ -283,7 +290,7 @@ public class ShuffleServerConf extends RssBaseConf {
       .checkValue(ConfigUtils.NON_NEGATIVE_LONG_VALIDATOR, " max fail times must be non-negative")
       .defaultValue(0L)
       .withDescription("For localstorage, it will exit when the failed initialized local storage exceed the number");
-
+  
   public ShuffleServerConf() {
   }
 

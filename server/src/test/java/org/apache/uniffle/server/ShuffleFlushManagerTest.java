@@ -387,6 +387,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
       shuffleServerConf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
       shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
       shuffleServerConf.set(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 5L);
+      shuffleServerConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 100L);
       StorageManager storageManager =
           StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
       ShuffleFlushManager manager =
@@ -411,6 +412,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
       Thread.sleep(6 * 1000);
       assertEquals(eventNum + 3, (int) ShuffleServerMetrics.counterTotalDroppedEventNum.get());
       assertEquals(0, manager.getPendingEventsSize());
+      assertEquals(300, manager.getMemoryReleaseByPendingEvent());
     } catch (Exception e) {
       e.printStackTrace();
       fail();

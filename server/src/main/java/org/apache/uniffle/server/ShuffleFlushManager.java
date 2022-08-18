@@ -20,6 +20,8 @@ package org.apache.uniffle.server;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,7 +30,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.RangeMap;
-import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -55,6 +56,7 @@ public class ShuffleFlushManager {
   private final String storageType;
   private final int storageDataReplica;
   private final ShuffleServerConf shuffleServerConf;
+  private final ScheduledExecutorService pendingEventProcesser;
   private Configuration hadoopConf;
   // appId -> shuffleId -> partitionId -> handlers
   private Map<String, Map<Integer, RangeMap<Integer, ShuffleWriteHandler>>> handlers = Maps.newConcurrentMap();
@@ -66,6 +68,7 @@ public class ShuffleFlushManager {
   private final BlockingQueue<PendingShuffleFlushEvent> pendingEvents = Queues.newLinkedBlockingQueue();
   private final long pendingEventTimeoutSec;
   private int processPendingEventIndex = 0;
+  private long memoryReleaseByPendingEvent = 0;
 
   public ShuffleFlushManager(ShuffleServerConf shuffleServerConf, String shuffleServerId, ShuffleServer shuffleServer,
                              StorageManager storageManager) {
@@ -111,26 +114,28 @@ public class ShuffleFlushManager {
     processEventThread.setName("ProcessEventThread");
     processEventThread.setDaemon(true);
     processEventThread.start();
-    // todo: extract a class named Service, and support stop method
-    Thread thread = new Thread("PendingEventProcessThread") {
-      @Override
-      public void run() {
-        for (; ; ) {
-          try {
-            processPendingEvents();
-            processPendingEventIndex = (processPendingEventIndex + 1) % 1000;
-            if (processPendingEventIndex == 0) {
-              // todo: get sleep interval from configuration
-              Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
-            }
-          } catch (Exception e) {
-            LOG.error(getName() + " happened exception: ", e);
+    pendingEventProcesser = Executors.newSingleThreadScheduledExecutor(
+            ThreadUtils.getThreadFactory("PendingEventProcesser-%d"));
+    long sleepInterval = shuffleServerConf.get(ShuffleServerConf.PENDING_EVENT_CHECK_INTERVAL);
+    long memoryCapacity = shuffleServerConf.getSizeAsBytes(ShuffleServerConf.SERVER_BUFFER_CAPACITY);;
+    long memoryThreshold = Math.max(memoryCapacity / 10, 1024L * 1024 * 1024);
+    pendingEventProcesser.scheduleWithFixedDelay(() -> {
+      for (; ; ) {
+        try {
+          processPendingEvents();
+          processPendingEventIndex = (processPendingEventIndex + 1) % 1000;
+          // OOM will happen if a large number of events need to be dropped.
+          // Because `usedMemory` release immediately, but the speed of GC is not fast enough.
+          if (processPendingEventIndex == 0 || memoryReleaseByPendingEvent > memoryThreshold) {
+            processPendingEventIndex = 0;
+            memoryReleaseByPendingEvent = 0L;
+            break;
           }
+        } catch (Exception e) {
+          LOG.error(e.getMessage(), e);
         }
       }
-    };
-    thread.setDaemon(true);
-    thread.start();
+    }, 0L, sleepInterval, TimeUnit.MILLISECONDS);
   }
 
   public void addToFlushQueue(ShuffleDataFlushEvent event) {
@@ -274,6 +279,11 @@ public class ShuffleFlushManager {
   }
 
   @VisibleForTesting
+  long getMemoryReleaseByPendingEvent() {
+    return memoryReleaseByPendingEvent;
+  }
+  
+  @VisibleForTesting
   protected Map<String, Map<Integer, RangeMap<Integer, ShuffleWriteHandler>>> getHandlers() {
     return handlers;
   }
@@ -308,6 +318,7 @@ public class ShuffleFlushManager {
       shuffleServer.getShuffleBufferManager().releaseMemory(
           event.getEvent().getSize(), true, false);
     }
+    memoryReleaseByPendingEvent += event.getEvent().getSize();
   }
 
   @VisibleForTesting
@@ -327,6 +338,10 @@ public class ShuffleFlushManager {
       LOG.error("Post pendingEvent queue fail!! App: " + flushEvent.getAppId() + " Shuffle "
           + flushEvent.getShuffleId() + " Partition " + flushEvent.getStartPartition());
     }
+  }
+
+  public void stop() {
+    pendingEventProcesser.shutdown();
   }
 
   private class PendingShuffleFlushEvent {

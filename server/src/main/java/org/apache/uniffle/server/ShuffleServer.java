@@ -129,6 +129,10 @@ public class ShuffleServer {
       healthCheck.stop();
       LOG.info("HealthCheck stopped!");
     }
+    if (shuffleFlushManager != null) {
+      shuffleFlushManager.stop();
+      LOG.info("shuffleFlushManager stopped!");
+    }
     server.stop();
     LOG.info("RPC Server Stopped!");
   }
