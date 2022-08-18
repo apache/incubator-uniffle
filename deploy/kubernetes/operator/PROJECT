@@ -1,0 +1,15 @@
+domain: apache.org
+layout:
+- go.kubebuilder.io/v3
+projectName: operator
+repo: github.com/apache/incubator-uniffle
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: apache.org
+  group: uniffle
+  kind: Remoteshuffleservice
+  path: github.com/apache/incubator-uniffle/api/v1alpha1
+  version: v1alpha1
+version: "3"
