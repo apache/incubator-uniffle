@@ -109,7 +109,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
   }
   
-  private ShuffleServerBlockingStub getBlockingStub() {
+  public ShuffleServerBlockingStub getBlockingStub() {
     return blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
   }
 
