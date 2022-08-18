@@ -54,6 +54,7 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
@@ -278,7 +279,11 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                 + " blocks to " + host + ":" + port
                 + ", statusCode=" + response.getStatus()
                 + ", errorMsg:" + response.getRetMsg();
-            throw new RssException(msg);
+            if (response.getStatus() == StatusCode.NO_REGISTER) {
+              throw new NotRetryException(msg);
+            } else {
+              throw new RssException(msg);
+            }
           }
           return response;
         }, request.getRetryIntervalMax(), maxRetryAttempts);
