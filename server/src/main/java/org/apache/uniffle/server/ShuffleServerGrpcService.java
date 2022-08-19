@@ -150,8 +150,18 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       ShuffleServerMetrics.counterTotalReceivedDataSize.inc(requireSize);
       boolean isPreAllocated = shuffleServer.getShuffleTaskManager().isPreAllocated(requireBufferId);
       if (!isPreAllocated) {
-        LOG.warn("Can't find requireBufferId[" + requireBufferId + "] for appId[" + appId
-            + "], shuffleId[" + shuffleId + "]");
+        String errorMsg = "Can't find requireBufferId[" + requireBufferId + "] for appId[" + appId
+            + "], shuffleId[" + shuffleId + "]";
+        LOG.warn(errorMsg);
+        responseMessage = errorMsg;
+        reply = SendShuffleDataResponse
+            .newBuilder()
+            .setStatus(valueOf(StatusCode.INTERNAL_ERROR))
+            .setRetMsg(responseMessage)
+            .build();
+        responseObserver.onNext(reply);
+        responseObserver.onCompleted();
+        return;
       }
       final long start = System.currentTimeMillis();
       List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);

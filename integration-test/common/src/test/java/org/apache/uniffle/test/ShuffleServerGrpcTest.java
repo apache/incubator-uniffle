@@ -28,6 +28,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
+import com.google.protobuf.ByteString;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -57,6 +58,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerGrpcMetrics;
@@ -392,6 +394,47 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     assertEquals(132, shuffleServers.get(0).getPreAllocatedMemory());
     Thread.sleep(10000);
     assertEquals(0, shuffleServers.get(0).getPreAllocatedMemory());
+  }
+
+
+  @Test
+  public void sendDataWithoutRequirePreAllocation() throws Exception {
+    String appId = "sendDataWithoutRequirePreAllocation";
+    List<ShuffleBlockInfo> blockInfos = Lists.newArrayList(new ShuffleBlockInfo(0, 0, 0, 100, 0,
+        new byte[]{}, Lists.newArrayList(), 0, 100, 0));
+    Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
+    partitionToBlocks.put(0, blockInfos);
+    Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
+    shuffleToBlocks.put(0, partitionToBlocks);
+    for (Map.Entry<Integer, Map<Integer, List<ShuffleBlockInfo>>> stb : shuffleToBlocks.entrySet()) {
+      List<RssProtos.ShuffleData> shuffleData = Lists.newArrayList();
+      for (Map.Entry<Integer, List<ShuffleBlockInfo>> ptb : stb.getValue().entrySet()) {
+        List<RssProtos.ShuffleBlock> shuffleBlocks = Lists.newArrayList();
+        for (ShuffleBlockInfo sbi : ptb.getValue()) {
+          shuffleBlocks.add(RssProtos.ShuffleBlock.newBuilder().setBlockId(sbi.getBlockId())
+              .setCrc(sbi.getCrc())
+              .setLength(sbi.getLength())
+              .setTaskAttemptId(sbi.getTaskAttemptId())
+              .setUncompressLength(sbi.getUncompressLength())
+              .setData(ByteString.copyFrom(sbi.getData()))
+              .build());
+        }
+        shuffleData.add(RssProtos.ShuffleData.newBuilder().setPartitionId(ptb.getKey())
+            .addAllBlock(shuffleBlocks)
+            .build());
+      }
+
+      RssProtos.SendShuffleDataRequest rpcRequest = RssProtos.SendShuffleDataRequest.newBuilder()
+          .setAppId(appId)
+          .setShuffleId(0)
+          .setRequireBufferId(10000)
+          .addAllShuffleData(shuffleData)
+          .build();
+      RssProtos.SendShuffleDataResponse response =
+          shuffleServerClient.getBlockingStub().sendShuffleData(rpcRequest);
+      assertTrue(RssProtos.StatusCode.INTERNAL_ERROR.equals(response.getStatus()));
+      assertTrue(response.getRetMsg().contains("Can't find requireBufferId[10000]"));
+    }
   }
 
   @Test

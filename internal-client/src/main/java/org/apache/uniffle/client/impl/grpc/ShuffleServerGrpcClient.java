@@ -54,7 +54,9 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
 import org.apache.uniffle.proto.RssProtos.FinishShuffleRequest;
@@ -109,7 +111,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
   }
   
-  private ShuffleServerBlockingStub getBlockingStub() {
+  public ShuffleServerBlockingStub getBlockingStub() {
     return blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
   }
 
@@ -253,29 +255,40 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .build());
       }
 
-      long requireId = requirePreAllocation(size, request.getRetryMax(), request.getRetryIntervalMax());
-      if (requireId != FAILED_REQUIRE_ID) {
-        SendShuffleDataRequest rpcRequest = SendShuffleDataRequest.newBuilder()
-            .setAppId(appId)
-            .setShuffleId(stb.getKey())
-            .setRequireBufferId(requireId)
-            .addAllShuffleData(shuffleData)
-            .build();
-        long start = System.currentTimeMillis();
-        SendShuffleDataResponse response = doSendData(rpcRequest);
-        LOG.info("Do sendShuffleData to {}:{} rpc cost:" + (System.currentTimeMillis() - start)
-            + " ms for " + size + " bytes with " + blockNum + " blocks", host, port);
-
-        if (response.getStatus() != StatusCode.SUCCESS) {
-          String msg = "Can't send shuffle data with " + blockNum
-              + " blocks to " + host + ":" + port
-              + ", statusCode=" + response.getStatus()
-              + ", errorMsg:" + response.getRetMsg();
-          LOG.warn(msg);
-          isSuccessful = false;
-          break;
-        }
-      } else {
+      final int allocateSize = size;
+      final int finalBlockNum = blockNum;
+      try {
+        RetryUtils.retry(() -> {
+          long requireId = requirePreAllocation(allocateSize, request.getRetryMax(), request.getRetryIntervalMax());
+          if (requireId == FAILED_REQUIRE_ID) {
+            throw new RssException(String.format(
+                "requirePreAllocation failed! size[%s], host[%s], port[%s]", allocateSize, host, port));
+          }
+          SendShuffleDataRequest rpcRequest = SendShuffleDataRequest.newBuilder()
+              .setAppId(appId)
+              .setShuffleId(stb.getKey())
+              .setRequireBufferId(requireId)
+              .addAllShuffleData(shuffleData)
+              .build();
+          long start = System.currentTimeMillis();
+          SendShuffleDataResponse response = getBlockingStub().sendShuffleData(rpcRequest);
+          LOG.info("Do sendShuffleData to {}:{} rpc cost:" + (System.currentTimeMillis() - start)
+              + " ms for " + allocateSize + " bytes with " + finalBlockNum + " blocks", host, port);
+          if (response.getStatus() != StatusCode.SUCCESS) {
+            String msg = "Can't send shuffle data with " + finalBlockNum
+                + " blocks to " + host + ":" + port
+                + ", statusCode=" + response.getStatus()
+                + ", errorMsg:" + response.getRetMsg();
+            if (response.getStatus() == StatusCode.NO_REGISTER) {
+              throw new NotRetryException(msg);
+            } else {
+              throw new RssException(msg);
+            }
+          }
+          return response;
+        }, request.getRetryIntervalMax(), maxRetryAttempts);
+      } catch (Throwable throwable) {
+        LOG.warn(throwable.getMessage());
         isSuccessful = false;
         break;
       }
@@ -288,21 +301,6 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       response = new RssSendShuffleDataResponse(ResponseStatusCode.INTERNAL_ERROR);
     }
     return response;
-  }
-
-  private SendShuffleDataResponse doSendData(SendShuffleDataRequest rpcRequest) {
-    int retryNum = 0;
-    while (retryNum < maxRetryAttempts) {
-      try {
-        SendShuffleDataResponse response = getBlockingStub().sendShuffleData(rpcRequest);
-        return response;
-      } catch (Exception e) {
-        retryNum++;
-        LOG.warn("Send data to host[" + host + "], port[" + port
-            + "] failed, try again, retryNum[" + retryNum + "]", e);
-      }
-    }
-    throw new RssException("Send data to host[" + host + "], port[" + port + "] failed");
   }
 
   @Override
