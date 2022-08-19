@@ -28,6 +28,7 @@ import java.util.concurrent.Future;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -61,7 +62,11 @@ public class ShuffleServerMetricsTest {
     ssc.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "fake.coordinator:123");
     ssc.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 1000L);
     shuffleServer = new ShuffleServer(ssc);
-    shuffleServer.getStorageManager().registerRemoteStorage("metricsTest", new RemoteStorageInfo(REMOTE_STORAGE_PATH));
+    shuffleServer.getStorageManager()
+        .registerRemoteStorage(
+            "metricsTest",
+            new RemoteStorageInfo(REMOTE_STORAGE_PATH)
+        );
     shuffleServer.start();
   }
 

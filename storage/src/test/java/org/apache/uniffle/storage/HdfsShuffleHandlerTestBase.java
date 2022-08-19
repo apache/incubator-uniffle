@@ -40,11 +40,11 @@ import org.apache.uniffle.storage.handler.impl.HdfsShuffleWriteHandler;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class HdfsShuffleHandlerTestBase extends HdfsTestBase {
+public class HdfsShuffleHandlerTestBase {
 
   private static final AtomicLong ATOMIC_LONG = new AtomicLong(0);
 
-  protected void writeTestData(
+  public static void writeTestData(
       HdfsShuffleWriteHandler writeHandler,
       int num, int length, long taskAttemptId,
       Map<Long, byte[]> expectedData) throws Exception {
@@ -61,7 +61,7 @@ public class HdfsShuffleHandlerTestBase extends HdfsTestBase {
     writeHandler.write(blocks);
   }
 
-  protected void writeTestData(
+  public static void writeTestData(
       HdfsFileWriter writer,
       int partitionId,
       int num, int length, long taskAttemptId,
@@ -94,14 +94,14 @@ public class HdfsShuffleHandlerTestBase extends HdfsTestBase {
     expectedIndexSegments.put(partitionId, segments);
   }
 
-  protected byte[] writeData(HdfsFileWriter writer, int len) throws IOException {
+  public static byte[] writeData(HdfsFileWriter writer, int len) throws IOException {
     byte[] data = new byte[len];
     new Random().nextBytes(data);
     writer.writeData(data);
     return data;
   }
 
-  protected int calcExpectedSegmentNum(int num, int size, int bufferSize) {
+  public static int calcExpectedSegmentNum(int num, int size, int bufferSize) {
     int segmentNum = 0;
     int cur = 0;
     for (int i = 0; i < num; ++i) {
@@ -119,7 +119,7 @@ public class HdfsShuffleHandlerTestBase extends HdfsTestBase {
     return segmentNum;
   }
 
-  protected void checkData(ShuffleDataResult shuffleDataResult, Map<Long, byte[]> expectedData) {
+  public static void checkData(ShuffleDataResult shuffleDataResult, Map<Long, byte[]> expectedData) {
 
     byte[] buffer = shuffleDataResult.getData();
     List<BufferSegment> bufferSegments = shuffleDataResult.getBufferSegments();
@@ -132,8 +132,8 @@ public class HdfsShuffleHandlerTestBase extends HdfsTestBase {
     }
   }
 
-  protected HdfsFileReader createHdfsReader(
-      String folder, String fileName, Configuration hadoopConf) throws IOException, IllegalStateException {
+  public static HdfsFileReader createHdfsReader(
+      String folder, String fileName, Configuration hadoopConf) throws Exception {
     Path path = new Path(folder, fileName);
     HdfsFileReader reader = new HdfsFileReader(path, hadoopConf);
     return reader;

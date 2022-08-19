@@ -564,8 +564,11 @@ public class RssShuffleManager implements ShuffleManager {
   }
 
   @VisibleForTesting
-  protected void registerShuffleServers(String appId, int shuffleId,
-                                        Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges) {
+  protected void registerShuffleServers(
+      String appId,
+      int shuffleId,
+      Map<ShuffleServerInfo,
+      List<PartitionRange>> serverToPartitionRanges) {
     if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
       return;
     }

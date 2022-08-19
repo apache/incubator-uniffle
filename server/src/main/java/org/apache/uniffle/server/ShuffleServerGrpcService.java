@@ -109,6 +109,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String appId = req.getAppId();
     int shuffleId = req.getShuffleId();
     String remoteStoragePath = req.getRemoteStorage().getPath();
+    String user = req.getUser();
+
     Map<String, String> remoteStorageConf = req
         .getRemoteStorage()
         .getRemoteStorageConfList()
@@ -118,12 +120,17 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     List<PartitionRange> partitionRanges = toPartitionRanges(req.getPartitionRangesList());
     LOG.info("Get register request for appId[" + appId + "], shuffleId[" + shuffleId
         + "], remoteStorage[" + remoteStoragePath + "] with "
-        + partitionRanges.size() + " partition ranges");
+        + partitionRanges.size() + " partition ranges. User: {}", user);
 
     StatusCode result = shuffleServer
         .getShuffleTaskManager()
         .registerShuffle(
-            appId, shuffleId, partitionRanges, new RemoteStorageInfo(remoteStoragePath, remoteStorageConf));
+            appId,
+            shuffleId,
+            partitionRanges,
+            new RemoteStorageInfo(remoteStoragePath, remoteStorageConf),
+            user
+        );
 
     reply = ShuffleRegisterResponse
         .newBuilder()

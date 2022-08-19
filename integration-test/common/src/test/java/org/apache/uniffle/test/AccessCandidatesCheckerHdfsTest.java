@@ -23,6 +23,7 @@ import java.io.PrintWriter;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,12 +56,20 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
   @Test
   public void test() throws Exception {
     String candidatesFile = HDFS_URI + "/test/access_checker_candidates";
+    createAndRunCases(HDFS_URI, candidatesFile, fs, HdfsTestBase.conf);
+  }
+
+  public static void createAndRunCases(
+      String clusterPrefix,
+      String candidatesFile,
+      FileSystem fs,
+      Configuration hadoopConf) throws Exception {
     Path path = new Path(candidatesFile);
     FSDataOutputStream out = fs.create(path);
 
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC, 1);
-    conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, HDFS_URI);
+    conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, clusterPrefix);
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
         "org.apache.uniffle.coordinator.AccessCandidatesChecker");
 
@@ -91,7 +100,7 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
     printWriter.println("2 ");
     printWriter.flush();
     printWriter.close();
-    AccessManager accessManager = new AccessManager(conf, null, HdfsTestBase.conf);
+    AccessManager accessManager = new AccessManager(conf, null, hadoopConf);
     AccessCandidatesChecker checker = (AccessCandidatesChecker) accessManager.getAccessCheckers().get(0);
     // load the config at the beginning
     sleep(1200);

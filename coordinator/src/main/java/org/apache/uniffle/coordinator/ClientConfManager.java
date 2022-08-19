@@ -37,6 +37,7 @@ import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public class ClientConfManager implements Closeable {
@@ -62,7 +63,7 @@ public class ClientConfManager implements Closeable {
     String pathStr = conf.get(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH);
     this.path = new Path(pathStr);
 
-    this.fileSystem = CoordinatorUtils.getFileSystemForPath(path, hadoopConf);
+    this.fileSystem = HadoopFilesystemProvider.getFilesystem(path, hadoopConf);
 
     if (!fileSystem.isFile(path)) {
       String msg = String.format("Fail to init ClientConfManager, %s is not a file.", path.toUri());

@@ -41,6 +41,12 @@
         </dependency>
         <dependency>
             <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-common</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.uniffle</groupId>
             <artifactId>shuffle-server</artifactId>
             <scope>test</scope>
         </dependency>
@@ -86,6 +92,16 @@
             <groupId>net.jpountz.lz4</groupId>
             <artifactId>lz4</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-minikdc</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
     <build>

@@ -34,6 +34,7 @@ import org.apache.uniffle.server.ShuffleFlushManager;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
+import org.apache.uniffle.server.ShuffleTaskManager;
 import org.apache.uniffle.server.StatusCode;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
@@ -341,6 +342,9 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     when(mockShuffleServer
         .getShuffleBufferManager())
         .thenReturn(shuffleBufferManager);
+    when(mockShuffleServer
+        .getShuffleTaskManager())
+        .thenReturn(mock(ShuffleTaskManager.class));
 
     String appId = "bufferSizeTest";
     int shuffleId = 1;
