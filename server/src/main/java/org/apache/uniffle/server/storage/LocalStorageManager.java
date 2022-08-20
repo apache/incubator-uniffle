@@ -171,7 +171,7 @@ public class LocalStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void removeResources(String appId, Set<Integer> shuffleSet) {
+  public void removeResources(String appId, Set<Integer> shuffleSet, String user) {
     for (LocalStorage storage : localStorages) {
       for (Integer shuffleId : shuffleSet) {
         storage.removeHandlers(appId);
@@ -182,7 +182,7 @@ public class LocalStorageManager extends SingleStorageManager {
     ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
         .createShuffleDeleteHandler(
             new CreateShuffleDeleteHandlerRequest(StorageType.LOCALFILE.name(), new Configuration()));
-    deleteHandler.delete(storageBasePaths.toArray(new String[storageBasePaths.size()]), appId);
+    deleteHandler.delete(storageBasePaths.toArray(new String[storageBasePaths.size()]), appId, user);
   }
 
   @Override

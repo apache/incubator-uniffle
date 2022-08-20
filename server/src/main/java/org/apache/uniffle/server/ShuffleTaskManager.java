@@ -383,10 +383,10 @@ public class ShuffleTaskManager {
     partitionsToBlockIds.remove(appId);
     shuffleBufferManager.removeBuffer(appId);
     shuffleFlushManager.removeResources(appId);
-    appUserMap.remove(appId);
     if (!shuffleToCachedBlockIds.isEmpty()) {
-      storageManager.removeResources(appId, shuffleToCachedBlockIds.keySet());
+      storageManager.removeResources(appId, shuffleToCachedBlockIds.keySet(), appUserMap.get(appId));
     }
+    appUserMap.remove(appId);
     shuffleTaskInfos.remove(appId);
     LOG.info("Finish remove resource for appId[" + appId + "] cost " + (System.currentTimeMillis() - start) + " ms");
   }

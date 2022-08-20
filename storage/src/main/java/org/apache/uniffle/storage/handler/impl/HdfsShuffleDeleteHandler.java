@@ -38,16 +38,16 @@ public class HdfsShuffleDeleteHandler implements ShuffleDeleteHandler {
   }
 
   @Override
-  public void delete(String[] storageBasePaths, String appId) {
+  public void delete(String[] storageBasePaths, String appId, String user) {
     Path path = new Path(ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePaths[0], appId));
     boolean isSuccess = false;
     int times = 0;
     int retryMax = 5;
     long start = System.currentTimeMillis();
-    LOG.info("Try delete shuffle data in HDFS for appId[" + appId + "] with " + path);
+    LOG.info("Try delete shuffle data in HDFS for appId[{}] of user[{}] with {}",appId, user, path);
     while (!isSuccess && times < retryMax) {
       try {
-        FileSystem fileSystem = HadoopFilesystemProvider.getFilesystem(path, hadoopConf);
+        FileSystem fileSystem = HadoopFilesystemProvider.getFilesystem(user, path, hadoopConf);
         fileSystem.delete(path, true);
         isSuccess = true;
       } catch (Exception e) {

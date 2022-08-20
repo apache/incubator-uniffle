@@ -32,6 +32,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.prometheus.client.Gauge;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
@@ -225,7 +226,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     manager.removeResources(appId1);
 
     assertTrue(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId1));
-    storageManager.removeResources(appId1, Sets.newHashSet(1));
+    storageManager.removeResources(appId1, Sets.newHashSet(1), StringUtils.EMPTY);
     assertFalse(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId1));
     try {
       fs.listStatus(new Path(remoteStorage.getPath() + "/" + appId1 + "/"));
@@ -240,7 +241,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     assertEquals(1, size);
     manager.removeResources(appId2);
     assertTrue(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId2));
-    storageManager.removeResources(appId2, Sets.newHashSet(1));
+    storageManager.removeResources(appId2, Sets.newHashSet(1), StringUtils.EMPTY);
     assertFalse(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId2));
     assertEquals(0, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     size = storage.getHandlerSize();
@@ -274,7 +275,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     assertEquals(2, storage.getHandlerSize());
     File file = new File(tempDir, appId1);
     assertTrue(file.exists());
-    storageManager.removeResources(appId1, Sets.newHashSet(1));
+    storageManager.removeResources(appId1, Sets.newHashSet(1), StringUtils.EMPTY);
     manager.removeResources(appId1);
     assertFalse(file.exists());
     ShuffleDataFlushEvent event3 =
@@ -285,7 +286,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     assertEquals(5, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     assertEquals(1, storage.getHandlerSize());
     manager.removeResources(appId2);
-    storageManager.removeResources(appId2, Sets.newHashSet(1));
+    storageManager.removeResources(appId2, Sets.newHashSet(1), StringUtils.EMPTY);
     assertEquals(0, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     assertEquals(0, storage.getHandlerSize());
   }
@@ -321,7 +322,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     } while (size > 0);
   }
 
-  private void waitForFlush(ShuffleFlushManager manager,
+  public static void waitForFlush(ShuffleFlushManager manager,
       String appId, int shuffleId, int expectedBlockNum) throws Exception {
     int retry = 0;
     int size = 0;
@@ -335,14 +336,14 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     } while (size < expectedBlockNum);
   }
 
-  private ShuffleDataFlushEvent createShuffleDataFlushEvent(
+  public static ShuffleDataFlushEvent createShuffleDataFlushEvent(
       String appId, int shuffleId, int startPartition, int endPartition, Supplier<Boolean> isValid) {
     List<ShufflePartitionedBlock> spbs = createBlock(5, 32);
     return new ShuffleDataFlushEvent(ATOMIC_LONG.getAndIncrement(),
         appId, shuffleId, startPartition, endPartition, 1, spbs, isValid, null);
   }
 
-  private List<ShufflePartitionedBlock> createBlock(int num, int length) {
+  public static List<ShufflePartitionedBlock> createBlock(int num, int length) {
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList();
     for (int i = 0; i < num; i++) {
       byte[] buf = new byte[length];
