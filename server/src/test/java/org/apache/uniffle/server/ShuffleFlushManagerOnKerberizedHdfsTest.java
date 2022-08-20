@@ -27,6 +27,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,6 +68,11 @@ public class ShuffleFlushManagerOnKerberizedHdfsTest extends KerberizedHdfsBase 
     LogManager.getRootLogger().setLevel(Level.INFO);
 
     initHadoopSecurityContext();
+  }
+
+  @AfterEach
+  public void afterEach() {
+    ShuffleServerMetrics.clear();
   }
 
   @BeforeAll
