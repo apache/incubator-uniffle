@@ -39,6 +39,7 @@ import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.common.RssShuffleUtils;
 import org.apache.uniffle.common.exception.RssException;
+import scala.runtime.BoxedUnit;
 
 public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C>> {
 
@@ -130,9 +131,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
         readTime += fetchDuration;
         serializeTime += serializationDuration;
       } else {
-        // finish reading records, close related reader and check data consistent
-        clearDeserializationStream();
-        shuffleReadClient.close();
+        // finish reading records, check data consistent
         shuffleReadClient.checkProcessedBlockIds();
         shuffleReadClient.logStatics();
         LOG.info("Fetch " + shuffleReadMetrics.remoteBytesRead() + " bytes cost " + readTime + " ms and "
@@ -148,6 +147,15 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
   public Product2<K, C> next() {
     shuffleReadMetrics.incRecordsRead(1L);
     return (Product2<K, C>) recordsIterator.next();
+  }
+
+  public BoxedUnit cleanup() {
+    clearDeserializationStream();
+    if (shuffleReadClient != null) {
+      shuffleReadClient.close();
+    }
+    shuffleReadClient = null;
+    return BoxedUnit.UNIT;
   }
 
   @VisibleForTesting
