@@ -173,7 +173,6 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     ShufflePartitionedData spd2 = createData(0, 68);
     ShufflePartitionedData spd3 = createData(0, 68);
     ShufflePartitionedData spd4 = createData(0, 68);
-    ShufflePartitionedData spd5 = createData(0, 68);
     shuffleBufferManager.cacheShuffleData(appId1, 1, false, spd1);
     shuffleBufferManager.cacheShuffleData(appId1, 2, false, spd2);
     shuffleBufferManager.cacheShuffleData(appId1, 2, false, spd3);
@@ -185,6 +184,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     assertEquals(200, shuffleSizeMap.get(appId1).get(2).get());
     assertEquals(100, shuffleSizeMap.get(appId2).get(1).get());
 
+    ShufflePartitionedData spd5 = createData(0, 68);
     shuffleBufferManager.cacheShuffleData(appId2, 2, false, spd5);
     // flush happen
     assertEquals(99, shuffleSizeMap.get(appId1).get(1).get());
@@ -333,7 +333,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   public void bufferSizeTest() throws Exception {
     ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
     StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(conf);
-    ShuffleFlushManager shuffleFlushManager = new ShuffleFlushManager(conf, "serverId", mockShuffleServer, storageManager);
+    ShuffleFlushManager shuffleFlushManager = new ShuffleFlushManager(conf,
+        "serverId", mockShuffleServer, storageManager);
     shuffleBufferManager = new ShuffleBufferManager(conf, shuffleFlushManager);
 
     when(mockShuffleServer

@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;

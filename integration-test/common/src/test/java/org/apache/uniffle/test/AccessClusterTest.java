@@ -17,10 +17,10 @@
 
 package org.apache.uniffle.test;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -126,7 +126,8 @@ public class AccessClusterTest extends CoordinatorTestBase {
     coordinatorConf.setString("rss.coordinator.access.candidates.path", cfgFile.getAbsolutePath());
     coordinatorConf.setString(
             "rss.coordinator.access.checkers",
-            "org.apache.uniffle.coordinator.AccessCandidatesChecker,org.apache.uniffle.coordinator.AccessClusterLoadChecker");
+            "org.apache.uniffle.coordinator.AccessCandidatesChecker,"
+                + "org.apache.uniffle.coordinator.AccessClusterLoadChecker");
     createCoordinatorServer(coordinatorConf);
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();

@@ -17,23 +17,11 @@
 
 package org.apache.spark.shuffle.reader;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
-import org.apache.uniffle.client.util.ClientUtils;
-import org.apache.uniffle.client.util.DefaultIdHelper;
-import org.apache.uniffle.common.util.ChecksumUtils;
-import org.apache.uniffle.common.util.Constants;
-import org.apache.uniffle.storage.handler.impl.HdfsShuffleWriteHandler;
-import org.apache.uniffle.storage.util.StorageType;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
@@ -45,6 +33,19 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
+import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
+import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.client.util.DefaultIdHelper;
+import org.apache.uniffle.common.util.ChecksumUtils;
+import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.storage.handler.impl.HdfsShuffleWriteHandler;
+import org.apache.uniffle.storage.util.StorageType;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
 
 public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
 
@@ -83,10 +84,12 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
     assertEquals(10, recNum);
   }
 
-  private RssShuffleDataIterator getDataIterator(String basePath, Roaring64NavigableMap blockIdBitmap, Roaring64NavigableMap taskIdBitmap) {
+  private RssShuffleDataIterator getDataIterator(String basePath, Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap taskIdBitmap) {
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(
         StorageType.HDFS.name(), "appId", 0, 1, 100, 2,
-        10, 10000, basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(), new Configuration(), new DefaultIdHelper());
+        10, 10000, basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(),
+        new Configuration(), new DefaultIdHelper());
     return new RssShuffleDataIterator(KRYO_SERIALIZER, readClient,
         new ShuffleReadMetrics());
   }
@@ -125,7 +128,7 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
 
     Map<String, String> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
-    Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
+    final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     writeTestData(writeHandler1, 2, 5, expectedData,
         blockIdBitmap, "key1", KRYO_SERIALIZER, 0);
     writeTestData(writeHandler2, 2, 5, expectedData,
@@ -169,6 +172,7 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
       fs.listStatus(dataFile);
       fail("Index file should be deleted");
     } catch (Exception e) {
+      // ignore
     }
 
     try {
@@ -193,7 +197,7 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
     writeTestData(writeHandler, 2, 5, expectedData,
         blockIdBitmap, "key", KRYO_SERIALIZER, 0);
 
-    RssShuffleDataIterator rssShuffleDataIterator = getDataIterator(basePath, blockIdBitmap, taskIdBitmap);
+    final RssShuffleDataIterator rssShuffleDataIterator = getDataIterator(basePath, blockIdBitmap, taskIdBitmap);
     // index file is deleted after iterator initialization, it should be ok, all index infos are read already
     Path indexFile = new Path(basePath + "/appId/0/0-1/test.index");
     fs.delete(indexFile, true);
@@ -203,6 +207,7 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
       fs.listStatus(indexFile);
       fail("Index file should be deleted");
     } catch (Exception e) {
+      // ignore
     }
     validateResult(rssShuffleDataIterator, expectedData, 10);
   }

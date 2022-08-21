@@ -30,12 +30,12 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.client.request.RssFetchClientConfRequest;
 import org.apache.uniffle.client.request.RssFetchRemoteStorageRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssFetchClientConfResponse;
 import org.apache.uniffle.client.response.RssFetchRemoteStorageResponse;
+import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 
@@ -97,7 +97,6 @@ public class FetchClientConfTest extends CoordinatorTestBase {
   @Test
   public void testFetchRemoteStorage(@TempDir File tempDir) throws Exception {
     String remotePath1 = "hdfs://path1";
-    String remotePath2 = "hdfs://path2";
     File cfgFile = File.createTempFile("tmp", ".conf", tempDir);
     String contItem = "path2,key1=test1,key2=test2";
     Map<String, String> dynamicConf = Maps.newHashMap();
@@ -121,6 +120,7 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     assertEquals(remotePath1, remoteStorageInfo.getPath());
 
     // update remote storage info
+    String remotePath2 = "hdfs://path2";
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), remotePath2);
     writeRemoteStorageConf(cfgFile, dynamicConf);
     waitForUpdate(Sets.newHashSet(remotePath2), coordinators.get(0).getApplicationManager());

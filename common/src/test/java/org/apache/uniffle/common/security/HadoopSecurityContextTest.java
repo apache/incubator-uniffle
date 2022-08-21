@@ -55,7 +55,7 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
       context.runSecured(StringUtils.EMPTY, (Callable<Void>) () -> null);
       fail();
     } catch (Exception e) {
-
+      return;
     }
 
     // case2: run by the login user, there is no need to wrap proxy action

@@ -17,14 +17,15 @@
 
 package org.apache.uniffle.server;
 
-import com.google.common.collect.Lists;
-import org.apache.uniffle.storage.common.LocalStorage;
-import org.apache.uniffle.storage.util.StorageType;
-import org.junit.jupiter.api.Test;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+
+import com.google.common.collect.Lists;
+import org.junit.jupiter.api.Test;
+
+import org.apache.uniffle.storage.common.LocalStorage;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -66,7 +67,7 @@ public class StorageCheckerTest {
   }
 
   private class MockStorageChecker extends LocalStorageChecker {
-    public MockStorageChecker(ShuffleServerConf conf, List<LocalStorage> storages) {
+    MockStorageChecker(ShuffleServerConf conf, List<LocalStorage> storages) {
       super(conf, storages);
     }
 
@@ -112,6 +113,7 @@ public class StorageCheckerTest {
               break;
             case 4:
               result = 100;
+              break;
             default:
               break;
           }
@@ -128,6 +130,8 @@ public class StorageCheckerTest {
               break;
           }
           break;
+        default:
+          // ignore
       }
       return result;
     }

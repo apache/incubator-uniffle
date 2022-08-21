@@ -17,15 +17,17 @@
 
 package org.apache.uniffle.test;
 
-import org.apache.uniffle.client.factory.CoordinatorClientFactory;
-import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+
+import org.apache.uniffle.client.factory.CoordinatorClientFactory;
+import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
 
 public class CoordinatorTestBase extends IntegrationTestBase {
 
   protected CoordinatorClientFactory factory = new CoordinatorClientFactory("GRPC");
   protected CoordinatorGrpcClient coordinatorClient;
+
   @BeforeEach
   public void createClient() {
     coordinatorClient =

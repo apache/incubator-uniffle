@@ -29,9 +29,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
-import org.apache.hadoop.security.UserGroupInformation;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -76,6 +75,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
   private ShuffleServerGrpcClient shuffleServerClient;
   private AtomicInteger atomicInteger = new AtomicInteger(0);
   private static Long EVENT_THRESHOLD_SIZE = 2048L;
+  private static final int GB = 1024 * 1024 * 1024;
 
   @BeforeAll
   public static void setupServers() throws Exception {
@@ -511,9 +511,9 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
   public void rpcMetricsTest() {
     String appId = "rpcMetricsTest";
     int shuffleId = 0;
-    double oldGrpcTotal = shuffleServers.get(0).getGrpcMetrics().getCounterGrpcTotal().get();
-    double oldValue = shuffleServers.get(0).getGrpcMetrics().getCounterMap().
-        get(ShuffleServerGrpcMetrics.REGISTER_SHUFFLE_METHOD).get();
+    final double oldGrpcTotal = shuffleServers.get(0).getGrpcMetrics().getCounterGrpcTotal().get();
+    double oldValue = shuffleServers.get(0).getGrpcMetrics().getCounterMap()
+        .get(ShuffleServerGrpcMetrics.REGISTER_SHUFFLE_METHOD).get();
     shuffleServerClient.registerShuffle(new RssRegisterShuffleRequest(appId, shuffleId,
         Lists.newArrayList(new PartitionRange(0, 1)), ""));
     double newValue = shuffleServers.get(0).getGrpcMetrics().getCounterMap()
@@ -647,7 +647,6 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     assertEquals(0, shuffleServers.get(0).getGrpcMetrics().getGaugeGrpcOpen().get(), 0.5);
 
     oldValue = ShuffleServerMetrics.counterTotalRequireBufferFailed.get();
-    int GB = 1024 * 1024 * 1024;
     // the next two allocations will fail
     assertEquals(shuffleServerClient.requirePreAllocation(GB, 0, 10), -1);
     assertEquals(shuffleServerClient.requirePreAllocation(GB, 0, 10), -1);

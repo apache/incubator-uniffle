@@ -26,12 +26,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
-import org.apache.uniffle.client.util.DefaultIdHelper;
-import org.apache.uniffle.common.util.Constants;
-import org.apache.uniffle.common.util.RetryUtils;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -40,11 +37,14 @@ import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.client.util.ClientType;
 import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
@@ -140,8 +140,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         shuffleServerInfo1, fakeShuffleServerInfo));
     shuffleWriteClientImpl.reportShuffleResult(partitionToServers, testAppId, 0, 0, ptb, 2);
     Roaring64NavigableMap report = shuffleWriteClientImpl.getShuffleResult("GRPC",
-      Sets.newHashSet(shuffleServerInfo1, fakeShuffleServerInfo),
-      testAppId, 0, 0);
+        Sets.newHashSet(shuffleServerInfo1, fakeShuffleServerInfo),
+        testAppId, 0, 0);
     assertEquals(blockIdBitmap, report);
   }
 
@@ -160,12 +160,12 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     partitionToServers.putIfAbsent(2, Lists.newArrayList(shuffleServerInfo2));
     Map<Integer, List<Long>> partitionToBlocks = Maps.newHashMap();
     List<Long> blockIds = Lists.newArrayList();
-    for (int i = 0; i < 5; i++ ) {
+    for (int i = 0; i < 5; i++) {
       blockIds.add(ClientUtils.getBlockId(1, 0, i));
     }
     partitionToBlocks.put(1, blockIds);
     blockIds = Lists.newArrayList();
-    for (int i = 0; i < 7; i++ ) {
+    for (int i = 0; i < 7; i++) {
       blockIds.add(ClientUtils.getBlockId(2, 0, i));
     }
     partitionToBlocks.put(2, blockIds);
