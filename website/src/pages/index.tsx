@@ -18,7 +18,12 @@ function HomepageHeader() {
           <Link
             className="button button--secondary button--lg"
             to="/docs/intro">
-            Getting Started - 5min ⏱️
+            Quick start
+          </Link>
+          <Link
+            className="button button--secondary button--lg"
+            to="https://github.com/apache/incubator-uniffle">
+            GitHub
           </Link>
         </div>
       </div>
@@ -26,12 +31,12 @@ function HomepageHeader() {
   );
 }
 
-export default function Home() {
+export default function Home(): JSX.Element {
   const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
-      title={`Hello from ${siteConfig.title}`}
-      description="Description will go into a meta tag in <head />">
+      title={`${siteConfig.title}`}
+      description="Apache Uniffle is a Remote Shuffle Service.">
       <HomepageHeader />
       <main>
         <HomepageFeatures />

@@ -264,8 +264,3 @@ Uniffle is under the Apache License Version 2.0. See the [LICENSE](https://githu
 
 ## Contributing
 For more information about contributing issues or pull requests, see [Uniffle Contributing Guide](https://github.com/apache/incubator-uniffle/blob/master/CONTRIBUTING.md).
-
-## Support 
-We provide free support for users using this project. If you want to join user wechat group for further help and collaboration. You can scan the following QR code or search wechatID `xinghuojihua_01`, add our assistant on wechat, and remark `Uniffle`. The assistant will help you join our wechat group.
-
-![Wechat](img/wechat.png)
