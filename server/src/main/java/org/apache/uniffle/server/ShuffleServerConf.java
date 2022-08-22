@@ -284,6 +284,18 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(0L)
       .withDescription("For localstorage, it will exit when the failed initialized local storage exceed the number");
 
+  public static final ConfigOption<Boolean> BUFFER_FLUSH_ENABLED = ConfigOptions
+       .key("rss.server.buffer.flush.enabled")
+       .booleanType()
+       .defaultValue(false)
+       .withDescription("Whether buffer flush when size exceeded rss.server.buffer.flush.threshold");
+
+  public static final ConfigOption<Long> BUFFER_FLUSH_THRESHOLD = ConfigOptions
+        .key("rss.server.buffer.flush.threshold")
+        .longType()
+        .defaultValue(32 * 1024 * 1024L)
+        .withDescription("The threshold of shuffle buffer flush");
+
   public ShuffleServerConf() {
   }
 
