@@ -406,7 +406,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
 
     ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
     StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(shuffleConf);
-    ShuffleFlushManager shuffleFlushManager = new ShuffleFlushManager(shuffleConf, "serverId", mockShuffleServer, storageManager);
+    ShuffleFlushManager shuffleFlushManager =
+        new ShuffleFlushManager(shuffleConf, "serverId", mockShuffleServer, storageManager);
     shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager);
 
     when(mockShuffleServer

@@ -118,7 +118,7 @@ public class ShuffleFlushManagerOnKerberizedHdfsTest extends KerberizedHdfsBase 
     manager.addToFlushQueue(event2);
     waitForFlush(manager, appId1, 1, 5);
     waitForFlush(manager, appId2, 1, 5);
-    AbstractStorage storage = (AbstractStorage) storageManager.selectStorage(event1);
+    final AbstractStorage storage = (AbstractStorage) storageManager.selectStorage(event1);
     assertEquals(5, manager.getCommittedBlockIds(appId1, 1).getLongCardinality());
     assertEquals(5, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     assertEquals(storageManager.selectStorage(event1), storageManager.selectStorage(event2));
