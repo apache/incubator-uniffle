@@ -17,16 +17,22 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
@@ -108,13 +114,25 @@ public class HdfsStorageManager extends SingleStorageManager {
     appIdToStorages.putIfAbsent(appId, pathToStorages.get(remoteStorage));
   }
 
-  private HdfsStorage getStorageByAppId(String appId) {
+  public HdfsStorage getStorageByAppId(String appId) {
     if (!appIdToStorages.containsKey(appId)) {
-      String msg = "Can't find HDFS storage for appId[" + appId + "]";
-      LOG.error(msg);
-      // outside should deal with null situation
-      // todo: it's better to have a fake storage for null situation
-      return null;
+      synchronized (this) {
+        FileSystem fs;
+        try {
+          List<Path> appStoragePath = pathToStorages.keySet().stream().map(
+              basePath -> new Path(basePath + Constants.KEY_SPLIT_CHAR + appId)).collect(Collectors.toList());
+          for (Path path : appStoragePath) {
+            fs = HadoopFilesystemProvider.getFilesystem(path, hadoopConf);
+            if (fs.isDirectory(path)) {
+              return new HdfsStorage(path.getParent().toString(), hadoopConf);
+            }
+          }
+        } catch (Exception e) {
+          LOG.error("Some error happened when fileSystem got the file status.", e);
+        }
+        // outside should deal with null situation
+        return null;
+      }
     }
     return appIdToStorages.get(appId);
   }
