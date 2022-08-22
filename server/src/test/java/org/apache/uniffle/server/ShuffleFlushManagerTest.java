@@ -57,12 +57,14 @@ import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
 import org.apache.uniffle.storage.HdfsTestBase;
 import org.apache.uniffle.storage.common.AbstractStorage;
+import org.apache.uniffle.storage.common.HdfsStorage;
 import org.apache.uniffle.storage.handler.impl.HdfsClientReadHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -246,6 +248,14 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     assertEquals(0, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     size = storage.getHandlerSize();
     assertEquals(0, size);
+    // fs create a remoteStorage for appId2 before remove resources,
+    // but thecache from appIdToStorages has removed, so we need to delete this path in hdfs
+    Path path = new Path(remoteStorage.getPath() + "/" + appId2 + "/");
+    assertTrue(fs.mkdirs(path));
+    storageManager.removeResources(appId2, Sets.newHashSet(1), StringUtils.EMPTY);
+    assertFalse(fs.exists(path));
+    HdfsStorage storageByAppId = ((HdfsStorageManager) storageManager).getStorageByAppId(appId2);
+    assertNull(storageByAppId);
   }
 
   @Test
