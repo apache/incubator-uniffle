@@ -131,6 +131,7 @@ public class HdfsStorageManager extends SingleStorageManager {
           LOG.error("Some error happened when fileSystem got the file status.", e);
         }
         // outside should deal with null situation
+        // todo: it's better to have a fake storage for null situation
         return null;
       }
     }
