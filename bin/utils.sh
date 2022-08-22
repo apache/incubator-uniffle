@@ -41,15 +41,32 @@ function common_shutdown {
   process_name="$1"
   install_dir="$2"
   max_attempt=30
-  pid=`cat ${install_dir}/currentpid`
+  get_pid_file_name ${process_name}
+  pid_file_name="${pid_file}"
+  pid=`cat ${install_dir}/${pid_file_name}`
 
   kill_process_with_retry "${pid}" "${process_name}" "${max_attempt}"
 
   if [[ $? == 0 ]]; then
-    rm -f ${install_dir}/currentpid
+    rm -f ${install_dir}/${pid_file_name}
     return 0
   else
     return 1
+  fi
+}
+
+#---
+# args:               Process name, coordinator or shuffle-server
+#---
+function get_pid_file_name {
+  process_name="$1"
+  if [[ $process_name == "coordinator" ]]; then
+    pid_file="coordinator.pid"
+  elif [[ $process_name == "shuffle-server" ]]; then
+    pid_file="shuffle-server.pid"
+  else
+    echo "Invalid process name: $process_name"
+    exit 1
   fi
 }
 
