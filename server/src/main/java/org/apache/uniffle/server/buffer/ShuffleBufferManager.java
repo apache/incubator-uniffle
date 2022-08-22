@@ -165,7 +165,9 @@ public class ShuffleBufferManager {
 
   void flushSingleBufferIfNecessary(ShuffleBuffer buffer, String appId,
       int shuffleId, int startPartition, int endPartition) {
-    if (this.bufferFlushEnabled && buffer.getSize() >= this.bufferFlushThreshold) {
+    // when single buffer flush is triggered, the buffer size should reach
+    // rss.server.flush.cold.storage.threshold.size
+    if (this.bufferFlushEnabled && buffer.getSize() > this.bufferFlushThreshold) {
       flushBuffer(buffer, appId, shuffleId, startPartition, endPartition);
     }
   }
