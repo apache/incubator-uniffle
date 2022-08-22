@@ -30,6 +30,7 @@ import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.ShuffleReader;
+import org.apache.spark.util.CompletionIterator;
 import org.apache.spark.util.CompletionIterator$;
 import org.apache.spark.util.collection.ExternalSorter;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -183,11 +184,11 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   }
 
   class MultiPartitionIterator<K, C> extends AbstractIterator<Product2<K, C>> {
-    java.util.Iterator<RssShuffleDataIterator> iterator;
-    RssShuffleDataIterator dataIterator;
+    java.util.Iterator<CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>>> iterator;
+    CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>>  dataIterator;
 
     MultiPartitionIterator() {
-      List<RssShuffleDataIterator> iterators = Lists.newArrayList();
+      List<CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>>> iterators = Lists.newArrayList();
       for (int partition = startPartition; partition < endPartition; partition++) {
         if (partitionToExpectBlocks.get(partition).isEmpty()) {
           LOG.info("{} partition is empty partition", partition);
@@ -201,13 +202,21 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         RssShuffleDataIterator iterator = new RssShuffleDataIterator<K, C>(
             shuffleDependency.serializer(), shuffleReadClient,
             readMetrics);
-        iterators.add(iterator);
+        CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>> completionIterator =
+            CompletionIterator$.MODULE$.apply(iterator, () -> iterator.cleanup());
+        iterators.add(completionIterator);
       }
       iterator = iterators.iterator();
       if (iterator.hasNext()) {
         dataIterator = iterator.next();
         iterator.remove();
       }
+      context.addTaskCompletionListener((taskContext) -> {
+        if (dataIterator != null) {
+          dataIterator.completion();
+        }
+        iterator.forEachRemaining(ci -> ci.completion());
+      });
     }
 
     @Override

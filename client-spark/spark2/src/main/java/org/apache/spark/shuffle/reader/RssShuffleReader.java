@@ -26,6 +26,7 @@ import org.apache.spark.TaskContext;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.ShuffleReader;
+import org.apache.spark.util.CompletionIterator;
 import org.apache.spark.util.CompletionIterator$;
 import org.apache.spark.util.TaskCompletionListener;
 import org.apache.spark.util.collection.ExternalSorter;
@@ -113,6 +114,16 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     RssShuffleDataIterator rssShuffleDataIterator = new RssShuffleDataIterator<K, C>(
         shuffleDependency.serializer(), shuffleReadClient,
         context.taskMetrics().shuffleReadMetrics());
+    CompletionIterator completionIterator =
+        CompletionIterator$.MODULE$.apply(rssShuffleDataIterator, new AbstractFunction0<BoxedUnit>() {
+          @Override
+          public BoxedUnit apply() {
+            return rssShuffleDataIterator.cleanup();
+          }
+        });
+    context.addTaskCompletionListener(context -> {
+      completionIterator.completion();
+    });
 
     Iterator<Product2<K, C>> resultIter = null;
     Iterator<Product2<K, C>> aggregatedIter = null;
@@ -120,16 +131,15 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     if (shuffleDependency.aggregator().isDefined()) {
       if (shuffleDependency.mapSideCombine()) {
         // We are reading values that are already combined
-        aggregatedIter = shuffleDependency.aggregator().get().combineCombinersByKey(
-            rssShuffleDataIterator, context);
+        aggregatedIter = shuffleDependency.aggregator().get().combineCombinersByKey(completionIterator, context);
       } else {
         // We don't know the value type, but also don't care -- the dependency *should*
         // have made sure its compatible w/ this aggregator, which will convert the value
         // type to the combined type C
-        aggregatedIter = shuffleDependency.aggregator().get().combineValuesByKey(rssShuffleDataIterator, context);
+        aggregatedIter = shuffleDependency.aggregator().get().combineValuesByKey(completionIterator, context);
       }
     } else {
-      aggregatedIter = rssShuffleDataIterator;
+      aggregatedIter = completionIterator;
     }
 
     if (shuffleDependency.keyOrdering().isDefined()) {
