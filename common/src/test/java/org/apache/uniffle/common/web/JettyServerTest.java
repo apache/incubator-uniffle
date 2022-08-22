@@ -17,13 +17,6 @@
 
 package org.apache.uniffle.common.web;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
-import org.apache.uniffle.common.config.RssBaseConf;
-import org.apache.uniffle.common.util.ExitUtils;
-import org.apache.uniffle.common.util.ExitUtils.ExitException;
 import java.io.FileNotFoundException;
 
 import org.eclipse.jetty.server.Handler;
@@ -32,6 +25,14 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.junit.jupiter.api.Test;
+
+import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.util.ExitUtils;
+import org.apache.uniffle.common.util.ExitUtils.ExitException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class JettyServerTest {
 

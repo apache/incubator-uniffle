@@ -18,6 +18,7 @@
 package org.apache.uniffle.common;
 
 import java.util.Arrays;
+
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,12 +28,12 @@ public class ShufflePartitionedDataTest {
   @Test
   public void testToString() {
     ShufflePartitionedData data = new ShufflePartitionedData(0, new ShufflePartitionedBlock[]{});
-    assertEquals("ShufflePartitionedData{partitionId=" + data.getPartitionId() + ", blockList=" +
-        Arrays.toString(data.getBlockList()) + "}", data.toString());
+    assertEquals("ShufflePartitionedData{partitionId=" + data.getPartitionId() + ", blockList="
+        + Arrays.toString(data.getBlockList()) + "}", data.toString());
     ShufflePartitionedData data1 = new ShufflePartitionedData(1,
         new ShufflePartitionedBlock[]{new ShufflePartitionedBlock(2, 3, 4, 5, 6, new byte[0])});
-    assertEquals("ShufflePartitionedData{partitionId=" + data1.getPartitionId() + ", blockList=" +
-        Arrays.toString(data1.getBlockList()) + "}", data1.toString());
+    assertEquals("ShufflePartitionedData{partitionId=" + data1.getPartitionId() + ", blockList="
+        + Arrays.toString(data1.getBlockList()) + "}", data1.toString());
     ShufflePartitionedData data2 = new ShufflePartitionedData(0, null);
     assertEquals("ShufflePartitionedData{partitionId=0, blockList=null}", data2.toString());
     data2.setPartitionId(1);

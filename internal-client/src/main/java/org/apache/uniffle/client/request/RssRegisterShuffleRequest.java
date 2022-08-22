@@ -19,6 +19,8 @@ package org.apache.uniffle.client.request;
 
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 
@@ -28,16 +30,19 @@ public class RssRegisterShuffleRequest {
   private int shuffleId;
   private List<PartitionRange> partitionRanges;
   private RemoteStorageInfo remoteStorageInfo;
+  private String user;
 
   public RssRegisterShuffleRequest(
       String appId,
       int shuffleId,
       List<PartitionRange> partitionRanges,
-      RemoteStorageInfo remoteStorageInfo) {
+      RemoteStorageInfo remoteStorageInfo,
+      String user) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionRanges = partitionRanges;
     this.remoteStorageInfo = remoteStorageInfo;
+    this.user = user;
   }
 
   public RssRegisterShuffleRequest(
@@ -45,7 +50,7 @@ public class RssRegisterShuffleRequest {
       int shuffleId,
       List<PartitionRange> partitionRanges,
       String remoteStoragePath) {
-    this(appId, shuffleId, partitionRanges, new RemoteStorageInfo(remoteStoragePath));
+    this(appId, shuffleId, partitionRanges, new RemoteStorageInfo(remoteStoragePath), StringUtils.EMPTY);
   }
 
   public String getAppId() {
@@ -62,5 +67,9 @@ public class RssRegisterShuffleRequest {
 
   public RemoteStorageInfo getRemoteStorageInfo() {
     return remoteStorageInfo;
+  }
+
+  public String getUser() {
+    return user;
   }
 }

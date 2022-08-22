@@ -17,14 +17,15 @@
 
 package org.apache.uniffle.coordinator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ServerNodeTest {
 

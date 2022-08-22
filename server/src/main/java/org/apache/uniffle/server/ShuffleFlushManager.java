@@ -29,6 +29,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.RangeMap;
 import com.google.common.util.concurrent.Uninterruptibles;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -50,7 +51,7 @@ public class ShuffleFlushManager {
   private final ShuffleServer shuffleServer;
   private final BlockingQueue<ShuffleDataFlushEvent> flushQueue = Queues.newLinkedBlockingQueue();
   private final ThreadPoolExecutor threadPoolExecutor;
-  private final String[] storageBasePaths;
+  private final List<String> storageBasePaths;
   private final String shuffleServerId;
   private final String storageType;
   private final int storageDataReplica;
@@ -85,7 +86,7 @@ public class ShuffleFlushManager {
     long keepAliveTime = shuffleServerConf.getLong(ShuffleServerConf.SERVER_FLUSH_THREAD_ALIVE);
     threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize, keepAliveTime, TimeUnit.SECONDS, waitQueue,
         ThreadUtils.getThreadFactory("FlushEventThreadPool"));
-    storageBasePaths = shuffleServerConf.getString(ShuffleServerConf.RSS_STORAGE_BASE_PATH).split(",");
+    storageBasePaths = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
     pendingEventTimeoutSec = shuffleServerConf.getLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC);
     // the thread for flush data
     Runnable processEventRunnable = () -> {
@@ -158,17 +159,22 @@ public class ShuffleFlushManager {
           writeSuccess = true;
           LOG.warn("AppId {} was removed already, event {} should be dropped", event.getAppId(), event);
         } else {
+          String user = StringUtils.defaultString(
+              shuffleServer.getShuffleTaskManager().getUserByAppId(event.getAppId()),
+              StringUtils.EMPTY
+          );
           ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(new CreateShuffleWriteHandlerRequest(
               storageType,
               event.getAppId(),
               event.getShuffleId(),
               event.getStartPartition(),
               event.getEndPartition(),
-              storageBasePaths,
+              storageBasePaths.toArray(new String[storageBasePaths.size()]),
               shuffleServerId,
               hadoopConf,
-              storageDataReplica));
-
+              storageDataReplica,
+              user)
+          );
           do {
             if (event.getRetryTimes() > retryMax) {
               LOG.error("Failed to write data for " + event + " in " + retryMax + " times, shuffle data will be lost");

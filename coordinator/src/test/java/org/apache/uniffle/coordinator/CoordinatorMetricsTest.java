@@ -87,7 +87,7 @@ public class CoordinatorMetricsTest {
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
-    assertEquals(8, actualObj.get("metrics").size());
+    assertEquals(9, actualObj.get("metrics").size());
   }
 
   @Test
@@ -104,10 +104,10 @@ public class CoordinatorMetricsTest {
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
-    assertEquals(6, actualObj.get("metrics").size());
+    assertEquals(9, actualObj.get("metrics").size());
   }
 
-  static private void writeRemoteStorageConf(File cfgFile, String value) throws Exception {
+  private static void writeRemoteStorageConf(File cfgFile, String value) throws Exception {
     FileWriter fileWriter = new FileWriter(cfgFile);
     PrintWriter printWriter = new PrintWriter(fileWriter);
     printWriter.println(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key() + " " + value);

@@ -74,15 +74,12 @@ public class ShuffleTaskManager {
   // but when get blockId, performance will degrade a little which can be optimized by client configuration
   private Map<String, Map<Integer, Roaring64NavigableMap[]>> partitionsToBlockIds;
   private ShuffleBufferManager shuffleBufferManager;
-  private Map<String, Long> appIds = Maps.newConcurrentMap();
-  // appId -> shuffleId -> commit count
-  private Map<String, Map<Integer, AtomicInteger>> commitCounts = Maps.newConcurrentMap();
-  private Map<String, Map<Integer, Object>> commitLocks = Maps.newConcurrentMap();
-  // appId -> shuffleId -> blockIds
-  private Map<String, Map<Integer, Roaring64NavigableMap>> cachedBlockIds = Maps.newConcurrentMap();
+  private Map<String, ShuffleTaskInfo> shuffleTaskInfos = Maps.newConcurrentMap();
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = Maps.newConcurrentMap();
   private Runnable clearResourceThread;
   private BlockingQueue<String> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
+  // appId -> user
+  private Map<String, String> appUserMap = Maps.newConcurrentMap();
   // appId -> shuffleId -> serverReadHandler
 
   public ShuffleTaskManager(
@@ -130,8 +127,10 @@ public class ShuffleTaskManager {
       String appId,
       int shuffleId,
       List<PartitionRange> partitionRanges,
-      RemoteStorageInfo remoteStorageInfo) {
+      RemoteStorageInfo remoteStorageInfo,
+      String user) {
     refreshAppId(appId);
+    appUserMap.putIfAbsent(appId, user);
     partitionsToBlockIds.putIfAbsent(appId, Maps.newConcurrentMap());
     for (PartitionRange partitionRange : partitionRanges) {
       shuffleBufferManager.registerBuffer(appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
@@ -161,20 +160,16 @@ public class ShuffleTaskManager {
     refreshAppId(appId);
     Roaring64NavigableMap cachedBlockIds = getCachedBlockIds(appId, shuffleId);
     Roaring64NavigableMap cloneBlockIds;
-    commitLocks.putIfAbsent(appId, Maps.newConcurrentMap());
-    Map<Integer, Object> shuffleLevelLocks = commitLocks.get(appId);
-    shuffleLevelLocks.putIfAbsent(shuffleId, new Object());
-    Object lock = shuffleLevelLocks.get(shuffleId);
+    ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.computeIfAbsent(appId, x -> new ShuffleTaskInfo());
+    Object lock = shuffleTaskInfo.getCommitLocks().computeIfAbsent(shuffleId, x -> new Object());
     synchronized (lock) {
       long commitTimeout = conf.get(ShuffleServerConf.SERVER_COMMIT_TIMEOUT);
       if (System.currentTimeMillis() - start > commitTimeout) {
         throw new RuntimeException("Shuffle data commit timeout for " + commitTimeout + " ms");
       }
-      byte[] bitmapBytes;
       synchronized (cachedBlockIds) {
-        bitmapBytes = RssUtils.serializeBitMap(cachedBlockIds);
+        cloneBlockIds = RssUtils.cloneBitMap(cachedBlockIds);
       }
-      cloneBlockIds = RssUtils.deserializeBitMap(bitmapBytes);
       long expectedCommitted = cloneBlockIds.getLongCardinality();
       shuffleBufferManager.commitShuffleTask(appId, shuffleId);
       Roaring64NavigableMap committedBlockIds;
@@ -183,9 +178,8 @@ public class ShuffleTaskManager {
       while (true) {
         committedBlockIds = shuffleFlushManager.getCommittedBlockIds(appId, shuffleId);
         synchronized (committedBlockIds) {
-          bitmapBytes = RssUtils.serializeBitMap(committedBlockIds);
+          cloneCommittedBlockIds = RssUtils.cloneBitMap(committedBlockIds);
         }
-        cloneCommittedBlockIds = RssUtils.deserializeBitMap(bitmapBytes);
         cloneBlockIds.andNot(cloneCommittedBlockIds);
         if (cloneBlockIds.isEmpty()) {
           break;
@@ -230,10 +224,9 @@ public class ShuffleTaskManager {
   }
 
   public int updateAndGetCommitCount(String appId, int shuffleId) {
-    commitCounts.putIfAbsent(appId, Maps.newConcurrentMap());
-    Map<Integer, AtomicInteger> shuffleCommit = commitCounts.get(appId);
-    shuffleCommit.putIfAbsent(shuffleId, new AtomicInteger(0));
-    AtomicInteger commitNum = shuffleCommit.get(shuffleId);
+    ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.computeIfAbsent(appId, x -> new ShuffleTaskInfo());
+    AtomicInteger commitNum = shuffleTaskInfo.getCommitCounts()
+        .computeIfAbsent(shuffleId, x -> new AtomicInteger(0));
     return commitNum.incrementAndGet();
   }
 
@@ -241,10 +234,9 @@ public class ShuffleTaskManager {
     if (spbs == null || spbs.length == 0) {
       return;
     }
-    cachedBlockIds.putIfAbsent(appId, Maps.newConcurrentMap());
-    Map<Integer, Roaring64NavigableMap> shuffleToBlockIds = cachedBlockIds.get(appId);
-    shuffleToBlockIds.putIfAbsent(shuffleId, Roaring64NavigableMap.bitmapOf());
-    Roaring64NavigableMap bitmap = shuffleToBlockIds.get(shuffleId);
+    ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.computeIfAbsent(appId, x -> new ShuffleTaskInfo());
+    Roaring64NavigableMap bitmap = shuffleTaskInfo.getCachedBlockIds()
+        .computeIfAbsent(shuffleId, x -> Roaring64NavigableMap.bitmapOf());
     synchronized (bitmap) {
       for (ShufflePartitionedBlock spb : spbs) {
         bitmap.addLong(spb.getBlockId());
@@ -253,11 +245,8 @@ public class ShuffleTaskManager {
   }
 
   public Roaring64NavigableMap getCachedBlockIds(String appId, int shuffleId) {
-    Map<Integer, Roaring64NavigableMap> shuffleIdToBlockIds = cachedBlockIds.get(appId);
-    if (shuffleIdToBlockIds == null) {
-      LOG.warn("Unexpected value when getCachedBlockIds for appId[" + appId + "]");
-      return Roaring64NavigableMap.bitmapOf();
-    }
+    Map<Integer, Roaring64NavigableMap> shuffleIdToBlockIds = shuffleTaskInfos
+        .getOrDefault(appId, new ShuffleTaskInfo()).getCachedBlockIds();
     Roaring64NavigableMap blockIds = shuffleIdToBlockIds.get(shuffleId);
     if (blockIds == null) {
       LOG.warn("Unexpected value when getCachedBlockIds for appId[" + appId + "], shuffleId[" + shuffleId + "]");
@@ -371,16 +360,16 @@ public class ShuffleTaskManager {
 
   public void checkResourceStatus() {
     try {
-      Set<String> appNames = Sets.newHashSet(appIds.keySet());
+      Set<String> appNames = Sets.newHashSet(shuffleTaskInfos.keySet());
       // remove applications which is timeout according to rss.server.app.expired.withoutHeartbeat
       for (String appId : appNames) {
-        if (System.currentTimeMillis() - appIds.get(appId) > appExpiredWithoutHB) {
+        if (System.currentTimeMillis() - shuffleTaskInfos.get(appId).getCurrentTimes() > appExpiredWithoutHB) {
           LOG.info("Detect expired appId[" + appId + "] according "
               + "to rss.server.app.expired.withoutHeartbeat");
           expiredAppIdQueue.add(appId);
         }
       }
-      ShuffleServerMetrics.gaugeAppNum.set(appIds.size());
+      ShuffleServerMetrics.gaugeAppNum.set(shuffleTaskInfos.size());
     } catch (Exception e) {
       LOG.warn("Error happened in checkResourceStatus", e);
     }
@@ -390,22 +379,20 @@ public class ShuffleTaskManager {
   public void removeResources(String appId) {
     LOG.info("Start remove resource for appId[" + appId + "]");
     final long start = System.currentTimeMillis();
-    final Map<Integer, Roaring64NavigableMap> shuffleToCachedBlockIds = cachedBlockIds.get(appId);
-    appIds.remove(appId);
+    final Map<Integer, Roaring64NavigableMap> shuffleToCachedBlockIds = shuffleTaskInfos.get(appId).getCachedBlockIds();
     partitionsToBlockIds.remove(appId);
-    cachedBlockIds.remove(appId);
-    commitCounts.remove(appId);
-    commitLocks.remove(appId);
     shuffleBufferManager.removeBuffer(appId);
     shuffleFlushManager.removeResources(appId);
-    if (shuffleToCachedBlockIds != null) {
-      storageManager.removeResources(appId, shuffleToCachedBlockIds.keySet());
+    if (!shuffleToCachedBlockIds.isEmpty()) {
+      storageManager.removeResources(appId, shuffleToCachedBlockIds.keySet(), appUserMap.get(appId));
     }
+    appUserMap.remove(appId);
+    shuffleTaskInfos.remove(appId);
     LOG.info("Finish remove resource for appId[" + appId + "] cost " + (System.currentTimeMillis() - start) + " ms");
   }
 
   public void refreshAppId(String appId) {
-    appIds.put(appId, System.currentTimeMillis());
+    shuffleTaskInfos.computeIfAbsent(appId, x -> new ShuffleTaskInfo()).setCurrentTimes(System.currentTimeMillis());
   }
 
   // check pre allocated buffer, release the memory if it expired
@@ -436,9 +423,13 @@ public class ShuffleTaskManager {
     return pabi.getRequireSize();
   }
 
+  public String getUserByAppId(String appId) {
+    return appUserMap.get(appId);
+  }
+
   @VisibleForTesting
-  public Map<String, Long> getAppIds() {
-    return appIds;
+  public Set<String> getAppIds() {
+    return shuffleTaskInfos.keySet();
   }
 
   @VisibleForTesting

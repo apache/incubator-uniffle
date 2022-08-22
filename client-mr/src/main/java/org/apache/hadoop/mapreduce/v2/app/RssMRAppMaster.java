@@ -77,7 +77,9 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
 public class RssMRAppMaster extends MRAppMaster {
@@ -130,10 +132,7 @@ public class RssMRAppMaster extends MRAppMaster {
 
       ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
       String appId = applicationAttemptId.toString();
-      ShuffleAssignmentsInfo response = client.getShuffleAssignments(
-          appId, 0, numReduceTasks, 1, Sets.newHashSet(assignmentTags));
 
-      Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges = response.getServerToPartitionRanges();
       final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
           new ThreadFactory() {
             @Override
@@ -144,40 +143,9 @@ public class RssMRAppMaster extends MRAppMaster {
             }
           }
       );
-      if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
-        return;
-      }
-
-      long heartbeatInterval = conf.getLong(RssMRConfig.RSS_HEARTBEAT_INTERVAL,
-          RssMRConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
-      long heartbeatTimeout = conf.getLong(RssMRConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
-      scheduledExecutorService.scheduleAtFixedRate(
-          () -> {
-            try {
-              client.sendAppHeartbeat(appId, heartbeatTimeout);
-              LOG.info("Finish send heartbeat to coordinator and servers");
-            } catch (Exception e) {
-              LOG.warn("Fail to send heartbeat to coordinator and servers", e);
-            }
-          },
-          heartbeatInterval / 2,
-          heartbeatInterval,
-          TimeUnit.MILLISECONDS);
 
       JobConf extraConf = new JobConf();
       extraConf.clear();
-      // write shuffle worker assignments to submit work directory
-      // format is as below:
-      // mapreduce.rss.assignment.partition.1:server1,server2
-      // mapreduce.rss.assignment.partition.2:server3,server4
-      // ...
-      response.getPartitionToServers().entrySet().forEach(entry -> {
-        List<String> servers = Lists.newArrayList();
-        for (ShuffleServerInfo server : entry.getValue()) {
-          servers.add(server.getHost() + ":" + server.getPort());
-        }
-        extraConf.set(RssMRConfig.RSS_ASSIGNMENT_PREFIX + entry.getKey(), StringUtils.join(servers, ","));
-      });
 
       // get remote storage from coordinator if necessary
       boolean dynamicConfEnabled = conf.getBoolean(RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
@@ -220,14 +188,80 @@ public class RssMRAppMaster extends MRAppMaster {
         }
         conf.setInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, originalAttempts + inc);
       }
+      
+      int requiredAssignmentShuffleServersNum = conf.getInt(
+              RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER,
+              RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER_DEFAULT_VALUE
+      );
+      
+      // retryInterval must bigger than `rss.server.heartbeat.timeout`, or maybe it will return the same result
+      long retryInterval = conf.getLong(RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL,
+              RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE);
+      int retryTimes = conf.getInt(RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES,
+              RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE);
+      ShuffleAssignmentsInfo response;
+      try {
+        response = RetryUtils.retry(() -> {
+          ShuffleAssignmentsInfo shuffleAssignments =
+                  client.getShuffleAssignments(
+                          appId,
+                          0,
+                          numReduceTasks,
+                          1,
+                          Sets.newHashSet(assignmentTags),
+                          requiredAssignmentShuffleServersNum
+                  );
 
-      LOG.info("Start to register shuffle");
-      long start = System.currentTimeMillis();
-      serverToPartitionRanges.entrySet().forEach(entry -> {
-        client.registerShuffle(
-            entry.getKey(), appId, 0, entry.getValue(), remoteStorage);
+          Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
+              shuffleAssignments.getServerToPartitionRanges();
+
+          if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
+            return null;
+          }
+          LOG.info("Start to register shuffle");
+          long start = System.currentTimeMillis();
+          serverToPartitionRanges.entrySet().forEach(entry -> {
+            client.registerShuffle(
+                entry.getKey(), appId, 0, entry.getValue(), remoteStorage);
+          });
+          LOG.info("Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
+          return shuffleAssignments;
+        }, retryInterval, retryTimes);
+      } catch (Throwable throwable) {
+        throw new RssException("registerShuffle failed!", throwable);
+      }
+
+      if (response == null) {
+        return;
+      }
+      long heartbeatInterval = conf.getLong(RssMRConfig.RSS_HEARTBEAT_INTERVAL,
+          RssMRConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
+      long heartbeatTimeout = conf.getLong(RssMRConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
+      scheduledExecutorService.scheduleAtFixedRate(
+          () -> {
+            try {
+              client.sendAppHeartbeat(appId, heartbeatTimeout);
+              LOG.info("Finish send heartbeat to coordinator and servers");
+            } catch (Exception e) {
+              LOG.warn("Fail to send heartbeat to coordinator and servers", e);
+            }
+          },
+          heartbeatInterval / 2,
+          heartbeatInterval,
+          TimeUnit.MILLISECONDS);
+
+      // write shuffle worker assignments to submit work directory
+      // format is as below:
+      // mapreduce.rss.assignment.partition.1:server1,server2
+      // mapreduce.rss.assignment.partition.2:server3,server4
+      // ...
+      response.getPartitionToServers().entrySet().forEach(entry -> {
+        List<String> servers = Lists.newArrayList();
+        for (ShuffleServerInfo server : entry.getValue()) {
+          servers.add(server.getHost() + ":" + server.getPort());
+        }
+        extraConf.set(RssMRConfig.RSS_ASSIGNMENT_PREFIX + entry.getKey(), StringUtils.join(servers, ","));
       });
-      LOG.info("Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
 
       writeExtraConf(conf, extraConf);
 

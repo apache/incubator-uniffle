@@ -17,16 +17,18 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
-import org.apache.uniffle.storage.HdfsTestBase;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Random;
+
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.jupiter.api.Test;
+
+import org.apache.uniffle.storage.HdfsTestBase;
+import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -37,7 +39,7 @@ public class HdfsFileWriterTest extends HdfsTestBase {
   @Test
   public void createStreamFirstTest() throws IOException {
     Path path = new Path(HDFS_URI, "createStreamFirstTest");
-    try (HdfsFileWriter writer = new HdfsFileWriter(path, conf)) {
+    try (HdfsFileWriter writer = new HdfsFileWriter(fs, path, conf)) {
       assertTrue(fs.isFile(path));
       assertEquals(0, writer.nextOffset());
     }
@@ -50,14 +52,14 @@ public class HdfsFileWriterTest extends HdfsTestBase {
 
     // create a file and fill 32 bytes
     Path path = new Path(HDFS_URI, "createStreamAppendTest");
-    try (HdfsFileWriter writer = new HdfsFileWriter(path, conf)) {
+    try (HdfsFileWriter writer = new HdfsFileWriter(fs, path, conf)) {
       assertEquals(0, writer.nextOffset());
       writer.writeData(data);
       assertEquals(32, writer.nextOffset());
     }
 
     // open existing file using append
-    try (HdfsFileWriter writer = new HdfsFileWriter(path, conf)) {
+    try (HdfsFileWriter writer = new HdfsFileWriter(fs, path, conf)) {
       assertTrue(fs.isFile(path));
       assertEquals(32, writer.nextOffset());
     }
@@ -65,7 +67,7 @@ public class HdfsFileWriterTest extends HdfsTestBase {
     // disable the append support
     conf.setBoolean("dfs.support.append", false);
     assertTrue(fs.isFile(path));
-    Throwable ise = assertThrows(IllegalStateException.class, () -> new HdfsFileWriter(path, conf));
+    Throwable ise = assertThrows(IllegalStateException.class, () -> new HdfsFileWriter(fs, path, conf));
     assertTrue(ise.getMessage().startsWith(path + " exists but append mode is not support!"));
   }
 
@@ -75,7 +77,7 @@ public class HdfsFileWriterTest extends HdfsTestBase {
     Path path = new Path(HDFS_URI, "createStreamDirectory");
     fs.mkdirs(path);
 
-    Throwable ise = assertThrows(IllegalStateException.class, () -> new HdfsFileWriter(path, conf));
+    Throwable ise = assertThrows(IllegalStateException.class, () -> new HdfsFileWriter(fs, path, conf));
     assertTrue(ise.getMessage().startsWith(HDFS_URI + "createStreamDirectory is a directory!"));
   }
 
@@ -87,7 +89,7 @@ public class HdfsFileWriterTest extends HdfsTestBase {
     buf.put(data);
     Path path = new Path(HDFS_URI, "createStreamTest");
 
-    try (HdfsFileWriter writer = new HdfsFileWriter(path, conf)) {
+    try (HdfsFileWriter writer = new HdfsFileWriter(fs, path, conf)) {
       assertEquals(0, writer.nextOffset());
       buf.flip();
       writer.writeData(buf.array());
@@ -101,7 +103,7 @@ public class HdfsFileWriterTest extends HdfsTestBase {
     new Random().nextBytes(data);
 
     Path path = new Path(HDFS_URI, "writeBufferTest");
-    try (HdfsFileWriter writer = new HdfsFileWriter(path, conf)) {
+    try (HdfsFileWriter writer = new HdfsFileWriter(fs, path, conf)) {
       assertEquals(0, writer.nextOffset());
       writer.writeData(data);
       assertEquals(32, writer.nextOffset());
@@ -126,7 +128,7 @@ public class HdfsFileWriterTest extends HdfsTestBase {
     buf.asIntBuffer().put(data);
 
     Path path = new Path(HDFS_URI, "writeBufferArrayTest");
-    try (HdfsFileWriter writer = new HdfsFileWriter(path, conf)) {
+    try (HdfsFileWriter writer = new HdfsFileWriter(fs, path, conf)) {
       assertEquals(0, writer.nextOffset());
       writer.writeData(buf.array());
       assertEquals(20, writer.nextOffset());
@@ -148,7 +150,7 @@ public class HdfsFileWriterTest extends HdfsTestBase {
         23, 128, 32, 32, 0xdeadbeef, 0);
 
     Path path = new Path(HDFS_URI, "writeSegmentTest");
-    try (HdfsFileWriter writer = new HdfsFileWriter(path, conf)) {
+    try (HdfsFileWriter writer = new HdfsFileWriter(fs, path, conf)) {
       writer.writeIndex(segment);
     }
 

@@ -34,6 +34,7 @@ import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.RetryUtils;
 
 public class DelegationRssShuffleManager implements ShuffleManager {
 
@@ -46,9 +47,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
 
   public DelegationRssShuffleManager(SparkConf sparkConf, boolean isDriver) throws Exception {
     this.sparkConf = sparkConf;
-    accessTimeoutMs = sparkConf.getInt(
-        RssSparkConfig.RSS_ACCESS_TIMEOUT_MS,
-        RssSparkConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE);
+    accessTimeoutMs = sparkConf.get(RssSparkConfig.RSS_ACCESS_TIMEOUT_MS);
     if (isDriver) {
       coordinatorClients = RssSparkShuffleUtils.createCoordinatorClients(sparkConf);
       delegate = createShuffleManagerInDriver();
@@ -69,7 +68,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     if (canAccess) {
       try {
         shuffleManager = new RssShuffleManager(sparkConf, true);
-        sparkConf.set(RssSparkConfig.RSS_ENABLED, "true");
+        sparkConf.set(RssSparkConfig.RSS_ENABLED.key(), "true");
         sparkConf.set("spark.shuffle.manager", RssShuffleManager.class.getCanonicalName());
         LOG.info("Use RssShuffleManager");
         return shuffleManager;
@@ -80,7 +79,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
 
     try {
       shuffleManager = RssSparkShuffleUtils.loadShuffleManager(Constants.SORT_SHUFFLE_MANAGER_NAME, sparkConf, true);
-      sparkConf.set(RssSparkConfig.RSS_ENABLED, "false");
+      sparkConf.set(RssSparkConfig.RSS_ENABLED.key(), "false");
       sparkConf.set("spark.shuffle.manager", "sort");
       LOG.info("Use SortShuffleManager");
     } catch (Exception e) {
@@ -92,30 +91,34 @@ public class DelegationRssShuffleManager implements ShuffleManager {
 
   private boolean tryAccessCluster() {
     String accessId = sparkConf.get(
-        RssSparkConfig.RSS_ACCESS_ID, "").trim();
+        RssSparkConfig.RSS_ACCESS_ID.key(), "").trim();
     if (StringUtils.isEmpty(accessId)) {
       LOG.warn("Access id key is empty");
       return false;
     }
+    long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS);
+    int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_TIMES);
 
     for (CoordinatorClient coordinatorClient : coordinatorClients) {
+      Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
+      boolean canAccess;
       try {
-        Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
-
-        RssAccessClusterResponse response =
-            coordinatorClient.accessCluster(new RssAccessClusterRequest(
-                accessId, assignmentTags, accessTimeoutMs));
-        if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
-          LOG.warn("Success to access cluster {} using {}", coordinatorClient.getDesc(), accessId);
-          return true;
-        } else if (response.getStatusCode() == ResponseStatusCode.ACCESS_DENIED) {
-          LOG.warn("Request to access cluster {} is denied using {} for {}",
-              coordinatorClient.getDesc(), accessId, response.getMessage());
-          return false;
-        } else {
-          LOG.warn("Fail to reach cluster {} for {}", coordinatorClient.getDesc(), response.getMessage());
-        }
-      } catch (Exception e) {
+        canAccess = RetryUtils.retry(() -> {
+          RssAccessClusterResponse response = coordinatorClient.accessCluster(new RssAccessClusterRequest(
+              accessId, assignmentTags, accessTimeoutMs));
+          if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+            LOG.warn("Success to access cluster {} using {}", coordinatorClient.getDesc(), accessId);
+            return true;
+          } else if (response.getStatusCode() == ResponseStatusCode.ACCESS_DENIED) {
+            throw new RssException("Request to access cluster " + coordinatorClient.getDesc() + " is denied using "
+                + accessId + " for " + response.getMessage());
+          } else {
+            throw new RssException("Fail to reach cluster " + coordinatorClient.getDesc()
+                + " for " + response.getMessage());
+          }
+        }, retryInterval, retryTimes);
+        return canAccess;
+      } catch (Throwable e) {
         LOG.warn("Fail to access cluster {} using {} for {}",
             coordinatorClient.getDesc(), accessId, e.getMessage());
       }
@@ -127,9 +130,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   private ShuffleManager createShuffleManagerInExecutor() throws RssException {
     ShuffleManager shuffleManager;
     // get useRSS from spark conf
-    boolean useRSS = sparkConf.getBoolean(
-        RssSparkConfig.RSS_ENABLED,
-        RssSparkConfig.RSS_USE_RSS_SHUFFLE_MANAGER_DEFAULT_VALUE);
+    boolean useRSS = sparkConf.get(RssSparkConfig.RSS_ENABLED);
     if (useRSS) {
       // Executor will not do any fallback
       shuffleManager = new RssShuffleManager(sparkConf, false);

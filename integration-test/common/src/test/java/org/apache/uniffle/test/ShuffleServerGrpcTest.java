@@ -18,6 +18,7 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +28,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
+import com.google.protobuf.ByteString;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -56,6 +59,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerGrpcMetrics;
@@ -84,7 +88,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     String basePath = dataDir1.getAbsolutePath();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
     shuffleServerConf.set(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, EVENT_THRESHOLD_SIZE);
-    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, basePath);
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
     shuffleServerConf.set(RssBaseConf.RPC_METRICS_ENABLED, true);
     shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
     shuffleServerConf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED, 5000L);
@@ -119,7 +123,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
         Lists.newArrayList(new PartitionRange(0, 1)), "");
     shuffleServerClient.registerShuffle(rrsr);
     assertEquals(Sets.newHashSet("clearResourceTest1", "clearResourceTest2"),
-        shuffleServers.get(0).getShuffleTaskManager().getAppIds().keySet());
+        shuffleServers.get(0).getShuffleTaskManager().getAppIds());
 
     // Thread will keep refresh clearResourceTest1 in coordinator
     Thread t = new Thread(() -> {
@@ -145,7 +149,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     // clearResourceTest2 will be removed because of rss.server.app.expired.withoutHeartbeat
     Thread.sleep(2000);
     assertEquals(Sets.newHashSet("clearResourceTest1"),
-        shuffleServers.get(0).getShuffleTaskManager().getAppIds().keySet());
+        shuffleServers.get(0).getShuffleTaskManager().getAppIds());
 
     // clearResourceTest1 will be removed because of rss.server.app.expired.withoutHeartbeat
     t.interrupt();
@@ -391,6 +395,47 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     assertEquals(132, shuffleServers.get(0).getPreAllocatedMemory());
     Thread.sleep(10000);
     assertEquals(0, shuffleServers.get(0).getPreAllocatedMemory());
+  }
+
+
+  @Test
+  public void sendDataWithoutRequirePreAllocation() throws Exception {
+    String appId = "sendDataWithoutRequirePreAllocation";
+    List<ShuffleBlockInfo> blockInfos = Lists.newArrayList(new ShuffleBlockInfo(0, 0, 0, 100, 0,
+        new byte[]{}, Lists.newArrayList(), 0, 100, 0));
+    Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
+    partitionToBlocks.put(0, blockInfos);
+    Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
+    shuffleToBlocks.put(0, partitionToBlocks);
+    for (Map.Entry<Integer, Map<Integer, List<ShuffleBlockInfo>>> stb : shuffleToBlocks.entrySet()) {
+      List<RssProtos.ShuffleData> shuffleData = Lists.newArrayList();
+      for (Map.Entry<Integer, List<ShuffleBlockInfo>> ptb : stb.getValue().entrySet()) {
+        List<RssProtos.ShuffleBlock> shuffleBlocks = Lists.newArrayList();
+        for (ShuffleBlockInfo sbi : ptb.getValue()) {
+          shuffleBlocks.add(RssProtos.ShuffleBlock.newBuilder().setBlockId(sbi.getBlockId())
+              .setCrc(sbi.getCrc())
+              .setLength(sbi.getLength())
+              .setTaskAttemptId(sbi.getTaskAttemptId())
+              .setUncompressLength(sbi.getUncompressLength())
+              .setData(ByteString.copyFrom(sbi.getData()))
+              .build());
+        }
+        shuffleData.add(RssProtos.ShuffleData.newBuilder().setPartitionId(ptb.getKey())
+            .addAllBlock(shuffleBlocks)
+            .build());
+      }
+
+      RssProtos.SendShuffleDataRequest rpcRequest = RssProtos.SendShuffleDataRequest.newBuilder()
+          .setAppId(appId)
+          .setShuffleId(0)
+          .setRequireBufferId(10000)
+          .addAllShuffleData(shuffleData)
+          .build();
+      RssProtos.SendShuffleDataResponse response =
+          shuffleServerClient.getBlockingStub().sendShuffleData(rpcRequest);
+      assertTrue(RssProtos.StatusCode.INTERNAL_ERROR.equals(response.getStatus()));
+      assertTrue(response.getRetMsg().contains("Can't find requireBufferId[10000]"));
+    }
   }
 
   @Test

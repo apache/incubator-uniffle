@@ -25,9 +25,9 @@ import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,8 +46,8 @@ public class LocalStorageChecker extends Checker {
 
   public LocalStorageChecker(ShuffleServerConf conf, List<LocalStorage> storages) {
     super(conf);
-    String basePathStr = conf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
-    if (StringUtils.isEmpty(basePathStr)) {
+    List<String> basePaths = conf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
+    if (CollectionUtils.isEmpty(basePaths)) {
       throw new IllegalArgumentException("The base path cannot be empty");
     }
     String storageType = conf.getString(ShuffleServerConf.RSS_STORAGE_TYPE);

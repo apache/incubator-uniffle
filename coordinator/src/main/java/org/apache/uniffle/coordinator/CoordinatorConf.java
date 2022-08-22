@@ -47,6 +47,13 @@ public class CoordinatorConf extends RssBaseConf {
       .longType()
       .defaultValue(30 * 1000L)
       .withDescription("timeout if can't get heartbeat from shuffle server");
+  public static final ConfigOption<Long> COORDINATOR_NODES_PERIODIC_OUTPUT_INTERVAL_TIMES = ConfigOptions
+      .key("rss.coordinator.server.periodic.output.interval.times")
+      .longType()
+      .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "output server list interval times must be positive")
+      .defaultValue(30L)
+      .withDescription("The periodic interval times of output alive nodes. The interval sec can be calculated by ("
+          + COORDINATOR_HEARTBEAT_TIMEOUT.key() + "/3 * rss.coordinator.server.periodic.output.interval.times)");
   public static final ConfigOption<String> COORDINATOR_ASSIGNMENT_STRATEGY = ConfigOptions
       .key("rss.coordinator.assignment.strategy")
       .stringType()
@@ -61,7 +68,7 @@ public class CoordinatorConf extends RssBaseConf {
       .key("rss.coordinator.shuffle.nodes.max")
       .intType()
       .defaultValue(9)
-      .withDescription("The max number of shuffle server when do the assignment");
+      .withDescription("The max limitation number of shuffle server when do the assignment");
   public static final ConfigOption<List<String>> COORDINATOR_ACCESS_CHECKERS = ConfigOptions
       .key("rss.coordinator.access.checkers")
       .stringType()
@@ -112,7 +119,7 @@ public class CoordinatorConf extends RssBaseConf {
       .intType()
       .checkValue(ConfigUtils.POSITIVE_INTEGER_VALIDATOR_2, "dynamic client conf update interval in seconds")
       .defaultValue(120)
-      .withDescription("Accessed candidates update interval in seconds");
+      .withDescription("The dynamic client conf update interval in seconds");
   public static final ConfigOption<String> COORDINATOR_REMOTE_STORAGE_CLUSTER_CONF = ConfigOptions
       .key("rss.coordinator.remote.storage.cluster.conf")
       .stringType()

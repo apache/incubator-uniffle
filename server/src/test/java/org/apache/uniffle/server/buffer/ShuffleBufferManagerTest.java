@@ -17,8 +17,16 @@
 
 package org.apache.uniffle.server.buffer;
 
+import java.io.File;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+
 import com.google.common.collect.RangeMap;
 import com.google.common.io.Files;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.util.Constants;
@@ -26,16 +34,11 @@ import org.apache.uniffle.server.ShuffleFlushManager;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
+import org.apache.uniffle.server.ShuffleTaskManager;
 import org.apache.uniffle.server.StatusCode;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
 import org.apache.uniffle.storage.util.StorageType;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.File;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,7 +62,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     File tmpDir = Files.createTempDir();
     File dataDir = new File(tmpDir, "data");
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
-    conf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, dataDir.getAbsolutePath());
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(dataDir.getAbsolutePath()));
     conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 500L);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 80.0);
@@ -329,7 +332,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   @Test
   public void bufferSizeTest() throws Exception {
     ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
-    StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager("serverId", conf);
+    StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(conf);
     ShuffleFlushManager shuffleFlushManager = new ShuffleFlushManager(conf, "serverId", mockShuffleServer, storageManager);
     shuffleBufferManager = new ShuffleBufferManager(conf, shuffleFlushManager);
 
@@ -339,6 +342,9 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     when(mockShuffleServer
         .getShuffleBufferManager())
         .thenReturn(shuffleBufferManager);
+    when(mockShuffleServer
+        .getShuffleTaskManager())
+        .thenReturn(mock(ShuffleTaskManager.class));
 
     String appId = "bufferSizeTest";
     int shuffleId = 1;
@@ -381,6 +387,55 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleBufferManager.removeBuffer(appId);
     assertEquals(64, shuffleBufferManager.getUsedMemory());
     assertEquals(1, shuffleBufferManager.getBufferPool().keySet().size());
+  }
+
+  @Test
+  public void flushSingleBufferTest() throws Exception {
+    ShuffleServerConf shuffleConf = new ShuffleServerConf();
+    File tmpDir = Files.createTempDir();
+    File dataDir = new File(tmpDir, "data");
+    shuffleConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    shuffleConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(dataDir.getAbsolutePath()));
+    shuffleConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 200L);
+    shuffleConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);
+    shuffleConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 80.0);
+    shuffleConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
+    shuffleConf.setBoolean(ShuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED, true);
+    shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD, 128L);
+
+    ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
+    StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(shuffleConf);
+    ShuffleFlushManager shuffleFlushManager = new ShuffleFlushManager(shuffleConf, "serverId", mockShuffleServer, storageManager);
+    shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager);
+
+    when(mockShuffleServer
+             .getShuffleFlushManager())
+        .thenReturn(shuffleFlushManager);
+    when(mockShuffleServer
+             .getShuffleBufferManager())
+        .thenReturn(shuffleBufferManager);
+    when(mockShuffleServer
+             .getShuffleTaskManager())
+        .thenReturn(mock(ShuffleTaskManager.class));
+
+    String appId = "bufferSizeTest";
+    int shuffleId = 1;
+
+    shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
+    shuffleBufferManager.registerBuffer(appId, shuffleId, 2, 3);
+    shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 64));
+    assertEquals(96, shuffleBufferManager.getUsedMemory());
+    shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(2, 64));
+    waitForFlush(shuffleFlushManager, appId, shuffleId, 2);
+    assertEquals(0, shuffleBufferManager.getUsedMemory());
+    assertEquals(0, shuffleBufferManager.getInFlushSize());
+
+    shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 32));
+    assertEquals(64, shuffleBufferManager.getUsedMemory());
+    shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(1, 32));
+    waitForFlush(shuffleFlushManager, appId, shuffleId, 4);
+    assertEquals(0, shuffleBufferManager.getUsedMemory());
+    assertEquals(0, shuffleBufferManager.getInFlushSize());
   }
 
   private void waitForFlush(ShuffleFlushManager shuffleFlushManager,

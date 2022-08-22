@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
-
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -52,7 +51,7 @@ public class SimpleClusterManagerTest {
   }
 
   @Test
-  public void getServerListTest() throws IOException {
+  public void getServerListTest() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
     SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
@@ -107,6 +106,39 @@ public class SimpleClusterManagerTest {
   }
 
   @Test
+  public void testGetCorrectServerNodesWhenOneNodeRemovedAndUnhealthyNodeFound() throws Exception {
+    CoordinatorConf ssc = new CoordinatorConf();
+    ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
+    SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
+    ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
+        10, testTags, false);
+    ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
+        10, testTags, true);
+    ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
+        11, testTags, true);
+    clusterManager.add(sn1);
+    clusterManager.add(sn2);
+    clusterManager.add(sn3);
+
+    List<ServerNode> serverNodes = clusterManager.getServerList(testTags);
+    assertEquals(2, serverNodes.size());
+    assertEquals(0, CoordinatorMetrics.gaugeUnhealthyServerNum.get());
+    clusterManager.nodesCheck();
+
+    List<ServerNode> serverList = clusterManager.getServerList(testTags);
+    Assertions.assertEquals(2, serverList.size());
+    assertEquals(1, CoordinatorMetrics.gaugeUnhealthyServerNum.get());
+
+    sn3.setTimestamp(System.currentTimeMillis() - 60 * 1000L);
+    clusterManager.nodesCheck();
+
+    List<ServerNode> serverList2 = clusterManager.getServerList(testTags);
+    Assertions.assertEquals(1, serverList2.size());
+    assertEquals(1, CoordinatorMetrics.gaugeUnhealthyServerNum.get());
+    clusterManager.close();
+  }
+
+  @Test
   public void heartbeatTimeoutTest() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 300L);
@@ -117,7 +149,7 @@ public class SimpleClusterManagerTest {
           try {
             Thread.sleep(800);
           } catch (Exception e) {
-
+            // ignore
           }
         }
 
@@ -151,7 +183,7 @@ public class SimpleClusterManagerTest {
   }
 
   @Test
-  public void testGetCorrectServerNodesWhenOneNodeRemoved() throws IOException {
+  public void testGetCorrectServerNodesWhenOneNodeRemoved() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
     SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());

@@ -31,10 +31,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.Constants;
-import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -56,7 +56,7 @@ public class ClientConfManagerTest {
   @Test
   public void test(@TempDir File tempDir) throws Exception {
     File cfgFile = File.createTempFile("tmp", ".conf", tempDir);
-    String cfgFileName = cfgFile.getAbsolutePath();
+    final String cfgFileName = cfgFile.getAbsolutePath();
     final String filePath = Objects.requireNonNull(
         getClass().getClassLoader().getResource("coordinator.conf")).getFile();
     CoordinatorConf conf = new CoordinatorConf(filePath);
@@ -139,9 +139,9 @@ public class ClientConfManagerTest {
   @Test
   public void dynamicRemoteStorageTest() throws Exception {
     int updateIntervalSec = 2;
-    String remotePath1 = "hdfs://host1/path1";
-    String remotePath2 = "hdfs://host2/path2";
-    String remotePath3 = "hdfs://host3/path3";
+    final String remotePath1 = "hdfs://host1/path1";
+    final String remotePath2 = "hdfs://host2/path2";
+    final String remotePath3 = "hdfs://host3/path3";
     File cfgFile = Files.createTempFile("dynamicRemoteStorageTest", ".conf").toFile();
     cfgFile.deleteOnExit();
     writeRemoteStorageConf(cfgFile, remotePath1);
@@ -152,7 +152,7 @@ public class ClientConfManagerTest {
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
     ApplicationManager applicationManager = new ApplicationManager(conf);
 
-    ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
+    final ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
     Thread.sleep(500);
     Set<String> expectedAvailablePath = Sets.newHashSet(remotePath1);
     assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());

@@ -18,9 +18,12 @@
 package org.apache.uniffle.common.rpc;
 
 import java.io.IOException;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.Queues;
 import io.grpc.BindableService;
@@ -47,13 +50,14 @@ public class GrpcServer implements ServerInterface {
     this.port = conf.getInteger(RssBaseConf.RPC_SERVER_PORT);
     long maxInboundMessageSize = conf.getLong(RssBaseConf.RPC_MESSAGE_MAX_SIZE);
     int rpcExecutorSize = conf.getInteger(RssBaseConf.RPC_EXECUTOR_SIZE);
-    pool = new ThreadPoolExecutor(
+    pool = new GrpcThreadPoolExecutor(
         rpcExecutorSize,
         rpcExecutorSize * 2,
         10,
         TimeUnit.MINUTES,
         Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
-        ThreadUtils.getThreadFactory("Grpc-%d")
+        ThreadUtils.getThreadFactory("Grpc-%d"),
+        grpcMetrics
     );
 
     boolean isMetricsEnabled = conf.getBoolean(RssBaseConf.RPC_METRICS_ENABLED);
@@ -64,6 +68,7 @@ public class GrpcServer implements ServerInterface {
           .forPort(port)
           .addService(ServerInterceptors.intercept(service, monitoringInterceptor))
           .executor(pool)
+          .addTransportFilter(new MonitoringServerTransportFilter(grpcMetrics))
           .maxInboundMessageSize((int)maxInboundMessageSize)
           .build();
     } else {
@@ -73,6 +78,41 @@ public class GrpcServer implements ServerInterface {
           .executor(pool)
           .maxInboundMessageSize((int)maxInboundMessageSize)
           .build();
+    }
+  }
+
+  public static class GrpcThreadPoolExecutor extends ThreadPoolExecutor {
+    private final GRPCMetrics grpcMetrics;
+    private final AtomicLong activeThreadSize = new AtomicLong(0L);
+
+    public GrpcThreadPoolExecutor(
+        int corePoolSize,
+        int maximumPoolSize,
+        long keepAliveTime,
+        TimeUnit unit,
+        BlockingQueue<Runnable> workQueue,
+        ThreadFactory threadFactory,
+        GRPCMetrics grpcMetrics) {
+      super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory);
+      this.grpcMetrics = grpcMetrics;
+    }
+
+    @Override
+    protected void beforeExecute(Thread t, Runnable r) {
+      grpcMetrics.setGauge(GRPCMetrics.GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY,
+          activeThreadSize.incrementAndGet());
+      grpcMetrics.setGauge(GRPCMetrics.GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY,
+          getQueue().size());
+      super.beforeExecute(t, r);
+    }
+
+    @Override
+    protected void afterExecute(Runnable r, Throwable t) {
+      grpcMetrics.setGauge(GRPCMetrics.GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY,
+          activeThreadSize.decrementAndGet());
+      grpcMetrics.setGauge(GRPCMetrics.GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY,
+          getQueue().size());
+      super.afterExecute(r, t);
     }
   }
 

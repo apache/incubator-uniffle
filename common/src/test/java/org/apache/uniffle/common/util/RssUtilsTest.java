@@ -18,24 +18,27 @@
 package org.apache.uniffle.common.util;
 
 import java.lang.reflect.Field;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
 import com.google.common.collect.Lists;
-import org.apache.uniffle.common.ShuffleDataSegment;
-import org.apache.uniffle.common.ShuffleIndexResult;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleDataSegment;
+import org.apache.uniffle.common.ShuffleIndexResult;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -56,12 +59,12 @@ public class RssUtilsTest {
   @Test
   public void testGetHostIp() {
     try {
-      String address = InetAddress.getLocalHost().getHostAddress();
       String realIp = RssUtils.getHostIp();
-      assertNotEquals("127.0.0.1", realIp);
-      if (!address.equals("127.0.0.1")) {
-        assertEquals(address, realIp);
-      }
+      InetAddress ia = InetAddress.getByName(realIp);
+      assertTrue(ia instanceof Inet4Address);
+      assertFalse(ia.isLinkLocalAddress() || ia.isAnyLocalAddress() || ia.isLoopbackAddress());
+      assertTrue(NetworkInterface.getByInetAddress(ia) != null);
+      assertTrue(ia.isReachable(5000));
       setEnv("RSS_IP", "8.8.8.8");
       assertEquals("8.8.8.8", RssUtils.getHostIp());
       setEnv("RSS_IP", "xxxx");
@@ -86,6 +89,14 @@ public class RssUtilsTest {
     Roaring64NavigableMap bitmap2 = RssUtils.deserializeBitMap(bytes);
     assertEquals(bitmap1, bitmap2);
     assertEquals(Roaring64NavigableMap.bitmapOf(), RssUtils.deserializeBitMap(new byte[]{}));
+  }
+
+  @Test
+  public void testCloneBitmap() {
+    Roaring64NavigableMap bitmap1 = Roaring64NavigableMap.bitmapOf(1, 2, 100, 10000);
+    Roaring64NavigableMap bitmap2 = RssUtils.cloneBitMap(bitmap1);
+    assertNotSame(bitmap1, bitmap2);
+    assertEquals(bitmap1, bitmap2);
   }
 
   @Test

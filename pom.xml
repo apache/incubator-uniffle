@@ -51,6 +51,7 @@
     <httpclient.version>4.5.3</httpclient.version>
     <httpcore.version>4.4.4</httpcore.version>
     <java.version>1.8</java.version>
+    <javax.annotation.version>1.3.2</javax.annotation.version>
     <jetty.version>9.3.24.v20180605</jetty.version>
     <junit.jupiter.version>5.8.2</junit.jupiter.version>
     <junit.platform.version>1.8.2</junit.platform.version>
@@ -74,6 +75,7 @@
     <spotbugs-maven-plugin.version>4.7.0.0</spotbugs-maven-plugin.version>
     <system-rules.version>1.19.0</system-rules.version>
     <test.redirectToFile>true</test.redirectToFile>
+    <trimStackTrace>false</trimStackTrace>
   </properties>
 
   <repositories>
@@ -217,6 +219,11 @@
         <version>${metrics.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>javax.annotation</groupId>
+        <artifactId>javax.annotation-api</artifactId>
+        <version>${javax.annotation.version}</version>
+      </dependency>
 
       <dependency>
         <groupId>org.apache.uniffle</groupId>
@@ -328,6 +335,12 @@
             <artifactId>json-smart</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-minikdc</artifactId>
+        <version>${hadoop.version}</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
@@ -691,6 +704,7 @@
             <useFile>${test.redirectToFile}</useFile>
             <argLine>${argLine} -ea -Xmx3g</argLine>
             <failIfNoTests>false</failIfNoTests>
+            <trimStackTrace>${trimStackTrace}</trimStackTrace>
           </configuration>
         </plugin>
 
@@ -906,6 +920,9 @@
             <exclude>src/test/resources/empty</exclude>
             <exclude>**/dependency-reduced-pom.xml</exclude>
             <exclude>.github/PULL_REQUEST_TEMPLATE</exclude>
+            <exclude>deploy/kubernetes/operator/go.mod</exclude>
+            <exclude>deploy/kubernetes/operator/go.sum</exclude>
+            <exclude>deploy/kubernetes/operator/PROJECT</exclude>
           </excludes>
         </configuration>
       </plugin>

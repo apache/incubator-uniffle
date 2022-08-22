@@ -17,10 +17,13 @@
 
 package org.apache.uniffle.server;
 
+import java.util.Arrays;
+
+import org.junit.jupiter.api.Test;
+
 import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.ExitUtils.ExitException;
 import org.apache.uniffle.storage.util.StorageType;
-import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -35,7 +38,7 @@ public class ShuffleServerTest {
       serverConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
       serverConf.setInteger(ShuffleServerConf.JETTY_HTTP_PORT, 9528);
       serverConf.setString(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:0");
-      serverConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH, "/tmp/null");
+      serverConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/tmp/null"));
       serverConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
       serverConf.setLong(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 100);
       serverConf.setLong(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY, 10);

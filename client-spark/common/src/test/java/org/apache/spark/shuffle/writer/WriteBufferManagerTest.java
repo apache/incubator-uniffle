@@ -53,11 +53,11 @@ public class WriteBufferManagerTest {
 
   private SparkConf getConf() {
     SparkConf conf = new SparkConf(false);
-    conf.set(RssSparkConfig.RSS_WRITER_BUFFER_SIZE, "64")
-        .set(RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE, "32")
-        .set(RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE, "128")
-        .set(RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE, "512")
-        .set(RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE, "190");
+    conf.set(RssSparkConfig.RSS_WRITER_BUFFER_SIZE.key(), "64")
+        .set(RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE.key(), "32")
+        .set(RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE.key(), "128")
+        .set(RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE.key(), "512")
+        .set(RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.key(), "190");
     return conf;
   }
 
@@ -120,6 +120,20 @@ public class WriteBufferManagerTest {
     assertEquals(224, wbm.getAllocatedBytes());
     assertEquals(96, wbm.getUsedBytes());
     assertEquals(96, wbm.getInSendListBytes());
+  }
+
+  @Test
+  public void addHugeRecordTest() {
+    SparkConf conf = getConf();
+    WriteBufferManager wbm = createManager(conf);
+    String testKey = "len_more_than_32";
+    String testValue = "len_more_than_32";
+    List<ShuffleBlockInfo> result = wbm.addRecord(0, testKey, testValue);
+    assertEquals(0, result.size());
+    assertEquals(512, wbm.getAllocatedBytes());
+    assertEquals(36, wbm.getUsedBytes());
+    assertEquals(0, wbm.getInSendListBytes());
+    assertEquals(1, wbm.getBuffers().size());
   }
 
   @Test

@@ -15,10 +15,12 @@
   ~ limitations under the License.
   -->
 
-# What is Uniffle
+# Apache Uniffle (Incubating)
 
-Uniffle is a Remote Shuffle Service, and provides the capability for Apache Spark applications
-to store shuffle data on remote servers.
+Uniffle is a unified remote shuffle service for compute engines.
+It provides the ability to aggregate and store shuffle data on remote servers,
+thus improving the performance and reliability of large jobs.
+Currently it supports [Apache Spark](https://spark.apache.org) and [MapReduce](https://hadoop.apache.org).
 
 [![Build](https://github.com/apache/incubator-uniffle/actions/workflows/build.yml/badge.svg?branch=master&event=push)](https://github.com/apache/incubator-uniffle/actions/workflows/build.yml)
 [![Codecov](https://codecov.io/gh/apache/incubator-uniffle/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/incubator-uniffle)
@@ -224,17 +226,7 @@ The important configuration is listed as following.
 
 ### Coordinator
 
-|Property Name|Default|	Description|
-|---|---|---|
-|rss.coordinator.server.heartbeat.timeout|30000|Timeout if can't get heartbeat from shuffle server|
-|rss.coordinator.assignment.strategy|PARTITION_BALANCE|Strategy for assigning shuffle server, PARTITION_BALANCE should be used for workload balance|
-|rss.coordinator.app.expired|60000|Application expired time (ms), the heartbeat interval should be less than it|
-|rss.coordinator.shuffle.nodes.max|9|The max number of shuffle server when do the assignment|
-|rss.coordinator.dynamicClientConf.path|-|The path of configuration file which have default conf for rss client|
-|rss.coordinator.exclude.nodes.file.path|-|The path of configuration file which have exclude nodes|
-|rss.coordinator.exclude.nodes.check.interval.ms|60000|Update interval (ms) for exclude nodes|
-|rss.rpc.server.port|-|RPC port for coordinator|
-|rss.jetty.http.port|-|Http port for coordinator|
+For more details of advanced configuration, please see [Uniffle Coordinator Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/coordinator_guide.md).
 
 ### Shuffle Server
 
@@ -253,6 +245,8 @@ The important configuration is listed as following.
 |rss.storage.type|-|Supports MEMORY_LOCALFILE, MEMORY_HDFS, MEMORY_LOCALFILE_HDFS|
 |rss.server.flush.cold.storage.threshold.size|64M| The threshold of data size for LOACALFILE and HDFS if MEMORY_LOCALFILE_HDFS is used|
 |rss.server.tags|-|The comma-separated list of tags to indicate the shuffle server's attributes. It will be used as the assignment basis for the coordinator|
+|rss.server.single.buffer.flush.enabled|false|Whether single buffer flush when size exceeded rss.server.single.buffer.flush.threshold|
+|rss.server.single.buffer.flush.threshold|64M|The threshold of single shuffle buffer flush|
 
 ### Shuffle Client
 
@@ -264,8 +258,3 @@ Uniffle is under the Apache License Version 2.0. See the [LICENSE](https://githu
 
 ## Contributing
 For more information about contributing issues or pull requests, see [Uniffle Contributing Guide](https://github.com/apache/incubator-uniffle/blob/master/CONTRIBUTING.md).
-
-## Support 
-We provide free support for users using this project. If you want to join user wechat group for further help and collaboration. You can scan the following QR code or search wechatID `xinghuojihua_01`, add our assistant on wechat, and remark `Uniffle`. The assistant will help you join our wechat group.
-
-![Wechat](docs/asset/wechat.png)

@@ -17,16 +17,19 @@
 
 package org.apache.uniffle.storage.util;
 
-import org.apache.uniffle.storage.HdfsTestBase;
-import org.apache.uniffle.storage.handler.impl.HdfsFileWriter;
-import org.apache.hadoop.fs.Path;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Random;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import org.apache.uniffle.storage.HdfsTestBase;
+import org.apache.uniffle.storage.handler.impl.HdfsFileWriter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -34,7 +37,15 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class ShuffleHdfsStorageUtilsTest extends HdfsTestBase {
 
   @Test
-  public void testUploadFile(@TempDir File tempDir) {
+  public void testUploadFile(@TempDir File tempDir) throws Exception {
+    createAndRunCases(tempDir, fs, HDFS_URI, HdfsTestBase.conf);
+  }
+
+  public static void createAndRunCases(
+      File tempDir,
+      FileSystem fileSystem,
+      String clusterPathPrefix,
+      Configuration hadoopConf) throws Exception {
     FileOutputStream fileOut = null;
     DataOutputStream dataOut = null;
     try {
@@ -46,8 +57,8 @@ public class ShuffleHdfsStorageUtilsTest extends HdfsTestBase {
       dataOut.write(buf);
       dataOut.close();
       fileOut.close();
-      String path = HDFS_URI + "test";
-      HdfsFileWriter writer = new HdfsFileWriter(new Path(path), conf);
+      String path = clusterPathPrefix + "test";
+      HdfsFileWriter writer = new HdfsFileWriter(fileSystem, new Path(path), hadoopConf);
       long size = ShuffleStorageUtils.uploadFile(file, writer, 1024);
       assertEquals(2096, size);
       size = ShuffleStorageUtils.uploadFile(file, writer, 100);

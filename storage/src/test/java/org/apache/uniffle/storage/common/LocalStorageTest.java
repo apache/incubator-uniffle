@@ -17,21 +17,22 @@
 
 package org.apache.uniffle.storage.common;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
 
 import com.google.common.collect.Lists;
-import org.apache.uniffle.common.util.RssUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.RoaringBitmap;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
+import org.apache.uniffle.common.util.RssUtils;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class LocalStorageTest {
@@ -74,8 +75,8 @@ public class LocalStorageTest {
   @Test
   public void removeResourcesTest() throws Exception {
     LocalStorage item = prepareDiskItem();
-    String key1 = RssUtils.generateShuffleKey("1", 1);
-    String key2 = RssUtils.generateShuffleKey("1", 2);
+    final String key1 = RssUtils.generateShuffleKey("1", 1);
+    final String key2 = RssUtils.generateShuffleKey("1", 2);
     item.removeResources(key1);
     assertEquals(50L, item.getMetaData().getDiskSize().get());
     assertEquals(0L, item.getMetaData().getShuffleSize(key1));
@@ -84,7 +85,7 @@ public class LocalStorageTest {
   }
 
   private LocalStorage prepareDiskItem() {
-    LocalStorage item = LocalStorage.newBuilder().basePath(testBaseDir.getAbsolutePath())
+    final LocalStorage item = LocalStorage.newBuilder().basePath(testBaseDir.getAbsolutePath())
         .cleanupThreshold(50)
         .highWaterMarkOfWrite(95)
         .lowWaterMarkOfWrite(80)
@@ -116,7 +117,7 @@ public class LocalStorageTest {
       try {
         t.join();
       } catch (InterruptedException e) {
-
+        // ignore
       }
     });
 

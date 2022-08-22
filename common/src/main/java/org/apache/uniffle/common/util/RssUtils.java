@@ -97,10 +97,10 @@ public class RssUtils {
     return result;
   }
 
-  // `InetAddress.getLocalHost().getHostAddress()` could return 127.0.0.1. To avoid
-  // this situation, we can get current ip through network interface (filtered ipv6,
-  // loop back, etc.). If the network interface in the machine is more than one, we
-  // will choose the first IP.
+  // `InetAddress.getLocalHost().getHostAddress()` could return
+  // 127.0.0.1 (127.0.1.1 on Debian). To avoid this situation, we can get current
+  // ip through network interface (filtered ipv6, loop back, etc.).
+  // If the network interface in the machine is more than one, we will choose the first IP.
   public static String getHostIp() throws Exception {
     // For K8S, there are too many IPs, it's hard to decide which we should use.
     // So we use the environment variable to tell RSS to use which one.
@@ -170,6 +170,12 @@ public class RssUtils {
     DataInputStream dataInputStream = new DataInputStream(new ByteArrayInputStream(bytes));
     bitmap.deserialize(dataInputStream);
     return bitmap;
+  }
+
+  public static Roaring64NavigableMap cloneBitMap(Roaring64NavigableMap bitmap) {
+    Roaring64NavigableMap clone = Roaring64NavigableMap.bitmapOf();
+    clone.or(bitmap);
+    return clone;
   }
 
   public static List<ShuffleDataSegment> transIndexDataToSegments(

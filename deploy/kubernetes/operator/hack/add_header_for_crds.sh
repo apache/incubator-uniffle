@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -14,3 +16,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+set -e
+set -o pipefail
+set -u
+
+for filename in config/crd/bases/*.yaml; do
+  original_content=$(cat "$filename")
+  header=$(cat hack/headers/header.yaml.txt)
+  echo "$header" > "$filename"
+  echo "$original_content" >> "$filename"
+done

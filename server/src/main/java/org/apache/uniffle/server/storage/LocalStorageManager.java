@@ -17,13 +17,24 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.RssUtils;
@@ -41,21 +52,24 @@ import org.apache.uniffle.storage.request.CreateShuffleDeleteHandlerRequest;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
-public class LocalStorageManager extends SingleStorageManager {
+import static org.apache.uniffle.server.ShuffleServerConf.LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER;
 
-  private final List<LocalStorage> localStorages = Lists.newArrayList();
-  private final String[] storageBasePaths;
+public class LocalStorageManager extends SingleStorageManager {
+  private static final Logger LOG = LoggerFactory.getLogger(LocalStorageManager.class);
+
+  private final List<LocalStorage> localStorages;
+  private final List<String> storageBasePaths;
   private final LocalStorageChecker checker;
   private List<LocalStorage> unCorruptedStorages = Lists.newArrayList();
   private final Set<String> corruptedStorages = Sets.newConcurrentHashSet();
 
+  @VisibleForTesting
   LocalStorageManager(ShuffleServerConf conf) {
     super(conf);
-    String storageBasePathStr = conf.getString(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
-    if (StringUtils.isEmpty(storageBasePathStr)) {
+    storageBasePaths = conf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
+    if (CollectionUtils.isEmpty(storageBasePaths)) {
       throw new IllegalArgumentException("Base path dirs must not be empty");
     }
-    storageBasePaths = storageBasePathStr.split(",");
     long shuffleExpiredTimeoutMs = conf.get(ShuffleServerConf.SHUFFLE_EXPIRED_TIMEOUT_MS);
     long capacity = conf.getSizeAsBytes(ShuffleServerConf.DISK_CAPACITY);
     double highWaterMarkOfWrite = conf.get(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE);
@@ -63,15 +77,54 @@ public class LocalStorageManager extends SingleStorageManager {
     if (highWaterMarkOfWrite < lowWaterMarkOfWrite) {
       throw new IllegalArgumentException("highWaterMarkOfWrite must be larger than lowWaterMarkOfWrite");
     }
-    for (String storagePath : storageBasePaths) {
-      localStorages.add(LocalStorage.newBuilder()
-          .basePath(storagePath)
-          .capacity(capacity)
-          .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
-          .highWaterMarkOfWrite(highWaterMarkOfWrite)
-          .shuffleExpiredTimeoutMs(shuffleExpiredTimeoutMs)
-          .build());
+
+    // We must make sure the order of `storageBasePaths` and `localStorages` is same, or some unit test may be fail
+    CountDownLatch countDownLatch = new CountDownLatch(storageBasePaths.size());
+    AtomicInteger successCount = new AtomicInteger();
+    ExecutorService executorService = Executors.newCachedThreadPool();
+    LocalStorage[] localStorageArray = new LocalStorage[storageBasePaths.size()];
+    for (int i = 0; i < storageBasePaths.size(); i++) {
+      final int idx = i;
+      String storagePath = storageBasePaths.get(i);
+      executorService.submit(() -> {
+        try {
+          localStorageArray[idx] = LocalStorage.newBuilder()
+              .basePath(storagePath)
+              .capacity(capacity)
+              .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
+              .highWaterMarkOfWrite(highWaterMarkOfWrite)
+              .shuffleExpiredTimeoutMs(shuffleExpiredTimeoutMs)
+              .build();
+          successCount.incrementAndGet();
+        } catch (Exception e) {
+          LOG.error("LocalStorage init failed!", e);
+        } finally {
+          countDownLatch.countDown();
+        }
+      });
     }
+
+    try {
+      countDownLatch.await();
+    } catch (InterruptedException e) {
+      LOG.error("Failed to wait initializing local storage.", e);
+    }
+    executorService.shutdown();
+
+    int failedCount = storageBasePaths.size() - successCount.get();
+    long maxFailedNumber = conf.getLong(LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER);
+    if (failedCount > maxFailedNumber || successCount.get() == 0) {
+      throw new RuntimeException(
+          String.format("Initialize %s local storage(s) failed, "
+              + "specified local storage paths size: %s, the conf of %s size: %s",
+              failedCount, localStorageArray.length, LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER.key(), maxFailedNumber)
+      );
+    }
+    localStorages = Arrays.stream(localStorageArray).filter(Objects::nonNull).collect(Collectors.toList());
+    LOG.info(
+        "Succeed to initialize storage paths: {}",
+        StringUtils.join(localStorages.stream().map(LocalStorage::getBasePath).collect(Collectors.toList()))
+    );
     this.checker = new LocalStorageChecker(conf, localStorages);
   }
 
@@ -91,7 +144,6 @@ public class LocalStorageManager extends SingleStorageManager {
     }
     return storage;
   }
-
 
   @Override
   public Storage selectStorage(ShuffleDataReadEvent event) {
@@ -119,7 +171,7 @@ public class LocalStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void removeResources(String appId, Set<Integer> shuffleSet) {
+  public void removeResources(String appId, Set<Integer> shuffleSet, String user) {
     for (LocalStorage storage : localStorages) {
       for (Integer shuffleId : shuffleSet) {
         storage.removeHandlers(appId);
@@ -130,7 +182,7 @@ public class LocalStorageManager extends SingleStorageManager {
     ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
         .createShuffleDeleteHandler(
             new CreateShuffleDeleteHandlerRequest(StorageType.LOCALFILE.name(), new Configuration()));
-    deleteHandler.delete(storageBasePaths, appId);
+    deleteHandler.delete(storageBasePaths.toArray(new String[storageBasePaths.size()]), appId, user);
   }
 
   @Override

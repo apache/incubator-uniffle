@@ -30,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -43,6 +44,7 @@ import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public class SimpleClusterManager implements ClusterManager {
@@ -60,19 +62,24 @@ public class SimpleClusterManager implements ClusterManager {
   private ScheduledExecutorService checkNodesExecutorService;
   private FileSystem hadoopFileSystem;
 
-  public SimpleClusterManager(CoordinatorConf conf, Configuration hadoopConf) throws IOException {
+  private long outputAliveServerCount = 0;
+  private final long periodicOutputIntervalTimes;
+
+  public SimpleClusterManager(CoordinatorConf conf, Configuration hadoopConf) throws Exception {
     this.shuffleNodesMax = conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
     this.heartbeatTimeout = conf.getLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT);
     // the thread for checking if shuffle server report heartbeat in time
     scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("SimpleClusterManager-%d"));
+
+    periodicOutputIntervalTimes = conf.get(CoordinatorConf.COORDINATOR_NODES_PERIODIC_OUTPUT_INTERVAL_TIMES);
     scheduledExecutorService.scheduleAtFixedRate(
         () -> nodesCheck(), heartbeatTimeout / 3,
         heartbeatTimeout / 3, TimeUnit.MILLISECONDS);
 
     String excludeNodesPath = conf.getString(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH, "");
     if (!StringUtils.isEmpty(excludeNodesPath)) {
-      this.hadoopFileSystem = CoordinatorUtils.getFileSystemForPath(new Path(excludeNodesPath), hadoopConf);
+      this.hadoopFileSystem = HadoopFilesystemProvider.getFilesystem(new Path(excludeNodesPath), hadoopConf);
       long updateNodesInterval = conf.getLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL);
       checkNodesExecutorService = Executors.newSingleThreadScheduledExecutor(
           ThreadUtils.getThreadFactory("UpdateExcludeNodes-%d"));
@@ -85,10 +92,14 @@ public class SimpleClusterManager implements ClusterManager {
     try {
       long timestamp = System.currentTimeMillis();
       Set<String> deleteIds = Sets.newHashSet();
+      Set<String> unhealthyNode = Sets.newHashSet();
       for (ServerNode sn : servers.values()) {
         if (timestamp - sn.getTimestamp() > heartbeatTimeout) {
           LOG.warn("Heartbeat timeout detect, " + sn + " will be removed from node list.");
           deleteIds.add(sn.getId());
+        } else if (!sn.isHealthy()) {
+          LOG.warn("Found server {} was unhealthy, will not assign it.", sn);
+          unhealthyNode.add(sn.getId());
         }
       }
       for (String serverId : deleteIds) {
@@ -99,7 +110,15 @@ public class SimpleClusterManager implements ClusterManager {
           }
         }
       }
+      if (!deleteIds.isEmpty() || outputAliveServerCount % periodicOutputIntervalTimes == 0) {
+        LOG.info("Alive servers number: {}, ids: {}",
+            servers.size(),
+            servers.keySet().stream().collect(Collectors.toList())
+        );
+      }
+      outputAliveServerCount++;
 
+      CoordinatorMetrics.gaugeUnhealthyServerNum.set(unhealthyNode.size());
       CoordinatorMetrics.gaugeTotalServerNum.set(servers.size());
     } catch (Exception e) {
       LOG.warn("Error happened in nodesCheck", e);
@@ -107,6 +126,7 @@ public class SimpleClusterManager implements ClusterManager {
   }
 
   private void updateExcludeNodes(String path) {
+    int originalExcludeNodesNumber = excludeNodes.size();
     try {
       Path hadoopPath = new Path(path);
       FileStatus fileStatus = hadoopFileSystem.getFileStatus(hadoopPath);
@@ -118,12 +138,16 @@ public class SimpleClusterManager implements ClusterManager {
       } else {
         excludeNodes = Sets.newConcurrentHashSet();
       }
-      CoordinatorMetrics.gaugeExcludeServerNum.set(excludeNodes.size());
     } catch (FileNotFoundException fileNotFoundException) {
       excludeNodes = Sets.newConcurrentHashSet();
     } catch (Exception e) {
       LOG.warn("Error when updating exclude nodes, the exclude nodes file path: " + path, e);
     }
+    int newlyExcludeNodesNumber = excludeNodes.size();
+    if (newlyExcludeNodesNumber != originalExcludeNodesNumber) {
+      LOG.info("Exclude nodes number: {}, nodes list: {}", newlyExcludeNodesNumber, excludeNodes);
+    }
+    CoordinatorMetrics.gaugeExcludeServerNum.set(excludeNodes.size());
   }
 
   private void parseExcludeNodesFile(DataInputStream fsDataInputStream) throws IOException {
@@ -132,7 +156,7 @@ public class SimpleClusterManager implements ClusterManager {
       String line;
       while ((line = br.readLine()) != null) {
         if (!StringUtils.isEmpty(line)) {
-          nodes.add(line);
+          nodes.add(line.trim());
         }
       }
     }
@@ -143,6 +167,9 @@ public class SimpleClusterManager implements ClusterManager {
 
   @Override
   public void add(ServerNode node) {
+    if (!servers.containsKey(node.getId())) {
+      LOG.info("Newly registering node: {}", node.getId());
+    }
     servers.put(node.getId(), node);
     Set<String> tags = node.getTags();
     // remove node with all tags to deal with the situation of tag change

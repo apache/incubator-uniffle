@@ -17,14 +17,15 @@
 
 package org.apache.uniffle.common;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-
 import java.util.Random;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class ShufflePartitionedBlockTest {
 
@@ -70,11 +71,11 @@ public class ShufflePartitionedBlockTest {
   @Test
   public void testToString() {
     ShufflePartitionedBlock b1 = new ShufflePartitionedBlock(1, 2, 3, 4, 5, new byte[6]);
-    assertEquals("ShufflePartitionedBlock{blockId[" + b1.getBlockId() +
-            "], length[" + b1.getLength() +
-            "], uncompressLength[" + b1.getUncompressLength() +
-            "], crc[" + b1.getCrc() +
-            "], taskAttemptId[" + b1.getTaskAttemptId() + "]}",
+    assertEquals("ShufflePartitionedBlock{blockId[" + b1.getBlockId()
+        + "], length[" + b1.getLength()
+        + "], uncompressLength[" + b1.getUncompressLength()
+        + "], crc[" + b1.getCrc()
+        + "], taskAttemptId[" + b1.getTaskAttemptId() + "]}",
         b1.toString());
   }
 

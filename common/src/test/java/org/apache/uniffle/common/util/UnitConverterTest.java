@@ -23,11 +23,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class UnitConverterTest {
 
-  long PB = (long)ByteUnit.PiB.toBytes(1L);
-  long TB = (long)ByteUnit.TiB.toBytes(1L);
-  long GB = (long)ByteUnit.GiB.toBytes(1L);
-  long MB = (long)ByteUnit.MiB.toBytes(1L);
-  long KB = (long)ByteUnit.KiB.toBytes(1L);
+  private static final long PB = (long)ByteUnit.PiB.toBytes(1L);
+  private static final long TB = (long)ByteUnit.TiB.toBytes(1L);
+  private static final long GB = (long)ByteUnit.GiB.toBytes(1L);
+  private static final long MB = (long)ByteUnit.MiB.toBytes(1L);
+  private static final long KB = (long)ByteUnit.KiB.toBytes(1L);
 
   @Test
   public void testByteString() {

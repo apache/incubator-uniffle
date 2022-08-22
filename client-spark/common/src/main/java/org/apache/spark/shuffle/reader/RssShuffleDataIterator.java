@@ -34,10 +34,12 @@ import scala.Product2;
 import scala.Tuple2;
 import scala.collection.AbstractIterator;
 import scala.collection.Iterator;
+import scala.runtime.BoxedUnit;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.common.RssShuffleUtils;
+import org.apache.uniffle.common.exception.RssException;
 
 public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C>> {
 
@@ -54,6 +56,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
   private DeserializationStream deserializationStream = null;
   private ByteBufInputStream byteBufInputStream = null;
   private long unCompressionLength = 0;
+  private ByteBuffer uncompressedData;
 
   public RssShuffleDataIterator(
       Serializer serializer,
@@ -106,8 +109,17 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       shuffleReadMetrics.incFetchWaitTime(fetchDuration);
       if (compressedData != null) {
         shuffleReadMetrics.incRemoteBytesRead(compressedData.limit() - compressedData.position());
+        // Directbytebuffers are not collected in time will cause executor easy 
+        // be killed by cluster managers(such as YARN) for using too much offheap memory
+        if (uncompressedData != null && uncompressedData.isDirect()) {
+          try {
+            RssShuffleUtils.destroyDirectByteBuffer(uncompressedData);
+          } catch (Exception e) {
+            throw new RssException("Destroy DirectByteBuffer failed!", e);
+          }
+        }
         long startDecompress = System.currentTimeMillis();
-        ByteBuffer uncompressedData = RssShuffleUtils.decompressData(
+        uncompressedData = RssShuffleUtils.decompressData(
             compressedData, compressedBlock.getUncompressLength());
         unCompressionLength += compressedBlock.getUncompressLength();
         long decompressDuration = System.currentTimeMillis() - startDecompress;
@@ -119,9 +131,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
         readTime += fetchDuration;
         serializeTime += serializationDuration;
       } else {
-        // finish reading records, close related reader and check data consistent
-        clearDeserializationStream();
-        shuffleReadClient.close();
+        // finish reading records, check data consistent
         shuffleReadClient.checkProcessedBlockIds();
         shuffleReadClient.logStatics();
         LOG.info("Fetch " + shuffleReadMetrics.remoteBytesRead() + " bytes cost " + readTime + " ms and "
@@ -137,6 +147,15 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
   public Product2<K, C> next() {
     shuffleReadMetrics.incRecordsRead(1L);
     return (Product2<K, C>) recordsIterator.next();
+  }
+
+  public BoxedUnit cleanup() {
+    clearDeserializationStream();
+    if (shuffleReadClient != null) {
+      shuffleReadClient.close();
+    }
+    shuffleReadClient = null;
+    return BoxedUnit.UNIT;
   }
 
   @VisibleForTesting

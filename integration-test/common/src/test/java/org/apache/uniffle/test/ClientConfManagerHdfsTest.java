@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.jupiter.api.Test;
 
@@ -42,11 +43,19 @@ public class ClientConfManagerHdfsTest extends HdfsTestBase {
   @Test
   public void test() throws Exception {
     String cfgFile = HDFS_URI + "/test/client_conf";
+    createAndRunClientConfManagerCases(HDFS_URI, cfgFile, fs, HdfsTestBase.conf);
+  }
+
+  public static void createAndRunClientConfManagerCases(
+      String clusterPathPrefix,
+      String cfgFile,
+      FileSystem fileSystem,
+      Configuration hadoopConf) throws Exception {
     Path path = new Path(cfgFile);
-    FSDataOutputStream out = fs.create(path);
+    FSDataOutputStream out = fileSystem.create(path);
 
     CoordinatorConf conf = new CoordinatorConf();
-    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, HDFS_URI);
+    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, clusterPathPrefix);
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 1);
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
 
@@ -71,7 +80,7 @@ public class ClientConfManagerHdfsTest extends HdfsTestBase {
     printWriter.println("spark.mock.3 true  ");
     printWriter.flush();
     printWriter.close();
-    clientConfManager = new ClientConfManager(conf, HdfsTestBase.conf, new ApplicationManager(conf));
+    clientConfManager = new ClientConfManager(conf, hadoopConf, new ApplicationManager(conf));
     sleep(1200);
     Map<String, String> clientConf = clientConfManager.getClientConf();
     assertEquals("abc", clientConf.get("spark.mock.1"));
@@ -84,7 +93,7 @@ public class ClientConfManagerHdfsTest extends HdfsTestBase {
     printWriter.flush();
     printWriter.close();
     sleep(1300);
-    assertTrue(fs.exists(path));
+    assertTrue(fileSystem.exists(path));
     clientConf = clientConfManager.getClientConf();
     assertEquals("abc", clientConf.get("spark.mock.1"));
     assertEquals("123", clientConf.get("spark.mock.2"));
@@ -92,8 +101,8 @@ public class ClientConfManagerHdfsTest extends HdfsTestBase {
     assertEquals(3, clientConf.size());
 
     // the config will not be changed when the conf file is deleted
-    fs.delete(path, true);
-    assertFalse(fs.exists(path));
+    fileSystem.delete(path, true);
+    assertFalse(fileSystem.exists(path));
     sleep(1200);
     clientConf = clientConfManager.getClientConf();
     assertEquals("abc", clientConf.get("spark.mock.1"));
@@ -103,14 +112,14 @@ public class ClientConfManagerHdfsTest extends HdfsTestBase {
 
     // the normal update config process, move the new conf file to the old one
     Path tmpPath = new Path(cfgFile + ".tmp");
-    out = fs.create(tmpPath);
+    out = fileSystem.create(tmpPath);
     printWriter = new PrintWriter(new OutputStreamWriter(out));
     printWriter.println("spark.mock.4 deadbeaf");
     printWriter.println("spark.mock.5 9527");
     printWriter.println("spark.mock.6 9527 3423");
     printWriter.println("spark.mock.7");
     printWriter.close();
-    fs.rename(tmpPath, path);
+    fileSystem.rename(tmpPath, path);
     sleep(1200);
     clientConf = clientConfManager.getClientConf();
     assertEquals("deadbeaf", clientConf.get("spark.mock.4"));

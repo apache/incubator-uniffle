@@ -24,7 +24,7 @@ public class RssClientConfig {
   public static final String RSS_CLIENT_RETRY_MAX = "rss.client.retry.max";
   public static final int RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE = 100;
   public static final String RSS_CLIENT_RETRY_INTERVAL_MAX = "rss.client.retry.interval.max";
-  public static final long RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE = 10000;
+  public static final long RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE = 10000L;
   public static final String RSS_COORDINATOR_QUORUM = "rss.coordinator.quorum";
   public static final String RSS_DATA_REPLICA = "rss.data.replica";
   public static final int RSS_DATA_REPLICA_DEFAULT_VALUE = 1;
@@ -43,9 +43,9 @@ public class RssClientConfig {
   public static final String RSS_HEARTBEAT_TIMEOUT = "rss.heartbeat.timeout";
   public static final String RSS_STORAGE_TYPE = "rss.storage.type";
   public static final String RSS_CLIENT_SEND_CHECK_INTERVAL_MS = "rss.client.send.check.interval.ms";
-  public static final long RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE = 500;
+  public static final long RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE = 500L;
   public static final String RSS_CLIENT_SEND_CHECK_TIMEOUT_MS = "rss.client.send.check.timeout.ms";
-  public static final long RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE = 60 * 1000 * 10;
+  public static final long RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE = 60 * 1000 * 10L;
   public static final String RSS_WRITER_BUFFER_SIZE = "rss.writer.buffer.size";
   public static final String RSS_PARTITION_NUM_PER_RANGE = "rss.partitionNum.per.range";
   public static final int RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE = 1;
@@ -60,9 +60,18 @@ public class RssClientConfig {
   public static final String RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE = "14m";
   // The tags specified by rss client to determine server assignment.
   public static final String RSS_CLIENT_ASSIGNMENT_TAGS = "rss.client.assignment.tags";
+  
+  public static final String RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL = "rss.client.assignment.retry.interval";
+  public static final long RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE = 65000;
+  public static final String RSS_CLIENT_ASSIGNMENT_RETRY_TIMES = "rss.client.assignment.retry.times";
+  public static final int RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE = 3;
 
   public static final String RSS_ACCESS_TIMEOUT_MS = "rss.access.timeout.ms";
   public static final int RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE = 10000;
   public static final String RSS_DYNAMIC_CLIENT_CONF_ENABLED = "rss.dynamicClientConf.enabled";
   public static final boolean RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE = true;
+
+  public static final String RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER =
+      "rss.client.assignment.shuffle.nodes.max";
+  public static final int RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER_DEFAULT_VALUE = -1;
 }

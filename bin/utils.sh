@@ -40,16 +40,33 @@ function is_process_running {
 function common_shutdown {
   process_name="$1"
   install_dir="$2"
-  max_attempt=3
-  pid=`cat ${install_dir}/currentpid`
+  max_attempt=30
+  get_pid_file_name ${process_name}
+  pid_file_name="${pid_file}"
+  pid=`cat ${install_dir}/${pid_file_name}`
 
   kill_process_with_retry "${pid}" "${process_name}" "${max_attempt}"
 
   if [[ $? == 0 ]]; then
-    rm -f ${install_dir}/currentpid
+    rm -f ${install_dir}/${pid_file_name}
     return 0
   else
     return 1
+  fi
+}
+
+#---
+# args:               Process name, coordinator or shuffle-server
+#---
+function get_pid_file_name {
+  process_name="$1"
+  if [[ $process_name == "coordinator" ]]; then
+    pid_file="coordinator.pid"
+  elif [[ $process_name == "shuffle-server" ]]; then
+    pid_file="shuffle-server.pid"
+  else
+    echo "Invalid process name: $process_name"
+    exit 1
   fi
 }
 
@@ -63,7 +80,7 @@ function kill_process_with_retry {
    local pid="$1"
    local pname="$2"
    local maxattempt="$3"
-   local sleeptime=30
+   local sleeptime=3
 
    if ! is_process_running $pid ; then
      echo "ERROR: process name ${pname} with pid: ${pid} not found"
@@ -75,7 +92,7 @@ function kill_process_with_retry {
       if is_process_running $pid; then
         kill ${pid}
       fi
-      sleep 30
+      sleep $sleeptime
       if is_process_running $pid; then
         echo "$pname is not dead [pid: $pid]"
         echo "sleeping for $sleeptime seconds before retry"

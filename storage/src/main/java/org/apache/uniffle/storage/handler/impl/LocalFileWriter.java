@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -34,7 +35,7 @@ public class LocalFileWriter implements Closeable {
   public LocalFileWriter(File file) throws IOException {
     fileOutputStream = new FileOutputStream(file, true);
     // init fsDataOutputStream
-    dataOutputStream = new DataOutputStream(fileOutputStream);
+    dataOutputStream = new DataOutputStream(new BufferedOutputStream(fileOutputStream));
     nextOffset = file.length();
   }
 

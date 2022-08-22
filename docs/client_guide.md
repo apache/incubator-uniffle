@@ -88,6 +88,7 @@ These configurations are shared by all types of clients.
 |<client_type>.rss.client.send.threadPool.size|5|The thread size for send shuffle data to shuffle server|
 |<client_type>.rss.client.assignment.tags|-|The comma-separated list of tags for deciding assignment shuffle servers. Notice that the SHUFFLE_SERVER_VERSION will always as the assignment tag whether this conf is set or not|
 |<client_type>.rss.client.data.commit.pool.size|The number of assigned shuffle servers|The thread size for sending commit to shuffle servers|
+|<client_type>.rss.client.assignment.shuffle.nodes.max|-1|The number of required assignment shuffle servers. If it is less than 0 or equals to 0 or greater than the coordinator's config of "rss.coordinator.shuffle.nodes.max", it will use the size of "rss.coordinator.shuffle.nodes.max" default|
 Notice:
 
 1. `<client_type>` should be `spark` or `mapreduce`
@@ -112,6 +113,8 @@ Other configuration:
 |Property Name|Default|Description|
 |---|---|---|
 |spark.rss.access.timeout.ms|10000|The timeout to access Uniffle coordinator|
+|spark.rss.client.access.retry.interval.ms|20000|The interval between retries fallback to SortShuffleManager|
+|spark.rss.client.access.retry.times|0|The number of retries fallback to SortShuffleManager|
   
 
 ### Client Quorum Setting 

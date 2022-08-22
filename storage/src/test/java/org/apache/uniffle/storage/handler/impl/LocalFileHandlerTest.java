@@ -17,15 +17,20 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
+import org.junit.jupiter.api.Test;
+
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleDataSegment;
@@ -37,14 +42,11 @@ import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LocalFileHandlerTest {
 
@@ -58,21 +60,21 @@ public class LocalFileHandlerTest {
     File dataDir2 = new File(tmpDir, "data2");
     String[] basePaths = new String[]{dataDir1.getAbsolutePath(),
         dataDir2.getAbsolutePath()};
-    LocalFileWriteHandler writeHandler1 = new LocalFileWriteHandler("appId", 0, 1, 1,
+    final LocalFileWriteHandler writeHandler1 = new LocalFileWriteHandler("appId", 0, 1, 1,
         basePaths[0], "pre");
-    LocalFileWriteHandler writeHandler2 = new LocalFileWriteHandler("appId", 0, 2, 2,
+    final LocalFileWriteHandler writeHandler2 = new LocalFileWriteHandler("appId", 0, 2, 2,
         basePaths[0], "pre");
 
     String possiblePath1 = ShuffleStorageUtils.getFullShuffleDataFolder(dataDir1.getAbsolutePath(),
         ShuffleStorageUtils.getShuffleDataPath("appId", 0, 1, 1));
     String possiblePath2 = ShuffleStorageUtils.getFullShuffleDataFolder(dataDir2.getAbsolutePath(),
         ShuffleStorageUtils.getShuffleDataPath("appId", 0, 1, 1));
-    assertTrue(writeHandler1.getBasePath().endsWith(possiblePath1) ||
-        writeHandler1.getBasePath().endsWith(possiblePath2));
+    assertTrue(writeHandler1.getBasePath().endsWith(possiblePath1)
+        || writeHandler1.getBasePath().endsWith(possiblePath2));
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Set<Long> expectedBlockIds1 = Sets.newHashSet();
-    Set<Long> expectedBlockIds2 = Sets.newHashSet();
+    final Set<Long> expectedBlockIds1 = Sets.newHashSet();
+    final Set<Long> expectedBlockIds2 = Sets.newHashSet();
 
     writeTestData(writeHandler1, 1, 32, expectedData, expectedBlockIds1);
     writeTestData(writeHandler1, 2, 32, expectedData, expectedBlockIds1);

@@ -151,6 +151,7 @@ message ShuffleRegisterRequest {
   int32 shuffleId = 2;
   repeated ShufflePartitionRange partitionRanges = 3;
   RemoteStorage remoteStorage = 4;
+  string user = 5;
 }
 
 message ShuffleRegisterResponse {
@@ -295,6 +296,7 @@ message GetShuffleServerRequest {
   int32 partitionNumPerRange = 7;
   int32 dataReplica = 8;
   repeated string requireTags = 9;
+  int32 assignmentShuffleServerNumber = 10;
 }
 
 message PartitionRangeAssignment {
