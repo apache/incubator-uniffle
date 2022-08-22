@@ -34,12 +34,12 @@ import scala.Product2;
 import scala.Tuple2;
 import scala.collection.AbstractIterator;
 import scala.collection.Iterator;
+import scala.runtime.BoxedUnit;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.common.RssShuffleUtils;
 import org.apache.uniffle.common.exception.RssException;
-import scala.runtime.BoxedUnit;
 
 public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C>> {
 
