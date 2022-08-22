@@ -37,7 +37,7 @@ import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.storage.HdfsTestBase;
 import org.apache.uniffle.storage.util.StorageType;
 
-abstract public class IntegrationTestBase extends HdfsTestBase {
+public abstract class IntegrationTestBase extends HdfsTestBase {
 
   protected static final int SHUFFLE_SERVER_PORT = 20001;
   protected static final String LOCALHOST = "127.0.0.1";

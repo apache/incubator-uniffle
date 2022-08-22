@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.test;
 
-import com.google.common.collect.Maps;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
@@ -25,6 +24,7 @@ import java.nio.file.Files;
 import java.util.Map;
 import java.util.Random;
 
+import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.sql.Dataset;

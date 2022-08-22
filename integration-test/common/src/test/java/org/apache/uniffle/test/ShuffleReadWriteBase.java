@@ -17,9 +17,18 @@
 
 package org.apache.uniffle.test;
 
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
 import org.apache.uniffle.client.TestUtils;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
@@ -33,14 +42,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
 
@@ -57,7 +59,8 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
       new Random().nextBytes(buf);
       long seqno = ATOMIC_LONG.getAndIncrement();
 
-      long blockId = (seqno << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH)) + taskAttemptId;
+      long blockId = (seqno << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
+          + taskAttemptId;
       blockIdBitmap.addLong(blockId);
       dataMap.put(blockId, buf);
       shuffleBlockInfoList.add(new ShuffleBlockInfo(
@@ -65,6 +68,16 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
           buf, shuffleServerInfoList, length, 10, taskAttemptId));
     }
     return shuffleBlockInfoList;
+  }
+
+  public static List<ShuffleBlockInfo> createShuffleBlockList(int shuffleId, int partitionId, long taskAttemptId,
+                                                              int blockNum, int length,
+                                                              Roaring64NavigableMap blockIdBitmap,
+                                                              Map<Long, byte[]> dataMap) {
+    List<ShuffleServerInfo> shuffleServerInfoList =
+        Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
+    return createShuffleBlockList(
+        shuffleId, partitionId, taskAttemptId, blockNum, length, blockIdBitmap, dataMap, shuffleServerInfoList);
   }
 
   public static Map<Integer, List<ShuffleBlockInfo>> createTestData(
@@ -87,14 +100,6 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
     partitionToBlocks.put(2, blocks3);
     partitionToBlocks.put(3, blocks4);
     return partitionToBlocks;
-  }
-
-  public static List<ShuffleBlockInfo> createShuffleBlockList(int shuffleId, int partitionId, long taskAttemptId,
-      int blockNum, int length, Roaring64NavigableMap blockIdBitmap, Map<Long, byte[]> dataMap) {
-    List<ShuffleServerInfo> shuffleServerInfoList =
-        Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
-    return createShuffleBlockList(
-        shuffleId, partitionId, taskAttemptId, blockNum, length, blockIdBitmap, dataMap, shuffleServerInfoList);
   }
 
   public static boolean compareByte(byte[] expected, ByteBuffer buffer) {

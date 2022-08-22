@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.server;
 
+import java.util.concurrent.TimeUnit;
+
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -24,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.proto.RssProtos;
 
-import java.util.concurrent.TimeUnit;
 
 public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
 
@@ -49,7 +50,7 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
       StreamObserver<RssProtos.SendShuffleDataResponse> responseObserver) {
     if (mockedTimeout > 0) {
       LOG.info("Add a mocked timeout on sendShuffleData");
-        Uninterruptibles.sleepUninterruptibly(mockedTimeout, TimeUnit.MILLISECONDS);
+      Uninterruptibles.sleepUninterruptibly(mockedTimeout, TimeUnit.MILLISECONDS);
     }
     super.sendShuffleData(request, responseObserver);
   }

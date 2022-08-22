@@ -36,9 +36,9 @@ import org.apache.spark.executor.TaskMetrics;
 import org.apache.spark.memory.TaskMemoryManager;
 import org.apache.spark.serializer.KryoSerializer;
 import org.apache.spark.serializer.Serializer;
-import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.RssShuffleManager;
+import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.TestUtils;
 import org.apache.spark.util.EventLoop;
 import org.junit.jupiter.api.Test;
@@ -52,8 +52,8 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
@@ -74,7 +74,7 @@ public class RssShuffleWriterTest {
         .set(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name())
         .set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "127.0.0.1:12345,127.0.0.1:12346");
     // init SparkContext
-    SparkContext sc = SparkContext.getOrCreate(conf);
+    final SparkContext sc = SparkContext.getOrCreate(conf);
     Map<String, Set<Long>> failBlocks = Maps.newConcurrentMap();
     Map<String, Set<Long>> successBlocks = Maps.newConcurrentMap();
     Serializer kryoSerializer = new KryoSerializer(conf);
@@ -146,7 +146,7 @@ public class RssShuffleWriterTest {
         .set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "127.0.0.1:12345,127.0.0.1:12346");
     // init SparkContext
     List<ShuffleBlockInfo> shuffleBlockInfos = Lists.newArrayList();
-    SparkContext sc = SparkContext.getOrCreate(conf);
+    final SparkContext sc = SparkContext.getOrCreate(conf);
     Map<String, Set<Long>> successBlockIds = Maps.newConcurrentMap();
     EventLoop<AddBlockEvent> testLoop = new EventLoop<AddBlockEvent>("test") {
       @Override
@@ -164,7 +164,7 @@ public class RssShuffleWriterTest {
       }
     };
 
-    RssShuffleManager manager = TestUtils.createShuffleManager(
+    final RssShuffleManager manager = TestUtils.createShuffleManager(
         conf,
         false,
         testLoop,
@@ -172,7 +172,7 @@ public class RssShuffleWriterTest {
         Maps.newConcurrentMap());
     Serializer kryoSerializer = new KryoSerializer(conf);
     Partitioner mockPartitioner = mock(Partitioner.class);
-    ShuffleWriteClient mockShuffleWriteClient = mock(ShuffleWriteClient.class);
+    final ShuffleWriteClient mockShuffleWriteClient = mock(ShuffleWriteClient.class);
     ShuffleDependency mockDependency = mock(ShuffleDependency.class);
     RssShuffleHandle mockHandle = mock(RssShuffleHandle.class);
     when(mockHandle.getDependency()).thenReturn(mockDependency);

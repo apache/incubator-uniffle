@@ -20,9 +20,9 @@ package org.apache.uniffle.common.util;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Sets;
-import org.apache.uniffle.common.exception.NotRetryException;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -17,14 +17,14 @@
 
 package org.apache.spark.shuffle.writer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import org.apache.spark.SparkConf;
 import org.apache.spark.serializer.KryoSerializer;
 import org.apache.spark.serializer.SerializationStream;
 import org.apache.spark.serializer.Serializer;
 import org.junit.jupiter.api.Test;
 import scala.reflect.ClassTag$;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class WriteBufferTest {
 

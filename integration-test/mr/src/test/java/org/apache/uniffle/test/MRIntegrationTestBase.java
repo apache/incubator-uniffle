@@ -51,6 +51,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
 
   protected static MiniMRYarnCluster mrYarnCluster;
   protected static FileSystem localFs;
+
   static {
     try {
       localFs = FileSystem.getLocal(conf);
@@ -62,8 +63,8 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
   private static Path TEST_ROOT_DIR = localFs.makeQualified(
       new Path("target", TestMRJobs.class.getName() + "-tmpDir"));
   static Path APP_JAR = new Path(TEST_ROOT_DIR, "MRAppJar.jar");
-  private static final String OUTPUT_ROOT_DIR = "/tmp/" +
-      TestMRJobs.class.getSimpleName();
+  private static final String OUTPUT_ROOT_DIR = "/tmp/"
+      + TestMRJobs.class.getSimpleName();
   private static final Path TEST_RESOURCES_DIR = new Path(TEST_ROOT_DIR,
       "localizedResources");
 
@@ -95,7 +96,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     JobConf appConf = new JobConf(mrYarnCluster.getConfig());
     updateCommonConfiguration(appConf);
     runOriginApp(appConf);
-    String originPath = appConf.get("mapreduce.output.fileoutputformat.outputdir");
+    final String originPath = appConf.get("mapreduce.output.fileoutputformat.outputdir");
     appConf = new JobConf(mrYarnCluster.getConfig());
     updateCommonConfiguration(appConf);
     runRssApp(appConf);
@@ -120,12 +121,13 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
 
   private void runRssApp(Configuration jobConf) throws Exception {
     URL url = MRIntegrationTestBase.class.getResource("/");
-    String parentPath = new Path(url.getPath()).getParent()
+    final String parentPath = new Path(url.getPath()).getParent()
         .getParent().getParent().getParent().toString();
     if (System.getenv("JAVA_HOME") == null) {
       throw new RuntimeException("We must set JAVA_HOME");
     }
-    jobConf.set(MRJobConfig.MR_AM_COMMAND_OPTS, "-XX:+TraceClassLoading org.apache.hadoop.mapreduce.v2.app.RssMRAppMaster");
+    jobConf.set(MRJobConfig.MR_AM_COMMAND_OPTS,
+        "-XX:+TraceClassLoading org.apache.hadoop.mapreduce.v2.app.RssMRAppMaster");
     jobConf.set(MRJobConfig.REDUCE_JAVA_OPTS, "-XX:+TraceClassLoading -XX:MaxDirectMemorySize=419430400");
     jobConf.setInt(MRJobConfig.MAP_MEMORY_MB, 500);
     jobConf.setInt(MRJobConfig.REDUCE_MEMORY_MB, 2048);
@@ -149,7 +151,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     String[] splittedProps = props.split(":");
     for (String prop : splittedProps)  {
       if (!prop.contains("classes") && !prop.contains("grpc") && !prop.contains("rss-")
-        && !prop.contains("shuffle-storage")) {
+          && !prop.contains("shuffle-storage")) {
         newProps = newProps + ":" + prop;
       } else if (prop.contains("mr") && prop.contains("integration-test")) {
         newProps = newProps + ":" + prop;

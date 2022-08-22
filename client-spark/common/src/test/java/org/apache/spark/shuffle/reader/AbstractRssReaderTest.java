@@ -17,21 +17,14 @@
 
 package org.apache.spark.shuffle.reader;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import com.esotericsoftware.kryo.io.Output;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import org.apache.uniffle.client.util.ClientUtils;
-import org.apache.uniffle.common.RssShuffleUtils;
-import org.apache.uniffle.common.ShufflePartitionedBlock;
-import org.apache.uniffle.common.util.ChecksumUtils;
-import org.apache.uniffle.storage.HdfsTestBase;
-import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.esotericsoftware.kryo.io.Output;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.spark.serializer.SerializationStream;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.serializer.SerializerInstance;
@@ -39,6 +32,16 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import scala.Product2;
 import scala.collection.Iterator;
 import scala.reflect.ClassTag$;
+
+import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.RssShuffleUtils;
+import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.util.ChecksumUtils;
+import org.apache.uniffle.storage.HdfsTestBase;
+import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 public abstract class AbstractRssReaderTest extends HdfsTestBase {
 

@@ -64,8 +64,6 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
       String candidatesFile,
       FileSystem fs,
       Configuration hadoopConf) throws Exception {
-    Path path = new Path(candidatesFile);
-    FSDataOutputStream out = fs.create(path);
 
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC, 1);
@@ -93,6 +91,9 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
     assertNotNull(expectedException);
     assertTrue(expectedException.getMessage().contains(
         "NoSuchMethodException: org.apache.uniffle.coordinator.AccessCandidatesChecker.<init>()"));
+
+    Path path = new Path(candidatesFile);
+    FSDataOutputStream out = fs.create(path);
 
     PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(out));
     printWriter.println("9527");
