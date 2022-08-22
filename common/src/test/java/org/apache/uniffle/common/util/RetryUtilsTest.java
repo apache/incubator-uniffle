@@ -20,6 +20,7 @@ package org.apache.uniffle.common.util;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Sets;
+import org.apache.uniffle.common.exception.NotRetryException;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.exception.RssException;
@@ -63,6 +64,17 @@ public class RetryUtilsTest {
         return 1;
       }, 10, maxTryTime);
       assertEquals(ret, 1);
+    } catch (Throwable throwable) {
+      // ignore
+    }
+    assertEquals(tryTimes.get(), 1);
+
+    tryTimes.set(0);
+    try {
+      RetryUtils.retry(() -> {
+        tryTimes.incrementAndGet();
+        throw new NotRetryException("");
+      }, 10, maxTryTime);
     } catch (Throwable throwable) {
       // ignore
     }

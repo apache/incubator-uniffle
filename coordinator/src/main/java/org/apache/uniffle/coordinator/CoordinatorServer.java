@@ -27,8 +27,15 @@ import org.apache.uniffle.common.Arguments;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
 import org.apache.uniffle.common.rpc.ServerInterface;
+import org.apache.uniffle.common.security.SecurityConfig;
+import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.web.CommonMetricsServlet;
 import org.apache.uniffle.common.web.JettyServer;
+
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_ENABLE;
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE;
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_PRINCIPAL;
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC;
 
 /**
  * The main entrance of coordinator service
@@ -105,6 +112,7 @@ public class CoordinatorServer {
     if (clientConfManager != null) {
       clientConfManager.close();
     }
+    SecurityContextFactory.get().getSecurityContext().close();
     server.stop();
   }
 
@@ -114,9 +122,20 @@ public class CoordinatorServer {
     registerMetrics();
     this.applicationManager = new ApplicationManager(coordinatorConf);
 
+    SecurityConfig securityConfig = null;
+    if (coordinatorConf.getBoolean(RSS_SECURITY_HADOOP_KERBEROS_ENABLE)) {
+      securityConfig = SecurityConfig.newBuilder()
+          .keytabFilePath(coordinatorConf.getString(RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE))
+          .principal(coordinatorConf.getString(RSS_SECURITY_HADOOP_KERBEROS_PRINCIPAL))
+          .reloginIntervalSec(coordinatorConf.getLong(RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC))
+          .build();
+    }
+    SecurityContextFactory.get().init(securityConfig);
+
     // load default hadoop configuration
     Configuration hadoopConf = new Configuration();
     ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(coordinatorConf, hadoopConf);
+
     this.clusterManager = clusterManagerFactory.getClusterManager();
     this.clientConfManager = new ClientConfManager(coordinatorConf, hadoopConf, applicationManager);
     AssignmentStrategyFactory assignmentStrategyFactory =

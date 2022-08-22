@@ -51,7 +51,7 @@ public class SimpleClusterManagerTest {
   }
 
   @Test
-  public void getServerListTest() throws IOException {
+  public void getServerListTest() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
     SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
@@ -106,7 +106,7 @@ public class SimpleClusterManagerTest {
   }
 
   @Test
-  public void testGetCorrectServerNodesWhenOneNodeRemovedAndUnhealthyNodeFound() throws IOException {
+  public void testGetCorrectServerNodesWhenOneNodeRemovedAndUnhealthyNodeFound() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
     SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
@@ -183,7 +183,7 @@ public class SimpleClusterManagerTest {
   }
 
   @Test
-  public void testGetCorrectServerNodesWhenOneNodeRemoved() throws IOException {
+  public void testGetCorrectServerNodesWhenOneNodeRemoved() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
     SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());

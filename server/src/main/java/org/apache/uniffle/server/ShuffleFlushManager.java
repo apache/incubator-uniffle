@@ -29,6 +29,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.RangeMap;
 import com.google.common.util.concurrent.Uninterruptibles;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -158,6 +159,10 @@ public class ShuffleFlushManager {
           writeSuccess = true;
           LOG.warn("AppId {} was removed already, event {} should be dropped", event.getAppId(), event);
         } else {
+          String user = StringUtils.defaultString(
+              shuffleServer.getShuffleTaskManager().getUserByAppId(event.getAppId()),
+              StringUtils.EMPTY
+          );
           ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(new CreateShuffleWriteHandlerRequest(
               storageType,
               event.getAppId(),
@@ -167,8 +172,9 @@ public class ShuffleFlushManager {
               storageBasePaths.toArray(new String[storageBasePaths.size()]),
               shuffleServerId,
               hadoopConf,
-              storageDataReplica));
-
+              storageDataReplica,
+              user)
+          );
           do {
             if (event.getRetryTimes() > retryMax) {
               LOG.error("Failed to write data for " + event + " in " + retryMax + " times, shuffle data will be lost");

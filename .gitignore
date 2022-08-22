@@ -28,7 +28,6 @@ deploy/kubernetes/docker/hadoopconfig/*
 *.dll
 *.so
 *.dylib
-bin
 local
 vendor
 VERSION
@@ -40,3 +39,8 @@ testbin/*
 *.swo
 *~
 deploy/kubernetes/operator/pkg/generated/
+deploy/kubernetes/operator/bin
+common/build/
+integration-test/common/build/
+storage/build/
+build/

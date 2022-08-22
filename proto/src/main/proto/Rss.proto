@@ -151,6 +151,7 @@ message ShuffleRegisterRequest {
   int32 shuffleId = 2;
   repeated ShufflePartitionRange partitionRanges = 3;
   RemoteStorage remoteStorage = 4;
+  string user = 5;
 }
 
 message ShuffleRegisterResponse {

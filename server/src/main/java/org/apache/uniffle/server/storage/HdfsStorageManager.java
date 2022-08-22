@@ -69,7 +69,7 @@ public class HdfsStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void removeResources(String appId, Set<Integer> shuffleSet) {
+  public void removeResources(String appId, Set<Integer> shuffleSet, String user) {
     HdfsStorage storage = getStorageByAppId(appId);
     if (storage != null) {
       storage.removeHandlers(appId);
@@ -77,7 +77,7 @@ public class HdfsStorageManager extends SingleStorageManager {
       ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
           .createShuffleDeleteHandler(
               new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), storage.getConf()));
-      deleteHandler.delete(new String[] {storage.getStoragePath()}, appId);
+      deleteHandler.delete(new String[] {storage.getStoragePath()}, appId, user);
     }
   }
 

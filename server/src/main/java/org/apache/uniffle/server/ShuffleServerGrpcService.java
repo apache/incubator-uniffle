@@ -109,6 +109,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String appId = req.getAppId();
     int shuffleId = req.getShuffleId();
     String remoteStoragePath = req.getRemoteStorage().getPath();
+    String user = req.getUser();
+
     Map<String, String> remoteStorageConf = req
         .getRemoteStorage()
         .getRemoteStorageConfList()
@@ -118,12 +120,17 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     List<PartitionRange> partitionRanges = toPartitionRanges(req.getPartitionRangesList());
     LOG.info("Get register request for appId[" + appId + "], shuffleId[" + shuffleId
         + "], remoteStorage[" + remoteStoragePath + "] with "
-        + partitionRanges.size() + " partition ranges");
+        + partitionRanges.size() + " partition ranges. User: {}", user);
 
     StatusCode result = shuffleServer
         .getShuffleTaskManager()
         .registerShuffle(
-            appId, shuffleId, partitionRanges, new RemoteStorageInfo(remoteStoragePath, remoteStorageConf));
+            appId,
+            shuffleId,
+            partitionRanges,
+            new RemoteStorageInfo(remoteStoragePath, remoteStorageConf),
+            user
+        );
 
     reply = ShuffleRegisterResponse
         .newBuilder()
@@ -150,8 +157,18 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       ShuffleServerMetrics.counterTotalReceivedDataSize.inc(requireSize);
       boolean isPreAllocated = shuffleServer.getShuffleTaskManager().isPreAllocated(requireBufferId);
       if (!isPreAllocated) {
-        LOG.warn("Can't find requireBufferId[" + requireBufferId + "] for appId[" + appId
-            + "], shuffleId[" + shuffleId + "]");
+        String errorMsg = "Can't find requireBufferId[" + requireBufferId + "] for appId[" + appId
+            + "], shuffleId[" + shuffleId + "]";
+        LOG.warn(errorMsg);
+        responseMessage = errorMsg;
+        reply = SendShuffleDataResponse
+            .newBuilder()
+            .setStatus(valueOf(StatusCode.INTERNAL_ERROR))
+            .setRetMsg(responseMessage)
+            .build();
+        responseObserver.onNext(reply);
+        responseObserver.onCompleted();
+        return;
       }
       final long start = System.currentTimeMillis();
       List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);
@@ -213,7 +230,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int commitCount = 0;
 
     try {
-      if (!shuffleServer.getShuffleTaskManager().getAppIds().containsKey(appId)) {
+      if (!shuffleServer.getShuffleTaskManager().getAppIds().contains(appId)) {
         throw new IllegalStateException("AppId " + appId + " was removed already");
       }
       commitCount = shuffleServer.getShuffleTaskManager().updateAndGetCommitCount(appId, shuffleId);
