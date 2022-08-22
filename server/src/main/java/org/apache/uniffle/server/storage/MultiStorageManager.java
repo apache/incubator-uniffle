@@ -112,10 +112,10 @@ public class MultiStorageManager implements StorageManager {
   }
 
   @Override
-  public void removeResources(String appId, Set<Integer> shuffleSet) {
+  public void removeResources(String appId, Set<Integer> shuffleSet, String user) {
     LOG.info("Start to remove resource of appId: {}, shuffles: {}", appId, shuffleSet.toString());
-    warmStorageManager.removeResources(appId, shuffleSet);
-    coldStorageManager.removeResources(appId, shuffleSet);
+    warmStorageManager.removeResources(appId, shuffleSet, user);
+    coldStorageManager.removeResources(appId, shuffleSet, user);
   }
 
   public StorageManager getColdStorageManager() {

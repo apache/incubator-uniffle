@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,14 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.storage.handler.api;
+// +k8s:deepcopy-gen=package
+// +groupName=uniffle.apache.org
 
-public interface ShuffleDeleteHandler {
-
-  /**
-   * Delete shuffle data with appId
-   *
-   * @param appId ApplicationId for delete
-   */
-  void delete(String[] storageBasePaths, String appId, String user);
-}
+package v1alpha1

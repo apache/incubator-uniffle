@@ -916,6 +916,9 @@
             <exclude>src/test/resources/empty</exclude>
             <exclude>**/dependency-reduced-pom.xml</exclude>
             <exclude>.github/PULL_REQUEST_TEMPLATE</exclude>
+            <exclude>deploy/kubernetes/operator/go.mod</exclude>
+            <exclude>deploy/kubernetes/operator/go.sum</exclude>
+            <exclude>deploy/kubernetes/operator/PROJECT</exclude>
           </excludes>
         </configuration>
       </plugin>

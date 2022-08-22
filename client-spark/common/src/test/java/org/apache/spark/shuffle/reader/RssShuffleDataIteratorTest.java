@@ -34,6 +34,7 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.client.util.DefaultIdHelper;
@@ -46,6 +47,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
 
@@ -238,6 +243,16 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
         assertTrue(e.getMessage().startsWith("Unexpected crc value"));
       }
     }
+  }
+
+  @Test
+  public void cleanup() throws Exception {
+    ShuffleReadClient mockClient = mock(ShuffleReadClient.class);
+    doNothing().when(mockClient).close();
+    RssShuffleDataIterator dataIterator =
+        new RssShuffleDataIterator(KRYO_SERIALIZER, mockClient, new ShuffleReadMetrics());
+    dataIterator.cleanup();
+    verify(mockClient, times(1)).close();
   }
 
 }

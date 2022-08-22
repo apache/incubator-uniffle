@@ -31,7 +31,7 @@ public class LocalFileDeleteHandler implements ShuffleDeleteHandler {
   private static final Logger LOG = LoggerFactory.getLogger(LocalFileDeleteHandler.class);
 
   @Override
-  public void delete(String[] storageBasePaths, String appId) {
+  public void delete(String[] storageBasePaths, String appId, String user) {
     for (String basePath : storageBasePaths) {
       String shufflePath = ShuffleStorageUtils.getFullShuffleDataFolder(basePath, appId);
       long start = System.currentTimeMillis();
