@@ -400,8 +400,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);
     shuffleConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 80.0);
     shuffleConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
-    shuffleConf.setBoolean(ShuffleServerConf.BUFFER_FLUSH_ENABLED, true);
-    shuffleConf.setSizeAsBytes(ShuffleServerConf.BUFFER_FLUSH_THRESHOLD, 128L);
+    shuffleConf.setBoolean(ShuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED, true);
+    shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD, 128L);
 
     ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
     StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(shuffleConf);
