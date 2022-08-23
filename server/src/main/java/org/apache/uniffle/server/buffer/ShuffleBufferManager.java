@@ -165,7 +165,9 @@ public class ShuffleBufferManager {
 
   void flushSingleBufferIfNecessary(ShuffleBuffer buffer, String appId,
       int shuffleId, int startPartition, int endPartition) {
-    if (this.bufferFlushEnabled && buffer.getSize() >= this.bufferFlushThreshold) {
+    // When we use multistorage and trigger single buffer flush, the buffer size should be bigger
+    // than rss.server.flush.cold.storage.threshold.size, otherwise cold storage will be useless.
+    if (this.bufferFlushEnabled && buffer.getSize() > this.bufferFlushThreshold) {
       flushBuffer(buffer, appId, shuffleId, startPartition, endPartition);
     }
   }
