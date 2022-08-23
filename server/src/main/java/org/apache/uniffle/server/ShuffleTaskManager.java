@@ -78,8 +78,6 @@ public class ShuffleTaskManager {
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = Maps.newConcurrentMap();
   private Runnable clearResourceThread;
   private BlockingQueue<String> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
-  // appId -> user
-  private Map<String, String> appUserMap = Maps.newConcurrentMap();
   // appId -> shuffleId -> serverReadHandler
 
   public ShuffleTaskManager(
@@ -130,7 +128,7 @@ public class ShuffleTaskManager {
       RemoteStorageInfo remoteStorageInfo,
       String user) {
     refreshAppId(appId);
-    appUserMap.putIfAbsent(appId, user);
+    shuffleTaskInfos.get(appId).setUser(user);
     partitionsToBlockIds.putIfAbsent(appId, Maps.newConcurrentMap());
     for (PartitionRange partitionRange : partitionRanges) {
       shuffleBufferManager.registerBuffer(appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
@@ -384,9 +382,8 @@ public class ShuffleTaskManager {
     shuffleBufferManager.removeBuffer(appId);
     shuffleFlushManager.removeResources(appId);
     if (!shuffleToCachedBlockIds.isEmpty()) {
-      storageManager.removeResources(appId, shuffleToCachedBlockIds.keySet(), appUserMap.get(appId));
+      storageManager.removeResources(appId, shuffleToCachedBlockIds.keySet(), getUserByAppId(appId));
     }
-    appUserMap.remove(appId);
     shuffleTaskInfos.remove(appId);
     LOG.info("Finish remove resource for appId[" + appId + "] cost " + (System.currentTimeMillis() - start) + " ms");
   }
@@ -424,7 +421,7 @@ public class ShuffleTaskManager {
   }
 
   public String getUserByAppId(String appId) {
-    return appUserMap.get(appId);
+    return shuffleTaskInfos.computeIfAbsent(appId, x -> new ShuffleTaskInfo()).getUser();
   }
 
   @VisibleForTesting

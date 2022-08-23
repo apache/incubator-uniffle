@@ -432,7 +432,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
 
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 32));
     assertEquals(64, shuffleBufferManager.getUsedMemory());
-    shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(1, 32));
+    shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(1, 48));
     waitForFlush(shuffleFlushManager, appId, shuffleId, 4);
     assertEquals(0, shuffleBufferManager.getUsedMemory());
     assertEquals(0, shuffleBufferManager.getInFlushSize());
