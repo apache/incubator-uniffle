@@ -36,7 +36,7 @@ export default function Home(): JSX.Element {
   return (
     <Layout
       title={`${siteConfig.title}`}
-      description="Apache Uniffle is a Remote Shuffle Service.">
+      description="Apache Uniffle(Incubating) is a Remote Shuffle Service.">
       <HomepageHeader />
       <main>
         <HomepageFeatures />

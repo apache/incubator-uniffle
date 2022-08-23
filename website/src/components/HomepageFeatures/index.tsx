@@ -9,10 +9,10 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'What is Uniffle',
+    title: 'What is Apache Uniffle(Incubating)',
     description: (
       <>
-          Uniffle is a Remote Shuffle Service, and provides the capability for Apache Spark applications to store shuffle data on remote servers.
+          Apache Uniffle(Incubating) is a Remote Shuffle Service, and provides the capability for Apache Spark applications to store shuffle data on remote servers.
       </>
     ),
   },
