@@ -19,13 +19,14 @@ package org.apache.uniffle.server;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.Maps;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 /**
  * ShuffleTaskInfo contains the information of submitting the shuffle,
- * the information of the cache block, and the timestamp corresponding to the app
+ * the information of the cache block, user and timestamp corresponding to the app
  */
 public class ShuffleTaskInfo {
 
@@ -39,12 +40,14 @@ public class ShuffleTaskInfo {
    * shuffleId -> blockIds
     */
   private Map<Integer, Roaring64NavigableMap> cachedBlockIds;
+  private AtomicReference<String> user;
 
   public ShuffleTaskInfo() {
     this.currentTimes = System.currentTimeMillis();
     this.commitCounts = Maps.newConcurrentMap();
     this.commitLocks = Maps.newConcurrentMap();
     this.cachedBlockIds = Maps.newConcurrentMap();
+    this.user = new AtomicReference<>();
   }
 
   public Long getCurrentTimes() {
@@ -65,5 +68,13 @@ public class ShuffleTaskInfo {
 
   public Map<Integer, Roaring64NavigableMap> getCachedBlockIds() {
     return cachedBlockIds;
+  }
+
+  public String getUser() {
+    return user.get();
+  }
+
+  public void setUser(String user) {
+    this.user.set(user);
   }
 }
