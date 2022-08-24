@@ -24,7 +24,6 @@ import java.util.Set;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.WritableComparator;
@@ -35,6 +34,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -309,17 +309,20 @@ public class SortWriteBufferManagerTest {
     }
 
     @Override
-    public void reportShuffleResult(Map<Integer, List<ShuffleServerInfo>> partitionToServers, String appId, int shuffleId, long taskAttemptId, Map<Integer, List<Long>> partitionToBlockIds, int bitmapNum) {
+    public void reportShuffleResult(Map<Integer, List<ShuffleServerInfo>> partitionToServers, String appId,
+        int shuffleId, long taskAttemptId, Map<Integer, List<Long>> partitionToBlockIds, int bitmapNum) {
 
     }
 
     @Override
-    public ShuffleAssignmentsInfo getShuffleAssignments(String appId, int shuffleId, int partitionNum, int partitionNumPerRange, Set<String> requiredTags, int assignmentShuffleServerNumber) {
+    public ShuffleAssignmentsInfo getShuffleAssignments(String appId, int shuffleId, int partitionNum,
+        int partitionNumPerRange, Set<String> requiredTags, int assignmentShuffleServerNumber) {
       return null;
     }
 
     @Override
-    public Roaring64NavigableMap getShuffleResult(String clientType, Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int partitionId) {
+    public Roaring64NavigableMap getShuffleResult(String clientType, Set<ShuffleServerInfo> shuffleServerInfoSet,
+        String appId, int shuffleId, int partitionId) {
       return null;
     }
 

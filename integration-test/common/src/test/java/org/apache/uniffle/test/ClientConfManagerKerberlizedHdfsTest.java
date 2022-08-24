@@ -32,12 +32,12 @@ public class ClientConfManagerKerberlizedHdfsTest extends KerberizedHdfsBase {
 
   @Test
   public void testConfInHDFS() throws Exception {
-      String cfgFile = kerberizedHdfs.getSchemeAndAuthorityPrefix() + "/test/client_conf";
-      ClientConfManagerHdfsTest.createAndRunClientConfManagerCases(
-          kerberizedHdfs.getSchemeAndAuthorityPrefix(),
-          cfgFile,
-          kerberizedHdfs.getFileSystem(),
-          kerberizedHdfs.getConf()
-      );
+    String cfgFile = kerberizedHdfs.getSchemeAndAuthorityPrefix() + "/test/client_conf";
+    ClientConfManagerHdfsTest.createAndRunClientConfManagerCases(
+        kerberizedHdfs.getSchemeAndAuthorityPrefix(),
+        cfgFile,
+        kerberizedHdfs.getFileSystem(),
+        kerberizedHdfs.getConf()
+    );
   }
 }

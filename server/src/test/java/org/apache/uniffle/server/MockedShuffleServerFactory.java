@@ -24,6 +24,7 @@ import org.apache.uniffle.common.rpc.ServerInterface;
 
 public class MockedShuffleServerFactory extends ShuffleServerFactory {
   private static final Logger LOG = LoggerFactory.getLogger(MockedShuffleServerFactory.class);
+
   public MockedShuffleServerFactory(MockedShuffleServer shuffleServer) {
     super(shuffleServer);
   }

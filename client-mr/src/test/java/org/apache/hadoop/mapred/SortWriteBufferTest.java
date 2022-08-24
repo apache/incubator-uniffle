@@ -17,6 +17,12 @@
 
 package org.apache.hadoop.mapred;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Random;
+
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BytesWritable;
@@ -26,13 +32,6 @@ import org.apache.hadoop.io.serializer.Deserializer;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.io.serializer.Serializer;
 import org.junit.jupiter.api.Test;
-
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.util.Map;
-import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -90,13 +89,13 @@ public class SortWriteBufferTest {
     keySerializer.serialize(key);
     byte[] valueBytes = new byte[200];
     Map<String, BytesWritable> valueMap = Maps.newConcurrentMap();
-    Map<String, Long> recordLenMap = Maps.newConcurrentMap();
     Random random = new Random();
     random.nextBytes(valueBytes);
     value = new BytesWritable(valueBytes);
     valueMap.putIfAbsent(keyStr, value);
     valSerializer.serialize(value);
     recordLength = buffer.addRecord(key, value);
+    Map<String, Long> recordLenMap = Maps.newConcurrentMap();
     recordLenMap.putIfAbsent(keyStr, recordLength);
 
     keyStr = "key1";
@@ -114,12 +113,11 @@ public class SortWriteBufferTest {
     bigKey[1] = 'e';
     bigKey[2] = 'y';
     bigKey[3] = '4';
-    BytesWritable bigWritableKey = new BytesWritable(bigKey);
+    final BytesWritable bigWritableKey = new BytesWritable(bigKey);
     valueBytes = new byte[253];
     random.nextBytes(valueBytes);
-    BytesWritable bigWritableValue = new BytesWritable(valueBytes);
-    long bigRecordLength = buffer.addRecord(bigWritableKey, bigWritableValue);
-
+    final BytesWritable bigWritableValue = new BytesWritable(valueBytes);
+    final long bigRecordLength = buffer.addRecord(bigWritableKey, bigWritableValue);
     keyStr = "key2";
     key = new BytesWritable(keyStr.getBytes());
     valueBytes = new byte[3100];

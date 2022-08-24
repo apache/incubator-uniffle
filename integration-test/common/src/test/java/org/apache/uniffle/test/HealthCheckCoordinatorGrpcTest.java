@@ -53,8 +53,6 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
   @BeforeAll
   public static void setupServers() throws Exception {
     serverTmpDir.deleteOnExit();
-    long totalSize = serverTmpDir.getTotalSpace();
-    long usedSize = serverTmpDir.getTotalSpace() - serverTmpDir.getUsableSpace();
     File data1 = new File(serverTmpDir, "data1");
     data1.mkdirs();
     File data2 = new File(serverTmpDir, "data2");
@@ -67,8 +65,10 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
     } else {
       writeDataSize = (int) freeSize / 2;
     }
+    long totalSize = serverTmpDir.getTotalSpace();
+    long usedSize = serverTmpDir.getTotalSpace() - serverTmpDir.getUsableSpace();
     maxUsage = (writeDataSize * 0.75 + usedSize) * 100.0 / totalSize;
-    healthUsage = (writeDataSize * 0.5 + usedSize) * 100.0 /totalSize;
+    healthUsage = (writeDataSize * 0.5 + usedSize) * 100.0 / totalSize;
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2000);
     coordinatorConf.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 3000);
@@ -95,20 +95,21 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
 
   @Test
   public void healthCheckTest() throws Exception {
-    RssGetShuffleAssignmentsRequest request =
-      new RssGetShuffleAssignmentsRequest(
-          "1",
-          1,
-          1,
-          1,
-          1,
-          Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
     assertEquals(2, coordinatorClient.getShuffleServerList().getServersCount());
     List<ServerNode> nodes  = coordinators.get(0).getClusterManager()
         .getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     assertEquals(2, coordinatorClient.getShuffleServerList().getServersCount());
     assertEquals(2, nodes.size());
+
+    RssGetShuffleAssignmentsRequest request =
+        new RssGetShuffleAssignmentsRequest(
+          "1",
+          1,
+          1,
+          1,
+          1,
+          Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     RssGetShuffleAssignmentsResponse response =
         coordinatorClient.getShuffleAssignments(request);
     assertFalse(response.getPartitionToServers().isEmpty());
@@ -142,7 +143,7 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
       if (i == 10) {
         fail();
       }
-    } while(nodes.size() != 2);
+    } while (nodes.size() != 2);
     for (ServerNode node : nodes) {
       assertTrue(node.isHealthy());
     }

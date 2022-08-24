@@ -19,13 +19,8 @@ package org.apache.spark.shuffle;
 
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
 
 import com.google.common.collect.Lists;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.uniffle.client.request.RssAccessClusterRequest;
-import org.apache.uniffle.client.response.ResponseStatusCode;
-import org.apache.uniffle.storage.util.StorageType;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.sort.SortShuffleManager;
 import org.junit.jupiter.api.AfterAll;
@@ -36,8 +31,7 @@ import org.mockito.Mockito;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
-import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.common.util.RetryUtils;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.client.response.ResponseStatusCode.ACCESS_DENIED;
 import static org.apache.uniffle.client.response.ResponseStatusCode.SUCCESS;
@@ -165,18 +159,18 @@ public class DelegationRssShuffleManagerTest {
         .thenReturn(new RssAccessClusterResponse(ACCESS_DENIED, ""))
         .thenReturn(new RssAccessClusterResponse(ACCESS_DENIED, ""))
         .thenReturn(new RssAccessClusterResponse(ACCESS_DENIED, ""));
-    List<CoordinatorClient> SecondCoordinatorClients = Lists.newArrayList();
-    SecondCoordinatorClients.add(mockCoordinatorClient);
+    List<CoordinatorClient> secondCoordinatorClients = Lists.newArrayList();
+    secondCoordinatorClients.add(mockCoordinatorClient);
     mockedStaticRssShuffleUtils.when(() ->
-        RssSparkShuffleUtils.createCoordinatorClients(any())).thenReturn(SecondCoordinatorClients);
-    SparkConf SecondConf = new SparkConf();
-    SecondConf.set(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS, 3000L);
-    SecondConf.set(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_TIMES, 3);
-    SecondConf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.key(), "false");
-    SecondConf.set(RssSparkConfig.RSS_ACCESS_ID.key(), "mockId");
-    SecondConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "m1:8001,m2:8002");
-    SecondConf.set("spark.rss.storage.type", StorageType.LOCALFILE.name());
-    assertCreateSortShuffleManager(SecondConf);
+        RssSparkShuffleUtils.createCoordinatorClients(any())).thenReturn(secondCoordinatorClients);
+    SparkConf secondConf = new SparkConf();
+    secondConf.set(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS, 3000L);
+    secondConf.set(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_TIMES, 3);
+    secondConf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.key(), "false");
+    secondConf.set(RssSparkConfig.RSS_ACCESS_ID.key(), "mockId");
+    secondConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "m1:8001,m2:8002");
+    secondConf.set("spark.rss.storage.type", StorageType.LOCALFILE.name());
+    assertCreateSortShuffleManager(secondConf);
   }
 
   private DelegationRssShuffleManager assertCreateSortShuffleManager(SparkConf conf) throws Exception {

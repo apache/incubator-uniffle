@@ -57,7 +57,7 @@ public class HadoopFilesystemProviderTest extends KerberizedHdfsBase {
       FileSystem fileSystem = HadoopFilesystemProvider.getFilesystem(new Path("/hdfs"), kerberizedHdfs.getConf());
       fileSystem.mkdirs(new Path("/hdfs/HadoopFilesystemProviderTest"));
     } catch (AccessControlException e) {
-
+      // ignore
     }
   }
 

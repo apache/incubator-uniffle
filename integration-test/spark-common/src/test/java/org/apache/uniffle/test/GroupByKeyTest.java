@@ -17,10 +17,10 @@
 
 package org.apache.uniffle.test;
 
-import com.google.common.collect.Lists;
 
 import java.util.Map;
 
+import com.google.common.collect.Lists;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;

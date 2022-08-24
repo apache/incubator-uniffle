@@ -23,11 +23,11 @@ import java.util.Set;
 
 import com.google.common.collect.Sets;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.TaskUmbilicalProtocol;
-import org.apache.hadoop.mapred.MapTaskCompletionEventsUpdate;
 import org.apache.hadoop.mapred.JobID;
+import org.apache.hadoop.mapred.MapTaskCompletionEventsUpdate;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.TaskCompletionEvent;
+import org.apache.hadoop.mapred.TaskUmbilicalProtocol;
 import org.apache.hadoop.mapreduce.RssMRUtils;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.junit.jupiter.api.Test;
@@ -50,11 +50,11 @@ public class EvenFetcherTest {
     jobConf.setNumMapTasks(mapTaskNum);
     TaskUmbilicalProtocol umbilical = mock(TaskUmbilicalProtocol.class);
     when(umbilical.getMapCompletionEvents(any(JobID.class),
-      eq(0), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
-      .thenReturn(getMockedCompletionEventsUpdate(0, mapTaskNum));
+        eq(0), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
+        .thenReturn(getMockedCompletionEventsUpdate(0, mapTaskNum));
 
     RssEventFetcher ef =
-      new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
+        new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
     Roaring64NavigableMap expected = Roaring64NavigableMap.bitmapOf();
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
       long rssTaskId = RssMRUtils.convertTaskAttemptIdToLong(
@@ -74,14 +74,14 @@ public class EvenFetcherTest {
     jobConf.setNumMapTasks(mapTaskNum);
     TaskUmbilicalProtocol umbilical = mock(TaskUmbilicalProtocol.class);
     when(umbilical.getMapCompletionEvents(any(JobID.class),
-      eq(0), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
-      .thenReturn(getMockedCompletionEventsUpdate(0, mapTaskNum,
+        eq(0), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
+        .thenReturn(getMockedCompletionEventsUpdate(0, mapTaskNum,
         Sets.newHashSet(70, 80, 90),
         Sets.newHashSet(),
         Sets.newHashSet()));
 
     RssEventFetcher ef =
-      new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
+        new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
     Roaring64NavigableMap expected = Roaring64NavigableMap.bitmapOf();
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
       long rssTaskId = RssMRUtils.convertTaskAttemptIdToLong(
@@ -102,18 +102,18 @@ public class EvenFetcherTest {
 
     TaskUmbilicalProtocol umbilical = mock(TaskUmbilicalProtocol.class);
     when(umbilical.getMapCompletionEvents(any(JobID.class),
-      eq(0), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
-      .thenReturn(getMockedCompletionEventsUpdate(0, MAX_EVENTS_TO_FETCH));
+        eq(0), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
+        .thenReturn(getMockedCompletionEventsUpdate(0, MAX_EVENTS_TO_FETCH));
     when(umbilical.getMapCompletionEvents(any(JobID.class),
-      eq(MAX_EVENTS_TO_FETCH), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
-      .thenReturn(getMockedCompletionEventsUpdate(MAX_EVENTS_TO_FETCH,
+        eq(MAX_EVENTS_TO_FETCH), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
+        .thenReturn(getMockedCompletionEventsUpdate(MAX_EVENTS_TO_FETCH,
         MAX_EVENTS_TO_FETCH));
     when(umbilical.getMapCompletionEvents(any(JobID.class),
-      eq(MAX_EVENTS_TO_FETCH * 2), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
-      .thenReturn(getMockedCompletionEventsUpdate(MAX_EVENTS_TO_FETCH * 2, 3));
+        eq(MAX_EVENTS_TO_FETCH * 2), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
+        .thenReturn(getMockedCompletionEventsUpdate(MAX_EVENTS_TO_FETCH * 2, 3));
 
     RssEventFetcher ef =
-      new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
+        new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
 
     Roaring64NavigableMap expected = Roaring64NavigableMap.bitmapOf();
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
@@ -134,12 +134,12 @@ public class EvenFetcherTest {
     jobConf.setNumMapTasks(mapTaskNum);
     TaskUmbilicalProtocol umbilical = mock(TaskUmbilicalProtocol.class);
     when(umbilical.getMapCompletionEvents(any(JobID.class),
-      eq(0), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
-      .thenReturn(getInconsistentCompletionEventsUpdate(0, mapTaskNum,
+        eq(0), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
+        .thenReturn(getInconsistentCompletionEventsUpdate(0, mapTaskNum,
         Sets.newHashSet(45, 67), Sets.newHashSet()));
 
     RssEventFetcher ef =
-      new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
+        new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
     Roaring64NavigableMap expected = Roaring64NavigableMap.bitmapOf();
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
       long rssTaskId = RssMRUtils.convertTaskAttemptIdToLong(
@@ -151,7 +151,7 @@ public class EvenFetcherTest {
       ef.fetchAllRssTaskIds();
       fail();
     } catch (Exception e) {
-      assert(e.getMessage()
+      assert (e.getMessage()
         .contains("TaskAttemptIDs are inconsistent with map tasks"));
     }
   }
@@ -164,12 +164,12 @@ public class EvenFetcherTest {
     jobConf.setNumMapTasks(mapTaskNum);
     TaskUmbilicalProtocol umbilical = mock(TaskUmbilicalProtocol.class);
     when(umbilical.getMapCompletionEvents(any(JobID.class),
-      eq(0), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
-      .thenReturn(getInconsistentCompletionEventsUpdate(0, mapTaskNum,
+        eq(0), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
+        .thenReturn(getInconsistentCompletionEventsUpdate(0, mapTaskNum,
         Sets.newHashSet(), Sets.newHashSet(101)));
 
     RssEventFetcher ef =
-      new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
+        new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
     Roaring64NavigableMap expected = Roaring64NavigableMap.bitmapOf();
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
       long rssTaskId = RssMRUtils.convertTaskAttemptIdToLong(
@@ -181,7 +181,7 @@ public class EvenFetcherTest {
       ef.fetchAllRssTaskIds();
       fail();
     } catch (Exception e) {
-      assert(e.getMessage()
+      assert (e.getMessage()
         .contains("TaskAttemptIDs are inconsistent with map tasks"));
     }
   }
@@ -197,14 +197,14 @@ public class EvenFetcherTest {
     Set<Integer> tipFailed = Sets.newHashSet(89);
     TaskUmbilicalProtocol umbilical = mock(TaskUmbilicalProtocol.class);
     when(umbilical.getMapCompletionEvents(any(JobID.class),
-      eq(0), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
-      .thenReturn(getMockedCompletionEventsUpdate(0, mapTaskNum,
+        eq(0), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
+        .thenReturn(getMockedCompletionEventsUpdate(0, mapTaskNum,
         Sets.newHashSet(), obsoleted, tipFailed));
 
     ExceptionReporter reporter = mock(ExceptionReporter.class);
 
     RssEventFetcher ef =
-      new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
+        new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
 
     Roaring64NavigableMap expected = Roaring64NavigableMap.bitmapOf();
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
@@ -227,21 +227,23 @@ public class EvenFetcherTest {
 
   private void validate(Roaring64NavigableMap expected, Roaring64NavigableMap actual) {
     assert (expected.getLongCardinality() == actual.getLongCardinality());
-    actual.forEach(taskId -> { assert(expected.contains(taskId)); });
+    actual.forEach(taskId -> {
+      assert (expected.contains(taskId));
+    });
   }
 
   private MapTaskCompletionEventsUpdate getMockedCompletionEventsUpdate(
-    int startIdx, int numEvents) {
+      int startIdx, int numEvents) {
     return getMockedCompletionEventsUpdate(startIdx, numEvents,
       Sets.newHashSet(), Sets.newHashSet(), Sets.newHashSet());
   }
 
   private MapTaskCompletionEventsUpdate getMockedCompletionEventsUpdate(
-    int startIdx,
-    int numEvents,
-    Set<Integer> repeatedSuccEvents,
-    Set<Integer> obsoletedEvents,
-    Set<Integer> tipFailedEvents) {
+      int startIdx,
+      int numEvents,
+      Set<Integer> repeatedSuccEvents,
+      Set<Integer> obsoletedEvents,
+      Set<Integer> tipFailedEvents) {
     ArrayList<TaskCompletionEvent> tceList = new ArrayList<org.apache.hadoop.mapred.TaskCompletionEvent>(numEvents);
     for (int i = 0; i < numEvents; ++i) {
       int eventIdx = startIdx + i;
@@ -252,34 +254,34 @@ public class EvenFetcherTest {
         status = TaskCompletionEvent.Status.TIPFAILED;
       }
       TaskCompletionEvent tce = new TaskCompletionEvent(eventIdx,
-        new TaskAttemptID("12345", 1, TaskType.MAP, eventIdx, 0),
-        eventIdx, true, status,
-        "http://somehost:8888");
+          new TaskAttemptID("12345", 1, TaskType.MAP, eventIdx, 0),
+          eventIdx, true, status,
+          "http://somehost:8888");
       tceList.add(tce);
     }
     obsoletedEvents.forEach(i -> {
       TaskCompletionEvent tce = new TaskCompletionEvent(tceList.size(),
-        new TaskAttemptID("12345", 1, TaskType.MAP, i, 0),
-        i, true, TaskCompletionEvent.Status.OBSOLETE,
-        "http://somehost:8888");
+          new TaskAttemptID("12345", 1, TaskType.MAP, i, 0),
+          i, true, TaskCompletionEvent.Status.OBSOLETE,
+          "http://somehost:8888");
       tceList.add(tce);
     });
 
     // use new attempt number - 1
     repeatedSuccEvents.forEach(i -> {
       TaskCompletionEvent tce = new TaskCompletionEvent(tceList.size(),
-        new TaskAttemptID("12345", 1, TaskType.MAP, i, 1),
-        i, true, TaskCompletionEvent.Status.SUCCEEDED,
-        "http://somehost:8888");
+          new TaskAttemptID("12345", 1, TaskType.MAP, i, 1),
+          i, true, TaskCompletionEvent.Status.SUCCEEDED,
+          "http://somehost:8888");
       tceList.add(tce);
     });
 
     // use new attempt number - 1
     obsoletedEvents.forEach(i -> {
       TaskCompletionEvent tce = new TaskCompletionEvent(tceList.size(),
-        new TaskAttemptID("12345", 1, TaskType.MAP, i, 1),
-        i, true, TaskCompletionEvent.Status.SUCCEEDED,
-        "http://somehost:8888");
+          new TaskAttemptID("12345", 1, TaskType.MAP, i, 1),
+          i, true, TaskCompletionEvent.Status.SUCCEEDED,
+          "http://somehost:8888");
       tceList.add(tce);
     });
     TaskCompletionEvent[] events = {};
@@ -288,25 +290,25 @@ public class EvenFetcherTest {
 
 
   private MapTaskCompletionEventsUpdate getInconsistentCompletionEventsUpdate(
-    int startIdx, int numEvents, Set<Integer> missEvents, Set<Integer> extraEvents) {
+      int startIdx, int numEvents, Set<Integer> missEvents, Set<Integer> extraEvents) {
     ArrayList<TaskCompletionEvent> tceList = new ArrayList<org.apache.hadoop.mapred.TaskCompletionEvent>(numEvents);
     for (int i = 0; i < numEvents; ++i) {
       int eventIdx = startIdx + i;
       if (!missEvents.contains(eventIdx)) {
         TaskCompletionEvent.Status status = TaskCompletionEvent.Status.SUCCEEDED;
         TaskCompletionEvent tce = new TaskCompletionEvent(eventIdx,
-          new TaskAttemptID("12345", 1, TaskType.MAP, eventIdx, 0),
-          eventIdx, true, status,
-          "http://somehost:8888");
+            new TaskAttemptID("12345", 1, TaskType.MAP, eventIdx, 0),
+            eventIdx, true, status,
+            "http://somehost:8888");
         tceList.add(tce);
       }
     }
 
     extraEvents.forEach(i -> {
       TaskCompletionEvent tce = new TaskCompletionEvent(i,
-        new TaskAttemptID("12345", 1, TaskType.MAP, i, 1),
-        i, true, TaskCompletionEvent.Status.SUCCEEDED,
-        "http://somehost:8888");
+          new TaskAttemptID("12345", 1, TaskType.MAP, i, 1),
+          i, true, TaskCompletionEvent.Status.SUCCEEDED,
+          "http://somehost:8888");
       tceList.add(tce);
     });
     TaskCompletionEvent[] events = {};

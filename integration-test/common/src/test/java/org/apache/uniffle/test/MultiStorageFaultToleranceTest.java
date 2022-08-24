@@ -26,10 +26,9 @@ import java.util.Set;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -41,6 +40,7 @@ import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
+import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -57,7 +57,7 @@ public class MultiStorageFaultToleranceTest extends ShuffleReadWriteBase {
 
   @BeforeAll
   public static void setupServers() throws Exception {
-    CoordinatorConf coordinatorConf = getCoordinatorConf();
+    final CoordinatorConf coordinatorConf = getCoordinatorConf();
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     String basePath = generateBasePath();
     shuffleServerConf.setDouble(ShuffleServerConf.CLEANUP_THRESHOLD, 0.0);
@@ -91,7 +91,7 @@ public class MultiStorageFaultToleranceTest extends ShuffleReadWriteBase {
     map.put(0, Lists.newArrayList(0));
     registerShuffle(appId, map);
     Roaring64NavigableMap blockBitmap = Roaring64NavigableMap.bitmapOf();
-    List<ShuffleBlockInfo> blocks = createShuffleBlockList(
+    final List<ShuffleBlockInfo> blocks = createShuffleBlockList(
         0, 0, 0, 40, 10 * 1024 * 1024, blockBitmap, expectedData);
     assertEquals(1, cluster.getDataNodes().size());
     cluster.stopDataNode(0);
@@ -114,8 +114,6 @@ public class MultiStorageFaultToleranceTest extends ShuffleReadWriteBase {
                                                   long taskAttemptId, List<ShuffleBlockInfo> blocks) {
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
-    Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
-    Set<Long> expectBlockIds = getExpectBlockIds(blocks);
     partitionToBlocks.put(partition, blocks);
     shuffleToBlocks.put(shuffle, partitionToBlocks);
     RssSendShuffleDataRequest rs = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
@@ -124,6 +122,9 @@ public class MultiStorageFaultToleranceTest extends ShuffleReadWriteBase {
     shuffleServerClient.sendCommit(rc);
     RssFinishShuffleRequest rf = new RssFinishShuffleRequest(appId, shuffle);
     shuffleServerClient.finishShuffle(rf);
+
+    Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
+    Set<Long> expectBlockIds = getExpectBlockIds(blocks);
     partitionToBlockIds.put(shuffle, new ArrayList<>(expectBlockIds));
     RssReportShuffleResultRequest rrp = new RssReportShuffleResultRequest(
         appId, shuffle, taskAttemptId, partitionToBlockIds, 1);

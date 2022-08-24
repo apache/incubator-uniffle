@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.SystemUtils;
-
 import org.apache.spark.SparkConf;
 import org.apache.spark.util.EventLoop;
 

@@ -168,7 +168,7 @@ public class KerberizedHdfs implements Serializable {
     
     UserGroupInformation.setConfiguration(conf);
     UserGroupInformation.setShouldRenewImmediatelyForTests(true);
-    UserGroupInformation ugi =
+    final UserGroupInformation ugi =
         UserGroupInformation.loginUserFromKeytabAndReturnUGI(hdfsPrincipal, hdfsKeytab);
 
     Configuration hdfsConf = createSecureDFSConfig();

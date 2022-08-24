@@ -23,11 +23,10 @@ import java.util.Map.Entry;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -38,6 +37,7 @@ import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
+import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -102,7 +102,8 @@ public class ShuffleServerWithHdfsTest extends ShuffleReadWriteBase {
 
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.HDFS.name(),
         appId, 0, 0, 100, 2, 10, 1000,
-        dataBasePath, bitmaps[0], Roaring64NavigableMap.bitmapOf(0), Lists.newArrayList(), new Configuration(), new DefaultIdHelper());
+        dataBasePath, bitmaps[0], Roaring64NavigableMap.bitmapOf(0), Lists.newArrayList(),
+        new Configuration(), new DefaultIdHelper());
     assertNull(readClient.readShuffleBlockData());
     shuffleServerClient.finishShuffle(rfsr);
 
@@ -131,22 +132,26 @@ public class ShuffleServerWithHdfsTest extends ShuffleReadWriteBase {
 
     readClient = new ShuffleReadClientImpl(StorageType.HDFS.name(),
         appId, 0, 0, 100, 2, 10, 1000,
-        dataBasePath, bitmaps[0], Roaring64NavigableMap.bitmapOf(0), Lists.newArrayList(), new Configuration(), new DefaultIdHelper());
+        dataBasePath, bitmaps[0], Roaring64NavigableMap.bitmapOf(0), Lists.newArrayList(),
+        new Configuration(), new DefaultIdHelper());
     validateResult(readClient, expectedData, bitmaps[0]);
 
     readClient = new ShuffleReadClientImpl(StorageType.HDFS.name(),
         appId, 0, 1, 100, 2, 10, 1000,
-        dataBasePath, bitmaps[1], Roaring64NavigableMap.bitmapOf(1), Lists.newArrayList(), new Configuration(), new DefaultIdHelper());
+        dataBasePath, bitmaps[1], Roaring64NavigableMap.bitmapOf(1), Lists.newArrayList(),
+        new Configuration(), new DefaultIdHelper());
     validateResult(readClient, expectedData, bitmaps[1]);
 
     readClient = new ShuffleReadClientImpl(StorageType.HDFS.name(),
         appId, 0, 2, 100, 2, 10, 1000,
-        dataBasePath, bitmaps[2], Roaring64NavigableMap.bitmapOf(2), Lists.newArrayList(), new Configuration(), new DefaultIdHelper());
+        dataBasePath, bitmaps[2], Roaring64NavigableMap.bitmapOf(2), Lists.newArrayList(),
+        new Configuration(), new DefaultIdHelper());
     validateResult(readClient, expectedData, bitmaps[2]);
 
     readClient = new ShuffleReadClientImpl(StorageType.HDFS.name(),
         appId, 0, 3, 100, 2, 10, 1000,
-        dataBasePath, bitmaps[3], Roaring64NavigableMap.bitmapOf(3), Lists.newArrayList(), new Configuration(), new DefaultIdHelper());
+        dataBasePath, bitmaps[3], Roaring64NavigableMap.bitmapOf(3), Lists.newArrayList(),
+        new Configuration(), new DefaultIdHelper());
     validateResult(readClient, expectedData, bitmaps[3]);
   }
 

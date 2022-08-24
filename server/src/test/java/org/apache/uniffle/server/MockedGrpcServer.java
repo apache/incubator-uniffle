@@ -23,11 +23,13 @@ import org.apache.uniffle.common.rpc.GrpcServer;
 
 public class MockedGrpcServer extends GrpcServer {
   MockedShuffleServerGrpcService service;
+
   public MockedGrpcServer(RssBaseConf conf, MockedShuffleServerGrpcService service,
                           GRPCMetrics grpcMetrics) {
     super(conf, service, grpcMetrics);
     this.service = service;
   }
+
   public MockedShuffleServerGrpcService getService() {
     return service;
   }

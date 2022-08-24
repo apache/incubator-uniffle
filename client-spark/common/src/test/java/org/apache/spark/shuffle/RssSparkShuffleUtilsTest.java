@@ -22,13 +22,12 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Maps;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
-import org.apache.uniffle.common.util.Constants;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.util.RssClientConfig;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -82,7 +81,7 @@ public class RssSparkShuffleUtilsTest {
 
   @Test
   public void applyDynamicClientConfTest() {
-    SparkConf conf = new SparkConf();
+    final SparkConf conf = new SparkConf();
     Map<String, String> clientConf = Maps.newHashMap();
     String remoteStoragePath = "hdfs://path1";
     String mockKey = "spark.mockKey";

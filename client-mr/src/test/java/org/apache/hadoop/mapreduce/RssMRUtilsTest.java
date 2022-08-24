@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class RssMRUtilsTest {
 
   @Test
-  public void TaskAttemptIdTest() {
+  public void baskAttemptIdTest() {
     long taskAttemptId = 0x1000ad12;
     JobID jobID = new JobID();
     TaskID taskId =  new TaskID(jobID, TaskType.MAP, (int) taskAttemptId);
@@ -61,7 +61,7 @@ public class RssMRUtilsTest {
   }
 
   @Test
-  public void BlockConvertTest() {
+  public void blockConvertTest() {
     JobID jobID =  new JobID();
     TaskID taskId =  new TaskID(jobID, TaskType.MAP, 233);
     TaskAttemptID taskAttemptID = new TaskAttemptID(taskId, 1);
@@ -76,7 +76,7 @@ public class RssMRUtilsTest {
 
   @Test
   public void applyDynamicClientConfTest() {
-    JobConf conf = new JobConf();
+    final JobConf conf = new JobConf();
     Map<String, String> clientConf = Maps.newHashMap();
     String remoteStoragePath = "hdfs://path1";
     String mockKey = "mapreduce.mockKey";

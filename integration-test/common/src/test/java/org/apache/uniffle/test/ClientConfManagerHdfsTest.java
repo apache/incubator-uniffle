@@ -51,8 +51,6 @@ public class ClientConfManagerHdfsTest extends HdfsTestBase {
       String cfgFile,
       FileSystem fileSystem,
       Configuration hadoopConf) throws Exception {
-    Path path = new Path(cfgFile);
-    FSDataOutputStream out = fileSystem.create(path);
 
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, clusterPathPrefix);
@@ -69,6 +67,8 @@ public class ClientConfManagerHdfsTest extends HdfsTestBase {
     assertNotNull(expectedException);
     assertTrue(expectedException.getMessage().endsWith("is not a file."));
 
+    Path path = new Path(cfgFile);
+    FSDataOutputStream out = fileSystem.create(path);
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile);
     ClientConfManager clientConfManager = new ClientConfManager(
         conf, new Configuration(), new ApplicationManager(conf));
