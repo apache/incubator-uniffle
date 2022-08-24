@@ -18,12 +18,17 @@
 #
 
 set -o pipefail
-set -o nounset   # exit the script if you try to use an uninitialised variable
 set -o errexit   # exit the script if any statement returns a non-true return value
 set -e
 
 SCRIPT_DIR="$(cd "`dirname "$0"`"; pwd)"
 BASE_DIR="$(cd "`dirname "$0"`/.."; pwd)"
 
+source "$SCRIPT_DIR/rss-env.sh"
+if [ -z "$RSS_PID_DIR" ]; then
+  RSS_PID_DIR="${BASE_DIR}"
+fi
+
 source "$SCRIPT_DIR/utils.sh"
-common_shutdown "shuffle-server" ${BASE_DIR}
+
+common_shutdown "shuffle-server" "${RSS_PID_DIR}"

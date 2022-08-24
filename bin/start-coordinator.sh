@@ -24,12 +24,26 @@ COORDINATOR_HOME="$(
   cd "$(dirname "$0")/.."
   pwd
 )"
+
+source "${COORDINATOR_HOME}/bin/rss-env.sh"
+
+if [ -z "$HADOOP_CONF_DIR" ]; then
+  HADOOP_CONF_DIR="${HADOOP_HOME}/etc/hadoop"
+fi
+
+if [ -z "$RSS_LOG_DIR" ]; then
+  RSS_LOG_DIR="${COORDINATOR_HOME}/logs"
+fi
+
+if [ -z "$RSS_PID_DIR" ]; then
+  RSS_PID_DIR="${COORDINATOR_HOME}"
+fi
+
 CONF_FILE="./conf/coordinator.conf "
 MAIN_CLASS="org.apache.uniffle.coordinator.CoordinatorServer"
 
 cd $COORDINATOR_HOME
 
-source "${COORDINATOR_HOME}/bin/rss-env.sh"
 source "${COORDINATOR_HOME}/bin/utils.sh"
 
 if [ -z "$HADOOP_HOME" ]; then
@@ -39,7 +53,6 @@ fi
 
 export JAVA_HOME
 
-HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
 HADOOP_DEPENDENCY=`$HADOOP_HOME/bin/hadoop classpath --glob`
 
 echo "Check process existence"
@@ -52,10 +65,8 @@ for file in $(ls ${JAR_DIR}/coordinator/*.jar 2>/dev/null); do
   CLASSPATH=$CLASSPATH:$file
 done
 
-if [ -z "$HADOOP_CONF_DIR" ]; then
-  echo "No env HADOOP_CONF_DIR."
-  exit 1
-fi
+mkdir -p "${RSS_LOG_DIR}"
+mkdir -p "${RSS_PID_DIR}"
 
 echo "Using Hadoop from $HADOOP_HOME"
 
@@ -75,7 +86,7 @@ JVM_ARGS=" -server \
 ARGS=""
 
 LOG_CONF_FILE="./conf/log4j.properties"
-LOG_PATH="./logs/coordinator.log"
+LOG_PATH="${RSS_LOG_DIR}/coordinator.log"
 if [ -f ${LOG_CONF_FILE} ]; then
   ARGS="$ARGS -Dlog4j.configuration=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH}"
 else
@@ -86,4 +97,4 @@ fi
 $RUNNER $ARGS $JVM_ARGS -cp $CLASSPATH $MAIN_CLASS --conf $CONF_FILE $@ &
 
 get_pid_file_name coordinator
-echo $! >$COORDINATOR_HOME/${pid_file}
+echo $! >${RSS_PID_DIR}/${pid_file}

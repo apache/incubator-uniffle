@@ -24,5 +24,10 @@ JAVA_HOME=<java_home_dir>
 HADOOP_HOME=<hadoop_home_dir>
 XMX_SIZE="80g"
 
+# HADOOP_CONF_DIR, Hadoop configuration files (Default: ${HADOOP_HOME}/etc/hadoop)
+# RSS_PID_DIR, Where the pid file is stored (Default: ${RSS_HOME})
+# RSS_LOG_DIR, Where log files are stored (Default: ${RSS_HOME}/logs)
+# RSS_IP, IP address Shuffle Server binds to on this node (Default: first non-loopback ipv4)
+
 RUNNER="${JAVA_HOME}/bin/java"
 JPS="${JAVA_HOME}/bin/jps"
