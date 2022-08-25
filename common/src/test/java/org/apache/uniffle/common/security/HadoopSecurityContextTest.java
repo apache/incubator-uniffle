@@ -41,8 +41,6 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
 
   @Test
   public void testSecuredCallable() throws Exception {
-    String val = System.getProperty("java.security.krb5.conf");
-
     HadoopSecurityContext context = new HadoopSecurityContext(
         null,
         kerberizedHdfs.getHdfsKeytab(),
@@ -119,5 +117,28 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
     } catch (Exception e) {
       assertTrue(e.getMessage().contains("refreshIntervalSec must be not negative"));
     }
+
+    // case4: lack krb5 conf, should throw exception
+    String krbConfFilePath = System.getProperty("java.security.krb5.conf");
+    System.clearProperty("java.security.krb5.conf");
+    try {
+      HadoopSecurityContext context = new HadoopSecurityContext(
+          null,
+          kerberizedHdfs.getHdfsKeytab(),
+          kerberizedHdfs.getHdfsPrincipal(),
+          100
+      );
+      fail();
+    } catch (Exception e) {
+      assertTrue(e.getMessage().contains("Cannot locate KDC"));
+    }
+
+    // case5: After setting the krb5 conf, it should pass
+    HadoopSecurityContext context = new HadoopSecurityContext(
+        krbConfFilePath,
+        kerberizedHdfs.getHdfsKeytab(),
+        kerberizedHdfs.getHdfsPrincipal(),
+        100
+    );
   }
 }
