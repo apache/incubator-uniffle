@@ -25,7 +25,7 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
 
 go mod vendor
 
-MODULE="github.com/apache/incubator-uniffle"
+MODULE="github.com/apache/incubator-uniffle/deploy/kubernetes/operator"
 GENERATED_BASE="pkg"
 OUTPUT_PACKAGE="${MODULE}/pkg/generated"
 APIS_PACKAGE="${MODULE}/api"
