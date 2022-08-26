@@ -48,6 +48,8 @@ import org.apache.hadoop.security.ssl.KeyStoreTestUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.util.RssUtils;
+
 import static org.apache.hadoop.fs.CommonConfigurationKeys.IPC_CLIENT_CONNECT_MAX_RETRIES_ON_SASL_KEY;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_BLOCK_ACCESS_TOKEN_ENABLE_KEY;
@@ -95,7 +97,7 @@ public class KerberizedHdfs implements Serializable {
   }
 
   private void setupDFSData() throws Exception {
-    String principal = "alex/localhost";
+    String principal = "alex/" + RssUtils.getHostIp();
     File keytab = new File(workDir, "alex.keytab");
     kdc.createPrincipal(keytab, principal);
     alexKeytab = keytab.getAbsolutePath();
@@ -160,7 +162,7 @@ public class KerberizedHdfs implements Serializable {
     String krb5Conf = kdc.getKrb5conf().getAbsolutePath();
     System.setProperty("java.security.krb5.conf", krb5Conf);
 
-    String principal = "hdfs" + "/localhost";
+    String principal = "hdfs/" + RssUtils.getHostIp();
     File keytab = new File(workDir, "hdfs.keytab");
     kdc.createPrincipal(keytab, principal);
     hdfsKeytab = keytab.getPath();
