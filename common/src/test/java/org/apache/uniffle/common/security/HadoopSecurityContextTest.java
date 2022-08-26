@@ -140,5 +140,8 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
         kerberizedHdfs.getHdfsPrincipal(),
         100
     );
+
+    // recover System property of krb5 conf
+    System.setProperty("java.security.krb5.conf", krbConfFilePath);
   }
 }
