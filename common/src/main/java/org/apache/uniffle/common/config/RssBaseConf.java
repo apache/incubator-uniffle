@@ -163,6 +163,13 @@ public class RssBaseConf extends RssConf {
       .defaultValue(false)
       .withDescription("Whether enable visiting secured hadoop cluster.");
 
+  public static final ConfigOption<String> RSS_SECURITY_HADOOP_KRB5_CONF_FILE = ConfigOptions
+      .key("rss.security.hadoop.kerberos.krb5-conf.file")
+      .stringType()
+      .noDefaultValue()
+      .withDescription("The file path of krb5.conf. And only when "
+          + RSS_SECURITY_HADOOP_KERBEROS_ENABLE.key() + " enabled, the option will be valid.");
+
   public static final ConfigOption<String> RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE = ConfigOptions
       .key("rss.security.hadoop.kerberos.keytab.file")
       .stringType()

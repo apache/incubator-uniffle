@@ -22,9 +22,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
+import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.PrivilegedExceptionAction;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
@@ -44,6 +47,8 @@ import org.apache.hadoop.security.authorize.ImpersonationProvider;
 import org.apache.hadoop.security.ssl.KeyStoreTestUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.uniffle.common.util.RssUtils;
 
 import static org.apache.hadoop.fs.CommonConfigurationKeys.IPC_CLIENT_CONNECT_MAX_RETRIES_ON_SASL_KEY;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
@@ -92,7 +97,7 @@ public class KerberizedHdfs implements Serializable {
   }
 
   private void setupDFSData() throws Exception {
-    String principal = "alex/localhost";
+    String principal = "alex/" + RssUtils.getHostIp();
     File keytab = new File(workDir, "alex.keytab");
     kdc.createPrincipal(keytab, principal);
     alexKeytab = keytab.getAbsolutePath();
@@ -157,7 +162,7 @@ public class KerberizedHdfs implements Serializable {
     String krb5Conf = kdc.getKrb5conf().getAbsolutePath();
     System.setProperty("java.security.krb5.conf", krb5Conf);
 
-    String principal = "hdfs" + "/localhost";
+    String principal = "hdfs/" + RssUtils.getHostIp();
     File keytab = new File(workDir, "hdfs.keytab");
     kdc.createPrincipal(keytab, principal);
     hdfsKeytab = keytab.getPath();
@@ -176,11 +181,20 @@ public class KerberizedHdfs implements Serializable {
     hdfsConf.set("hadoop.proxyuser.hdfs.groups", "*");
     hdfsConf.set("hadoop.proxyuser.hdfs.users", "*");
 
+    List<Integer> ports = findAvailablePorts(5);
+    LOGGER.info("Find available ports: {}", ports);
+
+    hdfsConf.set("dfs.datanode.ipc.address", "0.0.0.0:" + ports.get(0));
+    hdfsConf.set("dfs.datanode.address", "0.0.0.0:" + ports.get(1));
+    hdfsConf.set("dfs.datanode.http.address", "0.0.0.0:" + ports.get(2));
+    hdfsConf.set("dfs.datanode.http.address", "0.0.0.0:" + ports.get(3));
+
     kerberizedDfsCluster = ugi.doAs(new PrivilegedExceptionAction<MiniDFSCluster>() {
       @Override
       public MiniDFSCluster run() throws Exception {
         return new MiniDFSCluster
             .Builder(hdfsConf)
+            .nameNodePort(ports.get(4))
             .numDataNodes(1)
             .clusterId("kerberized-cluster-1")
             .checkDataNodeAddrConfig(true)
@@ -214,6 +228,23 @@ public class KerberizedHdfs implements Serializable {
     }
     setTestRunner(KerberizedHdfs.class);
     UserGroupInformation.reset();
+  }
+
+  private List<Integer> findAvailablePorts(int num) throws IOException {
+    List<ServerSocket> sockets = new ArrayList<>();
+    List<Integer> ports = new ArrayList<>();
+
+    for (int i = 0; i < num; i++) {
+      ServerSocket socket = new ServerSocket(0);
+      ports.add(socket.getLocalPort());
+      sockets.add(socket);
+    }
+
+    for (ServerSocket socket : sockets) {
+      socket.close();
+    }
+
+    return ports;
   }
 
   public String getSchemeAndAuthorityPrefix() {

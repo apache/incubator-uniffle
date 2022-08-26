@@ -56,6 +56,7 @@ public class HadoopSecurityContext implements SecurityContext {
 
     if (StringUtils.isNotEmpty(krb5ConfPath)) {
       System.setProperty(KRB5_CONF_KEY, krb5ConfPath);
+      sun.security.krb5.Config.refresh();
     }
 
     Configuration conf = new Configuration(false);
