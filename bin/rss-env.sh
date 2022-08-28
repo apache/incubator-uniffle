@@ -18,16 +18,16 @@
 #
 
 set -o pipefail
-set -e
+set -o nounset   # exit the script if you try to use an uninitialised variable
+set -o errexit   # exit the script if any statement returns a non-true return value
 
 JAVA_HOME=<java_home_dir>
 HADOOP_HOME=<hadoop_home_dir>
-XMX_SIZE="80g"
+XMX_SIZE="80g" # Shuffle Server JVM XMX size
 
-# HADOOP_CONF_DIR, Hadoop configuration files (Default: ${HADOOP_HOME}/etc/hadoop)
+# RSS_HOME, RSS home directory (Default: parent directory of the script)
+# RSS_CONF_DIR, RSS configuration directory (Default: ${RSS_HOME}/conf)
+# HADOOP_CONF_DIR, Hadoop configuration directory (Default: ${HADOOP_HOME}/etc/hadoop)
 # RSS_PID_DIR, Where the pid file is stored (Default: ${RSS_HOME})
 # RSS_LOG_DIR, Where log files are stored (Default: ${RSS_HOME}/logs)
 # RSS_IP, IP address Shuffle Server binds to on this node (Default: first non-loopback ipv4)
-
-RUNNER="${JAVA_HOME}/bin/java"
-JPS="${JAVA_HOME}/bin/jps"
