@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
+import java.net.BindException;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -48,6 +50,7 @@ import org.apache.hadoop.security.ssl.KeyStoreTestUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
 
 import static org.apache.hadoop.fs.CommonConfigurationKeys.IPC_CLIENT_CONNECT_MAX_RETRIES_ON_SASL_KEY;
@@ -92,7 +95,11 @@ public class KerberizedHdfs implements Serializable {
     kerberizedDfsBaseDir = Files.createTempDirectory("kerberizedDfsBaseDir").toFile().toPath();
 
     startKDC();
-    startKerberizedDFS();
+    try {
+      startKerberizedDFS();
+    } catch (Throwable t) {
+      throw new Exception(t);
+    }
     setupDFSData();
   }
 
@@ -158,7 +165,7 @@ public class KerberizedHdfs implements Serializable {
     return conf;
   }
 
-  private void startKerberizedDFS() throws Exception {
+  private void startKerberizedDFS() throws Throwable {
     String krb5Conf = kdc.getKrb5conf().getAbsolutePath();
     System.setProperty("java.security.krb5.conf", krb5Conf);
 
@@ -181,26 +188,29 @@ public class KerberizedHdfs implements Serializable {
     hdfsConf.set("hadoop.proxyuser.hdfs.groups", "*");
     hdfsConf.set("hadoop.proxyuser.hdfs.users", "*");
 
-    List<Integer> ports = findAvailablePorts(5);
-    LOGGER.info("Find available ports: {}", ports);
+    this.kerberizedDfsCluster = RetryUtils.retry(() -> {
+      List<Integer> ports = findAvailablePorts(5);
+      LOGGER.info("Find available ports: {}", ports);
 
-    hdfsConf.set("dfs.datanode.ipc.address", "0.0.0.0:" + ports.get(0));
-    hdfsConf.set("dfs.datanode.address", "0.0.0.0:" + ports.get(1));
-    hdfsConf.set("dfs.datanode.http.address", "0.0.0.0:" + ports.get(2));
-    hdfsConf.set("dfs.datanode.http.address", "0.0.0.0:" + ports.get(3));
+      hdfsConf.set("dfs.datanode.ipc.address", "0.0.0.0:" + ports.get(0));
+      hdfsConf.set("dfs.datanode.address", "0.0.0.0:" + ports.get(1));
+      hdfsConf.set("dfs.datanode.http.address", "0.0.0.0:" + ports.get(2));
+      hdfsConf.set("dfs.datanode.http.address", "0.0.0.0:" + ports.get(3));
 
-    kerberizedDfsCluster = ugi.doAs(new PrivilegedExceptionAction<MiniDFSCluster>() {
-      @Override
-      public MiniDFSCluster run() throws Exception {
-        return new MiniDFSCluster
-            .Builder(hdfsConf)
-            .nameNodePort(ports.get(4))
-            .numDataNodes(1)
-            .clusterId("kerberized-cluster-1")
-            .checkDataNodeAddrConfig(true)
-            .build();
-      }
-    });
+      return ugi.doAs(new PrivilegedExceptionAction<MiniDFSCluster>() {
+
+        @Override
+        public MiniDFSCluster run() throws Exception {
+          return new MiniDFSCluster
+              .Builder(hdfsConf)
+              .nameNodePort(ports.get(4))
+              .numDataNodes(1)
+              .clusterId("kerberized-cluster-1")
+              .checkDataNodeAddrConfig(true)
+              .build();
+        }
+      });
+    }, 1000L, 5, Sets.newHashSet(BindException.class));
   }
 
   private void startKDC() throws Exception {
