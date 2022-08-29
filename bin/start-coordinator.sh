@@ -18,46 +18,34 @@
 #
 
 set -o pipefail
-set -e
+set -o nounset   # exit the script if you try to use an uninitialised variable
+set -o errexit   # exit the script if any statement returns a non-true return value
 
-COORDINATOR_HOME="$(
-  cd "$(dirname "$0")/.."
-  pwd
-)"
-CONF_FILE="./conf/coordinator.conf "
+source "$(dirname "$0")/utils.sh"
+load_rss_env
+
+cd "$RSS_HOME"
+
+COORDINATOR_CONF_FILE="${RSS_CONF_DIR}/coordinator.conf"
+JAR_DIR="${RSS_HOME}/jars"
+LOG_CONF_FILE="${RSS_CONF_DIR}/log4j.properties"
+LOG_PATH="${RSS_LOG_DIR}/coordinator.log"
+
 MAIN_CLASS="org.apache.uniffle.coordinator.CoordinatorServer"
 
-cd $COORDINATOR_HOME
-
-source "${COORDINATOR_HOME}/bin/rss-env.sh"
-source "${COORDINATOR_HOME}/bin/utils.sh"
-
-if [ -z "$HADOOP_HOME" ]; then
-  echo "No env HADOOP_HOME."
-  exit 1
-fi
-
-export JAVA_HOME
-
-HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
-HADOOP_DEPENDENCY=`$HADOOP_HOME/bin/hadoop classpath --glob`
+HADOOP_DEPENDENCY="$("$HADOOP_HOME/bin/hadoop" classpath --glob)"
 
 echo "Check process existence"
-is_jvm_process_running $JPS $MAIN_CLASS
+is_jvm_process_running "$JPS" $MAIN_CLASS
 
-JAR_DIR="./jars"
 CLASSPATH=""
 
 for file in $(ls ${JAR_DIR}/coordinator/*.jar 2>/dev/null); do
   CLASSPATH=$CLASSPATH:$file
 done
 
-if [ -z "$HADOOP_CONF_DIR" ]; then
-  echo "No env HADOOP_CONF_DIR."
-  exit 1
-fi
-
-echo "Using Hadoop from $HADOOP_HOME"
+mkdir -p "${RSS_LOG_DIR}"
+mkdir -p "${RSS_PID_DIR}"
 
 CLASSPATH=$CLASSPATH:$HADOOP_CONF_DIR:$HADOOP_DEPENDENCY
 JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native"
@@ -74,8 +62,6 @@ JVM_ARGS=" -server \
 
 ARGS=""
 
-LOG_CONF_FILE="./conf/log4j.properties"
-LOG_PATH="./logs/coordinator.log"
 if [ -f ${LOG_CONF_FILE} ]; then
   ARGS="$ARGS -Dlog4j.configuration=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH}"
 else
@@ -83,7 +69,7 @@ else
   exit 1
 fi
 
-$RUNNER $ARGS $JVM_ARGS -cp $CLASSPATH $MAIN_CLASS --conf $CONF_FILE $@ &
+$RUNNER $ARGS $JVM_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$COORDINATOR_CONF_FILE" $@ &
 
 get_pid_file_name coordinator
-echo $! >$COORDINATOR_HOME/${pid_file}
+echo $! >${RSS_PID_DIR}/${pid_file}
