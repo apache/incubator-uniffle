@@ -442,8 +442,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         break;
       default:
         String msg = "Can't get shuffle result from " + host + ":" + port
-                         + " for [appId=" + request.getAppId() + ", shuffleId=" + request.getShuffleId()
-                         + ", errorMsg:" + rpcResponse.getRetMsg();
+            + " for [appId=" + request.getAppId() + ", shuffleId=" + request.getShuffleId()
+            + ", errorMsg:" + rpcResponse.getRetMsg();
         LOG.error(msg);
         throw new RssException(msg);
     }
