@@ -17,7 +17,6 @@
 
 package org.apache.spark.shuffle;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +26,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -405,18 +405,18 @@ public class RssShuffleManager implements ShuffleManager {
       readBufferSize = Integer.MAX_VALUE;
     }
     int shuffleId = rssShuffleHandle.getShuffleId();
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers =  rssShuffleHandle.getPartitionToServers();
-    Map<Integer, Roaring64NavigableMap> partitionToExpectBlocks = new HashMap<>();
-    for (int partition = startPartition; partition < endPartition; partition++) {
-      long start = System.currentTimeMillis();
-      Roaring64NavigableMap blockIdBitmap = shuffleWriteClient.getShuffleResult(
-          clientType, Sets.newHashSet(partitionToServers.get(partition)),
-          rssShuffleHandle.getAppId(), shuffleId, partition);
-      partitionToExpectBlocks.put(partition, blockIdBitmap);
-      LOG.info("Get shuffle blockId cost " + (System.currentTimeMillis() - start) + " ms, and get "
-          + blockIdBitmap.getLongCardinality() + " blockIds for shuffleId[" + shuffleId + "], partitionId["
-          + partition + "]");
-    }
+    Map<Integer, List<ShuffleServerInfo>> allPartitionToServers = rssShuffleHandle.getPartitionToServers();
+    Map<Integer, List<ShuffleServerInfo>> requirePartitionToServers = allPartitionToServers.entrySet()
+        .stream().filter(x -> x.getKey() >= startPartition && x.getKey() <= endPartition)
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    Map<ShuffleServerInfo, Set<Integer>> serverToPartitions = RssUtils.reversePartitionToServers(
+        requirePartitionToServers);
+    long start = System.currentTimeMillis();
+    Roaring64NavigableMap blockIdBitmap = shuffleWriteClient.getShuffleResultForMultiPart(
+        clientType, serverToPartitions, rssShuffleHandle.getAppId(), shuffleId);
+    LOG.info("Get shuffle blockId cost " + (System.currentTimeMillis() - start) + " ms, and get "
+        + blockIdBitmap.getLongCardinality() + " blockIds for shuffleId[" + shuffleId + "], startPartition["
+        + start + "], endPartition[" + endPartition + "]");
 
     ShuffleReadMetrics readMetrics;
     if (metrics != null) {
@@ -444,7 +444,7 @@ public class RssShuffleManager implements ShuffleManager {
         storageType,
         (int) readBufferSize,
         partitionNum,
-        partitionToExpectBlocks,
+        RssUtils.shuffleBitmapToPartitionBitmap(blockIdBitmap, startPartition, endPartition),
         taskIdBitmap,
         readMetrics);
   }

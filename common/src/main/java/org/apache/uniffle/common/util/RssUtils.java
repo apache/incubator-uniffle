@@ -35,11 +35,15 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.net.InetAddresses;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -48,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
+import org.apache.uniffle.common.ShuffleServerInfo;
 
 public class RssUtils {
 
@@ -291,5 +296,39 @@ public class RssUtils {
       return "";
     }
     return hostName.replaceAll("[\\.-]", "_");
+  }
+
+  public static Map<Integer, Roaring64NavigableMap> shuffleBitmapToPartitionBitmap(
+      Roaring64NavigableMap shuffleBitmap, int startPartition, int endPartition) {
+    Map<Integer, Roaring64NavigableMap> result = Maps.newHashMap();
+    for (int partitionId = startPartition; partitionId <= endPartition; partitionId++) {
+      result.putIfAbsent(partitionId, Roaring64NavigableMap.bitmapOf());
+    }
+    Iterator<Long> it = shuffleBitmap.iterator();
+    long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;
+    while (it.hasNext()) {
+      Long blockId = it.next();
+      int partitionId = Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask);
+      if (partitionId >= startPartition && partitionId <= endPartition) {
+        result.get(partitionId).add(blockId);
+      }
+    }
+    return result;
+  }
+
+  public static Map<ShuffleServerInfo, Set<Integer>> reversePartitionToServers(
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers) {
+    Map<ShuffleServerInfo, Set<Integer>> serverToPartitions = Maps.newHashMap();
+    for (Map.Entry<Integer, List<ShuffleServerInfo>> entry : partitionToServers.entrySet()) {
+      int partitionId = entry.getKey();
+      for (ShuffleServerInfo serverInfo : entry.getValue()) {
+        if (!serverToPartitions.containsKey(serverInfo)) {
+          serverToPartitions.put(serverInfo, Sets.newHashSet(partitionId));
+        } else {
+          serverToPartitions.get(serverInfo).add(partitionId);
+        }
+      }
+    }
+    return serverToPartitions;
   }
 }

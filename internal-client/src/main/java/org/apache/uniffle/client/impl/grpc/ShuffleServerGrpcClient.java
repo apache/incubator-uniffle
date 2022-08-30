@@ -34,6 +34,7 @@ import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssGetInMemoryShuffleDataRequest;
 import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
 import org.apache.uniffle.client.request.RssGetShuffleIndexRequest;
+import org.apache.uniffle.client.request.RssGetShuffleResultForMultiPartRequest;
 import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
@@ -67,6 +68,7 @@ import org.apache.uniffle.proto.RssProtos.GetLocalShuffleIndexRequest;
 import org.apache.uniffle.proto.RssProtos.GetLocalShuffleIndexResponse;
 import org.apache.uniffle.proto.RssProtos.GetMemoryShuffleDataRequest;
 import org.apache.uniffle.proto.RssProtos.GetMemoryShuffleDataResponse;
+import org.apache.uniffle.proto.RssProtos.GetShuffleResultForMultiPartRequest;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultRequest;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultResponse;
 import org.apache.uniffle.proto.RssProtos.PartitionToBlockIds;
@@ -426,6 +428,38 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setPartitionId(request.getPartitionId())
         .build();
     GetShuffleResultResponse rpcResponse = getBlockingStub().getShuffleResult(rpcRequest);
+    StatusCode statusCode = rpcResponse.getStatus();
+
+    RssGetShuffleResultResponse response;
+    switch (statusCode) {
+      case SUCCESS:
+        try {
+          response = new RssGetShuffleResultResponse(ResponseStatusCode.SUCCESS,
+              rpcResponse.getSerializedBitmap().toByteArray());
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+        break;
+      default:
+        String msg = "Can't get shuffle result from " + host + ":" + port
+                         + " for [appId=" + request.getAppId() + ", shuffleId=" + request.getShuffleId()
+                         + ", errorMsg:" + rpcResponse.getRetMsg();
+        LOG.error(msg);
+        throw new RssException(msg);
+    }
+
+    return response;
+  }
+
+  @Override
+  public RssGetShuffleResultResponse getShuffleResultForMultiPart(RssGetShuffleResultForMultiPartRequest request) {
+    GetShuffleResultForMultiPartRequest rpcRequest = GetShuffleResultForMultiPartRequest
+        .newBuilder()
+        .setAppId(request.getAppId())
+        .setShuffleId(request.getShuffleId())
+        .addAllPartitions(request.getPartitions())
+        .build();
+    GetShuffleResultResponse rpcResponse = getBlockingStub().getShuffleResultForMultiPart(rpcRequest);
     StatusCode statusCode = rpcResponse.getStatus();
 
     RssGetShuffleResultResponse response;

@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.Context;
@@ -50,6 +51,7 @@ import org.apache.uniffle.proto.RssProtos.GetLocalShuffleIndexRequest;
 import org.apache.uniffle.proto.RssProtos.GetLocalShuffleIndexResponse;
 import org.apache.uniffle.proto.RssProtos.GetMemoryShuffleDataRequest;
 import org.apache.uniffle.proto.RssProtos.GetMemoryShuffleDataResponse;
+import org.apache.uniffle.proto.RssProtos.GetShuffleResultForMultiPartRequest;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultRequest;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultResponse;
 import org.apache.uniffle.proto.RssProtos.PartitionToBlockIds;
@@ -366,7 +368,46 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
     try {
       serializedBlockIds = shuffleServer.getShuffleTaskManager().getFinishedBlockIds(
-          appId, shuffleId, partitionId);
+          appId, shuffleId, Sets.newHashSet(partitionId));
+      if (serializedBlockIds == null) {
+        status = StatusCode.INTERNAL_ERROR;
+        msg = "Can't get shuffle result for " + requestInfo;
+        LOG.warn(msg);
+      } else {
+        serializedBlockIdsBytes = UnsafeByteOperations.unsafeWrap(serializedBlockIds);
+      }
+    } catch (Exception e) {
+      status = StatusCode.INTERNAL_ERROR;
+      msg = e.getMessage();
+      LOG.error("Error happened when get shuffle result for {}", requestInfo, e);
+    }
+
+    reply = GetShuffleResultResponse.newBuilder()
+        .setStatus(valueOf(status))
+        .setRetMsg(msg)
+        .setSerializedBitmap(serializedBlockIdsBytes)
+        .build();
+    responseObserver.onNext(reply);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void getShuffleResultForMultiPart(GetShuffleResultForMultiPartRequest request,
+      StreamObserver<GetShuffleResultResponse> responseObserver) {
+    String appId = request.getAppId();
+    int shuffleId = request.getShuffleId();
+    List<Integer> partitionsList = request.getPartitionsList();
+
+    StatusCode status = StatusCode.SUCCESS;
+    String msg = "OK";
+    GetShuffleResultResponse reply;
+    byte[] serializedBlockIds = null;
+    String requestInfo = "appId[" + appId + "], shuffleId[" + shuffleId + "], partitions" + partitionsList;
+    ByteString serializedBlockIdsBytes = ByteString.EMPTY;
+
+    try {
+      serializedBlockIds = shuffleServer.getShuffleTaskManager().getFinishedBlockIds(
+          appId, shuffleId, Sets.newHashSet(partitionsList));
       if (serializedBlockIds == null) {
         status = StatusCode.INTERNAL_ERROR;
         msg = "Can't get shuffle result for " + requestInfo;

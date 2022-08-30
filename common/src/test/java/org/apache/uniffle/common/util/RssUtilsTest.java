@@ -27,14 +27,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
+import org.apache.uniffle.common.ShuffleServerInfo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -188,6 +192,54 @@ public class RssUtilsTest {
     List<RssUtilTestDummy> extsObjs = RssUtils.loadExtensions(RssUtilTestDummy.class, exts, testStr);
     assertEquals(1, extsObjs.size());
     assertEquals(testStr, extsObjs.get(0).get());
+  }
+
+  @Test
+  public void testShuffleBitmapToPartitionBitmap() {
+    Roaring64NavigableMap partition1Bitmap = Roaring64NavigableMap.bitmapOf(
+        getBlockId(0, 0, 0),
+        getBlockId(0, 0, 1),
+        getBlockId(0, 1, 0),
+        getBlockId(0, 1, 1));
+    Roaring64NavigableMap partition2Bitmap = Roaring64NavigableMap.bitmapOf(
+        getBlockId(1, 0, 0),
+        getBlockId(1, 0, 1),
+        getBlockId(1, 1, 0),
+        getBlockId(1, 1, 1));
+    Roaring64NavigableMap shuffleBitmap = Roaring64NavigableMap.bitmapOf();
+    shuffleBitmap.or(partition1Bitmap);
+    shuffleBitmap.or(partition2Bitmap);
+    assertEquals(8, shuffleBitmap.getLongCardinality());
+    Map<Integer, Roaring64NavigableMap> toPartitionBitmap =
+        RssUtils.shuffleBitmapToPartitionBitmap(shuffleBitmap, 0, 1);
+    assertEquals(2, toPartitionBitmap.size());
+    assertEquals(partition1Bitmap, toPartitionBitmap.get(0));
+    assertEquals(partition2Bitmap, toPartitionBitmap.get(1));
+  }
+
+  @Test
+  public void testReversePartitionToServers() {
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
+    ShuffleServerInfo server1 = new ShuffleServerInfo("server1", "0.0.0.1", 100);
+    ShuffleServerInfo server2 = new ShuffleServerInfo("server2", "0.0.0.2", 200);
+    ShuffleServerInfo server3 = new ShuffleServerInfo("server3", "0.0.0.3", 300);
+    ShuffleServerInfo server4 = new ShuffleServerInfo("server4", "0.0.0.4", 400);
+    partitionToServers.put(1, Lists.newArrayList(server1, server2));
+    partitionToServers.put(2, Lists.newArrayList(server3, server4));
+    partitionToServers.put(3, Lists.newArrayList(server1, server2));
+    partitionToServers.put(4, Lists.newArrayList(server3, server4));
+    Map<ShuffleServerInfo, Set<Integer>> serverToPartitions = RssUtils.reversePartitionToServers(partitionToServers);
+    assertEquals(4, serverToPartitions.size());
+    assertEquals(serverToPartitions.get(server1), Sets.newHashSet(1, 3));
+    assertEquals(serverToPartitions.get(server2), Sets.newHashSet(1, 3));
+    assertEquals(serverToPartitions.get(server3), Sets.newHashSet(2, 4));
+    assertEquals(serverToPartitions.get(server4), Sets.newHashSet(2, 4));
+  }
+
+  // Copy from ClientUtils
+  private Long getBlockId(long partitionId, long taskAttemptId, long atomicInt) {
+    return (atomicInt << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
+        + (partitionId << Constants.TASK_ATTEMPT_ID_MAX_LENGTH) + taskAttemptId;
   }
 
   interface RssUtilTestDummy {
