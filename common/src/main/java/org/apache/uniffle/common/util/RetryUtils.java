@@ -31,6 +31,11 @@ public class RetryUtils {
     return retry(cmd, null, intervalMs, retryTimes, null);
   }
 
+  public static <T> T retry(RetryCmd<T> cmd, long intervalMs, int retryTimes,
+      Set<Class> exceptionClasses) throws Throwable {
+    return retry(cmd, null, intervalMs, retryTimes, exceptionClasses);
+  }
+
   /**
    * @param cmd              command to execute
    * @param callBack         the callback command executed when the attempt of command fail

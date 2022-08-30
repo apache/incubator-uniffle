@@ -70,7 +70,9 @@ public class LocalStorage extends AbstractStorage {
     File baseFolder = new File(basePath);
     try {
       FileUtils.deleteDirectory(baseFolder);
-      baseFolder.mkdirs();
+      if (!baseFolder.mkdirs()) {
+        throw new IOException("Failed to create base folder: " + basePath);
+      }
     } catch (IOException ioe) {
       LOG.warn("Init base directory " + basePath + " fail, the disk should be corrupted", ioe);
       throw new RuntimeException(ioe);

@@ -639,7 +639,7 @@ public class RssShuffleManager implements ShuffleManager {
     return result;
   }
 
-  class ReadMetrics extends ShuffleReadMetrics {
+  static class ReadMetrics extends ShuffleReadMetrics {
     private ShuffleReadMetricsReporter reporter;
 
     ReadMetrics(ShuffleReadMetricsReporter reporter) {
@@ -662,7 +662,7 @@ public class RssShuffleManager implements ShuffleManager {
     }
   }
 
-  class WriteMetrics extends ShuffleWriteMetrics {
+  static class WriteMetrics extends ShuffleWriteMetrics {
     private ShuffleWriteMetricsReporter reporter;
 
     WriteMetrics(ShuffleWriteMetricsReporter reporter) {
