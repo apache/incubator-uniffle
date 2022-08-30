@@ -58,7 +58,7 @@ public class LocalStorageMeta {
     shuffleMetaList.sort((Entry<String, ShuffleMeta> o1, Entry<String, ShuffleMeta> o2) -> {
       long sz1 = o1.getValue().getSize().longValue();
       long sz2 = o2.getValue().getSize().longValue();
-      return -Long.compare(sz1, sz2);
+      return Long.compare(sz2, sz1);
     });
 
     return shuffleMetaList
@@ -210,7 +210,7 @@ public class LocalStorageMeta {
   }
 
   // Consider that ShuffleMeta is a simple class, we keep the class ShuffleMeta as an inner class.
-  private class ShuffleMeta {
+  private static class ShuffleMeta {
     private final AtomicLong size = new AtomicLong(0);
     private final RoaringBitmap partitionBitmap = RoaringBitmap.bitmapOf();
     private final AtomicLong uploadedSize = new AtomicLong(0);

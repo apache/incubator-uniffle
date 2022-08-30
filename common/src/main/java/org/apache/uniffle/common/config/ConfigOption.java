@@ -152,7 +152,7 @@ public class ConfigOption<T> {
   public boolean equals(Object o) {
     if (this == o) {
       return true;
-    } else if (o != null && o.getClass() == ConfigOption.class) {
+    } else if (o != null && o.getClass() == this.getClass()) {
       ConfigOption<?> that = (ConfigOption<?>) o;
       return this.key.equals(that.key)
         && (this.defaultValue == null ? that.defaultValue == null :

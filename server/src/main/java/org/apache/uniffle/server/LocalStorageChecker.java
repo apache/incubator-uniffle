@@ -151,7 +151,9 @@ public class LocalStorageChecker extends Checker {
       }
       File checkDir = new File(storageDir, "check");
       try {
-        checkDir.mkdirs();
+        if (!checkDir.mkdirs()) {
+          return false;
+        }
         File writeFile = new File(checkDir, "test");
         if (!writeFile.createNewFile()) {
           return false;

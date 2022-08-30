@@ -137,7 +137,6 @@ public class RssConf implements Cloneable {
    * @return the (default) value associated with the given config option
    */
   public int getInteger(ConfigOption<Integer> configOption) {
-    Optional<Integer> a = getOptional(configOption);
     return getOptional(configOption)
         .orElseGet(configOption::defaultValue);
   }

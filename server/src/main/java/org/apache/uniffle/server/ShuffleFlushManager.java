@@ -135,7 +135,9 @@ public class ShuffleFlushManager {
   }
 
   public void addToFlushQueue(ShuffleDataFlushEvent event) {
-    flushQueue.offer(event);
+    if (!flushQueue.offer(event)) {
+      LOG.warn("Flush queue is full, discard event: " + event);
+    }
   }
 
   private void flushToFile(ShuffleDataFlushEvent event) {
@@ -335,7 +337,7 @@ public class ShuffleFlushManager {
     }
   }
 
-  private class PendingShuffleFlushEvent {
+  private static class PendingShuffleFlushEvent {
     private final ShuffleDataFlushEvent event;
     private final long createTimeStamp = System.currentTimeMillis();
 
