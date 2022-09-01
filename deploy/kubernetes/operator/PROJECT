@@ -2,7 +2,7 @@ domain: apache.org
 layout:
 - go.kubebuilder.io/v3
 projectName: operator
-repo: github.com/apache/incubator-uniffle
+repo: github.com/apache/incubator-uniffle/deploy/kubernetes/operator
 resources:
 - api:
     crdVersion: v1
@@ -10,6 +10,6 @@ resources:
   domain: apache.org
   group: uniffle
   kind: Remoteshuffleservice
-  path: github.com/apache/incubator-uniffle/api/v1alpha1
+  path: github.com/apache/incubator-uniffle/deploy/kubernetes/operator/api/uniffle/v1alpha1
   version: v1alpha1
 version: "3"
