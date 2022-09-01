@@ -247,7 +247,7 @@ public class RssShuffleManager implements ShuffleManager {
   public <K, V, C> ShuffleHandle registerShuffle(int shuffleId, ShuffleDependency<K, V, C> dependency) {
 
     if (id.get() == null) {
-      id.compareAndSet(null, SparkEnv.get().conf().getAppId() + System.currentTimeMillis());
+      id.compareAndSet(null, SparkEnv.get().conf().getAppId() + "_" + System.currentTimeMillis());
     }
     LOG.info("Generate application id used in rss: " + id.get());
 

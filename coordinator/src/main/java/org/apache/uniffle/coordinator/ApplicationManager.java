@@ -70,6 +70,7 @@ public class ApplicationManager {
   public void refreshAppId(String appId) {
     if (!appIds.containsKey(appId)) {
       CoordinatorMetrics.counterTotalAppNum.inc();
+      LOG.info("New application is registered: {}", appId);
     }
     appIds.put(appId, System.currentTimeMillis());
   }
