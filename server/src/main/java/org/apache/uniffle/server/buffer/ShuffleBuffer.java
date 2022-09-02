@@ -101,11 +101,11 @@ public class ShuffleBuffer {
     return blocks;
   }
 
-  public long getSize() {
+  public synchronized long getSize() {
     return size;
   }
 
-  public boolean isFull() {
+  public synchronized boolean isFull() {
     return size > capacity;
   }
 
