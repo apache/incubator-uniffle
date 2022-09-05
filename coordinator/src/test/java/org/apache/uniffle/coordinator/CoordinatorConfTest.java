@@ -42,7 +42,7 @@ public class CoordinatorConfTest {
     assertEquals(123, conf.getLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT));
 
     // test default conf
-    assertEquals("PARTITION_BALANCE", conf.getString(CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY));
+    assertEquals("PARTITION_BALANCE", conf.get(CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY).name());
     assertEquals(256, conf.getInteger(CoordinatorConf.JETTY_CORE_POOL_SIZE));
     assertEquals(60 * 1000, conf.getLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL));
 

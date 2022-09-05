@@ -26,6 +26,8 @@ import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.RssUtils;
 
+import static org.apache.uniffle.coordinator.AssignmentStrategyFactory.StrategyName.PARTITION_BALANCE;
+
 /**
  * Configuration for Coordinator Service and rss-cluster, including service port,
  * heartbeat interval and etc.
@@ -54,10 +56,11 @@ public class CoordinatorConf extends RssBaseConf {
       .defaultValue(30L)
       .withDescription("The periodic interval times of output alive nodes. The interval sec can be calculated by ("
           + COORDINATOR_HEARTBEAT_TIMEOUT.key() + "/3 * rss.coordinator.server.periodic.output.interval.times)");
-  public static final ConfigOption<String> COORDINATOR_ASSIGNMENT_STRATEGY = ConfigOptions
+  public static final ConfigOption<AssignmentStrategyFactory.StrategyName>
+      COORDINATOR_ASSIGNMENT_STRATEGY = ConfigOptions
       .key("rss.coordinator.assignment.strategy")
-      .stringType()
-      .defaultValue("PARTITION_BALANCE")
+      .enumType(AssignmentStrategyFactory.StrategyName.class)
+      .defaultValue(PARTITION_BALANCE)
       .withDescription("Strategy for assigning shuffle server to write partitions");
   public static final ConfigOption<Long> COORDINATOR_APP_EXPIRED = ConfigOptions
       .key("rss.coordinator.app.expired")

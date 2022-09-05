@@ -18,7 +18,9 @@
 package org.apache.uniffle.common.config;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Function;
 
 import com.google.common.collect.Lists;
@@ -63,8 +65,30 @@ public class ConfigUtils {
       return (T) convertToDouble(rawValue);
     } else if (String.class.equals(clazz)) {
       return (T) convertToString(rawValue);
+    } else if (clazz.isEnum()) {
+      return (T) convertToEnum(rawValue, (Class<? extends Enum<?>>) clazz);
     }
     throw new IllegalArgumentException("Unsupported type: " + clazz);
+  }
+
+  public static <E extends Enum<?>> E convertToEnum(Object o, Class<E> clazz) {
+    if (o.getClass().equals(clazz)) {
+      return (E) o;
+    }
+
+    return Arrays.stream(clazz.getEnumConstants())
+        .filter(
+            e ->
+                e.toString()
+                    .toUpperCase(Locale.ROOT)
+                    .equals(o.toString().toUpperCase(Locale.ROOT)))
+        .findAny()
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    String.format(
+                        "Could not parse value for enum %s. Expected one of: [%s]",
+                        clazz, Arrays.toString(clazz.getEnumConstants()))));
   }
 
   static String convertToString(Object o) {
