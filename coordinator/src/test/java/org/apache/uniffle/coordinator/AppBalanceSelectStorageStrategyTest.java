@@ -25,11 +25,10 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.util.Constants;
 
+import static org.apache.uniffle.coordinator.ApplicationManager.StrategyName.APP_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-
-import static org.apache.uniffle.coordinator.ApplicationManager.StrategyName.APP_BALANCE;
 
 public class AppBalanceSelectStorageStrategyTest {
 

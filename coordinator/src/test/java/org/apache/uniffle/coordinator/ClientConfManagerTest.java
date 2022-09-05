@@ -40,12 +40,11 @@ import org.junit.jupiter.api.io.TempDir;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.Constants;
 
+import static org.apache.uniffle.coordinator.ApplicationManager.StrategyName.HEALTH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import static org.apache.uniffle.coordinator.ApplicationManager.StrategyName.HEALTH;
 
 public class ClientConfManagerTest {
 
