@@ -69,11 +69,6 @@ public class HealthSelectStorageStrategyTest {
     setUpHdfs(remotePath.getAbsolutePath());
   }
 
-  @AfterEach
-  public void closeCluster() {
-    cluster.shutdown(true);
-  }
-
   public void setUpHdfs(String hdfsPath) throws Exception {
     hdfsConf.set("fs.defaultFS", remotePath.getAbsolutePath());
     hdfsConf.set("dfs.nameservices", "rss");
@@ -156,57 +151,6 @@ public class HealthSelectStorageStrategyTest {
     assertEquals(0, healthSelectStorageStrategy.getAvailableRemoteStorageInfo().size());
     assertEquals(0, healthSelectStorageStrategy.getRemoteStoragePathRankValue().size());
     assertFalse(applicationManager.hasErrorInStatusCheck());
-  }
-
-  @Test
-  public void compareByAppNumIfException() throws Exception {
-    FileSystem fs = testFile.getFileSystem(hdfsConf);
-    healthSelectStorageStrategy.setFs(fs);
-
-    String remoteStoragePath = remoteStorage1 + Constants.COMMA_SPLIT_CHAR + remoteStorage2;
-    applicationManager.refreshRemoteStorage(remoteStoragePath, "");
-    //default value is 0
-    assertEquals(0,
-        healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage1).getRatioValue().get());
-    assertEquals(0,
-        healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage2).getRatioValue().get());
-    String storageHost1 = "p1";
-    assertEquals(0.0, CoordinatorMetrics.gaugeInUsedRemoteStorage.get(storageHost1).get(), 0.5);
-    String storageHost2 = "p2";
-    assertEquals(0.0, CoordinatorMetrics.gaugeInUsedRemoteStorage.get(storageHost2).get(), 0.5);
-
-    // compare with two remote path
-    healthSelectStorageStrategy.incRemoteStorageCounter(remoteStorage1);
-    healthSelectStorageStrategy.incRemoteStorageCounter(remoteStorage1);
-    String testApp1 = "testApp1";
-    applicationManager.refreshAppId(testApp1);
-    final long current = System.currentTimeMillis();
-    // p2 has a longer HEALTH time than p1, but p1 has more apps than p2. Based on the current strategy, p1 is selected
-    fs.create(testFile);
-    healthSelectStorageStrategy.sortPathByIORank(remoteStorage1, testFile, current);
-    fs.create(testFile);
-    healthSelectStorageStrategy.sortPathByIORank(remoteStorage2, testFile, current);
-    assertEquals(remoteStorage1, healthSelectStorageStrategy.pickRemoteStorage(testApp1).getPath());
-    assertEquals(remoteStorage1, healthSelectStorageStrategy.getAppIdToRemoteStorageInfo().get(testApp1).getPath());
-    assertEquals(3,
-        healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage1).getAppNum().get());
-    assertEquals(0,
-        healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage2).getAppNum().get());
-
-    // if some error throw, it will sort by the num of app
-    // p1 has a longer HEALTH time than p2, but sortPathByIORank will throw Exception, so it will sort by app num
-    String testApp2 = "testApp2";
-    applicationManager.refreshAppId(testApp2);
-    // This is going to throw a null pointer
-    healthSelectStorageStrategy.sortPathByIORank("", testFile, System.currentTimeMillis());
-    healthSelectStorageStrategy.sortPathByIORank("", testFile, System.currentTimeMillis());
-    assertEquals(remoteStorage2, healthSelectStorageStrategy.pickRemoteStorage(testApp2).getPath());
-    assertEquals(remoteStorage2, healthSelectStorageStrategy.getAppIdToRemoteStorageInfo().get(testApp2).getPath());
-    assertEquals(1,
-        healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage2).getAppNum().get());
-    assertEquals(3,
-        healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage1).getAppNum().get());
-    CoordinatorMetrics.clear();
   }
 
   @Test
