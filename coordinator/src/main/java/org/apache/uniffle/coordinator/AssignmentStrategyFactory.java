@@ -28,17 +28,17 @@ public class AssignmentStrategyFactory {
   }
 
   public AssignmentStrategy getAssignmentStrategy() {
-    String strategy = conf.getString(CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY);
-    if (StrategyName.BASIC.name().equals(strategy)) {
+    StrategyName strategy = conf.get(CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY);
+    if (StrategyName.BASIC == strategy) {
       return new BasicAssignmentStrategy(clusterManager);
-    } else if (StrategyName.PARTITION_BALANCE.name().equals(strategy)) {
+    } else if (StrategyName.PARTITION_BALANCE == strategy) {
       return new PartitionBalanceAssignmentStrategy(clusterManager);
     } else {
       throw new UnsupportedOperationException("Unsupported assignment strategy.");
     }
   }
 
-  private enum StrategyName {
+  public enum StrategyName {
     BASIC,
     PARTITION_BALANCE
   }

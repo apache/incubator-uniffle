@@ -60,7 +60,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.set(RssBaseConf.RPC_METRICS_ENABLED, true);
-    coordinatorConf.set(CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY, "BASIC");
+    coordinatorConf.setString(CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY.key(), "BASIC");
     coordinatorConf.setLong("rss.coordinator.app.expired", 2000);
     coordinatorConf.setLong("rss.coordinator.server.heartbeat.timeout", 3000);
     createCoordinatorServer(coordinatorConf);
