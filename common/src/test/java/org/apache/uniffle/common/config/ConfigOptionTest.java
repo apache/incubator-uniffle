@@ -90,7 +90,7 @@ public class ConfigOptionTest {
       conf.get(enumConfigOption);
       fail();
     } catch (IllegalArgumentException e) {
-
+      // ignore
     }
   }
 
