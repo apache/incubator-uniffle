@@ -39,11 +39,10 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 
+import static org.apache.uniffle.coordinator.ApplicationManager.StrategyName.HEALTH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import static org.apache.uniffle.coordinator.ApplicationManager.StrategyName.HEALTH;
 
 public class FetchClientConfTest extends CoordinatorTestBase {
 
