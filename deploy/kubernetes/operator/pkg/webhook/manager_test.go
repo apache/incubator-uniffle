@@ -108,7 +108,7 @@ var _ = AfterSuite(func() {
 	By("stopping admission manager")
 	ctxCancel()
 	By("tearing down the test environment")
-	_ = testEnv.Stop()
+	Expect(testEnv.Stop()).To(Succeed())
 })
 
 var _ = Describe("AdmissionManager", func() {
