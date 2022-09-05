@@ -46,9 +46,9 @@ public class HealthSelectStorageStrategyTest {
   private static final Configuration hdfsConf = new Configuration();
   private static MiniDFSCluster cluster;
   private final long appExpiredTime = 2000L;
-  private final String remoteStorage1 = "hdfs://path1";
-  private final String remoteStorage2 = "hdfs://path2";
-  private final String remoteStorage3 = "hdfs://path3";
+  private final String remoteStorage1 = "hdfs://p1";
+  private final String remoteStorage2 = "hdfs://p2";
+  private final String remoteStorage3 = "hdfs://p3";
   private final Path testFile = new Path("test");
 
   @TempDir
@@ -102,9 +102,9 @@ public class HealthSelectStorageStrategyTest {
         healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage1).getRatioValue().get());
     assertEquals(0,
         healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage2).getRatioValue().get());
-    String storageHost1 = "path1";
+    String storageHost1 = "p1";
     assertEquals(0.0, CoordinatorMetrics.gaugeInUsedRemoteStorage.get(storageHost1).get(), 0.5);
-    String storageHost2 = "path2";
+    String storageHost2 = "p2";
     assertEquals(0.0, CoordinatorMetrics.gaugeInUsedRemoteStorage.get(storageHost2).get(), 0.5);
 
     // compare with two remote path
@@ -170,9 +170,9 @@ public class HealthSelectStorageStrategyTest {
         healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage1).getRatioValue().get());
     assertEquals(0,
         healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage2).getRatioValue().get());
-    String storageHost1 = "path1";
+    String storageHost1 = "p1";
     assertEquals(0.0, CoordinatorMetrics.gaugeInUsedRemoteStorage.get(storageHost1).get(), 0.5);
-    String storageHost2 = "path2";
+    String storageHost2 = "p2";
     assertEquals(0.0, CoordinatorMetrics.gaugeInUsedRemoteStorage.get(storageHost2).get(), 0.5);
 
     // compare with two remote path
