@@ -34,7 +34,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	unifflev1alpha1 "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/api/uniffle/v1alpha1"
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/constants"
@@ -48,6 +47,8 @@ var (
 	testEnv    *envtest.Environment
 	kubeClient kubernetes.Interface
 	rssClient  versioned.Interface
+	stopCtx    context.Context
+	ctxCancel  context.CancelFunc
 )
 
 func TestAdmissionManager(t *testing.T) {
@@ -95,7 +96,7 @@ var _ = BeforeSuite(
 			},
 		}
 		am := newAdmissionManager(cfg)
-		stopCtx := signals.SetupSignalHandler()
+		stopCtx, ctxCancel = context.WithCancel(context.TODO())
 		go func() {
 			err = am.Start(stopCtx)
 			Expect(err).ToNot(HaveOccurred())
@@ -104,7 +105,10 @@ var _ = BeforeSuite(
 )
 
 var _ = AfterSuite(func() {
-	Expect(testEnv.Stop()).To(Succeed())
+	By("stopping admission manager")
+	ctxCancel()
+	By("tearing down the test environment")
+	_ = testEnv.Stop()
 })
 
 var _ = Describe("AdmissionManager", func() {
