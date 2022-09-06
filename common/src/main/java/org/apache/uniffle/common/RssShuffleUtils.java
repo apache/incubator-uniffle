@@ -17,9 +17,9 @@
 
 package org.apache.uniffle.common;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+
+import sun.nio.ch.DirectBuffer;
 
 import com.google.common.base.Preconditions;
 import net.jpountz.lz4.LZ4Compressor;
@@ -73,15 +73,9 @@ public class RssShuffleUtils {
    *
    */
   public static void destroyDirectByteBuffer(ByteBuffer toBeDestroyed)
-          throws IllegalArgumentException, IllegalAccessException,
-          InvocationTargetException, SecurityException, NoSuchMethodException {
+          throws IllegalArgumentException, SecurityException {
     Preconditions.checkArgument(toBeDestroyed.isDirect(),
             "toBeDestroyed isn't direct!");
-    Method cleanerMethod = toBeDestroyed.getClass().getMethod("cleaner");
-    cleanerMethod.setAccessible(true);
-    Object cleaner = cleanerMethod.invoke(toBeDestroyed);
-    Method cleanMethod = cleaner.getClass().getMethod("clean");
-    cleanMethod.setAccessible(true);
-    cleanMethod.invoke(cleaner);
+    ((DirectBuffer)toBeDestroyed).cleaner().clean();
   }
 }

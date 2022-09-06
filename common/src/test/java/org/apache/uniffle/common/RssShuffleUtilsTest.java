@@ -17,7 +17,11 @@
 
 package org.apache.uniffle.common;
 
+import java.lang.reflect.Field;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
+
+import sun.misc.Unsafe;
 
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
@@ -25,7 +29,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class RssShuffleUtilsTest {
 
@@ -57,9 +61,19 @@ public class RssShuffleUtilsTest {
       byteBuffer.put(b);
     }
     byteBuffer.flip();
+
+    // Get valid native pointer through `address` in `DirectByteBuffer`
+    Unsafe unsafe = getUnsafe();
+    long addressInByteBuffer = address(byteBuffer);
+    long originalAddress = unsafe.getAddress(addressInByteBuffer);
+
     RssShuffleUtils.destroyDirectByteBuffer(byteBuffer);
+
     // The memory may not be released fast enough.
-    Thread.sleep(200);
+    // If native pointer changes, `address` in `DirectByteBuffer` is invalid
+    while (unsafe.getAddress(addressInByteBuffer) == originalAddress) {
+      Thread.sleep(200);
+    }
     boolean same = true;
     byte[] read = new byte[size];
     byteBuffer.get(read);
@@ -69,6 +83,18 @@ public class RssShuffleUtilsTest {
         break;
       }
     }
-    assertTrue(!same);
+    assertFalse(same);
+  }
+
+  private Unsafe getUnsafe() throws NoSuchFieldException, IllegalAccessException {
+    Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
+    unsafeField.setAccessible(true);
+    return (sun.misc.Unsafe) unsafeField.get(null);
+  }
+
+  private long address(ByteBuffer buffer) throws NoSuchFieldException, IllegalAccessException {
+    Field addressField = Buffer.class.getDeclaredField("address");
+    addressField.setAccessible(true);
+    return (long) addressField.get(buffer);
   }
 }
