@@ -19,8 +19,12 @@ package org.apache.spark.shuffle;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.spark.SparkConf;
 import scala.Tuple2;
 
@@ -28,13 +32,17 @@ import org.apache.uniffle.common.config.ConfigOption;
 import org.apache.uniffle.common.config.ConfigOptions;
 import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 
 public class RssSparkClientConf extends RssClientConf {
-  private static final String SPARK_CONFIG_KEY_PREFIX = "spark.";
-  private static final String SPARK_CONFIG_RSS_KEY_PREFIX = SPARK_CONFIG_KEY_PREFIX + "rss.";
+  public static final String SPARK_CONFIG_KEY_PREFIX = "spark.";
+  public static final String SPARK_CONFIG_RSS_KEY_PREFIX = SPARK_CONFIG_KEY_PREFIX + "rss.";
 
   public static final String DEFAULT_RSS_WRITER_BUFFER_SIZE = "3m";
   public static final long DEFAULT_RSS_HEARTBEAT_TIMEOUT = 5 * 1000L;
+
+  public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
+      ImmutableSet.of(RSS_STORAGE_TYPE.key(), RSS_REMOTE_STORAGE_PATH.key());
 
   public static final ConfigOption<String> RSS_WRITER_SERIALIZER_BUFFER_SIZE = ConfigOptions
       .key("rss.writer.serializer.buffer.size")
@@ -76,12 +84,6 @@ public class RssSparkClientConf extends RssClientConf {
       .key("rss.test")
       .booleanType()
       .defaultValue(false);
-
-  public static final ConfigOption<Integer> RSS_CLIENT_HEARTBEAT_THREAD_NUM = ConfigOptions
-      .key("rss.client.heartBeat.threadNum")
-      .intType()
-      .defaultValue(4)
-      .withDescription("");
 
   public static final ConfigOption<String> RSS_CLIENT_SEND_SIZE_LIMIT = ConfigOptions
       .key("rss.client.send.size.limit")
@@ -149,6 +151,10 @@ public class RssSparkClientConf extends RssClientConf {
       .defaultValue(0)
       .withDescription("Number of retries fallback to SortShuffleManager");
 
+  public RssSparkClientConf() {
+    // ignore
+  }
+
   private RssSparkClientConf(SparkConf sparkConf) {
     List<ConfigOption<Object>> configOptions = ConfigUtils.getAllConfigOptions(RssSparkClientConf.class);
 
@@ -177,5 +183,14 @@ public class RssSparkClientConf extends RssClientConf {
 
   public static RssSparkClientConf from(SparkConf sparkConf) {
     return new RssSparkClientConf(sparkConf);
+  }
+
+  @VisibleForTesting
+  public static void toSparkConf(RssConf rssConf, SparkConf sparkConf) {
+    List<Pair<String, Object>> confs = rssConf.getAll();
+    for (Pair<String, Object> conf : confs) {
+      sparkConf.set(SPARK_CONFIG_KEY_PREFIX + conf.getLeft(), String.valueOf(conf.getRight()));
+    }
+    return;
   }
 }

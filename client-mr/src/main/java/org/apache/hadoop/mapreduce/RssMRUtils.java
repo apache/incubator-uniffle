@@ -35,6 +35,8 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
 
+import static org.apache.hadoop.mapreduce.RssMRClientConf.MR_RSS_CONFIG_PREFIX;
+
 public class RssMRUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssMRUtils.class);
@@ -73,37 +75,39 @@ public class RssMRUtils {
   }
 
   public static ShuffleWriteClient createShuffleClient(JobConf jobConf) {
-    int heartBeatThreadNum = jobConf.getInt(RssMRConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM,
-        RssMRConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM_DEFAULT_VALUE);
-    int retryMax = jobConf.getInt(RssMRConfig.RSS_CLIENT_RETRY_MAX,
-        RssMRConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
-    long retryIntervalMax = jobConf.getLong(RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
-        RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
-    String clientType = jobConf.get(RssMRConfig.RSS_CLIENT_TYPE,
-        RssMRConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
-    int replicaWrite = jobConf.getInt(RssMRConfig.RSS_DATA_REPLICA_WRITE,
-        RssMRConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE);
-    int replicaRead = jobConf.getInt(RssMRConfig.RSS_DATA_REPLICA_READ,
-        RssMRConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE);
-    int replica = jobConf.getInt(RssMRConfig.RSS_DATA_REPLICA,
-        RssMRConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
-    boolean replicaSkipEnabled = jobConf.getBoolean(RssMRConfig.RSS_DATA_REPLICA_SKIP_ENABLED,
-        RssMRConfig.RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE);
-    int dataTransferPoolSize = jobConf.getInt(RssMRConfig.RSS_DATA_TRANSFER_POOL_SIZE,
-        RssMRConfig.RSS_DATA_TRANSFER_POOL_SIZE_DEFAULT_VALUE);
-    int dataCommitPoolSize = jobConf.getInt(RssMRConfig.RSS_DATA_COMMIT_POOL_SIZE,
-        RssMRConfig.RSS_DATA_COMMIT_POOL_SIZE_DEFAULT_VALUE);
+    RssMRClientConf clientConf = RssMRClientConf.from(jobConf);
+
+    int heartBeatThreadNum = clientConf.get(RssMRClientConf.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
+    int retryMax = clientConf.get(RssMRClientConf.RSS_CLIENT_RETRY_MAX);
+    long retryIntervalMax = clientConf.get(RssMRClientConf.RSS_CLIENT_RETRY_INTERVAL_MAX);
+    String clientType = clientConf.get(RssMRClientConf.RSS_CLIENT_TYPE);
+    int replicaWrite = clientConf.get(RssMRClientConf.RSS_DATA_REPLICA_WRITE);
+    int replicaRead = clientConf.get(RssMRClientConf.RSS_DATA_REPLICA_READ);
+    int replica = clientConf.get(RssMRClientConf.RSS_DATA_REPLICA);
+    boolean replicaSkipEnabled = clientConf.get(RssMRClientConf.RSS_DATA_REPLICA_SKIP_ENABLED);
+    int dataTransferPoolSize = clientConf.get(RssMRClientConf.RSS_DATA_TRANSFER_POOL_SIZE);
+    int dataCommitPoolSize = clientConf.get(RssMRClientConf.RSS_DATA_COMMIT_POOL_SIZE);
     ShuffleWriteClient client = ShuffleClientFactory
         .getInstance()
-        .createShuffleWriteClient(clientType, retryMax, retryIntervalMax,
-            heartBeatThreadNum, replica, replicaWrite, replicaRead, replicaSkipEnabled,
-            dataTransferPoolSize, dataCommitPoolSize);
+        .createShuffleWriteClient(
+            clientType,
+            retryMax,
+            retryIntervalMax,
+            heartBeatThreadNum,
+            replica,
+            replicaWrite,
+            replicaRead,
+            replicaSkipEnabled,
+            dataTransferPoolSize,
+            dataCommitPoolSize
+        );
     return client;
   }
 
   public static Set<ShuffleServerInfo> getAssignedServers(JobConf jobConf, int reduceID) {
-    String servers = jobConf.get(RssMRConfig.RSS_ASSIGNMENT_PREFIX
-        + String.valueOf(reduceID));
+    String servers = jobConf.get(
+        MR_RSS_CONFIG_PREFIX + RssMRClientConf.RSS_ASSIGNMENT_PREFIX + String.valueOf(reduceID)
+    );
     String[] splitServers = servers.split(",");
     Set<ShuffleServerInfo> assignServers = Sets.newHashSet();
     for (String splitServer : splitServers) {
@@ -111,8 +115,11 @@ public class RssMRUtils {
       if (serverInfo.length != 2) {
         throw new RssException("partition " + reduceID + " server info isn't right");
       }
-      ShuffleServerInfo sever = new ShuffleServerInfo(StringUtils.join(serverInfo, "-"),
-          serverInfo[0], Integer.parseInt(serverInfo[1]));
+      ShuffleServerInfo sever = new ShuffleServerInfo(
+          StringUtils.join(serverInfo, "-"),
+          serverInfo[0],
+          Integer.parseInt(serverInfo[1])
+      );
       assignServers.add(sever);
     }
     return assignServers;
@@ -138,12 +145,12 @@ public class RssMRUtils {
 
     for (Map.Entry<String, String> kv : confItems.entrySet()) {
       String mrConfKey = kv.getKey();
-      if (!mrConfKey.startsWith(RssMRConfig.MR_RSS_CONFIG_PREFIX)) {
-        mrConfKey = RssMRConfig.MR_RSS_CONFIG_PREFIX + mrConfKey;
+      if (!mrConfKey.startsWith(RssMRClientConf.MR_RSS_CONFIG_PREFIX)) {
+        mrConfKey = RssMRClientConf.MR_RSS_CONFIG_PREFIX + mrConfKey;
       }
       String mrConfVal = kv.getValue();
       if (StringUtils.isEmpty(jobConf.get(mrConfKey, ""))
-          || RssMRConfig.RSS_MANDATORY_CLUSTER_CONF.contains(mrConfKey)) {
+          || RssMRClientConf.RSS_MANDATORY_CLUSTER_CONF.contains(mrConfKey)) {
         LOG.warn("Use conf dynamic conf {} = {}", mrConfKey, mrConfVal);
         jobConf.set(mrConfKey, mrConfVal);
       }

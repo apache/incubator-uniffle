@@ -36,6 +36,8 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RetryUtils;
 
+import static org.apache.spark.shuffle.RssSparkClientConf.SPARK_CONFIG_KEY_PREFIX;
+
 public class DelegationRssShuffleManager implements ShuffleManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(DelegationRssShuffleManager.class);
@@ -44,10 +46,13 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   private final List<CoordinatorClient> coordinatorClients;
   private final int accessTimeoutMs;
   private final SparkConf sparkConf;
+  private final RssSparkClientConf rssSparkClientConf;
 
   public DelegationRssShuffleManager(SparkConf sparkConf, boolean isDriver) throws Exception {
     this.sparkConf = sparkConf;
-    accessTimeoutMs = sparkConf.get(RssSparkConfig.RSS_ACCESS_TIMEOUT_MS);
+    this.rssSparkClientConf = RssSparkClientConf.from(sparkConf);
+
+    accessTimeoutMs = sparkConf.getInt(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_ACCESS_TIMEOUT_MS, 10000);
     if (isDriver) {
       coordinatorClients = RssSparkShuffleUtils.createCoordinatorClients(sparkConf);
       delegate = createShuffleManagerInDriver();
@@ -68,7 +73,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     if (canAccess) {
       try {
         shuffleManager = new RssShuffleManager(sparkConf, true);
-        sparkConf.set(RssSparkConfig.RSS_ENABLED.key(), "true");
+        sparkConf.set("spark." + RssSparkClientConf.RSS_ENABLED.key(), "true");
         sparkConf.set("spark.shuffle.manager", RssShuffleManager.class.getCanonicalName());
         LOG.info("Use RssShuffleManager");
         return shuffleManager;
@@ -79,7 +84,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
 
     try {
       shuffleManager = RssSparkShuffleUtils.loadShuffleManager(Constants.SORT_SHUFFLE_MANAGER_NAME, sparkConf, true);
-      sparkConf.set(RssSparkConfig.RSS_ENABLED.key(), "false");
+      sparkConf.set("spark." + RssSparkClientConf.RSS_ENABLED.key(), "false");
       sparkConf.set("spark.shuffle.manager", "sort");
       LOG.info("Use SortShuffleManager");
     } catch (Exception e) {
@@ -90,17 +95,16 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   }
 
   private boolean tryAccessCluster() {
-    String accessId = sparkConf.get(
-        RssSparkConfig.RSS_ACCESS_ID.key(), "").trim();
+    String accessId = rssSparkClientConf.getString(RssSparkClientConf.RSS_ACCESS_ID.key(), "").trim();
     if (StringUtils.isEmpty(accessId)) {
       LOG.warn("Access id key is empty");
       return false;
     }
-    long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS);
-    int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_TIMES);
+    long retryInterval = rssSparkClientConf.get(RssSparkClientConf.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS);
+    int retryTimes = rssSparkClientConf.get(RssSparkClientConf.RSS_CLIENT_ACCESS_RETRY_TIMES);
 
     for (CoordinatorClient coordinatorClient : coordinatorClients) {
-      Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
+      Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(rssSparkClientConf);
       boolean canAccess;
       try {
         canAccess = RetryUtils.retry(() -> {
@@ -130,7 +134,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   private ShuffleManager createShuffleManagerInExecutor() throws RssException {
     ShuffleManager shuffleManager;
     // get useRSS from spark conf
-    boolean useRSS = sparkConf.get(RssSparkConfig.RSS_ENABLED);
+    boolean useRSS = rssSparkClientConf.get(RssSparkClientConf.RSS_ENABLED);
     if (useRSS) {
       // Executor will not do any fallback
       shuffleManager = new RssShuffleManager(sparkConf, false);

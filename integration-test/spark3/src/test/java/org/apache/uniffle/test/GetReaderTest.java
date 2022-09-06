@@ -39,7 +39,7 @@ import org.apache.spark.resource.ResourceInformation;
 import org.apache.spark.shuffle.FetchFailedException;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.RssShuffleManager;
-import org.apache.spark.shuffle.RssSparkConfig;
+import org.apache.spark.shuffle.RssSparkClientConf;
 import org.apache.spark.shuffle.reader.RssShuffleReader;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.util.AccumulatorV2;
@@ -57,6 +57,7 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.spark.shuffle.RssSparkClientConf.SPARK_CONFIG_KEY_PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -67,7 +68,7 @@ public class GetReaderTest extends IntegrationTestBase {
   public void test() throws Exception {
     SparkConf sparkConf = new SparkConf();
     sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.RssShuffleManager");
-    sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
+    sparkConf.set(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
     sparkConf.setMaster("local[4]");
     final String remoteStorage1 = "hdfs://h1/p1";
     final String remoteStorage2 = "hdfs://h2/p2";

@@ -39,7 +39,7 @@ import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.scheduler.MapStatus;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.RssShuffleManager;
-import org.apache.spark.shuffle.RssSparkConfig;
+import org.apache.spark.shuffle.RssSparkClientConf;
 import org.apache.spark.shuffle.ShuffleWriter;
 import org.apache.spark.storage.BlockManagerId;
 import org.slf4j.Logger;
@@ -95,6 +95,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       ShuffleWriteClient shuffleWriteClient,
       RssShuffleHandle rssHandle) {
     LOG.warn("RssShuffle start write taskAttemptId data" + taskAttemptId);
+    RssSparkClientConf rssSparkClientConf = RssSparkClientConf.from(sparkConf);
+
     this.shuffleManager = shuffleManager;
     this.appId = appId;
     this.bufferManager = bufferManager;
@@ -106,11 +108,13 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.shuffleDependency = rssHandle.getDependency();
     this.partitioner = shuffleDependency.partitioner();
     this.shouldPartition = partitioner.numPartitions() > 1;
-    this.sendCheckTimeout = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS);
-    this.sendCheckInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS);
-    this.sendSizeLimit = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT.key(),
-        RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT.defaultValue().get());
-    this.bitmapSplitNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM);
+    this.sendCheckTimeout = rssSparkClientConf.get(RssSparkClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS);
+    this.sendCheckInterval = rssSparkClientConf.get(RssSparkClientConf.RSS_CLIENT_SEND_CHECK_INTERVAL_MS);
+    this.sendSizeLimit = rssSparkClientConf.getSizeAsBytes(
+        RssSparkClientConf.RSS_CLIENT_SEND_SIZE_LIMIT.key(),
+        RssSparkClientConf.RSS_CLIENT_SEND_SIZE_LIMIT.defaultValue()
+    );
+    this.bitmapSplitNum = rssSparkClientConf.get(RssSparkClientConf.RSS_CLIENT_BITMAP_SPLIT_NUM);
     this.partitionToBlockIds = Maps.newConcurrentMap();
     this.shuffleWriteClient = shuffleWriteClient;
     this.shuffleServersForData = rssHandle.getShuffleServersForData();
@@ -118,7 +122,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     Arrays.fill(partitionLengths, 0);
     partitionToServers = rssHandle.getPartitionToServers();
     this.isMemoryShuffleEnabled = isMemoryShuffleEnabled(
-        sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
+        rssSparkClientConf.get(RssSparkClientConf.RSS_STORAGE_TYPE));
   }
 
   private boolean isMemoryShuffleEnabled(String storageType) {

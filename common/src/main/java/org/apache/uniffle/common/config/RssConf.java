@@ -18,12 +18,15 @@
 package org.apache.uniffle.common.config;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.tuple.Pair;
 
 import org.apache.uniffle.common.util.UnitConverter;
 
@@ -639,5 +642,9 @@ public class RssConf implements Cloneable {
   @Override
   public String toString() {
     return this.settings.toString();
+  }
+
+  public List<Pair<String, Object>> getAll() {
+    return settings.entrySet().stream().map(x -> Pair.of(x.getKey(), x.getValue())).collect(Collectors.toList());
   }
 }

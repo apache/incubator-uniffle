@@ -25,7 +25,7 @@ import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.memory.TaskMemoryManager;
 import org.apache.spark.serializer.KryoSerializer;
 import org.apache.spark.serializer.Serializer;
-import org.apache.spark.shuffle.RssSparkConfig;
+import org.apache.spark.shuffle.RssSparkClientConf;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
@@ -44,7 +44,7 @@ public class WriteBufferManagerTest {
     Serializer kryoSerializer = new KryoSerializer(conf);
     TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
 
-    BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
+    BufferManagerOptions bufferOptions = new BufferManagerOptions(RssSparkClientConf.from(conf));
     WriteBufferManager wbm = new WriteBufferManager(
         0, 0, bufferOptions, kryoSerializer,
         Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics());
@@ -55,11 +55,11 @@ public class WriteBufferManagerTest {
 
   private SparkConf getConf() {
     SparkConf conf = new SparkConf(false);
-    conf.set(RssSparkConfig.RSS_WRITER_BUFFER_SIZE.key(), "64")
-        .set(RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE.key(), "32")
-        .set(RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE.key(), "128")
-        .set(RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE.key(), "512")
-        .set(RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.key(), "190");
+    conf.set(RssSparkClientConf.RSS_WRITER_BUFFER_SIZE.key(), "64")
+        .set(RssSparkClientConf.RSS_WRITER_BUFFER_SEGMENT_SIZE.key(), "32")
+        .set(RssSparkClientConf.RSS_WRITER_SERIALIZER_BUFFER_SIZE.key(), "128")
+        .set(RssSparkClientConf.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE.key(), "512")
+        .set(RssSparkClientConf.RSS_WRITER_BUFFER_SPILL_SIZE.key(), "190");
     return conf;
   }
 

@@ -26,12 +26,13 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssShuffleManager;
-import org.apache.spark.shuffle.RssSparkConfig;
+import org.apache.spark.shuffle.RssSparkClientConf;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.spark.shuffle.RssSparkClientConf.SPARK_CONFIG_KEY_PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,7 +43,7 @@ public class DynamicFetchClientConfTest extends IntegrationTestBase {
   public void test() throws Exception {
     SparkConf sparkConf = new SparkConf();
     sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.RssShuffleManager");
-    sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
+    sparkConf.set(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
     sparkConf.set("spark.mock.2", "no-overwrite-conf");
     sparkConf.set("spark.shuffle.service.enabled", "true");
 
@@ -54,11 +55,11 @@ public class DynamicFetchClientConfTest extends IntegrationTestBase {
     printWriter.println(" spark.mock.2 overwrite-conf ");
     printWriter.println(" spark.mock.3 true ");
     printWriter.println("spark.rss.storage.type " + StorageType.MEMORY_LOCALFILE_HDFS.name());
-    printWriter.println(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key() + " expectedPath");
+    printWriter.println(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_REMOTE_STORAGE_PATH.key() + " expectedPath");
     printWriter.flush();
     printWriter.close();
-    for (String k : RssSparkConfig.RSS_MANDATORY_CLUSTER_CONF) {
-      sparkConf.set(k, "Dummy-" + k);
+    for (String k : RssSparkClientConf.RSS_MANDATORY_CLUSTER_CONF) {
+      sparkConf.set("spark." + k, "Dummy-" + k);
     }
     sparkConf.set("spark.mock.2", "no-overwrite-conf");
 
@@ -74,10 +75,10 @@ public class DynamicFetchClientConfTest extends IntegrationTestBase {
     assertFalse(sparkConf.contains("spark.mock.1"));
     assertEquals("no-overwrite-conf", sparkConf.get("spark.mock.2"));
     assertFalse(sparkConf.contains("spark.mock.3"));
-    assertEquals("Dummy-" + RssSparkConfig.RSS_STORAGE_TYPE.key(),
-        sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
-    assertEquals("Dummy-" + RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(),
-        sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key()));
+    assertEquals("Dummy-" + RssSparkClientConf.RSS_STORAGE_TYPE.key(),
+        sparkConf.get(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_STORAGE_TYPE.key()));
+    assertEquals("Dummy-" + RssSparkClientConf.RSS_REMOTE_STORAGE_PATH.key(),
+        sparkConf.get(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_REMOTE_STORAGE_PATH.key()));
     assertTrue(sparkConf.getBoolean("spark.shuffle.service.enabled", true));
 
     RssShuffleManager rssShuffleManager = new RssShuffleManager(sparkConf, true);
@@ -86,14 +87,14 @@ public class DynamicFetchClientConfTest extends IntegrationTestBase {
     assertEquals(1234, sparkConf1.getInt("spark.mock.1", 0));
     assertEquals("no-overwrite-conf", sparkConf1.get("spark.mock.2"));
     assertEquals(StorageType.MEMORY_LOCALFILE_HDFS.name(), sparkConf.get("spark.rss.storage.type"));
-    assertEquals("expectedPath", sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key()));
+    assertEquals("expectedPath", sparkConf.get(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_REMOTE_STORAGE_PATH.key()));
     assertFalse(sparkConf1.getBoolean("spark.shuffle.service.enabled", true));
 
     fs.delete(path, true);
     shutdownServers();
     sparkConf = new SparkConf();
     sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.RssShuffleManager");
-    sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
+    sparkConf.set(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
     sparkConf.set("spark.mock.2", "no-overwrite-conf");
     sparkConf.set("spark.shuffle.service.enabled", "true");
 

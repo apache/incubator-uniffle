@@ -22,11 +22,12 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.spark.SparkConf;
-import org.apache.spark.shuffle.RssSparkConfig;
+import org.apache.spark.shuffle.RssSparkClientConf;
 import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.spark.shuffle.RssSparkClientConf.SPARK_CONFIG_KEY_PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
@@ -85,18 +86,18 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
   public void updateSparkConfWithRss(SparkConf sparkConf) {
     sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.RssShuffleManager");
     sparkConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
-    sparkConf.set(RssSparkConfig.RSS_WRITER_BUFFER_SIZE.key(), "4m");
-    sparkConf.set(RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.key(), "32m");
-    sparkConf.set(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key(), "2m");
-    sparkConf.set(RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE.key(), "128k");
-    sparkConf.set(RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE.key(), "256k");
-    sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
-    sparkConf.set(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(), "30000");
-    sparkConf.set(RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key(), "1000");
-    sparkConf.set(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.key(), "1000");
-    sparkConf.set(RssSparkConfig.RSS_INDEX_READ_LIMIT.key(), "100");
-    sparkConf.set(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key(), "1m");
-    sparkConf.set(RssSparkConfig.RSS_HEARTBEAT_INTERVAL.key(), "2000");
+    sparkConf.set(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_WRITER_BUFFER_SIZE.key(), "4m");
+    sparkConf.set(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_WRITER_BUFFER_SPILL_SIZE.key(), "32m");
+    sparkConf.set(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key(), "2m");
+    sparkConf.set(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_WRITER_SERIALIZER_BUFFER_SIZE.key(), "128k");
+    sparkConf.set(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_WRITER_BUFFER_SEGMENT_SIZE.key(), "256k");
+    sparkConf.set(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
+    sparkConf.set(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(), "30000");
+    sparkConf.set(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key(), "1000");
+    sparkConf.set(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_CLIENT_RETRY_INTERVAL_MAX.key(), "1000");
+    sparkConf.set(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_INDEX_READ_LIMIT.key(), "100");
+    sparkConf.set(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key(), "1m");
+    sparkConf.set(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_HEARTBEAT_INTERVAL.key(), "2000");
   }
 
   private void verifyTestResult(Map expected, Map actual) {

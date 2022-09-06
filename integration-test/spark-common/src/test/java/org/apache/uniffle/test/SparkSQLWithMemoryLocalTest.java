@@ -23,13 +23,14 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import org.apache.spark.SparkConf;
-import org.apache.spark.shuffle.RssSparkConfig;
+import org.apache.spark.shuffle.RssSparkClientConf;
 import org.junit.jupiter.api.BeforeAll;
 
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.spark.shuffle.RssSparkClientConf.SPARK_CONFIG_KEY_PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SparkSQLWithMemoryLocalTest extends SparkSQLTest {
@@ -41,7 +42,8 @@ public class SparkSQLWithMemoryLocalTest extends SparkSQLTest {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setLong("rss.coordinator.app.expired", 5000);
     Map<String, String> dynamicConf = Maps.newHashMap();
-    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE.name());
+    dynamicConf.put(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_STORAGE_TYPE.key(),
+        StorageType.MEMORY_LOCALFILE.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();

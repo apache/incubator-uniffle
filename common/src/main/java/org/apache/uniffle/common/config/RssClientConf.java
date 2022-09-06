@@ -21,6 +21,12 @@ import java.util.List;
 
 public class RssClientConf extends RssConf {
 
+  public static final ConfigOption<Integer> RSS_CLIENT_HEARTBEAT_THREAD_NUM = ConfigOptions
+      .key("rss.client.heartBeat.threadNum")
+      .intType()
+      .defaultValue(4)
+      .withDescription("");
+
   public static final ConfigOption<String> RSS_CLIENT_TYPE = ConfigOptions
       .key("rss.client.type")
       .stringType()
@@ -168,10 +174,10 @@ public class RssClientConf extends RssConf {
       .defaultValue(3)
       .withDescription("");
 
-  public static final ConfigOption<Long> RSS_ACCESS_TIMEOUT_MS = ConfigOptions
+  public static final ConfigOption<Integer> RSS_ACCESS_TIMEOUT_MS = ConfigOptions
       .key("rss.access.timeout.ms")
-      .longType()
-      .defaultValue(10000L)
+      .intType()
+      .defaultValue(10000)
       .withDescription("");
 
   public static final ConfigOption<Boolean> RSS_DYNAMIC_CLIENT_CONF_ENABLED = ConfigOptions
