@@ -19,14 +19,13 @@ package org.apache.uniffle.common;
 
 import java.nio.ByteBuffer;
 
-import sun.nio.ch.DirectBuffer;
-
 import com.google.common.base.Preconditions;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.nio.ch.DirectBuffer;
 
 public class RssShuffleUtils {
 
