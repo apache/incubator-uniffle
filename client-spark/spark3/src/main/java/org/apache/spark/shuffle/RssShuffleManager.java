@@ -33,6 +33,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.spark.MapOutputTracker;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkEnv;
@@ -458,7 +459,7 @@ public class RssShuffleManager implements ShuffleManager {
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf();
     Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>> mapStatusIter = null;
     // Since Spark 3.1 refactors the interface of getMapSizesByExecutorId,
-    // we use reflection and catch for the compatibility with 3.0 & 3.1
+    // we use reflection and catch for the compatibility with 3.0 & 3.1 & 3.2
     try {
       // attempt to use Spark 3.1's API
       mapStatusIter = (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
@@ -471,7 +472,7 @@ public class RssShuffleManager implements ShuffleManager {
                   endMapIndex,
                   startPartition,
                   endPartition);
-    } catch (Exception e) {
+    } catch (Exception ignored) {
       // fallback and attempt to use Spark 3.0's API
       try {
         mapStatusIter = (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
@@ -483,8 +484,21 @@ public class RssShuffleManager implements ShuffleManager {
                     shuffleId,
                     startPartition,
                     endPartition);
-      } catch (Exception ee) {
-        throw new RuntimeException(ee);
+      } catch (Exception ignored1) {
+        try {
+          // attempt to use Spark 3.2.0's API
+          mapStatusIter = (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
+              MapOutputTracker.class.getDeclaredMethod("getMapSizesByExecutorId",
+                  int.class, int.class, int.class, int.class, int.class)
+                  .invoke(SparkEnv.get().mapOutputTracker(),
+                      shuffleId,
+                      startMapIndex,
+                      endMapIndex,
+                      startPartition,
+                      endPartition);
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
       }
     }
     while (mapStatusIter.hasNext()) {
