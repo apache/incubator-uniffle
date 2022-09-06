@@ -139,7 +139,7 @@ public class HealthSelectStorageStrategy implements SelectStorageStrategy {
     } catch (Exception e) {
       RankValue rankValue = remoteStoragePathRankValue.get(path);
       remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
-      LOG.error("Failed to delete directory, we will not use this remote path {}.", path, e);
+      LOG.error("Failed to sort, we will not use this remote path {}.", path, e);
     } finally {
       sizeList = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet()).stream().filter(Objects::nonNull)
           .sorted(Comparator.comparingDouble(
