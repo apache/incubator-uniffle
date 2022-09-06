@@ -61,6 +61,7 @@ public class HealthSelectStorageStrategyTest {
   @AfterAll
   public static void clear() {
     CoordinatorMetrics.clear();
+    cluster.close();
   }
 
   @BeforeEach
@@ -93,9 +94,9 @@ public class HealthSelectStorageStrategyTest {
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
     //default value is 0
     assertEquals(0,
-        healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage1).getRatioValue().get());
+        healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage1).getReadAndWriteTime().get());
     assertEquals(0,
-        healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage2).getRatioValue().get());
+        healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage2).getReadAndWriteTime().get());
     String storageHost1 = "p1";
     assertEquals(0.0, CoordinatorMetrics.gaugeInUsedRemoteStorage.get(storageHost1).get(), 0.5);
     String storageHost2 = "p2";
@@ -135,7 +136,7 @@ public class HealthSelectStorageStrategyTest {
     assertEquals(Sets.newConcurrentHashSet(Sets.newHashSet(remoteStorage1, remoteStorage2)),
         healthSelectStorageStrategy.getRemoteStoragePathRankValue().keySet());
     assertTrue(
-        healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage2).getRatioValue().get() > 0);
+        healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage2).getReadAndWriteTime().get() > 0);
     assertEquals(1,
         healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage2).getAppNum().get());
     // app1 is expired, p2 is removed because of counter = 0

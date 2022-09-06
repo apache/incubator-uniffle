@@ -47,8 +47,7 @@ import org.apache.uniffle.common.util.ThreadUtils;
 
 /**
  * HealthSelectStorageStrategy considers that when allocating apps to different remote paths,
- * remote paths that can write data faster should be allocated as much as possible.
- * Therefore, it may occur that all apps are written to the same cluster.
+ * remote paths that can write and read. Therefore, it may occur that all apps are written to the same cluster.
  * At the same time, if a cluster has read and write exceptions, we will automatically avoid the cluster.
  * If there is an exception when getting the filesystem at the beginning,
  * roll back to using AppBalanceSelectStorageStrategy.
@@ -138,13 +137,13 @@ public class HealthSelectStorageStrategy implements SelectStorageStrategy {
   @VisibleForTesting
   public void sortPathByIORank(String path, Path testPath, long startWrite) {
     try {
-      fs.deleteOnExit(testPath);
+      fs.delete(testPath, true);
       long totalTime = System.currentTimeMillis() - startWrite;
       RankValue rankValue = remoteStoragePathRankValue.get(path);
       remoteStoragePathRankValue.put(path, new RankValue(totalTime, rankValue.getAppNum().get()));
       sizeList = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet()).stream().filter(Objects::nonNull)
           .sorted(Comparator.comparingDouble(
-              entry -> entry.getValue().getRatioValue().get())).collect(Collectors.toList());
+              entry -> entry.getValue().getReadAndWriteTime().get())).collect(Collectors.toList());
     } catch (Exception e) {
       LOG.error("Failed to delete directory, "
           + "we should compare the number of apps to select a remote path" + sizeList, e);
@@ -154,7 +153,7 @@ public class HealthSelectStorageStrategy implements SelectStorageStrategy {
   }
 
   /**
-   * the strategy of pick remote storage is according to assignment count
+   * the strategy of pick remote storage is based on whether the remote path can be read or written
    */
   @Override
   public RemoteStorageInfo pickRemoteStorage(String appId) {
@@ -215,7 +214,7 @@ public class HealthSelectStorageStrategy implements SelectStorageStrategy {
   @Override
   public synchronized void removePathFromCounter(String storagePath) {
     RankValue rankValue = remoteStoragePathRankValue.get(storagePath);
-    // The size of the file cannot be used to determine whether the current path is still used by apps.
+    // The time spent reading and writing cannot be used to determine whether the current path is still used by apps.
     // Therefore, determine whether the HDFS path is still used by the number of apps
     if (rankValue != null && rankValue.getAppNum().get() == 0) {
       remoteStoragePathRankValue.remove(storagePath);
@@ -248,21 +247,21 @@ public class HealthSelectStorageStrategy implements SelectStorageStrategy {
   }
 
   static class RankValue {
-    AtomicLong ratioValue;
+    AtomicLong readAndWriteTime;
     AtomicInteger appNum;
 
     RankValue(int appNum) {
-      this.ratioValue = new AtomicLong(0);
+      this.readAndWriteTime = new AtomicLong(0);
       this.appNum = new AtomicInteger(appNum);
     }
 
     RankValue(long ratioValue, int appNum) {
-      this.ratioValue = new AtomicLong(ratioValue);
+      this.readAndWriteTime = new AtomicLong(ratioValue);
       this.appNum = new AtomicInteger(appNum);
     }
 
-    public AtomicLong getRatioValue() {
-      return ratioValue;
+    public AtomicLong getReadAndWriteTime() {
+      return readAndWriteTime;
     }
 
     public AtomicInteger getAppNum() {

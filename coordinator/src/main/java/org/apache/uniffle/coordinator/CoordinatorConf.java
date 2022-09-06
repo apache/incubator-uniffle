@@ -135,7 +135,7 @@ public class CoordinatorConf extends RssBaseConf {
       .defaultValue(APP_BALANCE)
       .withDescription("Strategy for selecting the remote path");
   public static final ConfigOption<Long> COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME = ConfigOptions
-      .key("rss.coordinator.remote.storage.schedule.time")
+      .key("rss.coordinator.remote.storage.health.schedule.time")
       .longType()
       .defaultValue(60 * 1000L)
       .withDescription("The time of scheduling the read and write time of the paths to obtain different HDFS");
