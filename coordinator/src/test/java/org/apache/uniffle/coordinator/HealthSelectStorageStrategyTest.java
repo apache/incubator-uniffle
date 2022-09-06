@@ -135,8 +135,8 @@ public class HealthSelectStorageStrategyTest {
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
     assertEquals(Sets.newConcurrentHashSet(Sets.newHashSet(remoteStorage1, remoteStorage2)),
         healthSelectStorageStrategy.getRemoteStoragePathRankValue().keySet());
-    assertTrue(
-        healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage2).getReadAndWriteTime().get() > 0);
+    assertTrue(healthSelectStorageStrategy.getRemoteStoragePathRankValue()
+        .get(remoteStorage2).getReadAndWriteTime().get() > 0);
     assertEquals(1,
         healthSelectStorageStrategy.getRemoteStoragePathRankValue().get(remoteStorage2).getAppNum().get());
     // app1 is expired, p2 is removed because of counter = 0
