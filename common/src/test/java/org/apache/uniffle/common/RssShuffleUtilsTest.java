@@ -88,7 +88,7 @@ public class RssShuffleUtilsTest {
   private Unsafe getUnsafe() throws NoSuchFieldException, IllegalAccessException {
     Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
     unsafeField.setAccessible(true);
-    return (sun.misc.Unsafe) unsafeField.get(null);
+    return (Unsafe) unsafeField.get(null);
   }
 
   private long address(ByteBuffer buffer) throws NoSuchFieldException, IllegalAccessException {
