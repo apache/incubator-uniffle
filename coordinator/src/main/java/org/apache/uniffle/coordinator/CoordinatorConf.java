@@ -134,7 +134,7 @@ public class CoordinatorConf extends RssBaseConf {
       .enumType(ApplicationManager.StrategyName.class)
       .defaultValue(APP_BALANCE)
       .withDescription("Strategy for selecting the remote path");
-  public static final ConfigOption<Long> COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME = ConfigOptions
+  public static final ConfigOption<Long> COORDINATOR_REMOTE_STORAGE_HEALTH_SCHEDULE_TIME = ConfigOptions
       .key("rss.coordinator.remote.storage.health.schedule.time")
       .longType()
       .defaultValue(60 * 1000L)
@@ -142,8 +142,13 @@ public class CoordinatorConf extends RssBaseConf {
   public static final ConfigOption<Integer> COORDINATOR_REMOTE_STORAGE_FILE_SIZE = ConfigOptions
       .key("rss.coordinator.remote.storage.file.size")
       .intType()
-      .defaultValue(10240)
+      .defaultValue(204800 * 1000)
       .withDescription("The size of the file that the scheduled thread reads and writes");
+  public static final ConfigOption<Integer> COORDINATOR_REMOTE_STORAGE_ACCESS_TIMES = ConfigOptions
+      .key("rss.coordinator.remote.storage.access.times")
+      .intType()
+      .defaultValue(3)
+      .withDescription("The Number of times to read and write HDFS files");
 
   public CoordinatorConf() {
   }

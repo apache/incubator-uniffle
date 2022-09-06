@@ -247,7 +247,7 @@ public class ClientConfManagerTest {
     Thread.sleep(500);
     Set<String> expectedAvailablePath = Sets.newHashSet(remotePath1);
     assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
-    healthSelectStorageStrategy.sortPathByIORank(remotePath1, testPath, System.currentTimeMillis());
+    healthSelectStorageStrategy.sortPathByRankValue(remotePath1, testPath, System.currentTimeMillis());
     RemoteStorageInfo remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId1");
     assertEquals(remotePath1, remoteStorageInfo.getPath());
     assertTrue(remoteStorageInfo.getConfItems().isEmpty());
@@ -255,9 +255,9 @@ public class ClientConfManagerTest {
     writeRemoteStorageConf(cfgFile, remotePath3);
     expectedAvailablePath = Sets.newHashSet(remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
-    // The reason for setting the filesystem here is to trigger the execution of sortPathByIORank
+    // The reason for setting the filesystem here is to trigger the execution of sortPathByRankValue
     healthSelectStorageStrategy.setFs(fs);
-    healthSelectStorageStrategy.sortPathByIORank(remotePath3, testPath, System.currentTimeMillis());
+    healthSelectStorageStrategy.sortPathByRankValue(remotePath3, testPath, System.currentTimeMillis());
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId2");
     assertEquals(remotePath3, remoteStorageInfo.getPath());
 
@@ -267,9 +267,9 @@ public class ClientConfManagerTest {
     expectedAvailablePath = Sets.newHashSet(remotePath2, remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
     healthSelectStorageStrategy.setFs(fs);
-    healthSelectStorageStrategy.sortPathByIORank(remotePath2, testPath, current);
+    healthSelectStorageStrategy.sortPathByRankValue(remotePath2, testPath, current);
     healthSelectStorageStrategy.setFs(fs);
-    healthSelectStorageStrategy.sortPathByIORank(remotePath3, testPath, current);
+    healthSelectStorageStrategy.sortPathByRankValue(remotePath3, testPath, current);
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId3");
     assertEquals(remotePath2, remoteStorageInfo.getPath());
     assertEquals(2, remoteStorageInfo.getConfItems().size());

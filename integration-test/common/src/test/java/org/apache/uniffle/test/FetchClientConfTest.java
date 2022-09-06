@@ -158,7 +158,7 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     coordinatorConf.setBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
     coordinatorConf.setString(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
     coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 2);
-    coordinatorConf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 500);
+    coordinatorConf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_HEALTH_SCHEDULE_TIME, 500);
     coordinatorConf.set(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY, HEALTH);
     createCoordinatorServer(coordinatorConf);
     startServers();

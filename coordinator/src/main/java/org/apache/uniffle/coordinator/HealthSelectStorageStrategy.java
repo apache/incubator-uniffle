@@ -49,8 +49,6 @@ import org.apache.uniffle.common.util.ThreadUtils;
  * HealthSelectStorageStrategy considers that when allocating apps to different remote paths,
  * remote paths that can write and read. Therefore, it may occur that all apps are written to the same cluster.
  * At the same time, if a cluster has read and write exceptions, we will automatically avoid the cluster.
- * If there is an exception when getting the filesystem at the beginning,
- * roll back to using AppBalanceSelectStorageStrategy.
  */
 public class HealthSelectStorageStrategy implements SelectStorageStrategy {
 
@@ -69,10 +67,12 @@ public class HealthSelectStorageStrategy implements SelectStorageStrategy {
   private FileSystem fs;
   private Configuration conf;
   private final int fileSize;
+  private final int readAndWriteTimes;
 
   public HealthSelectStorageStrategy(CoordinatorConf cf) {
     conf = new Configuration();
     fileSize = cf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_FILE_SIZE);
+    readAndWriteTimes = cf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_ACCESS_TIMES);
     this.appIdToRemoteStorageInfo = Maps.newConcurrentMap();
     this.remoteStoragePathRankValue = Maps.newConcurrentMap();
     this.availableRemoteStorageInfo = Maps.newHashMap();
@@ -81,20 +81,19 @@ public class HealthSelectStorageStrategy implements SelectStorageStrategy {
         ThreadUtils.getThreadFactory("readWriteRankScheduler-%d"));
     // should init later than the refreshRemoteStorage init
     readWriteRankScheduler.scheduleAtFixedRate(this::checkReadAndWrite, 1000,
-        cf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME), TimeUnit.MILLISECONDS);
+        cf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_HEALTH_SCHEDULE_TIME), TimeUnit.MILLISECONDS);
   }
 
   public void checkReadAndWrite() {
-    try {
-      if (remoteStoragePathRankValue.size() > 1) {
-        for (String path : remoteStoragePathRankValue.keySet()) {
-          Path remotePath = new Path(path);
+    if (remoteStoragePathRankValue.size() > 1) {
+      for (String path : remoteStoragePathRankValue.keySet()) {
+        Path remotePath = new Path(path);
+        Path testPath = new Path(path + "/rssTest");
+        long startWriteTime = System.currentTimeMillis();
+        try {
           fs = HadoopFilesystemProvider.getFilesystem(remotePath, conf);
-          Path testPath = new Path(path + "/rssTest");
-          long startWriteTime = System.currentTimeMillis();
-          try {
+          for (int j = 0; j < readAndWriteTimes; j++) {
             byte[] data = RandomUtils.nextBytes(fileSize);
-
             try (FSDataOutputStream fos = fs.create(testPath)) {
               fos.write(data);
               fos.flush();
@@ -116,39 +115,35 @@ public class HealthSelectStorageStrategy implements SelectStorageStrategy {
                 hasReadBytes += readBytes;
               } while (readBytes != -1);
             }
-          } catch (Exception e) {
-            LOG.error("Storage read and write error ", e);
-            RankValue rankValue = remoteStoragePathRankValue.get(path);
-            remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
-          } finally {
-            sortPathByIORank(path, testPath, startWriteTime);
           }
+        } catch (Exception e) {
+          LOG.error("Storage read and write error, we will not use this remote path {}.", path, e);
+          RankValue rankValue = remoteStoragePathRankValue.get(path);
+          remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
+        } finally {
+          sortPathByRankValue(path, testPath, startWriteTime);
         }
-      } else {
-        sizeList = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
       }
-    } catch (Exception e) {
-      LOG.error("Some error happened, compare the number of apps to select a remote path", e);
-      sizeList = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet()).stream().filter(Objects::nonNull)
-          .sorted(Comparator.comparingDouble(entry -> entry.getValue().getAppNum().get())).collect(Collectors.toList());
+    } else {
+      sizeList = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
     }
   }
 
   @VisibleForTesting
-  public void sortPathByIORank(String path, Path testPath, long startWrite) {
+  public void sortPathByRankValue(String path, Path testPath, long startWrite) {
     try {
       fs.delete(testPath, true);
       long totalTime = System.currentTimeMillis() - startWrite;
       RankValue rankValue = remoteStoragePathRankValue.get(path);
       remoteStoragePathRankValue.put(path, new RankValue(totalTime, rankValue.getAppNum().get()));
+    } catch (Exception e) {
+      RankValue rankValue = remoteStoragePathRankValue.get(path);
+      remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
+      LOG.error("Failed to delete directory, we will not use this remote path {}.", path, e);
+    } finally {
       sizeList = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet()).stream().filter(Objects::nonNull)
           .sorted(Comparator.comparingDouble(
               entry -> entry.getValue().getReadAndWriteTime().get())).collect(Collectors.toList());
-    } catch (Exception e) {
-      LOG.error("Failed to delete directory, "
-          + "we should compare the number of apps to select a remote path" + sizeList, e);
-      sizeList = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet()).stream().filter(Objects::nonNull)
-          .sorted(Comparator.comparingDouble(entry -> entry.getValue().getAppNum().get())).collect(Collectors.toList());
     }
   }
 

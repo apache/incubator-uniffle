@@ -77,7 +77,7 @@ public class HealthSelectStorageStrategyTest {
     Thread.sleep(500L);
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_APP_EXPIRED, appExpiredTime);
-    conf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 5000);
+    conf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_HEALTH_SCHEDULE_TIME, 5000);
     conf.set(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY, HEALTH);
     applicationManager = new ApplicationManager(conf);
     healthSelectStorageStrategy = (HealthSelectStorageStrategy) applicationManager.getSelectStorageStrategy();
@@ -109,9 +109,9 @@ public class HealthSelectStorageStrategyTest {
     final long current = System.currentTimeMillis();
     applicationManager.refreshAppId(testApp1);
     fs.create(testFile);
-    healthSelectStorageStrategy.sortPathByIORank(remoteStorage2, testFile, current);
+    healthSelectStorageStrategy.sortPathByRankValue(remoteStorage2, testFile, current);
     fs.create(testFile);
-    healthSelectStorageStrategy.sortPathByIORank(remoteStorage1, testFile, current);
+    healthSelectStorageStrategy.sortPathByRankValue(remoteStorage1, testFile, current);
     assertEquals(remoteStorage2, healthSelectStorageStrategy.pickRemoteStorage(testApp1).getPath());
     assertEquals(remoteStorage2, healthSelectStorageStrategy.getAppIdToRemoteStorageInfo().get(testApp1).getPath());
     assertEquals(1,
