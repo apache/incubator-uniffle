@@ -487,6 +487,10 @@ public class RssShuffleManager implements ShuffleManager {
       } catch (Exception ignored1) {
         try {
           // attempt to use Spark 3.2.0's API
+          // Each Spark release will be versioned: [MAJOR].[FEATURE].[MAINTENANCE].
+          // Usually we only need to adapt [MAJOR].[FEATURE] . Unfortunately,
+          // some interfaces were removed wrongly in Spark 3.2.0. And they were added by Spark 3.2.1.
+          // So we need to adapt Spark 3.2.0 here
           mapStatusIter = (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
               MapOutputTracker.class.getDeclaredMethod("getMapSizesByExecutorId",
                   int.class, int.class, int.class, int.class, int.class)

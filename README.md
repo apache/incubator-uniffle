@@ -81,17 +81,25 @@ Build against profile Spark3(3.1.2)
 
     mvn -DskipTests clean package -Pspark3
 
-Build against Spark 3.2.x
+Build against Spark 3.2.x, Except 3.2.0
 
     mvn -DskipTests clean package -Pspark3.2
+
+Build against Spark 3.2.0
+
+    mvn -DskipTests clean package -Pspark3.2.0
 
 To package the Uniffle, run:
 
     ./build_distribution.sh
 
-Package against Spark 3.2.x, run:
+Package against Spark 3.2.x, Except 3.2.0, run:
 
     ./build_distribution.sh --spark3-profile 'spark3.2'
+
+Package against Spark 3.2.0, run:
+
+    ./build_distribution.sh --spark3-profile 'spark3.2.0'
 
 rss-xxx.tgz will be generated for deployment
 

@@ -61,6 +61,7 @@ jobs:
           - spark3.0
           - spark3
           - spark3.2
+          - spark3.2.0
           - mr
       fail-fast: false
     name: -P${{ matrix.profile }}
