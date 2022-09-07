@@ -60,11 +60,15 @@ public class RssSparkShuffleUtils {
       conf.set(
           SPARK_CONFIG_KEY_PREFIX
               + RssSparkClientConf.RSS_OZONE_FS_HDFS_IMPL.key().substring(OZONE_PREFIX_LEN),
-          sparkConf.get(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_OZONE_FS_HDFS_IMPL));
+          sparkConf.get(
+              SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_OZONE_FS_HDFS_IMPL,
+              RssSparkClientConf.RSS_OZONE_FS_HDFS_IMPL.defaultValue())
+      );
       conf.set(
           SPARK_CONFIG_KEY_PREFIX
               + RssSparkClientConf.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL.key().substring(OZONE_PREFIX_LEN),
-          sparkConf.get(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL));
+          sparkConf.get(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL,
+              RssSparkClientConf.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL.defaultValue()));
     }
 
     return conf;

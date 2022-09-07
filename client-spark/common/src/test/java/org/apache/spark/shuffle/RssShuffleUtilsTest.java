@@ -22,7 +22,6 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.client.util.RssShuffleUtils;
 import org.apache.uniffle.common.config.ConfigOption;
 import org.apache.uniffle.common.config.RssClientConf;
@@ -89,8 +88,10 @@ public class RssShuffleUtilsTest {
     assertEquals(StorageType.MEMORY_HDFS.name(), conf.get(RssSparkClientConf.RSS_STORAGE_TYPE));
     // won't be overwrite
     assertEquals(mockValue, conf.getString(mockKey, ""));
-    assertEquals(Integer.toString(RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE),
-        conf.get(RssSparkClientConf.RSS_CLIENT_RETRY_MAX));
+    assertEquals(
+        RssSparkClientConf.RSS_CLIENT_RETRY_MAX.defaultValue(),
+        conf.get(RssSparkClientConf.RSS_CLIENT_RETRY_MAX)
+    );
   }
 
   private <T> void equalsWithDefaultVal(RssClientConf conf, ConfigOption<T> option) {
@@ -98,6 +99,6 @@ public class RssShuffleUtilsTest {
   }
 
   private <T> void putWithDefaultVal(Map<String, String> clientConf, ConfigOption<T> option) {
-    clientConf.put(option.key(), (String) option.defaultValue());
+    clientConf.put(option.key(), String.valueOf(option.defaultValue()));
   }
 }
