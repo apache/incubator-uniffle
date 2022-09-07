@@ -19,6 +19,7 @@ package org.apache.uniffle.coordinator;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.Map;
@@ -28,6 +29,10 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,12 +41,18 @@ import org.junit.jupiter.api.io.TempDir;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.Constants;
 
+import static org.apache.uniffle.coordinator.ApplicationManager.StrategyName.IO_SAMPLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClientConfManagerTest {
+
+  @TempDir
+  private final File remotePath = new File("hdfs://rss");
+  private static MiniDFSCluster cluster;
+  private Configuration hdfsConf = new Configuration();
 
   @BeforeEach
   public void setUp() {
@@ -51,6 +62,18 @@ public class ClientConfManagerTest {
   @AfterEach
   public void clear() {
     CoordinatorMetrics.clear();
+  }
+
+  @AfterAll
+  public static void close() {
+    cluster.close();
+  }
+
+  public void createMiniHdfs(String hdfsPath) throws IOException {
+    hdfsConf.set("fs.defaultFS", remotePath.getAbsolutePath());
+    hdfsConf.set("dfs.nameservices", "rss");
+    hdfsConf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, hdfsPath);
+    cluster = (new MiniDFSCluster.Builder(hdfsConf)).build();
   }
 
   @Test
@@ -137,7 +160,7 @@ public class ClientConfManagerTest {
   }
 
   @Test
-  public void dynamicRemoteStorageTest() throws Exception {
+  public void dynamicRemoteByAppNumStrategyStorageTest() throws Exception {
     int updateIntervalSec = 2;
     final String remotePath1 = "hdfs://host1/path1";
     final String remotePath2 = "hdfs://host2/path2";
@@ -190,6 +213,83 @@ public class ClientConfManagerTest {
             || (remotePath2.equals(remoteStorageInfo.getPath())
                       && remoteStorageInfo.getConfItems().size() == 1)
                       && remoteStorageInfo.getConfItems().get("k1").equals("deadbeaf"));
+
+    clientConfManager.close();
+  }
+
+  @Test
+  public void dynamicRemoteByHealthStrategyStorageTest() throws Exception {
+    final int updateIntervalSec = 2;
+    final String remotePath1 = "hdfs://host1/path1";
+    final String remotePath2 = "hdfs://host2/path2";
+    final String remotePath3 = "hdfs://host3/path3";
+    File cfgFile = Files.createTempFile("dynamicRemoteStorageTest", ".conf").toFile();
+    cfgFile.deleteOnExit();
+    writeRemoteStorageConf(cfgFile, remotePath1);
+    createMiniHdfs(remotePath.getAbsolutePath());
+
+    CoordinatorConf conf = new CoordinatorConf();
+    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, updateIntervalSec);
+    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
+    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
+    conf.set(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY, IO_SAMPLE);
+
+    ApplicationManager applicationManager = new ApplicationManager(conf);
+    // init IORankScheduler
+    Thread.sleep(2000);
+    LowestIOSampleCostSelectStorageStrategy selectStorageStrategy =
+        (LowestIOSampleCostSelectStorageStrategy) applicationManager.getSelectStorageStrategy();
+    Path testPath = new Path("/test");
+    FileSystem fs = testPath.getFileSystem(hdfsConf);
+    selectStorageStrategy.setFs(fs);
+
+    final ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
+    Thread.sleep(500);
+    Set<String> expectedAvailablePath = Sets.newHashSet(remotePath1);
+    assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
+    selectStorageStrategy.sortPathByRankValue(remotePath1, testPath, System.currentTimeMillis());
+    RemoteStorageInfo remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId1");
+    assertEquals(remotePath1, remoteStorageInfo.getPath());
+    assertTrue(remoteStorageInfo.getConfItems().isEmpty());
+
+    writeRemoteStorageConf(cfgFile, remotePath3);
+    expectedAvailablePath = Sets.newHashSet(remotePath3);
+    waitForUpdate(expectedAvailablePath, applicationManager);
+    // The reason for setting the filesystem here is to trigger the execution of sortPathByRankValue
+    selectStorageStrategy.setFs(fs);
+    selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, System.currentTimeMillis());
+    remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId2");
+    assertEquals(remotePath3, remoteStorageInfo.getPath());
+
+    String confItems = "host2,k1=v1,k2=v2;host3,k3=v3";
+    final long current = System.currentTimeMillis();
+    writeRemoteStorageConf(cfgFile, remotePath2 + Constants.COMMA_SPLIT_CHAR + remotePath3, confItems);
+    expectedAvailablePath = Sets.newHashSet(remotePath2, remotePath3);
+    waitForUpdate(expectedAvailablePath, applicationManager);
+    selectStorageStrategy.setFs(fs);
+    selectStorageStrategy.sortPathByRankValue(remotePath2, testPath, current);
+    selectStorageStrategy.setFs(fs);
+    selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, current);
+    remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId3");
+    assertEquals(remotePath2, remoteStorageInfo.getPath());
+    assertEquals(2, remoteStorageInfo.getConfItems().size());
+    assertEquals("v1", remoteStorageInfo.getConfItems().get("k1"));
+    assertEquals("v2", remoteStorageInfo.getConfItems().get("k2"));
+
+    confItems = "host1,keyTest1=test1,keyTest2=test2;host2,k1=deadbeaf";
+    writeRemoteStorageConf(cfgFile, remotePath1 + Constants.COMMA_SPLIT_CHAR + remotePath2, confItems);
+    expectedAvailablePath = Sets.newHashSet(remotePath1, remotePath2);
+    waitForUpdate(expectedAvailablePath, applicationManager);
+    remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId4");
+    // one of remote storage will be chosen
+    assertTrue(
+        (remotePath1.equals(remoteStorageInfo.getPath())
+            && (remoteStorageInfo.getConfItems().size() == 2)
+            && (remoteStorageInfo.getConfItems().get("keyTest1").equals("test1")))
+            && (remoteStorageInfo.getConfItems().get("keyTest2").equals("test2"))
+            || (remotePath2.equals(remoteStorageInfo.getPath())
+            && remoteStorageInfo.getConfItems().size() == 1)
+            && remoteStorageInfo.getConfItems().get("k1").equals("deadbeaf"));
 
     clientConfManager.close();
   }

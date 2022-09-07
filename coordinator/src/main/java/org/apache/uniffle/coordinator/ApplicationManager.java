@@ -19,16 +19,12 @@ package org.apache.uniffle.coordinator;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -41,24 +37,38 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.RankValue;
 
 public class ApplicationManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ApplicationManager.class);
   private long expired;
+  private StrategyName storageStrategy;
   private Map<String, Long> appIds = Maps.newConcurrentMap();
+  private SelectStorageStrategy selectStorageStrategy;
   // store appId -> remote path to make sure all shuffle data of the same application
   // will be written to the same remote storage
-  private Map<String, RemoteStorageInfo> appIdToRemoteStorageInfo = Maps.newConcurrentMap();
+  private Map<String, RemoteStorageInfo> appIdToRemoteStorageInfo;
   // store remote path -> application count for assignment strategy
-  private Map<String, AtomicInteger> remoteStoragePathCounter = Maps.newConcurrentMap();
+  private Map<String, RankValue> remoteStoragePathRankValue;
   private Map<String, String> remoteStorageToHost = Maps.newConcurrentMap();
-  private Map<String, RemoteStorageInfo> availableRemoteStorageInfo = Maps.newHashMap();
+  private Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
   private ScheduledExecutorService scheduledExecutorService;
   // it's only for test case to check if status check has problem
   private boolean hasErrorInStatusCheck = false;
 
   public ApplicationManager(CoordinatorConf conf) {
+    storageStrategy = conf.get(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY);
+    if (StrategyName.IO_SAMPLE == storageStrategy) {
+      selectStorageStrategy = new LowestIOSampleCostSelectStorageStrategy(conf);
+    } else if (StrategyName.APP_BALANCE == storageStrategy) {
+      selectStorageStrategy = new AppBalanceSelectStorageStrategy();
+    } else {
+      throw new UnsupportedOperationException("Unsupported selected storage strategy.");
+    }
+    appIdToRemoteStorageInfo = selectStorageStrategy.getAppIdToRemoteStorageInfo();
+    remoteStoragePathRankValue = selectStorageStrategy.getRemoteStoragePathRankValue();
+    availableRemoteStorageInfo = selectStorageStrategy.getAvailableRemoteStorageInfo();
     expired = conf.getLong(CoordinatorConf.COORDINATOR_APP_EXPIRED);
     // the thread for checking application status
     scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
@@ -83,7 +93,7 @@ public class ApplicationManager {
       // add remote path if not exist
       for (String path : paths) {
         if (!availableRemoteStorageInfo.containsKey(path)) {
-          remoteStoragePathCounter.putIfAbsent(path, new AtomicInteger(0));
+          remoteStoragePathRankValue.putIfAbsent(path, new RankValue(0));
           // refreshRemoteStorage is designed without multiple thread problem
           // metrics shouldn't be added duplicated
           addRemoteStorageMetrics(path);
@@ -117,67 +127,17 @@ public class ApplicationManager {
   // the strategy of pick remote storage is according to assignment count
   // todo: better strategy with workload balance
   public RemoteStorageInfo pickRemoteStorage(String appId) {
-    if (appIdToRemoteStorageInfo.containsKey(appId)) {
-      return appIdToRemoteStorageInfo.get(appId);
-    }
-
-    // create list for sort
-    List<Map.Entry<String, AtomicInteger>> sizeList =
-        Lists.newArrayList(remoteStoragePathCounter.entrySet()).stream().filter(Objects::nonNull)
-            .sorted(Comparator.comparingInt(entry -> entry.getValue().get())).collect(Collectors.toList());
-
-    for (Map.Entry<String, AtomicInteger> entry : sizeList) {
-      String storagePath = entry.getKey();
-      if (availableRemoteStorageInfo.containsKey(storagePath)) {
-        appIdToRemoteStorageInfo.putIfAbsent(appId, availableRemoteStorageInfo.get(storagePath));
-        incRemoteStorageCounter(storagePath);
-        break;
-      }
-    }
+    selectStorageStrategy.pickRemoteStorage(appId);
     return appIdToRemoteStorageInfo.get(appId);
   }
 
   @VisibleForTesting
-  protected synchronized void incRemoteStorageCounter(String remoteStoragePath) {
-    AtomicInteger counter = remoteStoragePathCounter.get(remoteStoragePath);
-    if (counter != null) {
-      counter.incrementAndGet();
-    } else {
-      // it may be happened when assignment remote storage
-      // and refresh remote storage at the same time
-      LOG.warn("Remote storage path lost during assignment: %s doesn't exist, reset it to 1",
-          remoteStoragePath);
-      remoteStoragePathCounter.put(remoteStoragePath, new AtomicInteger(1));
-    }
-  }
-
-  @VisibleForTesting
   protected synchronized void decRemoteStorageCounter(String storagePath) {
-    if (!StringUtils.isEmpty(storagePath)) {
-      AtomicInteger atomic = remoteStoragePathCounter.get(storagePath);
-      if (atomic != null) {
-        int count = atomic.decrementAndGet();
-        if (count < 0) {
-          LOG.warn("Unexpected counter for remote storage: %s, which is %i, reset to 0",
-              storagePath, count);
-          atomic.set(0);
-        }
-      } else {
-        LOG.warn("Can't find counter for remote storage: {}", storagePath);
-        remoteStoragePathCounter.putIfAbsent(storagePath, new AtomicInteger(0));
-      }
-      if (remoteStoragePathCounter.get(storagePath).get() == 0
-          && !availableRemoteStorageInfo.containsKey(storagePath)) {
-        remoteStoragePathCounter.remove(storagePath);
-      }
-    }
+    selectStorageStrategy.decRemoteStorageCounter(storagePath);
   }
 
   private synchronized void removePathFromCounter(String storagePath) {
-    AtomicInteger atomic = remoteStoragePathCounter.get(storagePath);
-    if (atomic != null && atomic.get() == 0) {
-      remoteStoragePathCounter.remove(storagePath);
-    }
+    selectStorageStrategy.removePathFromCounter(storagePath);
   }
 
   public Set<String> getAppIds() {
@@ -185,13 +145,13 @@ public class ApplicationManager {
   }
 
   @VisibleForTesting
-  protected Map<String, RemoteStorageInfo> getAppIdToRemoteStorageInfo() {
-    return appIdToRemoteStorageInfo;
+  protected Map<String, RankValue> getRemoteStoragePathRankValue() {
+    return remoteStoragePathRankValue;
   }
 
   @VisibleForTesting
-  protected Map<String, AtomicInteger> getRemoteStoragePathCounter() {
-    return remoteStoragePathCounter;
+  public SelectStorageStrategy getSelectStorageStrategy() {
+    return selectStorageStrategy;
   }
 
   @VisibleForTesting
@@ -237,7 +197,7 @@ public class ApplicationManager {
       try {
         String storageHost = getStorageHost(remoteStoragePath);
         CoordinatorMetrics.updateDynamicGaugeForRemoteStorage(storageHost,
-            remoteStoragePathCounter.get(remoteStoragePath).get());
+            remoteStoragePathRankValue.get(remoteStoragePath).getAppNum().get());
       } catch (Exception e) {
         LOG.warn("Update remote storage metrics for {} failed ", remoteStoragePath);
       }
@@ -265,5 +225,10 @@ public class ApplicationManager {
       LOG.warn("Invalid format of remoteStoragePath to get host, {}", remoteStoragePath);
     }
     return storageHost;
+  }
+
+  public enum StrategyName {
+    APP_BALANCE,
+    IO_SAMPLE
   }
 }

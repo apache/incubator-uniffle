@@ -39,6 +39,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 
+import static org.apache.uniffle.coordinator.ApplicationManager.StrategyName.IO_SAMPLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -92,10 +93,11 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     response = coordinatorClient.fetchClientConf(request);
     assertEquals(ResponseStatusCode.INTERNAL_ERROR, response.getStatusCode());
     assertEquals(0, response.getClientConf().size());
+    shutdownServers();
   }
 
   @Test
-  public void testFetchRemoteStorage(@TempDir File tempDir) throws Exception {
+  public void testFetchRemoteStorageByApp(@TempDir File tempDir) throws Exception {
     String remotePath1 = "hdfs://path1";
     File cfgFile = File.createTempFile("tmp", ".conf", tempDir);
     String contItem = "path2,key1=test1,key2=test2";
@@ -139,6 +141,59 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     assertEquals(2, remoteStorageInfo.getConfItems().size());
     assertEquals("test1", remoteStorageInfo.getConfItems().get("key1"));
     assertEquals("test2", remoteStorageInfo.getConfItems().get("key2"));
+    shutdownServers();
+  }
+
+  @Test
+  public void testFetchRemoteStorageByIO(@TempDir File tempDir) throws Exception {
+    String remotePath1 = "hdfs://path1";
+    File cfgFile = File.createTempFile("tmp", ".conf", tempDir);
+    String contItem = "path2,key1=test1,key2=test2";
+    Map<String, String> dynamicConf = Maps.newHashMap();
+    dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), remotePath1);
+    dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_CLUSTER_CONF.key(), contItem);
+    writeRemoteStorageConf(cfgFile, dynamicConf);
+
+    CoordinatorConf coordinatorConf = getCoordinatorConf();
+    coordinatorConf.setBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
+    coordinatorConf.setString(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
+    coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 2);
+    coordinatorConf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_SCHEDULE_TIME, 500);
+    coordinatorConf.set(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY, IO_SAMPLE);
+    createCoordinatorServer(coordinatorConf);
+    startServers();
+
+    waitForUpdate(Sets.newHashSet(remotePath1), coordinators.get(0).getApplicationManager());
+    String appId = "testFetchRemoteStorageApp";
+    RssFetchRemoteStorageRequest request = new RssFetchRemoteStorageRequest(appId);
+    RssFetchRemoteStorageResponse response = coordinatorClient.fetchRemoteStorage(request);
+    RemoteStorageInfo remoteStorageInfo = response.getRemoteStorageInfo();
+    assertTrue(remoteStorageInfo.getConfItems().isEmpty());
+    assertEquals(remotePath1, remoteStorageInfo.getPath());
+
+    // update remote storage info
+    String remotePath2 = "hdfs://path2";
+    dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), remotePath2);
+    writeRemoteStorageConf(cfgFile, dynamicConf);
+    waitForUpdate(Sets.newHashSet(remotePath2), coordinators.get(0).getApplicationManager());
+    request = new RssFetchRemoteStorageRequest(appId);
+    response = coordinatorClient.fetchRemoteStorage(request);
+    // remotePath1 will be return because (appId -> remote storage path) is in cache
+    remoteStorageInfo = response.getRemoteStorageInfo();
+    assertEquals(remotePath1, remoteStorageInfo.getPath());
+    assertTrue(remoteStorageInfo.getConfItems().isEmpty());
+
+    // ensure sizeList can be updated
+    Thread.sleep(2000);
+    request = new RssFetchRemoteStorageRequest(appId + "another");
+    response = coordinatorClient.fetchRemoteStorage(request);
+    // got the remotePath2 for new appId
+    remoteStorageInfo = response.getRemoteStorageInfo();
+    assertEquals(remotePath2, remoteStorageInfo.getPath());
+    assertEquals(2, remoteStorageInfo.getConfItems().size());
+    assertEquals("test1", remoteStorageInfo.getConfItems().get("key1"));
+    assertEquals("test2", remoteStorageInfo.getConfItems().get("key2"));
+    shutdownServers();
   }
 
   private void waitForUpdate(
