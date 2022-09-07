@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package controller
 
 import (
@@ -17,7 +34,7 @@ import (
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/utils"
 )
 
-func buildTestRssObj(shuffleServerKey string) *unifflev1alpha1.RemoteShuffleService {
+func buildUpgradingRssObjWithTargetKeys(shuffleServerKey string) *unifflev1alpha1.RemoteShuffleService {
 	return &unifflev1alpha1.RemoteShuffleService{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            testRssName,
@@ -54,7 +71,8 @@ func buildTestShuffleServerPod() *corev1.Pod {
 	}
 }
 
-func buildTestExcludeNodeConfigMap(rss *unifflev1alpha1.RemoteShuffleService, shuffleServerKey string) *corev1.ConfigMap {
+func buildTestExcludeNodeConfigMap(rss *unifflev1alpha1.RemoteShuffleService,
+	shuffleServerKey string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      utils.GenerateCoordinatorName(rss),
@@ -69,7 +87,7 @@ func buildTestExcludeNodeConfigMap(rss *unifflev1alpha1.RemoteShuffleService, sh
 func TestUpdateTargetAndDeletedKeys(t *testing.T) {
 	testShuffleServerPod := buildTestShuffleServerPod()
 	shuffleServerKey := utils.BuildShuffleServerKey(testShuffleServerPod)
-	rss := buildTestRssObj(shuffleServerKey)
+	rss := buildUpgradingRssObjWithTargetKeys(shuffleServerKey)
 	cm := buildTestExcludeNodeConfigMap(rss, shuffleServerKey)
 
 	rssClient := fake.NewSimpleClientset(rss)
@@ -87,13 +105,11 @@ func TestUpdateTargetAndDeletedKeys(t *testing.T) {
 
 	for _, tt := range []struct {
 		name                 string
-		shuffleServerKey     string
 		expectedDeletedKeys  []string
 		expectedExcludeNodes string
 	}{
 		{
 			name:                 "update target and deleted keys when a shuffle server pod has been deleted",
-			shuffleServerKey:     shuffleServerKey,
 			expectedDeletedKeys:  []string{shuffleServerKey},
 			expectedExcludeNodes: "",
 		},
@@ -104,13 +120,15 @@ func TestUpdateTargetAndDeletedKeys(t *testing.T) {
 				return
 			}
 
-			curRss, err := rssClient.UniffleV1alpha1().RemoteShuffleServices(rss.Namespace).Get(context.TODO(), rss.Name, metav1.GetOptions{})
+			curRss, err := rssClient.UniffleV1alpha1().RemoteShuffleServices(rss.Namespace).Get(context.TODO(),
+				rss.Name, metav1.GetOptions{})
 			if err != nil {
 				t.Errorf("get updated rss object failed: %v", err)
 				return
 			}
 			if !stringSliceIsEqual(curRss.Status.DeletedKeys, tt.expectedDeletedKeys) {
-				t.Errorf("unexpected deleted keys: %+v, expected: %+v", curRss.Status.DeletedKeys, tt.expectedDeletedKeys)
+				t.Errorf("unexpected deleted keys: %+v, expected: %+v", curRss.Status.DeletedKeys,
+					tt.expectedDeletedKeys)
 				return
 			}
 
@@ -121,7 +139,8 @@ func TestUpdateTargetAndDeletedKeys(t *testing.T) {
 				return
 			}
 			if curCM.Data[testExcludeNodeFileKey] != tt.expectedExcludeNodes {
-				t.Errorf("unexpected deleted keys: %v, expected: %v", curCM.Data[testExcludeNodeFileKey], tt.expectedExcludeNodes)
+				t.Errorf("unexpected deleted keys: %v, expected: %v", curCM.Data[testExcludeNodeFileKey],
+					tt.expectedExcludeNodes)
 				return
 			}
 		})

@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package controller
 
 import (
@@ -158,14 +175,14 @@ func (r *rssController) processNextWorkRss() bool {
 	}
 	defer r.rssQueue.Done(rssKey)
 
-	pvcNamespace, pvcName, err := cache.SplitMetaNamespaceKey(rssKey.(string))
+	rssNamespace, rssName, err := cache.SplitMetaNamespaceKey(rssKey.(string))
 	if err != nil {
 		klog.Errorf("parsed rss key (%v) failed: %v", rssKey, err)
 		return true
 	}
 
 	var retryChecking bool
-	retryChecking, err = r.processRss(pvcNamespace, pvcName)
+	retryChecking, err = r.processRss(rssNamespace, rssName)
 	if err != nil {
 		klog.Errorf("processed rss %v failed : %v", rssKey, err)
 		r.rssQueue.AddRateLimited(rssKey)
@@ -221,7 +238,8 @@ func (r *rssController) processShuffleServer(key string) error {
 }
 
 // updateTargetAndDeletedKeys updates target and deleted keys in status of rss objects.
-func (r *rssController) updateTargetAndDeletedKeys(rss *unifflev1alpha1.RemoteShuffleService, shuffleServerKey string) error {
+func (r *rssController) updateTargetAndDeletedKeys(rss *unifflev1alpha1.RemoteShuffleService,
+	shuffleServerKey string) error {
 	deletedKeys := sets.NewString(rss.Status.DeletedKeys...)
 	if deletedKeys.Has(shuffleServerKey) {
 		klog.V(3).Infof("shuffle server (%v) has already been deleted for rss (%v)",
@@ -326,7 +344,7 @@ func (r *rssController) processRss(namespace, name string) (bool, error) {
 		return false, err
 	}
 
-	if isDeletionCandidate(rss) {
+	if rss.DeletionTimestamp != nil {
 		return r.processDeleting(rss)
 	}
 	return r.processNormal(rss)
@@ -826,20 +844,6 @@ func (r *rssController) serZeroPartition(rss *unifflev1alpha1.RemoteShuffleServi
 	newSts.Spec.UpdateStrategy.RollingUpdate.Partition = &partition
 	_, err = kubeutil.PatchStatefulSet(r.kubeClient, oldSts, newSts)
 	return err
-}
-
-// isDeletionCandidate checks if object is candidate to be deleted
-func isDeletionCandidate(rss *unifflev1alpha1.RemoteShuffleService) bool {
-	if rss.GetDeletionTimestamp() == nil {
-		return false
-	}
-	finalizers := rss.GetFinalizers()
-	for _, f := range finalizers {
-		if f == constants.RSSFinalizerName {
-			return true
-		}
-	}
-	return false
 }
 
 // buildPodCacheKey builds a key for shuffle server pod queue.
