@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.coordinator.HealthSelectStorageStrategy.RankValue;
+import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.RankValue;
 
 /**
  * AppBalanceSelectStorageStrategy will consider the number of apps allocated on each remote path is balanced.

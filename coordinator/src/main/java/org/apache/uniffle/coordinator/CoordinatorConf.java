@@ -148,7 +148,7 @@ public class CoordinatorConf extends RssBaseConf {
       .key("rss.coordinator.remote.storage.access.times")
       .intType()
       .defaultValue(3)
-      .withDescription("The Number of times to read and write HDFS files");
+      .withDescription("The number of times to read and write HDFS files");
 
   public CoordinatorConf() {
   }

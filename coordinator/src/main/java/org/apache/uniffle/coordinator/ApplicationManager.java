@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ThreadUtils;
-import org.apache.uniffle.coordinator.HealthSelectStorageStrategy.RankValue;
+import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.RankValue;
 
 public class ApplicationManager {
 
@@ -59,8 +59,8 @@ public class ApplicationManager {
 
   public ApplicationManager(CoordinatorConf conf) {
     storageStrategy = conf.get(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY);
-    if (StrategyName.HEALTH == storageStrategy) {
-      selectStorageStrategy = new HealthSelectStorageStrategy(conf);
+    if (StrategyName.IO_SAMPLE == storageStrategy) {
+      selectStorageStrategy = new LowestIOSampleCostSelectStorageStrategy(conf);
     } else if (StrategyName.APP_BALANCE == storageStrategy) {
       selectStorageStrategy = new AppBalanceSelectStorageStrategy();
     } else {
@@ -229,6 +229,6 @@ public class ApplicationManager {
 
   public enum StrategyName {
     APP_BALANCE,
-    HEALTH
+    IO_SAMPLE
   }
 }

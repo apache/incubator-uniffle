@@ -20,7 +20,7 @@ package org.apache.uniffle.coordinator;
 import java.util.Map;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.coordinator.HealthSelectStorageStrategy.RankValue;
+import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.RankValue;
 
 public interface SelectStorageStrategy {
 

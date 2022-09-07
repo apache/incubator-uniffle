@@ -46,13 +46,13 @@ import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 /**
- * HealthSelectStorageStrategy considers that when allocating apps to different remote paths,
+ * LowestIOSampleCostSelectStorageStrategy considers that when allocating apps to different remote paths,
  * remote paths that can write and read. Therefore, it may occur that all apps are written to the same cluster.
  * At the same time, if a cluster has read and write exceptions, we will automatically avoid the cluster.
  */
-public class HealthSelectStorageStrategy implements SelectStorageStrategy {
+public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStrategy {
 
-  private static final Logger LOG = LoggerFactory.getLogger(HealthSelectStorageStrategy.class);
+  private static final Logger LOG = LoggerFactory.getLogger(LowestIOSampleCostSelectStorageStrategy.class);
   /**
    * store appId -> remote path to make sure all shuffle data of the same application
    * will be written to the same remote storage
@@ -69,7 +69,7 @@ public class HealthSelectStorageStrategy implements SelectStorageStrategy {
   private final int fileSize;
   private final int readAndWriteTimes;
 
-  public HealthSelectStorageStrategy(CoordinatorConf cf) {
+  public LowestIOSampleCostSelectStorageStrategy(CoordinatorConf cf) {
     conf = new Configuration();
     fileSize = cf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_FILE_SIZE);
     readAndWriteTimes = cf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_ACCESS_TIMES);
