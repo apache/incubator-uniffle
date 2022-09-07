@@ -53,6 +53,7 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
 
 public class RssUtils {
 
@@ -226,8 +227,7 @@ public class RssUtils {
           fileOffset = -1;
         }
       } catch (BufferUnderflowException ue) {
-        LOGGER.warn("Read index data under flow", ue);
-        break;
+        throw new RssException("Read index data under flow", ue);
       }
     }
 
