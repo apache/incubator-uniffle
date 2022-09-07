@@ -134,18 +134,18 @@ public class CoordinatorConf extends RssBaseConf {
       .enumType(ApplicationManager.StrategyName.class)
       .defaultValue(APP_BALANCE)
       .withDescription("Strategy for selecting the remote path");
-  public static final ConfigOption<Long> COORDINATOR_REMOTE_STORAGE_HEALTH_SCHEDULE_TIME = ConfigOptions
-      .key("rss.coordinator.remote.storage.health.schedule.time")
+  public static final ConfigOption<Long> COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_SCHEDULE_TIME = ConfigOptions
+      .key("rss.coordinator.remote.storage.io.sample.schedule.time")
       .longType()
       .defaultValue(60 * 1000L)
       .withDescription("The time of scheduling the read and write time of the paths to obtain different HDFS");
-  public static final ConfigOption<Integer> COORDINATOR_REMOTE_STORAGE_FILE_SIZE = ConfigOptions
-      .key("rss.coordinator.remote.storage.file.size")
+  public static final ConfigOption<Integer> COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_FILE_SIZE = ConfigOptions
+      .key("rss.coordinator.remote.storage.io.sample.file.size")
       .intType()
       .defaultValue(204800 * 1000)
       .withDescription("The size of the file that the scheduled thread reads and writes");
-  public static final ConfigOption<Integer> COORDINATOR_REMOTE_STORAGE_ACCESS_TIMES = ConfigOptions
-      .key("rss.coordinator.remote.storage.access.times")
+  public static final ConfigOption<Integer> COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_ACCESS_TIMES = ConfigOptions
+      .key("rss.coordinator.remote.storage.io.sample.access.times")
       .intType()
       .defaultValue(3)
       .withDescription("The number of times to read and write HDFS files");

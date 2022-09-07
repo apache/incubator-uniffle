@@ -77,7 +77,7 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     Thread.sleep(500L);
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_APP_EXPIRED, appExpiredTime);
-    conf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_HEALTH_SCHEDULE_TIME, 5000);
+    conf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_SCHEDULE_TIME, 5000);
     conf.set(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY, IO_SAMPLE);
     applicationManager = new ApplicationManager(conf);
     selectStorageStrategy = (LowestIOSampleCostSelectStorageStrategy) applicationManager.getSelectStorageStrategy();

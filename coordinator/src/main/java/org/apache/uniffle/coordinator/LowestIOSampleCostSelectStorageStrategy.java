@@ -71,8 +71,8 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
 
   public LowestIOSampleCostSelectStorageStrategy(CoordinatorConf cf) {
     conf = new Configuration();
-    fileSize = cf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_FILE_SIZE);
-    readAndWriteTimes = cf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_ACCESS_TIMES);
+    fileSize = cf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_FILE_SIZE);
+    readAndWriteTimes = cf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_ACCESS_TIMES);
     this.appIdToRemoteStorageInfo = Maps.newConcurrentMap();
     this.remoteStoragePathRankValue = Maps.newConcurrentMap();
     this.availableRemoteStorageInfo = Maps.newHashMap();
@@ -81,7 +81,7 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
         ThreadUtils.getThreadFactory("readWriteRankScheduler-%d"));
     // should init later than the refreshRemoteStorage init
     readWriteRankScheduler.scheduleAtFixedRate(this::checkReadAndWrite, 1000,
-        cf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_HEALTH_SCHEDULE_TIME), TimeUnit.MILLISECONDS);
+        cf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_SCHEDULE_TIME), TimeUnit.MILLISECONDS);
   }
 
   public void checkReadAndWrite() {
