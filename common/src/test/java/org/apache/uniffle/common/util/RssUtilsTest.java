@@ -228,7 +228,7 @@ public class RssUtilsTest {
     partitionToServers.put(2, Lists.newArrayList(server3, server4));
     partitionToServers.put(3, Lists.newArrayList(server1, server2));
     partitionToServers.put(4, Lists.newArrayList(server3, server4));
-    Map<ShuffleServerInfo, Set<Integer>> serverToPartitions = RssUtils.reversePartitionToServers(partitionToServers);
+    Map<ShuffleServerInfo, Set<Integer>> serverToPartitions = RssUtils.generateServerToPartitions(partitionToServers);
     assertEquals(4, serverToPartitions.size());
     assertEquals(serverToPartitions.get(server1), Sets.newHashSet(1, 3));
     assertEquals(serverToPartitions.get(server2), Sets.newHashSet(1, 3));

@@ -27,7 +27,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.spark.SparkConf;
+import org.apache.spark.TaskContext;
+import org.apache.spark.shuffle.RssShuffleHandle;
+import org.apache.spark.shuffle.RssShuffleManager;
 import org.apache.spark.shuffle.RssSparkConfig;
+import org.apache.spark.shuffle.ShuffleHandle;
+import org.apache.spark.shuffle.ShuffleReadMetricsReporter;
+import org.apache.spark.shuffle.ShuffleReader;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -37,7 +43,9 @@ import org.apache.spark.sql.functions;
 import org.apache.spark.sql.internal.SQLConf;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.MockedGrpcServer;
 import org.apache.uniffle.server.MockedShuffleServerGrpcService;
@@ -47,7 +55,6 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 
 public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
 
@@ -125,7 +132,8 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
     sparkConf.set(RssSparkConfig.RSS_DATA_REPLICA_WRITE.key(), String.valueOf(replicateWrite));
     sparkConf.set(RssSparkConfig.RSS_DATA_REPLICA_READ.key(), String.valueOf(replicateRead));
 
-    sparkConf.set("spark.shuffle.manager", "org.apache.uniffle.test.MockRssShuffleManager");
+    sparkConf.set("spark.shuffle.manager",
+        "org.apache.uniffle.test.GetShuffleReportForMultiPartTest$MockRssShuffleManager");
   }
 
   @Test
@@ -186,5 +194,41 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
       expectRequestNum -= requestNum;
     }
     assertEquals(0, expectRequestNum);
+  }
+
+  public static class MockRssShuffleManager extends RssShuffleManager {
+
+    // shuffleId -> partShouldRequestNum
+    Map<Integer, AtomicInteger> shuffleToPartShouldRequestNum = Maps.newConcurrentMap();
+
+    public MockRssShuffleManager(SparkConf conf, boolean isDriver) {
+      super(conf, isDriver);
+    }
+
+    @Override
+    public <K, C> ShuffleReader<K, C> getReaderImpl(
+        ShuffleHandle handle,
+        int startMapIndex,
+        int endMapIndex,
+        int startPartition,
+        int endPartition,
+        TaskContext context,
+        ShuffleReadMetricsReporter metrics,
+        Roaring64NavigableMap taskIdBitmap) {
+      int shuffleId = handle.shuffleId();
+      RssShuffleHandle rssShuffleHandle = (RssShuffleHandle) handle;
+      Map<Integer, List<ShuffleServerInfo>> allPartitionToServers = rssShuffleHandle.getPartitionToServers();
+      int partitionNum = (int) allPartitionToServers.entrySet().stream()
+                                   .filter(x -> x.getKey() >= startPartition && x.getKey() <= endPartition).count();
+      AtomicInteger partShouldRequestNum = shuffleToPartShouldRequestNum.computeIfAbsent(shuffleId,
+          x -> new AtomicInteger(0));
+      partShouldRequestNum.addAndGet(partitionNum);
+      return super.getReaderImpl(handle, startMapIndex, endMapIndex, startPartition, endPartition,
+          context, metrics, taskIdBitmap);
+    }
+
+    public Map<Integer, AtomicInteger> getShuffleIdToPartitionNum() {
+      return shuffleToPartShouldRequestNum;
+    }
   }
 }

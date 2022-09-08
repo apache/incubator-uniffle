@@ -409,7 +409,7 @@ public class RssShuffleManager implements ShuffleManager {
     Map<Integer, List<ShuffleServerInfo>> requirePartitionToServers = allPartitionToServers.entrySet()
         .stream().filter(x -> x.getKey() >= startPartition && x.getKey() <= endPartition)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    Map<ShuffleServerInfo, Set<Integer>> serverToPartitions = RssUtils.reversePartitionToServers(
+    Map<ShuffleServerInfo, Set<Integer>> serverToPartitions = RssUtils.generateServerToPartitions(
         requirePartitionToServers);
     long start = System.currentTimeMillis();
     Roaring64NavigableMap blockIdBitmap = shuffleWriteClient.getShuffleResultForMultiPart(

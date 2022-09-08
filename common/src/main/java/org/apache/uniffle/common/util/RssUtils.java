@@ -316,7 +316,7 @@ public class RssUtils {
     return result;
   }
 
-  public static Map<ShuffleServerInfo, Set<Integer>> reversePartitionToServers(
+  public static Map<ShuffleServerInfo, Set<Integer>> generateServerToPartitions(
       Map<Integer, List<ShuffleServerInfo>> partitionToServers) {
     Map<ShuffleServerInfo, Set<Integer>> serverToPartitions = Maps.newHashMap();
     for (Map.Entry<Integer, List<ShuffleServerInfo>> entry : partitionToServers.entrySet()) {
