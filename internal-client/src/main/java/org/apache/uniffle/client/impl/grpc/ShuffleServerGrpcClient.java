@@ -69,6 +69,7 @@ import org.apache.uniffle.proto.RssProtos.GetLocalShuffleIndexResponse;
 import org.apache.uniffle.proto.RssProtos.GetMemoryShuffleDataRequest;
 import org.apache.uniffle.proto.RssProtos.GetMemoryShuffleDataResponse;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultForMultiPartRequest;
+import org.apache.uniffle.proto.RssProtos.GetShuffleResultForMultiPartResponse;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultRequest;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultResponse;
 import org.apache.uniffle.proto.RssProtos.PartitionToBlockIds;
@@ -459,7 +460,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setShuffleId(request.getShuffleId())
         .addAllPartitions(request.getPartitions())
         .build();
-    GetShuffleResultResponse rpcResponse = getBlockingStub().getShuffleResultForMultiPart(rpcRequest);
+    GetShuffleResultForMultiPartResponse rpcResponse = getBlockingStub().getShuffleResultForMultiPart(rpcRequest);
     StatusCode statusCode = rpcResponse.getStatus();
 
     RssGetShuffleResultResponse response;

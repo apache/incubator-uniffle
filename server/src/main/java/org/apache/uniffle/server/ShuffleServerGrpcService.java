@@ -52,6 +52,7 @@ import org.apache.uniffle.proto.RssProtos.GetLocalShuffleIndexResponse;
 import org.apache.uniffle.proto.RssProtos.GetMemoryShuffleDataRequest;
 import org.apache.uniffle.proto.RssProtos.GetMemoryShuffleDataResponse;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultForMultiPartRequest;
+import org.apache.uniffle.proto.RssProtos.GetShuffleResultForMultiPartResponse;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultRequest;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultResponse;
 import org.apache.uniffle.proto.RssProtos.PartitionToBlockIds;
@@ -393,14 +394,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
   @Override
   public void getShuffleResultForMultiPart(GetShuffleResultForMultiPartRequest request,
-      StreamObserver<GetShuffleResultResponse> responseObserver) {
+      StreamObserver<GetShuffleResultForMultiPartResponse> responseObserver) {
     String appId = request.getAppId();
     int shuffleId = request.getShuffleId();
     List<Integer> partitionsList = request.getPartitionsList();
 
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
-    GetShuffleResultResponse reply;
+    GetShuffleResultForMultiPartResponse reply;
     byte[] serializedBlockIds = null;
     String requestInfo = "appId[" + appId + "], shuffleId[" + shuffleId + "], partitions" + partitionsList;
     ByteString serializedBlockIdsBytes = ByteString.EMPTY;
@@ -421,7 +422,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       LOG.error("Error happened when get shuffle result for {}", requestInfo, e);
     }
 
-    reply = GetShuffleResultResponse.newBuilder()
+    reply = GetShuffleResultForMultiPartResponse.newBuilder()
         .setStatus(valueOf(status))
         .setRetMsg(msg)
         .setSerializedBitmap(serializedBlockIdsBytes)

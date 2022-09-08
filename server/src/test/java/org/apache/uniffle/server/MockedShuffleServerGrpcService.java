@@ -90,7 +90,7 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
 
   @Override
   public void getShuffleResultForMultiPart(RssProtos.GetShuffleResultForMultiPartRequest request,
-      StreamObserver<RssProtos.GetShuffleResultResponse> responseObserver) {
+      StreamObserver<RssProtos.GetShuffleResultForMultiPartResponse> responseObserver) {
     if (mockedTimeout > 0) {
       LOG.info("Add a mocked timeout on getShuffleResult");
       Uninterruptibles.sleepUninterruptibly(mockedTimeout, TimeUnit.MILLISECONDS);
