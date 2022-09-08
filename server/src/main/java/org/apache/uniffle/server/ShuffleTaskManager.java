@@ -18,6 +18,7 @@
 package org.apache.uniffle.server;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -263,52 +264,56 @@ public class ShuffleTaskManager {
     return requireId;
   }
 
-  public byte[] getFinishedBlockIds(
-      String appId, Integer shuffleId, Integer partitionId) throws IOException {
+  public byte[] getFinishedBlockIds(String appId, Integer shuffleId, Set<Integer> partitions) throws IOException {
     refreshAppId(appId);
-    Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId));
-    // update shuffle's timestamp that was recently read.
-    storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
-
+    for (int partitionId : partitions) {
+      Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId));
+      // update shuffle's timestamp that was recently read.
+      storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
+    }
     Map<Integer, Roaring64NavigableMap[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
     if (shuffleIdToPartitions == null) {
       return null;
     }
+
     Roaring64NavigableMap[] blockIds = shuffleIdToPartitions.get(shuffleId);
     if (blockIds == null) {
       return new byte[]{};
     }
-    Roaring64NavigableMap bitmap = blockIds[partitionId % blockIds.length];
-    if (bitmap == null) {
-      return new byte[]{};
-    }
-
-    if (partitionId > Constants.MAX_PARTITION_ID) {
-      throw new RuntimeException("Get invalid partitionId[" + partitionId
-          + "] which greater than " + Constants.MAX_PARTITION_ID);
-    }
-
-    return RssUtils.serializeBitMap(getBlockIdsByPartitionId(partitionId, bitmap));
-  }
-
-  // partitionId is passed as long to calculate minValue/maxValue
-  protected Roaring64NavigableMap getBlockIdsByPartitionId(long partitionId, Roaring64NavigableMap bitmap) {
-    Roaring64NavigableMap result = Roaring64NavigableMap.bitmapOf();
-    LongIterator iter = bitmap.getLongIterator();
-    long minValue = partitionId << Constants.TASK_ATTEMPT_ID_MAX_LENGTH;
-    long maxValue = Long.MAX_VALUE;
-    if (partitionId < Constants.MAX_PARTITION_ID) {
-      maxValue = (partitionId + 1) << (Constants.TASK_ATTEMPT_ID_MAX_LENGTH);
-    }
-    long mask = (1L << (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH)) - 1;
-    while (iter.hasNext()) {
-      long blockId = iter.next();
-      long partitionAndTask = blockId & mask;
-      if (partitionAndTask >= minValue && partitionAndTask < maxValue) {
-        result.addLong(blockId);
+    Map<Integer, Set<Integer>> bitmapIndexToPartitions = Maps.newHashMap();
+    for (int partitionId : partitions) {
+      int bitmapIndex = partitionId % blockIds.length;
+      if (bitmapIndexToPartitions.containsKey(bitmapIndex)) {
+        bitmapIndexToPartitions.get(bitmapIndex).add(partitionId);
+      } else {
+        HashSet<Integer> newHashSet = Sets.newHashSet(partitionId);
+        bitmapIndexToPartitions.put(bitmapIndex, newHashSet);
       }
     }
-    return result;
+
+    Roaring64NavigableMap res = Roaring64NavigableMap.bitmapOf();
+    for (Map.Entry<Integer, Set<Integer>> entry : bitmapIndexToPartitions.entrySet()) {
+      Set<Integer> requestPartitions = entry.getValue();
+      Roaring64NavigableMap bitmap = blockIds[entry.getKey()];
+      getBlockIdsByPartitionId(requestPartitions, bitmap, res);
+    }
+    return RssUtils.serializeBitMap(res);
+  }
+
+
+  // filter the specific partition blockId in the bitmap to the resultBitmap
+  protected Roaring64NavigableMap getBlockIdsByPartitionId(Set<Integer> requestPartitions,
+      Roaring64NavigableMap bitmap, Roaring64NavigableMap resultBitmap) {
+    LongIterator iter = bitmap.getLongIterator();
+    long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;
+    while (iter.hasNext()) {
+      long blockId = iter.next();
+      int partitionId = Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask);
+      if (requestPartitions.contains(partitionId)) {
+        resultBitmap.addLong(blockId);
+      }
+    }
+    return resultBitmap;
   }
 
   public ShuffleDataResult getInMemoryShuffleData(

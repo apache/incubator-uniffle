@@ -48,6 +48,7 @@ import org.apache.uniffle.client.request.RssFetchClientConfRequest;
 import org.apache.uniffle.client.request.RssFetchRemoteStorageRequest;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssGetShuffleAssignmentsRequest;
+import org.apache.uniffle.client.request.RssGetShuffleResultForMultiPartRequest;
 import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
@@ -491,6 +492,46 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     if (!isSuccessful) {
       throw new RssException("Get shuffle result is failed for appId["
           + appId + "], shuffleId[" + shuffleId + "]");
+    }
+    return blockIdBitmap;
+  }
+
+  @Override
+  public Roaring64NavigableMap getShuffleResultForMultiPart(String clientType,
+      Map<ShuffleServerInfo, Set<Integer>> serverToPartitions, String appId, int shuffleId) {
+    Map<Integer, Integer> partitionReadSuccess = Maps.newHashMap();
+    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    for (Map.Entry<ShuffleServerInfo, Set<Integer>> entry : serverToPartitions.entrySet()) {
+      ShuffleServerInfo shuffleServerInfo = entry.getKey();
+      Set<Integer> requestPartitions = Sets.newHashSet();
+      for (Integer partitionId : entry.getValue()) {
+        partitionReadSuccess.putIfAbsent(partitionId, 0);
+        if (partitionReadSuccess.get(partitionId) < replicaRead) {
+          requestPartitions.add(partitionId);
+        }
+      }
+      RssGetShuffleResultForMultiPartRequest request = new RssGetShuffleResultForMultiPartRequest(
+          appId, shuffleId, requestPartitions);
+      try {
+        RssGetShuffleResultResponse response =
+            getShuffleServerClient(shuffleServerInfo).getShuffleResultForMultiPart(request);
+        if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+          // merge into blockIds from multiple servers.
+          Roaring64NavigableMap blockIdBitmapOfServer = response.getBlockIdBitmap();
+          blockIdBitmap.or(blockIdBitmapOfServer);
+          for (Integer partitionId : requestPartitions) {
+            Integer oldVal = partitionReadSuccess.get(partitionId);
+            partitionReadSuccess.put(partitionId, oldVal + 1);
+          }
+        }
+      } catch (Exception e) {
+        LOG.warn("Get shuffle result is failed from " + shuffleServerInfo + " for appId[" + appId
+            + "], shuffleId[" + shuffleId + "], requestPartitions" + requestPartitions);
+      }
+    }
+    boolean isSuccessful = partitionReadSuccess.entrySet().stream().allMatch(x -> x.getValue() >= replicaRead);
+    if (!isSuccessful) {
+      throw new RssException("Get shuffle result is failed for appId[" + appId + "], shuffleId[" + shuffleId + "]");
     }
     return blockIdBitmap;
   }

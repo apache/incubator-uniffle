@@ -22,6 +22,7 @@ import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssGetInMemoryShuffleDataRequest;
 import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
 import org.apache.uniffle.client.request.RssGetShuffleIndexRequest;
+import org.apache.uniffle.client.request.RssGetShuffleResultForMultiPartRequest;
 import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
@@ -53,6 +54,8 @@ public interface ShuffleServerClient {
   RssReportShuffleResultResponse reportShuffleResult(RssReportShuffleResultRequest request);
 
   RssGetShuffleResultResponse getShuffleResult(RssGetShuffleResultRequest request);
+
+  RssGetShuffleResultResponse getShuffleResultForMultiPart(RssGetShuffleResultForMultiPartRequest request);
 
   RssGetShuffleIndexResponse getShuffleIndex(RssGetShuffleIndexRequest request);
 
