@@ -63,6 +63,7 @@ public class StorageCheckerTest {
     assertTrue(checker.checkIsHealthy());
     assertEquals(3000, ShuffleServerMetrics.gaugeLocalStorageTotalSpace.get());
     assertEquals(600, ShuffleServerMetrics.gaugeLocalStorageUsedSpace.get());
+    assertEquals(0.2, ShuffleServerMetrics.gaugeLocalStorageUsedSpaceRatio.get());
     assertEquals(3, ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.get());
     assertEquals(0, ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.get());
 

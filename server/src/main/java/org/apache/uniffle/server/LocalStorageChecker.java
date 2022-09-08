@@ -66,8 +66,8 @@ public class LocalStorageChecker extends Checker {
   @Override
   public boolean checkIsHealthy() {
     int num = 0;
-    long totalSpace = 0L;
-    long usedSpace = 0L;
+    Long totalSpace = 0L;
+    Long usedSpace = 0L;
     int corruptedDirs = 0;
 
     for (StorageInfo storageInfo : storageInfos) {
@@ -89,6 +89,7 @@ public class LocalStorageChecker extends Checker {
     ShuffleServerMetrics.gaugeLocalStorageUsedSpace.set(usedSpace);
     ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.set(storageInfos.size());
     ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.set(corruptedDirs);
+    ShuffleServerMetrics.gaugeLocalStorageUsedSpaceRatio.set(usedSpace.doubleValue() / totalSpace.doubleValue());
 
     if (storageInfos.isEmpty()) {
       if (isHealthy) {

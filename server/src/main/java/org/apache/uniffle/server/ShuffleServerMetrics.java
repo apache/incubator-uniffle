@@ -57,6 +57,7 @@ public class ShuffleServerMetrics {
   private static final String LOCAL_STORAGE_CORRUPTED_DIRS_NUM = "local_storage_corrupted_dirs_num";
   private static final String LOCAL_STORAGE_TOTAL_SPACE = "local_storage_total_space";
   private static final String LOCAL_STORAGE_USED_SPACE = "local_storage_used_space";
+  private static final String LOCAL_STORAGE_USED_SPACE_RATIO = "local_storage_used_space_ratio";
 
   private static final String IS_HEALTHY = "is_healthy";
   private static final String REGISTERED_SHUFFLE = "registered_shuffle";
@@ -111,6 +112,7 @@ public class ShuffleServerMetrics {
   public static Gauge gaugeLocalStorageCorruptedDirsNum;
   public static Gauge gaugeLocalStorageTotalSpace;
   public static Gauge gaugeLocalStorageUsedSpace;
+  public static Gauge gaugeLocalStorageUsedSpaceRatio;
 
   public static Gauge gaugeIsHealthy;
   public static Gauge gaugeRegisteredShuffle;
@@ -255,6 +257,7 @@ public class ShuffleServerMetrics {
     gaugeLocalStorageCorruptedDirsNum = metricsManager.addGauge(LOCAL_STORAGE_CORRUPTED_DIRS_NUM);
     gaugeLocalStorageTotalSpace = metricsManager.addGauge(LOCAL_STORAGE_TOTAL_SPACE);
     gaugeLocalStorageUsedSpace = metricsManager.addGauge(LOCAL_STORAGE_USED_SPACE);
+    gaugeLocalStorageUsedSpaceRatio = metricsManager.addGauge(LOCAL_STORAGE_USED_SPACE_RATIO);
 
     gaugeIsHealthy = metricsManager.addGauge(IS_HEALTHY);
     gaugeRegisteredShuffle = metricsManager.addGauge(REGISTERED_SHUFFLE);
