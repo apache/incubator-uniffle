@@ -295,25 +295,25 @@ public class ShuffleTaskManager {
     for (Map.Entry<Integer, Set<Integer>> entry : bitmapIndexToPartitions.entrySet()) {
       Set<Integer> requestPartitions = entry.getValue();
       Roaring64NavigableMap bitmap = blockIds[entry.getKey()];
-      res.or(getBlockIdsByPartitionId(requestPartitions, bitmap));
+      getBlockIdsByPartitionId(requestPartitions, bitmap, res);
     }
     return RssUtils.serializeBitMap(res);
   }
 
-  // partitionId is passed as long to calculate minValue/maxValue
+
+  // filter the specific partition blockId in the bitmap to the resultBitmap
   protected Roaring64NavigableMap getBlockIdsByPartitionId(Set<Integer> requestPartitions,
-      Roaring64NavigableMap bitmap) {
-    Roaring64NavigableMap result = Roaring64NavigableMap.bitmapOf();
+      Roaring64NavigableMap bitmap, Roaring64NavigableMap resultBitmap) {
     LongIterator iter = bitmap.getLongIterator();
     long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;
     while (iter.hasNext()) {
       long blockId = iter.next();
       int partitionId = Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask);
       if (requestPartitions.contains(partitionId)) {
-        result.addLong(blockId);
+        resultBitmap.addLong(blockId);
       }
     }
-    return result;
+    return resultBitmap;
   }
 
   public ShuffleDataResult getInMemoryShuffleData(

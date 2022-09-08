@@ -348,18 +348,19 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
       }
     }
     Roaring64NavigableMap resultBlockIds = shuffleTaskManager.getBlockIdsByPartitionId(
-        Sets.newHashSet(expectedPartitionId), bitmapBlockIds);
+        Sets.newHashSet(expectedPartitionId), bitmapBlockIds, Roaring64NavigableMap.bitmapOf());
     assertEquals(expectedBlockIds, resultBlockIds);
 
     bitmapBlockIds.addLong(getBlockId(0, 0, 0));
-    resultBlockIds = shuffleTaskManager.getBlockIdsByPartitionId(Sets.newHashSet(0), bitmapBlockIds);
+    resultBlockIds = shuffleTaskManager.getBlockIdsByPartitionId(Sets.newHashSet(0), bitmapBlockIds,
+        Roaring64NavigableMap.bitmapOf());
     assertEquals(Roaring64NavigableMap.bitmapOf(0L), resultBlockIds);
 
     long expectedBlockId = getBlockId(
         Constants.MAX_PARTITION_ID, Constants.MAX_TASK_ATTEMPT_ID, Constants.MAX_SEQUENCE_NO);
     bitmapBlockIds.addLong(expectedBlockId);
     resultBlockIds = shuffleTaskManager.getBlockIdsByPartitionId(Sets.newHashSet(Math.toIntExact(
-        Constants.MAX_PARTITION_ID)), bitmapBlockIds);
+        Constants.MAX_PARTITION_ID)), bitmapBlockIds, Roaring64NavigableMap.bitmapOf());
     assertEquals(Roaring64NavigableMap.bitmapOf(expectedBlockId), resultBlockIds);
   }
 
@@ -394,9 +395,11 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     }
 
     Roaring64NavigableMap resultBlockIds =
-        shuffleTaskManager.getBlockIdsByPartitionId(requestPartitions, bitmapBlockIds);
+        shuffleTaskManager.getBlockIdsByPartitionId(requestPartitions, bitmapBlockIds,
+            Roaring64NavigableMap.bitmapOf());
     assertEquals(expectedBlockIds, resultBlockIds);
-    assertEquals(bitmapBlockIds, shuffleTaskManager.getBlockIdsByPartitionId(allPartitions, bitmapBlockIds));
+    assertEquals(bitmapBlockIds, shuffleTaskManager.getBlockIdsByPartitionId(allPartitions, bitmapBlockIds,
+        Roaring64NavigableMap.bitmapOf()));
   }
 
   @Test
