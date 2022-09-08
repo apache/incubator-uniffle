@@ -133,7 +133,7 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
     sparkConf.set(RssSparkConfig.RSS_DATA_REPLICA_READ.key(), String.valueOf(replicateRead));
 
     sparkConf.set("spark.shuffle.manager",
-        "org.apache.uniffle.test.GetShuffleReportForMultiPartTest$MockRssShuffleManager");
+        "org.apache.uniffle.test.GetShuffleReportForMultiPartTest$RssShuffleManagerWrapper");
   }
 
   @Test
