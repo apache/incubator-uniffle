@@ -218,7 +218,7 @@ public class RssUtilsTest {
   }
 
   @Test
-  public void testReversePartitionToServers() {
+  public void testGenerateServerToPartitions() {
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
     ShuffleServerInfo server1 = new ShuffleServerInfo("server1", "0.0.0.1", 100);
     ShuffleServerInfo server2 = new ShuffleServerInfo("server2", "0.0.0.2", 200);

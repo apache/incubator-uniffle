@@ -176,7 +176,7 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
     }
     SparkConf conf = spark.sparkContext().conf();
     if (!conf.get("spark.shuffle.manager", "").isEmpty()) {
-      MockRssShuffleManager mockRssShuffleManager = (MockRssShuffleManager) spark.sparkContext().env().shuffleManager();
+      RssShuffleManagerWrapper mockRssShuffleManager = (RssShuffleManagerWrapper) spark.sparkContext().env().shuffleManager();
       int expectRequestNum = mockRssShuffleManager.getShuffleIdToPartitionNum().values().stream()
           .mapToInt(x -> x.get()).sum();
       // Validate getShuffleResultForMultiPart is correct before return result
@@ -196,12 +196,12 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
     assertEquals(0, expectRequestNum);
   }
 
-  public static class MockRssShuffleManager extends RssShuffleManager {
+  public static class RssShuffleManagerWrapper extends RssShuffleManager {
 
     // shuffleId -> partShouldRequestNum
     Map<Integer, AtomicInteger> shuffleToPartShouldRequestNum = Maps.newConcurrentMap();
 
-    public MockRssShuffleManager(SparkConf conf, boolean isDriver) {
+    public RssShuffleManagerWrapper(SparkConf conf, boolean isDriver) {
       super(conf, isDriver);
     }
 
