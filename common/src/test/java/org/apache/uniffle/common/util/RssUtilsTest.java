@@ -211,7 +211,7 @@ public class RssUtilsTest {
     shuffleBitmap.or(partition2Bitmap);
     assertEquals(8, shuffleBitmap.getLongCardinality());
     Map<Integer, Roaring64NavigableMap> toPartitionBitmap =
-        RssUtils.shuffleBitmapToPartitionBitmap(shuffleBitmap, 0, 1);
+        RssUtils.shuffleBitmapToPartitionBitmap(shuffleBitmap, 0, 2);
     assertEquals(2, toPartitionBitmap.size());
     assertEquals(partition1Bitmap, toPartitionBitmap.get(0));
     assertEquals(partition2Bitmap, toPartitionBitmap.get(1));
