@@ -156,7 +156,14 @@ public class RssUtilsTest {
     incompleteByteBuffer.putLong(1L);
     incompleteByteBuffer.putInt(2);
     data = incompleteByteBuffer.array();
-    assertTrue(RssUtils.transIndexDataToSegments(new ShuffleIndexResult(data), readBufferSize).isEmpty());
+    // It should throw exception
+    try {
+      RssUtils.transIndexDataToSegments(new ShuffleIndexResult(data), readBufferSize);
+      fail();
+    } catch (Exception e) {
+      // ignore
+      assertTrue(e.getMessage().contains("Read index data under flow"));
+    }
   }
 
   @Test
