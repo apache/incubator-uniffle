@@ -22,17 +22,30 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StorageCheckerTest {
 
   private int callTimes = 0;
+
+  @BeforeAll
+  public static void setup() {
+    ShuffleServerMetrics.register();
+  }
+
+  @AfterAll
+  public static void clear() {
+    ShuffleServerMetrics.clear();
+  }
 
   @Test
   public void checkTest() throws Exception {
@@ -48,22 +61,42 @@ public class StorageCheckerTest {
     LocalStorageChecker checker = new MockStorageChecker(conf, storages);
 
     assertTrue(checker.checkIsHealthy());
+    assertEquals(3000, ShuffleServerMetrics.gaugeLocalStorageTotalSpace.get());
+    assertEquals(600, ShuffleServerMetrics.gaugeLocalStorageUsedSpace.get());
+    assertEquals(3, ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.get());
+    assertEquals(0, ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.get());
 
     callTimes++;
     assertTrue(checker.checkIsHealthy());
+    assertEquals(3000, ShuffleServerMetrics.gaugeLocalStorageTotalSpace.get());
+    assertEquals(1400, ShuffleServerMetrics.gaugeLocalStorageUsedSpace.get());
+    assertEquals(3, ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.get());
+    assertEquals(0, ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.get());
 
     callTimes++;
     assertFalse(checker.checkIsHealthy());
+    assertEquals(3000, ShuffleServerMetrics.gaugeLocalStorageTotalSpace.get());
+    assertEquals(2100, ShuffleServerMetrics.gaugeLocalStorageUsedSpace.get());
+    assertEquals(3, ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.get());
+    assertEquals(0, ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.get());
 
     callTimes++;
     assertTrue(checker.checkIsHealthy());
     conf.set(ShuffleServerConf.HEALTH_MIN_STORAGE_PERCENTAGE, 80.0);
     checker = new MockStorageChecker(conf, storages);
     assertFalse(checker.checkIsHealthy());
+    assertEquals(3000, ShuffleServerMetrics.gaugeLocalStorageTotalSpace.get());
+    assertEquals(1600, ShuffleServerMetrics.gaugeLocalStorageUsedSpace.get());
+    assertEquals(3, ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.get());
+    assertEquals(0, ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.get());
 
     callTimes++;
     checker.checkIsHealthy();
     assertTrue(checker.checkIsHealthy());
+    assertEquals(3000, ShuffleServerMetrics.gaugeLocalStorageTotalSpace.get());
+    assertEquals(250, ShuffleServerMetrics.gaugeLocalStorageUsedSpace.get());
+    assertEquals(3, ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.get());
+    assertEquals(0, ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.get());
   }
 
   private class MockStorageChecker extends LocalStorageChecker {
