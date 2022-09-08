@@ -298,7 +298,7 @@ public class RssUtils {
     return hostName.replaceAll("[\\.-]", "_");
   }
 
-  public static Map<Integer, Roaring64NavigableMap> shuffleBitmapToPartitionBitmap(
+  public static Map<Integer, Roaring64NavigableMap> generatePartitionToBitmap(
       Roaring64NavigableMap shuffleBitmap, int startPartition, int endPartition) {
     Map<Integer, Roaring64NavigableMap> result = Maps.newHashMap();
     for (int partitionId = startPartition; partitionId < endPartition; partitionId++) {

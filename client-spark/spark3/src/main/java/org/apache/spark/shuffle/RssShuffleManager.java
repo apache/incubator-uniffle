@@ -444,7 +444,7 @@ public class RssShuffleManager implements ShuffleManager {
         storageType,
         (int) readBufferSize,
         partitionNum,
-        RssUtils.shuffleBitmapToPartitionBitmap(blockIdBitmap, startPartition, endPartition),
+        RssUtils.generatePartitionToBitmap(blockIdBitmap, startPartition, endPartition),
         taskIdBitmap,
         readMetrics);
   }
