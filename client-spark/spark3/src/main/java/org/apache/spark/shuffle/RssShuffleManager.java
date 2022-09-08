@@ -407,7 +407,7 @@ public class RssShuffleManager implements ShuffleManager {
     int shuffleId = rssShuffleHandle.getShuffleId();
     Map<Integer, List<ShuffleServerInfo>> allPartitionToServers = rssShuffleHandle.getPartitionToServers();
     Map<Integer, List<ShuffleServerInfo>> requirePartitionToServers = allPartitionToServers.entrySet()
-        .stream().filter(x -> x.getKey() >= startPartition && x.getKey() <= endPartition)
+        .stream().filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     Map<ShuffleServerInfo, Set<Integer>> serverToPartitions = RssUtils.generateServerToPartitions(
         requirePartitionToServers);

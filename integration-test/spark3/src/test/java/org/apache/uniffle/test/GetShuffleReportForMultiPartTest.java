@@ -220,7 +220,7 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
       RssShuffleHandle rssShuffleHandle = (RssShuffleHandle) handle;
       Map<Integer, List<ShuffleServerInfo>> allPartitionToServers = rssShuffleHandle.getPartitionToServers();
       int partitionNum = (int) allPartitionToServers.entrySet().stream()
-                                   .filter(x -> x.getKey() >= startPartition && x.getKey() <= endPartition).count();
+                                   .filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition).count();
       AtomicInteger partShouldRequestNum = shuffleToPartShouldRequestNum.computeIfAbsent(shuffleId,
           x -> new AtomicInteger(0));
       partShouldRequestNum.addAndGet(partitionNum);
