@@ -68,8 +68,8 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker {
     if (availableServerNumThreshold == -1) {
       String requiredNodesNumRaw = accessInfo.getExtraProperties().get(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM);
       int requiredNodesNum = defaultRequiredShuffleServerNumber;
-      if (StringUtils.isNotEmpty(requiredNodesNumRaw) && Integer.valueOf(requiredNodesNumRaw) > 0) {
-        requiredNodesNum = Integer.valueOf(requiredNodesNumRaw);
+      if (StringUtils.isNotEmpty(requiredNodesNumRaw) && Integer.parseInt(requiredNodesNumRaw) > 0) {
+        requiredNodesNum = Integer.parseInt(requiredNodesNumRaw);
       }
       if (size >= requiredNodesNum) {
         return new AccessCheckResult(true, Constants.COMMON_SUCCESS_MESSAGE);
