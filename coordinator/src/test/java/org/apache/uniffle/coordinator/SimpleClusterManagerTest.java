@@ -162,7 +162,7 @@ public class SimpleClusterManagerTest {
     });
     t.start();
 
-    Thread.sleep(10);
+    Thread.sleep(100);
     List<ServerNode> serverNodes = clusterManager.getServerList(testTags);
     assertEquals(2, serverNodes.size());
     Set<String> expectedIds = Sets.newHashSet("sn0", "sn1");
