@@ -139,8 +139,12 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
     int indexNum = 0;
     int len = 0;
     try (LocalFileReader reader = createFileReader(indexFileName)) {
-      indexNum = (int)  (new File(indexFileName).length() / FileBasedShuffleSegment.SEGMENT_SIZE);
+      long fileSize = new File(indexFileName).length();
+      indexNum = (int)  (fileSize / FileBasedShuffleSegment.SEGMENT_SIZE);
       len = indexNum * FileBasedShuffleSegment.SEGMENT_SIZE;
+      if (fileSize != len) {
+        LOG.warn("Maybe the index file: {} is being written due to the shuffle-buffer flushing.", indexFileName);
+      }
       byte[] indexData = reader.read(0, len);
       return new ShuffleIndexResult(indexData);
     } catch (Exception e) {

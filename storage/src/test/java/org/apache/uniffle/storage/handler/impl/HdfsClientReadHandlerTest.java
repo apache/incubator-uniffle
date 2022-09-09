@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -30,7 +31,10 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.storage.HdfsTestBase;
+import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
+import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 import static org.apache.uniffle.storage.HdfsShuffleHandlerTestBase.calcExpectedSegmentNum;
 import static org.apache.uniffle.storage.HdfsShuffleHandlerTestBase.checkData;
@@ -57,12 +61,12 @@ public class HdfsClientReadHandlerTest extends HdfsTestBase {
 
       Map<Long, byte[]> expectedData = Maps.newHashMap();
       Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
-      Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
 
       int readBufferSize = 13;
       int total = 0;
       int totalBlockNum = 0;
       int expectTotalBlockNum = 0;
+
       for (int i = 0; i < 5; i++) {
         writeHandler.setFailTimes(i);
         int num = new Random().nextInt(17);
@@ -70,6 +74,27 @@ public class HdfsClientReadHandlerTest extends HdfsTestBase {
         total += calcExpectedSegmentNum(num, 3, readBufferSize);
         expectTotalBlockNum += num;
         expectedData.forEach((id, block) -> expectBlockIds.addLong(id));
+      }
+
+      /**
+       * This part is to check the fault tolerance of reading HDFS incomplete index file
+       */
+      String indexFileName = ShuffleStorageUtils.generateIndexFileName("test_0");
+      HdfsFileWriter indexWriter = writeHandler.createWriter(indexFileName);
+      indexWriter.writeData(ByteBuffer.allocate(4).putInt(169560).array());
+      indexWriter.writeData(ByteBuffer.allocate(4).putInt(999).array());
+      indexWriter.close();
+
+      Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
+
+      HdfsShuffleReadHandler indexReader = new HdfsShuffleReadHandler(
+          "appId", 0, 1, basePath + "/appId/0/1-1/test_0",
+          readBufferSize, expectBlockIds, processBlockIds, hadoopConf);
+      try {
+        ShuffleIndexResult indexResult = indexReader.readShuffleIndex();
+        assertEquals(0, indexResult.getIndexData().length % FileBasedShuffleSegment.SEGMENT_SIZE);
+      } catch (Exception e) {
+        fail();
       }
 
       HdfsClientReadHandler handler = new HdfsClientReadHandler(

@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
+import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 /**
@@ -62,10 +63,18 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
     long start = System.currentTimeMillis();
     try {
       byte[] indexData = indexReader.read();
+      int segmentNumber = (int) (indexData.length / FileBasedShuffleSegment.SEGMENT_SIZE);
+      int expectedLen = segmentNumber * FileBasedShuffleSegment.SEGMENT_SIZE;
+      if (indexData.length != expectedLen) {
+        LOG.warn("Maybe the index file: {} is being written due to the shuffle-buffer flushing.", filePrefix);
+        byte[] indexNewData = new byte[expectedLen];
+        System.arraycopy(indexData, 0, indexNewData, 0, expectedLen);
+        indexData = indexNewData;
+      }
       LOG.info("Read index files {}.index for {} ms", filePrefix, System.currentTimeMillis() - start);
       return new ShuffleIndexResult(indexData);
     } catch (Exception e) {
-      LOG.info("Fail to read index files {}.index", filePrefix);
+      LOG.info("Fail to read index files {}.index", filePrefix, e);
     }
     return new ShuffleIndexResult();
   }
