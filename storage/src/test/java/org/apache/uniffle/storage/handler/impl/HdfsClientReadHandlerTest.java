@@ -61,7 +61,6 @@ public class HdfsClientReadHandlerTest extends HdfsTestBase {
 
       Map<Long, byte[]> expectedData = Maps.newHashMap();
       Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
-      Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
 
       int readBufferSize = 13;
       int total = 0;
@@ -85,6 +84,8 @@ public class HdfsClientReadHandlerTest extends HdfsTestBase {
       indexWriter.writeData(ByteBuffer.allocate(4).putInt(169560).array());
       indexWriter.writeData(ByteBuffer.allocate(4).putInt(999).array());
       indexWriter.close();
+
+      Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
 
       HdfsShuffleReadHandler indexReader = new HdfsShuffleReadHandler(
           "appId", 0, 1, basePath + "/appId/0/1-1/test_0",
