@@ -21,14 +21,27 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.Lists;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HealthCheckTest {
+
+  @BeforeAll
+  public static void setup() {
+    ShuffleServerMetrics.register();
+  }
+
+  @AfterAll
+  public static void clear() {
+    ShuffleServerMetrics.clear();
+  }
 
   @Test
   public void buildInCheckerTest() {
@@ -67,15 +80,20 @@ public class HealthCheckTest {
     HealthCheck checker = new HealthCheck(healthy, conf, Lists.newArrayList());
     checker.check();
     assertTrue(healthy.get());
+    assertEquals(0, ShuffleServerMetrics.gaugeIsHealthy.get());
+
     conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(), UnHealthyMockChecker.class.getCanonicalName());
     checker = new HealthCheck(healthy, conf, Lists.newArrayList());
     checker.check();
     assertFalse(healthy.get());
+    assertEquals(1, ShuffleServerMetrics.gaugeIsHealthy.get());
+
     conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(),
         UnHealthyMockChecker.class.getCanonicalName() + "," + HealthyMockChecker.class.getCanonicalName());
     checker = new HealthCheck(healthy, conf, Lists.newArrayList());
     checker.check();
     assertFalse(healthy.get());
+    assertEquals(1, ShuffleServerMetrics.gaugeIsHealthy.get());
   }
 
   private void assertConf(ShuffleServerConf conf) {

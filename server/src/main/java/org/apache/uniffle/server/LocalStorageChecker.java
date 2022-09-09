@@ -66,15 +66,30 @@ public class LocalStorageChecker extends Checker {
   @Override
   public boolean checkIsHealthy() {
     int num = 0;
+    Long totalSpace = 0L;
+    Long usedSpace = 0L;
+    int corruptedDirs = 0;
+
     for (StorageInfo storageInfo : storageInfos) {
       if (!storageInfo.checkStorageReadAndWrite()) {
         storageInfo.markCorrupted();
+        corruptedDirs++;
         continue;
       }
+
+      totalSpace += getTotalSpace(storageInfo.storageDir);
+      usedSpace += getUsedSpace(storageInfo.storageDir);
+
       if (storageInfo.checkIsSpaceEnough()) {
         num++;
       }
     }
+
+    ShuffleServerMetrics.gaugeLocalStorageTotalSpace.set(totalSpace);
+    ShuffleServerMetrics.gaugeLocalStorageUsedSpace.set(usedSpace);
+    ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.set(storageInfos.size());
+    ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.set(corruptedDirs);
+    ShuffleServerMetrics.gaugeLocalStorageUsedSpaceRatio.set(usedSpace.doubleValue() / totalSpace.doubleValue());
 
     if (storageInfos.isEmpty()) {
       if (isHealthy) {

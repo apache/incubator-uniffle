@@ -83,9 +83,11 @@ public class HealthCheck {
     for (Checker checker : checkers) {
       if (!checker.checkIsHealthy()) {
         isHealthy.set(false);
+        ShuffleServerMetrics.gaugeIsHealthy.set(1);
         return;
       }
     }
+    ShuffleServerMetrics.gaugeIsHealthy.set(0);
     isHealthy.set(true);
   }
 
