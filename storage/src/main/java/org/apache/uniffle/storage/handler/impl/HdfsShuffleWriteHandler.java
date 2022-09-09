@@ -152,7 +152,8 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
         fileNamePrefix);
   }
 
-  private HdfsFileWriter createWriter(String fileName) throws IOException, IllegalStateException {
+  @VisibleForTesting
+  public HdfsFileWriter createWriter(String fileName) throws IOException, IllegalStateException {
     Path path = new Path(basePath, fileName);
     HdfsFileWriter writer = new HdfsFileWriter(fileSystem, path, hadoopConf);
     return writer;
