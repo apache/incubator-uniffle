@@ -68,16 +68,16 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
     }
     List<Map.Entry<String, RankValue>> sizeList = Lists.newCopyOnWriteArrayList(
         remoteStoragePathRankValue.entrySet()).stream().filter(Objects::nonNull).sorted((x, y) -> {
-      final long xReadAndWriteTime = x.getValue().getReadAndWriteTime().get();
-      final long yReadAndWriteTime = y.getValue().getReadAndWriteTime().get();
-      if (xReadAndWriteTime > yReadAndWriteTime) {
-        return 1;
-      } else if (xReadAndWriteTime < yReadAndWriteTime) {
-        return -1;
-      } else {
-        return Integer.compare(x.getValue().getAppNum().get(), y.getValue().getAppNum().get());
-      }
-    }).collect(Collectors.toList());
+          final long xReadAndWriteTime = x.getValue().getReadAndWriteTime().get();
+          final long yReadAndWriteTime = y.getValue().getReadAndWriteTime().get();
+          if (xReadAndWriteTime > yReadAndWriteTime) {
+            return 1;
+          } else if (xReadAndWriteTime < yReadAndWriteTime) {
+            return -1;
+          } else {
+            return Integer.compare(x.getValue().getAppNum().get(), y.getValue().getAppNum().get());
+          }
+        }).collect(Collectors.toList());
     LOG.error("The sorted remote path list is: {}", sizeList);
     return sizeList;
   }
