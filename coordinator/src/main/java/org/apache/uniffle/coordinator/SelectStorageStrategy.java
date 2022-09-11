@@ -17,24 +17,17 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.util.List;
 import java.util.Map;
 
-import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+
 import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.RankValue;
 
 public interface SelectStorageStrategy {
 
-  RemoteStorageInfo pickRemoteStorage(String appId);
+  List<Map.Entry<String, RankValue>> sortPathByRankValue(String path, Path testPath, long time, boolean isHealthy);
 
-  void incRemoteStorageCounter(String remoteStoragePath);
-
-  void decRemoteStorageCounter(String storagePath);
-
-  void removePathFromCounter(String storagePath);
-
-  Map<String, RemoteStorageInfo> getAvailableRemoteStorageInfo();
-
-  Map<String, RemoteStorageInfo> getAppIdToRemoteStorageInfo();
-
-  Map<String, RankValue> getRemoteStoragePathRankValue();
+  void setFs(FileSystem fs);
 }

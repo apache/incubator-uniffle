@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.coordinator;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,12 +24,11 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.RankValue;
 
 /**
@@ -40,105 +38,36 @@ public class AppBalanceSelectStorageStrategy implements SelectStorageStrategy {
 
   private static final Logger LOG = LoggerFactory.getLogger(AppBalanceSelectStorageStrategy.class);
   /**
-   * store appId -> remote path to make sure all shuffle data of the same application
-   * will be written to the same remote storage
-   */
-  private final Map<String, RemoteStorageInfo> appIdToRemoteStorageInfo;
-  /**
    * store remote path -> application count for assignment strategy
    */
-  private final Map<String, RankValue> remoteStoragePathCounter;
-  private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
+  private final Map<String, RankValue> remoteStoragePathRankValue;
+  private FileSystem fs;
 
-  public AppBalanceSelectStorageStrategy() {
-    this.appIdToRemoteStorageInfo = Maps.newConcurrentMap();
-    this.remoteStoragePathCounter = Maps.newConcurrentMap();
-    this.availableRemoteStorageInfo = Maps.newHashMap();
+  public AppBalanceSelectStorageStrategy(Map<String, RankValue> remoteStoragePathRankValue) {
+    this.remoteStoragePathRankValue = remoteStoragePathRankValue;
   }
 
-  /**
-   * the strategy of pick remote storage is according to assignment count
-   */
-  @Override
-  public RemoteStorageInfo pickRemoteStorage(String appId) {
-    if (appIdToRemoteStorageInfo.containsKey(appId)) {
-      return appIdToRemoteStorageInfo.get(appId);
-    }
-
-    // create list for sort
-    List<Map.Entry<String, RankValue>> sizeList =
-        Lists.newArrayList(remoteStoragePathCounter.entrySet()).stream().filter(Objects::nonNull)
-            .sorted(Comparator.comparingInt(entry -> entry.getValue().getAppNum().get())).collect(Collectors.toList());
-
-    for (Map.Entry<String, RankValue> entry : sizeList) {
-      String storagePath = entry.getKey();
-      if (availableRemoteStorageInfo.containsKey(storagePath)) {
-        appIdToRemoteStorageInfo.putIfAbsent(appId, availableRemoteStorageInfo.get(storagePath));
-        incRemoteStorageCounter(storagePath);
-        break;
-      }
-    }
-    return appIdToRemoteStorageInfo.get(appId);
-  }
-
-  @Override
   @VisibleForTesting
-  public synchronized void incRemoteStorageCounter(String remoteStoragePath) {
-    RankValue counter = remoteStoragePathCounter.get(remoteStoragePath);
-    if (counter != null) {
-      counter.getAppNum().incrementAndGet();
-    } else {
-      // it may be happened when assignment remote storage
-      // and refresh remote storage at the same time
-      LOG.warn("Remote storage path lost during assignment: %s doesn't exist, reset it to 1",
-          remoteStoragePath);
-      remoteStoragePathCounter.put(remoteStoragePath, new RankValue(1));
-    }
-  }
-
   @Override
-  @VisibleForTesting
-  public synchronized void decRemoteStorageCounter(String storagePath) {
-    if (!StringUtils.isEmpty(storagePath)) {
-      RankValue atomic = remoteStoragePathCounter.get(storagePath);
-      if (atomic != null) {
-        double count = atomic.getAppNum().decrementAndGet();
-        if (count < 0) {
-          LOG.warn("Unexpected counter for remote storage: %s, which is %i, reset to 0",
-              storagePath, count);
-          atomic.getAppNum().set(0);
-        }
-      } else {
-        LOG.warn("Can't find counter for remote storage: {}", storagePath);
-        remoteStoragePathCounter.putIfAbsent(storagePath, new RankValue(0));
+  public List<Map.Entry<String, RankValue>> sortPathByRankValue(
+      String path, Path testPath, long time, boolean isHealthy) {
+    try {
+      fs.delete(testPath, true);
+      if (isHealthy) {
+        RankValue rankValue = remoteStoragePathRankValue.get(path);
+        remoteStoragePathRankValue.put(path, new RankValue(0, rankValue.getAppNum().get()));
       }
-      if (remoteStoragePathCounter.get(storagePath).getAppNum().get() == 0
-          && !availableRemoteStorageInfo.containsKey(storagePath)) {
-        remoteStoragePathCounter.remove(storagePath);
-      }
+    } catch (Exception e) {
+      RankValue rankValue = remoteStoragePathRankValue.get(path);
+      remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
+      LOG.error("Failed to sort, we will not use this remote path {}.", path, e);
     }
+    return Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet()).stream()
+        .filter(Objects::nonNull).collect(Collectors.toList());
   }
 
   @Override
-  public synchronized void removePathFromCounter(String storagePath) {
-    RankValue atomic = remoteStoragePathCounter.get(storagePath);
-    if (atomic != null && atomic.getAppNum().get() == 0) {
-      remoteStoragePathCounter.remove(storagePath);
-    }
-  }
-
-  @Override
-  public Map<String, RemoteStorageInfo> getAppIdToRemoteStorageInfo() {
-    return appIdToRemoteStorageInfo;
-  }
-
-  @Override
-  public Map<String, RankValue> getRemoteStoragePathRankValue() {
-    return remoteStoragePathCounter;
-  }
-
-  @Override
-  public Map<String, RemoteStorageInfo> getAvailableRemoteStorageInfo() {
-    return availableRemoteStorageInfo;
+  public void setFs(FileSystem fs) {
+    this.fs = fs;
   }
 }

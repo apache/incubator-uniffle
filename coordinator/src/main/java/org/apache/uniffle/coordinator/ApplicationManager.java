@@ -19,22 +19,32 @@ package org.apache.uniffle.coordinator;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.RankValue;
@@ -42,39 +52,101 @@ import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.Ra
 public class ApplicationManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ApplicationManager.class);
-  private long expired;
-  private StrategyName storageStrategy;
-  private Map<String, Long> appIds = Maps.newConcurrentMap();
-  private SelectStorageStrategy selectStorageStrategy;
+  private final long expired;
+  private final StrategyName storageStrategy;
+  private final Map<String, Long> appIds = Maps.newConcurrentMap();
+  private final SelectStorageStrategy selectStorageStrategy;
   // store appId -> remote path to make sure all shuffle data of the same application
   // will be written to the same remote storage
-  private Map<String, RemoteStorageInfo> appIdToRemoteStorageInfo;
+  private final Map<String, RemoteStorageInfo> appIdToRemoteStorageInfo;
   // store remote path -> application count for assignment strategy
-  private Map<String, RankValue> remoteStoragePathRankValue;
-  private Map<String, String> remoteStorageToHost = Maps.newConcurrentMap();
-  private Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
-  private ScheduledExecutorService scheduledExecutorService;
+  private final Map<String, RankValue> remoteStoragePathRankValue;
+  private final Map<String, String> remoteStorageToHost = Maps.newConcurrentMap();
+  private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
+  private List<Map.Entry<String, RankValue>> sizeList;
+  private final Configuration hdfsConf;
+  private final int fileSize;
+  private final int readAndWriteTimes;
   // it's only for test case to check if status check has problem
   private boolean hasErrorInStatusCheck = false;
+  private boolean remotePathIsHealthy = true;
 
   public ApplicationManager(CoordinatorConf conf) {
     storageStrategy = conf.get(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY);
+    appIdToRemoteStorageInfo = Maps.newConcurrentMap();
+    remoteStoragePathRankValue = Maps.newConcurrentMap();
+    availableRemoteStorageInfo = Maps.newConcurrentMap();
     if (StrategyName.IO_SAMPLE == storageStrategy) {
-      selectStorageStrategy = new LowestIOSampleCostSelectStorageStrategy(conf);
+      selectStorageStrategy = new LowestIOSampleCostSelectStorageStrategy(remoteStoragePathRankValue);
     } else if (StrategyName.APP_BALANCE == storageStrategy) {
-      selectStorageStrategy = new AppBalanceSelectStorageStrategy();
+      selectStorageStrategy = new AppBalanceSelectStorageStrategy(remoteStoragePathRankValue);
     } else {
       throw new UnsupportedOperationException("Unsupported selected storage strategy.");
     }
-    appIdToRemoteStorageInfo = selectStorageStrategy.getAppIdToRemoteStorageInfo();
-    remoteStoragePathRankValue = selectStorageStrategy.getRemoteStoragePathRankValue();
-    availableRemoteStorageInfo = selectStorageStrategy.getAvailableRemoteStorageInfo();
     expired = conf.getLong(CoordinatorConf.COORDINATOR_APP_EXPIRED);
+    fileSize = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_FILE_SIZE);
+    readAndWriteTimes = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES);
+    hdfsConf = new Configuration();
     // the thread for checking application status
-    scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
+    ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("ApplicationManager-%d"));
     scheduledExecutorService.scheduleAtFixedRate(
         () -> statusCheck(), expired / 2, expired / 2, TimeUnit.MILLISECONDS);
+    // the thread for checking if the hdfs path is readable and writable
+    ScheduledExecutorService readWriteRankScheduler = Executors.newSingleThreadScheduledExecutor(
+        ThreadUtils.getThreadFactory("readWriteRankScheduler-%d"));
+    // should init later than the refreshRemoteStorage init
+    readWriteRankScheduler.scheduleAtFixedRate(this::checkReadAndWrite, 1000,
+        conf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME), TimeUnit.MILLISECONDS);
+  }
+
+  public void checkReadAndWrite() {
+    if (remoteStoragePathRankValue.size() > 1) {
+      for (String path : remoteStoragePathRankValue.keySet()) {
+        Path remotePath = new Path(path);
+        Path testPath = new Path(path + "/rssTest");
+        long startWriteTime = System.currentTimeMillis();
+        try {
+          FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hdfsConf);
+          selectStorageStrategy.setFs(fs);
+          for (int j = 0; j < readAndWriteTimes; j++) {
+            byte[] data = RandomUtils.nextBytes(fileSize);
+            try (FSDataOutputStream fos = fs.create(testPath)) {
+              fos.write(data);
+              fos.flush();
+            }
+            byte[] readData = new byte[fileSize];
+            int readBytes;
+            try (FSDataInputStream fis = fs.open(testPath)) {
+              int hasReadBytes = 0;
+              do {
+                readBytes = fis.read(readData);
+                if (hasReadBytes < fileSize) {
+                  for (int i = 0; i < readBytes; i++) {
+                    if (data[hasReadBytes + i] != readData[i]) {
+                      RankValue rankValue = remoteStoragePathRankValue.get(path);
+                      remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
+                      throw new RssException("The content of reading and writing is inconsistent.");
+                    }
+                  }
+                }
+                hasReadBytes += readBytes;
+              } while (readBytes != -1);
+            }
+          }
+        } catch (Exception e) {
+          remotePathIsHealthy = false;
+          LOG.error("Storage read and write error, we will not use this remote path {}.", path, e);
+          RankValue rankValue = remoteStoragePathRankValue.get(path);
+          remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
+        } finally {
+          sizeList = selectStorageStrategy.sortPathByRankValue(path, testPath, startWriteTime, remotePathIsHealthy);
+          remotePathIsHealthy = true;
+        }
+      }
+    } else {
+      sizeList = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
+    }
   }
 
   public void refreshAppId(String appId) {
@@ -127,17 +199,88 @@ public class ApplicationManager {
   // the strategy of pick remote storage is according to assignment count
   // todo: better strategy with workload balance
   public RemoteStorageInfo pickRemoteStorage(String appId) {
-    selectStorageStrategy.pickRemoteStorage(appId);
+    if (appIdToRemoteStorageInfo.containsKey(appId)) {
+      return appIdToRemoteStorageInfo.get(appId);
+    }
+    // If the APP_BALANCE strategy is used, we must ensure that each allocation is uniform
+    useAppBalanceToSelect();
+    for (Map.Entry<String, RankValue> entry : sizeList) {
+      String storagePath = entry.getKey();
+      if (availableRemoteStorageInfo.containsKey(storagePath)) {
+        appIdToRemoteStorageInfo.putIfAbsent(appId, availableRemoteStorageInfo.get(storagePath));
+        incRemoteStorageCounter(storagePath);
+        break;
+      }
+    }
     return appIdToRemoteStorageInfo.get(appId);
   }
 
+  /**
+   * When choosing the AppBalance strategy, each time you select a path,
+   * you should know the number of the latest apps in different paths
+   */
   @VisibleForTesting
-  protected synchronized void decRemoteStorageCounter(String storagePath) {
-    selectStorageStrategy.decRemoteStorageCounter(storagePath);
+  public void useAppBalanceToSelect() {
+    boolean isAppBalance = storageStrategy.equals(StrategyName.APP_BALANCE);
+    boolean isUnhealthy =
+        sizeList.stream().noneMatch(rv -> rv.getValue().getReadAndWriteTime().get() != Long.MAX_VALUE);
+    if (isAppBalance) {
+      if (!isUnhealthy) {
+        // If there is only one unhealthy path, then filter that path
+        sizeList = sizeList.stream().filter(rv -> rv.getValue().getReadAndWriteTime().get() != Long.MAX_VALUE).sorted(
+            Comparator.comparingInt(entry -> entry.getValue().getAppNum().get())).collect(Collectors.toList());
+      } else {
+        // If all paths are unhealthy, assign paths according to the number of apps
+        sizeList = sizeList.stream().sorted(Comparator.comparingInt(
+            entry -> entry.getValue().getAppNum().get())).collect(Collectors.toList());
+      }
+    }
+    LOG.error("The sorted remote path list is: {}", sizeList);
   }
 
-  private synchronized void removePathFromCounter(String storagePath) {
-    selectStorageStrategy.removePathFromCounter(storagePath);
+  @VisibleForTesting
+  public synchronized void incRemoteStorageCounter(String remoteStoragePath) {
+    RankValue counter = remoteStoragePathRankValue.get(remoteStoragePath);
+    if (counter != null) {
+      counter.getAppNum().incrementAndGet();
+    } else {
+      // it may be happened when assignment remote storage
+      // and refresh remote storage at the same time
+      LOG.warn("Remote storage path lost during assignment: %s doesn't exist, reset it to 1",
+          remoteStoragePath);
+      remoteStoragePathRankValue.put(remoteStoragePath, new RankValue(1));
+    }
+  }
+
+  @VisibleForTesting
+  public synchronized void decRemoteStorageCounter(String storagePath) {
+    if (!StringUtils.isEmpty(storagePath)) {
+      RankValue atomic = remoteStoragePathRankValue.get(storagePath);
+      if (atomic != null) {
+        double count = atomic.getAppNum().decrementAndGet();
+        if (count < 0) {
+          LOG.warn("Unexpected counter for remote storage: %s, which is %i, reset to 0",
+              storagePath, count);
+          atomic.getAppNum().set(0);
+        }
+      } else {
+        LOG.warn("Can't find counter for remote storage: {}", storagePath);
+        remoteStoragePathRankValue.putIfAbsent(storagePath, new RankValue(0));
+      }
+      if (remoteStoragePathRankValue.get(storagePath).getAppNum().get() == 0
+          && !availableRemoteStorageInfo.containsKey(storagePath)) {
+        remoteStoragePathRankValue.remove(storagePath);
+      }
+    }
+  }
+
+  public synchronized void removePathFromCounter(String storagePath) {
+    RankValue atomic = remoteStoragePathRankValue.get(storagePath);
+    // The time spent reading and writing cannot be used to determine whether the current path is still used by apps.
+    // Therefore, determine whether the HDFS path is still used by the number of apps
+    if (atomic != null && atomic.getAppNum().get() == 0) {
+      remoteStoragePathRankValue.remove(storagePath);
+    }
   }
 
   public Set<String> getAppIds() {
@@ -157,6 +300,11 @@ public class ApplicationManager {
   @VisibleForTesting
   public Map<String, RemoteStorageInfo> getAvailableRemoteStorageInfo() {
     return availableRemoteStorageInfo;
+  }
+
+  @VisibleForTesting
+  public Map<String, RemoteStorageInfo> getAppIdToRemoteStorageInfo() {
+    return appIdToRemoteStorageInfo;
   }
 
   @VisibleForTesting

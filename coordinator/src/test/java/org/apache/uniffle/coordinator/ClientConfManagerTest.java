@@ -172,11 +172,14 @@ public class ClientConfManagerTest {
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, updateIntervalSec);
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
+    conf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 200);
+    conf.setInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES, 1);
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
     ApplicationManager applicationManager = new ApplicationManager(conf);
 
     final ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
-    Thread.sleep(500);
+    // the reason for sleep here is to ensure that threads can be scheduled normally, the same below
+    Thread.sleep(1000);
     Set<String> expectedAvailablePath = Sets.newHashSet(remotePath1);
     assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
     RemoteStorageInfo remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId1");
@@ -186,6 +189,7 @@ public class ClientConfManagerTest {
     writeRemoteStorageConf(cfgFile, remotePath3);
     expectedAvailablePath = Sets.newHashSet(remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
+    Thread.sleep(1000);
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId2");
     assertEquals(remotePath3, remoteStorageInfo.getPath());
 
@@ -193,6 +197,7 @@ public class ClientConfManagerTest {
     writeRemoteStorageConf(cfgFile, remotePath2 + Constants.COMMA_SPLIT_CHAR + remotePath3, confItems);
     expectedAvailablePath = Sets.newHashSet(remotePath2, remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
+    Thread.sleep(1000);
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId3");
     assertEquals(remotePath2, remoteStorageInfo.getPath());
     assertEquals(2, remoteStorageInfo.getConfItems().size());
@@ -232,11 +237,12 @@ public class ClientConfManagerTest {
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, updateIntervalSec);
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
+    conf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 200);
+    conf.setInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES, 1);
     conf.set(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY, IO_SAMPLE);
 
     ApplicationManager applicationManager = new ApplicationManager(conf);
-    // init IORankScheduler
-    Thread.sleep(2000);
+    // init readWriteRankScheduler
     LowestIOSampleCostSelectStorageStrategy selectStorageStrategy =
         (LowestIOSampleCostSelectStorageStrategy) applicationManager.getSelectStorageStrategy();
     Path testPath = new Path("/test");
@@ -244,10 +250,11 @@ public class ClientConfManagerTest {
     selectStorageStrategy.setFs(fs);
 
     final ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
-    Thread.sleep(500);
+    // the reason for sleep here is to ensure that threads can be scheduled normally, the same below
+    Thread.sleep(1000);
     Set<String> expectedAvailablePath = Sets.newHashSet(remotePath1);
     assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
-    selectStorageStrategy.sortPathByRankValue(remotePath1, testPath, System.currentTimeMillis());
+    selectStorageStrategy.sortPathByRankValue(remotePath1, testPath, System.currentTimeMillis(), true);
     RemoteStorageInfo remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId1");
     assertEquals(remotePath1, remoteStorageInfo.getPath());
     assertTrue(remoteStorageInfo.getConfItems().isEmpty());
@@ -257,7 +264,8 @@ public class ClientConfManagerTest {
     waitForUpdate(expectedAvailablePath, applicationManager);
     // The reason for setting the filesystem here is to trigger the execution of sortPathByRankValue
     selectStorageStrategy.setFs(fs);
-    selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, System.currentTimeMillis());
+    selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, System.currentTimeMillis(), true);
+    Thread.sleep(1000);
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId2");
     assertEquals(remotePath3, remoteStorageInfo.getPath());
 
@@ -267,9 +275,10 @@ public class ClientConfManagerTest {
     expectedAvailablePath = Sets.newHashSet(remotePath2, remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
     selectStorageStrategy.setFs(fs);
-    selectStorageStrategy.sortPathByRankValue(remotePath2, testPath, current);
+    selectStorageStrategy.sortPathByRankValue(remotePath2, testPath, current, true);
     selectStorageStrategy.setFs(fs);
-    selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, current);
+    selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, current, true);
+    Thread.sleep(1000);
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId3");
     assertEquals(remotePath2, remoteStorageInfo.getPath());
     assertEquals(2, remoteStorageInfo.getConfItems().size());
