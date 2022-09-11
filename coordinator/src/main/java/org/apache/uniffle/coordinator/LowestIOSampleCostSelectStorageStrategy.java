@@ -66,18 +66,18 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
       remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
       LOG.error("Failed to sort, we will not use this remote path {}.", path, e);
     }
-    List<Map.Entry<String, RankValue>> sizeList = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet()).stream().filter(Objects::nonNull)
-        .sorted((x, y) -> {
-          final long xReadAndWriteTime = x.getValue().getReadAndWriteTime().get();
-          final long yReadAndWriteTime = y.getValue().getReadAndWriteTime().get();
-          if (xReadAndWriteTime > yReadAndWriteTime) {
-            return 1;
-          } else if (xReadAndWriteTime < yReadAndWriteTime) {
-            return -1;
-          } else {
-            return Integer.compare(x.getValue().getAppNum().get(), y.getValue().getAppNum().get());
-          }
-        }).collect(Collectors.toList());
+    List<Map.Entry<String, RankValue>> sizeList = Lists.newCopyOnWriteArrayList(
+        remoteStoragePathRankValue.entrySet()).stream().filter(Objects::nonNull).sorted((x, y) -> {
+      final long xReadAndWriteTime = x.getValue().getReadAndWriteTime().get();
+      final long yReadAndWriteTime = y.getValue().getReadAndWriteTime().get();
+      if (xReadAndWriteTime > yReadAndWriteTime) {
+        return 1;
+      } else if (xReadAndWriteTime < yReadAndWriteTime) {
+        return -1;
+      } else {
+        return Integer.compare(x.getValue().getAppNum().get(), y.getValue().getAppNum().get());
+      }
+    }).collect(Collectors.toList());
     LOG.error("The sorted remote path list is: {}", sizeList);
     return sizeList;
   }
@@ -112,10 +112,10 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
 
     @Override
     public String toString() {
-      return "RankValue{" +
-          "readAndWriteTime=" + readAndWriteTime +
-          ", appNum=" + appNum +
-          '}';
+      return "RankValue{"
+          + "readAndWriteTime=" + readAndWriteTime
+          + ", appNum=" + appNum
+          + '}';
     }
   }
 }
