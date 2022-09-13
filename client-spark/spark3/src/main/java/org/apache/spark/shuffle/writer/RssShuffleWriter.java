@@ -95,7 +95,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       ShuffleWriteClient shuffleWriteClient,
       RssShuffleHandle rssHandle) {
     LOG.warn("RssShuffle start write taskAttemptId data" + taskAttemptId);
-    RssSparkClientConf rssSparkClientConf = RssSparkClientConf.from(sparkConf);
 
     this.shuffleManager = shuffleManager;
     this.appId = appId;
@@ -108,6 +107,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.shuffleDependency = rssHandle.getDependency();
     this.partitioner = shuffleDependency.partitioner();
     this.shouldPartition = partitioner.numPartitions() > 1;
+
+    RssSparkClientConf rssSparkClientConf = RssSparkClientConf.from(sparkConf);
     this.sendCheckTimeout = rssSparkClientConf.get(RssSparkClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS);
     this.sendCheckInterval = rssSparkClientConf.get(RssSparkClientConf.RSS_CLIENT_SEND_CHECK_INTERVAL_MS);
     this.sendSizeLimit = rssSparkClientConf.getSizeAsBytes(

@@ -185,6 +185,10 @@ public class RssSparkClientConf extends RssClientConf {
     return new RssSparkClientConf(sparkConf);
   }
 
+  public static String toKey(ConfigOption option) {
+    return String.format("%s%s", SPARK_CONFIG_KEY_PREFIX, option.key());
+  }
+
   @VisibleForTesting
   public static void toSparkConf(RssConf rssConf, SparkConf sparkConf) {
     List<Pair<String, Object>> confs = rssConf.getAll();

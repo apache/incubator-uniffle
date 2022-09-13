@@ -36,7 +36,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.Constants;
 
-import static org.apache.spark.shuffle.RssSparkClientConf.SPARK_CONFIG_KEY_PREFIX;
+import static org.apache.spark.shuffle.RssSparkClientConf.toKey;
 
 public class RssSparkShuffleUtils {
 
@@ -47,28 +47,29 @@ public class RssSparkShuffleUtils {
     Configuration conf = util.newConfiguration(sparkConf);
 
     boolean useOdfs = sparkConf.getBoolean(
-        SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE.key(),
+        toKey(RssSparkClientConf.RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE),
         false
     );
     if (useOdfs) {
       final int OZONE_PREFIX_LEN = "spark.rss.ozone.".length();
       conf.setBoolean(
-          SPARK_CONFIG_KEY_PREFIX
-              + RssSparkClientConf.RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE.key().substring(OZONE_PREFIX_LEN),
+          toKey(RssSparkClientConf.RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE).substring(OZONE_PREFIX_LEN),
           useOdfs
       );
       conf.set(
-          SPARK_CONFIG_KEY_PREFIX
-              + RssSparkClientConf.RSS_OZONE_FS_HDFS_IMPL.key().substring(OZONE_PREFIX_LEN),
+          toKey(RssSparkClientConf.RSS_OZONE_FS_HDFS_IMPL).substring(OZONE_PREFIX_LEN),
           sparkConf.get(
-              SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_OZONE_FS_HDFS_IMPL,
-              RssSparkClientConf.RSS_OZONE_FS_HDFS_IMPL.defaultValue())
+              toKey(RssSparkClientConf.RSS_OZONE_FS_HDFS_IMPL),
+              RssSparkClientConf.RSS_OZONE_FS_HDFS_IMPL.defaultValue()
+          )
       );
       conf.set(
-          SPARK_CONFIG_KEY_PREFIX
-              + RssSparkClientConf.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL.key().substring(OZONE_PREFIX_LEN),
-          sparkConf.get(SPARK_CONFIG_KEY_PREFIX + RssSparkClientConf.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL,
-              RssSparkClientConf.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL.defaultValue()));
+          toKey(RssSparkClientConf.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL).substring(OZONE_PREFIX_LEN),
+          sparkConf.get(
+              toKey(RssSparkClientConf.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL),
+              RssSparkClientConf.RSS_OZONE_FS_ABSTRACT_FILE_SYSTEM_HDFS_IMPL.defaultValue()
+          )
+      );
     }
 
     return conf;

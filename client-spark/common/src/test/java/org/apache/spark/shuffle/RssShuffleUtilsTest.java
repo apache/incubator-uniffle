@@ -30,6 +30,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RssShuffleUtilsTest {
+
   @Test
   public void applyDynamicClientConfTest() {
     final RssClientConf conf = new RssClientConf();

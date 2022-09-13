@@ -79,8 +79,10 @@ public class BufferManagerOptions {
           + "=" + bufferSpillThreshold);
     }
     if (bufferSegmentSize > bufferSize) {
-      LOG.warn(RssSparkClientConf.RSS_WRITER_BUFFER_SEGMENT_SIZE.key() + "[" + bufferSegmentSize + "] should be less than "
-          + RssSparkClientConf.RSS_WRITER_BUFFER_SIZE.key() + "[" + bufferSize + "]");
+      LOG.warn(RssSparkClientConf.RSS_WRITER_BUFFER_SEGMENT_SIZE.key()
+          + "[" + bufferSegmentSize + "] should be less than "
+          + RssSparkClientConf.RSS_WRITER_BUFFER_SIZE.key()
+          + "[" + bufferSize + "]");
     }
   }
 

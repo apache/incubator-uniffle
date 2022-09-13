@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
 
+import static org.apache.spark.shuffle.RssSparkClientConf.toKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -55,11 +56,11 @@ public class WriteBufferManagerTest {
 
   private SparkConf getConf() {
     SparkConf conf = new SparkConf(false);
-    conf.set(RssSparkClientConf.RSS_WRITER_BUFFER_SIZE.key(), "64")
-        .set(RssSparkClientConf.RSS_WRITER_BUFFER_SEGMENT_SIZE.key(), "32")
-        .set(RssSparkClientConf.RSS_WRITER_SERIALIZER_BUFFER_SIZE.key(), "128")
-        .set(RssSparkClientConf.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE.key(), "512")
-        .set(RssSparkClientConf.RSS_WRITER_BUFFER_SPILL_SIZE.key(), "190");
+    conf.set(toKey(RssSparkClientConf.RSS_WRITER_BUFFER_SIZE), "64")
+        .set(toKey(RssSparkClientConf.RSS_WRITER_BUFFER_SEGMENT_SIZE), "32")
+        .set(toKey(RssSparkClientConf.RSS_WRITER_SERIALIZER_BUFFER_SIZE), "128")
+        .set(toKey(RssSparkClientConf.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE), "512")
+        .set(toKey(RssSparkClientConf.RSS_WRITER_BUFFER_SPILL_SIZE), "190");
     return conf;
   }
 
