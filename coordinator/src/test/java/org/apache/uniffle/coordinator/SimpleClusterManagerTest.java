@@ -24,10 +24,10 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import com.google.common.collect.Sets;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
