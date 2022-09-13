@@ -207,9 +207,6 @@ public class SimpleClusterManagerTest {
     ssc.setString(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH, URI.create(excludeNodesPath).toString());
     ssc.setLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL, 2000);
 
-    final Set<String> nodes = Sets.newHashSet("node1-1999", "node2-1999");
-    writeExcludeHosts(excludeNodesPath, nodes);
-
     SimpleClusterManager scm = new SimpleClusterManager(ssc, new Configuration());
     scm.add(new ServerNode("node1-1999", "ip", 0, 100L, 50L, 20,
         10, testTags, true));
@@ -219,7 +216,10 @@ public class SimpleClusterManagerTest {
         10, testTags, true));
     scm.add(new ServerNode("node4-1999", "ip", 0, 100L, 50L, 20,
         10, testTags, true));
-    assertEquals(0, scm.getExcludeNodes().size());
+    assertTrue(scm.getExcludeNodes().isEmpty());
+
+    final Set<String> nodes = Sets.newHashSet("node1-1999", "node2-1999");
+    writeExcludeHosts(excludeNodesPath, nodes);
     await().atMost(3, TimeUnit.SECONDS).until(() -> scm.getExcludeNodes().equals(nodes));
     List<ServerNode> availableNodes = scm.getServerList(testTags);
     assertEquals(2, availableNodes.size());
