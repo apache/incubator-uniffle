@@ -25,8 +25,8 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
-
 
 public class ComposedClientReadHandler implements ClientReadHandler {
 
@@ -127,7 +127,7 @@ public class ComposedClientReadHandler implements ClientReadHandler {
           return null;
       }
     } catch (Exception e) {
-      LOG.error("Failed to read shuffle data from " + getCurrentHandlerName() + " handler", e);
+      throw new RssException("Failed to read shuffle data from " + getCurrentHandlerName() + " handler", e);
     }
     // when is no data for current handler, and the upmostLevel is not reached,
     // then try next one if there has

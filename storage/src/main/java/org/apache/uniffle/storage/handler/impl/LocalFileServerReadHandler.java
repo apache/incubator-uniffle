@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
+import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
@@ -80,7 +81,7 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
     File baseFolder = new File(fullShufflePath);
     if (!baseFolder.exists()) {
       // the partition doesn't exist in this base folder, skip
-      throw new RuntimeException("Can't find folder " + fullShufflePath);
+      throw new FileNotFoundException("Can't find folder " + fullShufflePath);
     }
     File[] indexFiles;
     String failedGetIndexFileMsg = "No index file found in  " + storageBasePath;
@@ -93,7 +94,7 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
         }
       });
     } catch (Exception e) {
-      throw new RuntimeException(failedGetIndexFileMsg, e);
+      throw new FileNotFoundException(failedGetIndexFileMsg, e);
     }
 
     if (indexFiles != null && indexFiles.length > 0) {

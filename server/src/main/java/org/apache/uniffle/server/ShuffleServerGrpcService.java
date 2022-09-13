@@ -40,6 +40,7 @@ import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
@@ -533,6 +534,12 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
         builder.setIndexData(UnsafeByteOperations.unsafeWrap(data));
         reply = builder.build();
+      } catch (FileNotFoundException indexFileNotFoundException) {
+        LOG.warn("Index file for {} is not found, maybe the data has been flushed to cold storage.",
+            requestInfo, indexFileNotFoundException);
+        reply = GetLocalShuffleIndexResponse.newBuilder()
+            .setStatus(valueOf(status))
+            .build();
       } catch (Exception e) {
         status = StatusCode.INTERNAL_ERROR;
         msg = "Error happened when get shuffle index for " + requestInfo + ", " + e.getMessage();
