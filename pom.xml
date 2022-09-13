@@ -35,6 +35,7 @@
   </parent>
 
   <properties>
+    <awaitility.version>4.2.0</awaitility.version>
     <checkstyle.version>9.3</checkstyle.version>
     <commons-logging.version>1.2</commons-logging.version>
     <commons-lang3.version>3.10</commons-lang3.version>
@@ -125,6 +126,11 @@
       <artifactId>error_prone_annotations</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
@@ -492,6 +498,13 @@
         <groupId>io.prometheus</groupId>
         <artifactId>simpleclient_servlet</artifactId>
         <version>${prometheus.simpleclient.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>${awaitility.version}</version>
+        <scope>test</scope>
       </dependency>
 
       <dependency>
