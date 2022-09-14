@@ -107,7 +107,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Integer> SERVER_MEMORY_REQUEST_RETRY_MAX = ConfigOptions
       .key("rss.server.memory.request.retry.max")
       .intType()
-      .defaultValue(100)
+      .defaultValue(50)
       .withDescription("Max times to retry for memory request");
 
   public static final ConfigOption<Long> SERVER_PRE_ALLOCATION_EXPIRED = ConfigOptions
