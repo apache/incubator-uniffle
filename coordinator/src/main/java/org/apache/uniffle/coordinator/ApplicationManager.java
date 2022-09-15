@@ -246,7 +246,7 @@ public class ApplicationManager {
     } else {
       // it may be happened when assignment remote storage
       // and refresh remote storage at the same time
-      LOG.warn("Remote storage path lost during assignment: %s doesn't exist, reset it to 1",
+      LOG.warn("Remote storage path lost during assignment: {} doesn't exist, reset it to 1",
           remoteStoragePath);
       remoteStoragePathRankValue.put(remoteStoragePath, new RankValue(1));
     }
@@ -259,7 +259,7 @@ public class ApplicationManager {
       if (atomic != null) {
         double count = atomic.getAppNum().decrementAndGet();
         if (count < 0) {
-          LOG.warn("Unexpected counter for remote storage: %s, which is %i, reset to 0",
+          LOG.warn("Unexpected counter for remote storage: {}, which is {}, reset to 0",
               storagePath, count);
           atomic.getAppNum().set(0);
         }
