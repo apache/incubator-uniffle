@@ -177,7 +177,7 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
       remoteStoragePathRankValue.put(remoteStoragePath, new RankValue(1));
       // it may be happened when assignment remote storage
       // and refresh remote storage at the same time
-      LOG.warn("Remote storage path lost during assignment: %s doesn't exist, "
+      LOG.warn("Remote storage path lost during assignment: {} doesn't exist, "
           + "reset the rank value to 0 and app size to 1.", remoteStoragePath);
     }
   }
@@ -190,7 +190,7 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
       if (atomic != null) {
         double count = atomic.getAppNum().decrementAndGet();
         if (count < 0) {
-          LOG.warn("Unexpected counter for remote storage: %s, which is %i, reset to 0",
+          LOG.warn("Unexpected counter for remote storage: {}, which is {}, reset to 0",
               storagePath, count);
           atomic.getAppNum().set(0);
         }
