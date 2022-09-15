@@ -82,7 +82,6 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
     return sizeList;
   }
 
-  @VisibleForTesting
   @Override
   public void setFs(FileSystem fs) {
     this.fs = fs;
