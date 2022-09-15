@@ -86,7 +86,7 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
 
   @Test
   public void selectStorageTest() throws Exception {
-    FileSystem fs = testFile.getFileSystem(hdfsConf);
+    final FileSystem fs = testFile.getFileSystem(hdfsConf);
 
     String remoteStoragePath = remoteStorage1 + Constants.COMMA_SPLIT_CHAR + remoteStorage2;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
