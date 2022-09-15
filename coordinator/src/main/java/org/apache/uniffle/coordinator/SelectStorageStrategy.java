@@ -20,7 +20,6 @@ package org.apache.uniffle.coordinator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.RankValue;
@@ -28,6 +27,4 @@ import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.Ra
 public interface SelectStorageStrategy {
 
   List<Map.Entry<String, RankValue>> sortPathByRankValue(String path, Path testPath, long time, boolean isHealthy);
-
-  void setFs(FileSystem fs);
 }

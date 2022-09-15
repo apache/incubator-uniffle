@@ -26,10 +26,13 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 
 /**
  * LowestIOSampleCostSelectStorageStrategy considers that when allocating apps to different remote paths,
@@ -44,10 +47,11 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
    * store remote path -> application count for assignment strategy
    */
   private final Map<String, RankValue> remoteStoragePathRankValue;
-  private FileSystem fs;
+  private final Configuration conf;
 
   public LowestIOSampleCostSelectStorageStrategy(Map<String, RankValue> remoteStoragePathRankValue) {
     this.remoteStoragePathRankValue = remoteStoragePathRankValue;
+    this.conf = new Configuration();
   }
 
   @VisibleForTesting
@@ -55,6 +59,7 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
   public List<Map.Entry<String, RankValue>> sortPathByRankValue(
       String path, Path testPath, long startWrite, boolean isHealthy) {
     try {
+      FileSystem fs = HadoopFilesystemProvider.getFilesystem(new Path(path), conf);
       fs.delete(testPath, true);
       if (isHealthy) {
         long totalTime = System.currentTimeMillis() - startWrite;
@@ -80,11 +85,6 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
         }).collect(Collectors.toList());
     LOG.error("The sorted remote path list is: {}", sizeList);
     return sizeList;
-  }
-
-  @Override
-  public void setFs(FileSystem fs) {
-    this.fs = fs;
   }
 
   static class RankValue {

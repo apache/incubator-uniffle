@@ -247,7 +247,6 @@ public class ClientConfManagerTest {
         (LowestIOSampleCostSelectStorageStrategy) applicationManager.getSelectStorageStrategy();
     Path testPath = new Path("/test");
     FileSystem fs = testPath.getFileSystem(hdfsConf);
-    selectStorageStrategy.setFs(fs);
 
     final ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
     // the reason for sleep here is to ensure that threads can be scheduled normally, the same below
@@ -262,8 +261,7 @@ public class ClientConfManagerTest {
     writeRemoteStorageConf(cfgFile, remotePath3);
     expectedAvailablePath = Sets.newHashSet(remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
-    // The reason for setting the filesystem here is to trigger the execution of sortPathByRankValue
-    selectStorageStrategy.setFs(fs);
+
     selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, System.currentTimeMillis(), true);
     Thread.sleep(1000);
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId2");
@@ -274,9 +272,7 @@ public class ClientConfManagerTest {
     writeRemoteStorageConf(cfgFile, remotePath2 + Constants.COMMA_SPLIT_CHAR + remotePath3, confItems);
     expectedAvailablePath = Sets.newHashSet(remotePath2, remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
-    selectStorageStrategy.setFs(fs);
     selectStorageStrategy.sortPathByRankValue(remotePath2, testPath, current, true);
-    selectStorageStrategy.setFs(fs);
     selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, current, true);
     Thread.sleep(1000);
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId3");

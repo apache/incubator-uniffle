@@ -108,7 +108,6 @@ public class ApplicationManager {
         long startWriteTime = System.currentTimeMillis();
         try {
           FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hdfsConf);
-          selectStorageStrategy.setFs(fs);
           for (int j = 0; j < readAndWriteTimes; j++) {
             byte[] data = RandomUtils.nextBytes(fileSize);
             try (FSDataOutputStream fos = fs.create(testPath)) {

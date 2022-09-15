@@ -24,11 +24,13 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.RankValue;
 
 /**
@@ -41,10 +43,11 @@ public class AppBalanceSelectStorageStrategy implements SelectStorageStrategy {
    * store remote path -> application count for assignment strategy
    */
   private final Map<String, RankValue> remoteStoragePathRankValue;
-  private FileSystem fs;
+  private final Configuration conf;
 
   public AppBalanceSelectStorageStrategy(Map<String, RankValue> remoteStoragePathRankValue) {
     this.remoteStoragePathRankValue = remoteStoragePathRankValue;
+    this.conf = new Configuration();
   }
 
   @VisibleForTesting
@@ -52,6 +55,7 @@ public class AppBalanceSelectStorageStrategy implements SelectStorageStrategy {
   public List<Map.Entry<String, RankValue>> sortPathByRankValue(
       String path, Path testPath, long time, boolean isHealthy) {
     try {
+      FileSystem fs = HadoopFilesystemProvider.getFilesystem(new Path(path), conf);
       fs.delete(testPath, true);
       if (isHealthy) {
         RankValue rankValue = remoteStoragePathRankValue.get(path);
@@ -64,10 +68,5 @@ public class AppBalanceSelectStorageStrategy implements SelectStorageStrategy {
     }
     return Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet()).stream()
         .filter(Objects::nonNull).collect(Collectors.toList());
-  }
-
-  @Override
-  public void setFs(FileSystem fs) {
-    this.fs = fs;
   }
 }
