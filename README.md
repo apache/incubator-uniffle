@@ -24,7 +24,7 @@ Currently it supports [Apache Spark](https://spark.apache.org) and [MapReduce](h
 
 [![Build](https://github.com/apache/incubator-uniffle/actions/workflows/build.yml/badge.svg?branch=master&event=push)](https://github.com/apache/incubator-uniffle/actions/workflows/build.yml)
 [![Codecov](https://codecov.io/gh/apache/incubator-uniffle/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/incubator-uniffle)
-[![Total Lines](https://img.shields.io/tokei/lines/github/apache/incubator-uniffle)](https://github.com/apache/incubator-uniffle)
+[![](https://sloc.xyz/github/apache/incubator-uniffle)](https://github.com/apache/incubator-uniffle)
 [![Code Quality](https://img.shields.io/lgtm/grade/java/github/apache/incubator-uniffle?label=code%20quality)](https://lgtm.com/projects/g/apache/incubator-uniffle/)
 [![License](https://img.shields.io/github/license/apache/incubator-uniffle)](https://github.com/apache/incubator-uniffle/blob/master/LICENSE)
 
