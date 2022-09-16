@@ -112,7 +112,7 @@ public class ShuffleBufferManager {
     }
 
     ShuffleBuffer buffer = entry.getValue();
-    int size = buffer.append(spd);
+    long size = buffer.append(spd);
     updateSize(size, isPreAllocated);
     updateShuffleSize(appId, shuffleId, size);
     synchronized (this) {
