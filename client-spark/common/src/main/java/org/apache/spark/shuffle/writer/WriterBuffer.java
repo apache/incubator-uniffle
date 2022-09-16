@@ -45,13 +45,9 @@ public class WriterBuffer {
         buffers.add(new WrappedBuffer(buffer, nextOffset));
         nextOffset = 0;
       }
-      if (length > bufferSize) {
-        buffer = new byte[length];
-        memoryUsed += length;
-      } else {
-        buffer = new byte[bufferSize];
-        memoryUsed += bufferSize;
-      }
+      int newBufferSize = Math.max(length, bufferSize);
+      buffer = new byte[newBufferSize];
+      memoryUsed += newBufferSize;
     }
 
     try {
