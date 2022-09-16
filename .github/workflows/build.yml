@@ -21,6 +21,10 @@ name: build
 
 on: [push, pull_request]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   checkstyle:
     uses: ./.github/workflows/sequential.yml
