@@ -20,10 +20,13 @@ package org.apache.uniffle.coordinator;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.util.Constants;
+
+import static org.apache.uniffle.common.util.Constants.ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM;
 
 /**
  * AccessClusterLoadChecker use the cluster load metrics including memory and healthy to
@@ -35,7 +38,9 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker {
 
   private final ClusterManager clusterManager;
   private final double memoryPercentThreshold;
+  // The hard constraint number of available shuffle servers
   private final int availableServerNumThreshold;
+  private final int defaultRequiredShuffleServerNumber;
 
   public AccessClusterLoadChecker(AccessManager accessManager) throws Exception {
     super(accessManager);
@@ -44,24 +49,40 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker {
     this.memoryPercentThreshold = conf.getDouble(CoordinatorConf.COORDINATOR_ACCESS_LOADCHECKER_MEMORY_PERCENTAGE);
     this.availableServerNumThreshold = conf.getInteger(
         CoordinatorConf.COORDINATOR_ACCESS_LOADCHECKER_SERVER_NUM_THRESHOLD,
-        conf.get(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX));
+        -1
+    );
+    this.defaultRequiredShuffleServerNumber = conf.get(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
   }
 
   public AccessCheckResult check(AccessInfo accessInfo) {
     Set<String> tags = accessInfo.getTags();
     List<ServerNode> servers = clusterManager.getServerList(tags);
     int size = (int) servers.stream().filter(ServerNode::isHealthy).filter(this::checkMemory).count();
-    if (size >= availableServerNumThreshold) {
+
+    // If the hard constraint number exist, directly check it
+    if (availableServerNumThreshold != -1 && size >= availableServerNumThreshold) {
       return new AccessCheckResult(true, Constants.COMMON_SUCCESS_MESSAGE);
-    } else {
-      String msg = String.format("Denied by AccessClusterLoadChecker accessInfo[%s], "
-              + "total %s nodes, %s available nodes, "
-              + "memory percent threshold %s, available num threshold %s.",
-          accessInfo, servers.size(), size, memoryPercentThreshold, availableServerNumThreshold);
-      LOG.warn(msg);
-      CoordinatorMetrics.counterTotalLoadDeniedRequest.inc();
-      return new AccessCheckResult(false, msg);
     }
+
+    // If the hard constraint is missing, check the available servers number meet the job's required server size
+    if (availableServerNumThreshold == -1) {
+      String requiredNodesNumRaw = accessInfo.getExtraProperties().get(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM);
+      int requiredNodesNum = defaultRequiredShuffleServerNumber;
+      if (StringUtils.isNotEmpty(requiredNodesNumRaw) && Integer.parseInt(requiredNodesNumRaw) > 0) {
+        requiredNodesNum = Integer.parseInt(requiredNodesNumRaw);
+      }
+      if (size >= requiredNodesNum) {
+        return new AccessCheckResult(true, Constants.COMMON_SUCCESS_MESSAGE);
+      }
+    }
+
+    String msg = String.format("Denied by AccessClusterLoadChecker accessInfo[%s], "
+            + "total %s nodes, %s available nodes, "
+            + "memory percent threshold %s, available num threshold %s.",
+        accessInfo, servers.size(), size, memoryPercentThreshold, availableServerNumThreshold);
+    LOG.warn(msg);
+    CoordinatorMetrics.counterTotalLoadDeniedRequest.inc();
+    return new AccessCheckResult(false, msg);
   }
 
   private boolean checkMemory(ServerNode serverNode) {

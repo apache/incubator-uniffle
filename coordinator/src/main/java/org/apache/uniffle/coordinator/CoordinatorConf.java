@@ -102,7 +102,11 @@ public class CoordinatorConf extends RssBaseConf {
       .intType()
       .checkValue(ConfigUtils.POSITIVE_INTEGER_VALIDATOR_2, "load checker serverNum threshold must be positive")
       .noDefaultValue()
-      .withDescription("The minimal required number of healthy shuffle servers when being accessed by client");
+      .withDescription(
+          "The minimal required number of healthy shuffle servers when being accessed by client. "
+          + "And when not specified, it will use the required shuffle-server number from client as the checking "
+          + "condition. If there is no client shuffle-server number specified, the coordinator conf "
+          + "of rss.coordinator.shuffle.nodes.max will be adopted");
   public static final ConfigOption<Boolean> COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED = ConfigOptions
       .key("rss.coordinator.dynamicClientConf.enabled")
       .booleanType()
