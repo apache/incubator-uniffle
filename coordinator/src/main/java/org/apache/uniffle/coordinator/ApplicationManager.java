@@ -19,6 +19,7 @@ package org.apache.uniffle.coordinator;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +71,8 @@ public class ApplicationManager {
   // it's only for test case to check if status check has problem
   private boolean hasErrorInStatusCheck = false;
   private boolean remotePathIsHealthy = true;
+  // TODO: Add anomaly detection for other storage
+  private final static List<String> REMOTE_PATH_SCHEMA = Arrays.asList("hdfs");
 
   public ApplicationManager(CoordinatorConf conf) {
     storageStrategy = conf.get(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY);
@@ -103,44 +106,49 @@ public class ApplicationManager {
   public void checkReadAndWrite() {
     if (remoteStoragePathRankValue.size() > 1) {
       for (String path : remoteStoragePathRankValue.keySet()) {
-        Path remotePath = new Path(path);
-        Path testPath = new Path(path + "/rssTest");
-        long startWriteTime = System.currentTimeMillis();
-        try {
-          FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hdfsConf);
-          for (int j = 0; j < readAndWriteTimes; j++) {
-            byte[] data = RandomUtils.nextBytes(fileSize);
-            try (FSDataOutputStream fos = fs.create(testPath)) {
-              fos.write(data);
-              fos.flush();
-            }
-            byte[] readData = new byte[fileSize];
-            int readBytes;
-            try (FSDataInputStream fis = fs.open(testPath)) {
-              int hasReadBytes = 0;
-              do {
-                readBytes = fis.read(readData);
-                if (hasReadBytes < fileSize) {
-                  for (int i = 0; i < readBytes; i++) {
-                    if (data[hasReadBytes + i] != readData[i]) {
-                      RankValue rankValue = remoteStoragePathRankValue.get(path);
-                      remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
-                      throw new RssException("The content of reading and writing is inconsistent.");
+        if (path.startsWith(REMOTE_PATH_SCHEMA.get(0))) {
+          Path remotePath = new Path(path);
+          String rssTest = path + "/rssTest";
+          Path testPath = new Path(rssTest);
+          long startWriteTime = System.currentTimeMillis();
+          try {
+            FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hdfsConf);
+            for (int j = 0; j < readAndWriteTimes; j++) {
+              byte[] data = RandomUtils.nextBytes(fileSize);
+              try (FSDataOutputStream fos = fs.create(testPath)) {
+                fos.write(data);
+                fos.flush();
+              }
+              byte[] readData = new byte[fileSize];
+              int readBytes;
+              try (FSDataInputStream fis = fs.open(testPath)) {
+                int hasReadBytes = 0;
+                do {
+                  readBytes = fis.read(readData);
+                  if (hasReadBytes < fileSize) {
+                    for (int i = 0; i < readBytes; i++) {
+                      if (data[hasReadBytes + i] != readData[i]) {
+                        RankValue rankValue = remoteStoragePathRankValue.get(path);
+                        remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
+                        throw new RssException("The content of reading and writing is inconsistent.");
+                      }
                     }
                   }
-                }
-                hasReadBytes += readBytes;
-              } while (readBytes != -1);
+                  hasReadBytes += readBytes;
+                } while (readBytes != -1);
+              }
             }
+          } catch (Exception e) {
+            remotePathIsHealthy = false;
+            LOG.error("Storage read and write error, we will not use this remote path {}.", path, e);
+            RankValue rankValue = remoteStoragePathRankValue.get(path);
+            remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
+          } finally {
+            sizeList = selectStorageStrategy.sortPathByRankValue(path, rssTest, startWriteTime, remotePathIsHealthy);
+            remotePathIsHealthy = true;
           }
-        } catch (Exception e) {
-          remotePathIsHealthy = false;
-          LOG.error("Storage read and write error, we will not use this remote path {}.", path, e);
-          RankValue rankValue = remoteStoragePathRankValue.get(path);
-          remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
-        } finally {
-          sizeList = selectStorageStrategy.sortPathByRankValue(path, testPath, startWriteTime, remotePathIsHealthy);
-          remotePathIsHealthy = true;
+        } else {
+          sizeList = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
         }
       }
     } else {

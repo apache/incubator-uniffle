@@ -53,10 +53,10 @@ public class AppBalanceSelectStorageStrategy implements SelectStorageStrategy {
   @VisibleForTesting
   @Override
   public List<Map.Entry<String, RankValue>> sortPathByRankValue(
-      String path, Path testPath, long time, boolean isHealthy) {
+      String path, String test, long time, boolean isHealthy) {
     try {
       FileSystem fs = HadoopFilesystemProvider.getFilesystem(new Path(path), conf);
-      fs.delete(testPath, true);
+      fs.delete(new Path(test),true);
       if (isHealthy) {
         RankValue rankValue = remoteStoragePathRankValue.get(path);
         remoteStoragePathRankValue.put(path, new RankValue(0, rankValue.getAppNum().get()));

@@ -48,7 +48,7 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
   private final String remoteStorage1 = "hdfs://p1";
   private final String remoteStorage2 = "hdfs://p2";
   private final String remoteStorage3 = "hdfs://p3";
-  private final Path testFile = new Path("test");
+  private final String testFile = "test";
 
   @TempDir
   private static File remotePath = new File("hdfs://rss");
@@ -86,7 +86,8 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
 
   @Test
   public void selectStorageTest() throws Exception {
-    final FileSystem fs = testFile.getFileSystem(hdfsConf);
+    final Path path = new Path(testFile);
+    final FileSystem fs = path.getFileSystem(hdfsConf);
 
     String remoteStoragePath = remoteStorage1 + Constants.COMMA_SPLIT_CHAR + remoteStorage2;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
@@ -107,9 +108,9 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     Thread.sleep(1000);
     final long current = System.currentTimeMillis();
     applicationManager.refreshAppId(testApp1);
-    fs.create(testFile);
+    fs.create(path);
     selectStorageStrategy.sortPathByRankValue(remoteStorage2, testFile, current, true);
-    fs.create(testFile);
+    fs.create(path);
     selectStorageStrategy.sortPathByRankValue(remoteStorage1, testFile, current, true);
     assertEquals(remoteStorage2, applicationManager.pickRemoteStorage(testApp1).getPath());
     assertEquals(remoteStorage2, applicationManager.getAppIdToRemoteStorageInfo().get(testApp1).getPath());
@@ -154,7 +155,6 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
 
   @Test
   public void selectStorageMulThreadTest() throws Exception {
-    FileSystem fs = testFile.getFileSystem(hdfsConf);
     String remoteStoragePath = remoteStorage1 + Constants.COMMA_SPLIT_CHAR + remoteStorage2
         + Constants.COMMA_SPLIT_CHAR + remoteStorage3;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");

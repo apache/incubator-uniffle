@@ -29,8 +29,6 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -52,7 +50,7 @@ public class ClientConfManagerTest {
   @TempDir
   private final File remotePath = new File("hdfs://rss");
   private static MiniDFSCluster cluster;
-  private Configuration hdfsConf = new Configuration();
+  private final Configuration hdfsConf = new Configuration();
 
   @BeforeEach
   public void setUp() {
@@ -245,8 +243,7 @@ public class ClientConfManagerTest {
     // init readWriteRankScheduler
     LowestIOSampleCostSelectStorageStrategy selectStorageStrategy =
         (LowestIOSampleCostSelectStorageStrategy) applicationManager.getSelectStorageStrategy();
-    Path testPath = new Path("/test");
-    FileSystem fs = testPath.getFileSystem(hdfsConf);
+    String testPath = "/test";
 
     final ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
     // the reason for sleep here is to ensure that threads can be scheduled normally, the same below

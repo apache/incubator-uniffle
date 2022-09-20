@@ -57,10 +57,10 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
   @VisibleForTesting
   @Override
   public List<Map.Entry<String, RankValue>> sortPathByRankValue(
-      String path, Path testPath, long startWrite, boolean isHealthy) {
+      String path, String testPath, long startWrite, boolean isHealthy) {
     try {
       FileSystem fs = HadoopFilesystemProvider.getFilesystem(new Path(path), conf);
-      fs.delete(testPath, true);
+      fs.delete(new Path(testPath), true);
       if (isHealthy) {
         long totalTime = System.currentTimeMillis() - startWrite;
         RankValue rankValue = remoteStoragePathRankValue.get(path);
