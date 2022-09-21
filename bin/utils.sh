@@ -41,15 +41,32 @@ function common_shutdown {
   process_name="$1"
   install_dir="$2"
   max_attempt=30
-  pid=`cat ${install_dir}/currentpid`
+  get_pid_file_name ${process_name}
+  pid_file_name="${pid_file}"
+  pid=`cat ${install_dir}/${pid_file_name}`
 
   kill_process_with_retry "${pid}" "${process_name}" "${max_attempt}"
 
   if [[ $? == 0 ]]; then
-    rm -f ${install_dir}/currentpid
+    rm -f ${install_dir}/${pid_file_name}
     return 0
   else
     return 1
+  fi
+}
+
+#---
+# args:               Process name, coordinator or shuffle-server
+#---
+function get_pid_file_name {
+  process_name="$1"
+  if [[ $process_name == "coordinator" ]]; then
+    pid_file="coordinator.pid"
+  elif [[ $process_name == "shuffle-server" ]]; then
+    pid_file="shuffle-server.pid"
+  else
+    echo "Invalid process name: $process_name"
+    exit 1
   fi
 }
 
@@ -123,5 +140,69 @@ function is_port_in_use {
     echo "port[$port] is already in use"
     exit 1
   fi
+}
+#---
+# load_rss_env: Export RSS environment variables
+#---
+function load_rss_env {
+  set -o allexport
+
+  # find rss-env.sh
+  set +o nounset
+  if [ -f "${RSS_CONF_DIR}/rss-env.sh" ]; then
+     RSS_ENV_SH="${RSS_CONF_DIR}/rss-env.sh"
+  elif [ -f "${RSS_HOME}/bin/rss-env.sh" ]; then
+     RSS_ENV_SH="${RSS_HOME}/bin/rss-env.sh"
+  else
+     RSS_ENV_SH="$(cd "$(dirname "$0")"; pwd)/rss-env.sh"
+  fi
+  set -o nounset
+  echo "Using rss_env.sh: ${RSS_ENV_SH}"
+
+  # export rss-env.sh
+  source "${RSS_ENV_SH}"
+
+  # check
+  if [ -z "$JAVA_HOME" ]; then
+    echo "No env JAVA_HOME."
+    exit 1
+  fi
+  if [ -z "$HADOOP_HOME" ]; then
+    echo "No env HADOOP_HOME."
+    exit 1
+  fi
+
+  # export default value
+  set +o nounset
+  if [ -z "$RSS_HOME" ]; then
+    RSS_HOME="$(cd "$(dirname "$0")/.."; pwd)"
+  fi
+  if [ -z "$RSS_CONF_DIR" ]; then
+    RSS_CONF_DIR="${RSS_HOME}/conf"
+  fi
+  if [ -z "$HADOOP_CONF_DIR" ]; then
+    HADOOP_CONF_DIR="${HADOOP_HOME}/etc/hadoop"
+  fi
+  if [ -z "$RSS_LOG_DIR" ]; then
+    RSS_LOG_DIR="${RSS_HOME}/logs"
+  fi
+  if [ -z "$RSS_PID_DIR" ]; then
+    RSS_PID_DIR="${RSS_HOME}"
+  fi
+  set -o nounset
+
+  RUNNER="${JAVA_HOME}/bin/java"
+  JPS="${JAVA_HOME}/bin/jps"
+
+  # print
+  echo "Using Java from ${JAVA_HOME}"
+  echo "Using Hadoop from ${HADOOP_HOME}"
+  echo "Using RSS from ${RSS_HOME}"
+  echo "Using RSS conf from ${RSS_CONF_DIR}"
+  echo "Using Hadoop conf from ${HADOOP_CONF_DIR}"
+  echo "Write log file to ${RSS_LOG_DIR}"
+  echo "Write pid file to ${RSS_PID_DIR}"
+
+  set +o allexport
 }
 

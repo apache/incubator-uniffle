@@ -53,6 +53,13 @@ public class ShuffleServerMetrics {
   private static final String TOTAL_READ_MEMORY_DATA = "total_read_memory_data";
   private static final String TOTAL_READ_TIME = "total_read_time";
 
+  private static final String LOCAL_STORAGE_TOTAL_DIRS_NUM = "local_storage_total_dirs_num";
+  private static final String LOCAL_STORAGE_CORRUPTED_DIRS_NUM = "local_storage_corrupted_dirs_num";
+  private static final String LOCAL_STORAGE_TOTAL_SPACE = "local_storage_total_space";
+  private static final String LOCAL_STORAGE_USED_SPACE = "local_storage_used_space";
+  private static final String LOCAL_STORAGE_USED_SPACE_RATIO = "local_storage_used_space_ratio";
+
+  private static final String IS_HEALTHY = "is_healthy";
   private static final String REGISTERED_SHUFFLE = "registered_shuffle";
   private static final String REGISTERED_SHUFFLE_ENGINE = "registered_shuffle_engine";
   private static final String BUFFERED_DATA_SIZE = "buffered_data_size";
@@ -101,6 +108,13 @@ public class ShuffleServerMetrics {
   public static Counter counterLocalStorageFailedWrite;
   public static Counter counterLocalStorageSuccessWrite;
 
+  public static Gauge gaugeLocalStorageTotalDirsNum;
+  public static Gauge gaugeLocalStorageCorruptedDirsNum;
+  public static Gauge gaugeLocalStorageTotalSpace;
+  public static Gauge gaugeLocalStorageUsedSpace;
+  public static Gauge gaugeLocalStorageUsedSpaceRatio;
+
+  public static Gauge gaugeIsHealthy;
   public static Gauge gaugeRegisteredShuffle;
   public static Gauge gaugeRegisteredShuffleEngine;
   public static Gauge gaugeBufferDataSize;
@@ -239,6 +253,13 @@ public class ShuffleServerMetrics {
     counterLocalStorageFailedWrite = metricsManager.addCounter(STORAGE_FAILED_WRITE_LOCAL);
     counterLocalStorageSuccessWrite = metricsManager.addCounter(STORAGE_SUCCESS_WRITE_LOCAL);
 
+    gaugeLocalStorageTotalDirsNum = metricsManager.addGauge(LOCAL_STORAGE_TOTAL_DIRS_NUM);
+    gaugeLocalStorageCorruptedDirsNum = metricsManager.addGauge(LOCAL_STORAGE_CORRUPTED_DIRS_NUM);
+    gaugeLocalStorageTotalSpace = metricsManager.addGauge(LOCAL_STORAGE_TOTAL_SPACE);
+    gaugeLocalStorageUsedSpace = metricsManager.addGauge(LOCAL_STORAGE_USED_SPACE);
+    gaugeLocalStorageUsedSpaceRatio = metricsManager.addGauge(LOCAL_STORAGE_USED_SPACE_RATIO);
+
+    gaugeIsHealthy = metricsManager.addGauge(IS_HEALTHY);
     gaugeRegisteredShuffle = metricsManager.addGauge(REGISTERED_SHUFFLE);
     gaugeRegisteredShuffleEngine = metricsManager.addGauge(REGISTERED_SHUFFLE_ENGINE);
     gaugeBufferDataSize = metricsManager.addGauge(BUFFERED_DATA_SIZE);

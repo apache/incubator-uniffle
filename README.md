@@ -24,6 +24,9 @@ Currently it supports [Apache Spark](https://spark.apache.org) and [MapReduce](h
 
 [![Build](https://github.com/apache/incubator-uniffle/actions/workflows/build.yml/badge.svg?branch=master&event=push)](https://github.com/apache/incubator-uniffle/actions/workflows/build.yml)
 [![Codecov](https://codecov.io/gh/apache/incubator-uniffle/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/incubator-uniffle)
+[![](https://sloc.xyz/github/apache/incubator-uniffle)](https://github.com/apache/incubator-uniffle)
+[![Code Quality](https://img.shields.io/lgtm/grade/java/github/apache/incubator-uniffle?label=code%20quality)](https://lgtm.com/projects/g/apache/incubator-uniffle/)
+[![License](https://img.shields.io/github/license/apache/incubator-uniffle)](https://github.com/apache/incubator-uniffle/blob/master/LICENSE)
 
 ## Architecture
 ![Rss Architecture](docs/asset/rss_architecture.png)
@@ -81,17 +84,25 @@ Build against profile Spark3(3.1.2)
 
     mvn -DskipTests clean package -Pspark3
 
-Build against Spark 3.2.x
+Build against Spark 3.2.x, Except 3.2.0
 
     mvn -DskipTests clean package -Pspark3.2
+
+Build against Spark 3.2.0
+
+    mvn -DskipTests clean package -Pspark3.2.0
 
 To package the Uniffle, run:
 
     ./build_distribution.sh
 
-Package against Spark 3.2.x, run:
+Package against Spark 3.2.x, Except 3.2.0, run:
 
     ./build_distribution.sh --spark3-profile 'spark3.2'
+
+Package against Spark 3.2.0, run:
+
+    ./build_distribution.sh --spark3-profile 'spark3.2.0'
 
 rss-xxx.tgz will be generated for deployment
 
@@ -245,10 +256,32 @@ For more details of advanced configuration, please see [Uniffle Coordinator Guid
 |rss.storage.type|-|Supports MEMORY_LOCALFILE, MEMORY_HDFS, MEMORY_LOCALFILE_HDFS|
 |rss.server.flush.cold.storage.threshold.size|64M| The threshold of data size for LOACALFILE and HDFS if MEMORY_LOCALFILE_HDFS is used|
 |rss.server.tags|-|The comma-separated list of tags to indicate the shuffle server's attributes. It will be used as the assignment basis for the coordinator|
+|rss.server.single.buffer.flush.enabled|false|Whether single buffer flush when size exceeded rss.server.single.buffer.flush.threshold|
+|rss.server.single.buffer.flush.threshold|64M|The threshold of single shuffle buffer flush|
 
 ### Shuffle Client
 
 For more details of advanced configuration, please see [Uniffle Shuffle Client Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/client_guide.md).
+
+## Security：Hadoop kerberos authentication
+The primary goals of the Uniffle Kerberos security are:
+1. to enable secure data access for coordinator/shuffle-servers, like dynamic conf/exclude-node files stored in secured dfs cluster
+2. to write shuffle data to kerberos secured dfs cluster for shuffle-servers.
+
+The following security configurations are introduced.
+
+|Property Name|Default|Description|
+|---|---|---|
+|rss.security.hadoop.kerberos.enable|false|Whether enable access secured hadoop cluster|
+|rss.security.hadoop.kerberos.krb5-conf.file|-|The file path of krb5.conf. And only when rss.security.hadoop.kerberos.enable is enabled, the option will be valid|
+|rss.security.hadoop.kerberos.keytab.file|-|The kerberos keytab file path. And only when rss.security.hadoop.kerberos.enable is enabled, the option will be valid|
+|rss.security.hadoop.kerberos.principal|-|The kerberos keytab principal. And only when rss.security.hadoop.kerberos.enable is enabled, the option will be valid|
+|rss.security.hadoop.kerberos.relogin.interval.sec|60|The kerberos authentication relogin interval. unit: sec|
+
+* The proxy user mechanism is used to keep the data isolation in uniffle, which means the shuffle-data written by 
+  shuffle-servers is owned by spark app's user. To achieve the this, the login user specified by above config should 
+  be as the superuser for HDFS. For more details of related sections, 
+  please see [Proxy user - Superusers Acting On Behalf Of Other Users](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/Superusers.html)
 
 ## LICENSE
 

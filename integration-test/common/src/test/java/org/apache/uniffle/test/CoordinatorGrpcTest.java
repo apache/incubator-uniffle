@@ -60,7 +60,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.set(RssBaseConf.RPC_METRICS_ENABLED, true);
-    coordinatorConf.set(CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY, "BASIC");
+    coordinatorConf.setString(CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY.key(), "BASIC");
     coordinatorConf.setLong("rss.coordinator.app.expired", 2000);
     coordinatorConf.setLong("rss.coordinator.server.heartbeat.timeout", 3000);
     createCoordinatorServer(coordinatorConf);
@@ -242,8 +242,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
   }
 
   @Test
-  public void rpcMetricsTest() throws Exception{
-    String appId = "rpcMetricsTest";
+  public void rpcMetricsTest() throws Exception {
     double oldValue = coordinators.get(0).getGrpcMetrics().getCounterMap()
         .get(CoordinatorGrpcMetrics.HEARTBEAT_METHOD).get();
     CoordinatorTestUtils.waitForRegister(coordinatorClient,2);
@@ -254,6 +253,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
         coordinators.get(0).getGrpcMetrics().getGaugeMap()
             .get(CoordinatorGrpcMetrics.HEARTBEAT_METHOD).get(), 0.5);
 
+    String appId = "rpcMetricsTest";
     RssGetShuffleAssignmentsRequest request = new RssGetShuffleAssignmentsRequest(
         appId, 1, 10, 4, 1,
         Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));

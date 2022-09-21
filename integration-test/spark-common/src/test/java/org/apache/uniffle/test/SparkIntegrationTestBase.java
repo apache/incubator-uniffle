@@ -49,8 +49,8 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
 
     long start = System.currentTimeMillis();
     updateCommonSparkConf(sparkConf);
-    Map resultWithoutRss = runSparkApp(sparkConf, fileName);
-    long durationWithoutRss = System.currentTimeMillis() - start;
+    final Map resultWithoutRss = runSparkApp(sparkConf, fileName);
+    final long durationWithoutRss = System.currentTimeMillis() - start;
 
     Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
     updateSparkConfWithRss(sparkConf);

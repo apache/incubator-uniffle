@@ -26,8 +26,8 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.DelegationRssShuffleManager;
-import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.RssShuffleManager;
+import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.ShuffleManager;
 import org.apache.spark.shuffle.sort.SortShuffleManager;
 import org.junit.jupiter.api.Test;
@@ -61,7 +61,7 @@ public class AutoAccessTest extends IntegrationTestBase {
     printWriter.println(" spark.mock.2 overwrite-conf ");
     printWriter.println(" spark.mock.3 true ");
     printWriter.println("spark.rss.storage.type " + StorageType.MEMORY_LOCALFILE_HDFS.name());
-    printWriter.println(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key()+ " expectedPath");
+    printWriter.println(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key() + " expectedPath");
     printWriter.flush();
     printWriter.close();
 
@@ -83,7 +83,8 @@ public class AutoAccessTest extends IntegrationTestBase {
     coordinatorConf.setString("rss.coordinator.access.candidates.path", candidatesFile);
     coordinatorConf.setString(
         "rss.coordinator.access.checkers",
-        "org.apache.uniffle.coordinator.AccessCandidatesChecker,org.apache.uniffle.coordinator.AccessClusterLoadChecker");
+        "org.apache.uniffle.coordinator.AccessCandidatesChecker,"
+            + "org.apache.uniffle.coordinator.AccessClusterLoadChecker");
     createCoordinatorServer(coordinatorConf);
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
@@ -162,7 +163,7 @@ public class AutoAccessTest extends IntegrationTestBase {
     printWriter.println(" spark.mock.2 overwrite-conf ");
     printWriter.println(" spark.mock.3 false ");
     printWriter.println("spark.rss.storage.type " + StorageType.MEMORY_LOCALFILE_HDFS.name());
-    printWriter.println(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key()+ " expectedPathNew");
+    printWriter.println(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key() + " expectedPathNew");
     printWriter.flush();
     printWriter.close();
     fs.rename(tmpPath, path);

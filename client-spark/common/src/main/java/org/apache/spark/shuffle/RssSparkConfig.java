@@ -19,7 +19,7 @@ package org.apache.spark.shuffle;
 
 import java.util.Set;
 
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 import org.apache.spark.internal.config.ConfigBuilder;
 import org.apache.spark.internal.config.ConfigEntry;
 import org.apache.spark.internal.config.TypedConfigBuilder;
@@ -231,7 +231,7 @@ public class RssSparkConfig {
       .createWithDefault("");
 
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
-      Sets.newHashSet(RSS_STORAGE_TYPE.key(), RSS_REMOTE_STORAGE_PATH.key());
+      ImmutableSet.of(RSS_STORAGE_TYPE.key(), RSS_REMOTE_STORAGE_PATH.key());
 
   public static final boolean RSS_USE_RSS_SHUFFLE_MANAGER_DEFAULT_VALUE = false;
 

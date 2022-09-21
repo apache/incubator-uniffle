@@ -34,6 +34,7 @@ import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssGetInMemoryShuffleDataRequest;
 import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
 import org.apache.uniffle.client.request.RssGetShuffleIndexRequest;
+import org.apache.uniffle.client.request.RssGetShuffleResultForMultiPartRequest;
 import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
@@ -54,7 +55,9 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
 import org.apache.uniffle.proto.RssProtos.FinishShuffleRequest;
@@ -65,6 +68,8 @@ import org.apache.uniffle.proto.RssProtos.GetLocalShuffleIndexRequest;
 import org.apache.uniffle.proto.RssProtos.GetLocalShuffleIndexResponse;
 import org.apache.uniffle.proto.RssProtos.GetMemoryShuffleDataRequest;
 import org.apache.uniffle.proto.RssProtos.GetMemoryShuffleDataResponse;
+import org.apache.uniffle.proto.RssProtos.GetShuffleResultForMultiPartRequest;
+import org.apache.uniffle.proto.RssProtos.GetShuffleResultForMultiPartResponse;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultRequest;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultResponse;
 import org.apache.uniffle.proto.RssProtos.PartitionToBlockIds;
@@ -109,7 +114,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
   }
   
-  private ShuffleServerBlockingStub getBlockingStub() {
+  public ShuffleServerBlockingStub getBlockingStub() {
     return blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
   }
 
@@ -122,11 +127,13 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       String appId,
       int shuffleId,
       List<PartitionRange> partitionRanges,
-      RemoteStorageInfo remoteStorageInfo) {
+      RemoteStorageInfo remoteStorageInfo,
+      String user) {
     ShuffleRegisterRequest.Builder reqBuilder = ShuffleRegisterRequest.newBuilder();
     reqBuilder
         .setAppId(appId)
         .setShuffleId(shuffleId)
+        .setUser(user)
         .addAllPartitionRanges(toShufflePartitionRanges(partitionRanges));
     RemoteStorage.Builder rsBuilder = RemoteStorage.newBuilder();
     rsBuilder.setPath(remoteStorageInfo.getPath());
@@ -183,7 +190,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       }
       try {
         long backoffTime =
-            Math.min(retryIntervalMax, backOffBase * (1 << Math.min(retry, 16)) + random.nextInt(backOffBase));
+            Math.min(retryIntervalMax, backOffBase * (1L << Math.min(retry, 16)) + random.nextInt(backOffBase));
         Thread.sleep(backoffTime);
       } catch (Exception e) {
         LOG.warn("Exception happened when require pre allocation from " + host + ":" + port, e);
@@ -205,7 +212,9 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         request.getAppId(),
         request.getShuffleId(),
         request.getPartitionRanges(),
-        request.getRemoteStorageInfo());
+        request.getRemoteStorageInfo(),
+        request.getUser()
+    );
 
     RssRegisterShuffleResponse response;
     StatusCode statusCode = rpcResponse.getStatus();
@@ -253,29 +262,40 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .build());
       }
 
-      long requireId = requirePreAllocation(size, request.getRetryMax(), request.getRetryIntervalMax());
-      if (requireId != FAILED_REQUIRE_ID) {
-        SendShuffleDataRequest rpcRequest = SendShuffleDataRequest.newBuilder()
-            .setAppId(appId)
-            .setShuffleId(stb.getKey())
-            .setRequireBufferId(requireId)
-            .addAllShuffleData(shuffleData)
-            .build();
-        long start = System.currentTimeMillis();
-        SendShuffleDataResponse response = doSendData(rpcRequest);
-        LOG.info("Do sendShuffleData to {}:{} rpc cost:" + (System.currentTimeMillis() - start)
-            + " ms for " + size + " bytes with " + blockNum + " blocks", host, port);
-
-        if (response.getStatus() != StatusCode.SUCCESS) {
-          String msg = "Can't send shuffle data with " + blockNum
-              + " blocks to " + host + ":" + port
-              + ", statusCode=" + response.getStatus()
-              + ", errorMsg:" + response.getRetMsg();
-          LOG.warn(msg);
-          isSuccessful = false;
-          break;
-        }
-      } else {
+      final int allocateSize = size;
+      final int finalBlockNum = blockNum;
+      try {
+        RetryUtils.retry(() -> {
+          long requireId = requirePreAllocation(allocateSize, request.getRetryMax(), request.getRetryIntervalMax());
+          if (requireId == FAILED_REQUIRE_ID) {
+            throw new RssException(String.format(
+                "requirePreAllocation failed! size[%s], host[%s], port[%s]", allocateSize, host, port));
+          }
+          SendShuffleDataRequest rpcRequest = SendShuffleDataRequest.newBuilder()
+              .setAppId(appId)
+              .setShuffleId(stb.getKey())
+              .setRequireBufferId(requireId)
+              .addAllShuffleData(shuffleData)
+              .build();
+          long start = System.currentTimeMillis();
+          SendShuffleDataResponse response = getBlockingStub().sendShuffleData(rpcRequest);
+          LOG.info("Do sendShuffleData to {}:{} rpc cost:" + (System.currentTimeMillis() - start)
+              + " ms for " + allocateSize + " bytes with " + finalBlockNum + " blocks", host, port);
+          if (response.getStatus() != StatusCode.SUCCESS) {
+            String msg = "Can't send shuffle data with " + finalBlockNum
+                + " blocks to " + host + ":" + port
+                + ", statusCode=" + response.getStatus()
+                + ", errorMsg:" + response.getRetMsg();
+            if (response.getStatus() == StatusCode.NO_REGISTER) {
+              throw new NotRetryException(msg);
+            } else {
+              throw new RssException(msg);
+            }
+          }
+          return response;
+        }, request.getRetryIntervalMax(), maxRetryAttempts);
+      } catch (Throwable throwable) {
+        LOG.warn(throwable.getMessage());
         isSuccessful = false;
         break;
       }
@@ -288,21 +308,6 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       response = new RssSendShuffleDataResponse(ResponseStatusCode.INTERNAL_ERROR);
     }
     return response;
-  }
-
-  private SendShuffleDataResponse doSendData(SendShuffleDataRequest rpcRequest) {
-    int retryNum = 0;
-    while (retryNum < maxRetryAttempts) {
-      try {
-        SendShuffleDataResponse response = getBlockingStub().sendShuffleData(rpcRequest);
-        return response;
-      } catch (Exception e) {
-        retryNum++;
-        LOG.warn("Send data to host[" + host + "], port[" + port
-            + "] failed, try again, retryNum[" + retryNum + "]", e);
-      }
-    }
-    throw new RssException("Send data to host[" + host + "], port[" + port + "] failed");
   }
 
   @Override
@@ -424,6 +429,38 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setPartitionId(request.getPartitionId())
         .build();
     GetShuffleResultResponse rpcResponse = getBlockingStub().getShuffleResult(rpcRequest);
+    StatusCode statusCode = rpcResponse.getStatus();
+
+    RssGetShuffleResultResponse response;
+    switch (statusCode) {
+      case SUCCESS:
+        try {
+          response = new RssGetShuffleResultResponse(ResponseStatusCode.SUCCESS,
+              rpcResponse.getSerializedBitmap().toByteArray());
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+        break;
+      default:
+        String msg = "Can't get shuffle result from " + host + ":" + port
+            + " for [appId=" + request.getAppId() + ", shuffleId=" + request.getShuffleId()
+            + ", errorMsg:" + rpcResponse.getRetMsg();
+        LOG.error(msg);
+        throw new RssException(msg);
+    }
+
+    return response;
+  }
+
+  @Override
+  public RssGetShuffleResultResponse getShuffleResultForMultiPart(RssGetShuffleResultForMultiPartRequest request) {
+    GetShuffleResultForMultiPartRequest rpcRequest = GetShuffleResultForMultiPartRequest
+        .newBuilder()
+        .setAppId(request.getAppId())
+        .setShuffleId(request.getShuffleId())
+        .addAllPartitions(request.getPartitions())
+        .build();
+    GetShuffleResultForMultiPartResponse rpcResponse = getBlockingStub().getShuffleResultForMultiPart(rpcRequest);
     StatusCode statusCode = rpcResponse.getStatus();
 
     RssGetShuffleResultResponse response;

@@ -43,4 +43,6 @@ public class Constants {
   public static final String CONF_REMOTE_STORAGE_PATH = ".remote.storage.path";
   public static final String RSS_CLIENT_CONF_REMOTE_STORAGE_PATH =
           RSS_CLIENT_CONF_COMMON_PREFIX + CONF_REMOTE_STORAGE_PATH;
+
+  public static final String ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM = "access_info_required_shuffle_nodes_num";
 }

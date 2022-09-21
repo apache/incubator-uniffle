@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
@@ -37,16 +38,16 @@ public class HdfsShuffleDeleteHandler implements ShuffleDeleteHandler {
   }
 
   @Override
-  public void delete(String[] storageBasePaths, String appId) {
+  public void delete(String[] storageBasePaths, String appId, String user) {
     Path path = new Path(ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePaths[0], appId));
     boolean isSuccess = false;
     int times = 0;
     int retryMax = 5;
     long start = System.currentTimeMillis();
-    LOG.info("Try delete shuffle data in HDFS for appId[" + appId + "] with " + path);
+    LOG.info("Try delete shuffle data in HDFS for appId[{}] of user[{}] with {}",appId, user, path);
     while (!isSuccess && times < retryMax) {
       try {
-        FileSystem fileSystem = ShuffleStorageUtils.getFileSystemForPath(path, hadoopConf);
+        FileSystem fileSystem = HadoopFilesystemProvider.getFilesystem(user, path, hadoopConf);
         fileSystem.delete(path, true);
         isSuccess = true;
       } catch (Exception e) {

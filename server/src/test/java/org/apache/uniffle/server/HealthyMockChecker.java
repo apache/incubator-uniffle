@@ -19,12 +19,13 @@ package org.apache.uniffle.server;
 
 class HealthyMockChecker extends Checker {
 
-    public HealthyMockChecker(ShuffleServerConf conf) {
-      super(conf);
-    }
+  @SuppressWarnings("checkstyle:RedundantModifier")
+  public HealthyMockChecker(ShuffleServerConf conf) {
+    super(conf);
+  }
 
-    @Override
-    boolean checkIsHealthy() {
-      return true;
-    }
+  @Override
+  boolean checkIsHealthy() {
+    return true;
+  }
 }

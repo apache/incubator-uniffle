@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.Context;
@@ -50,6 +51,8 @@ import org.apache.uniffle.proto.RssProtos.GetLocalShuffleIndexRequest;
 import org.apache.uniffle.proto.RssProtos.GetLocalShuffleIndexResponse;
 import org.apache.uniffle.proto.RssProtos.GetMemoryShuffleDataRequest;
 import org.apache.uniffle.proto.RssProtos.GetMemoryShuffleDataResponse;
+import org.apache.uniffle.proto.RssProtos.GetShuffleResultForMultiPartRequest;
+import org.apache.uniffle.proto.RssProtos.GetShuffleResultForMultiPartResponse;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultRequest;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultResponse;
 import org.apache.uniffle.proto.RssProtos.PartitionToBlockIds;
@@ -109,6 +112,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String appId = req.getAppId();
     int shuffleId = req.getShuffleId();
     String remoteStoragePath = req.getRemoteStorage().getPath();
+    String user = req.getUser();
+
     Map<String, String> remoteStorageConf = req
         .getRemoteStorage()
         .getRemoteStorageConfList()
@@ -118,12 +123,17 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     List<PartitionRange> partitionRanges = toPartitionRanges(req.getPartitionRangesList());
     LOG.info("Get register request for appId[" + appId + "], shuffleId[" + shuffleId
         + "], remoteStorage[" + remoteStoragePath + "] with "
-        + partitionRanges.size() + " partition ranges");
+        + partitionRanges.size() + " partition ranges. User: {}", user);
 
     StatusCode result = shuffleServer
         .getShuffleTaskManager()
         .registerShuffle(
-            appId, shuffleId, partitionRanges, new RemoteStorageInfo(remoteStoragePath, remoteStorageConf));
+            appId,
+            shuffleId,
+            partitionRanges,
+            new RemoteStorageInfo(remoteStoragePath, remoteStorageConf),
+            user
+        );
 
     reply = ShuffleRegisterResponse
         .newBuilder()
@@ -150,8 +160,18 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       ShuffleServerMetrics.counterTotalReceivedDataSize.inc(requireSize);
       boolean isPreAllocated = shuffleServer.getShuffleTaskManager().isPreAllocated(requireBufferId);
       if (!isPreAllocated) {
-        LOG.warn("Can't find requireBufferId[" + requireBufferId + "] for appId[" + appId
-            + "], shuffleId[" + shuffleId + "]");
+        String errorMsg = "Can't find requireBufferId[" + requireBufferId + "] for appId[" + appId
+            + "], shuffleId[" + shuffleId + "]";
+        LOG.warn(errorMsg);
+        responseMessage = errorMsg;
+        reply = SendShuffleDataResponse
+            .newBuilder()
+            .setStatus(valueOf(StatusCode.INTERNAL_ERROR))
+            .setRetMsg(responseMessage)
+            .build();
+        responseObserver.onNext(reply);
+        responseObserver.onCompleted();
+        return;
       }
       final long start = System.currentTimeMillis();
       List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);
@@ -213,7 +233,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int commitCount = 0;
 
     try {
-      if (!shuffleServer.getShuffleTaskManager().getAppIds().containsKey(appId)) {
+      if (!shuffleServer.getShuffleTaskManager().getAppIds().contains(appId)) {
         throw new IllegalStateException("AppId " + appId + " was removed already");
       }
       commitCount = shuffleServer.getShuffleTaskManager().updateAndGetCommitCount(appId, shuffleId);
@@ -349,7 +369,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
     try {
       serializedBlockIds = shuffleServer.getShuffleTaskManager().getFinishedBlockIds(
-          appId, shuffleId, partitionId);
+          appId, shuffleId, Sets.newHashSet(partitionId));
       if (serializedBlockIds == null) {
         status = StatusCode.INTERNAL_ERROR;
         msg = "Can't get shuffle result for " + requestInfo;
@@ -364,6 +384,45 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     }
 
     reply = GetShuffleResultResponse.newBuilder()
+        .setStatus(valueOf(status))
+        .setRetMsg(msg)
+        .setSerializedBitmap(serializedBlockIdsBytes)
+        .build();
+    responseObserver.onNext(reply);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void getShuffleResultForMultiPart(GetShuffleResultForMultiPartRequest request,
+      StreamObserver<GetShuffleResultForMultiPartResponse> responseObserver) {
+    String appId = request.getAppId();
+    int shuffleId = request.getShuffleId();
+    List<Integer> partitionsList = request.getPartitionsList();
+
+    StatusCode status = StatusCode.SUCCESS;
+    String msg = "OK";
+    GetShuffleResultForMultiPartResponse reply;
+    byte[] serializedBlockIds = null;
+    String requestInfo = "appId[" + appId + "], shuffleId[" + shuffleId + "], partitions" + partitionsList;
+    ByteString serializedBlockIdsBytes = ByteString.EMPTY;
+
+    try {
+      serializedBlockIds = shuffleServer.getShuffleTaskManager().getFinishedBlockIds(
+          appId, shuffleId, Sets.newHashSet(partitionsList));
+      if (serializedBlockIds == null) {
+        status = StatusCode.INTERNAL_ERROR;
+        msg = "Can't get shuffle result for " + requestInfo;
+        LOG.warn(msg);
+      } else {
+        serializedBlockIdsBytes = UnsafeByteOperations.unsafeWrap(serializedBlockIds);
+      }
+    } catch (Exception e) {
+      status = StatusCode.INTERNAL_ERROR;
+      msg = e.getMessage();
+      LOG.error("Error happened when get shuffle result for {}", requestInfo, e);
+    }
+
+    reply = GetShuffleResultForMultiPartResponse.newBuilder()
         .setStatus(valueOf(status))
         .setRetMsg(msg)
         .setSerializedBitmap(serializedBlockIdsBytes)

@@ -22,11 +22,18 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.NotRetryException;
+
 public class RetryUtils {
   private static final Logger LOG = LoggerFactory.getLogger(RetryUtils.class);
 
   public static <T> T retry(RetryCmd<T> cmd, long intervalMs, int retryTimes) throws Throwable {
     return retry(cmd, null, intervalMs, retryTimes, null);
+  }
+
+  public static <T> T retry(RetryCmd<T> cmd, long intervalMs, int retryTimes,
+      Set<Class> exceptionClasses) throws Throwable {
+    return retry(cmd, null, intervalMs, retryTimes, exceptionClasses);
   }
 
   /**
@@ -48,7 +55,8 @@ public class RetryUtils {
         return ret;
       } catch (Throwable t) {
         retry++;
-        if ((exceptionClasses != null && !isInstanceOf(exceptionClasses, t)) || retry >= retryTimes) {
+        if ((exceptionClasses != null && !isInstanceOf(exceptionClasses, t)) || retry >= retryTimes
+            || t instanceof NotRetryException) {
           throw t;
         } else {
           LOG.info("Retry due to Throwable, " + t.getClass().getName() + " " + t.getMessage());

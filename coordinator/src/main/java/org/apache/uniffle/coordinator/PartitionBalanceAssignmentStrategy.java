@@ -100,7 +100,7 @@ public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrate
           PartitionAssignmentInfo partitionInfo2 = serverToPartitions.get(o2);
           double v1 = o1.getAvailableMemory() * 1.0 / (partitionInfo1.getPartitionNum() + assignPartitions);
           double v2 = o2.getAvailableMemory() * 1.0 / (partitionInfo2.getPartitionNum() + assignPartitions);
-          return -Double.compare(v1, v2);
+          return Double.compare(v2, v1);
         }
       });
 

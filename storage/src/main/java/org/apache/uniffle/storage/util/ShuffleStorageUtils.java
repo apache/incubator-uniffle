@@ -26,9 +26,7 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.hash.MurmurHash;
 import org.slf4j.Logger;
@@ -47,22 +45,6 @@ public class ShuffleStorageUtils {
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleStorageUtils.class);
 
   private ShuffleStorageUtils() {
-  }
-
-  public static FileSystem getFileSystemForPath(Path path, Configuration conf) throws IOException {
-    // For local file systems, return the raw local file system, such calls to flush()
-    // actually flushes the stream.
-    try {
-      FileSystem fs = path.getFileSystem(conf);
-      if (fs instanceof LocalFileSystem) {
-        LOG.debug("{} is local file system", path);
-        return ((LocalFileSystem) fs).getRawFileSystem();
-      }
-      return fs;
-    } catch (IOException e) {
-      LOG.error("Fail to get filesystem of {}", path);
-      throw e;
-    }
   }
 
   public static String generateDataFileName(String fileNamePrefix) {
@@ -224,7 +206,7 @@ public class ShuffleStorageUtils {
 
   // index file header is $PartitionNum | [($PartitionId | $PartitionFileLength | $PartitionDataFileLength), ] | $CRC
   public static long getIndexFileHeaderLen(int partitionNum) {
-    return 4 + (4 + 8 + 8) * partitionNum + 8;
+    return 4 + (4 + 8 + 8) * (long) partitionNum + 8;
   }
 
   public static int getHeaderCrcLen() {

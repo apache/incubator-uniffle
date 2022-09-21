@@ -95,11 +95,15 @@ This document will introduce how to deploy Uniffle coordinators.
 |rss.coordinator.remote.storage.cluster.conf|-|Remote Storage Cluster related conf with format $clusterId,$key=$value, separated by ';'|
 |rss.rpc.server.port|-|RPC port for coordinator|
 |rss.jetty.http.port|-|Http port for coordinator|
+|rss.coordinator.remote.storage.select.strategy|APP_BALANCE|Strategy for selecting the remote path|
+|rss.coordinator.remote.storage.io.sample.schedule.time|60000|The time of scheduling the read and write time of the paths to obtain different HDFS|
+|rss.coordinator.remote.storage.io.sample.file.size|204800000|The size of the file that the scheduled thread reads and writes|
+|rss.coordinator.remote.storage.io.sample.access.times|3|The number of times to read and write HDFS files|
 
 ### AccessClusterLoadChecker settings
 |Property Name|Default|	Description|
 |---|---|---|
-|rss.coordinator.access.loadChecker.serverNum.threshold|-|The minimal required number of healthy shuffle servers when being accessed by client|
+|rss.coordinator.access.loadChecker.serverNum.threshold|-|The minimal required number of healthy shuffle servers when being accessed by client. And when not specified, it will use the required shuffle-server number from client as the checking condition. If there is no client shuffle-server number specified, the coordinator conf of rss.coordinator.shuffle.nodes.max will be adopted|
 
 ### AccessCandidatesChecker settings
 AccessCandidatesChecker is one of the built-in access checker, which will allow user to define the candidates list to use rss.  

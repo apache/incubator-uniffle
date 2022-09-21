@@ -23,24 +23,26 @@ import java.util.Set;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.storage.HdfsShuffleHandlerTestBase;
+import org.apache.uniffle.storage.HdfsTestBase;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class HdfsShuffleReadHandlerTest extends HdfsShuffleHandlerTestBase {
+public class HdfsShuffleReadHandlerTest extends HdfsTestBase {
 
-  @Test
-  public void test() {
+  public static void createAndRunCases(String clusterPathPrefix, Configuration conf, String user) {
     try {
-      String basePath = HDFS_URI + "HdfsShuffleFileReadHandlerTest";
+      String basePath = clusterPathPrefix + "HdfsShuffleFileReadHandlerTest";
       HdfsShuffleWriteHandler writeHandler =
           new HdfsShuffleWriteHandler(
               "appId",
@@ -49,7 +51,8 @@ public class HdfsShuffleReadHandlerTest extends HdfsShuffleHandlerTestBase {
               1,
               basePath,
               "test",
-              conf);
+              conf,
+              user);
 
       Map<Long, byte[]> expectedData = Maps.newHashMap();
 
@@ -57,8 +60,8 @@ public class HdfsShuffleReadHandlerTest extends HdfsShuffleHandlerTestBase {
       int totalBlockNum = 0;
       int expectTotalBlockNum = new Random().nextInt(37);
       int blockSize = new Random().nextInt(7) + 1;
-      writeTestData(writeHandler, expectTotalBlockNum, blockSize, 0, expectedData);
-      int total = calcExpectedSegmentNum(expectTotalBlockNum, blockSize, readBufferSize);
+      HdfsShuffleHandlerTestBase.writeTestData(writeHandler, expectTotalBlockNum, blockSize, 0, expectedData);
+      int total = HdfsShuffleHandlerTestBase.calcExpectedSegmentNum(expectTotalBlockNum, blockSize, readBufferSize);
       Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
       Roaring64NavigableMap processBlockIds =  Roaring64NavigableMap.bitmapOf();
       expectedData.forEach((id, block) -> expectBlockIds.addLong(id));
@@ -73,7 +76,7 @@ public class HdfsShuffleReadHandlerTest extends HdfsShuffleHandlerTestBase {
       for (int i = 0; i < total; ++i) {
         ShuffleDataResult shuffleDataResult = handler.readShuffleData();
         totalBlockNum += shuffleDataResult.getBufferSegments().size();
-        checkData(shuffleDataResult, expectedData);
+        HdfsShuffleHandlerTestBase.checkData(shuffleDataResult, expectedData);
         for (BufferSegment bufferSegment : shuffleDataResult.getBufferSegments()) {
           actualBlockIds.add(bufferSegment.getBlockId());
         }
@@ -90,5 +93,10 @@ public class HdfsShuffleReadHandlerTest extends HdfsShuffleHandlerTestBase {
       e.printStackTrace();
       fail(e.getMessage());
     }
+  }
+
+  @Test
+  public void test() {
+    createAndRunCases(HDFS_URI, conf, StringUtils.EMPTY);
   }
 }

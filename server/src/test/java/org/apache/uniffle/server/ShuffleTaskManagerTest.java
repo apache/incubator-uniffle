@@ -25,8 +25,10 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,7 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
@@ -80,9 +83,19 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     int shuffleId = 1;
 
     shuffleTaskManager.registerShuffle(
-        appId, shuffleId, Lists.newArrayList(new PartitionRange(0, 1)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+        appId,
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(0, 1)),
+        RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+        StringUtils.EMPTY
+    );
     shuffleTaskManager.registerShuffle(
-        appId, shuffleId, Lists.newArrayList(new PartitionRange(2, 3)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+        appId,
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(2, 3)),
+        RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+        StringUtils.EMPTY
+    );
 
     Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool =
         shuffleServer.getShuffleBufferManager().getBufferPool();
@@ -95,7 +108,12 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
 
     // register again
     shuffleTaskManager.registerShuffle(
-        appId, shuffleId, Lists.newArrayList(new PartitionRange(0, 1)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+        appId,
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(0, 1)),
+        RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+        StringUtils.EMPTY
+    );
     assertEquals(buffer, bufferPool.get(appId).get(shuffleId).get(0));
   }
 
@@ -103,9 +121,9 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
   public void writeProcessTest() throws Exception {
     String confFile = ClassLoader.getSystemResource("server.conf").getFile();
     ShuffleServerConf conf = new ShuffleServerConf(confFile);
-    String remoteStorage = HDFS_URI + "rss/test";
-    String appId = "testAppId";
-    int shuffleId = 1;
+    final String remoteStorage = HDFS_URI + "rss/test";
+    final String appId = "testAppId";
+    final int shuffleId = 1;
     conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 128L);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
@@ -120,12 +138,22 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(
         conf, shuffleFlushManager, shuffleBufferManager, storageManager);
     shuffleTaskManager.registerShuffle(
-        appId, shuffleId, Lists.newArrayList(new PartitionRange(1, 1)), new RemoteStorageInfo(remoteStorage));
+        appId,
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(1, 1)),
+        new RemoteStorageInfo(remoteStorage),
+        StringUtils.EMPTY
+    );
     shuffleTaskManager.registerShuffle(
-        appId, shuffleId, Lists.newArrayList(new PartitionRange(2, 2)), new RemoteStorageInfo(remoteStorage));
-    List<ShufflePartitionedBlock> expectedBlocks1 = Lists.newArrayList();
-    List<ShufflePartitionedBlock> expectedBlocks2 = Lists.newArrayList();
-    Map<Long, PreAllocatedBufferInfo> bufferIds = shuffleTaskManager.getRequireBufferIds();
+        appId,
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(2, 2)),
+        new RemoteStorageInfo(remoteStorage),
+        StringUtils.EMPTY
+    );
+    final List<ShufflePartitionedBlock> expectedBlocks1 = Lists.newArrayList();
+    final List<ShufflePartitionedBlock> expectedBlocks2 = Lists.newArrayList();
+    final Map<Long, PreAllocatedBufferInfo> bufferIds = shuffleTaskManager.getRequireBufferIds();
 
     shuffleTaskManager.requireBuffer(10);
     shuffleTaskManager.requireBuffer(10);
@@ -227,7 +255,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
   public void clearTest() throws Exception {
     ShuffleServerConf conf = new ShuffleServerConf();
     String storageBasePath = HDFS_URI + "rss/clearTest";
-    int shuffleId = 1;
+    final int shuffleId = 1;
     conf.set(ShuffleServerConf.RPC_SERVER_PORT, 1234);
     conf.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:9527");
     conf.set(ShuffleServerConf.JETTY_HTTP_PORT, 12345);
@@ -245,13 +273,22 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
     ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
     StorageManager storageManager = shuffleServer.getStorageManager();
-    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf, shuffleFlushManager, shuffleBufferManager, storageManager);
+    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf, shuffleFlushManager,
+        shuffleBufferManager, storageManager);
     shuffleTaskManager.registerShuffle(
-        "clearTest1", shuffleId,
-        Lists.newArrayList(new PartitionRange(0, 1)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+        "clearTest1",
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(0, 1)),
+        RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+        StringUtils.EMPTY
+    );
     shuffleTaskManager.registerShuffle(
-        "clearTest2", shuffleId,
-        Lists.newArrayList(new PartitionRange(0, 1)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+        "clearTest2",
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(0, 1)),
+        RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+        StringUtils.EMPTY
+    );
     shuffleTaskManager.refreshAppId("clearTest1");
     shuffleTaskManager.refreshAppId("clearTest2");
     assertEquals(2, shuffleTaskManager.getAppIds().size());
@@ -268,21 +305,25 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
       retry++;
     }
     // application "clearTest2" was removed according to rss.server.app.expired.withoutHeartbeat
-    assertEquals(Sets.newHashSet("clearTest1"), shuffleTaskManager.getAppIds().keySet());
+    assertEquals(Sets.newHashSet("clearTest1"), shuffleTaskManager.getAppIds());
     assertEquals(1, shuffleTaskManager.getCachedBlockIds("clearTest1", shuffleId).getLongCardinality());
 
     // register again
     shuffleTaskManager.registerShuffle(
-        "clearTest2", shuffleId,
-        Lists.newArrayList(new PartitionRange(0, 1)), RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+        "clearTest2",
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(0, 1)),
+        RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+        StringUtils.EMPTY
+    );
     shuffleTaskManager.refreshAppId("clearTest2");
     shuffleTaskManager.checkResourceStatus();
-    assertEquals(Sets.newHashSet("clearTest1", "clearTest2"), shuffleTaskManager.getAppIds().keySet());
+    assertEquals(Sets.newHashSet("clearTest1", "clearTest2"), shuffleTaskManager.getAppIds());
     Thread.sleep(5000);
     shuffleTaskManager.checkResourceStatus();
     // wait resource delete
     Thread.sleep(3000);
-    assertEquals(Sets.newHashSet(), shuffleTaskManager.getAppIds().keySet());
+    assertEquals(Sets.newHashSet(), shuffleTaskManager.getAppIds());
     assertTrue(shuffleTaskManager.getCachedBlockIds("clearTest1", shuffleId).isEmpty());
   }
 
@@ -307,18 +348,127 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
       }
     }
     Roaring64NavigableMap resultBlockIds = shuffleTaskManager.getBlockIdsByPartitionId(
-        expectedPartitionId, bitmapBlockIds);
+        Sets.newHashSet(expectedPartitionId), bitmapBlockIds, Roaring64NavigableMap.bitmapOf());
     assertEquals(expectedBlockIds, resultBlockIds);
 
     bitmapBlockIds.addLong(getBlockId(0, 0, 0));
-    resultBlockIds = shuffleTaskManager.getBlockIdsByPartitionId(0, bitmapBlockIds);
+    resultBlockIds = shuffleTaskManager.getBlockIdsByPartitionId(Sets.newHashSet(0), bitmapBlockIds,
+        Roaring64NavigableMap.bitmapOf());
     assertEquals(Roaring64NavigableMap.bitmapOf(0L), resultBlockIds);
 
     long expectedBlockId = getBlockId(
         Constants.MAX_PARTITION_ID, Constants.MAX_TASK_ATTEMPT_ID, Constants.MAX_SEQUENCE_NO);
     bitmapBlockIds.addLong(expectedBlockId);
-    resultBlockIds = shuffleTaskManager.getBlockIdsByPartitionId(Constants.MAX_PARTITION_ID, bitmapBlockIds);
+    resultBlockIds = shuffleTaskManager.getBlockIdsByPartitionId(Sets.newHashSet(Math.toIntExact(
+        Constants.MAX_PARTITION_ID)), bitmapBlockIds, Roaring64NavigableMap.bitmapOf());
     assertEquals(Roaring64NavigableMap.bitmapOf(expectedBlockId), resultBlockIds);
+  }
+
+  @Test
+  public void getBlockIdsByMultiPartitionTest() {
+    ShuffleServerConf conf = new ShuffleServerConf();
+    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(
+        conf, null, null, null);
+
+    Roaring64NavigableMap expectedBlockIds = Roaring64NavigableMap.bitmapOf();
+    int startPartition = 3;
+    int endPartition = 5;
+    Roaring64NavigableMap bitmapBlockIds = Roaring64NavigableMap.bitmapOf();
+    for (int taskId = 1; taskId < 10; taskId++) {
+      for (int partitionId = 1; partitionId < 10; partitionId++) {
+        for (int i = 0; i < 2; i++) {
+          long blockId = getBlockId(partitionId, taskId, i);
+          bitmapBlockIds.addLong(blockId);
+          if (partitionId >= startPartition && partitionId <= endPartition) {
+            expectedBlockIds.addLong(blockId);
+          }
+        }
+      }
+    }
+    Set<Integer> requestPartitions = Sets.newHashSet();
+    Set<Integer> allPartitions = Sets.newHashSet();
+    for (int partitionId = 1; partitionId < 10; partitionId++) {
+      allPartitions.add(partitionId);
+      if (partitionId >= startPartition && partitionId <= endPartition) {
+        requestPartitions.add(partitionId);
+      }
+    }
+
+    Roaring64NavigableMap resultBlockIds =
+        shuffleTaskManager.getBlockIdsByPartitionId(requestPartitions, bitmapBlockIds,
+            Roaring64NavigableMap.bitmapOf());
+    assertEquals(expectedBlockIds, resultBlockIds);
+    assertEquals(bitmapBlockIds, shuffleTaskManager.getBlockIdsByPartitionId(allPartitions, bitmapBlockIds,
+        Roaring64NavigableMap.bitmapOf()));
+  }
+
+  @Test
+  public void testGetFinishedBlockIds() throws Exception {
+    ShuffleServerConf conf = new ShuffleServerConf();
+    String storageBasePath = HDFS_URI + "rss/test";
+    String appId = "test_app";
+    final int shuffleId = 1;
+    final int bitNum = 3;
+    final int partitionNum = 10;
+    final int taskNum = 10;
+    final int blocksPerTask = 2;
+    conf.set(ShuffleServerConf.RPC_SERVER_PORT, 1234);
+    conf.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:9527");
+    conf.set(ShuffleServerConf.JETTY_HTTP_PORT, 12345);
+    conf.set(ShuffleServerConf.JETTY_CORE_POOL_SIZE, 64);
+    conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 128L);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storageBasePath));
+    conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
+    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
+    conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
+
+    ShuffleServer shuffleServer = new ShuffleServer(conf);
+    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
+    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
+    StorageManager storageManager = shuffleServer.getStorageManager();
+    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf, shuffleFlushManager,
+        shuffleBufferManager, storageManager);
+
+    int startPartition = 6;
+    int endPartition = 9;
+    Roaring64NavigableMap expectedBlockIds = Roaring64NavigableMap.bitmapOf();
+    Map<Integer, long[]>  blockIdsToReport = Maps.newHashMap();
+
+    for (int partitionId = 0; partitionId < partitionNum; partitionId++) {
+      shuffleTaskManager.registerShuffle(
+          appId,
+          shuffleId,
+          Lists.newArrayList(new PartitionRange(partitionId, partitionId)),
+          new RemoteStorageInfo(storageBasePath),
+          StringUtils.EMPTY
+      );
+      long[] blockIds = new long[taskNum * blocksPerTask];
+      for (int taskId = 0; taskId < taskNum; taskId++) {
+        for (int i = 0; i < blocksPerTask; i++) {
+          long blockId = getBlockId(partitionId, taskId, i);
+          blockIds[taskId * blocksPerTask + i] = blockId;
+        }
+      }
+      blockIdsToReport.putIfAbsent(partitionId, blockIds);
+      if (partitionId >= startPartition) {
+        expectedBlockIds.add(blockIds);
+      }
+    }
+    assertEquals((endPartition - startPartition + 1) * taskNum *  blocksPerTask,
+        expectedBlockIds.getLongCardinality());
+
+    shuffleTaskManager.addFinishedBlockIds(appId, shuffleId, blockIdsToReport, bitNum);
+    Set<Integer> requestPartitions = Sets.newHashSet();
+    for (int partitionId = startPartition; partitionId <= endPartition; partitionId++) {
+      requestPartitions.add(partitionId);
+    }
+    byte[] serializeBitMap =
+        shuffleTaskManager.getFinishedBlockIds(appId, shuffleId, requestPartitions);
+    Roaring64NavigableMap resBlockIds = RssUtils.deserializeBitMap(serializeBitMap);
+    assertEquals(expectedBlockIds, resBlockIds);
   }
 
   // copy from ClientUtils

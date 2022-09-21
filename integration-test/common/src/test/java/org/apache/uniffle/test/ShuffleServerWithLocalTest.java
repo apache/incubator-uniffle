@@ -28,8 +28,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.LongIterator;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -97,11 +97,6 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
     Roaring64NavigableMap[] bitmaps = new Roaring64NavigableMap[4];
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = createTestData(bitmaps, expectedData);
 
-    Set<Long> expectedBlockIds1 = transBitmapToSet(bitmaps[0]);
-    Set<Long> expectedBlockIds2 = transBitmapToSet(bitmaps[1]);
-    Set<Long> expectedBlockIds3 = transBitmapToSet(bitmaps[2]);
-    Set<Long> expectedBlockIds4 = transBitmapToSet(bitmaps[3]);
-
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
     shuffleToBlocks.put(0, partitionToBlocks);
 
@@ -113,6 +108,10 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
     RssFinishShuffleRequest rfsr = new RssFinishShuffleRequest(testAppId, 0);
     shuffleServerClient.finishShuffle(rfsr);
 
+    final Set<Long> expectedBlockIds1 = transBitmapToSet(bitmaps[0]);
+    final Set<Long> expectedBlockIds2 = transBitmapToSet(bitmaps[1]);
+    final Set<Long> expectedBlockIds3 = transBitmapToSet(bitmaps[2]);
+    final Set<Long> expectedBlockIds4 = transBitmapToSet(bitmaps[3]);
     ShuffleDataResult sdr  = readShuffleData(
         shuffleServerClient, testAppId, 0, 0, 2,
         10, 1000, 0);

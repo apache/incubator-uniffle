@@ -61,7 +61,11 @@ public class ShuffleServerMetricsTest {
     ssc.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "fake.coordinator:123");
     ssc.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 1000L);
     shuffleServer = new ShuffleServer(ssc);
-    shuffleServer.getStorageManager().registerRemoteStorage("metricsTest", new RemoteStorageInfo(REMOTE_STORAGE_PATH));
+    shuffleServer.getStorageManager()
+        .registerRemoteStorage(
+            "metricsTest",
+            new RemoteStorageInfo(REMOTE_STORAGE_PATH)
+        );
     shuffleServer.start();
   }
 
@@ -86,7 +90,7 @@ public class ShuffleServerMetricsTest {
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
     JsonNode metricsNode = actualObj.get("metrics");
-    assertEquals(40, metricsNode.size());
+    assertEquals(46, metricsNode.size());
 
     List<String> expectedMetricNames = Lists.newArrayList(
         ShuffleServerMetrics.STORAGE_TOTAL_WRITE_REMOTE_PREFIX + STORAGE_HOST,

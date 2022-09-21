@@ -20,13 +20,13 @@ package org.apache.uniffle.server.buffer;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.util.ChecksumUtils;
+import org.apache.uniffle.server.ShuffleServerMetrics;
 
 public abstract class BufferTestBase {
 

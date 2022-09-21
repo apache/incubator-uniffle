@@ -36,6 +36,8 @@ import org.apache.uniffle.common.Arguments;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
 import org.apache.uniffle.common.rpc.ServerInterface;
+import org.apache.uniffle.common.security.SecurityConfig;
+import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.web.CommonMetricsServlet;
@@ -43,6 +45,12 @@ import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
+
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_ENABLE;
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE;
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_PRINCIPAL;
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC;
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KRB5_CONF_FILE;
 
 /**
  * Server that manages startup/shutdown of a {@code Greeter} server.
@@ -130,6 +138,7 @@ public class ShuffleServer {
       healthCheck.stop();
       LOG.info("HealthCheck stopped!");
     }
+    SecurityContextFactory.get().getSecurityContext().close();
     server.stop();
     LOG.info("RPC Server Stopped!");
   }
@@ -149,9 +158,19 @@ public class ShuffleServer {
     jettyServer = new JettyServer(shuffleServerConf);
     registerMetrics();
 
+    SecurityConfig securityConfig = null;
+    if (shuffleServerConf.getBoolean(RSS_SECURITY_HADOOP_KERBEROS_ENABLE)) {
+      securityConfig = securityConfig.newBuilder()
+          .krb5ConfPath(shuffleServerConf.getString(RSS_SECURITY_HADOOP_KRB5_CONF_FILE))
+          .keytabFilePath(shuffleServerConf.getString(RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE))
+          .principal(shuffleServerConf.getString(RSS_SECURITY_HADOOP_KERBEROS_PRINCIPAL))
+          .reloginIntervalSec(shuffleServerConf.getLong(RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC))
+          .build();
+    }
+    SecurityContextFactory.get().init(securityConfig);
+
     storageManager = StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     storageManager.start();
-
 
     boolean healthCheckEnable = shuffleServerConf.getBoolean(ShuffleServerConf.HEALTH_CHECK_ENABLE);
     if (healthCheckEnable) {

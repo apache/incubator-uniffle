@@ -32,6 +32,7 @@ service ShuffleServer {
   rpc commitShuffleTask (ShuffleCommitRequest) returns (ShuffleCommitResponse);
   rpc reportShuffleResult (ReportShuffleResultRequest) returns (ReportShuffleResultResponse);
   rpc getShuffleResult (GetShuffleResultRequest) returns (GetShuffleResultResponse);
+  rpc getShuffleResultForMultiPart (GetShuffleResultForMultiPartRequest) returns (GetShuffleResultForMultiPartResponse);
   rpc finishShuffle (FinishShuffleRequest) returns (FinishShuffleResponse);
   rpc requireBuffer (RequireBufferRequest) returns (RequireBufferResponse);
   rpc appHeartbeat(AppHeartBeatRequest) returns (AppHeartBeatResponse);
@@ -141,6 +142,18 @@ message GetShuffleResultResponse {
   bytes serializedBitmap = 3;
 }
 
+message GetShuffleResultForMultiPartRequest {
+  string appId = 1;
+  int32 shuffleId = 2;
+  repeated int32 partitions = 3;
+}
+
+message GetShuffleResultForMultiPartResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
+  bytes serializedBitmap = 3;
+}
+
 message ShufflePartitionRange {
   int32 start = 1;
   int32 end = 2;
@@ -151,6 +164,7 @@ message ShuffleRegisterRequest {
   int32 shuffleId = 2;
   repeated ShufflePartitionRange partitionRanges = 3;
   RemoteStorage remoteStorage = 4;
+  string user = 5;
 }
 
 message ShuffleRegisterResponse {

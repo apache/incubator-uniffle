@@ -29,15 +29,6 @@ import java.util.TreeMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.uniffle.client.api.ShuffleWriteClient;
-import org.apache.uniffle.client.response.SendShuffleDataResult;
-import org.apache.uniffle.common.PartitionRange;
-import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.common.RssShuffleUtils;
-import org.apache.uniffle.common.ShuffleAssignmentsInfo;
-import org.apache.uniffle.common.ShuffleBlockInfo;
-import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.common.exception.RssException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -51,32 +42,41 @@ import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.IFile;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.MapOutputFile;
 import org.apache.hadoop.mapred.MROutputFiles;
+import org.apache.hadoop.mapred.MapOutputFile;
 import org.apache.hadoop.mapred.RawKeyValueIterator;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.SortWriteBufferManager;
-import org.apache.hadoop.mapred.TaskStatus;
 import org.apache.hadoop.mapred.Task;
+import org.apache.hadoop.mapred.TaskStatus;
 import org.apache.hadoop.mapreduce.JobID;
-import org.apache.hadoop.mapreduce.RssMRUtils;
-import org.apache.hadoop.mapreduce.TaskID;
-import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.MRConfig;
+import org.apache.hadoop.mapreduce.RssMRUtils;
+import org.apache.hadoop.mapreduce.TaskAttemptID;
+import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.util.Progress;
 import org.junit.jupiter.api.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
+import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.apache.uniffle.client.response.SendShuffleDataResult;
+import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.RssShuffleUtils;
+import org.apache.uniffle.common.ShuffleAssignmentsInfo;
+import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FetcherTest {
   static JobID jobId = new JobID("a", 0);
   static TaskAttemptID reduceId1 = new TaskAttemptID(
-    new TaskID(jobId, TaskType.REDUCE, 0), 0);
+      new TaskID(jobId, TaskType.REDUCE, 0), 0);
   static Configuration conf = new Configuration();
   static JobConf jobConf = new JobConf();
   static LocalDirAllocator lda = new LocalDirAllocator(MRConfig.LOCAL_DIR);
@@ -97,7 +97,7 @@ public class FetcherTest {
         null, null, new Progress(), new MROutputFiles());
     ShuffleReadClient shuffleReadClient = new MockedShuffleReadClient(data);
     RssFetcher fetcher = new RssFetcher(jobConf, reduceId1, taskStatus, merger, new Progress(),
-      reporter, metrics, shuffleReadClient, 3);
+        reporter, metrics, shuffleReadClient, 3);
     fetcher.fetchAllRssBlocks();
 
 
@@ -107,7 +107,7 @@ public class FetcherTest {
     List<String> allValuesExpected = Lists.newArrayList("v11", "v22", "v22", "v33", "v44", "v55", "v55");
     List<String> allKeys = Lists.newArrayList();
     List<String> allValues = Lists.newArrayList();
-    while(iterator.next()){
+    while (iterator.next()) {
       byte[] key = new byte[iterator.getKey().getLength()];
       byte[] value = new byte[iterator.getValue().getLength()];
       System.arraycopy(iterator.getKey().getData(), 0, key, 0, key.length);
@@ -138,7 +138,7 @@ public class FetcherTest {
     List<String> allValuesExpected = Lists.newArrayList("v11", "v22", "v22", "v33", "v44", "v55", "v55");
     List<String> allKeys = Lists.newArrayList();
     List<String> allValues = Lists.newArrayList();
-    while(iterator.next()){
+    while (iterator.next()) {
       byte[] key = new byte[iterator.getKey().getLength()];
       byte[] value = new byte[iterator.getValue().getLength()];
       System.arraycopy(iterator.getKey().getData(), 0, key, 0, key.length);
@@ -161,7 +161,7 @@ public class FetcherTest {
       null, null, new Progress(), new MROutputFiles(), expectedFails);
     ShuffleReadClient shuffleReadClient = new MockedShuffleReadClient(data);
     RssFetcher fetcher = new RssFetcher(jobConf, reduceId1, taskStatus, merger, new Progress(),
-      reporter, metrics, shuffleReadClient, 3);
+        reporter, metrics, shuffleReadClient, 3);
     fetcher.fetchAllRssBlocks();
 
     RawKeyValueIterator iterator = merger.close();
@@ -170,7 +170,7 @@ public class FetcherTest {
     List<String> allValuesExpected = Lists.newArrayList("v11", "v22", "v22", "v33", "v44", "v55", "v55");
     List<String> allKeys = Lists.newArrayList();
     List<String> allValues = Lists.newArrayList();
-    while(iterator.next()){
+    while (iterator.next()) {
       byte[] key = new byte[iterator.getKey().getLength()];
       byte[] value = new byte[iterator.getValue().getLength()];
       System.arraycopy(iterator.getKey().getData(), 0, key, 0, key.length);
@@ -181,8 +181,8 @@ public class FetcherTest {
     validate(allKeysExpected, allKeys);
     validate(allValuesExpected, allValues);
     // There will be 2 retries
-    assert(fetcher.getRetryCount() == 2);
-    assert(((MockMergeManagerImpl)merger).happenedFails.size() == 2);
+    assert (fetcher.getRetryCount() == 2);
+    assert (((MockMergeManagerImpl)merger).happenedFails.size() == 2);
   }
 
   public void testCodecIsDuplicated() throws Exception {
@@ -203,9 +203,9 @@ public class FetcherTest {
   }
 
   private void validate(List<String> expected, List<String> actual) {
-    assert(expected.size() == actual.size());
-    for(int i = 0; i < expected.size(); i++) {
-      assert(expected.get(i).equals(actual.get(i)));
+    assert (expected.size() == actual.size());
+    for (int i = 0; i < expected.size(); i++) {
+      assert (expected.get(i).equals(actual.get(i)));
     }
   }
 
@@ -244,7 +244,7 @@ public class FetcherTest {
   }
 
   private static byte[] writeMapOutputRss(Configuration conf, Map<String, String> keysToValues)
-    throws IOException, InterruptedException {
+      throws IOException, InterruptedException {
     SerializationFactory serializationFactory = new SerializationFactory(jobConf);
     MockShuffleWriteClient client = new MockShuffleWriteClient();
     client.setMode(2);
@@ -254,26 +254,26 @@ public class FetcherTest {
     Counters.Counter mapOutputByteCounter = new Counters.Counter();
     Counters.Counter mapOutputRecordCounter = new Counters.Counter();
     SortWriteBufferManager<Text, Text> manager = new SortWriteBufferManager(
-      10240,
-      1L,
-      10,
-      serializationFactory.getSerializer(Text.class),
-      serializationFactory.getSerializer(Text.class),
-      WritableComparator.get(Text.class),
-      0.9,
-      "test",
-      client,
-      500,
-      5 * 1000,
-      partitionToServers,
-      successBlocks,
-      failedBlocks,
-      mapOutputByteCounter,
-      mapOutputRecordCounter,
-      1,
-      100,
-      2000,
-      true,
+        10240,
+        1L,
+        10,
+        serializationFactory.getSerializer(Text.class),
+        serializationFactory.getSerializer(Text.class),
+        WritableComparator.get(Text.class),
+        0.9,
+        "test",
+        client,
+        500,
+        5 * 1000,
+        partitionToServers,
+        successBlocks,
+        failedBlocks,
+        mapOutputByteCounter,
+        mapOutputRecordCounter,
+        1,
+        100,
+        2000,
+        true,
         5,
         0.2f,
         1024000L);
@@ -288,11 +288,11 @@ public class FetcherTest {
 
 
   private static byte[] writeMapOutput(Configuration conf, Map<String, String> keysToValues)
-    throws IOException {
+      throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     FSDataOutputStream fsdos = new FSDataOutputStream(baos, null);
     IFile.Writer<Text, Text> writer = new IFile.Writer<Text, Text>(conf, fsdos,
-      Text.class, Text.class, null, null);
+        Text.class, Text.class, null, null);
     for (String key : keysToValues.keySet()) {
       String value = keysToValues.get(key);
       writer.append(new Text(key), new Text(value));
@@ -306,6 +306,8 @@ public class FetcherTest {
     public Set<Integer> happenedFails = Sets.newHashSet();
     private Set<Integer> expectedFails;
     private int currentMapout = 0;
+
+    @SuppressWarnings("checkstyle:RedundantModifier")
     public MockMergeManagerImpl(TaskAttemptID reduceId, JobConf jobConf,
                                 FileSystem localFS, LocalDirAllocator localDirAllocator,
                                 Reporter reporter, CompressionCodec codec, Class combinerClass,
@@ -314,8 +316,8 @@ public class FetcherTest {
                                 Counters.Counter mergedMapOutputsCounter, ExceptionReporter exceptionReporter,
                                 Progress mergePhase, MapOutputFile mapOutputFile, Set<Integer> expectedFails) {
       super(reduceId, jobConf, localFS, localDirAllocator, reporter, codec, combinerClass,
-        combineCollector, spilledRecordsCounter, reduceCombineInputCounter, mergedMapOutputsCounter, exceptionReporter,
-        mergePhase, mapOutputFile);
+          combineCollector, spilledRecordsCounter, reduceCombineInputCounter,
+          mergedMapOutputsCounter, exceptionReporter, mergePhase, mapOutputFile);
       this.expectedFails = expectedFails;
     }
 
@@ -342,6 +344,7 @@ public class FetcherTest {
     }
 
     public List<byte[]> data = new LinkedList<>();
+
     @Override
     public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList) {
       if (mode == 0) {
@@ -353,7 +356,7 @@ public class FetcherTest {
         for (ShuffleBlockInfo blockInfo : shuffleBlockInfoList) {
           successBlockIds.add(blockInfo.getBlockId());
         }
-        shuffleBlockInfoList.forEach( block -> {
+        shuffleBlockInfoList.forEach(block -> {
           data.add(RssShuffleUtils.decompressData(block.getData(), block.getUncompressLength()));
         });
         return new SendShuffleDataResult(successBlockIds, Sets.newHashSet());
@@ -396,17 +399,26 @@ public class FetcherTest {
     }
 
     @Override
-    public void reportShuffleResult(Map<Integer, List<ShuffleServerInfo>> partitionToServers, String appId, int shuffleId, long taskAttemptId, Map<Integer, List<Long>> partitionToBlockIds, int bitmapNum) {
+    public void reportShuffleResult(Map<Integer, List<ShuffleServerInfo>> partitionToServers, String appId,
+        int shuffleId, long taskAttemptId, Map<Integer, List<Long>> partitionToBlockIds, int bitmapNum) {
 
     }
 
     @Override
-    public ShuffleAssignmentsInfo getShuffleAssignments(String appId, int shuffleId, int partitionNum, int partitionNumPerRange, Set<String> requiredTags, int assignmentShuffleServerNumber) {
+    public ShuffleAssignmentsInfo getShuffleAssignments(String appId, int shuffleId, int partitionNum,
+        int partitionNumPerRange, Set<String> requiredTags, int assignmentShuffleServerNumber) {
       return null;
     }
 
     @Override
-    public Roaring64NavigableMap getShuffleResult(String clientType, Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int partitionId) {
+    public Roaring64NavigableMap getShuffleResult(String clientType, Set<ShuffleServerInfo> shuffleServerInfoSet,
+                                                  String appId, int shuffleId, int partitionId) {
+      return null;
+    }
+
+    @Override
+    public Roaring64NavigableMap getShuffleResultForMultiPart(String clientType, Map<ShuffleServerInfo,
+        Set<Integer>> serverToPartitions, String appId, int shuffleId) {
       return null;
     }
 
@@ -419,9 +431,10 @@ public class FetcherTest {
   static class MockedShuffleReadClient implements ShuffleReadClient {
     List<CompressedShuffleBlock> blocks;
     int index = 0;
+
     MockedShuffleReadClient(List<byte[]> data) {
       this.blocks = new LinkedList<>();
-      data.forEach( bytes -> {
+      data.forEach(bytes -> {
         byte[] compressed = RssShuffleUtils.compressData(bytes);
         blocks.add(new CompressedShuffleBlock(ByteBuffer.wrap(compressed), bytes.length));
       });

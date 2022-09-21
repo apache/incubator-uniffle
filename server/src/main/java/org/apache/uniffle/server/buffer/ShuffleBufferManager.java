@@ -55,6 +55,8 @@ public class ShuffleBufferManager {
   private int retryNum;
   private long highWaterMark;
   private long lowWaterMark;
+  private boolean bufferFlushEnabled;
+  private long bufferFlushThreshold;
 
   protected long bufferSize = 0;
   protected AtomicLong preAllocatedSize = new AtomicLong(0L);
@@ -72,10 +74,12 @@ public class ShuffleBufferManager {
     this.shuffleFlushManager = shuffleFlushManager;
     this.bufferPool = new ConcurrentHashMap<>();
     this.retryNum = conf.getInteger(ShuffleServerConf.SERVER_MEMORY_REQUEST_RETRY_MAX);
-    this.highWaterMark = (long)(capacity / 100
+    this.highWaterMark = (long)(capacity / 100.0
         * conf.get(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE));
-    this.lowWaterMark = (long)(capacity / 100
+    this.lowWaterMark = (long)(capacity / 100.0
         * conf.get(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE));
+    this.bufferFlushEnabled = conf.getBoolean(ShuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED);
+    this.bufferFlushThreshold = conf.getLong(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD);
   }
 
   public StatusCode registerBuffer(String appId, int shuffleId, int startPartition, int endPartition) {
@@ -88,7 +92,7 @@ public class ShuffleBufferManager {
       bufferRangeMap.put(Range.closed(startPartition, endPartition), new ShuffleBuffer(bufferSize));
     } else {
       LOG.warn("Already register for appId[" + appId + "], shuffleId[" + shuffleId + "], startPartition["
-          + startPartition + "], endPartition[" + endPartition + "]");
+              + startPartition + "], endPartition[" + endPartition + "]");
     }
 
     return StatusCode.SUCCESS;
@@ -108,10 +112,12 @@ public class ShuffleBufferManager {
     }
 
     ShuffleBuffer buffer = entry.getValue();
-    int size = buffer.append(spd);
+    long size = buffer.append(spd);
     updateSize(size, isPreAllocated);
     updateShuffleSize(appId, shuffleId, size);
     synchronized (this) {
+      flushSingleBufferIfNecessary(buffer, appId, shuffleId,
+          entry.getKey().lowerEndpoint(), entry.getKey().upperEndpoint());
       flushIfNecessary();
     }
     return StatusCode.SUCCESS;
@@ -155,6 +161,15 @@ public class ShuffleBufferManager {
       return null;
     }
     return buffer.getShuffleData(blockId, readBufferSize);
+  }
+
+  void flushSingleBufferIfNecessary(ShuffleBuffer buffer, String appId,
+      int shuffleId, int startPartition, int endPartition) {
+    // When we use multistorage and trigger single buffer flush, the buffer size should be bigger
+    // than rss.server.flush.cold.storage.threshold.size, otherwise cold storage will be useless.
+    if (this.bufferFlushEnabled && buffer.getSize() > this.bufferFlushThreshold) {
+      flushBuffer(buffer, appId, shuffleId, startPartition, endPartition);
+    }
   }
 
   void flushIfNecessary() {

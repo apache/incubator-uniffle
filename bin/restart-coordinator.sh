@@ -18,14 +18,13 @@
 #
 
 set -o pipefail
-set -e
+set -o nounset   # exit the script if you try to use an uninitialised variable
+set -o errexit   # exit the script if any statement returns a non-true return value
 
-COORDINATOR_HOME="$(
-  cd "$(dirname "$0")/.."
-  pwd
-)"
+source "$(dirname "$0")/utils.sh"
+load_rss_env
 
-cd $COORDINATOR_HOME
+cd "${RSS_HOME}"
 
 bash ./bin/stop-coordinator.sh
 sleep 3

@@ -52,7 +52,7 @@ public class AssignmentServerNodesNumberTest extends CoordinatorTestBase {
     coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, SHUFFLE_NODES_MAX);
     createCoordinatorServer(coordinatorConf);
 
-    for (int i = 0; i < SERVER_NUM; i++){
+    for (int i = 0; i < SERVER_NUM; i++) {
       ShuffleServerConf shuffleServerConf = getShuffleServerConf();
       File tmpDir = Files.createTempDir();
       File dataDir1 = new File(tmpDir, "data1");

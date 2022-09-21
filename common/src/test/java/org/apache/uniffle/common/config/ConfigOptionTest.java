@@ -56,6 +56,44 @@ public class ConfigOptionTest {
     assertFalse(conf.get(booleanConfig));
   }
 
+  enum TestType {
+    TYPE_1,
+    TYPE_2,
+  }
+
+  @Test
+  public void testEnumType() {
+    final ConfigOption<TestType> enumConfigOption = ConfigOptions
+        .key("rss.enum")
+        .enumType(TestType.class)
+        .defaultValue(TestType.TYPE_1)
+        .withDescription("enum test");
+
+    RssBaseConf conf = new RssBaseConf();
+
+    // case1: default value
+    assertEquals(TestType.TYPE_1, conf.get(enumConfigOption));
+
+    // case2: return the user specified value
+    conf.set(enumConfigOption, TestType.TYPE_2);
+    assertEquals(TestType.TYPE_2, conf.get(enumConfigOption));
+
+    // case3: set enum val with string
+    conf = new RssBaseConf();
+    conf.setString("rss.enum", "TYPE_2");
+    assertEquals(TestType.TYPE_2, conf.get(enumConfigOption));
+
+    // case4: set the illegal enum val with string
+    conf = new RssBaseConf();
+    conf.setString("rss.enum", "TYPE_3");
+    try {
+      conf.get(enumConfigOption);
+      fail();
+    } catch (IllegalArgumentException e) {
+      // ignore
+    }
+  }
+
   @Test
   public void testListTypes() {
     // test the string type list.

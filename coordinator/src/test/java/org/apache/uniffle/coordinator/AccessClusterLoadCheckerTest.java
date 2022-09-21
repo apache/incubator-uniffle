@@ -17,7 +17,11 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import com.google.common.collect.Lists;
@@ -26,6 +30,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.apache.uniffle.common.util.Constants.ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM;
+import static org.apache.uniffle.coordinator.CoordinatorConf.COORDINATOR_ACCESS_CHECKERS;
+import static org.apache.uniffle.coordinator.CoordinatorConf.COORDINATOR_ACCESS_LOADCHECKER_MEMORY_PERCENTAGE;
+import static org.apache.uniffle.coordinator.CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,7 +54,84 @@ public class AccessClusterLoadCheckerTest {
   }
 
   @Test
-  public void test() throws Exception {
+  public void testAccessInfoRequiredShuffleServers() throws Exception {
+    List<ServerNode> nodes = Lists.newArrayList();
+    ServerNode node1 = new ServerNode(
+        "1",
+        "1",
+        0,
+        50,
+        20,
+        1000,
+        0,
+        null,
+        true);
+    ServerNode node2 = new ServerNode(
+        "1",
+        "1",
+        0,
+        50,
+        20,
+        1000,
+        0,
+        null,
+        true);
+    nodes.add(node1);
+    nodes.add(node2);
+
+    ClusterManager clusterManager = mock(SimpleClusterManager.class);
+    when(clusterManager.getServerList(any())).thenReturn(nodes);
+
+    CoordinatorConf conf = new CoordinatorConf();
+    conf.set(COORDINATOR_ACCESS_CHECKERS, Arrays.asList("org.apache.uniffle.coordinator.AccessClusterLoadChecker"));
+    conf.set(COORDINATOR_SHUFFLE_NODES_MAX, 3);
+    conf.set(COORDINATOR_ACCESS_LOADCHECKER_MEMORY_PERCENTAGE, 20.0);
+
+    AccessManager accessManager = new AccessManager(conf, clusterManager, new Configuration());
+
+    AccessClusterLoadChecker accessClusterLoadChecker =
+        (AccessClusterLoadChecker) accessManager.getAccessCheckers().get(0);
+
+    /**
+     * case1:
+     * when setting the invalid required shuffle nodes number of job and available servers less than
+     * the COORDINATOR_SHUFFLE_NODES_MAX, it should return false
+     */
+    Map<String, String> properties = new HashMap<>();
+    properties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, "-1");
+    AccessInfo accessInfo = new AccessInfo("test", new HashSet<>(), properties);
+    assertFalse(accessClusterLoadChecker.check(accessInfo).isSuccess());
+
+    /**
+     * case2:
+     * when setting the valid required shuffle nodes number of job and available servers greater than
+     * the COORDINATOR_SHUFFLE_NODES_MAX, it should return true
+     */
+    properties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, "1");
+    accessInfo = new AccessInfo("test", new HashSet<>(), properties);
+    assertTrue(accessClusterLoadChecker.check(accessInfo).isSuccess());
+
+    /**
+     * case3:
+     * when setting the valid required shuffle nodes number of job and available servers less than
+     * the COORDINATOR_SHUFFLE_NODES_MAX, it should return false
+     */
+    properties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, "100");
+    accessInfo = new AccessInfo("test", new HashSet<>(), properties);
+    assertFalse(accessClusterLoadChecker.check(accessInfo).isSuccess());
+
+    /**
+     * case4:
+     * when the required shuffle nodes number is not specified in access info, it should use the
+     * default shuffle nodes max from coordinator conf.
+     */
+    properties = new HashMap<>();
+    accessInfo = new AccessInfo("test", new HashSet<>(), properties);
+    assertFalse(accessClusterLoadChecker.check(accessInfo).isSuccess());
+  }
+
+  @Test
+  public void testWhenAvailableServerThresholdSpecified() throws Exception {
     ClusterManager clusterManager = mock(SimpleClusterManager.class);
     List<ServerNode> serverNodeList = Lists.newArrayList();
     ServerNode node1 = new ServerNode(
@@ -63,7 +148,7 @@ public class AccessClusterLoadCheckerTest {
     final String filePath = Objects.requireNonNull(
         getClass().getClassLoader().getResource("coordinator.conf")).getFile();
     CoordinatorConf conf = new CoordinatorConf(filePath);
-    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
+    conf.setString(COORDINATOR_ACCESS_CHECKERS.key(),
         "org.apache.uniffle.coordinator.AccessClusterLoadChecker");
     AccessManager accessManager = new AccessManager(conf, clusterManager, new Configuration());
     AccessClusterLoadChecker accessClusterLoadChecker =

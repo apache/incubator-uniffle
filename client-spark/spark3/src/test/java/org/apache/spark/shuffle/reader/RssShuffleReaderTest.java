@@ -51,13 +51,13 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     String basePath = HDFS_URI + "readTest1";
     HdfsShuffleWriteHandler writeHandler =
         new HdfsShuffleWriteHandler("appId", 0, 0, 0, basePath, "test", conf);
-    HdfsShuffleWriteHandler writeHandler1 =
+    final HdfsShuffleWriteHandler writeHandler1 =
         new HdfsShuffleWriteHandler("appId", 0, 1, 1, basePath, "test", conf);
 
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
-    Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
+    final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     Map<String, String> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap1 = Roaring64NavigableMap.bitmapOf();
+    final Roaring64NavigableMap blockIdBitmap1 = Roaring64NavigableMap.bitmapOf();
     writeTestData(writeHandler, 2, 5, expectedData,
         blockIdBitmap, "key", KRYO_SERIALIZER, 0);
 

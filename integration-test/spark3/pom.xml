@@ -75,6 +75,13 @@
         </dependency>
         <dependency>
             <groupId>org.apache.uniffle</groupId>
+            <artifactId>shuffle-server</artifactId>
+            <type>test-jar</type>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.uniffle</groupId>
             <artifactId>coordinator</artifactId>
             <scope>test</scope>
         </dependency>

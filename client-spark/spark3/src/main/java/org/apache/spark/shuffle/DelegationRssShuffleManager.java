@@ -18,9 +18,11 @@
 package org.apache.spark.shuffle;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
@@ -35,6 +37,8 @@ import org.apache.uniffle.client.response.RssAccessClusterResponse;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RetryUtils;
+
+import static org.apache.uniffle.common.util.Constants.ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM;
 
 public class DelegationRssShuffleManager implements ShuffleManager {
 
@@ -99,13 +103,17 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS);
     int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_TIMES);
 
+    int assignmentShuffleNodesNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER);
+    Map<String, String> extraProperties = Maps.newHashMap();
+    extraProperties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, String.valueOf(assignmentShuffleNodesNum));
+
     for (CoordinatorClient coordinatorClient : coordinatorClients) {
       Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
       boolean canAccess;
       try {
         canAccess = RetryUtils.retry(() -> {
           RssAccessClusterResponse response = coordinatorClient.accessCluster(new RssAccessClusterRequest(
-              accessId, assignmentTags, accessTimeoutMs));
+              accessId, assignmentTags, accessTimeoutMs, extraProperties));
           if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
             LOG.warn("Success to access cluster {} using {}", coordinatorClient.getDesc(), accessId);
             return true;

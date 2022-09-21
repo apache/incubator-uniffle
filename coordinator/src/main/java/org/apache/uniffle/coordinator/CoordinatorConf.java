@@ -26,6 +26,9 @@ import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.RssUtils;
 
+import static org.apache.uniffle.coordinator.ApplicationManager.StrategyName.APP_BALANCE;
+import static org.apache.uniffle.coordinator.AssignmentStrategyFactory.StrategyName.PARTITION_BALANCE;
+
 /**
  * Configuration for Coordinator Service and rss-cluster, including service port,
  * heartbeat interval and etc.
@@ -54,10 +57,11 @@ public class CoordinatorConf extends RssBaseConf {
       .defaultValue(30L)
       .withDescription("The periodic interval times of output alive nodes. The interval sec can be calculated by ("
           + COORDINATOR_HEARTBEAT_TIMEOUT.key() + "/3 * rss.coordinator.server.periodic.output.interval.times)");
-  public static final ConfigOption<String> COORDINATOR_ASSIGNMENT_STRATEGY = ConfigOptions
+  public static final ConfigOption<AssignmentStrategyFactory.StrategyName>
+      COORDINATOR_ASSIGNMENT_STRATEGY = ConfigOptions
       .key("rss.coordinator.assignment.strategy")
-      .stringType()
-      .defaultValue("PARTITION_BALANCE")
+      .enumType(AssignmentStrategyFactory.StrategyName.class)
+      .defaultValue(PARTITION_BALANCE)
       .withDescription("Strategy for assigning shuffle server to write partitions");
   public static final ConfigOption<Long> COORDINATOR_APP_EXPIRED = ConfigOptions
       .key("rss.coordinator.app.expired")
@@ -98,7 +102,11 @@ public class CoordinatorConf extends RssBaseConf {
       .intType()
       .checkValue(ConfigUtils.POSITIVE_INTEGER_VALIDATOR_2, "load checker serverNum threshold must be positive")
       .noDefaultValue()
-      .withDescription("The minimal required number of healthy shuffle servers when being accessed by client");
+      .withDescription(
+          "The minimal required number of healthy shuffle servers when being accessed by client. "
+          + "And when not specified, it will use the required shuffle-server number from client as the checking "
+          + "condition. If there is no client shuffle-server number specified, the coordinator conf "
+          + "of rss.coordinator.shuffle.nodes.max will be adopted");
   public static final ConfigOption<Boolean> COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED = ConfigOptions
       .key("rss.coordinator.dynamicClientConf.enabled")
       .booleanType()
@@ -125,7 +133,26 @@ public class CoordinatorConf extends RssBaseConf {
       .stringType()
       .noDefaultValue()
       .withDescription("Remote Storage Cluster related conf with format $clusterId,$key=$value, separated by ';'");
-
+  public static final ConfigOption<ApplicationManager.StrategyName> COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY =
+      ConfigOptions.key("rss.coordinator.remote.storage.select.strategy")
+      .enumType(ApplicationManager.StrategyName.class)
+      .defaultValue(APP_BALANCE)
+      .withDescription("Strategy for selecting the remote path");
+  public static final ConfigOption<Long> COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_SCHEDULE_TIME = ConfigOptions
+      .key("rss.coordinator.remote.storage.io.sample.schedule.time")
+      .longType()
+      .defaultValue(60 * 1000L)
+      .withDescription("The time of scheduling the read and write time of the paths to obtain different HDFS");
+  public static final ConfigOption<Integer> COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_FILE_SIZE = ConfigOptions
+      .key("rss.coordinator.remote.storage.io.sample.file.size")
+      .intType()
+      .defaultValue(204800 * 1000)
+      .withDescription("The size of the file that the scheduled thread reads and writes");
+  public static final ConfigOption<Integer> COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_ACCESS_TIMES = ConfigOptions
+      .key("rss.coordinator.remote.storage.io.sample.access.times")
+      .intType()
+      .defaultValue(3)
+      .withDescription("The number of times to read and write HDFS files");
 
   public CoordinatorConf() {
   }

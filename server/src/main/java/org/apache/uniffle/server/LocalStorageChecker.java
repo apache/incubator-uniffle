@@ -66,15 +66,30 @@ public class LocalStorageChecker extends Checker {
   @Override
   public boolean checkIsHealthy() {
     int num = 0;
+    long totalSpace = 0L;
+    long usedSpace = 0L;
+    int corruptedDirs = 0;
+
     for (StorageInfo storageInfo : storageInfos) {
       if (!storageInfo.checkStorageReadAndWrite()) {
         storageInfo.markCorrupted();
+        corruptedDirs++;
         continue;
       }
+
+      totalSpace += getTotalSpace(storageInfo.storageDir);
+      usedSpace += getUsedSpace(storageInfo.storageDir);
+
       if (storageInfo.checkIsSpaceEnough()) {
         num++;
       }
     }
+
+    ShuffleServerMetrics.gaugeLocalStorageTotalSpace.set(totalSpace);
+    ShuffleServerMetrics.gaugeLocalStorageUsedSpace.set(usedSpace);
+    ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.set(storageInfos.size());
+    ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.set(corruptedDirs);
+    ShuffleServerMetrics.gaugeLocalStorageUsedSpaceRatio.set(usedSpace * 1.0 / totalSpace);
 
     if (storageInfos.isEmpty()) {
       if (isHealthy) {
@@ -151,7 +166,9 @@ public class LocalStorageChecker extends Checker {
       }
       File checkDir = new File(storageDir, "check");
       try {
-        checkDir.mkdirs();
+        if (!checkDir.mkdirs()) {
+          return false;
+        }
         File writeFile = new File(checkDir, "test");
         if (!writeFile.createNewFile()) {
           return false;

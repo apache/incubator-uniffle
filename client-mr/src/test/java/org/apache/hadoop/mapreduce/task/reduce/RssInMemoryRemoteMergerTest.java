@@ -17,6 +17,14 @@
 
 package org.apache.hadoop.mapreduce.task.reduce;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import org.apache.hadoop.conf.Configuration;
@@ -31,7 +39,6 @@ import org.apache.hadoop.mapred.IFile;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MROutputFiles;
 import org.apache.hadoop.mapred.Reporter;
-import org.apache.hadoop.mapred.Task;
 import org.apache.hadoop.mapreduce.CryptoUtils;
 import org.apache.hadoop.mapreduce.JobID;
 import org.apache.hadoop.mapreduce.MRConfig;
@@ -40,14 +47,6 @@ import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.util.Progress;
 import org.junit.jupiter.api.Test;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -62,15 +61,15 @@ public class RssInMemoryRemoteMergerTest {
     File tmpDir = Files.createTempDir();
     tmpDir.deleteOnExit();
     JobID jobId = new JobID("a", 0);
-    TaskAttemptID mapId1 = new TaskAttemptID(
+    final TaskAttemptID mapId1 = new TaskAttemptID(
         new TaskID(jobId, TaskType.MAP, 1), 0);
-    TaskAttemptID mapId2 = new TaskAttemptID(
+    final TaskAttemptID mapId2 = new TaskAttemptID(
         new TaskID(jobId, TaskType.MAP, 2), 0);
     TaskAttemptID reduceId1 = new TaskAttemptID(
         new TaskID(jobId, TaskType.REDUCE, 0), 0);
-    RssRemoteMergeManagerImpl<Text, Text> mergeManager = new RssRemoteMergeManagerImpl<Text, Text>(
+    final RssRemoteMergeManagerImpl<Text, Text> mergeManager = new RssRemoteMergeManagerImpl<Text, Text>(
         "app", reduceId1, jobConf, tmpDir.toString(),  1,5,  fs, lda, Reporter.NULL,
-      null, null, null, null, null,
+        null, null, null, null, null,
         null, null, new Progress(), new MROutputFiles(), new JobConf());
 
     // write map outputs

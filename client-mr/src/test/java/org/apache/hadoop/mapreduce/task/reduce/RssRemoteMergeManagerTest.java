@@ -17,6 +17,13 @@
 
 package org.apache.hadoop.mapreduce.task.reduce;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import org.apache.hadoop.conf.Configuration;
@@ -41,13 +48,6 @@ import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.util.Progress;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RssRemoteMergeManagerTest {
@@ -55,16 +55,17 @@ public class RssRemoteMergeManagerTest {
   JobID jobId = new JobID(appId, 0);
 
   TaskAttemptID mapId1 = new TaskAttemptID(
-    new TaskID(jobId, TaskType.MAP, 1), 0);
+      new TaskID(jobId, TaskType.MAP, 1), 0);
   TaskAttemptID mapId2 = new TaskAttemptID(
-    new TaskID(jobId, TaskType.MAP, 2), 0);
+      new TaskID(jobId, TaskType.MAP, 2), 0);
   TaskAttemptID reduceId1 = new TaskAttemptID(
-    new TaskID(jobId, TaskType.REDUCE, 0), 0);
+      new TaskID(jobId, TaskType.REDUCE, 0), 0);
+
   @Test
   public void mergerTest() throws Throwable {
     JobConf jobConf = new JobConf();
-    FileSystem fs = FileSystem.getLocal(jobConf);
-    LocalDirAllocator lda = new LocalDirAllocator(MRConfig.LOCAL_DIR);
+    final FileSystem fs = FileSystem.getLocal(jobConf);
+    final LocalDirAllocator lda = new LocalDirAllocator(MRConfig.LOCAL_DIR);
 
     File tmpDir = Files.createTempDir();
     tmpDir.deleteOnExit();
@@ -72,10 +73,10 @@ public class RssRemoteMergeManagerTest {
     jobConf.set("mapreduce.reduce.shuffle.memory.limit.percent", "0.01");
     jobConf.set("mapreduce.reduce.shuffle.merge.percent", "0.1");
 
-    RssRemoteMergeManagerImpl<Text, Text> mergeManager = new RssRemoteMergeManagerImpl<Text, Text>(
-      appId, reduceId1, jobConf, tmpDir.toString(), 1, 5, fs, lda, Reporter.NULL,
-      null, null, null, null, null,
-      null, null, new Progress(), new MROutputFiles(), new JobConf());
+    final RssRemoteMergeManagerImpl<Text, Text> mergeManager = new RssRemoteMergeManagerImpl<Text, Text>(
+        appId, reduceId1, jobConf, tmpDir.toString(), 1, 5, fs, lda, Reporter.NULL,
+        null, null, null, null, null,
+        null, null, new Progress(), new MROutputFiles(), new JobConf());
 
     // write map outputs
     Map<String, String> map1 = new TreeMap<String, String>();
@@ -88,9 +89,9 @@ public class RssRemoteMergeManagerTest {
     InMemoryMapOutput mapOutput1 = (InMemoryMapOutput)mergeManager.reserve(mapId1, mapOutputBytes1.length, 0);
     InMemoryMapOutput mapOutput2 = (InMemoryMapOutput)mergeManager.reserve(mapId2, mapOutputBytes2.length, 0);
     System.arraycopy(mapOutputBytes1, 0, mapOutput1.getMemory(), 0,
-      mapOutputBytes1.length);
+        mapOutputBytes1.length);
     System.arraycopy(mapOutputBytes2, 0, mapOutput2.getMemory(), 0,
-      mapOutputBytes2.length);
+        mapOutputBytes2.length);
     mapOutput1.commit();
     mapOutput2.commit();
 
@@ -122,11 +123,11 @@ public class RssRemoteMergeManagerTest {
   }
 
   private byte[] writeMapOutput(Configuration conf, Map<String, String> keysToValues)
-    throws IOException {
+      throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     FSDataOutputStream fsdos = new FSDataOutputStream(baos, null);
     IFile.Writer<Text, Text> writer = new IFile.Writer<Text, Text>(conf, fsdos,
-      Text.class, Text.class, null, null);
+        Text.class, Text.class, null, null);
     for (String key : keysToValues.keySet()) {
       String value = keysToValues.get(key);
       writer.append(new Text(key), new Text(value));
@@ -140,7 +141,7 @@ public class RssRemoteMergeManagerTest {
     FSDataInputStream in = CryptoUtils.wrapIfNecessary(conf, fs.open(path));
 
     IFile.Reader<Text, Text> reader = new IFile.Reader<Text, Text>(conf, in,
-      fs.getFileStatus(path).getLen(), null, null);
+        fs.getFileStatus(path).getLen(), null, null);
     DataInputBuffer keyBuff = new DataInputBuffer();
     DataInputBuffer valueBuff = new DataInputBuffer();
     Text key = new Text();

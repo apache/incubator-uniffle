@@ -20,7 +20,6 @@ package org.apache.uniffle.common.config;
 import java.util.List;
 import java.util.Map;
 
-
 public class RssBaseConf extends RssConf {
 
   public static final ConfigOption<String> RSS_COORDINATOR_QUORUM = ConfigOptions
@@ -158,11 +157,39 @@ public class RssBaseConf extends RssConf {
       .defaultValue(true)
       .withDescription("The switch for jvm metrics verbose");
 
-  public static final ConfigOption<String> RSS_SERVER_IP = ConfigOptions
-          .key("rss.server.ip")
-          .stringType()
-          .noDefaultValue()
-          .withDescription("Server ip");
+  public static final ConfigOption<Boolean> RSS_SECURITY_HADOOP_KERBEROS_ENABLE = ConfigOptions
+      .key("rss.security.hadoop.kerberos.enable")
+      .booleanType()
+      .defaultValue(false)
+      .withDescription("Whether enable visiting secured hadoop cluster.");
+
+  public static final ConfigOption<String> RSS_SECURITY_HADOOP_KRB5_CONF_FILE = ConfigOptions
+      .key("rss.security.hadoop.kerberos.krb5-conf.file")
+      .stringType()
+      .noDefaultValue()
+      .withDescription("The file path of krb5.conf. And only when "
+          + RSS_SECURITY_HADOOP_KERBEROS_ENABLE.key() + " enabled, the option will be valid.");
+
+  public static final ConfigOption<String> RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE = ConfigOptions
+      .key("rss.security.hadoop.kerberos.keytab.file")
+      .stringType()
+      .noDefaultValue()
+      .withDescription("The kerberos keytab file path. And only when "
+          + RSS_SECURITY_HADOOP_KERBEROS_ENABLE.key() + " enabled, the option will be valid.");
+
+  public static final ConfigOption<String> RSS_SECURITY_HADOOP_KERBEROS_PRINCIPAL = ConfigOptions
+      .key("rss.security.hadoop.kerberos.principal")
+      .stringType()
+      .noDefaultValue()
+      .withDescription("The kerberos keytab principal. And only when "
+          + RSS_SECURITY_HADOOP_KERBEROS_ENABLE.key() + " enabled, the option will be valid.");
+
+  public static final ConfigOption<Long> RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC = ConfigOptions
+      .key("rss.security.hadoop.kerberos.relogin.interval.sec")
+      .longType()
+      .checkValue(ConfigUtils.POSITIVE_INTEGER_VALIDATOR, "The value must be positive integer")
+      .defaultValue(60L)
+      .withDescription("The kerberos authentication relogin interval. unit: sec");
 
   public boolean loadCommonConf(Map<String, String> properties) {
     if (properties == null) {

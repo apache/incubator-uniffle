@@ -35,6 +35,7 @@
   </parent>
 
   <properties>
+    <awaitility.version>4.2.0</awaitility.version>
     <checkstyle.version>9.3</checkstyle.version>
     <commons-logging.version>1.2</commons-logging.version>
     <commons-lang3.version>3.10</commons-lang3.version>
@@ -125,6 +126,11 @@
       <artifactId>error_prone_annotations</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
@@ -338,6 +344,12 @@
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-minikdc</artifactId>
+        <version>${hadoop.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-client</artifactId>
         <version>${hadoop.version}</version>
         <scope>${hadoop.scope}</scope>
@@ -486,6 +498,13 @@
         <groupId>io.prometheus</groupId>
         <artifactId>simpleclient_servlet</artifactId>
         <version>${prometheus.simpleclient.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>${awaitility.version}</version>
+        <scope>test</scope>
       </dependency>
 
       <dependency>
@@ -793,18 +812,14 @@
         <artifactId>maven-checkstyle-plugin</artifactId>
         <version>${maven-checkstyle-plugin.version}</version>
         <configuration>
-          <sourceDirectories>
-            <directory>${basedir}/src/main/java</directory>
-          </sourceDirectories>
-          <testSourceDirectories>
-            <directory>${basedir}/src/test/java</directory>
-          </testSourceDirectories>
           <configLocation>checkstyle.xml</configLocation>
+          <suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation>
           <encoding>UTF-8</encoding>
           <consoleOutput>true</consoleOutput>
           <failsOnError>true</failsOnError>
           <linkXRef>false</linkXRef>
           <failOnViolation>true</failOnViolation>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
         </configuration>
         <dependencies>
           <dependency>
@@ -910,10 +925,15 @@
         <configuration>
           <excludes>
             <exclude>LICENSE</exclude>
+            <exclude>DISCLAIMER</exclude>
+            <exclude>NOTICE</exclude>
             <exclude>**/target/**</exclude>
             <exclude>src/test/resources/empty</exclude>
             <exclude>**/dependency-reduced-pom.xml</exclude>
             <exclude>.github/PULL_REQUEST_TEMPLATE</exclude>
+            <exclude>deploy/kubernetes/operator/go.mod</exclude>
+            <exclude>deploy/kubernetes/operator/go.sum</exclude>
+            <exclude>deploy/kubernetes/operator/PROJECT</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -1200,6 +1220,95 @@
       <properties>
         <scala.binary.version>2.12</scala.binary.version>
         <spark.version>3.2.1</spark.version>
+        <client.type>3</client.type>
+        <jackson.version>2.12.0</jackson.version>
+      </properties>
+      <modules>
+        <module>client-spark/common</module>
+        <module>client-spark/spark3</module>
+        <module>integration-test/spark-common</module>
+        <module>integration-test/spark3</module>
+      </modules>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-client-spark3</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+              </exclusion>
+            </exclusions>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+              </exclusion>
+            </exclusions>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-client-spark-common</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-client-spark-common</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-integration-common-test</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+          </dependency>
+
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-integration-spark-common-test</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+    </profile>
+
+    <profile>
+      <id>spark3.2.0</id>
+      <properties>
+        <scala.binary.version>2.12</scala.binary.version>
+        <spark.version>3.2.0</spark.version>
         <client.type>3</client.type>
         <jackson.version>2.12.0</jackson.version>
       </properties>

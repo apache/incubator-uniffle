@@ -65,5 +65,8 @@ public interface ShuffleWriteClient {
   Roaring64NavigableMap getShuffleResult(String clientType, Set<ShuffleServerInfo> shuffleServerInfoSet,
       String appId, int shuffleId, int partitionId);
 
+  Roaring64NavigableMap getShuffleResultForMultiPart(String clientType,
+      Map<ShuffleServerInfo, Set<Integer>> serverToPartitions, String appId, int shuffleId);
+
   void close();
 }

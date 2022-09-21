@@ -98,6 +98,7 @@ public class HdfsStorage extends AbstractStorage {
   @Override
   ShuffleWriteHandler newWriteHandler(CreateShuffleWriteHandlerRequest request) {
     try {
+      String user = request.getUser();
       return new HdfsShuffleWriteHandler(
           request.getAppId(),
           request.getShuffleId(),
@@ -105,7 +106,8 @@ public class HdfsStorage extends AbstractStorage {
           request.getEndPartition(),
           storagePath,
           request.getFileNamePrefix(),
-          conf
+          conf,
+          user
       );
     } catch (Exception e) {
       throw new RuntimeException(e);

@@ -139,6 +139,15 @@ public class ConfigOptions {
     public TypedConfigOptionBuilder<String> stringType() {
       return new TypedConfigOptionBuilder<>(key, String.class);
     }
+
+    /**
+     * Defines that the value of the option should be of {@link Enum} type.
+     *
+     * @param enumClass Concrete type of the expected enum.
+     */
+    public <T extends Enum<T>> TypedConfigOptionBuilder<T> enumType(Class<T> enumClass) {
+      return new TypedConfigOptionBuilder<>(key, enumClass);
+    }
   }
 
   // ------------------------------------------------------------------------

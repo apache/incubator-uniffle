@@ -18,7 +18,6 @@
 package org.apache.uniffle.storage;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -42,7 +41,7 @@ public class HdfsTestBase implements Serializable {
   protected static File baseDir;
 
   @BeforeAll
-  public static void setUpHdfs(@TempDir File tempDir) throws IOException {
+  public static void setUpHdfs(@TempDir File tempDir) throws Exception {
     conf = new Configuration();
     baseDir = tempDir;
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR,
@@ -53,7 +52,7 @@ public class HdfsTestBase implements Serializable {
   }
 
   @AfterAll
-  public static void tearDownHdfs() throws IOException {
+  public static void tearDownHdfs() throws Exception {
     fs.close();
     cluster.shutdown();
   }

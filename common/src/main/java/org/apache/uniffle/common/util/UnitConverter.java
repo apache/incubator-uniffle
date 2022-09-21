@@ -87,11 +87,15 @@ public class UnitConverter {
         long val = Long.parseLong(m.group(1));
         String suffix = m.group(2);
         // Check for invalid suffixes
-        if (suffix != null && !byteSuffixes.containsKey(suffix)) {
-          throw new NumberFormatException("Invalid suffix: \"" + suffix + "\"");
+        ByteUnit byteUnit = unit;
+        if (suffix != null) {
+          byteUnit = byteSuffixes.get(suffix);
+          if (byteUnit == null) {
+            throw new NumberFormatException("Invalid suffix: \"" + suffix + "\"");
+          }
         }
         // If suffix is valid use that, otherwise none was provided and use the default passed
-        return unit.convertFrom(val, suffix != null ? byteSuffixes.get(suffix) : unit);
+        return unit.convertFrom(val, byteUnit);
       } else if (fractionMatcher.matches()) {
         throw new NumberFormatException("Fractional values are not supported. Input was: "
             + fractionMatcher.group(1));
@@ -162,13 +166,17 @@ public class UnitConverter {
       long val = Long.parseLong(m.group(1));
       String suffix = m.group(2);
 
+      TimeUnit timeUnit = unit;
       // Check for invalid suffixes
-      if (suffix != null && !timeSuffixes.containsKey(suffix)) {
-        throw new NumberFormatException("Invalid suffix: \"" + suffix + "\"");
+      if (suffix != null) {
+        timeUnit = timeSuffixes.get(suffix);
+        if (timeUnit == null) {
+          throw new NumberFormatException("Invalid suffix: \"" + suffix + "\"");
+        }
       }
 
       // If suffix is valid use that, otherwise none was provided and use the default passed
-      return unit.convert(val, suffix != null ? timeSuffixes.get(suffix) : unit);
+      return unit.convert(val, timeUnit);
     } catch (NumberFormatException e) {
       String timeError = "Time must be specified as seconds (s), "
           + "milliseconds (ms), microseconds (us), minutes (m or min), hour (h), or day (d). "

@@ -17,7 +17,6 @@
 
 package org.apache.spark.shuffle;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,12 +26,14 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.spark.MapOutputTracker;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkEnv;
@@ -247,7 +248,7 @@ public class RssShuffleManager implements ShuffleManager {
   public <K, V, C> ShuffleHandle registerShuffle(int shuffleId, ShuffleDependency<K, V, C> dependency) {
 
     if (id.get() == null) {
-      id.compareAndSet(null, SparkEnv.get().conf().getAppId() + System.currentTimeMillis());
+      id.compareAndSet(null, SparkEnv.get().conf().getAppId() + "_" + System.currentTimeMillis());
     }
     LOG.info("Generate application id used in rss: " + id.get());
 
@@ -405,18 +406,18 @@ public class RssShuffleManager implements ShuffleManager {
       readBufferSize = Integer.MAX_VALUE;
     }
     int shuffleId = rssShuffleHandle.getShuffleId();
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers =  rssShuffleHandle.getPartitionToServers();
-    Map<Integer, Roaring64NavigableMap> partitionToExpectBlocks = new HashMap<>();
-    for (int partition = startPartition; partition < endPartition; partition++) {
-      long start = System.currentTimeMillis();
-      Roaring64NavigableMap blockIdBitmap = shuffleWriteClient.getShuffleResult(
-          clientType, Sets.newHashSet(partitionToServers.get(partition)),
-          rssShuffleHandle.getAppId(), shuffleId, partition);
-      partitionToExpectBlocks.put(partition, blockIdBitmap);
-      LOG.info("Get shuffle blockId cost " + (System.currentTimeMillis() - start) + " ms, and get "
-          + blockIdBitmap.getLongCardinality() + " blockIds for shuffleId[" + shuffleId + "], partitionId["
-          + partition + "]");
-    }
+    Map<Integer, List<ShuffleServerInfo>> allPartitionToServers = rssShuffleHandle.getPartitionToServers();
+    Map<Integer, List<ShuffleServerInfo>> requirePartitionToServers = allPartitionToServers.entrySet()
+        .stream().filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition)
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    Map<ShuffleServerInfo, Set<Integer>> serverToPartitions = RssUtils.generateServerToPartitions(
+        requirePartitionToServers);
+    long start = System.currentTimeMillis();
+    Roaring64NavigableMap blockIdBitmap = shuffleWriteClient.getShuffleResultForMultiPart(
+        clientType, serverToPartitions, rssShuffleHandle.getAppId(), shuffleId);
+    LOG.info("Get shuffle blockId cost " + (System.currentTimeMillis() - start) + " ms, and get "
+        + blockIdBitmap.getLongCardinality() + " blockIds for shuffleId[" + shuffleId + "], startPartition["
+        + start + "], endPartition[" + endPartition + "]");
 
     ShuffleReadMetrics readMetrics;
     if (metrics != null) {
@@ -444,7 +445,7 @@ public class RssShuffleManager implements ShuffleManager {
         storageType,
         (int) readBufferSize,
         partitionNum,
-        partitionToExpectBlocks,
+        RssUtils.generatePartitionToBitmap(blockIdBitmap, startPartition, endPartition),
         taskIdBitmap,
         readMetrics);
   }
@@ -458,7 +459,7 @@ public class RssShuffleManager implements ShuffleManager {
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf();
     Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>> mapStatusIter = null;
     // Since Spark 3.1 refactors the interface of getMapSizesByExecutorId,
-    // we use reflection and catch for the compatibility with 3.0 & 3.1
+    // we use reflection and catch for the compatibility with 3.0 & 3.1 & 3.2
     try {
       // attempt to use Spark 3.1's API
       mapStatusIter = (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
@@ -471,7 +472,7 @@ public class RssShuffleManager implements ShuffleManager {
                   endMapIndex,
                   startPartition,
                   endPartition);
-    } catch (Exception e) {
+    } catch (Exception ignored) {
       // fallback and attempt to use Spark 3.0's API
       try {
         mapStatusIter = (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
@@ -483,8 +484,25 @@ public class RssShuffleManager implements ShuffleManager {
                     shuffleId,
                     startPartition,
                     endPartition);
-      } catch (Exception ee) {
-        throw new RuntimeException(ee);
+      } catch (Exception ignored1) {
+        try {
+          // attempt to use Spark 3.2.0's API
+          // Each Spark release will be versioned: [MAJOR].[FEATURE].[MAINTENANCE].
+          // Usually we only need to adapt [MAJOR].[FEATURE] . Unfortunately,
+          // some interfaces were removed wrongly in Spark 3.2.0. And they were added by Spark 3.2.1.
+          // So we need to adapt Spark 3.2.0 here
+          mapStatusIter = (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
+              MapOutputTracker.class.getDeclaredMethod("getMapSizesByExecutorId",
+                  int.class, int.class, int.class, int.class, int.class)
+                  .invoke(SparkEnv.get().mapOutputTracker(),
+                      shuffleId,
+                      startMapIndex,
+                      endMapIndex,
+                      startPartition,
+                      endPartition);
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
       }
     }
     while (mapStatusIter.hasNext()) {
@@ -564,8 +582,11 @@ public class RssShuffleManager implements ShuffleManager {
   }
 
   @VisibleForTesting
-  protected void registerShuffleServers(String appId, int shuffleId,
-                                        Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges) {
+  protected void registerShuffleServers(
+      String appId,
+      int shuffleId,
+      Map<ShuffleServerInfo,
+      List<PartitionRange>> serverToPartitionRanges) {
     if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
       return;
     }
@@ -636,7 +657,7 @@ public class RssShuffleManager implements ShuffleManager {
     return result;
   }
 
-  class ReadMetrics extends ShuffleReadMetrics {
+  static class ReadMetrics extends ShuffleReadMetrics {
     private ShuffleReadMetricsReporter reporter;
 
     ReadMetrics(ShuffleReadMetricsReporter reporter) {
@@ -659,7 +680,7 @@ public class RssShuffleManager implements ShuffleManager {
     }
   }
 
-  class WriteMetrics extends ShuffleWriteMetrics {
+  static class WriteMetrics extends ShuffleWriteMetrics {
     private ShuffleWriteMetricsReporter reporter;
 
     WriteMetrics(ShuffleWriteMetricsReporter reporter) {
