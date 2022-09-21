@@ -191,6 +191,12 @@ public class RssBaseConf extends RssConf {
       .defaultValue(60L)
       .withDescription("The kerberos authentication relogin interval. unit: sec");
 
+  public static final ConfigOption<String> RSS_SERVER_IP = ConfigOptions
+      .key("rss.server.ip")
+      .stringType()
+      .noDefaultValue()
+      .withDescription("Server ip");
+
   public boolean loadCommonConf(Map<String, String> properties) {
     if (properties == null) {
       return false;

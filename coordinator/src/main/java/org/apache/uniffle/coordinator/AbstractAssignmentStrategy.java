@@ -21,9 +21,46 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.apache.uniffle.coordinator.CoordinatorConf.COORDINATOR_ASSGINMENT_HOST_STRATEGY;
 
 public abstract class AbstractAssignmentStrategy implements AssignmentStrategy {
+  protected final CoordinatorConf conf;
+  private final HostAssignmentStrategy assignmentHostStrategy;
+
+  public AbstractAssignmentStrategy(CoordinatorConf conf) {
+    this.conf = conf;
+    assignmentHostStrategy = conf.get(COORDINATOR_ASSGINMENT_HOST_STRATEGY);
+  }
+
   protected List<ServerNode> getCandidateNodes(List<ServerNode> allNodes, int expectNum) {
+    switch (assignmentHostStrategy) {
+      case MUST_DIFF: return getCandidateNodesWithDiffHost(allNodes, expectNum);
+      case PREFER_DIFF: return tryGetCandidateNodesWithDiffHost(allNodes, expectNum);
+      case NONE: return allNodes.subList(0, expectNum);
+      default: throw new RuntimeException("Unsupported host assignment strategy:" + assignmentHostStrategy);
+    }
+  }
+
+  protected List<ServerNode> tryGetCandidateNodesWithDiffHost(List<ServerNode> allNodes, int expectNum) {
+    List<ServerNode> candidatesNodes = getCandidateNodesWithDiffHost(allNodes, expectNum);
+    Set<ServerNode> candidatesNodeSet = candidatesNodes.stream().collect(Collectors.toSet());
+    if (candidatesNodes.size() < expectNum) {
+      for (ServerNode node : allNodes) {
+        if (candidatesNodeSet.contains(node)) {
+          continue;
+        }
+        candidatesNodes.add(node);
+        if (candidatesNodes.size() >= expectNum) {
+          break;
+        }
+      }
+    }
+    return candidatesNodes;
+  }
+
+  protected List<ServerNode> getCandidateNodesWithDiffHost(List<ServerNode> allNodes, int expectNum) {
     List<ServerNode> candidatesNodes = new ArrayList<>();
     Set<String> hostIpCandidate = new HashSet<>();
     for (ServerNode node : allNodes) {
@@ -37,5 +74,12 @@ public abstract class AbstractAssignmentStrategy implements AssignmentStrategy {
       }
     }
     return candidatesNodes;
+  }
+
+
+  public enum HostAssignmentStrategy {
+    MUST_DIFF,
+    PREFER_DIFF,
+    NONE
   }
 }

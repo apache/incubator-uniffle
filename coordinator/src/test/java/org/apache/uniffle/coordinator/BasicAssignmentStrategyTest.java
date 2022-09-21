@@ -51,7 +51,7 @@ public class BasicAssignmentStrategyTest {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, shuffleNodesMax);
     clusterManager = new SimpleClusterManager(ssc, new Configuration());
-    strategy = new BasicAssignmentStrategy(clusterManager);
+    strategy = new BasicAssignmentStrategy(clusterManager, ssc);
   }
 
   @AfterEach

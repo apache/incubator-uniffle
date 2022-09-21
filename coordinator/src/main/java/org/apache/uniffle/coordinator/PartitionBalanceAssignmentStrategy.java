@@ -57,7 +57,8 @@ public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrate
   private ClusterManager clusterManager;
   private Map<ServerNode, PartitionAssignmentInfo> serverToPartitions = Maps.newConcurrentMap();
 
-  public PartitionBalanceAssignmentStrategy(ClusterManager clusterManager) {
+  public PartitionBalanceAssignmentStrategy(ClusterManager clusterManager, CoordinatorConf conf) {
+    super(conf);
     this.clusterManager = clusterManager;
   }
 
@@ -120,9 +121,6 @@ public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrate
       }
 
       List<ServerNode> candidatesNodes = getCandidateNodes(nodes, expectNum);
-      if (candidatesNodes.isEmpty() || candidatesNodes.size() < replica) {
-        throw new RuntimeException("There isn't enough shuffle servers");
-      }
       int idx = 0;
       List<PartitionRange> ranges = CoordinatorUtils.generateRanges(totalPartitionNum, 1);
       for (PartitionRange range : ranges) {

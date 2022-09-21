@@ -35,7 +35,8 @@ public class BasicAssignmentStrategy extends AbstractAssignmentStrategy {
 
   private ClusterManager clusterManager;
 
-  public BasicAssignmentStrategy(ClusterManager clusterManager) {
+  public BasicAssignmentStrategy(ClusterManager clusterManager, CoordinatorConf conf) {
+    super(conf);
     this.clusterManager = clusterManager;
   }
 
@@ -82,10 +83,6 @@ public class BasicAssignmentStrategy extends AbstractAssignmentStrategy {
       return servers;
     }
 
-    List<ServerNode> candidateNodes = getCandidateNodes(servers, expectedNum);
-    if (candidateNodes.isEmpty() || candidateNodes.size() < expectedNum) {
-      LOG.warn("Can't get expected servers [" + expectedNum + "] and found only [" + candidateNodes.size() + "]");
-    }
-    return candidateNodes;
+    return getCandidateNodes(servers, expectedNum);
   }
 }
