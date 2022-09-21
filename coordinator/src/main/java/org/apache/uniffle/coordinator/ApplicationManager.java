@@ -19,11 +19,7 @@ package org.apache.uniffle.coordinator;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -33,19 +29,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.RankValue;
@@ -53,6 +41,8 @@ import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.Ra
 public class ApplicationManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ApplicationManager.class);
+  // TODO: Add anomaly detection for other storage
+  public static final List<String> REMOTE_PATH_SCHEMA = Arrays.asList("hdfs");
   private final long expired;
   private final StrategyName storageStrategy;
   private final Map<String, Long> appIds = Maps.newConcurrentMap();
@@ -65,14 +55,8 @@ public class ApplicationManager {
   private final Map<String, String> remoteStorageToHost = Maps.newConcurrentMap();
   private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
   private List<Map.Entry<String, RankValue>> sizeList;
-  private final Configuration hdfsConf;
-  private final int fileSize;
-  private final int readAndWriteTimes;
   // it's only for test case to check if status check has problem
   private boolean hasErrorInStatusCheck = false;
-  private boolean remotePathIsHealthy = true;
-  // TODO: Add anomaly detection for other storage
-  private final static List<String> REMOTE_PATH_SCHEMA = Arrays.asList("hdfs");
 
   public ApplicationManager(CoordinatorConf conf) {
     storageStrategy = conf.get(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY);
@@ -80,21 +64,18 @@ public class ApplicationManager {
     remoteStoragePathRankValue = Maps.newConcurrentMap();
     availableRemoteStorageInfo = Maps.newConcurrentMap();
     if (StrategyName.IO_SAMPLE == storageStrategy) {
-      selectStorageStrategy = new LowestIOSampleCostSelectStorageStrategy(remoteStoragePathRankValue);
+      selectStorageStrategy = new LowestIOSampleCostSelectStorageStrategy(remoteStoragePathRankValue, conf);
     } else if (StrategyName.APP_BALANCE == storageStrategy) {
-      selectStorageStrategy = new AppBalanceSelectStorageStrategy(remoteStoragePathRankValue);
+      selectStorageStrategy = new AppBalanceSelectStorageStrategy(remoteStoragePathRankValue, conf);
     } else {
       throw new UnsupportedOperationException("Unsupported selected storage strategy.");
     }
     expired = conf.getLong(CoordinatorConf.COORDINATOR_APP_EXPIRED);
-    fileSize = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_FILE_SIZE);
-    readAndWriteTimes = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES);
-    hdfsConf = new Configuration();
     // the thread for checking application status
     ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("ApplicationManager-%d"));
     scheduledExecutorService.scheduleAtFixedRate(
-        () -> statusCheck(), expired / 2, expired / 2, TimeUnit.MILLISECONDS);
+        this::statusCheck, expired / 2, expired / 2, TimeUnit.MILLISECONDS);
     // the thread for checking if the hdfs path is readable and writable
     ScheduledExecutorService readWriteRankScheduler = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("readWriteRankScheduler-%d"));
@@ -106,50 +87,7 @@ public class ApplicationManager {
   public void checkReadAndWrite() {
     if (remoteStoragePathRankValue.size() > 1) {
       for (String path : remoteStoragePathRankValue.keySet()) {
-        if (path.startsWith(REMOTE_PATH_SCHEMA.get(0))) {
-          Path remotePath = new Path(path);
-          String rssTest = path + "/rssTest";
-          Path testPath = new Path(rssTest);
-          long startWriteTime = System.currentTimeMillis();
-          try {
-            FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hdfsConf);
-            for (int j = 0; j < readAndWriteTimes; j++) {
-              byte[] data = RandomUtils.nextBytes(fileSize);
-              try (FSDataOutputStream fos = fs.create(testPath)) {
-                fos.write(data);
-                fos.flush();
-              }
-              byte[] readData = new byte[fileSize];
-              int readBytes;
-              try (FSDataInputStream fis = fs.open(testPath)) {
-                int hasReadBytes = 0;
-                do {
-                  readBytes = fis.read(readData);
-                  if (hasReadBytes < fileSize) {
-                    for (int i = 0; i < readBytes; i++) {
-                      if (data[hasReadBytes + i] != readData[i]) {
-                        RankValue rankValue = remoteStoragePathRankValue.get(path);
-                        remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
-                        throw new RssException("The content of reading and writing is inconsistent.");
-                      }
-                    }
-                  }
-                  hasReadBytes += readBytes;
-                } while (readBytes != -1);
-              }
-            }
-          } catch (Exception e) {
-            remotePathIsHealthy = false;
-            LOG.error("Storage read and write error, we will not use this remote path {}.", path, e);
-            RankValue rankValue = remoteStoragePathRankValue.get(path);
-            remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
-          } finally {
-            sizeList = selectStorageStrategy.sortPathByRankValue(path, rssTest, startWriteTime, remotePathIsHealthy);
-            remotePathIsHealthy = true;
-          }
-        } else {
-          sizeList = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
-        }
+        sizeList = selectStorageStrategy.readAndWrite(path);
       }
     } else {
       sizeList = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
