@@ -96,7 +96,15 @@ public class MultiStorageManager implements StorageManager {
     if (event.getSize() > flushColdStorageThresholdSize) {
       return coldStorageManager;
     } else {
-      return warmStorageManager;
+      try {
+        if (warmStorageManager.selectStorage(event).canWrite()) {
+          return warmStorageManager;
+        }
+      } catch (Exception e) {
+        LOG.warn("", e);
+        return coldStorageManager;
+      }
+      return coldStorageManager;
     }
   }
 
