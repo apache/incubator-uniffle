@@ -235,33 +235,11 @@ and job recovery (i.e., `yarn.app.mapreduce.am.job.recovery.enable=false`)
 
 The important configuration is listed as following.
 
-### Coordinator
-
-For more details of advanced configuration, please see [Uniffle Coordinator Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/coordinator_guide.md).
-
-### Shuffle Server
-
-|Property Name|Default|Description|
-|---|---|---|
-|rss.coordinator.quorum|-|Coordinator quorum|
-|rss.rpc.server.port|-|RPC port for Shuffle server|
-|rss.jetty.http.port|-|Http port for Shuffle server|
-|rss.server.buffer.capacity|-|Max memory of buffer manager for shuffle server|
-|rss.server.memory.shuffle.highWaterMark.percentage|75.0|Threshold of spill data to storage, percentage of rss.server.buffer.capacity|
-|rss.server.memory.shuffle.lowWaterMark.percentage|25.0|Threshold of keep data in memory, percentage of rss.server.buffer.capacity|
-|rss.server.read.buffer.capacity|-|Max size of buffer for reading data|
-|rss.server.heartbeat.interval|10000|Heartbeat interval to Coordinator (ms)|
-|rss.server.flush.threadPool.size|10|Thread pool for flush data to file|
-|rss.server.commit.timeout|600000|Timeout when commit shuffle data (ms)|
-|rss.storage.type|-|Supports MEMORY_LOCALFILE, MEMORY_HDFS, MEMORY_LOCALFILE_HDFS|
-|rss.server.flush.cold.storage.threshold.size|64M| The threshold of data size for LOACALFILE and HDFS if MEMORY_LOCALFILE_HDFS is used|
-|rss.server.tags|-|The comma-separated list of tags to indicate the shuffle server's attributes. It will be used as the assignment basis for the coordinator|
-|rss.server.single.buffer.flush.enabled|false|Whether single buffer flush when size exceeded rss.server.single.buffer.flush.threshold|
-|rss.server.single.buffer.flush.threshold|64M|The threshold of single shuffle buffer flush|
-
-### Shuffle Client
-
-For more details of advanced configuration, please see [Uniffle Shuffle Client Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/client_guide.md).
+|Role|Link|
+|---|---|
+|coordinator|[Uniffle Coordinator Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/coordinator_guide.md)|
+|shuffle server|[Uniffle Shuffle Server Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/server_guide.md)|
+|client|[Uniffle Shuffle Client Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/client_guide.md)|
 
 ## Security：Hadoop kerberos authentication
 The primary goals of the Uniffle Kerberos security are:
