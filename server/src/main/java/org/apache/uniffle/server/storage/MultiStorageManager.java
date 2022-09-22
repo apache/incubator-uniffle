@@ -113,6 +113,7 @@ public class MultiStorageManager implements StorageManager {
       LOG.warn("", e);
       storageManager = storageManager == warmStorageManager ? coldStorageManager : warmStorageManager;
     }
+    event.setStorageManager(storageManager);
     return storageManager;
   }
 
