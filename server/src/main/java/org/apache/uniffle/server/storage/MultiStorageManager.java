@@ -106,7 +106,9 @@ public class MultiStorageManager implements StorageManager {
     }
 
     try {
-      if (!storageManager.selectStorage(event).canWrite()) {
+      Storage storage = storageManager.selectStorage(event);
+      // if storage is null, appId may not be registered
+      if (storage != null && !storage.canWrite()) {
         storageManager = storageManager == warmStorageManager ? coldStorageManager : warmStorageManager;
       }
     } catch (Exception e) {
