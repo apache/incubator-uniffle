@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
+import org.apache.uniffle.server.storage.StorageManager;
 
 public class ShuffleDataFlushEvent {
 
@@ -36,6 +37,7 @@ public class ShuffleDataFlushEvent {
   private final Supplier<Boolean> valid;
   private final ShuffleBuffer shuffleBuffer;
   private final AtomicInteger retryTimes = new AtomicInteger();
+  private StorageManager storageManager;
 
   public ShuffleDataFlushEvent(
       long eventId,
@@ -88,6 +90,14 @@ public class ShuffleDataFlushEvent {
 
   public ShuffleBuffer getShuffleBuffer() {
     return shuffleBuffer;
+  }
+
+  public StorageManager getStorageManager() {
+    return storageManager;
+  }
+
+  public void setStorageManager(StorageManager storageManager) {
+    this.storageManager = storageManager;
   }
 
   public boolean isValid() {

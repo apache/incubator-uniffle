@@ -71,7 +71,7 @@ public class MultiStorageManager implements StorageManager {
   @Override
   public boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event) {
     StorageManager storageManager = selectStorageManager(event);
-    if (storageManager == coldStorageManager && event.getRetryTimes() > fallBackTimes) {
+    if (event.getRetryTimes() > fallBackTimes) {
       try {
         CreateShuffleWriteHandlerRequest request = storage.getCreateWriterHandlerRequest(
             event.getAppId(),
@@ -80,32 +80,40 @@ public class MultiStorageManager implements StorageManager {
         if (request == null) {
           return false;
         }
-        storage = warmStorageManager.selectStorage(event);
+        storageManager = storageManager == warmStorageManager ? coldStorageManager : warmStorageManager;
+        event.setStorageManager(storageManager);
+        storage = storageManager.selectStorage(event);
         handler = storage.getOrCreateWriteHandler(request);
       } catch (IOException ioe) {
         LOG.warn("Create fallback write handler failed ", ioe);
         return false;
       }
-      return warmStorageManager.write(storage, handler, event);
+      return storageManager.write(storage, handler, event);
     } else {
       return storageManager.write(storage, handler, event);
     }
   }
 
   private StorageManager selectStorageManager(ShuffleDataFlushEvent event) {
-    if (event.getSize() > flushColdStorageThresholdSize) {
-      return coldStorageManager;
-    } else {
-      try {
-        if (warmStorageManager.selectStorage(event).canWrite()) {
-          return warmStorageManager;
-        }
-      } catch (Exception e) {
-        LOG.warn("", e);
-        return coldStorageManager;
-      }
-      return coldStorageManager;
+    if (event.getStorageManager() != null) {
+      return event.getStorageManager();
     }
+    StorageManager storageManager;
+    if (event.getSize() > flushColdStorageThresholdSize) {
+      storageManager = coldStorageManager;
+    } else {
+      storageManager = warmStorageManager;
+    }
+
+    try {
+      if (!storageManager.selectStorage(event).canWrite()) {
+        storageManager = storageManager == warmStorageManager ? coldStorageManager : warmStorageManager;
+      }
+    } catch (Exception e) {
+      LOG.warn("", e);
+      storageManager = storageManager == warmStorageManager ? coldStorageManager : warmStorageManager;
+    }
+    return storageManager;
   }
 
   public void start() {
