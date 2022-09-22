@@ -27,7 +27,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.prometheus.client.CollectorRegistry;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -144,14 +143,10 @@ public class ShuffleServer {
   }
 
   private void initialization() throws Exception {
-    ip = shuffleServerConf.get(ShuffleServerConf.RSS_SERVER_IP);
-    if (StringUtils.isBlank(ip)) {
-      ip = RssUtils.getHostIp();
-      if (ip == null) {
-        throw new RuntimeException("Couldn't acquire host Ip");
-      }
+    ip = RssUtils.getHostIp();
+    if (ip == null) {
+      throw new RuntimeException("Couldn't acquire host Ip");
     }
-    
     port = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     id = ip + "-" + port;
     LOG.info("Start to initialize server {}", id);
