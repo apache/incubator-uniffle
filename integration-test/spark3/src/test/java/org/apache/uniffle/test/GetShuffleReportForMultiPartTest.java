@@ -175,7 +175,8 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
       i++;
     }
     SparkConf conf = spark.sparkContext().conf();
-    if (!conf.get("spark.shuffle.manager", "").isEmpty()) {
+    if (conf.get("spark.shuffle.manager", "")
+        .equals("org.apache.uniffle.test.GetShuffleReportForMultiPartTest$RssShuffleManagerWrapper")) {
       RssShuffleManagerWrapper mockRssShuffleManager =
           (RssShuffleManagerWrapper) spark.sparkContext().env().shuffleManager();
       int expectRequestNum = mockRssShuffleManager.getShuffleIdToPartitionNum().values().stream()
