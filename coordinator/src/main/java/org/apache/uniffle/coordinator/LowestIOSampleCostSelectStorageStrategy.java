@@ -96,7 +96,7 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
   }
 
   @Override
-  public List<Map.Entry<String, RankValue>> readAndWrite(String path) {
+  public List<Map.Entry<String, RankValue>> detectStorage(String path) {
     if (path.startsWith(ApplicationManager.REMOTE_PATH_SCHEMA.get(0))) {
       setRemotePathIsHealthy(true);
       Path remotePath = new Path(path);

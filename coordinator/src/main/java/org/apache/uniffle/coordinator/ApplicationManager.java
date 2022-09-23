@@ -91,7 +91,7 @@ public class ApplicationManager {
   public void checkReadAndWrite() {
     if (remoteStoragePathRankValue.size() > 1) {
       for (String path : remoteStoragePathRankValue.keySet()) {
-        sizeList = selectStorageStrategy.readAndWrite(path);
+        sizeList = selectStorageStrategy.detectStorage(path);
       }
     } else {
       sizeList = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());

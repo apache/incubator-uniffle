@@ -24,5 +24,5 @@ import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.Ra
 
 public interface SelectStorageStrategy {
 
-  List<Map.Entry<String, RankValue>> readAndWrite(String path);
+  List<Map.Entry<String, RankValue>> detectStorage(String path);
 }
