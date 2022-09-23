@@ -19,15 +19,10 @@ package org.apache.uniffle.coordinator;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -151,8 +146,7 @@ public class ApplicationManager {
     if (appIdToRemoteStorageInfo.containsKey(appId)) {
       return appIdToRemoteStorageInfo.get(appId);
     }
-    // If the APP_BALANCE strategy is used, we must ensure that each allocation is uniform
-    useAppBalanceToSelect();
+    sizeList = selectStorageStrategy.pickStorage(sizeList);
     for (Map.Entry<String, RankValue> entry : sizeList) {
       String storagePath = entry.getKey();
       if (availableRemoteStorageInfo.containsKey(storagePath)) {
@@ -162,29 +156,6 @@ public class ApplicationManager {
       }
     }
     return appIdToRemoteStorageInfo.get(appId);
-  }
-
-  /**
-   * When choosing the AppBalance strategy, each time you select a path,
-   * you should know the number of the latest apps in different paths
-   */
-  @VisibleForTesting
-  public void useAppBalanceToSelect() {
-    boolean isAppBalance = storageStrategy.equals(StrategyName.APP_BALANCE);
-    boolean isUnhealthy =
-        sizeList.stream().noneMatch(rv -> rv.getValue().getReadAndWriteTime().get() != Long.MAX_VALUE);
-    if (isAppBalance) {
-      if (!isUnhealthy) {
-        // If there is only one unhealthy path, then filter that path
-        sizeList = sizeList.stream().filter(rv -> rv.getValue().getReadAndWriteTime().get() != Long.MAX_VALUE).sorted(
-            Comparator.comparingInt(entry -> entry.getValue().getAppNum().get())).collect(Collectors.toList());
-      } else {
-        // If all paths are unhealthy, assign paths according to the number of apps
-        sizeList = sizeList.stream().sorted(Comparator.comparingInt(
-            entry -> entry.getValue().getAppNum().get())).collect(Collectors.toList());
-      }
-    }
-    LOG.error("The sorted remote path list is: {}", sizeList);
   }
 
   @VisibleForTesting

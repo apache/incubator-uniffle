@@ -144,6 +144,11 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
     }
   }
 
+  @Override
+  public synchronized List<Map.Entry<String, RankValue>> pickStorage(List<Map.Entry<String, RankValue>> paths) {
+    return paths;
+  }
+
   public void setRemotePathIsHealthy(boolean remotePathIsHealthy) {
     this.remotePathIsHealthy = remotePathIsHealthy;
   }

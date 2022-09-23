@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -124,6 +125,27 @@ public class AppBalanceSelectStorageStrategy implements SelectStorageStrategy {
     } else {
       return Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
     }
+  }
+
+  /**
+   * When choosing the AppBalance strategy, each time you select a path,
+   * you should know the number of the latest apps in different paths
+   */
+  @Override
+  public synchronized List<Map.Entry<String, RankValue>> pickStorage(List<Map.Entry<String, RankValue>> paths) {
+    boolean isUnhealthy =
+        paths.stream().noneMatch(rv -> rv.getValue().getReadAndWriteTime().get() != Long.MAX_VALUE);
+    if (!isUnhealthy) {
+      // If there is only one unhealthy path, then filter that path
+      paths = paths.stream().filter(rv -> rv.getValue().getReadAndWriteTime().get() != Long.MAX_VALUE).sorted(
+          Comparator.comparingInt(entry -> entry.getValue().getAppNum().get())).collect(Collectors.toList());
+    } else {
+      // If all paths are unhealthy, assign paths according to the number of apps
+      paths = paths.stream().sorted(Comparator.comparingInt(
+          entry -> entry.getValue().getAppNum().get())).collect(Collectors.toList());
+    }
+    LOG.error("The sorted remote path list is: {}", paths);
+    return paths;
   }
 
   public void setRemotePathIsHealthy(boolean remotePathIsHealthy) {
