@@ -182,17 +182,17 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
       int expectRequestNum = mockRssShuffleManager.getShuffleIdToPartitionNum().values().stream()
           .mapToInt(x -> x.get()).sum();
       // Validate getShuffleResultForMultiPart is correct before return result
-      validateRequestCount(expectRequestNum * replicateRead);
+      validateRequestCount(spark.sparkContext().applicationId(), expectRequestNum * replicateRead);
     }
     return map;
   }
 
-  public void validateRequestCount(int expectRequestNum) {
+  public void validateRequestCount(String appId, int expectRequestNum) {
     for (ShuffleServer shuffleServer : shuffleServers) {
       MockedShuffleServerGrpcService service = ((MockedGrpcServer) shuffleServer.getServer()).getService();
       Map<String, Map<Integer, AtomicInteger>> serviceRequestCount = service.getShuffleIdToPartitionRequest();
-      int requestNum = serviceRequestCount.entrySet().stream().flatMap(x -> x.getValue().values()
-           .stream()).mapToInt(AtomicInteger::get).sum();
+      int requestNum = serviceRequestCount.entrySet().stream().filter(x -> x.getKey().startsWith(appId))
+          .flatMap(x -> x.getValue().values().stream()).mapToInt(AtomicInteger::get).sum();
       expectRequestNum -= requestNum;
     }
     assertEquals(0, expectRequestNum);
