@@ -34,6 +34,7 @@ import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.RankValue;
@@ -48,13 +49,21 @@ public class AppBalanceSelectStorageStrategy implements SelectStorageStrategy {
    * store remote path -> application count for assignment strategy
    */
   private final Map<String, RankValue> remoteStoragePathRankValue;
+  private final Map<String, RemoteStorageInfo> appIdToRemoteStorageInfo;
+  private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
   private final Configuration hdfsConf;
   private final int fileSize;
   private final int readAndWriteTimes;
   private boolean remotePathIsHealthy = true;
 
-  public AppBalanceSelectStorageStrategy(Map<String, RankValue> remoteStoragePathRankValue, CoordinatorConf conf) {
+  public AppBalanceSelectStorageStrategy(
+      Map<String, RankValue> remoteStoragePathRankValue,
+      Map<String, RemoteStorageInfo> appIdToRemoteStorageInfo,
+      Map<String, RemoteStorageInfo> availableRemoteStorageInfo,
+      CoordinatorConf conf) {
     this.remoteStoragePathRankValue = remoteStoragePathRankValue;
+    this.appIdToRemoteStorageInfo = appIdToRemoteStorageInfo;
+    this.availableRemoteStorageInfo = availableRemoteStorageInfo;
     this.hdfsConf = new Configuration();
     fileSize = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_FILE_SIZE);
     readAndWriteTimes = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES);
@@ -80,11 +89,11 @@ public class AppBalanceSelectStorageStrategy implements SelectStorageStrategy {
   }
 
   @Override
-  public List<Map.Entry<String, RankValue>> detectStorage(String path) {
-    if (path.startsWith(ApplicationManager.REMOTE_PATH_SCHEMA.get(0))) {
+  public List<Map.Entry<String, RankValue>> detectStorage(String uri) {
+    if (uri.startsWith(ApplicationManager.REMOTE_PATH_SCHEMA.get(0))) {
       setRemotePathIsHealthy(true);
-      Path remotePath = new Path(path);
-      String rssTest = path + "/rssTest";
+      Path remotePath = new Path(uri);
+      String rssTest = uri + "/rssTest";
       Path testPath = new Path(rssTest);
       try {
         FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hdfsConf);
@@ -103,8 +112,8 @@ public class AppBalanceSelectStorageStrategy implements SelectStorageStrategy {
               if (hasReadBytes < fileSize) {
                 for (int i = 0; i < readBytes; i++) {
                   if (data[hasReadBytes + i] != readData[i]) {
-                    RankValue rankValue = remoteStoragePathRankValue.get(path);
-                    remoteStoragePathRankValue.put(path,
+                    RankValue rankValue = remoteStoragePathRankValue.get(uri);
+                    remoteStoragePathRankValue.put(uri,
                         new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
                     throw new RssException("The content of reading and writing is inconsistent.");
                   }
@@ -116,11 +125,11 @@ public class AppBalanceSelectStorageStrategy implements SelectStorageStrategy {
         }
       } catch (Exception e) {
         setRemotePathIsHealthy(false);
-        LOG.error("Storage read and write error, we will not use this remote path {}.", path, e);
-        RankValue rankValue = remoteStoragePathRankValue.get(path);
-        remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
+        LOG.error("Storage read and write error, we will not use this remote path {}.", uri, e);
+        RankValue rankValue = remoteStoragePathRankValue.get(uri);
+        remoteStoragePathRankValue.put(uri, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
       } finally {
-        return sortPathByRankValue(path, rssTest, remotePathIsHealthy);
+        return sortPathByRankValue(uri, rssTest, remotePathIsHealthy);
       }
     } else {
       return Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
@@ -132,20 +141,29 @@ public class AppBalanceSelectStorageStrategy implements SelectStorageStrategy {
    * you should know the number of the latest apps in different paths
    */
   @Override
-  public synchronized List<Map.Entry<String, RankValue>> pickStorage(List<Map.Entry<String, RankValue>> paths) {
+  public synchronized String pickStorage(
+      List<Map.Entry<String, RankValue>> uris, String appId) {
     boolean isUnhealthy =
-        paths.stream().noneMatch(rv -> rv.getValue().getReadAndWriteTime().get() != Long.MAX_VALUE);
+        uris.stream().noneMatch(rv -> rv.getValue().getReadAndWriteTime().get() != Long.MAX_VALUE);
     if (!isUnhealthy) {
       // If there is only one unhealthy path, then filter that path
-      paths = paths.stream().filter(rv -> rv.getValue().getReadAndWriteTime().get() != Long.MAX_VALUE).sorted(
+      uris = uris.stream().filter(rv -> rv.getValue().getReadAndWriteTime().get() != Long.MAX_VALUE).sorted(
           Comparator.comparingInt(entry -> entry.getValue().getAppNum().get())).collect(Collectors.toList());
     } else {
       // If all paths are unhealthy, assign paths according to the number of apps
-      paths = paths.stream().sorted(Comparator.comparingInt(
+      uris = uris.stream().sorted(Comparator.comparingInt(
           entry -> entry.getValue().getAppNum().get())).collect(Collectors.toList());
     }
-    LOG.error("The sorted remote path list is: {}", paths);
-    return paths;
+    LOG.error("The sorted remote path list is: {}", uris);
+    for (Map.Entry<String, RankValue> entry : uris) {
+      String storagePath = entry.getKey();
+      if (availableRemoteStorageInfo.containsKey(storagePath)) {
+        appIdToRemoteStorageInfo.putIfAbsent(appId, availableRemoteStorageInfo.get(storagePath));
+        return storagePath;
+      }
+    }
+    LOG.error("No remote storage available, we will default to the first.");
+    return uris.get(0).getKey();
   }
 
   public void setRemotePathIsHealthy(boolean remotePathIsHealthy) {

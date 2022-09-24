@@ -66,9 +66,11 @@ public class ApplicationManager {
     remoteStoragePathRankValue = Maps.newConcurrentMap();
     availableRemoteStorageInfo = Maps.newConcurrentMap();
     if (StrategyName.IO_SAMPLE == storageStrategy) {
-      selectStorageStrategy = new LowestIOSampleCostSelectStorageStrategy(remoteStoragePathRankValue, conf);
+      selectStorageStrategy = new LowestIOSampleCostSelectStorageStrategy(remoteStoragePathRankValue,
+          appIdToRemoteStorageInfo, availableRemoteStorageInfo, conf);
     } else if (StrategyName.APP_BALANCE == storageStrategy) {
-      selectStorageStrategy = new AppBalanceSelectStorageStrategy(remoteStoragePathRankValue, conf);
+      selectStorageStrategy = new AppBalanceSelectStorageStrategy(remoteStoragePathRankValue,
+          appIdToRemoteStorageInfo, availableRemoteStorageInfo, conf);
     } else {
       throw new UnsupportedOperationException("Unsupported selected storage strategy.");
     }
@@ -149,15 +151,8 @@ public class ApplicationManager {
     if (appIdToRemoteStorageInfo.containsKey(appId)) {
       return appIdToRemoteStorageInfo.get(appId);
     }
-    sizeList = selectStorageStrategy.pickStorage(sizeList);
-    for (Map.Entry<String, RankValue> entry : sizeList) {
-      String storagePath = entry.getKey();
-      if (availableRemoteStorageInfo.containsKey(storagePath)) {
-        appIdToRemoteStorageInfo.putIfAbsent(appId, availableRemoteStorageInfo.get(storagePath));
-        incRemoteStorageCounter(storagePath);
-        break;
-      }
-    }
+    String pickStorage = selectStorageStrategy.pickStorage(sizeList, appId);
+    incRemoteStorageCounter(pickStorage);
     return appIdToRemoteStorageInfo.get(appId);
   }
 

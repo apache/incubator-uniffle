@@ -32,6 +32,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.uniffle.common.RemoteStorageInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,14 +51,21 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
    * store remote path -> application count for assignment strategy
    */
   private final Map<String, RankValue> remoteStoragePathRankValue;
+  private final Map<String, RemoteStorageInfo> appIdToRemoteStorageInfo;
+  private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
   private final Configuration hdfsConf;
   private final int fileSize;
   private final int readAndWriteTimes;
   private boolean remotePathIsHealthy = true;
 
   public LowestIOSampleCostSelectStorageStrategy(
-      Map<String, RankValue> remoteStoragePathRankValue, CoordinatorConf conf) {
+      Map<String, RankValue> remoteStoragePathRankValue,
+      Map<String, RemoteStorageInfo> appIdToRemoteStorageInfo,
+      Map<String, RemoteStorageInfo> availableRemoteStorageInfo,
+      CoordinatorConf conf) {
     this.remoteStoragePathRankValue = remoteStoragePathRankValue;
+    this.appIdToRemoteStorageInfo = appIdToRemoteStorageInfo;
+    this.availableRemoteStorageInfo = availableRemoteStorageInfo;
     this.hdfsConf = new Configuration();
     fileSize = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_FILE_SIZE);
     readAndWriteTimes = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES);
@@ -145,8 +153,17 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
   }
 
   @Override
-  public synchronized List<Map.Entry<String, RankValue>> pickStorage(List<Map.Entry<String, RankValue>> paths) {
-    return paths;
+  public synchronized String pickStorage(
+      List<Map.Entry<String, RankValue>> uris, String appId) {
+    for (Map.Entry<String, RankValue> uri : uris) {
+      String storagePath = uri.getKey();
+      if (availableRemoteStorageInfo.containsKey(storagePath)) {
+        appIdToRemoteStorageInfo.putIfAbsent(appId, availableRemoteStorageInfo.get(storagePath));
+        return storagePath;
+      }
+    }
+    LOG.error("No RemoteStorage available, we will default to the first.");
+    return uris.get(0).getKey();
   }
 
   public void setRemotePathIsHealthy(boolean remotePathIsHealthy) {
