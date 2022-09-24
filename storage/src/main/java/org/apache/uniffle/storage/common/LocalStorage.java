@@ -44,7 +44,7 @@ public class LocalStorage extends AbstractStorage {
   private static final Logger LOG = LoggerFactory.getLogger(LocalStorage.class);
   public static final String STORAGE_HOST = "local";
 
-  private final long capacity;
+  private long capacity;
   private final String basePath;
   private final double cleanupThreshold;
   private final long cleanIntervalMs;
@@ -77,10 +77,16 @@ public class LocalStorage extends AbstractStorage {
       LOG.warn("Init base directory " + basePath + " fail, the disk should be corrupted", ioe);
       throw new RuntimeException(ioe);
     }
-    long freeSpace = baseFolder.getFreeSpace();
-    if (freeSpace < capacity) {
-      throw new IllegalArgumentException("The Disk of " + basePath + " Available Capacity " + freeSpace
-          + " is smaller than configuration");
+    if (capacity < 0L) {
+      this.capacity = baseFolder.getTotalSpace();
+      LOG.info("Make the disk capacity the total space when \"rss.server.disk.capacity\" is not specified "
+          + "or less than 0");
+    } else {
+      long freeSpace = baseFolder.getFreeSpace();
+      if (freeSpace < capacity) {
+        throw new IllegalArgumentException("The Disk of " + basePath + " Available Capacity " + freeSpace
+            + " is smaller than configuration");
+      }
     }
   }
 
