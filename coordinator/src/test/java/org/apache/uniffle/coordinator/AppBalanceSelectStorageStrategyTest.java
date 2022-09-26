@@ -116,7 +116,7 @@ public class AppBalanceSelectStorageStrategyTest {
         + Constants.COMMA_SPLIT_CHAR + remotePath3;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
     String appPrefix = "testAppId";
-    // init readWriteRankScheduler
+    // init detectStorageScheduler
     Thread.sleep(2000);
     Thread pickThread1 = new Thread(() -> {
       for (int i = 0; i < 1000; i++) {

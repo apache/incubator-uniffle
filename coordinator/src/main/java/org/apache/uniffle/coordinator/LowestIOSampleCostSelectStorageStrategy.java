@@ -153,17 +153,16 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
   }
 
   @Override
-  public synchronized String pickStorage(
+  public synchronized RemoteStorageInfo pickStorage(
       List<Map.Entry<String, RankValue>> uris, String appId) {
     for (Map.Entry<String, RankValue> uri : uris) {
       String storagePath = uri.getKey();
       if (availableRemoteStorageInfo.containsKey(storagePath)) {
-        appIdToRemoteStorageInfo.putIfAbsent(appId, availableRemoteStorageInfo.get(storagePath));
-        return storagePath;
+        return appIdToRemoteStorageInfo.computeIfAbsent(appId, x -> availableRemoteStorageInfo.get(storagePath));
       }
     }
-    LOG.error("No RemoteStorage available, we will default to the first.");
-    return uris.get(0).getKey();
+    LOG.warn("No remote storage is available, we will default to the first.");
+    return availableRemoteStorageInfo.values().iterator().next();
   }
 
   public void setRemotePathIsHealthy(boolean remotePathIsHealthy) {

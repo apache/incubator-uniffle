@@ -159,7 +159,8 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
         + Constants.COMMA_SPLIT_CHAR + remoteStorage3;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
     String appPrefix = "testAppId";
-
+    // init detectStorageScheduler
+    Thread.sleep(2000);
     Thread pickThread1 = new Thread(() -> {
       for (int i = 0; i < 1000; i++) {
         String appId = appPrefix + i;

@@ -80,11 +80,11 @@ public class ApplicationManager {
         ThreadUtils.getThreadFactory("ApplicationManager-%d"));
     scheduledExecutorService.scheduleAtFixedRate(
         this::statusCheck, expired / 2, expired / 2, TimeUnit.MILLISECONDS);
-    // the thread for checking if the hdfs path is readable and writable
-    ScheduledExecutorService readWriteRankScheduler = Executors.newSingleThreadScheduledExecutor(
+    // the thread for checking if the storage is normal
+    ScheduledExecutorService detectStorageScheduler = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("readWriteRankScheduler-%d"));
     // should init later than the refreshRemoteStorage init
-    readWriteRankScheduler.scheduleAtFixedRate(this::checkReadAndWrite, 1000,
+    detectStorageScheduler.scheduleAtFixedRate(this::checkReadAndWrite, 1000,
         conf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME), TimeUnit.MILLISECONDS);
   }
 
@@ -151,8 +151,8 @@ public class ApplicationManager {
     if (appIdToRemoteStorageInfo.containsKey(appId)) {
       return appIdToRemoteStorageInfo.get(appId);
     }
-    String pickStorage = selectStorageStrategy.pickStorage(sizeList, appId);
-    incRemoteStorageCounter(pickStorage);
+    RemoteStorageInfo pickStorage = selectStorageStrategy.pickStorage(sizeList, appId);
+    incRemoteStorageCounter(pickStorage.getPath());
     return appIdToRemoteStorageInfo.get(appId);
   }
 

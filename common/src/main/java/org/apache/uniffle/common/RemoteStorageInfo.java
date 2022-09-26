@@ -55,7 +55,7 @@ public class RemoteStorageInfo implements Serializable {
       if (!ArrayUtils.isEmpty(items)) {
         for (String item : items) {
           String[] kv = item.split(Constants.EQUAL_SPLIT_CHAR);
-          if (kv != null && kv.length == 2) {
+          if (kv.length == 2) {
             this.confItems.put(kv[0], kv[1]);
           }
         }

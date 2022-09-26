@@ -141,7 +141,7 @@ public class AppBalanceSelectStorageStrategy implements SelectStorageStrategy {
    * you should know the number of the latest apps in different paths
    */
   @Override
-  public synchronized String pickStorage(
+  public synchronized RemoteStorageInfo pickStorage(
       List<Map.Entry<String, RankValue>> uris, String appId) {
     boolean isUnhealthy =
         uris.stream().noneMatch(rv -> rv.getValue().getReadAndWriteTime().get() != Long.MAX_VALUE);
@@ -154,16 +154,15 @@ public class AppBalanceSelectStorageStrategy implements SelectStorageStrategy {
       uris = uris.stream().sorted(Comparator.comparingInt(
           entry -> entry.getValue().getAppNum().get())).collect(Collectors.toList());
     }
-    LOG.error("The sorted remote path list is: {}", uris);
+    LOG.debug("The sorted remote path list is: {}", uris);
     for (Map.Entry<String, RankValue> entry : uris) {
       String storagePath = entry.getKey();
       if (availableRemoteStorageInfo.containsKey(storagePath)) {
-        appIdToRemoteStorageInfo.putIfAbsent(appId, availableRemoteStorageInfo.get(storagePath));
-        return storagePath;
+        return appIdToRemoteStorageInfo.computeIfAbsent(appId, x -> availableRemoteStorageInfo.get(storagePath));
       }
     }
-    LOG.error("No remote storage available, we will default to the first.");
-    return uris.get(0).getKey();
+    LOG.warn("No remote storage is available, we will default to the first.");
+    return availableRemoteStorageInfo.values().iterator().next();
   }
 
   public void setRemotePathIsHealthy(boolean remotePathIsHealthy) {
