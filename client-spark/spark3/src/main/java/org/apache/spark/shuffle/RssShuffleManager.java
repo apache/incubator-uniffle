@@ -51,6 +51,7 @@ import org.apache.spark.util.EventLoop;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import scala.Tuple2;
 import scala.Tuple3;
 import scala.collection.Iterator;
@@ -73,6 +74,8 @@ import org.apache.uniffle.common.util.ThreadUtils;
 public class RssShuffleManager implements ShuffleManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleManager.class);
+  private static final String MDC_TASK_ID_ENTIFIER = "taskId";
+
   private final String clientType;
   private final long heartbeatInterval;
   private final long heartbeatTimeout;
@@ -93,51 +96,33 @@ public class RssShuffleManager implements ShuffleManager {
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
   private RemoteStorageInfo remoteStorage;
-  private final EventLoop eventLoop;
-  private final EventLoop defaultEventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
 
-    @Override
-    public void onReceive(AddBlockEvent event) {
-      threadPoolExecutor.execute(() -> sendShuffleData(event.getTaskId(), event.getShuffleDataInfoList()));
-    }
-
-    @Override
-    public void onError(Throwable throwable) {
-      LOG.info("Shuffle event loop error...", throwable);
-    }
-
-    @Override
-    public void onStart() {
-      LOG.info("Shuffle event loop start...");
-    }
-
-    private void sendShuffleData(String taskId, List<ShuffleBlockInfo> shuffleDataInfoList) {
-      try {
-        SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(id.get(), shuffleDataInfoList);
-        putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
-        putBlockId(taskToFailedBlockIds, taskId, result.getFailedBlockIds());
-      } finally {
-        final AtomicLong releaseSize = new AtomicLong(0);
-        shuffleDataInfoList.forEach((sbi) -> releaseSize.addAndGet(sbi.getFreeMemory()));
-        WriteBufferManager bufferManager = taskToBufferManager.get(taskId);
-        if (bufferManager != null) {
-          bufferManager.freeAllocatedMemory(releaseSize.get());
-        }
-        LOG.debug("Spark 3.0 finish send data and release " + releaseSize + " bytes");
+  private void sendShuffleData(String taskId, List<ShuffleBlockInfo> shuffleDataInfoList) {
+    try {
+      SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(id.get(), shuffleDataInfoList);
+      putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
+      putBlockId(taskToFailedBlockIds, taskId, result.getFailedBlockIds());
+    } finally {
+      final AtomicLong releaseSize = new AtomicLong(0);
+      shuffleDataInfoList.forEach((sbi) -> releaseSize.addAndGet(sbi.getFreeMemory()));
+      WriteBufferManager bufferManager = taskToBufferManager.get(taskId);
+      if (bufferManager != null) {
+        bufferManager.freeAllocatedMemory(releaseSize.get());
       }
+      LOG.debug("Spark 3.0 finish send data and release " + releaseSize + " bytes");
     }
+  }
 
-    private synchronized void putBlockId(
-        Map<String, Set<Long>> taskToBlockIds,
-        String taskAttemptId,
-        Set<Long> blockIds) {
-      if (blockIds == null || blockIds.isEmpty()) {
-        return;
-      }
-      taskToBlockIds.putIfAbsent(taskAttemptId, Sets.newConcurrentHashSet());
-      taskToBlockIds.get(taskAttemptId).addAll(blockIds);
+  private synchronized void putBlockId(
+      Map<String, Set<Long>> taskToBlockIds,
+      String taskAttemptId,
+      Set<Long> blockIds) {
+    if (blockIds == null || blockIds.isEmpty()) {
+      return;
     }
-  };
+    taskToBlockIds.putIfAbsent(taskAttemptId, Sets.newConcurrentHashSet());
+    taskToBlockIds.get(taskAttemptId).addAll(blockIds);
+  }
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
@@ -182,8 +167,6 @@ public class RssShuffleManager implements ShuffleManager {
     taskToFailedBlockIds = Maps.newConcurrentMap();
     // for non-driver executor, start a thread for sending shuffle data to shuffle server
     LOG.info("RSS data send thread is starting");
-    eventLoop = defaultEventLoop;
-    eventLoop.start();
     int poolSize = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_SIZE);
     int keepAliveTime = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE);
     threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize * 2, keepAliveTime, TimeUnit.SECONDS,
@@ -228,12 +211,6 @@ public class RssShuffleManager implements ShuffleManager {
             dataCommitPoolSize);
     this.taskToSuccessBlockIds = taskToSuccessBlockIds;
     this.taskToFailedBlockIds = taskToFailedBlockIds;
-    if (loop != null) {
-      eventLoop = loop;
-    } else {
-      eventLoop = defaultEventLoop;
-    }
-    eventLoop.start();
     threadPoolExecutor = null;
     heartBeatScheduledExecutorService = null;
   }
@@ -246,7 +223,6 @@ public class RssShuffleManager implements ShuffleManager {
   // pass that ShuffleHandle to executors (getWriter/getReader)
   @Override
   public <K, V, C> ShuffleHandle registerShuffle(int shuffleId, ShuffleDependency<K, V, C> dependency) {
-
     if (id.get() == null) {
       id.compareAndSet(null, SparkEnv.get().conf().getAppId() + "_" + System.currentTimeMillis());
     }
@@ -302,6 +278,7 @@ public class RssShuffleManager implements ShuffleManager {
     if (!(handle instanceof RssShuffleHandle)) {
       throw new RuntimeException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
+    MDC.put(MDC_TASK_ID_ENTIFIER, " [task_" + context.taskAttemptId() + "]");
     RssShuffleHandle rssHandle = (RssShuffleHandle) handle;
     // todo: this implement is tricky, we should refactor it
     if (id.get() == null) {
@@ -570,9 +547,6 @@ public class RssShuffleManager implements ShuffleManager {
     if (shuffleWriteClient != null) {
       shuffleWriteClient.close();
     }
-    if (eventLoop != null) {
-      eventLoop.stop();
-    }
   }
 
   public void clearTaskMeta(String taskId) {
@@ -636,9 +610,15 @@ public class RssShuffleManager implements ShuffleManager {
   }
 
   public void postEvent(AddBlockEvent addBlockEvent) {
-    if (eventLoop != null) {
-      eventLoop.post(addBlockEvent);
-    }
+    Map<String, String> ctxMap = MDC.getCopyOfContextMap();
+    threadPoolExecutor.execute(() -> {
+      try {
+        MDC.setContextMap(ctxMap);
+        sendShuffleData(addBlockEvent.getTaskId(), addBlockEvent.getShuffleDataInfoList());
+      } finally {
+        MDC.clear();
+      }
+    });
   }
 
   public Set<Long> getFailedBlockIds(String taskId) {
