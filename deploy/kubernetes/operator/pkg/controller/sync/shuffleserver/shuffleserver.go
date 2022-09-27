@@ -136,7 +136,8 @@ func GenerateNodePortSVC(rss *unifflev1alpha1.RemoteShuffleService) *corev1.Serv
 
 // getReplicas returns replicas of shuffle servers.
 func getReplicas(rss *unifflev1alpha1.RemoteShuffleService) *int32 {
-	// TODO: we will support hpa for rss object, and when we enable hpa, wo should not return replicas in .spec.shuffleServer field.
+	// TODO: we will support hpa for rss object,
+	// and when we enable hpa, we should not return replicas in .spec.shuffleServer field.
 	return rss.Spec.ShuffleServer.Replicas
 }
 

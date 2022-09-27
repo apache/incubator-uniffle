@@ -66,7 +66,7 @@ func buildTestShuffleServerPod() *corev1.Pod {
 			},
 		},
 		Status: corev1.PodStatus{
-			PodIP: "10.0.0.1",
+			PodIP: "xxx.xxx.xxx.xxx",
 		},
 	}
 }
