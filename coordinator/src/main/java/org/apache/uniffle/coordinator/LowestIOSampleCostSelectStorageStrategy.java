@@ -86,7 +86,9 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
 
   public void checkReadAndWrite() {
     if (remoteStoragePathRankValue.size() > 1) {
-      for (String path : remoteStoragePathRankValue.keySet()) {
+      for (Map.Entry<String, RankValue> entry : remoteStoragePathRankValue.entrySet()) {
+        final String path = entry.getKey();
+        final RankValue rankValue = entry.getValue();
         Path remotePath = new Path(path);
         Path testPath = new Path(path + "/rssTest");
         long startWriteTime = System.currentTimeMillis();
@@ -107,7 +109,6 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
                 if (hasReadBytes < fileSize) {
                   for (int i = 0; i < readBytes; i++) {
                     if (data[hasReadBytes + i] != readData[i]) {
-                      RankValue rankValue = remoteStoragePathRankValue.get(path);
                       remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
                     }
                   }
@@ -118,7 +119,6 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
           }
         } catch (Exception e) {
           LOG.error("Storage read and write error, we will not use this remote path {}.", path, e);
-          RankValue rankValue = remoteStoragePathRankValue.get(path);
           remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
         } finally {
           sortPathByRankValue(path, testPath, startWriteTime);
