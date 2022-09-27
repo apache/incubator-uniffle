@@ -107,7 +107,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Integer> SERVER_MEMORY_REQUEST_RETRY_MAX = ConfigOptions
       .key("rss.server.memory.request.retry.max")
       .intType()
-      .defaultValue(100)
+      .defaultValue(50)
       .withDescription("Max times to retry for memory request");
 
   public static final ConfigOption<Long> SERVER_PRE_ALLOCATION_EXPIRED = ConfigOptions
@@ -177,9 +177,9 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Long> DISK_CAPACITY = ConfigOptions
       .key("rss.server.disk.capacity")
       .longType()
-      .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "disk capacity must be positive")
-      .defaultValue(1024L * 1024L * 1024L * 1024L)
-      .withDescription("Disk capacity that shuffle server can use");
+      .defaultValue(-1L)
+      .withDescription("Disk capacity that shuffle server can use. "
+          + "If it's negative, it will use the default whole space");
 
   public static final ConfigOption<Long> SHUFFLE_EXPIRED_TIMEOUT_MS = ConfigOptions
       .key("rss.server.shuffle.expired.timeout.ms")

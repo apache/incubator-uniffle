@@ -30,6 +30,7 @@ SHUFFLE_SERVER_CONF_FILE="${RSS_CONF_DIR}/server.conf"
 JAR_DIR="${RSS_HOME}/jars"
 LOG_CONF_FILE="${RSS_CONF_DIR}/log4j.properties"
 LOG_PATH="${RSS_LOG_DIR}/shuffle_server.log"
+OUT_PATH="${RSS_LOG_DIR}/shuffle_server.out"
 
 set +o nounset
 if [ -z "$XMX_SIZE" ]; then
@@ -47,7 +48,9 @@ MAIN_CLASS="org.apache.uniffle.server.ShuffleServer"
 HADOOP_DEPENDENCY="$("$HADOOP_HOME/bin/hadoop" classpath --glob)"
 
 echo "Check process existence"
-is_jvm_process_running "$JPS" $MAIN_CLASS
+RPC_PORT=`grep '^rss.rpc.server.port' $CONF_FILE |awk '{print $2}'`
+is_port_in_use $RPC_PORT
+
 
 CLASSPATH=""
 
@@ -90,7 +93,7 @@ else
   exit 1
 fi
 
-$RUNNER $ARGS $JVM_ARGS $JAVA_LIB_PATH -cp $CLASSPATH $MAIN_CLASS --conf "$SHUFFLE_SERVER_CONF_FILE" $@ &
+$RUNNER $ARGS $JVM_ARGS $JAVA_LIB_PATH -cp $CLASSPATH $MAIN_CLASS --conf "$SHUFFLE_SERVER_CONF_FILE" $@ &> $OUT_PATH &
 
 get_pid_file_name shuffle-server
 echo $! >${RSS_PID_DIR}/${pid_file}

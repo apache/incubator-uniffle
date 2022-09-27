@@ -51,7 +51,7 @@ public class BasicAssignmentStrategyTest {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, shuffleNodesMax);
     clusterManager = new SimpleClusterManager(ssc, new Configuration());
-    strategy = new BasicAssignmentStrategy(clusterManager);
+    strategy = new BasicAssignmentStrategy(clusterManager, ssc);
   }
 
   @AfterEach
@@ -63,7 +63,7 @@ public class BasicAssignmentStrategyTest {
   @Test
   public void testAssign() {
     for (int i = 0; i < 20; ++i) {
-      clusterManager.add(new ServerNode(String.valueOf(i), "", 0, 0, 0,
+      clusterManager.add(new ServerNode(String.valueOf(i), "127.0.0." + i, 0, 0, 0,
           20 - i, 0, tags, true));
     }
 
@@ -90,7 +90,7 @@ public class BasicAssignmentStrategyTest {
   @Test
   public void testRandomAssign() {
     for (int i = 0; i < 20; ++i) {
-      clusterManager.add(new ServerNode(String.valueOf(i), "", 0, 0, 0,
+      clusterManager.add(new ServerNode(String.valueOf(i), "127.0.0." + i, 0, 0, 0,
           0, 0, tags, true));
     }
     PartitionRangeAssignment pra = strategy.assign(100, 10, 2, tags, -1);
@@ -156,7 +156,7 @@ public class BasicAssignmentStrategyTest {
     Set<String> serverTags = Sets.newHashSet("tag-1");
 
     for (int i = 0; i < 20; ++i) {
-      clusterManager.add(new ServerNode("t1-" + i, "", 0, 0, 0,
+      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
           20 - i, 0, serverTags, true));
     }
 

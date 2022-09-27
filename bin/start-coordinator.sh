@@ -30,6 +30,7 @@ COORDINATOR_CONF_FILE="${RSS_CONF_DIR}/coordinator.conf"
 JAR_DIR="${RSS_HOME}/jars"
 LOG_CONF_FILE="${RSS_CONF_DIR}/log4j.properties"
 LOG_PATH="${RSS_LOG_DIR}/coordinator.log"
+OUT_PATH="${RSS_LOG_DIR}/coordinator.out"
 
 MAIN_CLASS="org.apache.uniffle.coordinator.CoordinatorServer"
 
@@ -69,7 +70,7 @@ else
   exit 1
 fi
 
-$RUNNER $ARGS $JVM_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$COORDINATOR_CONF_FILE" $@ &
+$RUNNER $ARGS $JVM_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$COORDINATOR_CONF_FILE" $@ &> $OUT_PATH &
 
 get_pid_file_name coordinator
 echo $! >${RSS_PID_DIR}/${pid_file}

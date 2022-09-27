@@ -52,6 +52,9 @@ public class ShuffleServerMetrics {
   private static final String TOTAL_READ_LOCAL_INDEX_FILE = "total_read_local_index_file";
   private static final String TOTAL_READ_MEMORY_DATA = "total_read_memory_data";
   private static final String TOTAL_READ_TIME = "total_read_time";
+  private static final String TOTAL_REQUIRE_READ_MEMORY = "total_require_read_memory_num";
+  private static final String TOTAL_REQUIRE_READ_MEMORY_RETRY = "total_require_read_memory_retry_num";
+  private static final String TOTAL_REQUIRE_READ_MEMORY_FAILED = "total_require_read_memory_failed_num";
 
   private static final String LOCAL_STORAGE_TOTAL_DIRS_NUM = "local_storage_total_dirs_num";
   private static final String LOCAL_STORAGE_CORRUPTED_DIRS_NUM = "local_storage_corrupted_dirs_num";
@@ -107,6 +110,9 @@ public class ShuffleServerMetrics {
   public static Counter counterLocalStorageRetryWrite;
   public static Counter counterLocalStorageFailedWrite;
   public static Counter counterLocalStorageSuccessWrite;
+  public static Counter counterTotalRequireReadMemoryNum;
+  public static Counter counterTotalRequireReadMemoryRetryNum;
+  public static Counter counterTotalRequireReadMemoryFailedNum;
 
   public static Gauge gaugeLocalStorageTotalDirsNum;
   public static Gauge gaugeLocalStorageCorruptedDirsNum;
@@ -252,6 +258,9 @@ public class ShuffleServerMetrics {
     counterLocalStorageRetryWrite = metricsManager.addCounter(STORAGE_RETRY_WRITE_LOCAL);
     counterLocalStorageFailedWrite = metricsManager.addCounter(STORAGE_FAILED_WRITE_LOCAL);
     counterLocalStorageSuccessWrite = metricsManager.addCounter(STORAGE_SUCCESS_WRITE_LOCAL);
+    counterTotalRequireReadMemoryNum = metricsManager.addCounter(TOTAL_REQUIRE_READ_MEMORY);
+    counterTotalRequireReadMemoryRetryNum = metricsManager.addCounter(TOTAL_REQUIRE_READ_MEMORY_RETRY);
+    counterTotalRequireReadMemoryFailedNum = metricsManager.addCounter(TOTAL_REQUIRE_READ_MEMORY_FAILED);
 
     gaugeLocalStorageTotalDirsNum = metricsManager.addGauge(LOCAL_STORAGE_TOTAL_DIRS_NUM);
     gaugeLocalStorageCorruptedDirsNum = metricsManager.addGauge(LOCAL_STORAGE_CORRUPTED_DIRS_NUM);

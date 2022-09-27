@@ -103,7 +103,7 @@ This document will introduce how to deploy Uniffle coordinators.
 ### AccessClusterLoadChecker settings
 |Property Name|Default|	Description|
 |---|---|---|
-|rss.coordinator.access.loadChecker.serverNum.threshold|-|The minimal required number of healthy shuffle servers when being accessed by client|
+|rss.coordinator.access.loadChecker.serverNum.threshold|-|The minimal required number of healthy shuffle servers when being accessed by client. And when not specified, it will use the required shuffle-server number from client as the checking condition. If there is no client shuffle-server number specified, the coordinator conf of rss.coordinator.shuffle.nodes.max will be adopted|
 
 ### AccessCandidatesChecker settings
 AccessCandidatesChecker is one of the built-in access checker, which will allow user to define the candidates list to use rss.  

@@ -112,7 +112,7 @@ public class ShuffleBufferManager {
     }
 
     ShuffleBuffer buffer = entry.getValue();
-    int size = buffer.append(spd);
+    long size = buffer.append(spd);
     updateSize(size, isPreAllocated);
     updateShuffleSize(appId, shuffleId, size);
     synchronized (this) {
@@ -275,6 +275,7 @@ public class ShuffleBufferManager {
   }
 
   public boolean requireReadMemoryWithRetry(long size) {
+    ShuffleServerMetrics.counterTotalRequireReadMemoryNum.inc();
     for (int i = 0; i < retryNum; i++) {
       synchronized (this) {
         if (readDataMemory.get() + size < readCapacity) {
@@ -284,12 +285,14 @@ public class ShuffleBufferManager {
       }
       LOG.info("Can't require[" + size + "] for read data, current[" + readDataMemory.get()
           + "], capacity[" + readCapacity + "], re-try " + i + " times");
+      ShuffleServerMetrics.counterTotalRequireReadMemoryRetryNum.inc();
       try {
         Thread.sleep(1000);
       } catch (Exception e) {
         LOG.warn("Error happened when require memory", e);
       }
     }
+    ShuffleServerMetrics.counterTotalRequireReadMemoryFailedNum.inc();
     return false;
   }
 
