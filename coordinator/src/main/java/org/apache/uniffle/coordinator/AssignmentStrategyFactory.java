@@ -30,9 +30,9 @@ public class AssignmentStrategyFactory {
   public AssignmentStrategy getAssignmentStrategy() {
     StrategyName strategy = conf.get(CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY);
     if (StrategyName.BASIC == strategy) {
-      return new BasicAssignmentStrategy(clusterManager);
+      return new BasicAssignmentStrategy(clusterManager, conf);
     } else if (StrategyName.PARTITION_BALANCE == strategy) {
-      return new PartitionBalanceAssignmentStrategy(clusterManager);
+      return new PartitionBalanceAssignmentStrategy(clusterManager, conf);
     } else {
       throw new UnsupportedOperationException("Unsupported assignment strategy.");
     }

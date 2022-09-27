@@ -153,6 +153,12 @@ public class CoordinatorConf extends RssBaseConf {
       .intType()
       .defaultValue(3)
       .withDescription("The number of times to read and write HDFS files");
+  public static final ConfigOption<AbstractAssignmentStrategy.HostAssignmentStrategy>
+      COORDINATOR_ASSGINMENT_HOST_STRATEGY =
+      ConfigOptions.key("rss.coordinator.assignment.host.strategy")
+          .enumType(AbstractAssignmentStrategy.HostAssignmentStrategy.class)
+          .defaultValue(AbstractAssignmentStrategy.HostAssignmentStrategy.PREFER_DIFF)
+          .withDescription("Strategy for selecting shuffle servers");
 
   public CoordinatorConf() {
   }
