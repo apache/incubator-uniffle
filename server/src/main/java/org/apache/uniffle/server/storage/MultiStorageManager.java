@@ -18,7 +18,6 @@
 package org.apache.uniffle.server.storage;
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +27,7 @@ import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
@@ -112,10 +112,10 @@ public class MultiStorageManager implements StorageManager {
   }
 
   @Override
-  public void removeResources(String appId, Set<Integer> shuffleSet, String user) {
-    LOG.info("Start to remove resource of appId: {}, shuffles: {}", appId, shuffleSet.toString());
-    warmStorageManager.removeResources(appId, shuffleSet, user);
-    coldStorageManager.removeResources(appId, shuffleSet, user);
+  public void removeResources(PurgeEvent event) {
+    LOG.info("Start to remove resource of {}", event);
+    warmStorageManager.removeResources(event);
+    coldStorageManager.removeResources(event);
   }
 
   public StorageManager getColdStorageManager() {

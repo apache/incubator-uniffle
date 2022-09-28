@@ -54,6 +54,7 @@ import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
+import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
 import org.apache.uniffle.client.response.ClientResponse;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
@@ -66,6 +67,7 @@ import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
+import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -589,6 +591,45 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     heartBeatExecutorService.shutdownNow();
     coordinatorClients.forEach(CoordinatorClient::close);
     dataTransferPool.shutdownNow();
+  }
+
+  @Override
+  public void unregisterShuffle(String appId, int shuffleId) {
+    RssUnregisterShuffleRequest request = new RssUnregisterShuffleRequest(appId, shuffleId);
+    List<Callable<Void>> callableList = Lists.newArrayList();
+
+    shuffleServerInfoSet.stream().forEach(shuffleServerInfo -> {
+          callableList.add(() -> {
+            try {
+              ShuffleServerClient client =
+                  ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
+              RssUnregisterShuffleResponse response = client.unregisterShuffle(request);
+              if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
+                LOG.warn("Failed to unregister shuffle to " + shuffleServerInfo);
+              }
+            } catch (Exception e) {
+              LOG.warn("Error happened when unregistering to " + shuffleServerInfo, e);
+            }
+            return null;
+          });
+        }
+    );
+
+    try {
+      ExecutorService executorService =
+          Executors.newFixedThreadPool(
+              Math.min(10, shuffleServerInfoSet.size()),
+              ThreadUtils.getThreadFactory("unregister-shuffle-%d")
+          );
+      List<Future<Void>> futures = executorService.invokeAll(callableList, 10, TimeUnit.SECONDS);
+      for (Future<Void> future : futures) {
+        if (!future.isDone()) {
+          future.cancel(true);
+        }
+      }
+    } catch (InterruptedException ie) {
+      LOG.warn("Unregister shuffle is interrupted", ie);
+    }
   }
 
   private void throwExceptionIfNecessary(ClientResponse response, String errorMsg) {

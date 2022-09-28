@@ -426,6 +426,11 @@ public class FetcherTest {
     public void close() {
 
     }
+
+    @Override
+    public void unregisterShuffle(String appId, int shuffleId) {
+
+    }
   }
 
   static class MockedShuffleReadClient implements ShuffleReadClient {

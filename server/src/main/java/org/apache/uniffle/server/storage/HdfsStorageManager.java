@@ -17,9 +17,9 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -38,11 +38,14 @@ import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
+import org.apache.uniffle.server.event.AppPurgeEvent;
+import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.storage.common.HdfsStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.factory.ShuffleHandlerFactory;
 import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
 import org.apache.uniffle.storage.request.CreateShuffleDeleteHandlerRequest;
+import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
 public class HdfsStorageManager extends SingleStorageManager {
@@ -75,15 +78,32 @@ public class HdfsStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void removeResources(String appId, Set<Integer> shuffleSet, String user) {
+  public void removeResources(PurgeEvent event) {
+    String appId = event.getAppId();
+    String user = event.getUser();
     HdfsStorage storage = getStorageByAppId(appId);
     if (storage != null) {
-      storage.removeHandlers(appId);
+      if (event instanceof AppPurgeEvent) {
+        storage.removeHandlers(appId);
+      }
       appIdToStorages.remove(appId);
-      ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
+      ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory
+          .getInstance()
           .createShuffleDeleteHandler(
-              new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), storage.getConf()));
-      deleteHandler.delete(new String[] {storage.getStoragePath()}, appId, user);
+              new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), storage.getConf())
+          );
+
+      String basicPath = ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);
+      List<String> deletePaths = new ArrayList<>();
+
+      if (event instanceof AppPurgeEvent) {
+        deletePaths.add(basicPath);
+      } else {
+        for (Integer shuffleId : event.getShuffleIds()) {
+          deletePaths.add(ShuffleStorageUtils.getFullShuffleDataFolder(basicPath, String.valueOf(shuffleId)));
+        }
+      }
+      deleteHandler.delete(deletePaths.toArray(new String[0]), appId, user);
     }
   }
 

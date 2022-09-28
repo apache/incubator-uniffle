@@ -370,6 +370,13 @@ public class RssShuffleManager implements ShuffleManager {
 
   @Override
   public boolean unregisterShuffle(int shuffleId) {
+    try {
+      if (SparkEnv.get().executorId().equals("driver")) {
+        shuffleWriteClient.unregisterShuffle(appId, shuffleId);
+      }
+    } catch (Exception e) {
+      LOG.warn("Errors on unregister to remote shuffle-servers", e);
+    }
     return true;
   }
 

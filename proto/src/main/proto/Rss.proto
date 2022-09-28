@@ -25,6 +25,7 @@ package rss.common;
 
 service ShuffleServer {
   rpc registerShuffle (ShuffleRegisterRequest) returns (ShuffleRegisterResponse);
+  rpc unregisterShuffle(ShuffleUnregisterRequest) returns (ShuffleUnregisterResponse);
   rpc sendShuffleData (SendShuffleDataRequest) returns (SendShuffleDataResponse);
   rpc getLocalShuffleIndex (GetLocalShuffleIndexRequest) returns (GetLocalShuffleIndexResponse);
   rpc getLocalShuffleData (GetLocalShuffleDataRequest) returns (GetLocalShuffleDataResponse);
@@ -165,6 +166,16 @@ message ShuffleRegisterRequest {
   repeated ShufflePartitionRange partitionRanges = 3;
   RemoteStorage remoteStorage = 4;
   string user = 5;
+}
+
+message ShuffleUnregisterRequest {
+  string appId = 1;
+  int32 shuffleId = 2;
+}
+
+message ShuffleUnregisterResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
 }
 
 message ShuffleRegisterResponse {

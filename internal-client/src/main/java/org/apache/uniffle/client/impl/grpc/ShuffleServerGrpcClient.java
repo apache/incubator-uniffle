@@ -40,6 +40,7 @@ import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
+import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
 import org.apache.uniffle.client.response.RssFinishShuffleResponse;
@@ -51,6 +52,7 @@ import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
+import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -58,6 +60,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RetryUtils;
+import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
 import org.apache.uniffle.proto.RssProtos.FinishShuffleRequest;
@@ -204,6 +207,35 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       result = rpcResponse.getRequireBufferId();
     }
     return result;
+  }
+
+  private RssProtos.ShuffleUnregisterResponse doUnregisterShuffle(String appId, int shuffleId) {
+    RssProtos.ShuffleUnregisterRequest request = RssProtos.ShuffleUnregisterRequest.newBuilder()
+        .setAppId(appId)
+        .setShuffleId(shuffleId)
+        .build();
+    return blockingStub.unregisterShuffle(request);
+  }
+
+  @Override
+  public RssUnregisterShuffleResponse unregisterShuffle(RssUnregisterShuffleRequest request) {
+    RssProtos.ShuffleUnregisterResponse rpcResponse = doUnregisterShuffle(request.getAppId(), request.getShuffleId());
+
+    RssUnregisterShuffleResponse response;
+    StatusCode statusCode = rpcResponse.getStatus();
+
+    switch (statusCode) {
+      case SUCCESS:
+        response = new RssUnregisterShuffleResponse(ResponseStatusCode.SUCCESS);
+        break;
+      default:
+        String msg = String.format("Errors on unregister shuffle to %s:%s for appId[%s].shuffleId[%], error: %s",
+            host, port, request.getAppId(), request.getShuffleId(), rpcResponse.getRetMsg());
+        LOG.error(msg);
+        throw new RssException(msg);
+    }
+
+    return response;
   }
 
   @Override
