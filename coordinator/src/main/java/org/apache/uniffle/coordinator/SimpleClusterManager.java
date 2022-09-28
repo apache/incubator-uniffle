@@ -66,7 +66,7 @@ public class SimpleClusterManager implements ClusterManager {
   private final long periodicOutputIntervalTimes;
 
   private long startTime;
-  private final boolean startupSilentPeriodEnabled;
+  private boolean startupSilentPeriodEnabled;
   private long startupSilentPeriodDurationMs;
   private boolean readyForServe = false;
 
@@ -263,7 +263,17 @@ public class SimpleClusterManager implements ClusterManager {
   }
 
   @VisibleForTesting
-  void setStartTime(long startTime) {
+  public void setStartTime(long startTime) {
     this.startTime = startTime;
+  }
+
+  @VisibleForTesting
+  public void setReadyForServe(boolean readyForServe) {
+    this.readyForServe = readyForServe;
+  }
+
+  @VisibleForTesting
+  public void setStartupSilentPeriodEnabled(boolean startupSilentPeriodEnabled) {
+    this.startupSilentPeriodEnabled = startupSilentPeriodEnabled;
   }
 }
