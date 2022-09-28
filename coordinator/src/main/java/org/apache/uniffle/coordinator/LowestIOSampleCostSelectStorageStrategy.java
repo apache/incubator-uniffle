@@ -70,66 +70,6 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
     fileSize = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_FILE_SIZE);
     readAndWriteTimes = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES);
 
-  public LowestIOSampleCostSelectStorageStrategy(CoordinatorConf cf) {
-    conf = new Configuration();
-    fileSize = cf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_FILE_SIZE);
-    readAndWriteTimes = cf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_ACCESS_TIMES);
-    this.appIdToRemoteStorageInfo = Maps.newConcurrentMap();
-    this.remoteStoragePathRankValue = Maps.newConcurrentMap();
-    this.availableRemoteStorageInfo = Maps.newHashMap();
-    this.sizeList = Lists.newCopyOnWriteArrayList();
-    ScheduledExecutorService readWriteRankScheduler = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("readWriteRankScheduler-%d"));
-    // should init later than the refreshRemoteStorage init
-    readWriteRankScheduler.scheduleAtFixedRate(this::checkReadAndWrite, 1000,
-        cf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_SCHEDULE_TIME), TimeUnit.MILLISECONDS);
-  }
-
-  public void checkReadAndWrite() {
-    if (remoteStoragePathRankValue.size() > 1) {
-      for (Map.Entry<String, RankValue> entry : remoteStoragePathRankValue.entrySet()) {
-        final String path = entry.getKey();
-        final RankValue rankValue = entry.getValue();
-        Path remotePath = new Path(path);
-        Path testPath = new Path(path + "/rssTest");
-        long startWriteTime = System.currentTimeMillis();
-        try {
-          fs = HadoopFilesystemProvider.getFilesystem(remotePath, conf);
-          for (int j = 0; j < readAndWriteTimes; j++) {
-            byte[] data = RandomUtils.nextBytes(fileSize);
-            try (FSDataOutputStream fos = fs.create(testPath)) {
-              fos.write(data);
-              fos.flush();
-            }
-            byte[] readData = new byte[fileSize];
-            int readBytes;
-            try (FSDataInputStream fis = fs.open(testPath)) {
-              int hasReadBytes = 0;
-              do {
-                readBytes = fis.read(readData);
-                if (hasReadBytes < fileSize) {
-                  for (int i = 0; i < readBytes; i++) {
-                    if (data[hasReadBytes + i] != readData[i]) {
-                      remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
-                    }
-                  }
-                }
-                hasReadBytes += readBytes;
-              } while (readBytes != -1);
-            }
-          }
-        } catch (Exception e) {
-          LOG.error("Storage read and write error, we will not use this remote path {}.", path, e);
-          remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
-        } finally {
-          sortPathByRankValue(path, testPath, startWriteTime);
-        }
-      }
-    } else {
-      sizeList = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
-    }
-  }
-
   @VisibleForTesting
   public List<Map.Entry<String, RankValue>> sortPathByRankValue(
       String path, String testPath, long startWrite, boolean isHealthy) {
