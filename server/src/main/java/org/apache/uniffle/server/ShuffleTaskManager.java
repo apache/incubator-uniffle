@@ -497,4 +497,9 @@ public class ShuffleTaskManager {
   public void removeShuffleDataAsync(String appId, int shuffleId) {
     expiredAppIdQueue.add(new ShufflePurgeEvent(appId, getUserByAppId(appId), Arrays.asList(shuffleId)));
   }
+
+  @VisibleForTesting
+  void removeShuffleDataSync(String appId, int shuffleId) {
+    removeResourcesByShuffleIds(appId, Arrays.asList(shuffleId));
+  }
 }
