@@ -69,6 +69,7 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
     this.hdfsConf = new Configuration();
     fileSize = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_FILE_SIZE);
     readAndWriteTimes = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES);
+  )
 
   @VisibleForTesting
   public List<Map.Entry<String, RankValue>> sortPathByRankValue(
