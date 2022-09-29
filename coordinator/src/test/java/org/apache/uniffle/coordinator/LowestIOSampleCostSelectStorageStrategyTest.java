@@ -93,9 +93,9 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
     //default value is 0
     assertEquals(0,
-        applicationManager.getRemoteStoragePathRankValue().get(remoteStorage1).getReadAndWriteTime().get());
+        applicationManager.getRemoteStoragePathRankValue().get(remoteStorage1).getCostTime().get());
     assertEquals(0,
-        applicationManager.getRemoteStoragePathRankValue().get(remoteStorage2).getReadAndWriteTime().get());
+        applicationManager.getRemoteStoragePathRankValue().get(remoteStorage2).getCostTime().get());
     String storageHost1 = "p1";
     assertEquals(0.0, CoordinatorMetrics.gaugeInUsedRemoteStorage.get(storageHost1).get(), 0.5);
     String storageHost2 = "p2";
@@ -109,9 +109,9 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     final long current = System.currentTimeMillis();
     applicationManager.refreshAppId(testApp1);
     fs.create(path);
-    selectStorageStrategy.sortPathByRankValue(remoteStorage2, testFile, current, true);
+    selectStorageStrategy.sortPathByRankValue(remoteStorage2, testFile, current);
     fs.create(path);
-    selectStorageStrategy.sortPathByRankValue(remoteStorage1, testFile, current, true);
+    selectStorageStrategy.sortPathByRankValue(remoteStorage1, testFile, current);
     assertEquals(remoteStorage2, applicationManager.pickRemoteStorage(testApp1).getPath());
     assertEquals(remoteStorage2, applicationManager.getAppIdToRemoteStorageInfo().get(testApp1).getPath());
     assertEquals(1,
@@ -136,7 +136,7 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     assertEquals(Sets.newConcurrentHashSet(Sets.newHashSet(remoteStorage1, remoteStorage2)),
         applicationManager.getRemoteStoragePathRankValue().keySet());
     assertTrue(applicationManager.getRemoteStoragePathRankValue()
-        .get(remoteStorage2).getReadAndWriteTime().get() > 0);
+        .get(remoteStorage2).getCostTime().get() > 0);
     assertEquals(1,
         applicationManager.getRemoteStoragePathRankValue().get(remoteStorage2).getAppNum().get());
     // app1 is expired, p2 is removed because of counter = 0

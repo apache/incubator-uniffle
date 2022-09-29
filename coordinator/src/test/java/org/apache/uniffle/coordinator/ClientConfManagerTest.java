@@ -250,7 +250,7 @@ public class ClientConfManagerTest {
     Thread.sleep(1000);
     Set<String> expectedAvailablePath = Sets.newHashSet(remotePath1);
     assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
-    selectStorageStrategy.sortPathByRankValue(remotePath1, testPath, System.currentTimeMillis(), true);
+    selectStorageStrategy.sortPathByRankValue(remotePath1, testPath, System.currentTimeMillis());
     RemoteStorageInfo remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId1");
     assertEquals(remotePath1, remoteStorageInfo.getPath());
     assertTrue(remoteStorageInfo.getConfItems().isEmpty());
@@ -259,7 +259,7 @@ public class ClientConfManagerTest {
     expectedAvailablePath = Sets.newHashSet(remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
 
-    selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, System.currentTimeMillis(), true);
+    selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, System.currentTimeMillis());
     Thread.sleep(1000);
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId2");
     assertEquals(remotePath3, remoteStorageInfo.getPath());
@@ -269,8 +269,8 @@ public class ClientConfManagerTest {
     writeRemoteStorageConf(cfgFile, remotePath2 + Constants.COMMA_SPLIT_CHAR + remotePath3, confItems);
     expectedAvailablePath = Sets.newHashSet(remotePath2, remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
-    selectStorageStrategy.sortPathByRankValue(remotePath2, testPath, current, true);
-    selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, current, true);
+    selectStorageStrategy.sortPathByRankValue(remotePath2, testPath, current);
+    selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, current);
     Thread.sleep(1000);
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId3");
     assertEquals(remotePath2, remoteStorageInfo.getPath());

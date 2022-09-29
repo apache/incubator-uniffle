@@ -25,7 +25,9 @@ import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.Ra
 
 public interface SelectStorageStrategy {
 
+  void checkStorages();
+
   List<Map.Entry<String, RankValue>> detectStorage(String uri);
 
-  RemoteStorageInfo pickStorage(List<Map.Entry<String, RankValue>> uris, String appId);
+  RemoteStorageInfo pickStorage(String appId);
 }

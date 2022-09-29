@@ -56,7 +56,6 @@ public class ApplicationManager {
   private final Map<String, RankValue> remoteStoragePathRankValue;
   private final Map<String, String> remoteStorageToHost = Maps.newConcurrentMap();
   private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
-  private List<Map.Entry<String, RankValue>> sizeList;
   // it's only for test case to check if status check has problem
   private boolean hasErrorInStatusCheck = false;
 
@@ -84,18 +83,8 @@ public class ApplicationManager {
     ScheduledExecutorService detectStorageScheduler = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("readWriteRankScheduler-%d"));
     // should init later than the refreshRemoteStorage init
-    detectStorageScheduler.scheduleAtFixedRate(this::checkReadAndWrite, 1000,
+    detectStorageScheduler.scheduleAtFixedRate(selectStorageStrategy::checkStorages, 1000,
         conf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME), TimeUnit.MILLISECONDS);
-  }
-
-  public void checkReadAndWrite() {
-    if (remoteStoragePathRankValue.size() > 1) {
-      for (String path : remoteStoragePathRankValue.keySet()) {
-        sizeList = selectStorageStrategy.detectStorage(path);
-      }
-    } else {
-      sizeList = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
-    }
   }
 
   public void refreshAppId(String appId) {
@@ -151,7 +140,7 @@ public class ApplicationManager {
     if (appIdToRemoteStorageInfo.containsKey(appId)) {
       return appIdToRemoteStorageInfo.get(appId);
     }
-    RemoteStorageInfo pickStorage = selectStorageStrategy.pickStorage(sizeList, appId);
+    RemoteStorageInfo pickStorage = selectStorageStrategy.pickStorage(appId);
     incRemoteStorageCounter(pickStorage.getPath());
     return appIdToRemoteStorageInfo.get(appId);
   }

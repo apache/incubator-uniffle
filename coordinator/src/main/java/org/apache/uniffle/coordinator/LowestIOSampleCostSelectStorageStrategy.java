@@ -20,6 +20,7 @@ package org.apache.uniffle.coordinator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -56,7 +57,7 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
   private final Configuration hdfsConf;
   private final int fileSize;
   private final int readAndWriteTimes;
-  private boolean remotePathIsHealthy = true;
+  private List<Map.Entry<String, RankValue>> uris;
 
   public LowestIOSampleCostSelectStorageStrategy(
       Map<String, RankValue> remoteStoragePathRankValue,
@@ -71,26 +72,36 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
     readAndWriteTimes = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES);
   }
 
+  @Override
+  public void checkStorages() {
+    if (remoteStoragePathRankValue.size() > 1) {
+      for (String path : remoteStoragePathRankValue.keySet()) {
+        uris = detectStorage(path);
+      }
+    } else {
+      uris = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
+    }
+  }
+
   @VisibleForTesting
   public List<Map.Entry<String, RankValue>> sortPathByRankValue(
-      String path, String testPath, long startWrite, boolean isHealthy) {
+      String path, String testPath, long startWrite) {
+    RankValue rankValue = remoteStoragePathRankValue.get(path);
     try {
       FileSystem fs = HadoopFilesystemProvider.getFilesystem(new Path(path), hdfsConf);
       fs.delete(new Path(testPath), true);
-      if (isHealthy) {
-        long totalTime = System.currentTimeMillis() - startWrite;
-        RankValue rankValue = remoteStoragePathRankValue.get(path);
-        remoteStoragePathRankValue.put(path, new RankValue(totalTime, rankValue.getAppNum().get()));
+      if (rankValue.getHealthy().get()) {
+        rankValue.setCostTime(new AtomicLong(System.currentTimeMillis() - startWrite));
       }
     } catch (Exception e) {
-      RankValue rankValue = remoteStoragePathRankValue.get(path);
-      remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
+      rankValue.setAppNum(rankValue.getAppNum());
+      rankValue.setCostTime(new AtomicLong(Long.MAX_VALUE));
       LOG.error("Failed to sort, we will not use this remote path {}.", path, e);
     }
     List<Map.Entry<String, RankValue>> sizeList = Lists.newCopyOnWriteArrayList(
         remoteStoragePathRankValue.entrySet()).stream().filter(Objects::nonNull).sorted((x, y) -> {
-          final long xReadAndWriteTime = x.getValue().getReadAndWriteTime().get();
-          final long yReadAndWriteTime = y.getValue().getReadAndWriteTime().get();
+          final long xReadAndWriteTime = x.getValue().getCostTime().get();
+          final long yReadAndWriteTime = y.getValue().getCostTime().get();
           if (xReadAndWriteTime > yReadAndWriteTime) {
             return 1;
           } else if (xReadAndWriteTime < yReadAndWriteTime) {
@@ -106,10 +117,11 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
   @Override
   public List<Map.Entry<String, RankValue>> detectStorage(String path) {
     if (path.startsWith(ApplicationManager.REMOTE_PATH_SCHEMA.get(0))) {
-      setRemotePathIsHealthy(true);
       Path remotePath = new Path(path);
       String rssTest = path + "/rssTest";
       Path testPath = new Path(rssTest);
+      RankValue rankValue = remoteStoragePathRankValue.get(path);
+      rankValue.setHealthy(new AtomicBoolean(true));
       long startWriteTime = System.currentTimeMillis();
       try {
         FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hdfsConf);
@@ -128,7 +140,6 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
               if (hasReadBytes < fileSize) {
                 for (int i = 0; i < readBytes; i++) {
                   if (data[hasReadBytes + i] != readData[i]) {
-                    RankValue rankValue = remoteStoragePathRankValue.get(path);
                     remoteStoragePathRankValue.put(path,
                         new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
                     throw new RssException("The content of reading and writing is inconsistent.");
@@ -140,12 +151,10 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
           }
         }
       } catch (Exception e) {
-        setRemotePathIsHealthy(false);
         LOG.error("Storage read and write error, we will not use this remote path {}.", path, e);
-        RankValue rankValue = remoteStoragePathRankValue.get(path);
-        remoteStoragePathRankValue.put(path, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
+        rankValue.setHealthy(new AtomicBoolean(false));
       } finally {
-        return sortPathByRankValue(path, rssTest, startWriteTime, remotePathIsHealthy);
+        return sortPathByRankValue(path, rssTest, startWriteTime);
       }
     } else {
       return Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
@@ -153,8 +162,7 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
   }
 
   @Override
-  public synchronized RemoteStorageInfo pickStorage(
-      List<Map.Entry<String, RankValue>> uris, String appId) {
+  public synchronized RemoteStorageInfo pickStorage(String appId) {
     for (Map.Entry<String, RankValue> uri : uris) {
       String storagePath = uri.getKey();
       if (availableRemoteStorageInfo.containsKey(storagePath)) {
@@ -165,36 +173,54 @@ public class LowestIOSampleCostSelectStorageStrategy implements SelectStorageStr
     return availableRemoteStorageInfo.values().iterator().next();
   }
 
-  public void setRemotePathIsHealthy(boolean remotePathIsHealthy) {
-    this.remotePathIsHealthy = remotePathIsHealthy;
-  }
-
   static class RankValue {
-    AtomicLong readAndWriteTime;
+    AtomicLong costTime;
     AtomicInteger appNum;
+    AtomicBoolean isHealthy;
 
     RankValue(int appNum) {
-      this.readAndWriteTime = new AtomicLong(0);
+      this.costTime = new AtomicLong(0);
       this.appNum = new AtomicInteger(appNum);
+      this.isHealthy = new AtomicBoolean(true);
     }
 
-    RankValue(long ratioValue, int appNum) {
-      this.readAndWriteTime = new AtomicLong(ratioValue);
+    RankValue(long costTime, int appNum) {
+      this.costTime = new AtomicLong(costTime);
       this.appNum = new AtomicInteger(appNum);
+      this.isHealthy = new AtomicBoolean(true);
     }
 
-    public AtomicLong getReadAndWriteTime() {
-      return readAndWriteTime;
+    public AtomicLong getCostTime() {
+      return costTime;
     }
 
     public AtomicInteger getAppNum() {
       return appNum;
     }
 
+    public AtomicBoolean getHealthy() {
+      return isHealthy;
+    }
+
+    public void setCostTime(AtomicLong readAndWriteTime) {
+      this.costTime = readAndWriteTime;
+    }
+
+    public void setAppNum(AtomicInteger appNum) {
+      this.appNum = appNum;
+    }
+
+    public void setHealthy(AtomicBoolean isHealthy) {
+      this.isHealthy = isHealthy;
+      if (!isHealthy.get()) {
+        this.costTime.set(Long.MAX_VALUE);
+      }
+    }
+
     @Override
     public String toString() {
       return "RankValue{"
-          + "readAndWriteTime=" + readAndWriteTime
+          + "costTime=" + costTime
           + ", appNum=" + appNum
           + '}';
     }
