@@ -37,9 +37,11 @@ import org.slf4j.LoggerFactory;
 import scala.reflect.ClassTag$;
 
 import org.apache.uniffle.client.util.ClientUtils;
-import org.apache.uniffle.common.RssShuffleUtils;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.compression.CompressionFactory;
+import org.apache.uniffle.common.compression.Compressor;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ChecksumUtils;
 
@@ -77,6 +79,7 @@ public class WriteBufferManager extends MemoryConsumer {
   private long uncompressedDataLen = 0;
   private long requireMemoryInterval;
   private int requireMemoryRetryMax;
+  private Compressor compressor;
 
   public WriteBufferManager(
       int shuffleId,
@@ -85,7 +88,8 @@ public class WriteBufferManager extends MemoryConsumer {
       Serializer serializer,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers,
       TaskMemoryManager taskMemoryManager,
-      ShuffleWriteMetrics shuffleWriteMetrics) {
+      ShuffleWriteMetrics shuffleWriteMetrics,
+      RssConf rssConf) {
     super(taskMemoryManager, taskMemoryManager.pageSizeBytes(), MemoryMode.ON_HEAP);
     this.bufferSize = bufferManagerOptions.getBufferSize();
     this.spillSize = bufferManagerOptions.getBufferSpillThreshold();
@@ -102,6 +106,7 @@ public class WriteBufferManager extends MemoryConsumer {
     this.requireMemoryRetryMax = bufferManagerOptions.getRequireMemoryRetryMax();
     this.arrayOutputStream = new WrappedByteArrayOutputStream(serializerBufferSize);
     this.serializeStream = instance.serializeStream(arrayOutputStream);
+    this.compressor = CompressionFactory.of().getCompressor(rssConf);
   }
 
   public List<ShuffleBlockInfo> addRecord(int partitionId, Object key, Object value) {
@@ -170,7 +175,7 @@ public class WriteBufferManager extends MemoryConsumer {
     byte[] data = wb.getData();
     final int uncompressLength = data.length;
     long start = System.currentTimeMillis();
-    final byte[] compressed = RssShuffleUtils.compressData(data);
+    final byte[] compressed = compressor.compress(data);
     final long crc32 = ChecksumUtils.getCrc32(compressed);
     compressTime += System.currentTimeMillis() - start;
     final long blockId = ClientUtils.getBlockId(partitionId, taskAttemptId, getNextSeqNo(partitionId));

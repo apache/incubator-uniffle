@@ -60,6 +60,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
@@ -307,7 +308,7 @@ public class RssShuffleManager implements ShuffleManager {
       WriteBufferManager bufferManager = new WriteBufferManager(
           shuffleId, context.taskAttemptId(), bufferOptions, rssHandle.getDependency().serializer(),
           rssHandle.getPartitionToServers(), context.taskMemoryManager(),
-          writeMetrics);
+          writeMetrics, new RssConf());
       taskToBufferManager.put(taskId, bufferManager);
 
       return new RssShuffleWriter(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(), bufferManager,
@@ -360,7 +361,7 @@ public class RssShuffleManager implements ShuffleManager {
           rssShuffleHandle, shuffleRemoteStoragePath, indexReadLimit,
           readerHadoopConf,
           storageType, (int) readBufferSize, partitionNumPerRange, partitionNum,
-          blockIdBitmap, taskIdBitmap);
+          blockIdBitmap, taskIdBitmap, RssSparkConfig.toRssConf(sparkConf));
     } else {
       throw new RuntimeException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }

@@ -50,6 +50,7 @@ import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssConf;
 
 public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleReader.class);
@@ -74,6 +75,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private int mapStartIndex;
   private int mapEndIndex;
   private ShuffleReadMetrics readMetrics;
+  private RssConf rssConf;
 
   public RssShuffleReader(
       int startPartition,
@@ -90,7 +92,8 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       int partitionNum,
       Map<Integer, Roaring64NavigableMap> partitionToExpectBlocks,
       Roaring64NavigableMap taskIdBitmap,
-      ShuffleReadMetrics readMetrics) {
+      ShuffleReadMetrics readMetrics,
+      RssConf rssConf) {
     this.appId = rssShuffleHandle.getAppId();
     this.startPartition = startPartition;
     this.endPartition = endPartition;
@@ -111,6 +114,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.hadoopConf = hadoopConf;
     this.readMetrics = readMetrics;
     this.partitionToShuffleServers = rssShuffleHandle.getPartitionToServers();
+    this.rssConf = rssConf;
   }
 
   @Override
@@ -201,7 +205,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
         RssShuffleDataIterator iterator = new RssShuffleDataIterator<K, C>(
             shuffleDependency.serializer(), shuffleReadClient,
-            readMetrics);
+            readMetrics, rssConf);
         CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>> completionIterator =
             CompletionIterator$.MODULE$.apply(iterator, () -> iterator.cleanup());
         iterators.add(completionIterator);

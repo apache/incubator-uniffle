@@ -44,6 +44,7 @@ import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssConf;
 
 public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 
@@ -67,6 +68,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private Roaring64NavigableMap taskIdBitmap;
   private List<ShuffleServerInfo> shuffleServerInfoList;
   private Configuration hadoopConf;
+  private RssConf rssConf;
 
   public RssShuffleReader(
       int startPartition,
@@ -81,7 +83,8 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       int partitionNumPerRange,
       int partitionNum,
       Roaring64NavigableMap blockIdBitmap,
-      Roaring64NavigableMap taskIdBitmap) {
+      Roaring64NavigableMap taskIdBitmap,
+      RssConf rssConf) {
     this.appId = rssShuffleHandle.getAppId();
     this.startPartition = startPartition;
     this.endPartition = endPartition;
@@ -101,6 +104,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.hadoopConf = hadoopConf;
     this.shuffleServerInfoList =
         (List<ShuffleServerInfo>) (rssShuffleHandle.getPartitionToServers().get(startPartition));
+    this.rssConf = rssConf;
   }
 
   @Override
@@ -113,7 +117,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
     RssShuffleDataIterator rssShuffleDataIterator = new RssShuffleDataIterator<K, C>(
         shuffleDependency.serializer(), shuffleReadClient,
-        context.taskMetrics().shuffleReadMetrics());
+        context.taskMetrics().shuffleReadMetrics(), rssConf);
     CompletionIterator completionIterator =
         CompletionIterator$.MODULE$.apply(rssShuffleDataIterator, new AbstractFunction0<BoxedUnit>() {
           @Override

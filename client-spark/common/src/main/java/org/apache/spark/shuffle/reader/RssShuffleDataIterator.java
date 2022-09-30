@@ -38,8 +38,12 @@ import scala.runtime.BoxedUnit;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
-import org.apache.uniffle.common.RssShuffleUtils;
-import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.client.util.RssClientConfig;
+import org.apache.uniffle.common.compression.CompressionFactory;
+import org.apache.uniffle.common.compression.Decompressor;
+import org.apache.uniffle.common.config.RssConf;
+
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_WRITER_BUFFER_SIZE;
 
 public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C>> {
 
@@ -57,19 +61,29 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
   private ByteBufInputStream byteBufInputStream = null;
   private long unCompressionLength = 0;
   private ByteBuffer uncompressedData;
+  private Decompressor decompressor;
 
   public RssShuffleDataIterator(
       Serializer serializer,
       ShuffleReadClient shuffleReadClient,
-      ShuffleReadMetrics shuffleReadMetrics) {
+      ShuffleReadMetrics shuffleReadMetrics,
+      RssConf rssConf) {
     this.serializerInstance = serializer.newInstance();
     this.shuffleReadClient = shuffleReadClient;
     this.shuffleReadMetrics = shuffleReadMetrics;
+    this.decompressor = CompressionFactory.of().getDecompressor(rssConf);
+    // todo: support off-heap bytebuffer
+    this.uncompressedData = ByteBuffer.allocate(
+        (int) rssConf.getSizeAsBytes(
+            RssClientConfig.RSS_WRITER_BUFFER_SIZE,
+            RSS_WRITER_BUFFER_SIZE.defaultValueString()
+        )
+    );
   }
 
-  public Iterator<Tuple2<Object, Object>> createKVIterator(ByteBuffer data) {
+  public Iterator<Tuple2<Object, Object>> createKVIterator(ByteBuffer data, int size) {
     clearDeserializationStream();
-    byteBufInputStream = new ByteBufInputStream(Unpooled.wrappedBuffer(data), true);
+    byteBufInputStream = new ByteBufInputStream(Unpooled.wrappedBuffer(data.array(), 0, size), true);
     deserializationStream = serializerInstance.deserializeStream(byteBufInputStream);
     return deserializationStream.asKeyValueIterator();
   }
@@ -109,24 +123,20 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       shuffleReadMetrics.incFetchWaitTime(fetchDuration);
       if (compressedData != null) {
         shuffleReadMetrics.incRemoteBytesRead(compressedData.limit() - compressedData.position());
-        // Directbytebuffers are not collected in time will cause executor easy 
-        // be killed by cluster managers(such as YARN) for using too much offheap memory
-        if (uncompressedData != null && uncompressedData.isDirect()) {
-          try {
-            RssShuffleUtils.destroyDirectByteBuffer(uncompressedData);
-          } catch (Exception e) {
-            throw new RssException("Destroy DirectByteBuffer failed!", e);
-          }
+
+        int uncompressedLen = compressedBlock.getUncompressLength();
+        if (uncompressedData == null || uncompressedData.capacity() < uncompressedLen) {
+          uncompressedData = ByteBuffer.allocate(uncompressedLen);
         }
+        uncompressedData.clear();
         long startDecompress = System.currentTimeMillis();
-        uncompressedData = RssShuffleUtils.decompressData(
-            compressedData, compressedBlock.getUncompressLength());
+        decompressor.decompress(compressedData, uncompressedLen, uncompressedData, 0);
         unCompressionLength += compressedBlock.getUncompressLength();
         long decompressDuration = System.currentTimeMillis() - startDecompress;
         decompressTime += decompressDuration;
         // create new iterator for shuffle data
         long startSerialization = System.currentTimeMillis();
-        recordsIterator = createKVIterator(uncompressedData);
+        recordsIterator = createKVIterator(uncompressedData, uncompressedLen);
         long serializationDuration = System.currentTimeMillis() - startSerialization;
         readTime += fetchDuration;
         serializeTime += serializationDuration;
@@ -155,6 +165,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       shuffleReadClient.close();
     }
     shuffleReadClient = null;
+    uncompressedData = null;
     return BoxedUnit.UNIT;
   }
 

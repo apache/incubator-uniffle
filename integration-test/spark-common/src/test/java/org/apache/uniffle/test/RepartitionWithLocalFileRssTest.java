@@ -18,17 +18,24 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
+import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
 
+import org.apache.uniffle.common.compression.CompressionFactory;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
+
+import static org.apache.uniffle.common.config.RssClientConf.COMPRESSION_TYPE;
 
 public class RepartitionWithLocalFileRssTest extends RepartitionTest {
 
@@ -52,5 +59,36 @@ public class RepartitionWithLocalFileRssTest extends RepartitionTest {
 
   @Override
   public void updateRssStorage(SparkConf sparkConf) {
+  }
+
+  /**
+   * Test different compression types with localfile rss mode.
+   * @throws Exception
+   */
+  @Override
+  public void run() throws Exception {
+    String fileName = generateTestFile();
+    SparkConf sparkConf = createSparkConf();
+    Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+
+    List<Map> results = new ArrayList<>();
+    Map resultWithoutRss = runSparkApp(sparkConf, fileName);
+    results.add(resultWithoutRss);
+
+    updateSparkConfWithRss(sparkConf);
+    updateSparkConfCustomer(sparkConf);
+    for (CompressionFactory.Type type :
+        new CompressionFactory.Type[]{
+            CompressionFactory.Type.NOOP,
+            CompressionFactory.Type.ZSTD,
+            CompressionFactory.Type.LZ4}) {
+      sparkConf.set("spark." + COMPRESSION_TYPE.key(), type.name());
+      Map resultWithRss = runSparkApp(sparkConf, fileName);
+      results.add(resultWithRss);
+    }
+
+    for (int i = 1; i < results.size(); i ++) {
+      verifyTestResult(results.get(0), results.get(i));
+    }
   }
 }
