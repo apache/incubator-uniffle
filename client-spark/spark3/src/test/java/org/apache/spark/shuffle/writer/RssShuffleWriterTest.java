@@ -229,26 +229,14 @@ public class RssShuffleWriterTest {
 
     assertTrue(shuffleWriteMetrics.writeTime() > 0);
     assertEquals(6, shuffleWriteMetrics.recordsWritten());
-    // Spark3 and Spark2 use different version lz4, their length is different
-    // it can happen that 2 different platforms compress the same data differently,
-    // yet the decoded outcome remains identical to original.
-    // https://github.com/lz4/lz4/issues/812
-    if (TestUtils.isMacOnAppleSilicon()) {
-      assertEquals(144, shuffleWriteMetrics.bytesWritten());
-    } else {
-      assertEquals(120, shuffleWriteMetrics.bytesWritten());
-    }
+
+    assertEquals(
+        shuffleBlockInfos.stream().mapToInt(ShuffleBlockInfo::getLength).sum(),
+        shuffleWriteMetrics.bytesWritten()
+    );
 
     assertEquals(6, shuffleBlockInfos.size());
     for (ShuffleBlockInfo shuffleBlockInfo : shuffleBlockInfos) {
-      // it can happen that 2 different platforms compress the same data differently,
-      // yet the decoded outcome remains identical to original.
-      // https://github.com/lz4/lz4/issues/812
-      if (TestUtils.isMacOnAppleSilicon()) {
-        assertEquals(24, shuffleBlockInfo.getLength());
-      } else {
-        assertEquals(20, shuffleBlockInfo.getLength());
-      }
       assertEquals(22, shuffleBlockInfo.getUncompressLength());
       assertEquals(0, shuffleBlockInfo.getShuffleId());
       if (shuffleBlockInfo.getPartitionId() == 0) {

@@ -87,7 +87,7 @@ public class RepartitionWithLocalFileRssTest extends RepartitionTest {
       results.add(resultWithRss);
     }
 
-    for (int i = 1; i < results.size(); i ++) {
+    for (int i = 1; i < results.size(); i++) {
       verifyTestResult(results.get(0), results.get(i));
     }
   }

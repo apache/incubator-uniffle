@@ -220,12 +220,14 @@ public class RssShuffleWriterTest {
 
     assertTrue(rssShuffleWriterSpy.getShuffleWriteMetrics().shuffleWriteTime() > 0);
     assertEquals(6, rssShuffleWriterSpy.getShuffleWriteMetrics().shuffleRecordsWritten());
-    assertEquals(144, rssShuffleWriterSpy.getShuffleWriteMetrics().shuffleBytesWritten());
+    assertEquals(
+        shuffleBlockInfos.stream().mapToInt(ShuffleBlockInfo::getLength).sum(),
+        rssShuffleWriterSpy.getShuffleWriteMetrics().shuffleBytesWritten()
+    );
 
     assertEquals(6, shuffleBlockInfos.size());
     for (ShuffleBlockInfo shuffleBlockInfo : shuffleBlockInfos) {
       assertEquals(0, shuffleBlockInfo.getShuffleId());
-      assertEquals(24, shuffleBlockInfo.getLength());
       assertEquals(22, shuffleBlockInfo.getUncompressLength());
       if (shuffleBlockInfo.getPartitionId() == 0) {
         assertEquals(shuffleBlockInfo.getShuffleServerInfos(), ssi12);
