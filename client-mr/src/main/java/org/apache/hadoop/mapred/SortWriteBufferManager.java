@@ -43,9 +43,11 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
-import org.apache.uniffle.common.RssShuffleUtils;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.compression.CompressionFactory;
+import org.apache.uniffle.common.compression.Compressor;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
@@ -90,6 +92,8 @@ public class SortWriteBufferManager<K, V> {
   private long sortTime = 0;
   private final long maxBufferSize;
   private final ExecutorService sendExecutorService;
+  private final RssConf rssConf;
+  private final Compressor compressor;
 
   public SortWriteBufferManager(
       long maxMemSize,
@@ -114,7 +118,8 @@ public class SortWriteBufferManager<K, V> {
       boolean isMemoryShuffleEnabled,
       int sendThreadNum,
       double sendThreshold,
-      long maxBufferSize) {
+      long maxBufferSize,
+      RssConf rssConf) {
     this.maxMemSize = maxMemSize;
     this.taskAttemptId = taskAttemptId;
     this.batch = batch;
@@ -140,6 +145,8 @@ public class SortWriteBufferManager<K, V> {
     this.sendExecutorService  = Executors.newFixedThreadPool(
         sendThreadNum,
         ThreadUtils.getThreadFactory("send-thread-%d"));
+    this.rssConf = rssConf;
+    this.compressor = CompressionFactory.of().getCompressor(rssConf);
   }
 
   // todo: Single Buffer should also have its size limit
@@ -309,7 +316,7 @@ public class SortWriteBufferManager<K, V> {
     int partitionId = wb.getPartitionId();
     final int uncompressLength = data.length;
     long start = System.currentTimeMillis();
-    final byte[] compressed = RssShuffleUtils.compressData(data);
+    final byte[] compressed = compressor.compress(data);
     final long crc32 = ChecksumUtils.getCrc32(compressed);
     compressTime += System.currentTimeMillis() - start;
     final long blockId = RssMRUtils.getBlockId((long)partitionId, taskAttemptId, getNextSeqNo(partitionId));

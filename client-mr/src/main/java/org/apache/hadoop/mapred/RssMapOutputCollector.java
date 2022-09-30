@@ -130,7 +130,8 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
         isMemoryShuffleEnabled(storageType),
         sendThreadNum,
         sendThreshold,
-        maxBufferSize);
+        maxBufferSize,
+        RssMRConfig.toRssConf(rssJobConf));
   }
 
   private Map<Integer, List<ShuffleServerInfo>> createAssignmentMap(JobConf jobConf) {

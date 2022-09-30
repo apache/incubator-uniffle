@@ -17,11 +17,14 @@
 
 package org.apache.hadoop.mapreduce;
 
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.hadoop.mapred.JobConf;
 
 import org.apache.uniffle.client.util.RssClientConfig;
+import org.apache.uniffle.common.config.RssConf;
 
 public class RssMRConfig {
 
@@ -164,4 +167,17 @@ public class RssMRConfig {
 
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
       ImmutableSet.of(RSS_STORAGE_TYPE, RSS_REMOTE_STORAGE_PATH);
+
+  public static RssConf toRssConf(JobConf jobConf) {
+    RssConf rssConf = new RssConf();
+    for (Map.Entry<String, String> entry : jobConf) {
+      String key = entry.getKey();
+      if (!key.startsWith(MR_RSS_CONFIG_PREFIX)) {
+        continue;
+      }
+      key = key.substring(MR_RSS_CONFIG_PREFIX.length());
+      rssConf.setString(key, entry.getValue());
+    }
+    return rssConf;
+  }
 }

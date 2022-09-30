@@ -65,10 +65,14 @@ import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.common.RssShuffleUtils;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.compression.Compressor;
+import org.apache.uniffle.common.compression.Decompressor;
+import org.apache.uniffle.common.compression.ZstdCompressor;
+import org.apache.uniffle.common.compression.ZstdDecompressor;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -88,6 +92,9 @@ public class FetcherTest {
   static List<byte[]> data;
   static MergeManagerImpl<Text, Text> merger;
 
+  static Decompressor decompressor = new ZstdDecompressor();
+  static Compressor compressor = new ZstdCompressor(1);
+
   @Test
   public void writeAndReadDataTestWithRss() throws Throwable {
     fs = FileSystem.getLocal(conf);
@@ -97,7 +104,7 @@ public class FetcherTest {
         null, null, new Progress(), new MROutputFiles());
     ShuffleReadClient shuffleReadClient = new MockedShuffleReadClient(data);
     RssFetcher fetcher = new RssFetcher(jobConf, reduceId1, taskStatus, merger, new Progress(),
-        reporter, metrics, shuffleReadClient, 3);
+        reporter, metrics, shuffleReadClient, 3, new RssConf());
     fetcher.fetchAllRssBlocks();
 
 
@@ -128,7 +135,7 @@ public class FetcherTest {
         null, null, new Progress(), new MROutputFiles());
     ShuffleReadClient shuffleReadClient = new MockedShuffleReadClient(data);
     RssFetcher fetcher = new RssFetcher(jobConf, reduceId1, taskStatus, merger, new Progress(),
-        reporter, metrics, shuffleReadClient, 3);
+        reporter, metrics, shuffleReadClient, 3, new RssConf());
     fetcher.fetchAllRssBlocks();
 
 
@@ -161,7 +168,7 @@ public class FetcherTest {
       null, null, new Progress(), new MROutputFiles(), expectedFails);
     ShuffleReadClient shuffleReadClient = new MockedShuffleReadClient(data);
     RssFetcher fetcher = new RssFetcher(jobConf, reduceId1, taskStatus, merger, new Progress(),
-        reporter, metrics, shuffleReadClient, 3);
+        reporter, metrics, shuffleReadClient, 3, new RssConf());
     fetcher.fetchAllRssBlocks();
 
     RawKeyValueIterator iterator = merger.close();
@@ -276,7 +283,8 @@ public class FetcherTest {
         true,
         5,
         0.2f,
-        1024000L);
+        1024000L,
+        new RssConf());
 
     for (String key : keysToValues.keySet()) {
       String value = keysToValues.get(key);
@@ -357,7 +365,14 @@ public class FetcherTest {
           successBlockIds.add(blockInfo.getBlockId());
         }
         shuffleBlockInfoList.forEach(block -> {
-          data.add(RssShuffleUtils.decompressData(block.getData(), block.getUncompressLength()));
+          ByteBuffer uncompressedBuffer = ByteBuffer.allocate(block.getUncompressLength());
+          decompressor.decompress(
+              ByteBuffer.wrap(block.getData()),
+              block.getUncompressLength(),
+              uncompressedBuffer,
+              0
+          );
+          data.add(uncompressedBuffer.array());
         });
         return new SendShuffleDataResult(successBlockIds, Sets.newHashSet());
       }
@@ -440,7 +455,7 @@ public class FetcherTest {
     MockedShuffleReadClient(List<byte[]> data) {
       this.blocks = new LinkedList<>();
       data.forEach(bytes -> {
-        byte[] compressed = RssShuffleUtils.compressData(bytes);
+        byte[] compressed = compressor.compress(bytes);
         blocks.add(new CompressedShuffleBlock(ByteBuffer.wrap(compressed), bytes.length));
       });
     }
