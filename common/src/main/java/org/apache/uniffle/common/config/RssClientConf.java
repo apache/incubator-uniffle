@@ -38,6 +38,6 @@ public class RssClientConf {
   public static final ConfigOption<Integer> ZSTD_COMPRESSION_LEVEL = ConfigOptions
       .key("rss.client.io.compression.zstd.level")
       .intType()
-      .defaultValue(1)
+      .defaultValue(3)
       .withDescription("");
 }

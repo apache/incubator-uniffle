@@ -33,6 +33,6 @@ public class ZstdCompressor implements Compressor {
 
   @Override
   public byte[] compress(byte[] data) {
-    return Zstd.compress(data);
+    return Zstd.compress(data, compressionLevel);
   }
 }
