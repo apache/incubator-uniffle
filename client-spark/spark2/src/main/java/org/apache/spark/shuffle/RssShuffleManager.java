@@ -306,9 +306,15 @@ public class RssShuffleManager implements ShuffleManager {
       BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
       ShuffleWriteMetrics writeMetrics = context.taskMetrics().shuffleWriteMetrics();
       WriteBufferManager bufferManager = new WriteBufferManager(
-          shuffleId, context.taskAttemptId(), bufferOptions, rssHandle.getDependency().serializer(),
-          rssHandle.getPartitionToServers(), context.taskMemoryManager(),
-          writeMetrics, new RssConf());
+          shuffleId,
+          context.taskAttemptId(),
+          bufferOptions,
+          rssHandle.getDependency().serializer(),
+          rssHandle.getPartitionToServers(),
+          context.taskMemoryManager(),
+          writeMetrics,
+          RssSparkConfig.toRssConf(sparkConf)
+      );
       taskToBufferManager.put(taskId, bufferManager);
 
       return new RssShuffleWriter(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(), bufferManager,
