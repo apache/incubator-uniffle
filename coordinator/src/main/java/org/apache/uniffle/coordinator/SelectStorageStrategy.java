@@ -17,17 +17,11 @@
 
 package org.apache.uniffle.coordinator;
 
-import java.util.List;
-import java.util.Map;
-
 import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.RankValue;
 
 public interface SelectStorageStrategy {
 
-  void checkStorages();
-
-  List<Map.Entry<String, RankValue>> detectStorage(String uri);
+  void detectStorage();
 
   RemoteStorageInfo pickStorage(String appId);
 }

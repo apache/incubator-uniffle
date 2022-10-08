@@ -81,9 +81,9 @@ public class ApplicationManager {
         this::statusCheck, expired / 2, expired / 2, TimeUnit.MILLISECONDS);
     // the thread for checking if the storage is normal
     ScheduledExecutorService detectStorageScheduler = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("readWriteRankScheduler-%d"));
+        ThreadUtils.getThreadFactory("detectStoragesScheduler-%d"));
     // should init later than the refreshRemoteStorage init
-    detectStorageScheduler.scheduleAtFixedRate(selectStorageStrategy::checkStorages, 1000,
+    detectStorageScheduler.scheduleAtFixedRate(selectStorageStrategy::detectStorage, 1000,
         conf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME), TimeUnit.MILLISECONDS);
   }
 
