@@ -31,6 +31,7 @@ import (
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/utils"
 )
 
+// buildEmptyPhaseRssObj builds a rss object with empty phase for testing.
 func buildEmptyPhaseRssObj() *unifflev1alpha1.RemoteShuffleService {
 	return &unifflev1alpha1.RemoteShuffleService{
 		ObjectMeta: metav1.ObjectMeta{
@@ -47,6 +48,7 @@ func buildEmptyPhaseRssObj() *unifflev1alpha1.RemoteShuffleService {
 	}
 }
 
+// TestProcessEmptyPhaseRss tests rss objects' process of rss-controller
 func TestProcessEmptyPhaseRss(t *testing.T) {
 	rss := buildEmptyPhaseRssObj()
 

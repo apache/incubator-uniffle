@@ -38,7 +38,10 @@ USER rssadmin
 COPY rss-${RSS_VERSION}.tgz /data/rssadmin
 RUN tar -xvf /data/rssadmin/rss-${RSS_VERSION}.tgz -C /data/rssadmin
 RUN mv /data/rssadmin/rss-${RSS_VERSION} /data/rssadmin/rss
+RUN rm /data/rssadmin/rss/bin/rss-env.sh
 RUN rm -rf /data/rssadmin/rss-${RSS_VERSION}.tgz
+
+COPY rss-env.sh /data/rssadmin/rss/bin
 
 COPY start.sh /data/rssadmin/rss/bin
 
