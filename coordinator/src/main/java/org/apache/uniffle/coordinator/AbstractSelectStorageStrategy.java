@@ -26,7 +26,6 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.exception.RssException;
 
 import static org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.RankValue;
@@ -72,14 +71,5 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
         hasReadBytes += readBytes;
       } while (readBytes != -1);
     }
-  }
-
-  @Override
-  public void detectStorage() {
-  }
-
-  @Override
-  public RemoteStorageInfo pickStorage(String appId) {
-    return null;
   }
 }
