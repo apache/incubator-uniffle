@@ -28,6 +28,7 @@ import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.serializer.DeserializationStream;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.serializer.SerializerInstance;
+import org.apache.spark.shuffle.RssSparkConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Product2;
@@ -42,8 +43,6 @@ import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.compression.CompressionFactory;
 import org.apache.uniffle.common.compression.Decompressor;
 import org.apache.uniffle.common.config.RssConf;
-
-import static org.apache.spark.shuffle.RssSparkConfig.RSS_WRITER_BUFFER_SIZE;
 
 public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C>> {
 
@@ -76,7 +75,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
     this.uncompressedData = ByteBuffer.allocate(
         (int) rssConf.getSizeAsBytes(
             RssClientConfig.RSS_WRITER_BUFFER_SIZE,
-            RSS_WRITER_BUFFER_SIZE.defaultValueString()
+            RssSparkConfig.RSS_WRITER_BUFFER_SIZE.defaultValueString()
         )
     );
   }
