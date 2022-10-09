@@ -27,17 +27,12 @@ public class RssClientConf {
       .key("rss.client.io.compression.codec")
       .enumType(CompressionFactory.Type.class)
       .defaultValue(ZSTD)
-      .withDescription("");
-
-  public static final ConfigOption<Boolean> LZ4_COMPRESSION_DIRECT_MEMORY_ENABLED = ConfigOptions
-      .key("rss.client.io.compression.lz4.direct.memory.enable")
-      .booleanType()
-      .defaultValue(true)
-      .withDescription("");
+      .withDescription("The compression codec is used to compress the shuffle data. "
+          + "Default codec is `zstd`, `lz4` also can be used.");
 
   public static final ConfigOption<Integer> ZSTD_COMPRESSION_LEVEL = ConfigOptions
       .key("rss.client.io.compression.zstd.level")
       .intType()
       .defaultValue(3)
-      .withDescription("");
+      .withDescription("The zstd compression level, the default level is 3");
 }

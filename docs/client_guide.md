@@ -89,6 +89,8 @@ These configurations are shared by all types of clients.
 |<client_type>.rss.client.assignment.tags|-|The comma-separated list of tags for deciding assignment shuffle servers. Notice that the SHUFFLE_SERVER_VERSION will always as the assignment tag whether this conf is set or not|
 |<client_type>.rss.client.data.commit.pool.size|The number of assigned shuffle servers|The thread size for sending commit to shuffle servers|
 |<client_type>.rss.client.assignment.shuffle.nodes.max|-1|The number of required assignment shuffle servers. If it is less than 0 or equals to 0 or greater than the coordinator's config of "rss.coordinator.shuffle.nodes.max", it will use the size of "rss.coordinator.shuffle.nodes.max" default|
+|<client_type>.rss.client.io.compression.codec|zstd|The compression codec is used to compress the shuffle data. Default codec is `zstd`, `lz4` also can be used.|
+|<client_type>.rss.client.io.compression.zstd.level|3|The zstd compression level, the default level is 3|
 Notice:
 
 1. `<client_type>` should be `spark` or `mapreduce`
