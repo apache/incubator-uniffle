@@ -146,7 +146,7 @@ public class SortWriteBufferManager<K, V> {
         sendThreadNum,
         ThreadUtils.getThreadFactory("send-thread-%d"));
     this.rssConf = rssConf;
-    this.compressor = CompressionFactory.of().getCompressor(rssConf);
+    this.compressor = CompressionFactory.getInstance().getCompressor(rssConf);
   }
 
   // todo: Single Buffer should also have its size limit

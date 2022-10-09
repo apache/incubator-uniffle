@@ -38,7 +38,7 @@ public class CompressionFactory {
     static final CompressionFactory INSTANCE = new CompressionFactory();
   }
 
-  public static CompressionFactory of() {
+  public static CompressionFactory getInstance() {
     return LazyHolder.INSTANCE;
   }
 

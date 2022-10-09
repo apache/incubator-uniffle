@@ -121,7 +121,7 @@ public class RssFetcher<K,V> {
     this.totalBlockCount = totalBlockCount;
 
     this.rssConf = rssConf;
-    this.decompressor = CompressionFactory.of().getDecompressor(rssConf);
+    this.decompressor = CompressionFactory.getInstance().getDecompressor(rssConf);
   }
 
   public void fetchAllRssBlocks() throws IOException, InterruptedException {

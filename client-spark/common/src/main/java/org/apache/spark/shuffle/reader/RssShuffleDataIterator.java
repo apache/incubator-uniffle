@@ -70,7 +70,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
     this.serializerInstance = serializer.newInstance();
     this.shuffleReadClient = shuffleReadClient;
     this.shuffleReadMetrics = shuffleReadMetrics;
-    this.decompressor = CompressionFactory.of().getDecompressor(rssConf);
+    this.decompressor = CompressionFactory.getInstance().getDecompressor(rssConf);
     // todo: support off-heap bytebuffer
     this.uncompressedData = ByteBuffer.allocate(
         (int) rssConf.getSizeAsBytes(

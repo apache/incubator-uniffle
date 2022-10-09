@@ -91,7 +91,7 @@ public abstract class AbstractRssReaderTest extends HdfsTestBase {
   }
 
   protected ShufflePartitionedBlock createShuffleBlock(byte[] data, long blockId) {
-    byte[] compressData = CompressionFactory.of().getCompressor(new RssConf()).compress(data);
+    byte[] compressData = CompressionFactory.getInstance().getCompressor(new RssConf()).compress(data);
     long crc = ChecksumUtils.getCrc32(compressData);
     return new ShufflePartitionedBlock(compressData.length, data.length, crc, blockId, 0,
         compressData);

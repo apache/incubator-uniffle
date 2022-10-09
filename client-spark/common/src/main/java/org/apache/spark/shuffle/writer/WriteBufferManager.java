@@ -106,7 +106,7 @@ public class WriteBufferManager extends MemoryConsumer {
     this.requireMemoryRetryMax = bufferManagerOptions.getRequireMemoryRetryMax();
     this.arrayOutputStream = new WrappedByteArrayOutputStream(serializerBufferSize);
     this.serializeStream = instance.serializeStream(arrayOutputStream);
-    this.compressor = CompressionFactory.of().getCompressor(rssConf);
+    this.compressor = CompressionFactory.getInstance().getCompressor(rssConf);
   }
 
   public List<ShuffleBlockInfo> addRecord(int partitionId, Object key, Object value) {

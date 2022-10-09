@@ -56,10 +56,10 @@ public class CompressionTest {
     conf.set(COMPRESSION_TYPE, type);
         
     // case1: heap bytebuffer
-    Compressor compressor = CompressionFactory.of().getCompressor(conf);
+    Compressor compressor = CompressionFactory.getInstance().getCompressor(conf);
     byte[] compressed = compressor.compress(data);
 
-    Decompressor decompressor = CompressionFactory.of().getDecompressor(conf);
+    Decompressor decompressor = CompressionFactory.getInstance().getDecompressor(conf);
     ByteBuffer dest = ByteBuffer.allocate(size);
     decompressor.decompress(ByteBuffer.wrap(compressed), size, dest, 0);
 
