@@ -19,6 +19,8 @@ package org.apache.uniffle.server.event;
 
 import java.util.List;
 
+// todo: introduce the unified abstract dispatcher to handle events,
+// mentioned in https://github.com/apache/incubator-uniffle/pull/249#discussion_r983001435
 public abstract class PurgeEvent {
   private String appId;
   private String user;

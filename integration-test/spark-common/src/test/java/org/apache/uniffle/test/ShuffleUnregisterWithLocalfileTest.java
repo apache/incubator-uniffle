@@ -31,11 +31,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import scala.Tuple2;
 
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.apache.uniffle.common.config.RssBaseConf.RSS_STORAGE_BASE_PATH;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -79,7 +79,8 @@ public class ShuffleUnregisterWithLocalfileTest extends SparkIntegrationTestBase
 
     // The second run will use the rss. and we should check the effectiveness of unregisterShuffle method.
     if (runCounter == 1) {
-      String path = shuffleServers.get(0).getShuffleServerConf().get(RSS_STORAGE_BASE_PATH).get(0);
+      String path = shuffleServers.get(0).getShuffleServerConf()
+          .get(RssBaseConf.RSS_STORAGE_BASE_PATH).get(0);
       String appPath = new File(path).listFiles()[0].getAbsolutePath();
 
       String shufflePath = appPath + "/0";

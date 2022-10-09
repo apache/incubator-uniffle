@@ -80,6 +80,9 @@ import org.apache.uniffle.common.util.ThreadUtils;
 public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleWriteClientImpl.class);
+  private static final int MAX_UNREGISTER_THREAD_POOL_SIZE = 10;
+  private static final int MAX_UNREGISTER_WAIT_SEC = 10;
+
   private String clientType;
   private int retryMax;
   private long retryIntervalMax;
@@ -615,13 +618,14 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         }
     );
 
+    ExecutorService executorService = null;
     try {
-      ExecutorService executorService =
+      executorService =
           Executors.newFixedThreadPool(
-              Math.min(10, shuffleServerInfoSet.size()),
+              Math.min(MAX_UNREGISTER_THREAD_POOL_SIZE, shuffleServerInfoSet.size()),
               ThreadUtils.getThreadFactory("unregister-shuffle-%d")
           );
-      List<Future<Void>> futures = executorService.invokeAll(callableList, 10, TimeUnit.SECONDS);
+      List<Future<Void>> futures = executorService.invokeAll(callableList, MAX_UNREGISTER_WAIT_SEC, TimeUnit.SECONDS);
       for (Future<Void> future : futures) {
         if (!future.isDone()) {
           future.cancel(true);
@@ -629,6 +633,10 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       }
     } catch (InterruptedException ie) {
       LOG.warn("Unregister shuffle is interrupted", ie);
+    } finally {
+      if (executorService != null) {
+        executorService.shutdownNow();
+      }
     }
   }
 
