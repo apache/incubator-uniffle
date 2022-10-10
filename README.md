@@ -241,7 +241,7 @@ The important configuration is listed as following.
 |shuffle server|[Uniffle Shuffle Server Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/server_guide.md)|
 |client|[Uniffle Shuffle Client Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/client_guide.md)|
 
-## Security：Hadoop kerberos authentication
+## Security: Hadoop kerberos authentication
 The primary goals of the Uniffle Kerberos security are:
 1. to enable secure data access for coordinator/shuffle-servers, like dynamic conf/exclude-node files stored in secured dfs cluster
 2. to write shuffle data to kerberos secured dfs cluster for shuffle-servers.
