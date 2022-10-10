@@ -96,9 +96,11 @@ This document will introduce how to deploy Uniffle coordinators.
 |rss.rpc.server.port|-|RPC port for coordinator|
 |rss.jetty.http.port|-|Http port for coordinator|
 |rss.coordinator.remote.storage.select.strategy|APP_BALANCE|Strategy for selecting the remote path|
-|rss.coordinator.remote.storage.schedule.time|60000|The time of scheduling the read and write time of the paths to obtain different HDFS|
-|rss.coordinator.remote.storage.schedule.file.size|204800000|The size of the file that the scheduled thread reads and writes|
-|rss.coordinator.remote.storage.schedule.access.times|3|The number of times to read and write HDFS files|
+|rss.coordinator.remote.storage.io.sample.schedule.time|60000|The time of scheduling the read and write time of the paths to obtain different HDFS|
+|rss.coordinator.remote.storage.io.sample.file.size|204800000|The size of the file that the scheduled thread reads and writes|
+|rss.coordinator.remote.storage.io.sample.access.times|3|The number of times to read and write HDFS files|
+|rss.coordinator.startup-silent-period.enabled|false|Enable the startup-silent-period to reject the assignment requests for avoiding partial assignments. To avoid service interruption, this mechanism is disabled by default. Especially it's recommended to use in coordinator HA mode when restarting single coordinator.|
+|rss.coordinator.startup-silent-period.duration|20000|The waiting duration(ms) when conf of rss.coordinator.startup-silent-period.enabled is enabled.|
 
 ### AccessClusterLoadChecker settings
 |Property Name|Default|	Description|

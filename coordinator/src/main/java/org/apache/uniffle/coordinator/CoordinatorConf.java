@@ -164,7 +164,8 @@ public class CoordinatorConf extends RssBaseConf {
       .booleanType()
       .defaultValue(false)
       .withDescription("Enable the startup-silent-period to reject the assignment requests "
-          + "for avoiding partial assignments");
+          + "for avoiding partial assignments. To avoid service interruption, this mechanism is disabled by default. "
+          + "Especially it's recommended to use in coordinator HA mode when restarting single coordinator.");
   public static final ConfigOption<Long> COORDINATOR_START_SILENT_PERIOD_DURATION = ConfigOptions
       .key("rss.coordinator.startup-silent-period.duration")
       .longType()
