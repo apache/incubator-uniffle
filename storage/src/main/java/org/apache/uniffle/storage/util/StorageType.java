@@ -18,10 +18,33 @@
 package org.apache.uniffle.storage.util;
 
 public enum StorageType {
-  HDFS,
-  LOCALFILE,
-  LOCALFILE_HDFS,
-  MEMORY_LOCALFILE,
-  MEMORY_HDFS,
-  MEMORY_LOCALFILE_HDFS
+  MEMORY(1),
+  LOCALFILE(2),
+  HDFS(4),
+  LOCALFILE_HDFS(6),
+  MEMORY_LOCALFILE(3),
+  MEMORY_HDFS(5),
+  MEMORY_LOCALFILE_HDFS(7);
+
+  private int val;
+
+  StorageType(int val) {
+    this.val = val;
+  }
+
+  private int getVal() {
+    return val;
+  }
+
+  public static boolean withMemory(StorageType storageType) {
+    return (storageType.getVal() & MEMORY.getVal()) != 0;
+  }
+
+  public static boolean withLocalfile(StorageType storageType) {
+    return (storageType.getVal() & LOCALFILE.getVal()) != 0;
+  }
+
+  public static boolean withHDFS(StorageType storageType) {
+    return (storageType.getVal() & HDFS.getVal()) != 0;
+  }
 }
