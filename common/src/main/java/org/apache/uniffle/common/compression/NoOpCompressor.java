@@ -23,9 +23,9 @@ package org.apache.uniffle.common.compression;
 public class NoOpCompressor implements Compressor {
 
   @Override
-  public byte[] compress(byte[] data) {
-    byte[] dst = new byte[data.length];
-    System.arraycopy(data, 0, dst, 0, data.length);
+  public byte[] compress(byte[] src) {
+    byte[] dst = new byte[src.length];
+    System.arraycopy(src, 0, dst, 0, src.length);
     return dst;
   }
 }

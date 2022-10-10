@@ -19,6 +19,6 @@ package org.apache.uniffle.common.compression;
 
 public interface Compressor {
 
-  byte[] compress(byte[] data);
+  byte[] compress(byte[] src);
 
 }

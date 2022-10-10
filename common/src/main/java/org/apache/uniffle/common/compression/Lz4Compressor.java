@@ -28,7 +28,7 @@ public class Lz4Compressor implements Compressor {
   }
 
   @Override
-  public byte[] compress(byte[] data) {
-    return lz4Factory.fastCompressor().compress(data);
+  public byte[] compress(byte[] src) {
+    return lz4Factory.fastCompressor().compress(src);
   }
 }
