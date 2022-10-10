@@ -17,19 +17,18 @@
 
 package org.apache.uniffle.common.compression;
 
-import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 
 public class Lz4Compressor implements Compressor {
 
-  private LZ4Compressor compressor;
+  private LZ4Factory lz4Factory;
 
   public Lz4Compressor() {
-    this.compressor = LZ4Factory.fastestInstance().fastCompressor();
+    this.lz4Factory = LZ4Factory.fastestInstance();
   }
 
   @Override
   public byte[] compress(byte[] data) {
-    return compressor.compress(data);
+    return lz4Factory.fastCompressor().compress(data);
   }
 }
