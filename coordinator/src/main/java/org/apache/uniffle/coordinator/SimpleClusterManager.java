@@ -65,12 +65,20 @@ public class SimpleClusterManager implements ClusterManager {
   private long outputAliveServerCount = 0;
   private final long periodicOutputIntervalTimes;
 
+  private long startTime;
+  private boolean startupSilentPeriodEnabled;
+  private long startupSilentPeriodDurationMs;
+  private boolean readyForServe = false;
+
   public SimpleClusterManager(CoordinatorConf conf, Configuration hadoopConf) throws Exception {
     this.shuffleNodesMax = conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
     this.heartbeatTimeout = conf.getLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT);
     // the thread for checking if shuffle server report heartbeat in time
     scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("SimpleClusterManager-%d"));
+
+    this.startupSilentPeriodEnabled = conf.get(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_ENABLED);
+    this.startupSilentPeriodDurationMs = conf.get(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_DURATION);
 
     periodicOutputIntervalTimes = conf.get(CoordinatorConf.COORDINATOR_NODES_PERIODIC_OUTPUT_INTERVAL_TIMES);
     scheduledExecutorService.scheduleAtFixedRate(
@@ -86,6 +94,8 @@ public class SimpleClusterManager implements ClusterManager {
       checkNodesExecutorService.scheduleAtFixedRate(
           () -> updateExcludeNodes(excludeNodesPath), updateNodesInterval, updateNodesInterval, TimeUnit.MILLISECONDS);
     }
+
+    this.startTime = System.currentTimeMillis();
   }
 
   void nodesCheck() {
@@ -225,6 +235,19 @@ public class SimpleClusterManager implements ClusterManager {
   }
 
   @Override
+  public boolean isReadyForServe() {
+    if (!startupSilentPeriodEnabled) {
+      return true;
+    }
+
+    if (!readyForServe && System.currentTimeMillis() - startTime > startupSilentPeriodDurationMs) {
+      readyForServe = true;
+    }
+
+    return readyForServe;
+  }
+
+  @Override
   public void close() throws IOException {
     if (hadoopFileSystem != null) {
       hadoopFileSystem.close();
@@ -237,5 +260,20 @@ public class SimpleClusterManager implements ClusterManager {
     if (checkNodesExecutorService != null) {
       checkNodesExecutorService.shutdown();
     }
+  }
+
+  @VisibleForTesting
+  public void setStartTime(long startTime) {
+    this.startTime = startTime;
+  }
+
+  @VisibleForTesting
+  public void setReadyForServe(boolean readyForServe) {
+    this.readyForServe = readyForServe;
+  }
+
+  @VisibleForTesting
+  public void setStartupSilentPeriodEnabled(boolean startupSilentPeriodEnabled) {
+    this.startupSilentPeriodEnabled = startupSilentPeriodEnabled;
   }
 }

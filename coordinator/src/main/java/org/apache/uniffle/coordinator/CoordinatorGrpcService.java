@@ -120,6 +120,10 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
 
     GetShuffleAssignmentsResponse response;
     try {
+      if (!coordinatorServer.getClusterManager().isReadyForServe()) {
+        throw new Exception("Coordinator is out-of-service when in starting.");
+      }
+
       final PartitionRangeAssignment pra =
           coordinatorServer
               .getAssignmentStrategy()

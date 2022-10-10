@@ -159,6 +159,19 @@ public class CoordinatorConf extends RssBaseConf {
           .enumType(AbstractAssignmentStrategy.HostAssignmentStrategy.class)
           .defaultValue(AbstractAssignmentStrategy.HostAssignmentStrategy.PREFER_DIFF)
           .withDescription("Strategy for selecting shuffle servers");
+  public static final ConfigOption<Boolean> COORDINATOR_START_SILENT_PERIOD_ENABLED = ConfigOptions
+      .key("rss.coordinator.startup-silent-period.enabled")
+      .booleanType()
+      .defaultValue(false)
+      .withDescription("Enable the startup-silent-period to reject the assignment requests "
+          + "for avoiding partial assignments. To avoid service interruption, this mechanism is disabled by default. "
+          + "Especially it's recommended to use in coordinator HA mode when restarting single coordinator.");
+  public static final ConfigOption<Long> COORDINATOR_START_SILENT_PERIOD_DURATION = ConfigOptions
+      .key("rss.coordinator.startup-silent-period.duration")
+      .longType()
+      .defaultValue(20 * 1000L)
+      .withDescription("The waiting duration(ms) when conf of "
+          + COORDINATOR_START_SILENT_PERIOD_ENABLED + " is enabled.");
 
   public CoordinatorConf() {
   }
