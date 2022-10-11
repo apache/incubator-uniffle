@@ -245,13 +245,10 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
   public void rpcMetricsTest() throws Exception {
     double oldValue = coordinators.get(0).getGrpcMetrics().getCounterMap()
         .get(CoordinatorGrpcMetrics.HEARTBEAT_METHOD).get();
-    CoordinatorTestUtils.waitForRegister(coordinatorClient,2);
+    CoordinatorTestUtils.waitForRegister(coordinatorClient, 2);
     double newValue = coordinators.get(0).getGrpcMetrics().getCounterMap()
         .get(CoordinatorGrpcMetrics.HEARTBEAT_METHOD).get();
     assertTrue(newValue - oldValue > 1);
-    assertEquals(0,
-        coordinators.get(0).getGrpcMetrics().getGaugeMap()
-            .get(CoordinatorGrpcMetrics.HEARTBEAT_METHOD).get(), 0.5);
 
     String appId = "rpcMetricsTest";
     RssGetShuffleAssignmentsRequest request = new RssGetShuffleAssignmentsRequest(
@@ -263,9 +260,6 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     newValue = coordinators.get(0).getGrpcMetrics().getCounterMap()
         .get(CoordinatorGrpcMetrics.GET_SHUFFLE_ASSIGNMENTS_METHOD).get();
     assertEquals(oldValue + 1, newValue, 0.5);
-    assertEquals(0,
-        coordinators.get(0).getGrpcMetrics().getGaugeMap()
-            .get(CoordinatorGrpcMetrics.GET_SHUFFLE_ASSIGNMENTS_METHOD).get(), 0.5);
 
     double connectionSize = coordinators.get(0)
         .getGrpcMetrics().getGaugeMap().get(GRCP_SERVER_CONNECTION_NUMBER_KEY).get();
