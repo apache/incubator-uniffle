@@ -148,7 +148,7 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
   @Test
   public void testTags() throws Exception {
     ShuffleWriteClientImpl shuffleWriteClient = new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1,
-        1, 1, 1, true, 1, 1);
+        1, 1, 1, true, 1, 1, 10, 10);
     shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
 
     // Case1 : only set the single default shuffle version tag
