@@ -34,12 +34,35 @@ public class ShuffleClientFactory {
     return INSTANCE;
   }
 
+  /**
+   * Only for MR engine, which wont used to unregister to remote shuffle-servers
+   */
   public ShuffleWriteClient createShuffleWriteClient(
       String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
       int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled, int dataTransferPoolSize,
       int dataCommitPoolSize) {
-    return new ShuffleWriteClientImpl(clientType, retryMax, retryIntervalMax, heartBeatThreadNum,
-      replica, replicaWrite, replicaRead, replicaSkipEnabled, dataTransferPoolSize, dataCommitPoolSize);
+    return createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum, replica,
+        replicaWrite, replicaRead, replicaSkipEnabled, dataTransferPoolSize, dataCommitPoolSize, 10, 10);
+  }
+
+  public ShuffleWriteClient createShuffleWriteClient(
+      String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
+      int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled, int dataTransferPoolSize,
+      int dataCommitPoolSize, int unregisterThreadPoolSize, int unregisterRequestTimeoutSec) {
+    return new ShuffleWriteClientImpl(
+        clientType,
+        retryMax,
+        retryIntervalMax,
+        heartBeatThreadNum,
+        replica,
+        replicaWrite,
+        replicaRead,
+        replicaSkipEnabled,
+        dataTransferPoolSize,
+        dataCommitPoolSize,
+        unregisterThreadPoolSize,
+        unregisterRequestTimeoutSec
+    );
   }
 
   public ShuffleReadClient createShuffleReadClient(CreateShuffleReadClientRequest request) {

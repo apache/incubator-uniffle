@@ -80,8 +80,6 @@ import org.apache.uniffle.common.util.ThreadUtils;
 public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleWriteClientImpl.class);
-  private static final int MAX_UNREGISTER_THREAD_POOL_SIZE = 10;
-  private static final int MAX_UNREGISTER_WAIT_SEC = 10;
 
   private String clientType;
   private int retryMax;
@@ -94,9 +92,10 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private int replicaWrite;
   private int replicaRead;
   private boolean replicaSkipEnabled;
-  private int dataTranferPoolSize;
   private int dataCommitPoolSize = -1;
   private final ForkJoinPool dataTransferPool;
+  private final int unregisterThreadPoolSize;
+  private final int unregisterRequestTimeSec;
 
   public ShuffleWriteClientImpl(
       String clientType,
@@ -108,7 +107,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int replicaRead,
       boolean replicaSkipEnabled,
       int dataTranferPoolSize,
-      int dataCommitPoolSize) {
+      int dataCommitPoolSize,
+      int unregisterThreadPoolSize,
+      int unregisterRequestTimeSec) {
     this.clientType = clientType;
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
@@ -119,9 +120,10 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     this.replicaWrite = replicaWrite;
     this.replicaRead = replicaRead;
     this.replicaSkipEnabled = replicaSkipEnabled;
-    this.dataTranferPoolSize = dataTranferPoolSize;
     this.dataTransferPool = new ForkJoinPool(dataTranferPoolSize);
     this.dataCommitPoolSize = dataCommitPoolSize;
+    this.unregisterThreadPoolSize = unregisterThreadPoolSize;
+    this.unregisterRequestTimeSec = unregisterRequestTimeSec;
   }
 
   private boolean sendShuffleDataAsync(
@@ -622,10 +624,10 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     try {
       executorService =
           Executors.newFixedThreadPool(
-              Math.min(MAX_UNREGISTER_THREAD_POOL_SIZE, shuffleServerInfoSet.size()),
+              Math.min(unregisterThreadPoolSize, shuffleServerInfoSet.size()),
               ThreadUtils.getThreadFactory("unregister-shuffle-%d")
           );
-      List<Future<Void>> futures = executorService.invokeAll(callableList, MAX_UNREGISTER_WAIT_SEC, TimeUnit.SECONDS);
+      List<Future<Void>> futures = executorService.invokeAll(callableList, unregisterRequestTimeSec, TimeUnit.SECONDS);
       for (Future<Void> future : futures) {
         if (!future.isDone()) {
           future.cancel(true);
