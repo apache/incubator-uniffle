@@ -925,7 +925,7 @@
         <configuration>
           <excludes>
             <exclude>LICENSE</exclude>
-            <exclude>DISCLAIMER</exclude>
+            <exclude>DISCLAIMER-WIP</exclude>
             <exclude>NOTICE</exclude>
             <exclude>**/target/**</exclude>
             <exclude>src/test/resources/empty</exclude>
