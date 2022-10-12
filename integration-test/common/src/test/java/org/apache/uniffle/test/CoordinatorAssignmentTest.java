@@ -87,7 +87,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
   @Test
   public void testSilentPeriod() throws Exception {
     ShuffleWriteClientImpl shuffleWriteClient = new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1,
-        1, 1, 1, true, 1, 1);
+        1, 1, 1, true, 1, 1, 10, 10);
     shuffleWriteClient.registerCoordinators(QUORUM);
 
     // Case1: Disable silent period
@@ -112,7 +112,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
   @Test
   public void testAssignmentServerNodesNumber() throws Exception {
     ShuffleWriteClientImpl shuffleWriteClient = new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1,
-        1, 1, 1, true, 1, 1);
+        1, 1, 1, true, 1, 1, 10, 10);
     shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
 
     /**

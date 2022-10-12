@@ -112,6 +112,14 @@ public class RssSparkConfig {
           .doc("The max data size sent to shuffle server"))
       .createWithDefault("16m");
 
+  public static final ConfigEntry<Integer> RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE = createIntegerBuilder(
+      new ConfigBuilder("spark.rss.client.unregister.thread.pool.size"))
+      .createWithDefault(10);
+
+  public static final ConfigEntry<Integer> RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC = createIntegerBuilder(
+      new ConfigBuilder("spark.rss.client.unregister.request.timeout.sec"))
+      .createWithDefault(10);
+
   // When the size of read buffer reaches the half of JVM region (i.e., 32m),
   // it will incur humongous allocation, so we set it to 14m.
   public static final ConfigEntry<String> RSS_CLIENT_READ_BUFFER_SIZE = createStringBuilder(

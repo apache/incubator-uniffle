@@ -17,9 +17,12 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -44,6 +47,9 @@ import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
+import org.apache.uniffle.server.event.AppPurgeEvent;
+import org.apache.uniffle.server.event.PurgeEvent;
+import org.apache.uniffle.server.event.ShufflePurgeEvent;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.factory.ShuffleHandlerFactory;
@@ -171,10 +177,16 @@ public class LocalStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void removeResources(String appId, Set<Integer> shuffleSet, String user) {
+  public void removeResources(PurgeEvent event) {
+    String appId = event.getAppId();
+    String user = event.getUser();
+    List<Integer> shuffleSet = Optional.ofNullable(event.getShuffleIds()).orElse(Collections.emptyList());
+
     for (LocalStorage storage : localStorages) {
-      for (Integer shuffleId : shuffleSet) {
+      if (event instanceof AppPurgeEvent) {
         storage.removeHandlers(appId);
+      }
+      for (Integer shuffleId : shuffleSet) {
         storage.removeResources(RssUtils.generateShuffleKey(appId, shuffleId));
       }
     }
@@ -182,7 +194,23 @@ public class LocalStorageManager extends SingleStorageManager {
     ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
         .createShuffleDeleteHandler(
             new CreateShuffleDeleteHandlerRequest(StorageType.LOCALFILE.name(), new Configuration()));
-    deleteHandler.delete(storageBasePaths.toArray(new String[storageBasePaths.size()]), appId, user);
+
+    List<String> deletePaths = storageBasePaths.stream().flatMap(path -> {
+      String basicPath = ShuffleStorageUtils.getFullShuffleDataFolder(path, appId);
+      if (event instanceof ShufflePurgeEvent) {
+        List<String> paths = new ArrayList<>();
+        for (int shuffleId : shuffleSet) {
+          paths.add(
+              ShuffleStorageUtils.getFullShuffleDataFolder(basicPath, String.valueOf(shuffleId))
+          );
+        }
+        return paths.stream();
+      } else {
+        return Arrays.asList(basicPath).stream();
+      }
+    }).collect(Collectors.toList());
+
+    deleteHandler.delete(deletePaths.toArray(new String[deletePaths.size()]), appId, user);
   }
 
   @Override

@@ -157,6 +157,8 @@ The important configuration is listed as following.
 |---|---|---|
 |spark.rss.writer.buffer.spill.size|128m|Buffer size for total partition data|
 |spark.rss.client.send.size.limit|16m|The max data size sent to shuffle server|
+|spark.rss.client.unregister.thread.pool.size|10|The max size of thread pool of unregistering|
+|spark.rss.client.unregister.request.timeout.sec|10|The max timeout sec when doing unregister to remote shuffle-servers|
 
 
 ### MapReduce Specialized Setting

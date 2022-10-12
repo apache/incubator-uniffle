@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
-import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 public class HdfsShuffleDeleteHandler implements ShuffleDeleteHandler {
 
@@ -39,33 +38,35 @@ public class HdfsShuffleDeleteHandler implements ShuffleDeleteHandler {
 
   @Override
   public void delete(String[] storageBasePaths, String appId, String user) {
-    Path path = new Path(ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePaths[0], appId));
-    boolean isSuccess = false;
-    int times = 0;
-    int retryMax = 5;
-    long start = System.currentTimeMillis();
-    LOG.info("Try delete shuffle data in HDFS for appId[{}] of user[{}] with {}",appId, user, path);
-    while (!isSuccess && times < retryMax) {
-      try {
-        FileSystem fileSystem = HadoopFilesystemProvider.getFilesystem(user, path, hadoopConf);
-        fileSystem.delete(path, true);
-        isSuccess = true;
-      } catch (Exception e) {
-        times++;
-        LOG.warn("Can't delete shuffle data for appId[" + appId + "] with " + times + " times", e);
+    for (String deletePath : storageBasePaths) {
+      final Path path = new Path(deletePath);
+      boolean isSuccess = false;
+      int times = 0;
+      int retryMax = 5;
+      long start = System.currentTimeMillis();
+      LOG.info("Try delete shuffle data in HDFS for appId[{}] of user[{}] with {}",appId, user, path);
+      while (!isSuccess && times < retryMax) {
         try {
-          Thread.sleep(1000);
-        } catch (Exception ex) {
-          LOG.warn("Exception happened when Thread.sleep", ex);
+          FileSystem fileSystem = HadoopFilesystemProvider.getFilesystem(user, path, hadoopConf);
+          fileSystem.delete(path, true);
+          isSuccess = true;
+        } catch (Exception e) {
+          times++;
+          LOG.warn("Can't delete shuffle data for appId[" + appId + "] with " + times + " times", e);
+          try {
+            Thread.sleep(1000);
+          } catch (Exception ex) {
+            LOG.warn("Exception happened when Thread.sleep", ex);
+          }
         }
       }
-    }
-    if (isSuccess) {
-      LOG.info("Delete shuffle data in HDFS for appId[" + appId + "] with " + path + " successfully in "
-          + (System.currentTimeMillis() - start) + " ms");
-    } else {
-      LOG.info("Failed to delete shuffle data in HDFS for appId[" + appId + "] with " + path + " in "
-          + (System.currentTimeMillis() - start) + " ms");
+      if (isSuccess) {
+        LOG.info("Delete shuffle data in HDFS for appId[" + appId + "] with " + path + " successfully in "
+            + (System.currentTimeMillis() - start) + " ms");
+      } else {
+        LOG.info("Failed to delete shuffle data in HDFS for appId[" + appId + "] with " + path + " in "
+            + (System.currentTimeMillis() - start) + " ms");
+      }
     }
   }
 }

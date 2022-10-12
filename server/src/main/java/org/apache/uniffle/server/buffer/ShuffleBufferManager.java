@@ -24,6 +24,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -209,21 +210,10 @@ public class ShuffleBufferManager {
     if (shuffleIdToBuffers == null) {
       return;
     }
-    // calculate released size
-    long size = 0;
-    for (RangeMap<Integer, ShuffleBuffer> rangeMap : shuffleIdToBuffers.values()) {
-      if (rangeMap != null) {
-        Collection<ShuffleBuffer> buffers = rangeMap.asMapOfRanges().values();
-        if (buffers != null) {
-          for (ShuffleBuffer buffer : buffers) {
-            ShuffleServerMetrics.gaugeTotalPartitionNum.dec();
-            size += buffer.getSize();
-          }
-        }
-      }
-    }
-    // release memory
-    releaseMemory(size, false, false);
+    removeBufferByShuffleId(
+        appId,
+        shuffleIdToBuffers.keySet().stream().collect(Collectors.toList()).toArray(new Integer[0])
+    );
     shuffleSizeMap.remove(appId);
     bufferPool.remove(appId);
   }
@@ -458,5 +448,34 @@ public class ShuffleBufferManager {
     pickedShuffle.putIfAbsent(appId, Sets.newHashSet());
     Set<Integer> shuffleIdSet = pickedShuffle.get(appId);
     shuffleIdSet.add(shuffleId);
+  }
+
+  public void removeBufferByShuffleId(String appId, Integer... shuffleIds) {
+    Map<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers = bufferPool.get(appId);
+    if (shuffleIdToBuffers == null) {
+      return;
+    }
+
+    Map<Integer, AtomicLong> shuffleIdToSizeMap = shuffleSizeMap.get(appId);
+    for (int shuffleId : shuffleIds) {
+      long size = 0;
+
+      RangeMap<Integer, ShuffleBuffer> bufferRangeMap = shuffleIdToBuffers.get(shuffleId);
+      if (bufferRangeMap == null) {
+        continue;
+      }
+      Collection<ShuffleBuffer> buffers = bufferRangeMap.asMapOfRanges().values();
+      if (buffers != null) {
+        for (ShuffleBuffer buffer : buffers) {
+          ShuffleServerMetrics.gaugeTotalPartitionNum.dec();
+          size += buffer.getSize();
+        }
+      }
+      releaseMemory(size, false, false);
+      if (shuffleIdToSizeMap != null) {
+        shuffleIdToSizeMap.remove(shuffleId);
+      }
+      shuffleIdToBuffers.remove(shuffleId);
+    }
   }
 }

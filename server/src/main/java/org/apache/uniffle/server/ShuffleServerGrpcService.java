@@ -106,6 +106,29 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   }
 
   @Override
+  public void unregisterShuffle(RssProtos.ShuffleUnregisterRequest request,
+      StreamObserver<RssProtos.ShuffleUnregisterResponse> responseStreamObserver) {
+    String appId = request.getAppId();
+    int shuffleId = request.getShuffleId();
+
+    StatusCode result = StatusCode.SUCCESS;
+    String responseMessage = "OK";
+    try {
+      shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId, shuffleId);
+    } catch (Exception e) {
+      result = StatusCode.INTERNAL_ERROR;
+    }
+
+    RssProtos.ShuffleUnregisterResponse reply = RssProtos.ShuffleUnregisterResponse
+        .newBuilder()
+        .setStatus(valueOf(result))
+        .setRetMsg(responseMessage)
+        .build();
+    responseStreamObserver.onNext(reply);
+    responseStreamObserver.onCompleted();
+  }
+
+  @Override
   public void registerShuffle(ShuffleRegisterRequest req,
       StreamObserver<ShuffleRegisterResponse> responseObserver) {
 

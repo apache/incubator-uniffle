@@ -18,9 +18,12 @@
 package org.apache.uniffle.server;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
@@ -34,6 +37,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
+import org.apache.commons.collections.CollectionUtils;
 import org.roaringbitmap.longlong.LongIterator;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -51,6 +55,9 @@ import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
+import org.apache.uniffle.server.event.AppPurgeEvent;
+import org.apache.uniffle.server.event.PurgeEvent;
+import org.apache.uniffle.server.event.ShufflePurgeEvent;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
@@ -78,7 +85,7 @@ public class ShuffleTaskManager {
   private Map<String, ShuffleTaskInfo> shuffleTaskInfos = Maps.newConcurrentMap();
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = Maps.newConcurrentMap();
   private Runnable clearResourceThread;
-  private BlockingQueue<String> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
+  private BlockingQueue<PurgeEvent> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
   // appId -> shuffleId -> serverReadHandler
 
   public ShuffleTaskManager(
@@ -109,8 +116,13 @@ public class ShuffleTaskManager {
     clearResourceThread = () -> {
       while (true) {
         try {
-          String appId = expiredAppIdQueue.take();
-          removeResources(appId);
+          PurgeEvent event = expiredAppIdQueue.take();
+          if (event instanceof AppPurgeEvent) {
+            removeResources(event.getAppId());
+          }
+          if (event instanceof ShufflePurgeEvent) {
+            removeResourcesByShuffleIds(event.getAppId(), ((ShufflePurgeEvent) event).getShuffleIds());
+          }
         } catch (Exception e) {
           LOG.error("Exception happened when clear resource for expired application", e);
         }
@@ -369,13 +381,49 @@ public class ShuffleTaskManager {
         if (System.currentTimeMillis() - shuffleTaskInfos.get(appId).getCurrentTimes() > appExpiredWithoutHB) {
           LOG.info("Detect expired appId[" + appId + "] according "
               + "to rss.server.app.expired.withoutHeartbeat");
-          expiredAppIdQueue.add(appId);
+          expiredAppIdQueue.add(new AppPurgeEvent(appId, getUserByAppId(appId)));
         }
       }
       ShuffleServerMetrics.gaugeAppNum.set(shuffleTaskInfos.size());
     } catch (Exception e) {
       LOG.warn("Error happened in checkResourceStatus", e);
     }
+  }
+
+  /**
+   * Clear up the partial resources of shuffleIds of App.
+   * @param appId
+   * @param shuffleIds
+   */
+  public void removeResourcesByShuffleIds(String appId, List<Integer> shuffleIds) {
+    if (CollectionUtils.isEmpty(shuffleIds)) {
+      return;
+    }
+
+    LOG.info("Start remove resource for appId[{}], shuffleIds[{}]", appId, shuffleIds);
+    final long start = System.currentTimeMillis();
+    final ShuffleTaskInfo taskInfo = shuffleTaskInfos.get(appId);
+    if (taskInfo != null) {
+      for (Integer shuffleId : shuffleIds) {
+        Optional.ofNullable(taskInfo).ifPresent(x -> x.getCachedBlockIds().remove(shuffleId));
+        Optional.ofNullable(taskInfo).ifPresent(x -> x.getCommitCounts().remove(shuffleId));
+        Optional.ofNullable(taskInfo).ifPresent(x -> x.getCommitLocks().remove(shuffleId));
+      }
+    }
+    Optional.ofNullable(partitionsToBlockIds.get(appId)).ifPresent(x -> {
+      for (Integer shuffleId : shuffleIds) {
+        x.remove(shuffleId);
+      }
+    });
+    shuffleBufferManager.removeBufferByShuffleId(appId, shuffleIds.toArray(new Integer[0]));
+    for (Integer shuffleId : shuffleIds) {
+      shuffleFlushManager.removeResourcesOfShuffleId(appId, shuffleId);
+    }
+    storageManager.removeResources(
+        new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds)
+    );
+    LOG.info("Finish remove resource for appId[{}], shuffleIds[{}], cost[{}]",
+        appId, shuffleIds, System.currentTimeMillis() - start);
   }
 
   @VisibleForTesting
@@ -387,7 +435,9 @@ public class ShuffleTaskManager {
     shuffleBufferManager.removeBuffer(appId);
     shuffleFlushManager.removeResources(appId);
     if (!shuffleToCachedBlockIds.isEmpty()) {
-      storageManager.removeResources(appId, shuffleToCachedBlockIds.keySet(), getUserByAppId(appId));
+      storageManager.removeResources(
+          new AppPurgeEvent(appId, getUserByAppId(appId), new ArrayList<>(shuffleToCachedBlockIds.keySet()))
+      );
     }
     shuffleTaskInfos.remove(appId);
     LOG.info("Finish remove resource for appId[" + appId + "] cost " + (System.currentTimeMillis() - start) + " ms");
@@ -442,5 +492,14 @@ public class ShuffleTaskManager {
   @VisibleForTesting
   public Map<String, Map<Integer, Roaring64NavigableMap[]>> getPartitionsToBlockIds() {
     return partitionsToBlockIds;
+  }
+
+  public void removeShuffleDataAsync(String appId, int shuffleId) {
+    expiredAppIdQueue.add(new ShufflePurgeEvent(appId, getUserByAppId(appId), Arrays.asList(shuffleId)));
+  }
+
+  @VisibleForTesting
+  void removeShuffleDataSync(String appId, int shuffleId) {
+    removeResourcesByShuffleIds(appId, Arrays.asList(shuffleId));
   }
 }

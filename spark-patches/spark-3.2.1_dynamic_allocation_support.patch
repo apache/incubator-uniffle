@@ -15,23 +15,6 @@
 # limitations under the License.
 #
 
-diff --git a/core/src/main/scala/org/apache/spark/Dependency.scala b/core/src/main/scala/org/apache/spark/Dependency.scala
-index 1b4e7ba5106..95818ff72ca 100644
---- a/core/src/main/scala/org/apache/spark/Dependency.scala
-+++ b/core/src/main/scala/org/apache/spark/Dependency.scala
-@@ -174,8 +174,10 @@ class ShuffleDependency[K: ClassTag, V: ClassTag, C: ClassTag](
-       !rdd.isBarrier()
-   }
- 
--  _rdd.sparkContext.cleaner.foreach(_.registerShuffleForCleanup(this))
--  _rdd.sparkContext.shuffleDriverComponents.registerShuffle(shuffleId)
-+  if (!_rdd.context.getConf.isRssEnable()) {
-+    _rdd.sparkContext.cleaner.foreach(_.registerShuffleForCleanup(this))
-+    _rdd.sparkContext.shuffleDriverComponents.registerShuffle(shuffleId)
-+  }
- }
- 
- 
 diff --git a/core/src/main/scala/org/apache/spark/ExecutorAllocationManager.scala b/core/src/main/scala/org/apache/spark/ExecutorAllocationManager.scala
 index c4b619300b5..821a01985d9 100644
 --- a/core/src/main/scala/org/apache/spark/ExecutorAllocationManager.scala
