@@ -230,6 +230,13 @@ The jar for MapReduce is located in <RSS_HOME>/jars/client/mr/rss-client-mr-XXXX
 Note that the RssMRAppMaster will automatically disable slow start (i.e., `mapreduce.job.reduce.slowstart.completedmaps=1`)
 and job recovery (i.e., `yarn.app.mapreduce.am.job.recovery.enable=false`)
 
+### Deploy In Kubernetes
+
+We have provided operator of uniffle used for deploying it in kubernetes environments.
+
+For details, see the following document:
+
+[operator docs](docs/operator)
 
 ## Configuration
 

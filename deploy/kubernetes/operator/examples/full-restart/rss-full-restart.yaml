@@ -22,7 +22,7 @@ metadata:
   name: rss-full-restart-demo
   namespace: kube-system
 spec:
-  configMapName: rss-full-restart-demo
+  configMapName: "${rss-configuration-name}"
   coordinator:
     image: "${rss-coordinator-image}"
     initContainerImage: "busybox:latest"
