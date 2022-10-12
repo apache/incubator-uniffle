@@ -196,8 +196,6 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
   }
 
   private boolean isMemoryShuffleEnabled(String storageType) {
-    return StorageType.MEMORY_LOCALFILE.name().equals(storageType)
-        || StorageType.MEMORY_HDFS.name().equals(storageType)
-        || StorageType.MEMORY_LOCALFILE_HDFS.name().equals(storageType);
+    return StorageType.withMemory(StorageType.valueOf(storageType));
   }
 }
