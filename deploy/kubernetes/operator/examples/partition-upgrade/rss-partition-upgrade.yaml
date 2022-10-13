@@ -22,7 +22,7 @@ metadata:
   name: rss-parition-upgrade-demo
   namespace: kube-system
 spec:
-  configMapName: rss-parition-upgrade-demo
+  configMapName: "${rss-configuration-name}"
   coordinator:
     image: "${rss-coordinator-image}"
     initContainerImage: "busybox:latest"
