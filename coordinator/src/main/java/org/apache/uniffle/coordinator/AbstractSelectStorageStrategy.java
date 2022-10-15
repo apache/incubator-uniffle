@@ -26,9 +26,8 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
+import org.apache.uniffle.common.RankValue;
 import org.apache.uniffle.common.exception.RssException;
-
-import static org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.RankValue;
 
 /**
  * This is a simple implementation class, which provides some methods to check whether the path is normal
@@ -37,11 +36,11 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
   /**
    * store remote path -> application count for assignment strategy
    */
-  protected final Map<String, LowestIOSampleCostSelectStorageStrategy.RankValue> remoteStoragePathRankValue;
+  protected final Map<String, RankValue> remoteStoragePathRankValue;
   protected final int fileSize;
 
   public AbstractSelectStorageStrategy(
-      Map<String, LowestIOSampleCostSelectStorageStrategy.RankValue> remoteStoragePathRankValue,
+      Map<String, RankValue> remoteStoragePathRankValue,
       CoordinatorConf conf) {
     this.remoteStoragePathRankValue = remoteStoragePathRankValue;
     fileSize = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_FILE_SIZE);
