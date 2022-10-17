@@ -21,6 +21,7 @@ import java.util.Map;
 
 import com.google.common.collect.Maps;
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.uniffle.common.util.Constants;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.util.RssClientConfig;
