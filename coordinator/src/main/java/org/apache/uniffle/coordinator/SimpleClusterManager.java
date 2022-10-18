@@ -131,9 +131,10 @@ public class SimpleClusterManager implements ClusterManager {
       Path hadoopPath = new Path(path);
       FileStatus fileStatus = hadoopFileSystem.getFileStatus(hadoopPath);
       if (fileStatus != null && fileStatus.isFile()) {
-        if (excludeLastModify.get() != fileStatus.getModificationTime()) {
+        long latestModificationTime = fileStatus.getModificationTime();
+        if (excludeLastModify.get() != latestModificationTime) {
           parseExcludeNodesFile(hadoopFileSystem.open(hadoopPath));
-          excludeLastModify.set(fileStatus.getModificationTime());
+          excludeLastModify.set(latestModificationTime);
         }
       } else {
         excludeNodes = Sets.newConcurrentHashSet();
