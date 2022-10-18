@@ -70,8 +70,8 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.compression.Compressor;
 import org.apache.uniffle.common.compression.Decompressor;
-import org.apache.uniffle.common.compression.ZstdCompressor;
-import org.apache.uniffle.common.compression.ZstdDecompressor;
+import org.apache.uniffle.common.compression.Lz4Compressor;
+import org.apache.uniffle.common.compression.Lz4Decompressor;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 
@@ -92,8 +92,8 @@ public class FetcherTest {
   static List<byte[]> data;
   static MergeManagerImpl<Text, Text> merger;
 
-  static Decompressor decompressor = new ZstdDecompressor();
-  static Compressor compressor = new ZstdCompressor(1);
+  static Decompressor decompressor = new Lz4Decompressor();
+  static Compressor compressor = new Lz4Compressor();
 
   @Test
   public void writeAndReadDataTestWithRss() throws Throwable {
