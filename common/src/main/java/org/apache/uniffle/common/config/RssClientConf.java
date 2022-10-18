@@ -19,16 +19,16 @@ package org.apache.uniffle.common.config;
 
 import org.apache.uniffle.common.compression.CompressionFactory;
 
-import static org.apache.uniffle.common.compression.CompressionFactory.Type.ZSTD;
+import static org.apache.uniffle.common.compression.CompressionFactory.Type.LZ4;
 
 public class RssClientConf {
 
   public static final ConfigOption<CompressionFactory.Type> COMPRESSION_TYPE = ConfigOptions
       .key("rss.client.io.compression.codec")
       .enumType(CompressionFactory.Type.class)
-      .defaultValue(ZSTD)
+      .defaultValue(LZ4)
       .withDescription("The compression codec is used to compress the shuffle data. "
-          + "Default codec is `zstd`, `lz4` also can be used.");
+          + "Default codec is `LZ4`, `ZSTD` also can be used.");
 
   public static final ConfigOption<Integer> ZSTD_COMPRESSION_LEVEL = ConfigOptions
       .key("rss.client.io.compression.zstd.level")
