@@ -174,7 +174,7 @@ public class RssMRUtils {
     return rssJobConf.get(key, mrJobConf.get(key, defaultValue));
   }
 
-  public static long getBlockId(int partitionId, long taskAttemptId, int nextSeqNo) {
+  public static long getBlockId(long partitionId, long taskAttemptId, int nextSeqNo) {
     long attemptId = taskAttemptId >> (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH);
     if (attemptId < 0 || attemptId > MAX_ATTEMPT_ID) {
       throw new RuntimeException("Can't support attemptId [" + attemptId
