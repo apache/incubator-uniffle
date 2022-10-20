@@ -37,6 +37,8 @@ public class HdfsFileReader implements FileReader, Closeable {
   private Path path;
   private Configuration hadoopConf;
   private FSDataInputStream fsDataInputStream;
+  private FileSystem fileSystem;
+  private long fileLen = -1;
 
   public HdfsFileReader(Path path, Configuration hadoopConf) throws Exception {
     this.path = path;
@@ -45,7 +47,7 @@ public class HdfsFileReader implements FileReader, Closeable {
   }
 
   private void createStream() throws Exception {
-    FileSystem fileSystem = HadoopFilesystemProvider.getFilesystem(path, hadoopConf);
+    fileSystem = HadoopFilesystemProvider.getFilesystem(path, hadoopConf);
 
     if (!fileSystem.isFile(path)) {
       String msg = path + " don't exist or is not a file.";
@@ -91,5 +93,12 @@ public class HdfsFileReader implements FileReader, Closeable {
 
   public Path getPath() {
     return path;
+  }
+
+  public long getFileLen() throws IOException {
+    if (fileLen == -1) {
+      fileLen = fileSystem.getFileStatus(path).getLen();
+    }
+    return fileLen;
   }
 }

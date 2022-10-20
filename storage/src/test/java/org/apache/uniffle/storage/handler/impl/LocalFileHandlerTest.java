@@ -184,7 +184,7 @@ public class LocalFileHandlerTest {
     }
 
     List<ShuffleDataSegment> shuffleDataSegments =
-        RssUtils.transIndexDataToSegments(shuffleIndexResult, 32);
+        RssUtils.transIndexDataToSegments(shuffleIndexResult, 32, -1);
 
     for (ShuffleDataSegment shuffleDataSegment : shuffleDataSegments) {
       byte[] shuffleData =

@@ -79,7 +79,6 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
     return new ShuffleIndexResult();
   }
 
-  @Override
   protected ShuffleDataResult readShuffleData(ShuffleDataSegment shuffleDataSegment) {
     // Here we make an assumption that the rest of the file is corrupted, if an unexpected data is read.
     int expectedLength = shuffleDataSegment.getLength();
@@ -113,6 +112,15 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       return new byte[0];
     }
     return data;
+  }
+
+  protected long getDataFileLen() {
+    try {
+      return dataReader.getFileLen();
+    } catch (IOException ioException) {
+      LOG.error("getDataFileLen failed for " +  ShuffleStorageUtils.generateDataFileName(filePrefix), ioException);
+      return -1;
+    }
   }
 
   public synchronized void close() {

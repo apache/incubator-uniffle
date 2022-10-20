@@ -185,21 +185,23 @@ public class RssUtils {
   }
 
   public static List<ShuffleDataSegment> transIndexDataToSegments(
-      ShuffleIndexResult shuffleIndexResult, int readBufferSize) {
+      ShuffleIndexResult shuffleIndexResult, int readBufferSize, long dataFileLen) {
     if (shuffleIndexResult == null || shuffleIndexResult.isEmpty()) {
       return Lists.newArrayList();
     }
 
     byte[] indexData = shuffleIndexResult.getIndexData();
-    return transIndexDataToSegments(indexData, readBufferSize);
+    return transIndexDataToSegments(indexData, readBufferSize, dataFileLen);
   }
 
-  private static List<ShuffleDataSegment> transIndexDataToSegments(byte[] indexData, int readBufferSize) {
+  private static List<ShuffleDataSegment> transIndexDataToSegments(byte[] indexData,
+      int readBufferSize, long dataFileLen) {
     ByteBuffer byteBuffer = ByteBuffer.wrap(indexData);
     List<BufferSegment> bufferSegments = Lists.newArrayList();
     List<ShuffleDataSegment> dataFileSegments = Lists.newArrayList();
     int bufferOffset = 0;
     long fileOffset = -1;
+    long totalLength = 0;
 
     while (byteBuffer.hasRemaining()) {
       try {
@@ -218,6 +220,13 @@ public class RssUtils {
 
         bufferSegments.add(new BufferSegment(blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
         bufferOffset += length;
+        totalLength += length;
+
+        // If ShuffleServer is flushing the file at this time, the length in the index file record may be greater
+        // than the length in the actual data file, and it needs to be returned at this time to avoid EOFException
+        if (dataFileLen != -1 && totalLength >= dataFileLen) {
+          break;
+        }
 
         if (bufferOffset >= readBufferSize) {
           ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);

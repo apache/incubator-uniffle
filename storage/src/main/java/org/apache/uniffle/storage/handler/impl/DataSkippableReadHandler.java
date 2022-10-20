@@ -64,7 +64,8 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
         return null;
       }
 
-      shuffleDataSegments = RssUtils.transIndexDataToSegments(shuffleIndexResult, readBufferSize);
+      long dataFileLen = getDataFileLen();
+      shuffleDataSegments = RssUtils.transIndexDataToSegments(shuffleIndexResult, readBufferSize, dataFileLen);
     }
 
     // We should skip unexpected and processed segments when handler is read
@@ -89,4 +90,6 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
     }
     return result;
   }
+
+  protected abstract long getDataFileLen();
 }
