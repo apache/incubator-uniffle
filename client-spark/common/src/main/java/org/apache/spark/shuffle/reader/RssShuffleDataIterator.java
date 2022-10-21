@@ -40,8 +40,7 @@ import scala.runtime.BoxedUnit;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.client.util.RssClientConfig;
-import org.apache.uniffle.common.compression.CompressionFactory;
-import org.apache.uniffle.common.compression.Decompressor;
+import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
 
 public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C>> {
@@ -60,7 +59,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
   private ByteBufInputStream byteBufInputStream = null;
   private long unCompressionLength = 0;
   private ByteBuffer uncompressedData;
-  private Decompressor decompressor;
+  private Codec codec;
 
   public RssShuffleDataIterator(
       Serializer serializer,
@@ -70,7 +69,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
     this.serializerInstance = serializer.newInstance();
     this.shuffleReadClient = shuffleReadClient;
     this.shuffleReadMetrics = shuffleReadMetrics;
-    this.decompressor = CompressionFactory.getInstance().getDecompressor(rssConf);
+    this.codec = Codec.newInstance(rssConf);
     // todo: support off-heap bytebuffer
     this.uncompressedData = ByteBuffer.allocate(
         (int) rssConf.getSizeAsBytes(
@@ -129,7 +128,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
         }
         uncompressedData.clear();
         long startDecompress = System.currentTimeMillis();
-        decompressor.decompress(compressedData, uncompressedLen, uncompressedData, 0);
+        codec.decompress(compressedData, uncompressedLen, uncompressedData, 0);
         unCompressionLength += compressedBlock.getUncompressLength();
         long decompressDuration = System.currentTimeMillis() - startDecompress;
         decompressTime += decompressDuration;

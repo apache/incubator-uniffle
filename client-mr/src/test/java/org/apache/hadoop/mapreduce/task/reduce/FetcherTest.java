@@ -68,10 +68,8 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.common.compression.Compressor;
-import org.apache.uniffle.common.compression.Decompressor;
-import org.apache.uniffle.common.compression.Lz4Compressor;
-import org.apache.uniffle.common.compression.Lz4Decompressor;
+import org.apache.uniffle.common.compression.Codec;
+import org.apache.uniffle.common.compression.Lz4Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 
@@ -92,8 +90,7 @@ public class FetcherTest {
   static List<byte[]> data;
   static MergeManagerImpl<Text, Text> merger;
 
-  static Decompressor decompressor = new Lz4Decompressor();
-  static Compressor compressor = new Lz4Compressor();
+  static Codec codec = new Lz4Codec();
 
   @Test
   public void writeAndReadDataTestWithRss() throws Throwable {
@@ -366,7 +363,7 @@ public class FetcherTest {
         }
         shuffleBlockInfoList.forEach(block -> {
           ByteBuffer uncompressedBuffer = ByteBuffer.allocate(block.getUncompressLength());
-          decompressor.decompress(
+          codec.decompress(
               ByteBuffer.wrap(block.getData()),
               block.getUncompressLength(),
               uncompressedBuffer,
@@ -455,7 +452,7 @@ public class FetcherTest {
     MockedShuffleReadClient(List<byte[]> data) {
       this.blocks = new LinkedList<>();
       data.forEach(bytes -> {
-        byte[] compressed = compressor.compress(bytes);
+        byte[] compressed = codec.compress(bytes);
         blocks.add(new CompressedShuffleBlock(ByteBuffer.wrap(compressed), bytes.length));
       });
     }

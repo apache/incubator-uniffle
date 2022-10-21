@@ -17,8 +17,19 @@
 
 package org.apache.uniffle.common.compression;
 
-public interface Compressor {
+import java.nio.ByteBuffer;
 
-  byte[] compress(byte[] src);
+public class NoOpCodec extends Codec {
 
+  @Override
+  public void decompress(ByteBuffer src, int uncompressedLen, ByteBuffer dest, int destOffset) {
+    dest.put(src);
+  }
+
+  @Override
+  public byte[] compress(byte[] src) {
+    byte[] dst = new byte[src.length];
+    System.arraycopy(src, 0, dst, 0, src.length);
+    return dst;
+  }
 }

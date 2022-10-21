@@ -45,8 +45,7 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.common.compression.CompressionFactory;
-import org.apache.uniffle.common.compression.Compressor;
+import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ChecksumUtils;
@@ -93,7 +92,7 @@ public class SortWriteBufferManager<K, V> {
   private final long maxBufferSize;
   private final ExecutorService sendExecutorService;
   private final RssConf rssConf;
-  private final Compressor compressor;
+  private final Codec codec;
 
   public SortWriteBufferManager(
       long maxMemSize,
@@ -146,7 +145,7 @@ public class SortWriteBufferManager<K, V> {
         sendThreadNum,
         ThreadUtils.getThreadFactory("send-thread-%d"));
     this.rssConf = rssConf;
-    this.compressor = CompressionFactory.getInstance().getCompressor(rssConf);
+    this.codec = Codec.newInstance(rssConf);
   }
 
   // todo: Single Buffer should also have its size limit
@@ -316,7 +315,7 @@ public class SortWriteBufferManager<K, V> {
     int partitionId = wb.getPartitionId();
     final int uncompressLength = data.length;
     long start = System.currentTimeMillis();
-    final byte[] compressed = compressor.compress(data);
+    final byte[] compressed = codec.compress(data);
     final long crc32 = ChecksumUtils.getCrc32(compressed);
     compressTime += System.currentTimeMillis() - start;
     final long blockId = RssMRUtils.getBlockId((long)partitionId, taskAttemptId, getNextSeqNo(partitionId));

@@ -35,8 +35,7 @@ import org.apache.hadoop.util.Progress;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
-import org.apache.uniffle.common.compression.CompressionFactory;
-import org.apache.uniffle.common.compression.Decompressor;
+import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ByteUnit;
@@ -87,7 +86,7 @@ public class RssFetcher<K,V> {
   private int waitCount = 0;
   private byte[] uncompressedData = null;
   private RssConf rssConf;
-  private Decompressor decompressor;
+  private Codec codec;
 
   RssFetcher(JobConf job, TaskAttemptID reduceId,
       TaskStatus status,
@@ -121,7 +120,7 @@ public class RssFetcher<K,V> {
     this.totalBlockCount = totalBlockCount;
 
     this.rssConf = rssConf;
-    this.decompressor = CompressionFactory.getInstance().getDecompressor(rssConf);
+    this.codec = Codec.newInstance(rssConf);
   }
 
   public void fetchAllRssBlocks() throws IOException, InterruptedException {
@@ -160,7 +159,7 @@ public class RssFetcher<K,V> {
       final long startDecompress = System.currentTimeMillis();
       int uncompressedLen = compressedBlock.getUncompressLength();
       ByteBuffer decompressedBuffer = ByteBuffer.allocate(uncompressedLen);
-      decompressor.decompress(compressedData, uncompressedLen, decompressedBuffer, 0);
+      codec.decompress(compressedData, uncompressedLen, decompressedBuffer, 0);
       uncompressedData = decompressedBuffer.array();
       unCompressionLength += compressedBlock.getUncompressLength();
       long decompressDuration = System.currentTimeMillis() - startDecompress;

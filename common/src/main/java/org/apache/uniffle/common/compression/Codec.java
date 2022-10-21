@@ -24,78 +24,28 @@ import org.apache.uniffle.common.config.RssConf;
 import static org.apache.uniffle.common.config.RssClientConf.COMPRESSION_TYPE;
 import static org.apache.uniffle.common.config.RssClientConf.ZSTD_COMPRESSION_LEVEL;
 
-public class Codec implements Compressor, Decompressor {
+public abstract class Codec {
 
-  private final RssConf rssConf;
-  private volatile Decompressor decompressor;
-  private volatile Compressor compressor;
-
-  private Codec(RssConf rssConf) {
-    this.rssConf = rssConf;
+  public static Codec newInstance(RssConf rssConf) {
+    Type type = rssConf.get(COMPRESSION_TYPE);
+    switch (type) {
+      case ZSTD:
+        return new ZstdCodec(rssConf.get(ZSTD_COMPRESSION_LEVEL));
+      case NOOP:
+        return new NoOpCodec();
+      case LZ4:
+      default:
+        return new Lz4Codec();
+    }
   }
 
-  public static Codec getInstance(RssConf rssConf) {
-    return new Codec(rssConf);
-  }
+  public abstract void decompress(ByteBuffer src, int uncompressedLen, ByteBuffer dest, int destOffset);
+
+  public abstract byte[] compress(byte[] src);
 
   public enum Type {
     LZ4,
     ZSTD,
     NOOP,
   }
-
-  @Override
-  public byte[] compress(byte[] src) {
-    return getOrCreateCompressor().compress(src);
-  }
-
-  @Override
-  public void decompress(ByteBuffer src, int uncompressedLen, ByteBuffer dest, int destOffset) {
-    getOrCreateDeCompressor().decompress(src, uncompressedLen, dest, destOffset);
-  }
-
-  private Decompressor getOrCreateDeCompressor() {
-    if (decompressor == null) {
-      synchronized (decompressor) {
-        if (decompressor == null) {
-          CompressionFactory.Type type = rssConf.get(COMPRESSION_TYPE);
-          switch (type) {
-            case ZSTD:
-              this.decompressor = new ZstdDecompressor();
-              break;
-            case NOOP:
-              this.decompressor = new NoOpDecompressor();
-              break;
-            case LZ4:
-            default:
-              this.decompressor = new Lz4Decompressor();
-          }
-        }
-      }
-    }
-    return decompressor;
-  }
-
-  private Compressor getOrCreateCompressor() {
-    if (compressor == null) {
-      synchronized (compressor) {
-        if (compressor == null) {
-          CompressionFactory.Type type = rssConf.get(COMPRESSION_TYPE);
-          switch (type) {
-            case ZSTD:
-              this.compressor = new ZstdCompressor(rssConf.get(ZSTD_COMPRESSION_LEVEL));
-              break;
-            case NOOP:
-              this.compressor = new NoOpCompressor();
-              break;
-            case LZ4:
-            default:
-              this.compressor = new Lz4Compressor();
-          }
-        }
-      }
-    }
-    return compressor;
-  }
-
 }

@@ -17,15 +17,15 @@
 
 package org.apache.uniffle.common.config;
 
-import org.apache.uniffle.common.compression.CompressionFactory;
+import org.apache.uniffle.common.compression.Codec;
 
-import static org.apache.uniffle.common.compression.CompressionFactory.Type.LZ4;
+import static org.apache.uniffle.common.compression.Codec.Type.LZ4;
 
 public class RssClientConf {
 
-  public static final ConfigOption<CompressionFactory.Type> COMPRESSION_TYPE = ConfigOptions
+  public static final ConfigOption<Codec.Type> COMPRESSION_TYPE = ConfigOptions
       .key("rss.client.io.compression.codec")
-      .enumType(CompressionFactory.Type.class)
+      .enumType(Codec.Type.class)
       .defaultValue(LZ4)
       .withDescription("The compression codec is used to compress the shuffle data. "
           + "Default codec is `LZ4`, `ZSTD` also can be used.");

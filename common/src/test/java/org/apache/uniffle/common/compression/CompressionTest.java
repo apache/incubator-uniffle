@@ -35,11 +35,11 @@ public class CompressionTest {
 
   static List<Arguments> testCompression() {
     int[] sizes = {1, 1024, 128 * 1024, 512 * 1024, 1024 * 1024, 4 * 1024 * 1024};
-    CompressionFactory.Type[] types = {CompressionFactory.Type.ZSTD, CompressionFactory.Type.LZ4};
+    Codec.Type[] types = {Codec.Type.ZSTD, Codec.Type.LZ4};
 
     List<Arguments> arguments = new ArrayList<>();
     for (int size : sizes) {
-      for (CompressionFactory.Type type : types) {
+      for (Codec.Type type : types) {
         arguments.add(
             Arguments.of(size, type)
         );
@@ -50,18 +50,17 @@ public class CompressionTest {
 
   @ParameterizedTest
   @MethodSource
-  public void testCompression(int size, CompressionFactory.Type type) {
+  public void testCompression(int size, Codec.Type type) {
     byte[] data = RandomUtils.nextBytes(size);
     RssConf conf = new RssConf();
     conf.set(COMPRESSION_TYPE, type);
         
     // case1: heap bytebuffer
-    Compressor compressor = CompressionFactory.getInstance().getCompressor(conf);
-    byte[] compressed = compressor.compress(data);
+    Codec codec = Codec.newInstance(conf);
+    byte[] compressed = codec.compress(data);
 
-    Decompressor decompressor = CompressionFactory.getInstance().getDecompressor(conf);
     ByteBuffer dest = ByteBuffer.allocate(size);
-    decompressor.decompress(ByteBuffer.wrap(compressed), size, dest, 0);
+    codec.decompress(ByteBuffer.wrap(compressed), size, dest, 0);
 
     assertArrayEquals(data, dest.array());
 
@@ -70,14 +69,14 @@ public class CompressionTest {
     src.put(compressed);
     src.flip();
     ByteBuffer dst = ByteBuffer.allocateDirect(size);
-    decompressor.decompress(src, size, dst, 0);
+    codec.decompress(src, size, dst, 0);
     byte[] res = new byte[size];
     dst.get(res);
     assertArrayEquals(data, res);
 
     // case3: use the recycled bytebuffer
     ByteBuffer recycledDst = ByteBuffer.allocate(size + 10);
-    decompressor.decompress(ByteBuffer.wrap(compressed), size, recycledDst, 0);
+    codec.decompress(ByteBuffer.wrap(compressed), size, recycledDst, 0);
     recycledDst.get(res);
     assertArrayEquals(data, res);
   }

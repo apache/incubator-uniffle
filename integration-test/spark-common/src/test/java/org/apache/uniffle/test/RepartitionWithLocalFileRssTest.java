@@ -30,7 +30,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
 
-import org.apache.uniffle.common.compression.CompressionFactory;
+import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
@@ -77,11 +77,11 @@ public class RepartitionWithLocalFileRssTest extends RepartitionTest {
 
     updateSparkConfWithRss(sparkConf);
     updateSparkConfCustomer(sparkConf);
-    for (CompressionFactory.Type type :
-        new CompressionFactory.Type[]{
-            CompressionFactory.Type.NOOP,
-            CompressionFactory.Type.ZSTD,
-            CompressionFactory.Type.LZ4}) {
+    for (Codec.Type type :
+        new Codec.Type[]{
+            Codec.Type.NOOP,
+            Codec.Type.ZSTD,
+            Codec.Type.LZ4}) {
       sparkConf.set("spark." + COMPRESSION_TYPE.key(), type.name());
       Map resultWithRss = runSparkApp(sparkConf, fileName);
       results.add(resultWithRss);

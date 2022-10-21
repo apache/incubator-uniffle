@@ -19,10 +19,23 @@ package org.apache.uniffle.common.compression;
 
 import java.nio.ByteBuffer;
 
-public class NoOpDecompressor implements Decompressor {
+import net.jpountz.lz4.LZ4Factory;
+
+public class Lz4Codec extends Codec {
+
+  private LZ4Factory lz4Factory;
+
+  public Lz4Codec() {
+    this.lz4Factory = LZ4Factory.fastestInstance();
+  }
 
   @Override
   public void decompress(ByteBuffer src, int uncompressedLen, ByteBuffer dest, int destOffset) {
-    dest.put(src);
+    lz4Factory.fastDecompressor().decompress(src, src.position(), dest, destOffset, uncompressedLen);
+  }
+
+  @Override
+  public byte[] compress(byte[] src) {
+    return lz4Factory.fastCompressor().compress(src);
   }
 }

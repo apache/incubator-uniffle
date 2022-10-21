@@ -25,11 +25,14 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.exception.RssException;
 
-public class ZstdDecompressor implements Decompressor {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ZstdDecompressor.class);
+public class ZstdCodec extends Codec {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ZstdCodec.class);
 
-  public ZstdDecompressor() {
-    LOGGER.info("Initializing zstd decompressor.");
+  private final int compressionLevel;
+
+  public ZstdCodec(int level) {
+    this.compressionLevel = level;
+    LOGGER.info("Initializing zstd compressor.");
   }
 
   @Override
@@ -55,5 +58,10 @@ public class ZstdDecompressor implements Decompressor {
     }
 
     throw new RssException("Zstd only supports the same type of bytebuffer decompression.");
+  }
+
+  @Override
+  public byte[] compress(byte[] src) {
+    return Zstd.compress(src, compressionLevel);
   }
 }
