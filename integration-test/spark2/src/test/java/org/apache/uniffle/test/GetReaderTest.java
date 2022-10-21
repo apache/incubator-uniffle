@@ -137,7 +137,6 @@ public class GetReaderTest extends IntegrationTestBase {
     assertNull(commonHadoopConf.get("k2"));
 
     // mock the scenario that get reader in an executor
-    rssShuffleManager.setRemoteStorage(null);
     rssShuffleReader = (RssShuffleReader) rssShuffleManager.getReader(
         rssShuffleHandle, 0, 0, mockTaskContextImpl);
     hadoopConf =  rssShuffleReader.getHadoopConf();

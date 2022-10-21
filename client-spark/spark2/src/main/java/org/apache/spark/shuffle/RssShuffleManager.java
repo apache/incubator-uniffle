@@ -86,7 +86,6 @@ public class RssShuffleManager implements ShuffleManager {
   private final int dataCommitPoolSize;
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
-  private RemoteStorageInfo remoteStorage;
   private ThreadPoolExecutor threadPoolExecutor;
   private EventLoop eventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
 
@@ -211,9 +210,10 @@ public class RssShuffleManager implements ShuffleManager {
     }
 
     String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
-    remoteStorage = new RemoteStorageInfo(sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""));
-    remoteStorage = ClientUtils.fetchRemoteStorage(
-        appId, remoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
+    RemoteStorageInfo defaultRemoteStorage = new RemoteStorageInfo(
+        sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""));
+    RemoteStorageInfo remoteStorage = ClientUtils.fetchRemoteStorage(
+        appId, defaultRemoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
 
     int partitionNumPerRange = sparkConf.get(RssSparkConfig.RSS_PARTITION_NUM_PER_RANGE);
 
@@ -231,7 +231,7 @@ public class RssShuffleManager implements ShuffleManager {
         ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
                 appId, shuffleId, dependency.partitioner().numPartitions(),
                 partitionNumPerRange, assignmentTags, requiredShuffleServerNumber);
-        registerShuffleServers(appId, shuffleId, response.getServerToPartitionRanges());
+        registerShuffleServers(appId, shuffleId, response.getServerToPartitionRanges(), remoteStorage);
         return response.getPartitionToServers();
       }, retryInterval, retryTimes);
     } catch (Throwable throwable) {
@@ -266,7 +266,8 @@ public class RssShuffleManager implements ShuffleManager {
   protected void registerShuffleServers(
       String appId,
       int shuffleId,
-      Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges) {
+      Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges,
+      RemoteStorageInfo remoteStorage) {
     if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
       return;
     }
@@ -471,8 +472,4 @@ public class RssShuffleManager implements ShuffleManager {
     this.appId = appId;
   }
 
-  @VisibleForTesting
-  public void setRemoteStorage(RemoteStorageInfo remoteStorage) {
-    this.remoteStorage = remoteStorage;
-  }
 }
