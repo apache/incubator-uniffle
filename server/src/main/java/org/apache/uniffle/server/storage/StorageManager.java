@@ -25,6 +25,7 @@ import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
+import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 
 
 public interface StorageManager {
@@ -33,7 +34,8 @@ public interface StorageManager {
 
   Storage selectStorage(ShuffleDataReadEvent event);
 
-  boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event);
+  boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event,
+                CreateShuffleWriteHandlerRequest request);
 
   void updateWriteMetrics(ShuffleDataFlushEvent event, long writeTime);
 
@@ -48,6 +50,8 @@ public interface StorageManager {
   void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo);
 
   Checker getStorageChecker();
+  
+  boolean canWrite(ShuffleDataFlushEvent event);
 
   // todo: add an interface that check storage isHealthy
 }

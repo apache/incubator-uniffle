@@ -33,6 +33,7 @@ import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageWriteMetrics;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
+import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 
 
 public abstract class SingleStorageManager implements StorageManager {
@@ -52,7 +53,8 @@ public abstract class SingleStorageManager implements StorageManager {
   }
 
   @Override
-  public boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event) {
+  public boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event,
+                       CreateShuffleWriteHandlerRequest request) {
     String shuffleKey = RssUtils.generateShuffleKey(event.getAppId(), event.getShuffleId());
     storage.createMetadataIfNotExist(shuffleKey);
 
@@ -113,6 +115,22 @@ public abstract class SingleStorageManager implements StorageManager {
     }
   }
 
+
+  @Override
+  public boolean canWrite(ShuffleDataFlushEvent event) {
+    try {
+      Storage storage = selectStorage(event);
+      // if storage is null, appId may not be registered
+      if (storage == null || !storage.canWrite()) {
+        return false;
+      }
+      return true;
+    } catch (Exception e) {
+      LOG.warn("", e);
+      return false;
+    }
+  }
+  
   public StorageWriteMetrics createStorageWriteMetrics(ShuffleDataFlushEvent event, long writeTime) {
     long length = 0;
     long blockNum = 0;
