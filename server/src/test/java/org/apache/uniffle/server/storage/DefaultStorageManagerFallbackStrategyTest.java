@@ -74,5 +74,10 @@ public class DefaultStorageManagerFallbackStrategyTest {
     event.increaseRetryTimes();
     storageManager = fallbackStrategy.tryFallback(current, event, warmStorageManager, coldStorageManager);
     assertTrue(storageManager == warmStorageManager);
+    for (int i = 0; i < 2; i++) {
+      event.increaseRetryTimes();
+    }
+    storageManager = fallbackStrategy.tryFallback(coldStorageManager, event, warmStorageManager, coldStorageManager);
+    assertTrue(storageManager == warmStorageManager);
   }
 }
