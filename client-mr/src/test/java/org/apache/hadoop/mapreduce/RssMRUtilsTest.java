@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -72,6 +73,22 @@ public class RssMRUtilsTest {
     blockId = RssMRUtils.getBlockId(2, taskAttemptId, 2);
     newTaskAttemptId = RssMRUtils.getTaskAttemptId(blockId);
     assertEquals(taskAttemptId, newTaskAttemptId);
+  }
+
+  @Test
+  public void partitionIdConvertBlockTest() {
+    JobID jobID =  new JobID();
+    TaskID taskId =  new TaskID(jobID, TaskType.MAP, 233);
+    TaskAttemptID taskAttemptID = new TaskAttemptID(taskId, 1);
+    long taskAttemptId = RssMRUtils.convertTaskAttemptIdToLong(taskAttemptID, 1);
+    long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;
+    for (int partitionId = 0; partitionId <= 3000; partitionId++) {
+      for (int seqNo = 0; seqNo <= 10; seqNo++) {
+        long blockId = RssMRUtils.getBlockId(Long.valueOf(partitionId), taskAttemptId, seqNo);
+        int newPartitionId = Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask);
+        assertEquals(partitionId, newPartitionId);
+      }
+    }
   }
 
   @Test

@@ -40,6 +40,7 @@ import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
@@ -102,6 +103,29 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       default:
         return RssProtos.StatusCode.INTERNAL_ERROR;
     }
+  }
+
+  @Override
+  public void unregisterShuffle(RssProtos.ShuffleUnregisterRequest request,
+      StreamObserver<RssProtos.ShuffleUnregisterResponse> responseStreamObserver) {
+    String appId = request.getAppId();
+    int shuffleId = request.getShuffleId();
+
+    StatusCode result = StatusCode.SUCCESS;
+    String responseMessage = "OK";
+    try {
+      shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId, shuffleId);
+    } catch (Exception e) {
+      result = StatusCode.INTERNAL_ERROR;
+    }
+
+    RssProtos.ShuffleUnregisterResponse reply = RssProtos.ShuffleUnregisterResponse
+        .newBuilder()
+        .setStatus(valueOf(result))
+        .setRetMsg(responseMessage)
+        .build();
+    responseStreamObserver.onNext(reply);
+    responseStreamObserver.onCompleted();
   }
 
   @Override
@@ -533,6 +557,12 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
         builder.setIndexData(UnsafeByteOperations.unsafeWrap(data));
         reply = builder.build();
+      } catch (FileNotFoundException indexFileNotFoundException) {
+        LOG.warn("Index file for {} is not found, maybe the data has been flushed to cold storage.",
+            requestInfo, indexFileNotFoundException);
+        reply = GetLocalShuffleIndexResponse.newBuilder()
+            .setStatus(valueOf(status))
+            .build();
       } catch (Exception e) {
         status = StatusCode.INTERNAL_ERROR;
         msg = "Error happened when get shuffle index for " + requestInfo + ", " + e.getMessage();

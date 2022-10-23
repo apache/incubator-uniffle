@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SimpleClusterManagerTest {
@@ -54,6 +55,18 @@ public class SimpleClusterManagerTest {
   @AfterEach
   public void clear() {
     CoordinatorMetrics.clear();
+  }
+
+  @Test
+  public void startupSilentPeriodTest() throws Exception {
+    CoordinatorConf coordinatorConf = new CoordinatorConf();
+    coordinatorConf.set(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_ENABLED, true);
+    coordinatorConf.set(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_DURATION, 20 * 1000L);
+    SimpleClusterManager manager = new SimpleClusterManager(coordinatorConf, new Configuration());
+    assertFalse(manager.isReadyForServe());
+
+    manager.setStartTime(System.currentTimeMillis() - 30 * 1000L);
+    assertTrue(manager.isReadyForServe());
   }
 
   @Test

@@ -92,7 +92,6 @@ public class RssShuffleManager implements ShuffleManager {
   private ScheduledExecutorService heartBeatScheduledExecutorService;
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
-  private RemoteStorageInfo remoteStorage;
   private final EventLoop eventLoop;
   private final EventLoop defaultEventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
 
@@ -160,12 +159,13 @@ public class RssShuffleManager implements ShuffleManager {
     int heartBeatThreadNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
     this.dataTransferPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE);
     this.dataCommitPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE);
-
+    int unregisterThreadPoolSize = sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);
+    int unregisterRequestTimeoutSec = sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC);
     shuffleWriteClient = ShuffleClientFactory
         .getInstance()
         .createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum,
             dataReplica, dataReplicaWrite, dataReplicaRead, dataReplicaSkipEnabled, dataTransferPoolSize,
-            dataCommitPoolSize);
+            dataCommitPoolSize, unregisterThreadPoolSize, unregisterRequestTimeoutSec);
     registerCoordinator();
     // fetch client conf and apply them if necessary and disable ESS
     if (isDriver && dynamicConfEnabled) {
@@ -220,12 +220,24 @@ public class RssShuffleManager implements ShuffleManager {
     int heartBeatThreadNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
     this.dataTransferPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE);
     this.dataCommitPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE);
-
+    int unregisterThreadPoolSize = sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);
+    int unregisterRequestTimeoutSec = sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC);
     shuffleWriteClient = ShuffleClientFactory
         .getInstance()
-        .createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum,
-            dataReplica, dataReplicaWrite, dataReplicaRead, dataReplicaSkipEnabled, dataTransferPoolSize,
-            dataCommitPoolSize);
+        .createShuffleWriteClient(
+            clientType,
+            retryMax,
+            retryIntervalMax,
+            heartBeatThreadNum,
+            dataReplica,
+            dataReplicaWrite,
+            dataReplicaRead,
+            dataReplicaSkipEnabled,
+            dataTransferPoolSize,
+            dataCommitPoolSize,
+            unregisterThreadPoolSize,
+            unregisterRequestTimeoutSec
+        );
     this.taskToSuccessBlockIds = taskToSuccessBlockIds;
     this.taskToFailedBlockIds = taskToFailedBlockIds;
     if (loop != null) {
@@ -253,10 +265,10 @@ public class RssShuffleManager implements ShuffleManager {
     LOG.info("Generate application id used in rss: " + id.get());
 
     String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
-    remoteStorage = new RemoteStorageInfo(
+    RemoteStorageInfo defaultRemoteStorage = new RemoteStorageInfo(
         sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""));
-    remoteStorage = ClientUtils.fetchRemoteStorage(
-        id.get(), remoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
+    RemoteStorageInfo remoteStorage = ClientUtils.fetchRemoteStorage(
+        id.get(), defaultRemoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
 
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
 
@@ -275,7 +287,7 @@ public class RssShuffleManager implements ShuffleManager {
                 1,
                 assignmentTags,
                 requiredShuffleServerNumber);
-        registerShuffleServers(id.get(), shuffleId, response.getServerToPartitionRanges());
+        registerShuffleServers(id.get(), shuffleId, response.getServerToPartitionRanges(), remoteStorage);
         return response.getPartitionToServers();
       }, retryInterval, retryTimes);
     } catch (Throwable throwable) {
@@ -551,6 +563,13 @@ public class RssShuffleManager implements ShuffleManager {
 
   @Override
   public boolean unregisterShuffle(int shuffleId) {
+    try {
+      if (SparkEnv.get().executorId().equals("driver")) {
+        shuffleWriteClient.unregisterShuffle(id.get(), shuffleId);
+      }
+    } catch (Exception e) {
+      LOG.warn("Errors on unregister to remote shuffle-servers", e);
+    }
     return true;
   }
 
@@ -586,7 +605,8 @@ public class RssShuffleManager implements ShuffleManager {
       String appId,
       int shuffleId,
       Map<ShuffleServerInfo,
-      List<PartitionRange>> serverToPartitionRanges) {
+      List<PartitionRange>> serverToPartitionRanges,
+      RemoteStorageInfo remoteStorage) {
     if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
       return;
     }
@@ -708,8 +728,7 @@ public class RssShuffleManager implements ShuffleManager {
     this.id = new AtomicReference<>(appId);
   }
 
-  @VisibleForTesting
-  public void setRemoteStorage(RemoteStorageInfo remoteStorage) {
-    this.remoteStorage = remoteStorage;
+  public String getId() {
+    return id.get();
   }
 }

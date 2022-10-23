@@ -110,6 +110,8 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     coordinatorConf.setBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
     coordinatorConf.setString(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
     coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 3);
+    coordinatorConf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 200);
+    coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES, 1);
     createCoordinatorServer(coordinatorConf);
     startServers();
 
@@ -127,6 +129,7 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     writeRemoteStorageConf(cfgFile, dynamicConf);
     waitForUpdate(Sets.newHashSet(remotePath2), coordinators.get(0).getApplicationManager());
     request = new RssFetchRemoteStorageRequest(appId);
+    Thread.sleep(1500);
     response = coordinatorClient.fetchRemoteStorage(request);
     // remotePath1 will be return because (appId -> remote storage path) is in cache
     remoteStorageInfo = response.getRemoteStorageInfo();
@@ -158,7 +161,8 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     coordinatorConf.setBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
     coordinatorConf.setString(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
     coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 2);
-    coordinatorConf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_SCHEDULE_TIME, 500);
+    coordinatorConf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 100);
+    coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES, 1);
     coordinatorConf.set(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY, IO_SAMPLE);
     createCoordinatorServer(coordinatorConf);
     startServers();

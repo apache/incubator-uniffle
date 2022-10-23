@@ -138,21 +138,40 @@ public class CoordinatorConf extends RssBaseConf {
       .enumType(ApplicationManager.StrategyName.class)
       .defaultValue(APP_BALANCE)
       .withDescription("Strategy for selecting the remote path");
-  public static final ConfigOption<Long> COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_SCHEDULE_TIME = ConfigOptions
-      .key("rss.coordinator.remote.storage.io.sample.schedule.time")
+  public static final ConfigOption<Long> COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME = ConfigOptions
+      .key("rss.coordinator.remote.storage.schedule.time")
       .longType()
       .defaultValue(60 * 1000L)
       .withDescription("The time of scheduling the read and write time of the paths to obtain different HDFS");
-  public static final ConfigOption<Integer> COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_FILE_SIZE = ConfigOptions
-      .key("rss.coordinator.remote.storage.io.sample.file.size")
+  public static final ConfigOption<Integer> COORDINATOR_REMOTE_STORAGE_SCHEDULE_FILE_SIZE = ConfigOptions
+      .key("rss.coordinator.remote.storage.schedule.file.size")
       .intType()
       .defaultValue(204800 * 1000)
       .withDescription("The size of the file that the scheduled thread reads and writes");
-  public static final ConfigOption<Integer> COORDINATOR_REMOTE_STORAGE_IO_SAMPLE_ACCESS_TIMES = ConfigOptions
-      .key("rss.coordinator.remote.storage.io.sample.access.times")
+  public static final ConfigOption<Integer> COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES = ConfigOptions
+      .key("rss.coordinator.remote.storage.schedule.access.times")
       .intType()
       .defaultValue(3)
       .withDescription("The number of times to read and write HDFS files");
+  public static final ConfigOption<AbstractAssignmentStrategy.HostAssignmentStrategy>
+      COORDINATOR_ASSGINMENT_HOST_STRATEGY =
+      ConfigOptions.key("rss.coordinator.assignment.host.strategy")
+          .enumType(AbstractAssignmentStrategy.HostAssignmentStrategy.class)
+          .defaultValue(AbstractAssignmentStrategy.HostAssignmentStrategy.PREFER_DIFF)
+          .withDescription("Strategy for selecting shuffle servers");
+  public static final ConfigOption<Boolean> COORDINATOR_START_SILENT_PERIOD_ENABLED = ConfigOptions
+      .key("rss.coordinator.startup-silent-period.enabled")
+      .booleanType()
+      .defaultValue(false)
+      .withDescription("Enable the startup-silent-period to reject the assignment requests "
+          + "for avoiding partial assignments. To avoid service interruption, this mechanism is disabled by default. "
+          + "Especially it's recommended to use in coordinator HA mode when restarting single coordinator.");
+  public static final ConfigOption<Long> COORDINATOR_START_SILENT_PERIOD_DURATION = ConfigOptions
+      .key("rss.coordinator.startup-silent-period.duration")
+      .longType()
+      .defaultValue(20 * 1000L)
+      .withDescription("The waiting duration(ms) when conf of "
+          + COORDINATOR_START_SILENT_PERIOD_ENABLED + " is enabled.");
 
   public CoordinatorConf() {
   }

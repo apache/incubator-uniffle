@@ -17,12 +17,11 @@
 
 package org.apache.uniffle.server.storage;
 
-import java.util.Set;
-
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
+import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
@@ -41,7 +40,7 @@ public interface StorageManager {
 
   // todo: add an interface for updateReadMetrics
 
-  void removeResources(String appId, Set<Integer> shuffleSet, String user);
+  void removeResources(PurgeEvent event);
 
   void start();
 

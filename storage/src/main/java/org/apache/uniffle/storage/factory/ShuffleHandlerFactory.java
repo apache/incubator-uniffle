@@ -17,13 +17,16 @@
 
 package org.apache.uniffle.storage.factory;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
 import org.apache.uniffle.client.util.ClientType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
 import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
 import org.apache.uniffle.storage.handler.impl.ComposedClientReadHandler;
@@ -51,142 +54,89 @@ public class ShuffleHandlerFactory {
   }
 
   public ClientReadHandler createShuffleReadHandler(CreateShuffleReadHandlerRequest request) {
-    if (StorageType.HDFS.name().equals(request.getStorageType())) {
-      return new HdfsClientReadHandler(
-          request.getAppId(),
-          request.getShuffleId(),
-          request.getPartitionId(),
-          request.getIndexReadLimit(),
-          request.getPartitionNumPerRange(),
-          request.getPartitionNum(),
-          request.getReadBufferSize(),
-          request.getExpectBlockIds(),
-          request.getProcessBlockIds(),
-          request.getStorageBasePath(),
-          request.getHadoopConf());
-    } else if (StorageType.LOCALFILE.name().equals(request.getStorageType())) {
-      List<ShuffleServerInfo> shuffleServerInfoList = request.getShuffleServerInfoList();
-      List<ShuffleServerClient> shuffleServerClients = shuffleServerInfoList.stream().map(
-          ssi -> ShuffleServerClientFactory.getInstance().getShuffleServerClient(ClientType.GRPC.name(), ssi)).collect(
-          Collectors.toList());
-      return new LocalFileQuorumClientReadHandler(request.getAppId(), request.getShuffleId(), request.getPartitionId(),
-          request.getIndexReadLimit(), request.getPartitionNumPerRange(), request.getPartitionNum(),
-          request.getReadBufferSize(), request.getExpectBlockIds(), request.getProcessBlockIds(),
-          shuffleServerClients);
-    } else if (StorageType.LOCALFILE_HDFS.name().equals(request.getStorageType())) {
-      List<ShuffleServerInfo> shuffleServerInfoList = request.getShuffleServerInfoList();
-      List<ShuffleServerClient> shuffleServerClients = shuffleServerInfoList.stream().map(
-          ssi -> ShuffleServerClientFactory.getInstance().getShuffleServerClient(
-              ClientType.GRPC.name(), ssi)).collect(
-          Collectors.toList());
-      return new ComposedClientReadHandler(() -> {
-        return new LocalFileQuorumClientReadHandler(
-            request.getAppId(),
-            request.getShuffleId(),
-            request.getPartitionId(),
-            request.getIndexReadLimit(),
-            request.getPartitionNumPerRange(),
-            request.getPartitionNum(),
-            request.getReadBufferSize(),
-            request.getExpectBlockIds(),
-            request.getProcessBlockIds(),
-            shuffleServerClients);
-      }, () -> {
-        return new HdfsClientReadHandler(
-            request.getAppId(),
-            request.getShuffleId(),
-            request.getPartitionId(),
-            request.getIndexReadLimit(),
-            request.getPartitionNumPerRange(),
-            request.getPartitionNum(),
-            request.getReadBufferSize(),
-            request.getExpectBlockIds(),
-            request.getProcessBlockIds(),
-            request.getStorageBasePath(),
-            request.getHadoopConf());
-      });
-    } else if (StorageType.MEMORY_LOCALFILE.name().equals(request.getStorageType())) {
-      List<ShuffleServerInfo> shuffleServerInfoList = request.getShuffleServerInfoList();
-      List<ShuffleServerClient> shuffleServerClients = shuffleServerInfoList.stream().map(
-          ssi -> ShuffleServerClientFactory.getInstance().getShuffleServerClient(
-              ClientType.GRPC.name(), ssi)).collect(
-          Collectors.toList());
-      ClientReadHandler memoryClientReadHandler = new MemoryQuorumClientReadHandler(
-          request.getAppId(),
-          request.getShuffleId(),
-          request.getPartitionId(),
-          request.getReadBufferSize(),
-          shuffleServerClients);
-      ClientReadHandler localClientReadHandler = new LocalFileQuorumClientReadHandler(request.getAppId(),
-          request.getShuffleId(), request.getPartitionId(), request.getIndexReadLimit(),
-          request.getPartitionNumPerRange(), request.getPartitionNum(),
-          request.getReadBufferSize(), request.getExpectBlockIds(), request.getProcessBlockIds(),
-          shuffleServerClients);
-      return new ComposedClientReadHandler(memoryClientReadHandler, localClientReadHandler);
-    } else if (StorageType.MEMORY_HDFS.name().equals(request.getStorageType())) {
-      List<ShuffleServerInfo> shuffleServerInfoList = request.getShuffleServerInfoList();
-      List<ShuffleServerClient> shuffleServerClients = shuffleServerInfoList.stream().map(
-          ssi -> ShuffleServerClientFactory.getInstance().getShuffleServerClient(
-              ClientType.GRPC.name(), ssi)).collect(
-          Collectors.toList());
-      return new ComposedClientReadHandler(() -> {
-        return new MemoryQuorumClientReadHandler(
-          request.getAppId(),
-          request.getShuffleId(),
-          request.getPartitionId(),
-          request.getReadBufferSize(),
-          shuffleServerClients);
-      }, () -> {
-        return new HdfsClientReadHandler(
-            request.getAppId(),
-            request.getShuffleId(),
-            request.getPartitionId(),
-            request.getIndexReadLimit(),
-            request.getPartitionNumPerRange(),
-            request.getPartitionNum(),
-            request.getReadBufferSize(),
-            request.getExpectBlockIds(),
-            request.getProcessBlockIds(),
-            request.getStorageBasePath(),
-            request.getHadoopConf());
-      });
-    } else if (StorageType.MEMORY_LOCALFILE_HDFS.name().equals(request.getStorageType())) {
-      List<ShuffleServerInfo> shuffleServerInfoList = request.getShuffleServerInfoList();
-      List<ShuffleServerClient> shuffleServerClients = shuffleServerInfoList.stream().map(
-          ssi -> ShuffleServerClientFactory.getInstance().getShuffleServerClient(
-              ClientType.GRPC.name(), ssi)).collect(
-          Collectors.toList());
-      return new ComposedClientReadHandler(() -> {
-        return new MemoryQuorumClientReadHandler(
-            request.getAppId(),
-            request.getShuffleId(),
-            request.getPartitionId(),
-            request.getReadBufferSize(),
-            shuffleServerClients);
-      }, () -> {
-        return new LocalFileQuorumClientReadHandler(request.getAppId(),
-            request.getShuffleId(), request.getPartitionId(), request.getIndexReadLimit(),
-            request.getPartitionNumPerRange(), request.getPartitionNum(),
-            request.getReadBufferSize(), request.getExpectBlockIds(), request.getProcessBlockIds(),
-            shuffleServerClients);
-      }, () -> {
-        return  new HdfsClientReadHandler(
-            request.getAppId(),
-            request.getShuffleId(),
-            request.getPartitionId(),
-            request.getIndexReadLimit(),
-            request.getPartitionNumPerRange(),
-            request.getPartitionNum(),
-            request.getReadBufferSize(),
-            request.getExpectBlockIds(),
-            request.getProcessBlockIds(),
-            request.getStorageBasePath(),
-            request.getHadoopConf());
-      });
-    } else {
+    String storageType = request.getStorageType();
+    StorageType type = StorageType.valueOf(storageType);
+
+    if (StorageType.MEMORY == type) {
       throw new UnsupportedOperationException(
-          "Doesn't support storage type for client read handler:" + request.getStorageType());
+          "Doesn't support storage type for client read handler:" + storageType);
     }
+
+    if (StorageType.HDFS == type) {
+      return getHdfsClientReadHandler(request);
+    }
+    if (StorageType.LOCALFILE == type) {
+      return getLocalfileClientReaderHandler(request);
+    }
+
+    List<ClientReadHandler> handlers = new ArrayList<>();
+    if (StorageType.withMemory(type)) {
+      handlers.add(
+          getMemoryClientReadHandler(request)
+      );
+    }
+    if (StorageType.withLocalfile(type)) {
+      handlers.add(
+          getLocalfileClientReaderHandler(request)
+      );
+    }
+    if (StorageType.withHDFS(type)) {
+      handlers.add(
+          getHdfsClientReadHandler(request)
+      );
+    }
+    if (handlers.isEmpty()) {
+      throw new RssException("This should not happen due to the unknown storage type: " + storageType);
+    }
+
+    Callable<ClientReadHandler>[] callables =
+        handlers
+            .stream()
+            .map(x -> (Callable<ClientReadHandler>) () -> x)
+            .collect(Collectors.toList())
+            .toArray(new Callable[handlers.size()]);
+    return new ComposedClientReadHandler(callables);
+  }
+
+  private ClientReadHandler getMemoryClientReadHandler(CreateShuffleReadHandlerRequest request) {
+    List<ShuffleServerInfo> shuffleServerInfoList = request.getShuffleServerInfoList();
+    List<ShuffleServerClient> shuffleServerClients = shuffleServerInfoList.stream().map(
+        ssi -> ShuffleServerClientFactory.getInstance().getShuffleServerClient(
+            ClientType.GRPC.name(), ssi)).collect(
+        Collectors.toList());
+    ClientReadHandler memoryClientReadHandler = new MemoryQuorumClientReadHandler(
+        request.getAppId(),
+        request.getShuffleId(),
+        request.getPartitionId(),
+        request.getReadBufferSize(),
+        shuffleServerClients);
+    return memoryClientReadHandler;
+  }
+
+  private ClientReadHandler getLocalfileClientReaderHandler(CreateShuffleReadHandlerRequest request) {
+    List<ShuffleServerInfo> shuffleServerInfoList = request.getShuffleServerInfoList();
+    List<ShuffleServerClient> shuffleServerClients = shuffleServerInfoList.stream().map(
+        ssi -> ShuffleServerClientFactory.getInstance().getShuffleServerClient(ClientType.GRPC.name(), ssi)).collect(
+        Collectors.toList());
+    return new LocalFileQuorumClientReadHandler(request.getAppId(), request.getShuffleId(), request.getPartitionId(),
+        request.getIndexReadLimit(), request.getPartitionNumPerRange(), request.getPartitionNum(),
+        request.getReadBufferSize(), request.getExpectBlockIds(), request.getProcessBlockIds(),
+        shuffleServerClients);
+  }
+
+  private ClientReadHandler getHdfsClientReadHandler(CreateShuffleReadHandlerRequest request) {
+    return new HdfsClientReadHandler(
+        request.getAppId(),
+        request.getShuffleId(),
+        request.getPartitionId(),
+        request.getIndexReadLimit(),
+        request.getPartitionNumPerRange(),
+        request.getPartitionNum(),
+        request.getReadBufferSize(),
+        request.getExpectBlockIds(),
+        request.getProcessBlockIds(),
+        request.getStorageBasePath(),
+        request.getHadoopConf());
   }
 
   public ShuffleDeleteHandler createShuffleDeleteHandler(CreateShuffleDeleteHandlerRequest request) {

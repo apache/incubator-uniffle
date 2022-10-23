@@ -20,6 +20,11 @@ REGISTRY ?= UNKNOWN_REGISTRY
 
 MODULES ?= webhook controller
 
+# ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
+ENVTEST_K8S_VERSION = 1.22.1
+
+LOCAL_DIR=$(shell pwd)/local
+
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -59,7 +64,8 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: manifests generate fmt vet ## Run tests.
+test: manifests generate fmt vet envtest ## Run tests.
+	export KUBEBUILDER_ASSETS=$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCAL_DIR) -p path); \
 	go test ./... -coverprofile cover.out
 
 .PHONY: build
@@ -69,7 +75,7 @@ build: test ## Build manager binary.
     done
 
 # Build the docker image
-docker-build: test version
+docker-build: build version
 	@for module in ${MODULES}; do \
 		image=${REGISTRY}/rss-$$module:$$(cat VERSION); \
 		echo building $$image;\
@@ -77,36 +83,36 @@ docker-build: test version
 	done
 
 # Push the docker image
-docker-push: version docker-build
+docker-push: docker-build
 	@for module in ${MODULES}; do \
 		image=${REGISTRY}/rss-$$module:$$(cat VERSION); \
 		echo pushing $$image;\
 		docker push $$image; \
 	done
 
-CONTROLLER_GEN = $(shell pwd)/local/controller-gen
+CONTROLLER_GEN = $(LOCAL_DIR)/controller-gen
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
 	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0)
 	./hack/update-codegen.sh
 
-KUSTOMIZE = $(shell pwd)/local/kustomize
+KUSTOMIZE = $(LOCAL_DIR)/kustomize
 .PHONY: kustomize
 kustomize: ## Download kustomize locally if necessary.
 	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.5.2)
 
-ENVTEST = $(shell pwd)/local/setup-envtest
+ENVTEST = $(LOCAL_DIR)/setup-envtest
 .PHONY: envtest
 envtest: ## Download envtest-setup locally if necessary.
 	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
 
-GOIMPORTS = $(shell pwd)/local/goimports
+GOIMPORTS = $(LOCAL_DIR)/goimports
 .PHONY: goimports
 goimports: ## Download goimports locally if necessary.
 	$(call go-get-tool,$(GOIMPORTS),golang.org/x/tools/cmd/goimports@latest)
 	$(GOIMPORTS) -local github.com/apache/incubator-uniffle/deploy/kubernetes/operator -w .
 
-REVIVE = $(shell pwd)/local/revive
+REVIVE = $(LOCAL_DIR)/revive
 .PHONY: revive
 revive: ## Download revive locally if necessary.
 	$(call go-get-tool,$(REVIVE),github.com/mgechev/revive@latest)

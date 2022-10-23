@@ -54,6 +54,7 @@ import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
+import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
 import org.apache.uniffle.client.response.ClientResponse;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
@@ -66,6 +67,7 @@ import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
+import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -78,6 +80,7 @@ import org.apache.uniffle.common.util.ThreadUtils;
 public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleWriteClientImpl.class);
+
   private String clientType;
   private int retryMax;
   private long retryIntervalMax;
@@ -89,9 +92,10 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private int replicaWrite;
   private int replicaRead;
   private boolean replicaSkipEnabled;
-  private int dataTranferPoolSize;
   private int dataCommitPoolSize = -1;
   private final ForkJoinPool dataTransferPool;
+  private final int unregisterThreadPoolSize;
+  private final int unregisterRequestTimeSec;
 
   public ShuffleWriteClientImpl(
       String clientType,
@@ -103,7 +107,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int replicaRead,
       boolean replicaSkipEnabled,
       int dataTranferPoolSize,
-      int dataCommitPoolSize) {
+      int dataCommitPoolSize,
+      int unregisterThreadPoolSize,
+      int unregisterRequestTimeSec) {
     this.clientType = clientType;
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
@@ -114,9 +120,10 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     this.replicaWrite = replicaWrite;
     this.replicaRead = replicaRead;
     this.replicaSkipEnabled = replicaSkipEnabled;
-    this.dataTranferPoolSize = dataTranferPoolSize;
     this.dataTransferPool = new ForkJoinPool(dataTranferPoolSize);
     this.dataCommitPoolSize = dataCommitPoolSize;
+    this.unregisterThreadPoolSize = unregisterThreadPoolSize;
+    this.unregisterRequestTimeSec = unregisterRequestTimeSec;
   }
 
   private boolean sendShuffleDataAsync(
@@ -589,6 +596,50 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     heartBeatExecutorService.shutdownNow();
     coordinatorClients.forEach(CoordinatorClient::close);
     dataTransferPool.shutdownNow();
+  }
+
+  @Override
+  public void unregisterShuffle(String appId, int shuffleId) {
+    RssUnregisterShuffleRequest request = new RssUnregisterShuffleRequest(appId, shuffleId);
+    List<Callable<Void>> callableList = Lists.newArrayList();
+
+    shuffleServerInfoSet.stream().forEach(shuffleServerInfo -> {
+          callableList.add(() -> {
+            try {
+              ShuffleServerClient client =
+                  ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
+              RssUnregisterShuffleResponse response = client.unregisterShuffle(request);
+              if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
+                LOG.warn("Failed to unregister shuffle to " + shuffleServerInfo);
+              }
+            } catch (Exception e) {
+              LOG.warn("Error happened when unregistering to " + shuffleServerInfo, e);
+            }
+            return null;
+          });
+        }
+    );
+
+    ExecutorService executorService = null;
+    try {
+      executorService =
+          Executors.newFixedThreadPool(
+              Math.min(unregisterThreadPoolSize, shuffleServerInfoSet.size()),
+              ThreadUtils.getThreadFactory("unregister-shuffle-%d")
+          );
+      List<Future<Void>> futures = executorService.invokeAll(callableList, unregisterRequestTimeSec, TimeUnit.SECONDS);
+      for (Future<Void> future : futures) {
+        if (!future.isDone()) {
+          future.cancel(true);
+        }
+      }
+    } catch (InterruptedException ie) {
+      LOG.warn("Unregister shuffle is interrupted", ie);
+    } finally {
+      if (executorService != null) {
+        executorService.shutdownNow();
+      }
+    }
   }
 
   private void throwExceptionIfNecessary(ClientResponse response, String errorMsg) {

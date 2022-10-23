@@ -24,16 +24,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
-import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 public class LocalFileDeleteHandler implements ShuffleDeleteHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(LocalFileDeleteHandler.class);
 
   @Override
-  public void delete(String[] storageBasePaths, String appId, String user) {
-    for (String basePath : storageBasePaths) {
-      String shufflePath = ShuffleStorageUtils.getFullShuffleDataFolder(basePath, appId);
+  public void delete(String[] shuffleDataStoredPath, String appId, String user) {
+    for (String basePath : shuffleDataStoredPath) {
+      final String shufflePath = basePath;
       long start = System.currentTimeMillis();
       try {
         File baseFolder = new File(shufflePath);

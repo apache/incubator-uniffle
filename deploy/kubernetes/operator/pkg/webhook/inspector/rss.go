@@ -53,22 +53,10 @@ func (i *inspector) validateRSS(ar *admissionv1.AdmissionReview) *admissionv1.Ad
 			string(ar.Request.Object.Raw), err)
 		return util.AdmissionReviewFailed(ar, err)
 	}
-	// validate configurations for coordinators.
-	coordinator := newRSS.Spec.Coordinator
-	if len(coordinator.RPCNodePort) != int(*coordinator.Count) ||
-		len(coordinator.HTTPNodePort) != int(*coordinator.Count) {
-		return util.AdmissionReviewFailed(ar,
-			fmt.Errorf("invalid number of http or rpc node ports (%v/%v) <> (%v)",
-				len(coordinator.RPCNodePort), len(coordinator.HTTPNodePort), coordinator.Count))
-	}
-	if len(coordinator.ExcludeNodesFilePath) == 0 {
-		return util.AdmissionReviewFailed(ar,
-			fmt.Errorf("empty exclude nodes file path for coordinators"))
-	}
-	// validate configurations of logHostPath for coordinators.
-	coordinatorLogPath := newRSS.Spec.Coordinator.LogHostPath
-	if len(coordinatorLogPath) > 0 && len(newRSS.Spec.Coordinator.HostPathMounts[coordinatorLogPath]) == 0 {
-		return util.AdmissionReviewFailed(ar, fmt.Errorf("empty log volume mount path for coordinators"))
+	if err := validateCoordinator(newRSS.Spec.Coordinator); err != nil {
+		klog.Errorf("validate coordinator config of rss (%v) failed: %v",
+			utils.UniqueName(newRSS), err)
+		return util.AdmissionReviewFailed(ar, err)
 	}
 	// validate configurations of logHostPath for shuffle servers.
 	shuffleServerLogPath := newRSS.Spec.ShuffleServer.LogHostPath
@@ -154,4 +142,22 @@ func generateRSSPatches(ar *admissionv1.AdmissionReview,
 	}
 	klog.V(4).Infof("patch body (%v) for rss (%v)", string(patchBody), utils.UniqueName(rss))
 	return patchBody, nil
+}
+
+// validateCoordinator validates configurations for coordinators.
+func validateCoordinator(coordinator *unifflev1alpha1.CoordinatorConfig) error {
+	if len(coordinator.RPCNodePort) != int(*coordinator.Count) ||
+		len(coordinator.HTTPNodePort) != int(*coordinator.Count) {
+		return fmt.Errorf("invalid number of http or rpc node ports (%v/%v) <> (%v)",
+			len(coordinator.RPCNodePort), len(coordinator.HTTPNodePort), coordinator.Count)
+	}
+	if len(coordinator.ExcludeNodesFilePath) == 0 {
+		return fmt.Errorf("empty exclude nodes file path for coordinators")
+	}
+	// validate configurations of logHostPath for coordinators.
+	coordinatorLogPath := coordinator.LogHostPath
+	if len(coordinatorLogPath) > 0 && len(coordinator.HostPathMounts[coordinatorLogPath]) == 0 {
+		return fmt.Errorf("empty log volume mount path for coordinators")
+	}
+	return nil
 }

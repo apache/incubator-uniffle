@@ -83,17 +83,17 @@ cd $RSS_DIR || exit
 RSS_VERSION=$(mvn help:evaluate -Dexpression=project.version 2>/dev/null | grep -v "INFO" | grep -v "WARNING" | tail -n 1)
 RSS_FILE=rss-${RSS_VERSION}.tgz
 if [ ! -e "$RSS_FILE" ]; \
-  then sh build_distribution.sh \
+  then sh ./build_distribution.sh; \
   else echo "$RSS_FILE has been built"; \
 fi
 cd "$OLDPWD" || exit
 cp "$RSS_DIR/$RSS_FILE" .
 
-IMAGE=$REGISTRY/rss-server:$RSS_VERSION
-
-echo "building image: $IMAGE"
 GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 GIT_COMMIT=$(git describe --dirty --always --tags | sed 's/-/./g')
+echo "image version: ${IMAGE_VERSION:=$RSS_VERSION-$GIT_COMMIT}"
+IMAGE=$REGISTRY/rss-server:$IMAGE_VERSION
+echo "building image: $IMAGE"
 docker build -t "$IMAGE" \
              --build-arg RSS_VERSION="$RSS_VERSION" \
              --build-arg HADOOP_VERSION="$HADOOP_VERSION" \

@@ -49,4 +49,9 @@ public interface ClusterManager extends Closeable {
   List<ServerNode> list();
 
   int getShuffleNodesMax();
+
+  /**
+   * @return whether to be ready for serving
+   */
+  boolean isReadyForServe();
 }

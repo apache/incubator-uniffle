@@ -86,7 +86,6 @@ public class RssShuffleManager implements ShuffleManager {
   private final int dataCommitPoolSize;
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
-  private RemoteStorageInfo remoteStorage;
   private ThreadPoolExecutor threadPoolExecutor;
   private EventLoop eventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
 
@@ -160,11 +159,13 @@ public class RssShuffleManager implements ShuffleManager {
     long retryIntervalMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);
     int heartBeatThreadNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
     this.dataCommitPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE);
+    int unregisterThreadPoolSize = sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);
+    int unregisterRequestTimeoutSec = sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC);
     this.shuffleWriteClient = ShuffleClientFactory
         .getInstance()
         .createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum,
             dataReplica, dataReplicaWrite, dataReplicaRead, dataReplicaSkipEnabled, dataTransferPoolSize,
-            dataCommitPoolSize);
+            dataCommitPoolSize, unregisterThreadPoolSize, unregisterRequestTimeoutSec);
     registerCoordinator();
     // fetch client conf and apply them if necessary and disable ESS
     if (isDriver && dynamicConfEnabled) {
@@ -211,9 +212,10 @@ public class RssShuffleManager implements ShuffleManager {
     }
 
     String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
-    remoteStorage = new RemoteStorageInfo(sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""));
-    remoteStorage = ClientUtils.fetchRemoteStorage(
-        appId, remoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
+    RemoteStorageInfo defaultRemoteStorage = new RemoteStorageInfo(
+        sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""));
+    RemoteStorageInfo remoteStorage = ClientUtils.fetchRemoteStorage(
+        appId, defaultRemoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
 
     int partitionNumPerRange = sparkConf.get(RssSparkConfig.RSS_PARTITION_NUM_PER_RANGE);
 
@@ -231,7 +233,7 @@ public class RssShuffleManager implements ShuffleManager {
         ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
                 appId, shuffleId, dependency.partitioner().numPartitions(),
                 partitionNumPerRange, assignmentTags, requiredShuffleServerNumber);
-        registerShuffleServers(appId, shuffleId, response.getServerToPartitionRanges());
+        registerShuffleServers(appId, shuffleId, response.getServerToPartitionRanges(), remoteStorage);
         return response.getPartitionToServers();
       }, retryInterval, retryTimes);
     } catch (Throwable throwable) {
@@ -266,7 +268,8 @@ public class RssShuffleManager implements ShuffleManager {
   protected void registerShuffleServers(
       String appId,
       int shuffleId,
-      Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges) {
+      Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges,
+      RemoteStorageInfo remoteStorage) {
     if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
       return;
     }
@@ -370,6 +373,13 @@ public class RssShuffleManager implements ShuffleManager {
 
   @Override
   public boolean unregisterShuffle(int shuffleId) {
+    try {
+      if (SparkEnv.get().executorId().equals("driver")) {
+        shuffleWriteClient.unregisterShuffle(appId, shuffleId);
+      }
+    } catch (Exception e) {
+      LOG.warn("Errors on unregister to remote shuffle-servers", e);
+    }
     return true;
   }
 
@@ -471,8 +481,4 @@ public class RssShuffleManager implements ShuffleManager {
     this.appId = appId;
   }
 
-  @VisibleForTesting
-  public void setRemoteStorage(RemoteStorageInfo remoteStorage) {
-    this.remoteStorage = remoteStorage;
-  }
 }

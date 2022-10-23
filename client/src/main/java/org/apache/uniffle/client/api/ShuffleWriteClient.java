@@ -69,4 +69,6 @@ public interface ShuffleWriteClient {
       Map<ShuffleServerInfo, Set<Integer>> serverToPartitions, String appId, int shuffleId);
 
   void close();
+
+  void unregisterShuffle(String appId, int shuffleId);
 }

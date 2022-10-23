@@ -29,8 +29,6 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -52,7 +50,7 @@ public class ClientConfManagerTest {
   @TempDir
   private final File remotePath = new File("hdfs://rss");
   private static MiniDFSCluster cluster;
-  private Configuration hdfsConf = new Configuration();
+  private final Configuration hdfsConf = new Configuration();
 
   @BeforeEach
   public void setUp() {
@@ -172,11 +170,13 @@ public class ClientConfManagerTest {
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, updateIntervalSec);
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
+    conf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 60000);
+    conf.setInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES, 1);
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
     ApplicationManager applicationManager = new ApplicationManager(conf);
 
     final ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
-    Thread.sleep(500);
+    applicationManager.getSelectStorageStrategy().detectStorage();
     Set<String> expectedAvailablePath = Sets.newHashSet(remotePath1);
     assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
     RemoteStorageInfo remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId1");
@@ -186,6 +186,7 @@ public class ClientConfManagerTest {
     writeRemoteStorageConf(cfgFile, remotePath3);
     expectedAvailablePath = Sets.newHashSet(remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
+    applicationManager.getSelectStorageStrategy().detectStorage();
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId2");
     assertEquals(remotePath3, remoteStorageInfo.getPath());
 
@@ -193,6 +194,7 @@ public class ClientConfManagerTest {
     writeRemoteStorageConf(cfgFile, remotePath2 + Constants.COMMA_SPLIT_CHAR + remotePath3, confItems);
     expectedAvailablePath = Sets.newHashSet(remotePath2, remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
+    applicationManager.getSelectStorageStrategy().detectStorage();
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId3");
     assertEquals(remotePath2, remoteStorageInfo.getPath());
     assertEquals(2, remoteStorageInfo.getConfItems().size());
@@ -232,19 +234,19 @@ public class ClientConfManagerTest {
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, updateIntervalSec);
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
+    conf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 60000);
+    conf.setInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES, 1);
     conf.set(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY, IO_SAMPLE);
 
     ApplicationManager applicationManager = new ApplicationManager(conf);
-    // init IORankScheduler
-    Thread.sleep(2000);
+    // init readWriteRankScheduler
     LowestIOSampleCostSelectStorageStrategy selectStorageStrategy =
         (LowestIOSampleCostSelectStorageStrategy) applicationManager.getSelectStorageStrategy();
-    Path testPath = new Path("/test");
-    FileSystem fs = testPath.getFileSystem(hdfsConf);
-    selectStorageStrategy.setFs(fs);
+    String testPath = "/test";
 
     final ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
-    Thread.sleep(500);
+    // the reason for sleep here is to ensure that threads can be scheduled normally, the same below
+    applicationManager.getSelectStorageStrategy().detectStorage();
     Set<String> expectedAvailablePath = Sets.newHashSet(remotePath1);
     assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
     selectStorageStrategy.sortPathByRankValue(remotePath1, testPath, System.currentTimeMillis());
@@ -255,9 +257,9 @@ public class ClientConfManagerTest {
     writeRemoteStorageConf(cfgFile, remotePath3);
     expectedAvailablePath = Sets.newHashSet(remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
-    // The reason for setting the filesystem here is to trigger the execution of sortPathByRankValue
-    selectStorageStrategy.setFs(fs);
+
     selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, System.currentTimeMillis());
+    applicationManager.getSelectStorageStrategy().detectStorage();
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId2");
     assertEquals(remotePath3, remoteStorageInfo.getPath());
 
@@ -266,10 +268,9 @@ public class ClientConfManagerTest {
     writeRemoteStorageConf(cfgFile, remotePath2 + Constants.COMMA_SPLIT_CHAR + remotePath3, confItems);
     expectedAvailablePath = Sets.newHashSet(remotePath2, remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
-    selectStorageStrategy.setFs(fs);
     selectStorageStrategy.sortPathByRankValue(remotePath2, testPath, current);
-    selectStorageStrategy.setFs(fs);
     selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, current);
+    applicationManager.getSelectStorageStrategy().detectStorage();
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId3");
     assertEquals(remotePath2, remoteStorageInfo.getPath());
     assertEquals(2, remoteStorageInfo.getConfItems().size());

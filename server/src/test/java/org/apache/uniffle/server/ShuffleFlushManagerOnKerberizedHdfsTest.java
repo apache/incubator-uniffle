@@ -18,11 +18,11 @@
 package org.apache.uniffle.server;
 
 import java.io.FileNotFoundException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Level;
@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.KerberizedHdfsBase;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
+import org.apache.uniffle.server.event.AppPurgeEvent;
 import org.apache.uniffle.server.storage.HdfsStorageManager;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
@@ -134,7 +135,9 @@ public class ShuffleFlushManagerOnKerberizedHdfsTest extends KerberizedHdfsBase 
     manager.removeResources(appId1);
 
     assertTrue(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId1));
-    storageManager.removeResources(appId1, Sets.newHashSet(1), "alex");
+    storageManager.removeResources(
+        new AppPurgeEvent(appId1, "alex", Arrays.asList(1))
+    );
     assertFalse(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId1));
     try {
       kerberizedHdfs.getFileSystem().listStatus(new Path(remoteStorage.getPath() + "/" + appId1 + "/"));
@@ -151,7 +154,9 @@ public class ShuffleFlushManagerOnKerberizedHdfsTest extends KerberizedHdfsBase 
     assertEquals(1, size);
     manager.removeResources(appId2);
     assertTrue(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId2));
-    storageManager.removeResources(appId2, Sets.newHashSet(1), "alex");
+    storageManager.removeResources(
+        new AppPurgeEvent(appId2, "alex", Arrays.asList(1))
+    );
     assertFalse(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId2));
     assertEquals(0, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     size = storage.getHandlerSize();

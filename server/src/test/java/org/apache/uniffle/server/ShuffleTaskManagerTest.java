@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.server;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +32,7 @@ import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -49,10 +52,13 @@ import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.storage.HdfsTestBase;
 import org.apache.uniffle.storage.handler.impl.HdfsClientReadHandler;
+import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -248,6 +254,141 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
       fail("Exception should be thrown");
     } catch (Exception e) {
       assertTrue(e.getMessage().startsWith("Shuffle data commit timeout for"));
+    }
+  }
+
+  /**
+   * Clean up the shuffle data of stage level for one app
+   * @throws Exception
+   */
+  @Test
+  public void removeShuffleDataWithHdfsTest() throws Exception {
+    String confFile = ClassLoader.getSystemResource("server.conf").getFile();
+    ShuffleServerConf conf = new ShuffleServerConf(confFile);
+    String storageBasePath = HDFS_URI + "rss/clearTest";
+    conf.set(ShuffleServerConf.RPC_SERVER_PORT, 1234);
+    conf.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:9527");
+    conf.set(ShuffleServerConf.JETTY_HTTP_PORT, 12345);
+    conf.set(ShuffleServerConf.JETTY_CORE_POOL_SIZE, 64);
+    conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 128L);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
+    conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
+    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
+    conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
+
+    ShuffleServer shuffleServer = new ShuffleServer(conf);
+
+    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
+    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
+    StorageManager storageManager = shuffleServer.getStorageManager();
+    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(
+        conf, shuffleFlushManager, shuffleBufferManager, storageManager);
+
+    String appId = "removeShuffleDataTest1";
+    for (int i = 0; i < 4; i++) {
+      shuffleTaskManager.registerShuffle(
+          appId,
+          i,
+          Lists.newArrayList(new PartitionRange(0, 1)),
+          new RemoteStorageInfo(storageBasePath, Maps.newHashMap()),
+          StringUtils.EMPTY
+      );
+    }
+    shuffleTaskManager.refreshAppId(appId);
+
+    assertEquals(1, shuffleTaskManager.getAppIds().size());
+
+    ShufflePartitionedData partitionedData0 = createPartitionedData(1, 1, 35);
+
+    shuffleTaskManager.requireBuffer(35);
+    shuffleTaskManager.requireBuffer(35);
+    shuffleTaskManager.cacheShuffleData(appId, 0, false, partitionedData0);
+    shuffleTaskManager.updateCachedBlockIds(appId, 0, partitionedData0.getBlockList());
+    shuffleTaskManager.cacheShuffleData(appId, 1, false, partitionedData0);
+    shuffleTaskManager.updateCachedBlockIds(appId, 1, partitionedData0.getBlockList());
+    shuffleTaskManager.refreshAppId(appId);
+    shuffleTaskManager.checkResourceStatus();
+
+    assertEquals(1, shuffleTaskManager.getAppIds().size());
+
+    RangeMap<Integer, ShuffleBuffer> rangeMap = shuffleBufferManager.getBufferPool().get(appId).get(0);
+    assertFalse(rangeMap.asMapOfRanges().isEmpty());
+    shuffleTaskManager.commitShuffle(appId, 0);
+
+    // Before removing shuffle resources
+    String appBasePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath, appId);
+    String shufflePath0 = ShuffleStorageUtils.getFullShuffleDataFolder(appBasePath, "0");
+    assertTrue(fs.exists(new Path(shufflePath0)));
+
+    // After removing the shuffle id of 0 resources
+    shuffleTaskManager.removeShuffleDataSync(appId, 0);
+    assertFalse(fs.exists(new Path(shufflePath0)));
+    assertTrue(fs.exists(new Path(appBasePath)));
+    assertNull(shuffleBufferManager.getBufferPool().get(appId).get(0));
+    assertNotNull(shuffleBufferManager.getBufferPool().get(appId).get(1));
+  }
+
+  @Test
+  public void removeShuffleDataWithLocalfileTest() throws Exception {
+    String confFile = ClassLoader.getSystemResource("server.conf").getFile();
+    ShuffleServerConf conf = new ShuffleServerConf(confFile);
+    conf.set(ShuffleServerConf.RPC_SERVER_PORT, 1234);
+    conf.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:9527");
+    conf.set(ShuffleServerConf.JETTY_HTTP_PORT, 12345);
+    conf.set(ShuffleServerConf.JETTY_CORE_POOL_SIZE, 64);
+    conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 1000L);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
+    conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
+    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 100000L);
+    conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
+
+    conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, "LOCALFILE");
+    java.nio.file.Path path1 = Files.createTempDirectory("removeShuffleDataWithLocalfileTest");
+    java.nio.file.Path path2 = Files.createTempDirectory("removeShuffleDataWithLocalfileTest");
+    conf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH.key(),
+        path1.toAbsolutePath().toString() + "," + path2.toAbsolutePath().toString());
+
+    ShuffleServer shuffleServer = new ShuffleServer(conf);
+
+    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
+    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
+    StorageManager storageManager = shuffleServer.getStorageManager();
+    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(
+        conf, shuffleFlushManager, shuffleBufferManager, storageManager);
+
+    String appId = "removeShuffleDataWithLocalfileTest";
+
+    int shuffleNum = 4;
+    for (int i = 0; i < shuffleNum; i++) {
+      shuffleTaskManager.registerShuffle(
+          appId,
+          i,
+          Lists.newArrayList(new PartitionRange(0, 1)),
+          RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+          StringUtils.EMPTY
+      );
+
+      ShufflePartitionedData partitionedData0 = createPartitionedData(1, 1, 35);
+      shuffleTaskManager.requireBuffer(35);
+      shuffleTaskManager.cacheShuffleData(appId, i, false, partitionedData0);
+      shuffleTaskManager.updateCachedBlockIds(appId, i, partitionedData0.getBlockList());
+    }
+
+    assertEquals(1, shuffleTaskManager.getAppIds().size());
+
+    for (int i = 0; i < shuffleNum; i++) {
+      shuffleTaskManager.commitShuffle(appId, i);
+      shuffleTaskManager.removeShuffleDataSync(appId, i);
+    }
+
+    for (String path : conf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH)) {
+      String appPath = path + "/" + appId;
+      File[] files = new File(appPath).listFiles();
+      if (files != null) {
+        assertEquals(0, files.length);
+      }
     }
   }
 

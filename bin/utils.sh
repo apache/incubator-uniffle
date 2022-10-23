@@ -133,6 +133,14 @@ function is_jvm_process_running {
 
 }
 
+function is_port_in_use {
+  local port=$1
+  local tmp=$(lsof -i:$port | grep LISTEN)
+  if [[ "$tmp" != "" ]]; then
+    echo "port[$port] is already in use"
+    exit 1
+  fi
+}
 #---
 # load_rss_env: Export RSS environment variables
 #---

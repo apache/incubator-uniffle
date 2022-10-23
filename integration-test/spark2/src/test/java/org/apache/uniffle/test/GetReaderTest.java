@@ -79,6 +79,8 @@ public class GetReaderTest extends IntegrationTestBase {
     coordinatorConf.setInteger("rss.coordinator.dynamicClientConf.updateIntervalSec", 1);
     coordinatorConf.setInteger("rss.coordinator.access.candidates.updateIntervalSec", 1);
     coordinatorConf.setInteger("rss.coordinator.access.loadChecker.serverNum.threshold", 1);
+    coordinatorConf.setLong("rss.coordinator.remote.storage.schedule.time", 200);
+    coordinatorConf.setInteger("rss.coordinator.remote.storage.schedule.access.times", 1);
     createCoordinatorServer(coordinatorConf);
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
@@ -120,6 +122,8 @@ public class GetReaderTest extends IntegrationTestBase {
     JavaPairRDD<String, Tuple2<Integer, Integer>> javaPairRDD = TestUtils.combineByKeyRDD(TestUtils.getRDD(jsc2));
     ShuffleDependency shuffleDependency = (ShuffleDependency) javaPairRDD.rdd().dependencies().head();
     rssShuffleHandle = (RssShuffleHandle) shuffleDependency.shuffleHandle();
+    // the reason for sleep here is to ensure that threads can be scheduled normally
+    Thread.sleep(500);
     RemoteStorageInfo remoteStorageInfo3 = rssShuffleHandle.getRemoteStorage();
     assertEquals(remoteStorage1, remoteStorageInfo1.getPath());
     assertEquals(2, remoteStorageInfo3.getConfItems().size());
@@ -137,7 +141,6 @@ public class GetReaderTest extends IntegrationTestBase {
     assertNull(commonHadoopConf.get("k2"));
 
     // mock the scenario that get reader in an executor
-    rssShuffleManager.setRemoteStorage(null);
     rssShuffleReader = (RssShuffleReader) rssShuffleManager.getReader(
         rssShuffleHandle, 0, 0, mockTaskContextImpl);
     hadoopConf =  rssShuffleReader.getHadoopConf();

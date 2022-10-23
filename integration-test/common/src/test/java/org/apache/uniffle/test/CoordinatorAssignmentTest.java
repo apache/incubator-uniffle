@@ -34,23 +34,34 @@ import org.apache.uniffle.client.util.ClientType;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.coordinator.SimpleClusterManager;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class AssignmentServerNodesNumberTest extends CoordinatorTestBase {
-  private static final Logger LOG = LoggerFactory.getLogger(AssignmentServerNodesNumberTest.class);
+public class CoordinatorAssignmentTest extends CoordinatorTestBase {
+  private static final Logger LOG = LoggerFactory.getLogger(CoordinatorAssignmentTest.class);
   private static final int SHUFFLE_NODES_MAX = 10;
   private static final int SERVER_NUM = 10;
   private static final HashSet<String> TAGS = Sets.newHashSet("t1");
 
+  private static final String QUORUM =
+      LOCALHOST + ":" + COORDINATOR_PORT_1 + "," + LOCALHOST + ":" + COORDINATOR_PORT_2;
+
   @BeforeAll
   public static void setupServers() throws Exception {
-    CoordinatorConf coordinatorConf = getCoordinatorConf();
-    coordinatorConf.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2000);
-    coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, SHUFFLE_NODES_MAX);
-    createCoordinatorServer(coordinatorConf);
+    CoordinatorConf coordinatorConf1 = getCoordinatorConf();
+    coordinatorConf1.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2000);
+    coordinatorConf1.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, SHUFFLE_NODES_MAX);
+    createCoordinatorServer(coordinatorConf1);
+
+    CoordinatorConf coordinatorConf2 = getCoordinatorConf();
+    coordinatorConf2.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2000);
+    coordinatorConf2.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, SHUFFLE_NODES_MAX);
+    coordinatorConf2.setInteger(CoordinatorConf.RPC_SERVER_PORT, COORDINATOR_PORT_2);
+    coordinatorConf2.setInteger(CoordinatorConf.JETTY_HTTP_PORT, JETTY_PORT_2);
+    createCoordinatorServer(coordinatorConf2);
 
     for (int i = 0; i < SERVER_NUM; i++) {
       ShuffleServerConf shuffleServerConf = getShuffleServerConf();
@@ -65,6 +76,7 @@ public class AssignmentServerNodesNumberTest extends CoordinatorTestBase {
       shuffleServerConf.setInteger(RssBaseConf.RPC_SERVER_PORT, 18001 + i);
       shuffleServerConf.setInteger(RssBaseConf.JETTY_HTTP_PORT, 19010 + i);
       shuffleServerConf.set(ShuffleServerConf.TAGS, new ArrayList<>(TAGS));
+      shuffleServerConf.setString("rss.coordinator.quorum", QUORUM);
       createShuffleServer(shuffleServerConf);
     }
     startServers();
@@ -73,9 +85,34 @@ public class AssignmentServerNodesNumberTest extends CoordinatorTestBase {
   }
 
   @Test
+  public void testSilentPeriod() throws Exception {
+    ShuffleWriteClientImpl shuffleWriteClient = new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1,
+        1, 1, 1, true, 1, 1, 10, 10);
+    shuffleWriteClient.registerCoordinators(QUORUM);
+
+    // Case1: Disable silent period
+    ShuffleAssignmentsInfo info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, -1);
+    assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
+
+    // Case2: Enable silent period mechanism, it should fallback to slave coordinator.
+    SimpleClusterManager clusterManager = (SimpleClusterManager) coordinators.get(0).getClusterManager();
+    clusterManager.setReadyForServe(false);
+    clusterManager.setStartupSilentPeriodEnabled(true);
+    clusterManager.setStartTime(System.currentTimeMillis() - 1);
+
+    if (clusterManager.getNodesNum() < 10) {
+      info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, -1);
+      assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
+    }
+
+    // recover
+    clusterManager.setReadyForServe(true);
+  }
+
+  @Test
   public void testAssignmentServerNodesNumber() throws Exception {
     ShuffleWriteClientImpl shuffleWriteClient = new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1,
-        1, 1, 1, true, 1, 1);
+        1, 1, 1, true, 1, 1, 10, 10);
     shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
 
     /**

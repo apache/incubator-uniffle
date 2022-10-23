@@ -50,14 +50,15 @@ import org.apache.uniffle.common.PartitionRange;
  * ....
  **/
 
-public class PartitionBalanceAssignmentStrategy implements AssignmentStrategy {
+public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrategy {
 
   private static final Logger LOG = LoggerFactory.getLogger(PartitionBalanceAssignmentStrategy.class);
 
   private ClusterManager clusterManager;
   private Map<ServerNode, PartitionAssignmentInfo> serverToPartitions = Maps.newConcurrentMap();
 
-  public PartitionBalanceAssignmentStrategy(ClusterManager clusterManager) {
+  public PartitionBalanceAssignmentStrategy(ClusterManager clusterManager, CoordinatorConf conf) {
+    super(conf);
     this.clusterManager = clusterManager;
   }
 
@@ -119,7 +120,7 @@ public class PartitionBalanceAssignmentStrategy implements AssignmentStrategy {
         expectNum = nodes.size();
       }
 
-      List<ServerNode> candidatesNodes = nodes.subList(0, expectNum);
+      List<ServerNode> candidatesNodes = getCandidateNodes(nodes, expectNum);
       int idx = 0;
       List<PartitionRange> ranges = CoordinatorUtils.generateRanges(totalPartitionNum, 1);
       for (PartitionRange range : ranges) {

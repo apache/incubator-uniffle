@@ -19,6 +19,7 @@ package org.apache.uniffle.server;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -335,6 +336,11 @@ public class ShuffleFlushManager {
       LOG.error("Post pendingEvent queue fail!! App: " + flushEvent.getAppId() + " Shuffle "
           + flushEvent.getShuffleId() + " Partition " + flushEvent.getStartPartition());
     }
+  }
+
+  public void removeResourcesOfShuffleId(String appId, int shuffleId) {
+    Optional.ofNullable(handlers.get(appId)).ifPresent(x -> x.remove(shuffleId));
+    Optional.ofNullable(committedBlockIds.get(appId)).ifPresent(x -> x.remove(shuffleId));
   }
 
   private static class PendingShuffleFlushEvent {

@@ -66,6 +66,8 @@ jobs:
       fail-fast: false
     name: -P${{ matrix.profile }}
     steps:
+    - name: Set /etc/hosts mapping
+      run: sudo hostname "action-host" | sudo echo "127.0.0.1 action-host" | sudo tee -a /etc/hosts
     - name: Checkout project
       uses: actions/checkout@v2
     - name: Set up JDK ${{ inputs.java-version }}

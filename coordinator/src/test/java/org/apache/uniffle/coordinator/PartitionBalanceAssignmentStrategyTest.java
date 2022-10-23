@@ -20,7 +20,9 @@ package org.apache.uniffle.coordinator;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -34,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -49,7 +52,7 @@ public class PartitionBalanceAssignmentStrategyTest {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, shuffleNodesMax);
     clusterManager = new SimpleClusterManager(ssc, new Configuration());
-    strategy = new PartitionBalanceAssignmentStrategy(clusterManager);
+    strategy = new PartitionBalanceAssignmentStrategy(clusterManager, ssc);
   }
 
   @Test
@@ -181,7 +184,7 @@ public class PartitionBalanceAssignmentStrategyTest {
     for (int i = 0; i < 20; i++) {
       ServerNode node = new ServerNode(
           String.valueOf((char)('a' + i)),
-          "",
+          "127.0.0." + i,
           0,
           10L,
           5L,
@@ -198,7 +201,7 @@ public class PartitionBalanceAssignmentStrategyTest {
     Set<String> serverTags = Sets.newHashSet("tag-1");
 
     for (int i = 0; i < 20; ++i) {
-      clusterManager.add(new ServerNode("t1-" + i, "", 0, 0, 0,
+      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
           20 - i, 0, serverTags, true));
     }
 
@@ -268,7 +271,7 @@ public class PartitionBalanceAssignmentStrategyTest {
      */
     serverTags = Sets.newHashSet("tag-2");
     for (int i = 0; i < shuffleNodesMax - 1; ++i) {
-      clusterManager.add(new ServerNode("t2-" + i, "", 0, 0, 0,
+      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 0, 0, 0,
           20 - i, 0, serverTags, true));
     }
     pra = strategy.assign(100, 1, 1, serverTags, shuffleNodesMax);
@@ -281,5 +284,121 @@ public class PartitionBalanceAssignmentStrategyTest {
             .collect(Collectors.toSet())
             .size()
     );
+  }
+
+
+  @Test
+  public void testAssignmentWithMustDiff() throws Exception {
+    CoordinatorConf ssc = new CoordinatorConf();
+    ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, shuffleNodesMax);
+    ssc.set(CoordinatorConf.COORDINATOR_ASSGINMENT_HOST_STRATEGY,
+        AbstractAssignmentStrategy.HostAssignmentStrategy.MUST_DIFF);
+    SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
+    AssignmentStrategy strategy = new PartitionBalanceAssignmentStrategy(clusterManager, ssc);
+
+    Set<String> serverTags = Sets.newHashSet("tag-1");
+
+    for (int i = 0; i < 5; ++i) {
+      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
+          20 - i, 0, serverTags, true));
+    }
+    for (int i = 0; i < 5; ++i) {
+      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0,
+          20 - i, 0, serverTags, true));
+    }
+    PartitionRangeAssignment pra = strategy.assign(100, 1, 5, serverTags, -1);
+    pra.getAssignments().values().forEach((nodeList) -> {
+      Map<String, ServerNode> nodeMap = new HashMap<>();
+      nodeList.forEach((node) -> {
+        ServerNode serverNode = nodeMap.get(node.getIp());
+        assertNull(serverNode);
+        nodeMap.put(node.getIp(), node);
+      });
+    });
+
+    pra = strategy.assign(100, 1, 6, serverTags, -1);
+    pra.getAssignments().values().forEach((nodeList) -> {
+      Map<String, ServerNode> nodeMap = new HashMap<>();
+      boolean hasSameHost = false;
+      for (ServerNode node : nodeList) {
+        ServerNode serverNode = nodeMap.get(node.getIp());
+        if (serverNode != null) {
+          hasSameHost = true;
+          break;
+        }
+        assertNull(serverNode);
+        nodeMap.put(node.getIp(), node);
+      }
+      assertTrue(hasSameHost);
+    });
+  }
+
+  @Test
+  public void testAssignmentWithPreferDiff() throws Exception {
+    CoordinatorConf ssc = new CoordinatorConf();
+    ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, shuffleNodesMax);
+    ssc.set(CoordinatorConf.COORDINATOR_ASSGINMENT_HOST_STRATEGY,
+        AbstractAssignmentStrategy.HostAssignmentStrategy.PREFER_DIFF);
+    SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
+    AssignmentStrategy strategy = new PartitionBalanceAssignmentStrategy(clusterManager, ssc);
+    Set<String> serverTags = Sets.newHashSet("tag-1");
+
+    for (int i = 0; i < 3; ++i) {
+      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
+          20 - i, 0, serverTags, true));
+    }
+    for (int i = 0; i < 2; ++i) {
+      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0,
+          20 - i, 0, serverTags, true));
+    }
+    PartitionRangeAssignment pra = strategy.assign(100, 1, 5, serverTags, -1);
+    pra.getAssignments().values().forEach((nodeList) -> {
+      assertEquals(5, nodeList.size());
+    });
+
+    ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, 3);
+    clusterManager = new SimpleClusterManager(ssc, new Configuration());
+    for (int i = 0; i < 3; ++i) {
+      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
+          20 - i, 0, serverTags, true));
+    }
+    for (int i = 0; i < 2; ++i) {
+      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0,
+          20 - i, 0, serverTags, true));
+    }
+    strategy = new PartitionBalanceAssignmentStrategy(clusterManager, ssc);
+    pra = strategy.assign(100, 1, 3, serverTags, -1);
+    pra.getAssignments().values().forEach((nodeList) -> {
+      Map<String, ServerNode> nodeMap = new HashMap<>();
+      nodeList.forEach((node) -> {
+        ServerNode serverNode = nodeMap.get(node.getIp());
+        assertNull(serverNode);
+        nodeMap.put(node.getIp(), node);
+      });
+    });
+  }
+
+  @Test
+  public void testAssignmentWithNone() throws Exception {
+    CoordinatorConf ssc = new CoordinatorConf();
+    ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, shuffleNodesMax);
+    ssc.set(CoordinatorConf.COORDINATOR_ASSGINMENT_HOST_STRATEGY,
+        AbstractAssignmentStrategy.HostAssignmentStrategy.NONE);
+    SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
+    AssignmentStrategy strategy = new PartitionBalanceAssignmentStrategy(clusterManager, ssc);
+    Set<String> serverTags = Sets.newHashSet("tag-1");
+
+    for (int i = 0; i < 3; ++i) {
+      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
+          20 - i, 0, serverTags, true));
+    }
+    for (int i = 0; i < 2; ++i) {
+      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0,
+          20 - i, 0, serverTags, true));
+    }
+    PartitionRangeAssignment pra = strategy.assign(100, 1, 5, serverTags, -1);
+    pra.getAssignments().values().forEach((nodeList) -> {
+      assertEquals(5, nodeList.size());
+    });
   }
 }

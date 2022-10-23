@@ -48,7 +48,9 @@ MAIN_CLASS="org.apache.uniffle.server.ShuffleServer"
 HADOOP_DEPENDENCY="$("$HADOOP_HOME/bin/hadoop" classpath --glob)"
 
 echo "Check process existence"
-is_jvm_process_running "$JPS" $MAIN_CLASS
+RPC_PORT=`grep '^rss.rpc.server.port' $SHUFFLE_SERVER_CONF_FILE |awk '{print $2}'`
+is_port_in_use $RPC_PORT
+
 
 CLASSPATH=""
 

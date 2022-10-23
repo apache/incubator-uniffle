@@ -52,6 +52,7 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
+import org.apache.uniffle.server.event.AppPurgeEvent;
 import org.apache.uniffle.server.storage.HdfsStorageManager;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
@@ -229,7 +230,9 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     manager.removeResources(appId1);
 
     assertTrue(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId1));
-    storageManager.removeResources(appId1, Sets.newHashSet(1), StringUtils.EMPTY);
+    storageManager.removeResources(
+        new AppPurgeEvent(appId1, StringUtils.EMPTY, Arrays.asList(1))
+    );
     assertFalse(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId1));
     try {
       fs.listStatus(new Path(remoteStorage.getPath() + "/" + appId1 + "/"));
@@ -244,7 +247,9 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     assertEquals(1, size);
     manager.removeResources(appId2);
     assertTrue(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId2));
-    storageManager.removeResources(appId2, Sets.newHashSet(1), StringUtils.EMPTY);
+    storageManager.removeResources(
+        new AppPurgeEvent(appId2, StringUtils.EMPTY, Arrays.asList(1))
+    );
     assertFalse(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId2));
     assertEquals(0, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     size = storage.getHandlerSize();
@@ -253,7 +258,9 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     // but thecache from appIdToStorages has removed, so we need to delete this path in hdfs
     Path path = new Path(remoteStorage.getPath() + "/" + appId2 + "/");
     assertTrue(fs.mkdirs(path));
-    storageManager.removeResources(appId2, Sets.newHashSet(1), StringUtils.EMPTY);
+    storageManager.removeResources(
+        new AppPurgeEvent(appId2, StringUtils.EMPTY, Lists.newArrayList(1))
+    );
     assertFalse(fs.exists(path));
     HdfsStorage storageByAppId = ((HdfsStorageManager) storageManager).getStorageByAppId(appId2);
     assertNull(storageByAppId);
@@ -286,7 +293,9 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     assertEquals(2, storage.getHandlerSize());
     File file = new File(tempDir, appId1);
     assertTrue(file.exists());
-    storageManager.removeResources(appId1, Sets.newHashSet(1), StringUtils.EMPTY);
+    storageManager.removeResources(
+        new AppPurgeEvent(appId1, StringUtils.EMPTY, Lists.newArrayList(1))
+    );
     manager.removeResources(appId1);
     assertFalse(file.exists());
     ShuffleDataFlushEvent event3 =
@@ -297,7 +306,9 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     assertEquals(5, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     assertEquals(1, storage.getHandlerSize());
     manager.removeResources(appId2);
-    storageManager.removeResources(appId2, Sets.newHashSet(1), StringUtils.EMPTY);
+    storageManager.removeResources(
+        new AppPurgeEvent(appId2, StringUtils.EMPTY, Lists.newArrayList(1))
+    );
     assertEquals(0, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     assertEquals(0, storage.getHandlerSize());
   }
