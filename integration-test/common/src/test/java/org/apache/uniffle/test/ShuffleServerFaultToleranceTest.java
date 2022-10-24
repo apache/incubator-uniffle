@@ -153,7 +153,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
       ShuffleBuffer shuffleBuffer2 = shuffleServers.get(2).getShuffleBufferManager()
           .getShuffleBuffer(testAppId, shuffleId, 0);
       if (shuffleBuffer.getBlocks().size() == 0 && shuffleBuffer.getInFlushBlockMap().size() == 0
-      && shuffleBuffer2.getBlocks().size() == 0 && shuffleBuffer2.getInFlushBlockMap().size() == 0) {
+          && shuffleBuffer2.getBlocks().size() == 0 && shuffleBuffer2.getInFlushBlockMap().size() == 0) {
         break;
       }
 
