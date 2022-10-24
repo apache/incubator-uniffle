@@ -33,23 +33,23 @@ public class DefaultStorageManagerFallbackStrategy extends AbstractStorageManage
   }
 
   @Override
-  public StorageManager tryFallback(StorageManager current, ShuffleDataFlushEvent event, StorageManager... options) {
+  public StorageManager tryFallback(StorageManager current, ShuffleDataFlushEvent event, StorageManager... candidates) {
     if (fallBackTimes > 0
         && (event.getRetryTimes() < fallBackTimes || event.getRetryTimes() % fallBackTimes > 0)) {
       return current;
     }
     int nextIdx = -1;
-    for (int i = 0; i < options.length; i++) {
-      if (current == options[i]) {
-        nextIdx = (i + 1) % options.length;
+    for (int i = 0; i < candidates.length; i++) {
+      if (current == candidates[i]) {
+        nextIdx = (i + 1) % candidates.length;
         break;
       }
     }
     if (nextIdx == -1) {
-      throw new RuntimeException("Current StorageManager is not in options");
+      throw new RuntimeException("Current StorageManager is not in candidates");
     }
-    for (int i = 0; i < options.length - 1; i++) {
-      StorageManager storageManager = options[(i + nextIdx) % options.length];
+    for (int i = 0; i < candidates.length - 1; i++) {
+      StorageManager storageManager = candidates[(i + nextIdx) % candidates.length];
       if (!storageManager.canWrite(event)) {
         continue;
       }

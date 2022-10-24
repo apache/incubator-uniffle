@@ -126,7 +126,7 @@ public abstract class SingleStorageManager implements StorageManager {
       }
       return true;
     } catch (Exception e) {
-      LOG.warn("", e);
+      LOG.warn("Exception happened when select storage", e);
       return false;
     }
   }

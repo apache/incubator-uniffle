@@ -28,5 +28,5 @@ public abstract class AbstractStorageManagerFallbackStrategy {
   }
   
   public abstract StorageManager tryFallback(
-      StorageManager current, ShuffleDataFlushEvent event, StorageManager... options);
+      StorageManager current, ShuffleDataFlushEvent event, StorageManager... candidates);
 }

@@ -296,6 +296,12 @@ public class ShuffleServerConf extends RssBaseConf {
         .defaultValue(64 * 1024 * 1024L)
         .withDescription("The threshold of single shuffle buffer flush");
 
+  public static final ConfigOption<Long> STORAGEMANAGER_CACHE_TIMEOUT = ConfigOptions
+      .key("rss.server.multistorage.storagemanager.cache.timeout")
+      .longType()
+      .defaultValue(60 * 1000L)
+      .withDescription("The timeout of the cache which record the mapping information");
+
   public ShuffleServerConf() {
   }
 
