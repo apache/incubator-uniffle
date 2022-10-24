@@ -44,4 +44,9 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
   @Override
   public void logConsumedBlockInfo() {
   }
+
+  @Override
+  public void fallback() {
+
+  }
 }

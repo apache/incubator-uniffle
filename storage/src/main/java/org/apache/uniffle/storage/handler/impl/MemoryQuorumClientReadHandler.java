@@ -33,6 +33,7 @@ public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
   private static final Logger LOG = LoggerFactory.getLogger(MemoryQuorumClientReadHandler.class);
   private long lastBlockId = Constants.INVALID_BLOCK_ID;
   private List<MemoryClientReadHandler> handlers = Lists.newLinkedList();
+  private boolean readAfterFallback;
 
   public MemoryQuorumClientReadHandler(
       String appId,
@@ -52,10 +53,16 @@ public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
 
   @Override
   public ShuffleDataResult readShuffleData() {
+    if (finished()) {
+      return null;
+    }
     boolean readSuccessful = false;
     ShuffleDataResult result = null;
 
     for (MemoryClientReadHandler handler: handlers) {
+      if (handler.finished()) {
+        continue;
+      }
       try {
         result = handler.readShuffleData();
         readSuccessful = true;
@@ -65,11 +72,26 @@ public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
       }
     }
 
-    if (!readSuccessful) {
+    if (!readSuccessful && !readAfterFallback) {
       throw new RssException("Failed to read in memory shuffle data for appId[" + appId
           + "], shuffleId[" + shuffleId + "], partitionId[" + partitionId + "]");
     }
 
     return result;
+  }
+
+  @Override
+  public void fallback() {
+    readAfterFallback = true;
+  }
+
+  @Override
+  public boolean finished() {
+    for (MemoryClientReadHandler handler : handlers) {
+      if (!handler.finished()) {
+        return false;
+      }
+    }
+    return true;
   }
 }

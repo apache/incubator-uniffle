@@ -35,6 +35,7 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
   private static final Logger LOG = LoggerFactory.getLogger(MemoryClientReadHandler.class);
   private long lastBlockId = Constants.INVALID_BLOCK_ID;
   private ShuffleServerClient shuffleServerClient;
+  private boolean isFinished;
 
   public MemoryClientReadHandler(
       String appId,
@@ -70,8 +71,15 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
     if (!result.isEmpty()) {
       List<BufferSegment> bufferSegments = result.getBufferSegments();
       lastBlockId = bufferSegments.get(bufferSegments.size() - 1).getBlockId();
+    } else {
+      isFinished = true;
     }
 
     return result;
+  }
+
+  @Override
+  public boolean finished() {
+    return isFinished;
   }
 }

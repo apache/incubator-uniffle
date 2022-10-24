@@ -37,6 +37,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
 
   protected Roaring64NavigableMap expectBlockIds;
   protected Roaring64NavigableMap processBlockIds;
+  private boolean isFinished;
 
   public DataSkippableReadHandler(
       String appId,
@@ -61,6 +62,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
     if (shuffleDataSegments.isEmpty()) {
       ShuffleIndexResult shuffleIndexResult = readShuffleIndex();
       if (shuffleIndexResult == null || shuffleIndexResult.isEmpty()) {
+        isFinished = true;
         return null;
       }
 
@@ -87,6 +89,15 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
       }
       segmentIndex++;
     }
+
+    if (segmentIndex > shuffleDataSegments.size()) {
+      isFinished = true;
+    }
     return result;
+  }
+
+  @Override
+  public boolean finished() {
+    return isFinished;
   }
 }

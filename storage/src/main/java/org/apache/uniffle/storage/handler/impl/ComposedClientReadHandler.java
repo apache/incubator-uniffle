@@ -228,6 +228,40 @@ public class ComposedClientReadHandler implements ClientReadHandler {
     LOG.info(getReadUncompressLengthInfo());
   }
 
+  @Override
+  public void fallback() {
+    currentHandler = HOT;
+    if (hotDataReadHandler != null) {
+      hotDataReadHandler.fallback();
+    }
+    if (warmDataReadHandler != null) {
+      warmDataReadHandler.fallback();
+    }
+    if (coldDataReadHandler != null) {
+      coldDataReadHandler.fallback();
+    }
+    if (frozenDataReadHandler != null) {
+      frozenDataReadHandler.fallback();
+    }
+  }
+
+  @Override
+  public boolean finished() {
+    if (hotDataReadHandler != null && !hotDataReadHandler.finished()) {
+      return false;
+    }
+    if (warmDataReadHandler != null && !warmDataReadHandler.finished()) {
+      return false;
+    }
+    if (coldDataReadHandler != null && !coldDataReadHandler.finished()) {
+      return false;
+    }
+    if (frozenDataReadHandler != null && !frozenDataReadHandler.finished()) {
+      return false;
+    }
+    return true;
+  }
+
   @VisibleForTesting
   public String getReadBlokNumInfo() {
     long totalBlockNum = hotReadBlockNum + warmReadBlockNum

@@ -60,6 +60,8 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private AtomicLong crcCheckTime = new AtomicLong(0);
   private ClientReadHandler clientReadHandler;
   private final IdHelper idHelper;
+  private int fallbackTimes;
+  private int maxFallbackTimes = 3;
 
   public ShuffleReadClientImpl(
       String storageType,
@@ -128,7 +130,20 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
 
     // if need request new data from shuffle server
     if (bufferSegmentQueue.isEmpty()) {
-      if (read() <= 0) {
+      while (read() <= 0) {
+        if (clientReadHandler.finished()) {
+          return null;
+        }
+        try {
+          checkProcessedBlockIds();
+        } catch (RssException e) {
+          if (fallbackTimes >= maxFallbackTimes) {
+            return null;
+          }
+          fallbackTimes++;
+          clientReadHandler.fallback();
+          continue;
+        }
         return null;
       }
     }

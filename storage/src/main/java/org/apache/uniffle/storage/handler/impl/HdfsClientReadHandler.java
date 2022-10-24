@@ -127,21 +127,32 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       init(fullShufflePath);
     }
 
-    if (readHandlerIndex >= readHandlers.size()) {
+    if (finished()) {
       return new ShuffleDataResult();
     }
 
-    HdfsShuffleReadHandler hdfsShuffleFileReader = readHandlers.get(readHandlerIndex);
-    ShuffleDataResult shuffleDataResult = hdfsShuffleFileReader.readShuffleData();
-
-    while (shuffleDataResult == null) {
-      ++readHandlerIndex;
+    HdfsShuffleReadHandler hdfsShuffleFileReader;
+    ShuffleDataResult shuffleDataResult = null;
+    do {
       if (readHandlerIndex >= readHandlers.size()) {
         return new ShuffleDataResult();
       }
       hdfsShuffleFileReader = readHandlers.get(readHandlerIndex);
-      shuffleDataResult = hdfsShuffleFileReader.readShuffleData();
-    }
+      if (hdfsShuffleFileReader.finished()) {
+        ++readHandlerIndex;
+        continue;
+      }
+      try {
+        shuffleDataResult = hdfsShuffleFileReader.readShuffleData();
+      } catch (Exception e) {
+        ++readHandlerIndex;
+        continue;
+      }
+
+      if (shuffleDataResult == null || shuffleDataResult.isEmpty()) {
+        ++readHandlerIndex;
+      }
+    } while (shuffleDataResult == null || shuffleDataResult.isEmpty());
 
     return shuffleDataResult;
   }
@@ -180,5 +191,20 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
   public void logConsumedBlockInfo() {
     LOG.info("Client read " + readBlockNum + " blocks,"
         + " bytes:" +  readLength + "  uncompressed bytes:" + readUncompressLength);
+  }
+
+  @Override
+  public void fallback() {
+    readHandlerIndex = 0;
+  }
+
+  @Override
+  public boolean finished() {
+    for (HdfsShuffleReadHandler readHandler : readHandlers) {
+      if (!readHandler.finished()) {
+        return false;
+      }
+    }
+    return true;
   }
 }
