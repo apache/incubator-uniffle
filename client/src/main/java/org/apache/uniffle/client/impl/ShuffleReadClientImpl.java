@@ -61,8 +61,11 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private ClientReadHandler clientReadHandler;
   private final IdHelper idHelper;
   private int fallbackTimes;
-  private int maxFallbackTimes = 3;
+  public static final int DEFAULT_MAX_FALLBACK_TIMES = 3;
+  private int maxFallbackTimes;
 
+  // Only for test
+  @VisibleForTesting
   public ShuffleReadClientImpl(
       String storageType,
       String appId,
@@ -78,6 +81,27 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
       IdHelper idHelper) {
+    this(storageType, appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange,
+        partitionNum, readBufferSize, storageBasePath, blockIdBitmap, taskIdBitmap,
+        shuffleServerInfoList, hadoopConf, idHelper, DEFAULT_MAX_FALLBACK_TIMES);
+  }
+
+  public ShuffleReadClientImpl(
+      String storageType,
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int indexReadLimit,
+      int partitionNumPerRange,
+      int partitionNum,
+      int readBufferSize,
+      String storageBasePath,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap taskIdBitmap,
+      List<ShuffleServerInfo> shuffleServerInfoList,
+      Configuration hadoopConf,
+      IdHelper idHelper,
+      int maxFallbackTimes) {
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.blockIdBitmap = blockIdBitmap;
@@ -114,6 +138,8 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     pendingBlockIds = RssUtils.cloneBitMap(blockIdBitmap);
 
     clientReadHandler = ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
+
+    this.maxFallbackTimes = maxFallbackTimes;
   }
 
   @Override

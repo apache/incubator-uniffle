@@ -73,7 +73,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
 
     RssShuffleReader rssShuffleReaderSpy = spy(new RssShuffleReader<String, String>(0, 1, contextMock,
         handleMock, basePath, 1000, conf, StorageType.HDFS.name(),
-        1000, 2, 10, blockIdBitmap, taskIdBitmap));
+        1000, 2, 10, blockIdBitmap, taskIdBitmap, 3));
 
     validateResult(rssShuffleReaderSpy.read(), expectedData, 10);
   }

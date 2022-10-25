@@ -354,13 +354,13 @@ public class RssShuffleManager implements ShuffleManager {
       final String shuffleRemoteStoragePath = shuffleRemoteStorageInfo.getPath();
       Configuration readerHadoopConf = RssSparkShuffleUtils.getRemoteStorageHadoopConf(
           sparkConf, shuffleRemoteStorageInfo);
-
+      int maxFallbackTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_READ_FALLBACK_MAX_TIMES);
       return new RssShuffleReader<K, C>(
           startPartition, endPartition, context,
           rssShuffleHandle, shuffleRemoteStoragePath, indexReadLimit,
           readerHadoopConf,
           storageType, (int) readBufferSize, partitionNumPerRange, partitionNum,
-          blockIdBitmap, taskIdBitmap);
+          blockIdBitmap, taskIdBitmap, maxFallbackTimes);
     } else {
       throw new RuntimeException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }

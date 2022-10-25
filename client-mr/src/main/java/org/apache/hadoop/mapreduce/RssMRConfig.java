@@ -159,6 +159,11 @@ public class RssMRConfig {
           MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES;
   public static final int RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE =
           RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE;
+
+  public static final String RSS_CLIENT_READ_FALLBACK_MAX_TIMES =
+      MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_READ_FALLBACK_MAX_TIMES;
+  public static final int RSS_CLIENT_READ_FALLBACK_MAX_TIMES_DEFAULT_VALUE =
+      RssClientConfig.RSS_CLIENT_READ_FALLBACK_MAX_TIMES_DEFAULT_VALUE;
   
   public static final String RSS_CONF_FILE = "rss_conf.xml";
 
