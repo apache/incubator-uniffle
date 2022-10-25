@@ -131,7 +131,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
     RssGetShuffleIndexRequest rgsir = new RssGetShuffleIndexRequest(
         appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
     ShuffleIndexResult shuffleIndexResult = shuffleServerClient.getShuffleIndex(rgsir).getShuffleIndexResult();
-    return RssUtils.transIndexDataToSegments(shuffleIndexResult, readBufferSize, -1);
+    return RssUtils.transIndexDataToSegments(shuffleIndexResult, readBufferSize);
 
   }
 
@@ -175,7 +175,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
     if (shuffleIndexResult == null) {
       return new ShuffleDataResult();
     }
-    List<ShuffleDataSegment> sds = RssUtils.transIndexDataToSegments(shuffleIndexResult, readBufferSize, -1);
+    List<ShuffleDataSegment> sds = RssUtils.transIndexDataToSegments(shuffleIndexResult, readBufferSize);
 
     if (segmentIndex >= sds.size()) {
       return new ShuffleDataResult();

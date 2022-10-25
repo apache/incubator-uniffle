@@ -93,9 +93,4 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
     }
     return result;
   }
-
-  @Override
-  protected long getDataFileLen() {
-    return -1;
-  }
 }

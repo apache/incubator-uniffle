@@ -185,12 +185,13 @@ public class RssUtils {
   }
 
   public static List<ShuffleDataSegment> transIndexDataToSegments(
-      ShuffleIndexResult shuffleIndexResult, int readBufferSize, long dataFileLen) {
+      ShuffleIndexResult shuffleIndexResult, int readBufferSize) {
     if (shuffleIndexResult == null || shuffleIndexResult.isEmpty()) {
       return Lists.newArrayList();
     }
 
     byte[] indexData = shuffleIndexResult.getIndexData();
+    long dataFileLen = shuffleIndexResult.getDataFileLen();
     return transIndexDataToSegments(indexData, readBufferSize, dataFileLen);
   }
 
