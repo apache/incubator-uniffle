@@ -38,7 +38,6 @@ public class HdfsFileReader implements FileReader, Closeable {
   private Configuration hadoopConf;
   private FSDataInputStream fsDataInputStream;
   private FileSystem fileSystem;
-  private long fileLen = -1;
 
   public HdfsFileReader(Path path, Configuration hadoopConf) throws Exception {
     this.path = path;
@@ -96,9 +95,6 @@ public class HdfsFileReader implements FileReader, Closeable {
   }
 
   public long getFileLen() throws IOException {
-    if (fileLen == -1) {
-      fileLen = fileSystem.getFileStatus(path).getLen();
-    }
-    return fileLen;
+    return fileSystem.getFileStatus(path).getLen();
   }
 }
