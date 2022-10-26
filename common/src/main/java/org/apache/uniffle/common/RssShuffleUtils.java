@@ -22,44 +22,8 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 
 import com.google.common.base.Preconditions;
-import net.jpountz.lz4.LZ4Compressor;
-import net.jpountz.lz4.LZ4Factory;
-import net.jpountz.lz4.LZ4FastDecompressor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RssShuffleUtils {
-
-  private static final Logger LOG = LoggerFactory.getLogger(RssShuffleUtils.class);
-
-  public static byte[] compressData(byte[] data) {
-    LZ4Compressor compressor = LZ4Factory.fastestInstance().fastCompressor();
-    return compressor.compress(data);
-  }
-
-  public static byte[] decompressData(byte[] data, int uncompressLength) {
-    LZ4FastDecompressor fastDecompressor = LZ4Factory.fastestInstance().fastDecompressor();
-    byte[] uncompressData = new byte[uncompressLength];
-    fastDecompressor.decompress(data, 0, uncompressData, 0, uncompressLength);
-    return uncompressData;
-  }
-
-  public static ByteBuffer decompressData(ByteBuffer data, int uncompressLength) {
-    return decompressData(data, uncompressLength, true);
-  }
-
-  public static ByteBuffer decompressData(ByteBuffer data, int uncompressLength, boolean useDirectMem) {
-    LZ4FastDecompressor fastDecompressor = LZ4Factory.fastestInstance().fastDecompressor();
-    ByteBuffer uncompressData;
-    if (useDirectMem) {
-      uncompressData = ByteBuffer.allocateDirect(uncompressLength);
-    } else {
-      uncompressData = ByteBuffer.allocate(uncompressLength);
-    }
-    fastDecompressor.decompress(data, data.position(), uncompressData, 0, uncompressLength);
-    return uncompressData;
-  }
-  
   /**
    * DirectByteBuffers are garbage collected by using a phantom reference and a
    * reference queue. Every once a while, the JVM checks the reference queue and

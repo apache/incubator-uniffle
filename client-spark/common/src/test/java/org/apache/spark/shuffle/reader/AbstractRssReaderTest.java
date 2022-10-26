@@ -34,8 +34,9 @@ import scala.collection.Iterator;
 import scala.reflect.ClassTag$;
 
 import org.apache.uniffle.client.util.ClientUtils;
-import org.apache.uniffle.common.RssShuffleUtils;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.compression.Codec;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.storage.HdfsTestBase;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
@@ -90,7 +91,7 @@ public abstract class AbstractRssReaderTest extends HdfsTestBase {
   }
 
   protected ShufflePartitionedBlock createShuffleBlock(byte[] data, long blockId) {
-    byte[] compressData = RssShuffleUtils.compressData(data);
+    byte[] compressData = Codec.newInstance(new RssConf()).compress(data);
     long crc = ChecksumUtils.getCrc32(compressData);
     return new ShufflePartitionedBlock(compressData.length, data.length, crc, blockId, 0,
         compressData);

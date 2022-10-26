@@ -49,6 +49,7 @@ import scala.collection.mutable.MutableList;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -98,7 +99,7 @@ public class RssShuffleWriterTest {
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
     WriteBufferManager bufferManager = new WriteBufferManager(
         0, 0, bufferOptions, kryoSerializer,
-        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics());
+        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(), new RssConf());
     WriteBufferManager bufferManagerSpy = spy(bufferManager);
 
     RssShuffleWriter rssShuffleWriter = new RssShuffleWriter("appId", 0, "taskId", 1L,
@@ -206,7 +207,7 @@ public class RssShuffleWriterTest {
     ShuffleWriteMetrics shuffleWriteMetrics = new ShuffleWriteMetrics();
     WriteBufferManager bufferManager = new WriteBufferManager(
         0, 0, bufferOptions, kryoSerializer,
-        partitionToServers, mockTaskMemoryManager, shuffleWriteMetrics);
+        partitionToServers, mockTaskMemoryManager, shuffleWriteMetrics, new RssConf());
     WriteBufferManager bufferManagerSpy = spy(bufferManager);
     RssShuffleWriter rssShuffleWriter = new RssShuffleWriter("appId", 0, "taskId", 1L,
         bufferManagerSpy, shuffleWriteMetrics, manager, conf, mockShuffleWriteClient, mockHandle);
@@ -228,26 +229,14 @@ public class RssShuffleWriterTest {
 
     assertTrue(shuffleWriteMetrics.writeTime() > 0);
     assertEquals(6, shuffleWriteMetrics.recordsWritten());
-    // Spark3 and Spark2 use different version lz4, their length is different
-    // it can happen that 2 different platforms compress the same data differently,
-    // yet the decoded outcome remains identical to original.
-    // https://github.com/lz4/lz4/issues/812
-    if (TestUtils.isMacOnAppleSilicon()) {
-      assertEquals(144, shuffleWriteMetrics.bytesWritten());
-    } else {
-      assertEquals(120, shuffleWriteMetrics.bytesWritten());
-    }
+
+    assertEquals(
+        shuffleBlockInfos.stream().mapToInt(ShuffleBlockInfo::getLength).sum(),
+        shuffleWriteMetrics.bytesWritten()
+    );
 
     assertEquals(6, shuffleBlockInfos.size());
     for (ShuffleBlockInfo shuffleBlockInfo : shuffleBlockInfos) {
-      // it can happen that 2 different platforms compress the same data differently,
-      // yet the decoded outcome remains identical to original.
-      // https://github.com/lz4/lz4/issues/812
-      if (TestUtils.isMacOnAppleSilicon()) {
-        assertEquals(24, shuffleBlockInfo.getLength());
-      } else {
-        assertEquals(20, shuffleBlockInfo.getLength());
-      }
       assertEquals(22, shuffleBlockInfo.getUncompressLength());
       assertEquals(0, shuffleBlockInfo.getShuffleId());
       if (shuffleBlockInfo.getPartitionId() == 0) {

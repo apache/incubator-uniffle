@@ -197,7 +197,7 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
           readerJobConf, new MRIdHelper());
       ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
       RssFetcher fetcher = new RssFetcher(mrJobConf, reduceId, taskStatus, merger, copyPhase, reporter, metrics,
-          shuffleReadClient, blockIdBitmap.getLongCardinality());
+          shuffleReadClient, blockIdBitmap.getLongCardinality(), RssMRConfig.toRssConf(rssJobConf));
       fetcher.fetchAllRssBlocks();
       LOG.info("In reduce: " + reduceId
           + ", Rss MR client fetches blocks from RSS server successfully");

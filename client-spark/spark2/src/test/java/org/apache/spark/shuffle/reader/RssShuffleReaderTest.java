@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import scala.Option;
 
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.storage.handler.impl.HdfsShuffleWriteHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -73,7 +74,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
 
     RssShuffleReader rssShuffleReaderSpy = spy(new RssShuffleReader<String, String>(0, 1, contextMock,
         handleMock, basePath, 1000, conf, StorageType.HDFS.name(),
-        1000, 2, 10, blockIdBitmap, taskIdBitmap));
+        1000, 2, 10, blockIdBitmap, taskIdBitmap, new RssConf()));
 
     validateResult(rssShuffleReaderSpy.read(), expectedData, 10);
   }

@@ -38,6 +38,7 @@ import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.client.util.DefaultIdHelper;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.handler.impl.HdfsShuffleWriteHandler;
@@ -96,7 +97,7 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
         10, 10000, basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(),
         new Configuration(), new DefaultIdHelper());
     return new RssShuffleDataIterator(KRYO_SERIALIZER, readClient,
-        new ShuffleReadMetrics());
+        new ShuffleReadMetrics(), new RssConf());
   }
 
   @Test
@@ -119,7 +120,6 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
 
     validateResult(rssShuffleDataIterator, expectedData, 20);
     assertEquals(20, rssShuffleDataIterator.getShuffleReadMetrics().recordsRead());
-    assertEquals(256, rssShuffleDataIterator.getShuffleReadMetrics().remoteBytesRead());
     assertTrue(rssShuffleDataIterator.getShuffleReadMetrics().fetchWaitTime() > 0);
   }
 
@@ -250,7 +250,7 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
     ShuffleReadClient mockClient = mock(ShuffleReadClient.class);
     doNothing().when(mockClient).close();
     RssShuffleDataIterator dataIterator =
-        new RssShuffleDataIterator(KRYO_SERIALIZER, mockClient, new ShuffleReadMetrics());
+        new RssShuffleDataIterator(KRYO_SERIALIZER, mockClient, new ShuffleReadMetrics(), new RssConf());
     dataIterator.cleanup();
     verify(mockClient, times(1)).close();
   }

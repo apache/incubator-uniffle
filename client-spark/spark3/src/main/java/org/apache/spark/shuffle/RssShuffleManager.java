@@ -331,7 +331,7 @@ public class RssShuffleManager implements ShuffleManager {
     WriteBufferManager bufferManager = new WriteBufferManager(
         shuffleId, context.taskAttemptId(), bufferOptions, rssHandle.getDependency().serializer(),
         rssHandle.getPartitionToServers(), context.taskMemoryManager(),
-        writeMetrics);
+        writeMetrics, RssSparkConfig.toRssConf(sparkConf));
     taskToBufferManager.put(taskId, bufferManager);
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
     return new RssShuffleWriter(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(), bufferManager,
@@ -459,7 +459,8 @@ public class RssShuffleManager implements ShuffleManager {
         partitionNum,
         RssUtils.generatePartitionToBitmap(blockIdBitmap, startPartition, endPartition),
         taskIdBitmap,
-        readMetrics);
+        readMetrics,
+        RssSparkConfig.toRssConf(sparkConf));
   }
 
   private Roaring64NavigableMap getExpectedTasksByExecutorId(
