@@ -57,7 +57,7 @@ public class ZstdCodec extends Codec {
       return;
     }
 
-    throw new RssException("Zstd only supports the same type of bytebuffer decompression.");
+    throw new IllegalStateException("Zstd only supports the same type of bytebuffer decompression.");
   }
 
   @Override

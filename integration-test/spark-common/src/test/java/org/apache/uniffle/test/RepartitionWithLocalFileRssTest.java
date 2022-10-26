@@ -82,7 +82,7 @@ public class RepartitionWithLocalFileRssTest extends RepartitionTest {
             Codec.Type.NOOP,
             Codec.Type.ZSTD,
             Codec.Type.LZ4}) {
-      sparkConf.set("spark." + COMPRESSION_TYPE.key(), type.name());
+      sparkConf.set("spark." + COMPRESSION_TYPE.key().toLowerCase(), type.name());
       Map resultWithRss = runSparkApp(sparkConf, fileName);
       results.add(resultWithRss);
     }
