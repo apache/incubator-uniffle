@@ -132,7 +132,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
     }
 
     HdfsShuffleReadHandler hdfsShuffleFileReader;
-    ShuffleDataResult shuffleDataResult = null;
+    ShuffleDataResult shuffleDataResult;
     do {
       if (readHandlerIndex >= readHandlers.size()) {
         return new ShuffleDataResult();
@@ -151,10 +151,10 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
 
       if (shuffleDataResult == null || shuffleDataResult.isEmpty()) {
         ++readHandlerIndex;
+      } else {
+        return shuffleDataResult;
       }
-    } while (shuffleDataResult == null || shuffleDataResult.isEmpty());
-
-    return shuffleDataResult;
+    } while (true);
   }
 
   protected String getFileNamePrefix(String fileName) {
