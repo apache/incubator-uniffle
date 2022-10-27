@@ -38,6 +38,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -79,7 +80,8 @@ public class SortWriteBufferManagerTest {
         true,
         5,
         0.2f,
-        1024000L);
+        1024000L,
+        new RssConf());
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
@@ -128,7 +130,8 @@ public class SortWriteBufferManagerTest {
         true,
         5,
         0.2f,
-        1024000L);
+        1024000L,
+        new RssConf());
     byte[] key = new byte[20];
     byte[] value = new byte[1024];
     random.nextBytes(key);
@@ -176,7 +179,8 @@ public class SortWriteBufferManagerTest {
         true,
         5,
         0.2f,
-        100L);
+        100L,
+        new RssConf());
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
@@ -223,7 +227,8 @@ public class SortWriteBufferManagerTest {
         true,
         5,
         0.2f,
-        1024000L);
+        1024000L,
+        new RssConf());
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];

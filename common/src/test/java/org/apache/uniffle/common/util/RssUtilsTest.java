@@ -137,7 +137,7 @@ public class RssUtilsTest {
     }
 
     byte[] data = byteBuffer.array();
-    shuffleDataSegments = RssUtils.transIndexDataToSegments(new ShuffleIndexResult(data), readBufferSize);
+    shuffleDataSegments = RssUtils.transIndexDataToSegments(new ShuffleIndexResult(data, -1), readBufferSize);
     assertEquals(expectedTotalSegmentNum, shuffleDataSegments.size());
 
     assertEquals(0, shuffleDataSegments.get(0).getOffset());
@@ -158,7 +158,7 @@ public class RssUtilsTest {
     data = incompleteByteBuffer.array();
     // It should throw exception
     try {
-      RssUtils.transIndexDataToSegments(new ShuffleIndexResult(data), readBufferSize);
+      RssUtils.transIndexDataToSegments(new ShuffleIndexResult(data, -1), readBufferSize);
       fail();
     } catch (Exception e) {
       // ignore

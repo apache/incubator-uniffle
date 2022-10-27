@@ -140,14 +140,16 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
     int indexNum = 0;
     int len = 0;
     try (LocalFileReader reader = createFileReader(indexFileName)) {
-      long fileSize = new File(indexFileName).length();
-      indexNum = (int)  (fileSize / FileBasedShuffleSegment.SEGMENT_SIZE);
+      long indexFileSize = new File(indexFileName).length();
+      indexNum = (int)  (indexFileSize / FileBasedShuffleSegment.SEGMENT_SIZE);
       len = indexNum * FileBasedShuffleSegment.SEGMENT_SIZE;
-      if (fileSize != len) {
+      if (indexFileSize != len) {
         LOG.warn("Maybe the index file: {} is being written due to the shuffle-buffer flushing.", indexFileName);
       }
       byte[] indexData = reader.read(0, len);
-      return new ShuffleIndexResult(indexData);
+      // get dataFileSize for read segment generation in DataSkippableReadHandler#readShuffleData
+      long dataFileSize = new File(dataFileName).length();
+      return new ShuffleIndexResult(indexData, dataFileSize);
     } catch (Exception e) {
       LOG.error("Fail to read index file {} indexNum {} len {}",
           indexFileName, indexNum, len);

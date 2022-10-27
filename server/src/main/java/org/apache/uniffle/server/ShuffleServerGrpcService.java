@@ -556,6 +556,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             + " bytes with {}", readTime, data.length, requestInfo);
 
         builder.setIndexData(UnsafeByteOperations.unsafeWrap(data));
+        builder.setDataFileLen(shuffleIndexResult.getDataFileLen());
         reply = builder.build();
       } catch (FileNotFoundException indexFileNotFoundException) {
         LOG.warn("Index file for {} is not found, maybe the data has been flushed to cold storage.",

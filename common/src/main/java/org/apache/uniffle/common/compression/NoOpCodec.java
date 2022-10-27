@@ -15,18 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common;
+package org.apache.uniffle.common.compression;
 
-import org.junit.jupiter.api.Test;
+import java.nio.ByteBuffer;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+public class NoOpCodec extends Codec {
 
-public class ShuffleIndexResultTest {
-
-  @Test
-  public void testEmpty() {
-    assertTrue(new ShuffleIndexResult().isEmpty());
-    assertTrue(new ShuffleIndexResult(null, -1).isEmpty());
+  @Override
+  public void decompress(ByteBuffer src, int uncompressedLen, ByteBuffer dest, int destOffset) {
+    dest.put(src);
   }
 
+  @Override
+  public byte[] compress(byte[] src) {
+    byte[] dst = new byte[src.length];
+    System.arraycopy(src, 0, dst, 0, src.length);
+    return dst;
+  }
 }

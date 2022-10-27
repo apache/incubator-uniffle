@@ -331,7 +331,7 @@ public class RssShuffleManager implements ShuffleManager {
     WriteBufferManager bufferManager = new WriteBufferManager(
         shuffleId, context.taskAttemptId(), bufferOptions, rssHandle.getDependency().serializer(),
         rssHandle.getPartitionToServers(), context.taskMemoryManager(),
-        writeMetrics);
+        writeMetrics, RssSparkConfig.toRssConf(sparkConf));
     taskToBufferManager.put(taskId, bufferManager);
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
     return new RssShuffleWriter(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(), bufferManager,
@@ -443,7 +443,7 @@ public class RssShuffleManager implements ShuffleManager {
     final String shuffleRemoteStoragePath = shuffleRemoteStorageInfo.getPath();
     Configuration readerHadoopConf = RssSparkShuffleUtils.getRemoteStorageHadoopConf(
         sparkConf, shuffleRemoteStorageInfo);
-    int maxFallbackTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_READ_FALLBACK_MAX_TIMES);
+
     return new RssShuffleReader<K, C>(
         startPartition,
         endPartition,
@@ -460,7 +460,7 @@ public class RssShuffleManager implements ShuffleManager {
         RssUtils.generatePartitionToBitmap(blockIdBitmap, startPartition, endPartition),
         taskIdBitmap,
         readMetrics,
-        maxFallbackTimes);
+        RssSparkConfig.toRssConf(sparkConf));
   }
 
   private Roaring64NavigableMap getExpectedTasksByExecutorId(

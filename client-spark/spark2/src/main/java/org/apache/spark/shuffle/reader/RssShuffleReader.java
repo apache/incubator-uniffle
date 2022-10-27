@@ -44,6 +44,7 @@ import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssConf;
 
 public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 
@@ -55,7 +56,6 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private int endPartition;
   private TaskContext context;
   private ShuffleDependency<K, C, ?> shuffleDependency;
-  private int maxFallbackTimes;
   private Serializer serializer;
   private String taskId;
   private String basePath;
@@ -68,6 +68,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private Roaring64NavigableMap taskIdBitmap;
   private List<ShuffleServerInfo> shuffleServerInfoList;
   private Configuration hadoopConf;
+  private RssConf rssConf;
 
   public RssShuffleReader(
       int startPartition,
@@ -83,7 +84,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       int partitionNum,
       Roaring64NavigableMap blockIdBitmap,
       Roaring64NavigableMap taskIdBitmap,
-      int maxFallbackTimes) {
+      RssConf rssConf) {
     this.appId = rssShuffleHandle.getAppId();
     this.startPartition = startPartition;
     this.endPartition = endPartition;
@@ -103,7 +104,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.hadoopConf = hadoopConf;
     this.shuffleServerInfoList =
         (List<ShuffleServerInfo>) (rssShuffleHandle.getPartitionToServers().get(startPartition));
-    this.maxFallbackTimes = maxFallbackTimes;
+    this.rssConf = rssConf;
   }
 
   @Override
@@ -112,12 +113,11 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 
     CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
         appId, shuffleId, startPartition, storageType, basePath, indexReadLimit, readBufferSize,
-        partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
-        hadoopConf, maxFallbackTimes);
+        partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf);
     ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
     RssShuffleDataIterator rssShuffleDataIterator = new RssShuffleDataIterator<K, C>(
         shuffleDependency.serializer(), shuffleReadClient,
-        context.taskMetrics().shuffleReadMetrics());
+        context.taskMetrics().shuffleReadMetrics(), rssConf);
     CompletionIterator completionIterator =
         CompletionIterator$.MODULE$.apply(rssShuffleDataIterator, new AbstractFunction0<BoxedUnit>() {
           @Override

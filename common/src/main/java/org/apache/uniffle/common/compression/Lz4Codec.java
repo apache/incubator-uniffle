@@ -15,18 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common;
+package org.apache.uniffle.common.compression;
 
-import org.junit.jupiter.api.Test;
+import java.nio.ByteBuffer;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import net.jpountz.lz4.LZ4Factory;
 
-public class ShuffleIndexResultTest {
+public class Lz4Codec extends Codec {
 
-  @Test
-  public void testEmpty() {
-    assertTrue(new ShuffleIndexResult().isEmpty());
-    assertTrue(new ShuffleIndexResult(null, -1).isEmpty());
+  private LZ4Factory lz4Factory;
+
+  public Lz4Codec() {
+    this.lz4Factory = LZ4Factory.fastestInstance();
   }
 
+  @Override
+  public void decompress(ByteBuffer src, int uncompressedLen, ByteBuffer dest, int destOffset) {
+    lz4Factory.fastDecompressor().decompress(src, src.position(), dest, destOffset, uncompressedLen);
+  }
+
+  @Override
+  public byte[] compress(byte[] src) {
+    return lz4Factory.fastCompressor().compress(src);
+  }
 }

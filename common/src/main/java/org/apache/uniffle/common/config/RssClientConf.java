@@ -15,18 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common;
+package org.apache.uniffle.common.config;
 
-import org.junit.jupiter.api.Test;
+import org.apache.uniffle.common.compression.Codec;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.apache.uniffle.common.compression.Codec.Type.LZ4;
 
-public class ShuffleIndexResultTest {
+public class RssClientConf {
 
-  @Test
-  public void testEmpty() {
-    assertTrue(new ShuffleIndexResult().isEmpty());
-    assertTrue(new ShuffleIndexResult(null, -1).isEmpty());
-  }
+  public static final ConfigOption<Codec.Type> COMPRESSION_TYPE = ConfigOptions
+      .key("rss.client.io.compression.codec")
+      .enumType(Codec.Type.class)
+      .defaultValue(LZ4)
+      .withDescription("The compression codec is used to compress the shuffle data. "
+          + "Default codec is `LZ4`, `ZSTD` also can be used.");
 
+  public static final ConfigOption<Integer> ZSTD_COMPRESSION_LEVEL = ConfigOptions
+      .key("rss.client.io.compression.zstd.level")
+      .intType()
+      .defaultValue(3)
+      .withDescription("The zstd compression level, the default level is 3");
 }

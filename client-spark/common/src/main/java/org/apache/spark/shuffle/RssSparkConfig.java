@@ -20,13 +20,16 @@ package org.apache.spark.shuffle;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.spark.SparkConf;
 import org.apache.spark.internal.config.ConfigBuilder;
 import org.apache.spark.internal.config.ConfigEntry;
 import org.apache.spark.internal.config.TypedConfigBuilder;
+import scala.Tuple2;
 import scala.runtime.AbstractFunction1;
 
 import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.config.ConfigUtils;
+import org.apache.uniffle.common.config.RssConf;
 
 public class RssSparkConfig {
 
@@ -289,5 +292,18 @@ public class RssSparkConfig {
 
   public static TypedConfigBuilder<String> createStringBuilder(ConfigBuilder builder) {
     return builder.stringConf();
+  }
+
+  public static RssConf toRssConf(SparkConf sparkConf) {
+    RssConf rssConf = new RssConf();
+    for (Tuple2<String, String> tuple : sparkConf.getAll()) {
+      String key = tuple._1;
+      if (!key.startsWith(SPARK_RSS_CONFIG_PREFIX)) {
+        continue;
+      }
+      key = key.substring(SPARK_RSS_CONFIG_PREFIX.length());
+      rssConf.setString(key, tuple._2);
+    }
+    return rssConf;
   }
 }

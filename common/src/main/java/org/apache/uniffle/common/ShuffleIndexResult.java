@@ -19,17 +19,23 @@ package org.apache.uniffle.common;
 
 public class ShuffleIndexResult {
   private final byte[] indexData;
+  private long dataFileLen;
 
   public ShuffleIndexResult() {
-    this(new byte[0]);
+    this(new byte[0], -1);
   }
 
-  public ShuffleIndexResult(byte[] bytes) {
+  public ShuffleIndexResult(byte[] bytes, long dataFileLen) {
     this.indexData = bytes;
+    this.dataFileLen = dataFileLen;
   }
 
   public byte[] getIndexData() {
     return indexData;
+  }
+
+  public long getDataFileLen() {
+    return dataFileLen;
   }
 
   public boolean isEmpty() {

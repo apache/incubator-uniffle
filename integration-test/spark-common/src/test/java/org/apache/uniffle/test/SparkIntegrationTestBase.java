@@ -99,7 +99,7 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
     sparkConf.set(RssSparkConfig.RSS_HEARTBEAT_INTERVAL.key(), "2000");
   }
 
-  private void verifyTestResult(Map expected, Map actual) {
+  protected void verifyTestResult(Map expected, Map actual) {
     assertEquals(expected.size(), actual.size());
     for (Object expectedKey : expected.keySet()) {
       assertEquals(expected.get(expectedKey), actual.get(expectedKey));

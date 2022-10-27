@@ -92,6 +92,13 @@ public class ConfigOptionTest {
     } catch (IllegalArgumentException e) {
       // ignore
     }
+
+    // case5: the case insensitive
+    conf = new RssBaseConf();
+    conf.setString("rss.enum", "type_2");
+    assertEquals(TestType.TYPE_2, conf.get(enumConfigOption));
+    conf.setString("rss.enum", "TyPe_2");
+    assertEquals(TestType.TYPE_2, conf.get(enumConfigOption));
   }
 
   @Test
