@@ -122,7 +122,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
       if (composedClientReadHandler.finished()) {
         break;
       }
-      composedClientReadHandler.fallback();
+      composedClientReadHandler.nextRound();
       sdr  = composedClientReadHandler.readShuffleData();
     }
     Map<Long, byte[]> expectedData = Maps.newHashMap();

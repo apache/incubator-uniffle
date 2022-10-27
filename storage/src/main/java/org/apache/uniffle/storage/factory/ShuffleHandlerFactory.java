@@ -92,7 +92,10 @@ public class ShuffleHandlerFactory {
     Callable<ClientReadHandler>[] callables =
         handlers
             .stream()
-            .map(x -> (Callable<ClientReadHandler>) () -> x)
+            .map(x -> {
+              x.setMaxHanderFailTimes(request.getMaxHanderFailTimes());
+              return (Callable<ClientReadHandler>) () -> x;
+            })
             .collect(Collectors.toList())
             .toArray(new Callable[handlers.size()]);
     return new ComposedClientReadHandler(callables);

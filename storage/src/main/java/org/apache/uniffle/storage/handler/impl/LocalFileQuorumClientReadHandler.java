@@ -114,7 +114,7 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
   }
 
   @Override
-  public void fallback() {
+  public void nextRound() {
     readAfterFallback = true;
   }
 

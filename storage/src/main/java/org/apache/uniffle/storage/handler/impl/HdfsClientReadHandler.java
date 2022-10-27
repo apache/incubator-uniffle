@@ -194,7 +194,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
   }
 
   @Override
-  public void fallback() {
+  public void nextRound() {
     readHandlerIndex = 0;
   }
 

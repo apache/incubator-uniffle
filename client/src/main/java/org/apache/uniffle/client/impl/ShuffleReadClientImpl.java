@@ -60,9 +60,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private AtomicLong crcCheckTime = new AtomicLong(0);
   private ClientReadHandler clientReadHandler;
   private final IdHelper idHelper;
-  private int fallbackTimes;
   public static final int DEFAULT_MAX_FALLBACK_TIMES = 3;
-  private int maxFallbackTimes;
 
   // Only for test
   @VisibleForTesting
@@ -101,7 +99,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
       IdHelper idHelper,
-      int maxFallbackTimes) {
+      int maxHanderFailTimes) {
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.blockIdBitmap = blockIdBitmap;
@@ -122,6 +120,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setHadoopConf(hadoopConf);
     request.setExpectBlockIds(blockIdBitmap);
     request.setProcessBlockIds(processedBlockIds);
+    request.setMaxHanderFailTimes(maxHanderFailTimes);
 
     List<Long> removeBlockIds = Lists.newArrayList();
     blockIdBitmap.forEach(bid -> {
@@ -138,8 +137,6 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     pendingBlockIds = RssUtils.cloneBitMap(blockIdBitmap);
 
     clientReadHandler = ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
-
-    this.maxFallbackTimes = maxFallbackTimes;
   }
 
   @Override
@@ -163,11 +160,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
         try {
           checkProcessedBlockIds();
         } catch (RssException e) {
-          if (fallbackTimes >= maxFallbackTimes) {
-            return null;
-          }
-          fallbackTimes++;
-          clientReadHandler.fallback();
+          clientReadHandler.nextRound();
           continue;
         }
         return null;

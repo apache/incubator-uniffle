@@ -75,6 +75,6 @@ public class RssClientConfig {
       "rss.client.assignment.shuffle.nodes.max";
   public static final int RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER_DEFAULT_VALUE = -1;
 
-  public static final String RSS_CLIENT_READ_FALLBACK_MAX_TIMES = "rss.client.read.fallback.times.max";
-  public static final int RSS_CLIENT_READ_FALLBACK_MAX_TIMES_DEFAULT_VALUE = 3;
+  public static final String RSS_CLIENT_HANDLER_READ_MAX_FAIL_TIMES = "rss.client.handler.read.fail.times.max";
+  public static final int RSS_CLIENT_HANDLER_READ_MAX_FAIL_TIMES_DEFAULT_VALUE = 3;
 }

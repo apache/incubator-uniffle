@@ -229,19 +229,19 @@ public class ComposedClientReadHandler implements ClientReadHandler {
   }
 
   @Override
-  public void fallback() {
+  public void nextRound() {
     currentHandler = HOT;
     if (hotDataReadHandler != null) {
-      hotDataReadHandler.fallback();
+      hotDataReadHandler.nextRound();
     }
     if (warmDataReadHandler != null) {
-      warmDataReadHandler.fallback();
+      warmDataReadHandler.nextRound();
     }
     if (coldDataReadHandler != null) {
-      coldDataReadHandler.fallback();
+      coldDataReadHandler.nextRound();
     }
     if (frozenDataReadHandler != null) {
-      frozenDataReadHandler.fallback();
+      frozenDataReadHandler.nextRound();
     }
   }
 
@@ -260,6 +260,11 @@ public class ComposedClientReadHandler implements ClientReadHandler {
       return false;
     }
     return true;
+  }
+
+  @Override
+  public void setMaxHanderFailTimes(int maxHanderFailTimes) {
+    throw new UnsupportedOperationException();
   }
 
   @VisibleForTesting

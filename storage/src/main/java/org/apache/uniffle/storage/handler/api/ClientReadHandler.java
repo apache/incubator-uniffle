@@ -35,8 +35,9 @@ public interface ClientReadHandler {
   // Display the statistics of consumed blocks
   void logConsumedBlockInfo();
 
-  void fallback();
+  void nextRound();
 
   boolean finished();
 
+  void setMaxHanderFailTimes(int maxHanderFailTimes);
 }

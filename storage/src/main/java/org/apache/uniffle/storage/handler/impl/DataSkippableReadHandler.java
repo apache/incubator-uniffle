@@ -60,7 +60,15 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
 
   public ShuffleDataResult readShuffleData() {
     if (shuffleDataSegments.isEmpty()) {
-      ShuffleIndexResult shuffleIndexResult = readShuffleIndex();
+      ShuffleIndexResult shuffleIndexResult;
+      try {
+        shuffleIndexResult = readShuffleIndex();
+      } catch (Exception e) {
+        if (++failTimes > maxHanderFailTimes) {
+          isFinished = true;
+        }
+        throw e;
+      }
       if (shuffleIndexResult == null || shuffleIndexResult.isEmpty()) {
         isFinished = true;
         return null;
@@ -82,14 +90,21 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
         blocksOfSegment.or(processBlockIds);
         blocksOfSegment.xor(processBlockIds);
         if (!blocksOfSegment.isEmpty()) {
-          result = readShuffleData(segment);
+          try {
+            result = readShuffleData(segment);
+          } catch (Exception e) {
+            if (++failTimes > maxHanderFailTimes) {
+              isFinished = true;
+            }
+            throw e;
+          }
           segmentIndex++;
           break;
         }
       }
       segmentIndex++;
     }
-
+    failTimes = 0;
     if (segmentIndex > shuffleDataSegments.size()) {
       isFinished = true;
     }

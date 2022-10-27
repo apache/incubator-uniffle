@@ -241,10 +241,6 @@ public class RssSparkConfig {
           .doc("Coordinator quorum"))
       .createWithDefault("");
 
-  public static final ConfigEntry<Integer> RSS_CLIENT_READ_FALLBACK_MAX_TIMES = createIntegerBuilder(
-      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_READ_FALLBACK_MAX_TIMES))
-      .createWithDefault(RssClientConfig.RSS_CLIENT_READ_FALLBACK_MAX_TIMES_DEFAULT_VALUE);
-
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
       ImmutableSet.of(RSS_STORAGE_TYPE.key(), RSS_REMOTE_STORAGE_PATH.key());
 

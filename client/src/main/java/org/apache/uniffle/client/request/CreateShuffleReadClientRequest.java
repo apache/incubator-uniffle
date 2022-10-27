@@ -42,7 +42,7 @@ public class CreateShuffleReadClientRequest {
   private List<ShuffleServerInfo> shuffleServerInfoList;
   private Configuration hadoopConf;
   private IdHelper idHelper;
-  private int maxFallbackTimes;
+  private int maxHanderFailTimes;
 
   public CreateShuffleReadClientRequest(
       String appId,
@@ -58,10 +58,10 @@ public class CreateShuffleReadClientRequest {
       Roaring64NavigableMap taskIdBitmap,
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
-      int maxFallbackTimes) {
+      int maxHanderFailTimes) {
     this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
-        hadoopConf, new DefaultIdHelper(), maxFallbackTimes);
+        hadoopConf, new DefaultIdHelper(), maxHanderFailTimes);
   }
 
   public CreateShuffleReadClientRequest(
@@ -79,7 +79,7 @@ public class CreateShuffleReadClientRequest {
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
       IdHelper idHelper,
-      int maxFallbackTimes) {
+      int maxHanderFailTimes) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -94,7 +94,7 @@ public class CreateShuffleReadClientRequest {
     this.shuffleServerInfoList = shuffleServerInfoList;
     this.hadoopConf = hadoopConf;
     this.idHelper = idHelper;
-    this.maxFallbackTimes = maxFallbackTimes;
+    this.maxHanderFailTimes = maxHanderFailTimes;
   }
 
   public String getAppId() {
@@ -153,7 +153,7 @@ public class CreateShuffleReadClientRequest {
     return idHelper;
   }
 
-  public int getMaxFallbackTimes() {
-    return maxFallbackTimes;
+  public int getMaxHanderFailTimes() {
+    return maxHanderFailTimes;
   }
 }

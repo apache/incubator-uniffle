@@ -81,7 +81,7 @@ public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
   }
 
   @Override
-  public void fallback() {
+  public void nextRound() {
     readAfterFallback = true;
   }
 

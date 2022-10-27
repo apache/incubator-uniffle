@@ -41,6 +41,7 @@ public class CreateShuffleReadHandlerRequest {
   private List<ShuffleServerInfo> shuffleServerInfoList;
   private Roaring64NavigableMap expectBlockIds;
   private Roaring64NavigableMap processBlockIds;
+  private int maxHanderFailTimes;
 
   public CreateShuffleReadHandlerRequest() {
   }
@@ -156,4 +157,13 @@ public class CreateShuffleReadHandlerRequest {
   public Roaring64NavigableMap getProcessBlockIds() {
     return processBlockIds;
   }
+  
+  public int getMaxHanderFailTimes() {
+    return maxHanderFailTimes;
+  }
+
+  public void setMaxHanderFailTimes(int maxHanderFailTimes) {
+    this.maxHanderFailTimes = maxHanderFailTimes;
+  }
+
 }
