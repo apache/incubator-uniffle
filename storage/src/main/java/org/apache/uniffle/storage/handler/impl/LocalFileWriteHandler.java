@@ -20,6 +20,7 @@ package org.apache.uniffle.storage.handler.impl;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
@@ -87,7 +88,13 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
 
   @Override
   public synchronized void write(
-      List<ShufflePartitionedBlock> shuffleBlocks) throws IOException, IllegalStateException {
+      List<ShufflePartitionedBlock> shuffleBlocks,
+      Supplier<Boolean> valid) throws IOException, IllegalStateException {
+    if (!valid.get()) {
+      LOG.warn("Event is invalid, the app with basePath {}, fileNamePrefix {} was removed already", this.basePath,
+          this.fileNamePrefix);
+      return;
+    }
 
     // Ignore this write, if the shuffle directory is deleted after being uploaded in multi mode
     // or after its app heartbeat times out.

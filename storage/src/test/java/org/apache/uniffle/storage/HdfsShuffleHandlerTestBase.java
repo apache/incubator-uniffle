@@ -58,7 +58,7 @@ public class HdfsShuffleHandlerTestBase {
           length, length, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, buf));
       expectedData.put(blockId, buf);
     }
-    writeHandler.write(blocks);
+    writeHandler.write(blocks, () -> true);
   }
 
   public static void writeTestData(

@@ -478,7 +478,7 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
       expectedData.put(blockId, buf);
       blockIdBitmap.addLong(blockId);
     }
-    writeHandler.write(blocks);
+    writeHandler.write(blocks, () -> true);
   }
 
   private void writeDuplicatedData(
@@ -499,6 +499,6 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
       expectedData.put(blockId, buf);
       blockIdBitmap.addLong(blockId);
     }
-    writeHandler.write(blocks);
+    writeHandler.write(blocks, () -> true);
   }
 }

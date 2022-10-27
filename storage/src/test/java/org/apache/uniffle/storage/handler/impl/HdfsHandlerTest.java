@@ -68,7 +68,7 @@ public class HdfsHandlerTest extends HdfsTestBase {
       expectedIndex.add(new FileBasedShuffleSegment(i, pos, i * 8, i * 8, i, 0));
       pos += i * 8;
     }
-    writeHandler.write(blocks);
+    writeHandler.write(blocks, () -> true);
 
     compareDataAndIndex("appId", 1, 1, basePath, expectedData, expectedBlockId);
 
@@ -85,7 +85,7 @@ public class HdfsHandlerTest extends HdfsTestBase {
     }
     writeHandler =
         new HdfsShuffleWriteHandler("appId", 1, 1, 1, basePath, "test", conf);
-    writeHandler.write(blocksAppend);
+    writeHandler.write(blocksAppend, () -> true);
 
     compareDataAndIndex("appId", 1, 1, basePath, expectedData, expectedBlockId);
   }

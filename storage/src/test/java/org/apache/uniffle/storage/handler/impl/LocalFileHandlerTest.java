@@ -145,7 +145,7 @@ public class LocalFileHandlerTest {
       expectedData.put(blockId, buf);
       expectedBlockIds.add(blockId);
     }
-    writeHandler.write(blocks);
+    writeHandler.write(blocks, () -> true);
   }
 
   protected void validateResult(ServerReadHandler readHandler, Set<Long> expectedBlockIds,

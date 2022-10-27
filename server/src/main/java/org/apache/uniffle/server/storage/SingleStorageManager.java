@@ -66,7 +66,7 @@ public abstract class SingleStorageManager implements StorageManager {
 
     try {
       long startWrite = System.currentTimeMillis();
-      handler.write(event.getShuffleBlocks());
+      handler.write(event.getShuffleBlocks(), event.getValidSupplier());
       long writeTime = System.currentTimeMillis() - startWrite;
       updateWriteMetrics(event, writeTime);
       return true;
