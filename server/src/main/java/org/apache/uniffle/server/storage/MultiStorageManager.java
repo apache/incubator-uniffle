@@ -64,7 +64,7 @@ public class MultiStorageManager implements StorageManager {
   public static AbstractStorageManagerFallbackStrategy loadFallbackStrategy(
       ShuffleServerConf conf) throws Exception {
     String name = conf.getString(ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
-        DefaultStorageManagerFallbackStrategy.class.getCanonicalName());
+        HdfsStorageManagerFallbackStrategy.class.getCanonicalName());
     Class<?> klass = Class.forName(name);
     Constructor<?> constructor;
     AbstractStorageManagerFallbackStrategy instance;
