@@ -192,7 +192,7 @@ public class ShuffleFlushManager {
               break;
             }
 
-            writeSuccess = storageManager.write(storage, handler, event, request);
+            writeSuccess = storageManager.write(storage, handler, event);
 
             if (writeSuccess) {
               updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), blocks);

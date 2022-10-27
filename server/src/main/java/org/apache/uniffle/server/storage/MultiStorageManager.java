@@ -77,8 +77,7 @@ public class MultiStorageManager implements StorageManager {
   }
 
   @Override
-  public boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event, 
-                       CreateShuffleWriteHandlerRequest request) {
+  public boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event) {
     StorageManager storageManager = selectStorageManager(event);
     if (event.getRetryTimes() > 0) {
       try {
@@ -87,6 +86,8 @@ public class MultiStorageManager implements StorageManager {
         if (newStorageManager != storageManager) {
           storageManager = newStorageManager;
           storageManagerCache.put(event, storageManager);
+          CreateShuffleWriteHandlerRequest request = storage.getCreateWriterHandlerRequest(
+              event.getAppId(), event.getShuffleId(), event.getStartPartition());
           storage = storageManager.selectStorage(event);
           handler = storage.getOrCreateWriteHandler(request);
         }
@@ -94,7 +95,7 @@ public class MultiStorageManager implements StorageManager {
         LOG.warn("Create fallback write handler failed ", ioe);
       }
     }
-    boolean success = storageManager.write(storage, handler, event, request);
+    boolean success = storageManager.write(storage, handler, event);
     if (success) {
       storageManagerCache.invalidate(event);
     }

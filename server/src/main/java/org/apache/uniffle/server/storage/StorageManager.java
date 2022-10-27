@@ -24,7 +24,6 @@ import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
-import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 
 
 public interface StorageManager {
@@ -33,8 +32,7 @@ public interface StorageManager {
 
   Storage selectStorage(ShuffleDataReadEvent event);
 
-  boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event,
-                CreateShuffleWriteHandlerRequest request);
+  boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event);
 
   void updateWriteMetrics(ShuffleDataFlushEvent event, long writeTime);
 

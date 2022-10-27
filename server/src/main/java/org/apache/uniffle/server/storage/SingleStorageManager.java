@@ -33,7 +33,6 @@ import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageWriteMetrics;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
-import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 
 
 public abstract class SingleStorageManager implements StorageManager {
@@ -53,8 +52,7 @@ public abstract class SingleStorageManager implements StorageManager {
   }
 
   @Override
-  public boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event,
-                       CreateShuffleWriteHandlerRequest request) {
+  public boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event) {
     String shuffleKey = RssUtils.generateShuffleKey(event.getAppId(), event.getShuffleId());
     storage.createMetadataIfNotExist(shuffleKey);
 
