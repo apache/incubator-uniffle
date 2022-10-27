@@ -26,7 +26,7 @@ public class ShuffleIndexResultTest {
   @Test
   public void testEmpty() {
     assertTrue(new ShuffleIndexResult().isEmpty());
-    assertTrue(new ShuffleIndexResult(null).isEmpty());
+    assertTrue(new ShuffleIndexResult(null, -1).isEmpty());
   }
 
 }

@@ -532,6 +532,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             + " bytes with {}", readTime, data.length, requestInfo);
 
         builder.setIndexData(UnsafeByteOperations.unsafeWrap(data));
+        builder.setDataFileLen(shuffleIndexResult.getDataFileLen());
         reply = builder.build();
       } catch (Exception e) {
         status = StatusCode.INTERNAL_ERROR;
