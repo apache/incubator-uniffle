@@ -20,10 +20,10 @@ package org.apache.uniffle.server.storage;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 
-public class DefaultStorageManagerFallbackStrategy extends AbstractStorageManagerFallbackStrategy {
+public class RotateStorageManagerFallbackStrategy extends AbstractStorageManagerFallbackStrategy {
   private final Long fallBackTimes;
 
-  public DefaultStorageManagerFallbackStrategy(ShuffleServerConf conf) {
+  public RotateStorageManagerFallbackStrategy(ShuffleServerConf conf) {
     super(conf);
     fallBackTimes = conf.get(ShuffleServerConf.FALLBACK_MAX_FAIL_TIMES);
   }

@@ -46,7 +46,7 @@ public class StorageManagerFallbackStrategyTest {
 
   @Test
   public void testDefaultFallbackStrategy() {
-    DefaultStorageManagerFallbackStrategy fallbackStrategy = new DefaultStorageManagerFallbackStrategy(conf);
+    RotateStorageManagerFallbackStrategy fallbackStrategy = new RotateStorageManagerFallbackStrategy(conf);
     LocalStorageManager warmStorageManager = new LocalStorageManager(conf);
     HdfsStorageManager coldStorageManager = new HdfsStorageManager(conf);
     StorageManager current = warmStorageManager;
@@ -63,7 +63,7 @@ public class StorageManagerFallbackStrategyTest {
     assertTrue(storageManager == coldStorageManager);
 
     conf.setLong(ShuffleServerConf.FALLBACK_MAX_FAIL_TIMES, 3);
-    fallbackStrategy = new DefaultStorageManagerFallbackStrategy(conf);
+    fallbackStrategy = new RotateStorageManagerFallbackStrategy(conf);
     storageManager = fallbackStrategy.tryFallback(current, event, warmStorageManager, coldStorageManager);
     assertTrue(storageManager == warmStorageManager);
     for (int i = 0; i < 2; i++) {

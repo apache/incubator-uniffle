@@ -26,14 +26,19 @@ import org.apache.uniffle.server.ShuffleServerConf;
 
 
 public class HdfsStorageManagerFallbackStrategy extends AbstractStorageManagerFallbackStrategy {
+  private final Long fallBackTimes;
   private Set<Class<? extends StorageManager>> excludeTypes = Sets.newHashSet(HdfsStorageManager.class);
 
   public HdfsStorageManagerFallbackStrategy(ShuffleServerConf conf) {
     super(conf);
+    fallBackTimes = conf.get(ShuffleServerConf.FALLBACK_MAX_FAIL_TIMES);
   }
 
   @Override
   public StorageManager tryFallback(StorageManager current, ShuffleDataFlushEvent event, StorageManager... candidates) {
-    return findNextStorageManager(current, excludeTypes, event, candidates);
+    if (event.getRetryTimes() > fallBackTimes) {
+      return findNextStorageManager(current, excludeTypes, event, candidates);
+    }
+    return current;
   }
 }
