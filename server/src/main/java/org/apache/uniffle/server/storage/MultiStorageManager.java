@@ -18,6 +18,7 @@
 package org.apache.uniffle.server.storage;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.cache.Cache;
@@ -49,11 +50,32 @@ public class MultiStorageManager implements StorageManager {
     warmStorageManager = new LocalStorageManager(conf);
     coldStorageManager = new HdfsStorageManager(conf);
     flushColdStorageThresholdSize = conf.getSizeAsBytes(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE);
-    storageManagerFallbackStrategy = new DefaultStorageManagerFallbackStrategy(conf);
+    try {
+      storageManagerFallbackStrategy = loadFallbackStrategy(conf);
+    } catch (Exception e) {
+      throw new RuntimeException("Load fallback strategy failed.", e);
+    }
     long cacheTimeout = conf.getLong(ShuffleServerConf.STORAGEMANAGER_CACHE_TIMEOUT);
     storageManagerCache = CacheBuilder.newBuilder()
         .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)
         .build();
+  }
+
+  public static AbstractStorageManagerFallbackStrategy loadFallbackStrategy(
+      ShuffleServerConf conf) throws Exception {
+    String name = conf.getString(ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
+        DefaultStorageManagerFallbackStrategy.class.getCanonicalName());
+    Class<?> klass = Class.forName(name);
+    Constructor<?> constructor;
+    AbstractStorageManagerFallbackStrategy instance;
+    try {
+      constructor = klass.getConstructor(conf.getClass(), Boolean.TYPE);
+      instance = (AbstractStorageManagerFallbackStrategy) constructor.newInstance(conf);
+    } catch (NoSuchMethodException e) {
+      constructor = klass.getConstructor(conf.getClass());
+      instance = (AbstractStorageManagerFallbackStrategy) constructor.newInstance(conf);
+    }
+    return instance;
   }
 
   @Override

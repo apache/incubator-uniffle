@@ -17,10 +17,16 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 
 public abstract class AbstractStorageManagerFallbackStrategy {
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractStorageManagerFallbackStrategy.class);
   protected ShuffleServerConf conf;
 
   public AbstractStorageManagerFallbackStrategy(ShuffleServerConf conf) {
@@ -29,4 +35,31 @@ public abstract class AbstractStorageManagerFallbackStrategy {
   
   public abstract StorageManager tryFallback(
       StorageManager current, ShuffleDataFlushEvent event, StorageManager... candidates);
+
+  protected StorageManager findNextStorageManager(
+      StorageManager current, Set<Class<? extends StorageManager>> excludeTypes,
+      ShuffleDataFlushEvent event, StorageManager... candidates) {
+    int nextIdx = -1;
+    for (int i = 0; i < candidates.length; i++) {
+      if (current == candidates[i]) {
+        nextIdx = (i + 1) % candidates.length;
+        break;
+      }
+    }
+    if (nextIdx == -1) {
+      throw new RuntimeException("Current StorageManager is not in candidates");
+    }
+    for (int i = 0; i < candidates.length - 1; i++) {
+      StorageManager storageManager = candidates[(i + nextIdx) % candidates.length];
+      if (excludeTypes != null && excludeTypes.contains(storageManager.getClass())) {
+        continue;
+      }
+      if (!storageManager.canWrite(event)) {
+        continue;
+      }
+      return storageManager;
+    }
+    LOG.warn("Find next storageManager failed, all candidates are not available.");
+    return current;
+  }
 }
