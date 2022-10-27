@@ -576,7 +576,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     switch (statusCode) {
       case SUCCESS:
         response = new RssGetShuffleIndexResponse(
-            ResponseStatusCode.SUCCESS, rpcResponse.getIndexData().toByteArray());
+            ResponseStatusCode.SUCCESS, rpcResponse.getIndexData().toByteArray(), rpcResponse.getDataFileLen());
 
         break;
       default:

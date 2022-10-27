@@ -22,9 +22,9 @@ import org.apache.uniffle.common.ShuffleIndexResult;
 public class RssGetShuffleIndexResponse extends ClientResponse  {
   private final ShuffleIndexResult shuffleIndexResult;
 
-  public RssGetShuffleIndexResponse(ResponseStatusCode statusCode, byte[] data) {
+  public RssGetShuffleIndexResponse(ResponseStatusCode statusCode, byte[] data, long dataFileLen) {
     super(statusCode);
-    this.shuffleIndexResult = new ShuffleIndexResult(data);
+    this.shuffleIndexResult = new ShuffleIndexResult(data, dataFileLen);
   }
 
   public ShuffleIndexResult getShuffleIndexResult() {
