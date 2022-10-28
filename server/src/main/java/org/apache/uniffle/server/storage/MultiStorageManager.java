@@ -18,7 +18,11 @@
 package org.apache.uniffle.server.storage;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.util.concurrent.TimeUnit;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,13 +43,39 @@ public class MultiStorageManager implements StorageManager {
   private final StorageManager warmStorageManager;
   private final StorageManager coldStorageManager;
   private final long flushColdStorageThresholdSize;
-  private final long fallBackTimes;
+  private AbstractStorageManagerFallbackStrategy storageManagerFallbackStrategy;
+  private Cache<ShuffleDataFlushEvent, StorageManager> storageManagerCache;
 
   MultiStorageManager(ShuffleServerConf conf) {
     warmStorageManager = new LocalStorageManager(conf);
     coldStorageManager = new HdfsStorageManager(conf);
-    fallBackTimes = conf.get(ShuffleServerConf.FALLBACK_MAX_FAIL_TIMES);
     flushColdStorageThresholdSize = conf.getSizeAsBytes(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE);
+    try {
+      storageManagerFallbackStrategy = loadFallbackStrategy(conf);
+    } catch (Exception e) {
+      throw new RuntimeException("Load fallback strategy failed.", e);
+    }
+    long cacheTimeout = conf.getLong(ShuffleServerConf.STORAGEMANAGER_CACHE_TIMEOUT);
+    storageManagerCache = CacheBuilder.newBuilder()
+        .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)
+        .build();
+  }
+
+  public static AbstractStorageManagerFallbackStrategy loadFallbackStrategy(
+      ShuffleServerConf conf) throws Exception {
+    String name = conf.getString(ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
+        HdfsStorageManagerFallbackStrategy.class.getCanonicalName());
+    Class<?> klass = Class.forName(name);
+    Constructor<?> constructor;
+    AbstractStorageManagerFallbackStrategy instance;
+    try {
+      constructor = klass.getConstructor(conf.getClass(), Boolean.TYPE);
+      instance = (AbstractStorageManagerFallbackStrategy) constructor.newInstance(conf);
+    } catch (NoSuchMethodException e) {
+      constructor = klass.getConstructor(conf.getClass());
+      instance = (AbstractStorageManagerFallbackStrategy) constructor.newInstance(conf);
+    }
+    return instance;
   }
 
   @Override
@@ -65,39 +95,52 @@ public class MultiStorageManager implements StorageManager {
 
   @Override
   public void updateWriteMetrics(ShuffleDataFlushEvent event, long writeTime) {
-    selectStorageManager(event).updateWriteMetrics(event, writeTime);
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event) {
     StorageManager storageManager = selectStorageManager(event);
-    if (storageManager == coldStorageManager && event.getRetryTimes() > fallBackTimes) {
+    if (event.getRetryTimes() > 0) {
       try {
-        CreateShuffleWriteHandlerRequest request = storage.getCreateWriterHandlerRequest(
-            event.getAppId(),
-            event.getShuffleId(),
-            event.getStartPartition());
-        if (request == null) {
-          return false;
+        StorageManager newStorageManager = storageManagerFallbackStrategy.tryFallback(
+                storageManager, event, warmStorageManager, coldStorageManager);
+        if (newStorageManager != storageManager) {
+          storageManager = newStorageManager;
+          storageManagerCache.put(event, storageManager);
+          CreateShuffleWriteHandlerRequest request = storage.getCreateWriterHandlerRequest(
+              event.getAppId(), event.getShuffleId(), event.getStartPartition());
+          storage = storageManager.selectStorage(event);
+          handler = storage.getOrCreateWriteHandler(request);
         }
-        storage = warmStorageManager.selectStorage(event);
-        handler = storage.getOrCreateWriteHandler(request);
       } catch (IOException ioe) {
         LOG.warn("Create fallback write handler failed ", ioe);
-        return false;
       }
-      return warmStorageManager.write(storage, handler, event);
-    } else {
-      return storageManager.write(storage, handler, event);
     }
+    boolean success = storageManager.write(storage, handler, event);
+    if (success) {
+      storageManagerCache.invalidate(event);
+    }
+    return success;
   }
 
   private StorageManager selectStorageManager(ShuffleDataFlushEvent event) {
-    if (event.getSize() > flushColdStorageThresholdSize) {
-      return coldStorageManager;
-    } else {
-      return warmStorageManager;
+    StorageManager storageManager = storageManagerCache.getIfPresent(event);
+    if (storageManager != null) {
+      return storageManager;
     }
+    if (event.getSize() > flushColdStorageThresholdSize) {
+      storageManager = coldStorageManager;
+    } else {
+      storageManager = warmStorageManager;
+    }
+
+    if (!storageManager.canWrite(event)) {
+      storageManager = storageManagerFallbackStrategy.tryFallback(
+          storageManager, event, warmStorageManager, coldStorageManager);
+    }
+    storageManagerCache.put(event, storageManager);
+    return storageManager;
   }
 
   public void start() {
@@ -112,6 +155,10 @@ public class MultiStorageManager implements StorageManager {
   }
 
   @Override
+  public boolean canWrite(ShuffleDataFlushEvent event) {
+    return warmStorageManager.canWrite(event) || coldStorageManager.canWrite(event);
+  }
+
   public void removeResources(PurgeEvent event) {
     LOG.info("Start to remove resource of {}", event);
     warmStorageManager.removeResources(event);

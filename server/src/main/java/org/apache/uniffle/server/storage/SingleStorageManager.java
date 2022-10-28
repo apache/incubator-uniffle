@@ -113,6 +113,22 @@ public abstract class SingleStorageManager implements StorageManager {
     }
   }
 
+
+  @Override
+  public boolean canWrite(ShuffleDataFlushEvent event) {
+    try {
+      Storage storage = selectStorage(event);
+      // if storage is null, appId may not be registered
+      if (storage == null || !storage.canWrite()) {
+        return false;
+      }
+      return true;
+    } catch (Exception e) {
+      LOG.warn("Exception happened when select storage", e);
+      return false;
+    }
+  }
+  
   public StorageWriteMetrics createStorageWriteMetrics(ShuffleDataFlushEvent event, long writeTime) {
     long length = 0;
     long blockNum = 0;

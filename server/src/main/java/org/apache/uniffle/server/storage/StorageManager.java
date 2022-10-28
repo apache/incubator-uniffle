@@ -47,6 +47,8 @@ public interface StorageManager {
   void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo);
 
   Checker getStorageChecker();
+  
+  boolean canWrite(ShuffleDataFlushEvent event);
 
   // todo: add an interface that check storage isHealthy
 }

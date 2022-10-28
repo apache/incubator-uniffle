@@ -63,6 +63,7 @@ import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerGrpcMetrics;
 import org.apache.uniffle.server.ShuffleServerMetrics;
+import org.apache.uniffle.server.storage.MultiStorageManager;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -369,7 +370,8 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
         EVENT_THRESHOLD_SIZE + 1, null, null, null);
     try {
       // can't find storage info with appId2
-      shuffleServers.get(0).getStorageManager().selectStorage(event2).getStoragePath();
+      ((MultiStorageManager)shuffleServers.get(0).getStorageManager()).getColdStorageManager()
+          .selectStorage(event2).getStoragePath();
       fail("Exception should be thrown with un-register appId");
     } catch (Exception e) {
       // expected exception, ignore

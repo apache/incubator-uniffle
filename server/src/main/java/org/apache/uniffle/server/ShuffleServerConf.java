@@ -263,6 +263,12 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(64L * 1024L * 1024L)
       .withDescription("For multistorage, the event size exceed this value, flush data  to cold storage");
 
+  public static final ConfigOption<String> MULTISTORAGE_FALLBACK_STRATEGY_CLASS = ConfigOptions
+      .key("rss.server.multistorage.fallback.strategy.class")
+      .stringType()
+      .noDefaultValue()
+      .withDescription("For multistorage, fallback strategy class");
+
   public static final ConfigOption<Long> FALLBACK_MAX_FAIL_TIMES = ConfigOptions
       .key("rss.server.multistorage.fallback.max.fail.times")
       .longType()
@@ -295,6 +301,12 @@ public class ShuffleServerConf extends RssBaseConf {
         .longType()
         .defaultValue(64 * 1024 * 1024L)
         .withDescription("The threshold of single shuffle buffer flush");
+
+  public static final ConfigOption<Long> STORAGEMANAGER_CACHE_TIMEOUT = ConfigOptions
+      .key("rss.server.multistorage.storagemanager.cache.timeout")
+      .longType()
+      .defaultValue(60 * 1000L)
+      .withDescription("The timeout of the cache which record the mapping information");
 
   public ShuffleServerConf() {
   }
