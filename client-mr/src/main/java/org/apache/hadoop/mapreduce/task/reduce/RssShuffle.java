@@ -191,8 +191,9 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
       LOG.info("In reduce: " + reduceId
           + ", Rss MR client starts to fetch blocks from RSS server");
       JobConf readerJobConf = getRemoteConf();
-      int maxHandlerFailTimes = RssMRUtils.getInt(rssJobConf, mrJobConf, RssMRConfig.RSS_CLIENT_READ_FALLBACK_MAX_TIMES,
-          RssMRConfig.RSS_CLIENT_READ_FALLBACK_MAX_TIMES_DEFAULT_VALUE);
+      int maxHandlerFailTimes = RssMRUtils.getInt(rssJobConf, mrJobConf,
+          RssMRConfig.RSS_CLIENT_HANDLER_READ_MAX_FAIL_TIMES,
+          RssMRConfig.RSS_CLIENT_HANDLER_READ_MAX_FAIL_TIMES_DEFAULT_VALUE);
       CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
           appId, 0, reduceId.getTaskID().getId(), storageType, basePath, indexReadLimit, readBufferSize,
           partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, serverInfoList,

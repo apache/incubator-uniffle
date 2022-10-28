@@ -38,7 +38,7 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
   private long readBlockNum = 0L;
   private long readLength = 0L;
   private long readUncompressLength = 0L;
-  private boolean readAfterFallback;
+  private boolean readAfterFirstRound;
 
   public LocalFileQuorumClientReadHandler(
       String appId,
@@ -90,7 +90,7 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
         LOG.warn("Failed to read a replica due to ", e);
       }
     }
-    if (!readSuccessful && !readAfterFallback) {
+    if (!readSuccessful && !readAfterFirstRound) {
       throw new RssException("Failed to read all replicas for appId[" + appId + "], shuffleId["
           + shuffleId + "], partitionId[" + partitionId + "]");
     }
@@ -115,7 +115,7 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
 
   @Override
   public void nextRound() {
-    readAfterFallback = true;
+    readAfterFirstRound = true;
   }
 
   @Override

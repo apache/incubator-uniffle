@@ -60,7 +60,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private AtomicLong crcCheckTime = new AtomicLong(0);
   private ClientReadHandler clientReadHandler;
   private final IdHelper idHelper;
-  public static final int DEFAULT_MAX_FALLBACK_TIMES = 3;
+  public static final int DEFAULT_MAX_FAIL_TIMES = 3;
 
   // Only for test
   @VisibleForTesting
@@ -81,7 +81,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       IdHelper idHelper) {
     this(storageType, appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange,
         partitionNum, readBufferSize, storageBasePath, blockIdBitmap, taskIdBitmap,
-        shuffleServerInfoList, hadoopConf, idHelper, DEFAULT_MAX_FALLBACK_TIMES);
+        shuffleServerInfoList, hadoopConf, idHelper, DEFAULT_MAX_FAIL_TIMES);
   }
 
   public ShuffleReadClientImpl(
