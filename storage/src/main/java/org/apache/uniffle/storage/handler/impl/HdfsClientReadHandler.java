@@ -152,6 +152,9 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       if (shuffleDataResult == null || shuffleDataResult.isEmpty()) {
         ++readHandlerIndex;
       } else {
+        if (hdfsShuffleFileReader.finished()) {
+          ++readHandlerIndex;
+        }
         return shuffleDataResult;
       }
     } while (true);
