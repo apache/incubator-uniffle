@@ -105,7 +105,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
       segmentIndex++;
     }
     failTimes = 0;
-    if (segmentIndex > shuffleDataSegments.size()) {
+    if (segmentIndex >= shuffleDataSegments.size()) {
       isFinished = true;
     }
     return result;
