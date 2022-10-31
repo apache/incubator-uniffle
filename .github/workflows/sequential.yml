@@ -59,9 +59,9 @@ jobs:
     name: java ${{ inputs.java-version }}
     steps:
     - name: Checkout project
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Set up JDK ${{ inputs.java-version }}
-      uses: actions/setup-java@v2
+      uses: actions/setup-java@v3
       with:
         java-version: ${{ inputs.java-version }}
         distribution: ${{ inputs.jdk-distro }}
@@ -87,7 +87,7 @@ jobs:
       continue-on-error: true
     - name: Upload test reports
       if: ${{ failure() && inputs.reports-path != '' }}
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: ${{ inputs.reports-name }}
         path: ${{ inputs.reports-path }}
