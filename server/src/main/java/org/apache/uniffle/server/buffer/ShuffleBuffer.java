@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server.buffer;
 
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +81,13 @@ public class ShuffleBuffer {
     }
     // buffer will be cleared, and new list must be created for async flush
     List<ShufflePartitionedBlock> spBlocks = new LinkedList<>(blocks);
+    // todo: For specific AQE jobs
+    spBlocks.sort(new Comparator<ShufflePartitionedBlock>() {
+      @Override
+      public int compare(ShufflePartitionedBlock o1, ShufflePartitionedBlock o2) {
+        return o1.getTaskAttemptId() - o2.getTaskAttemptId() > 0 ? 1 : -1;
+      }
+    });
     long eventId = ShuffleFlushManager.ATOMIC_EVENT_ID.getAndIncrement();
     final ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
         eventId,
