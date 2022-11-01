@@ -39,9 +39,9 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.segment.FixedSizeSegmentSplitter;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.Constants;
-import org.apache.uniffle.common.util.RssUtils;
 
 
 public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
@@ -131,8 +131,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
     RssGetShuffleIndexRequest rgsir = new RssGetShuffleIndexRequest(
         appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
     ShuffleIndexResult shuffleIndexResult = shuffleServerClient.getShuffleIndex(rgsir).getShuffleIndexResult();
-    return RssUtils.transIndexDataToSegments(shuffleIndexResult, readBufferSize);
-
+    return new FixedSizeSegmentSplitter(readBufferSize).split(shuffleIndexResult);
   }
 
   public static ShuffleDataResult readShuffleData(
@@ -175,7 +174,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
     if (shuffleIndexResult == null) {
       return new ShuffleDataResult();
     }
-    List<ShuffleDataSegment> sds = RssUtils.transIndexDataToSegments(shuffleIndexResult, readBufferSize);
+    List<ShuffleDataSegment> sds = new FixedSizeSegmentSplitter(readBufferSize).split(shuffleIndexResult);
 
     if (segmentIndex >= sds.size()) {
       return new ShuffleDataResult();

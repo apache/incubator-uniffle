@@ -107,7 +107,7 @@ public class LocalOrderSegmentSplitterTest {
     assertEquals(6, dataSegments.get(1).getLength());
   }
 
-  private byte[] generateData(Pair<Integer, Integer>... configEntries) {
+  public static byte[] generateData(Pair<Integer, Integer>... configEntries) {
     ByteBuffer byteBuffer = ByteBuffer.allocate(configEntries.length * 40);
     int total = 0;
     for (Pair<Integer, Integer> entry : configEntries) {
