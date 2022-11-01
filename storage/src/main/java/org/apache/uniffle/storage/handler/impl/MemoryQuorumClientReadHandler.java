@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.common.ShuffleDataResult;
-import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
 
 public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
@@ -33,7 +32,6 @@ public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
   private static final Logger LOG = LoggerFactory.getLogger(MemoryQuorumClientReadHandler.class);
   private long lastBlockId = Constants.INVALID_BLOCK_ID;
   private List<MemoryClientReadHandler> handlers = Lists.newLinkedList();
-  private boolean readAfterFirstRound;
 
   public MemoryQuorumClientReadHandler(
       String appId,
@@ -56,7 +54,6 @@ public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
     if (finished()) {
       return null;
     }
-    boolean readSuccessful = false;
     ShuffleDataResult result = null;
 
     for (MemoryClientReadHandler handler: handlers) {
@@ -65,24 +62,12 @@ public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
       }
       try {
         result = handler.readShuffleData();
-        readSuccessful = true;
         break;
       } catch (Exception e) {
         LOG.warn("Failed to read a replica due to ", e);
       }
     }
-
-    if (!readSuccessful && !readAfterFirstRound) {
-      throw new RssException("Failed to read in memory shuffle data for appId[" + appId
-          + "], shuffleId[" + shuffleId + "], partitionId[" + partitionId + "]");
-    }
-
     return result;
-  }
-
-  @Override
-  public void nextRound() {
-    readAfterFirstRound = true;
   }
 
   @Override

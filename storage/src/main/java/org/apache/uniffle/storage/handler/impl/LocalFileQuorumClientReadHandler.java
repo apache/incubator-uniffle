@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
-import org.apache.uniffle.common.exception.RssException;
 
 public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler {
 
@@ -38,7 +37,6 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
   private long readBlockNum = 0L;
   private long readLength = 0L;
   private long readUncompressLength = 0L;
-  private boolean readAfterFirstRound;
 
   public LocalFileQuorumClientReadHandler(
       String appId,
@@ -76,7 +74,6 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
     if (finished()) {
       return null;
     }
-    boolean readSuccessful = false;
     ShuffleDataResult result = null;
     for (LocalFileClientReadHandler handler : handlers) {
       if (handler.finished()) {
@@ -84,15 +81,10 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
       }
       try {
         result = handler.readShuffleData();
-        readSuccessful = true;
         break;
       } catch (Exception e) {
         LOG.warn("Failed to read a replica due to ", e);
       }
-    }
-    if (!readSuccessful && !readAfterFirstRound) {
-      throw new RssException("Failed to read all replicas for appId[" + appId + "], shuffleId["
-          + shuffleId + "], partitionId[" + partitionId + "]");
     }
     return result;
   }
@@ -111,11 +103,6 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
   public void logConsumedBlockInfo() {
     LOG.info("Client read " + readBlockNum + " blocks,"
         + " bytes:" +  readLength + " uncompressed bytes:" + readUncompressLength);
-  }
-
-  @Override
-  public void nextRound() {
-    readAfterFirstRound = true;
   }
 
   @Override
