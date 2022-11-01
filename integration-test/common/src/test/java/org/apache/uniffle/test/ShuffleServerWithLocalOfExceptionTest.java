@@ -28,7 +28,6 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.common.ShuffleDataResult;
-import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
@@ -37,7 +36,6 @@ import org.apache.uniffle.storage.handler.impl.MemoryQuorumClientReadHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleServerWithLocalOfExceptionTest extends ShuffleReadWriteBase {
 
@@ -73,7 +71,7 @@ public class ShuffleServerWithLocalOfExceptionTest extends ShuffleReadWriteBase 
   }
 
   @Test
-  public void testReadWhenConnectionFailedShouldThrowException() throws Exception {
+  public void testReadWhenConnectionFailed() throws Exception {
     String testAppId = "testReadWhenException";
     int shuffleId = 0;
     int partitionId = 0;
@@ -84,11 +82,7 @@ public class ShuffleServerWithLocalOfExceptionTest extends ShuffleReadWriteBase 
     handlers[0] = memoryQuorumClientReadHandler;
     ComposedClientReadHandler composedClientReadHandler = new ComposedClientReadHandler(handlers);
     shuffleServers.get(0).stopServer();
-    try {
-      ShuffleDataResult sdr  = composedClientReadHandler.readShuffleData();
-      fail("Should throw connection exception directly.");
-    } catch (RssException rssException) {
-      assertTrue(rssException.getMessage().contains("Failed to read shuffle data from HOT handler"));
-    }
+    ShuffleDataResult sdr  = composedClientReadHandler.readShuffleData();
+    assertTrue(sdr == null);
   }
 }
