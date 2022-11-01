@@ -46,6 +46,7 @@ import org.apache.uniffle.common.KerberizedHdfsBase;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.server.ShuffleServer;
@@ -178,7 +179,8 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
         0,
         Lists.newArrayList(new PartitionRange(0, 1)),
         remoteStorageInfo,
-        user
+        user,
+        ShuffleDataDistributionType.NORMAL
     );
     shuffleServerClient.registerShuffle(rrsr);
 
@@ -187,7 +189,8 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
         0,
         Lists.newArrayList(new PartitionRange(2, 3)),
         remoteStorageInfo,
-        user
+        user,
+        ShuffleDataDistributionType.NORMAL
     );
     shuffleServerClient.registerShuffle(rrsr);
 

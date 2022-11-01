@@ -359,4 +359,8 @@ public class ShuffleFlushManager {
       return createTimeStamp;
     }
   }
+
+  public ShuffleServer getShuffleServer() {
+    return shuffleServer;
+  }
 }

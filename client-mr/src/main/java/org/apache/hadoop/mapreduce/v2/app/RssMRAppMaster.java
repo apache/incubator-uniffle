@@ -76,6 +76,7 @@ import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
@@ -220,10 +221,14 @@ public class RssMRAppMaster extends MRAppMaster {
           }
           LOG.info("Start to register shuffle");
           long start = System.currentTimeMillis();
-          serverToPartitionRanges.entrySet().forEach(entry -> {
-            client.registerShuffle(
-                entry.getKey(), appId, 0, entry.getValue(), remoteStorage);
-          });
+          serverToPartitionRanges.entrySet().forEach(entry -> client.registerShuffle(
+              entry.getKey(),
+              appId,
+              0,
+              entry.getValue(),
+              remoteStorage,
+              ShuffleDataDistributionType.NORMAL
+          ));
           LOG.info("Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
           return shuffleAssignments;
         }, retryInterval, retryTimes);

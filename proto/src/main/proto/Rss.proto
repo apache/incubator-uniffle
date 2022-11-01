@@ -167,6 +167,12 @@ message ShuffleRegisterRequest {
   repeated ShufflePartitionRange partitionRanges = 3;
   RemoteStorage remoteStorage = 4;
   string user = 5;
+  DataDistribution shuffleDataDistribution = 6;
+}
+
+enum DataDistribution {
+  NORMAL = 0;
+  LOCAL_ORDER = 1;
 }
 
 message ShuffleUnregisterRequest {

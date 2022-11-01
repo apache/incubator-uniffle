@@ -34,6 +34,7 @@ import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.client.util.IdHelper;
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
@@ -60,6 +61,35 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private AtomicLong crcCheckTime = new AtomicLong(0);
   private ClientReadHandler clientReadHandler;
   private final IdHelper idHelper;
+  private ShuffleDataDistributionType dataDistributionType = ShuffleDataDistributionType.NORMAL;
+  private int mapStartIndex = 0;
+  private int mapEndIndex = Integer.MAX_VALUE;
+
+  public ShuffleReadClientImpl(
+      String storageType,
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int indexReadLimit,
+      int partitionNumPerRange,
+      int partitionNum,
+      int readBufferSize,
+      String storageBasePath,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap taskIdBitmap,
+      List<ShuffleServerInfo> shuffleServerInfoList,
+      Configuration hadoopConf,
+      IdHelper idHelper,
+      ShuffleDataDistributionType dataDistributionType,
+      int startMapIndex,
+      int endMapIndex) {
+    this(storageType, appId, shuffleId, partitionId, indexReadLimit,
+        partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
+        blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf, idHelper);
+    this.dataDistributionType = dataDistributionType;
+    this.mapStartIndex = startMapIndex;
+    this.mapEndIndex = endMapIndex;
+  }
 
   public ShuffleReadClientImpl(
       String storageType,
@@ -96,6 +126,9 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setHadoopConf(hadoopConf);
     request.setExpectBlockIds(blockIdBitmap);
     request.setProcessBlockIds(processedBlockIds);
+    request.setDistributionType(dataDistributionType);
+    request.setStartMapIndex(mapStartIndex);
+    request.setEndMapIndex(mapEndIndex);
 
     List<Long> removeBlockIds = Lists.newArrayList();
     blockIdBitmap.forEach(bid -> {

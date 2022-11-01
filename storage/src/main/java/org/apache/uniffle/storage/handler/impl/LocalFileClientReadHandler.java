@@ -25,6 +25,7 @@ import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
 import org.apache.uniffle.client.request.RssGetShuffleIndexRequest;
 import org.apache.uniffle.client.response.RssGetShuffleDataResponse;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
@@ -47,8 +48,14 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
       int readBufferSize,
       Roaring64NavigableMap expectBlockIds,
       Roaring64NavigableMap processBlockIds,
-      ShuffleServerClient shuffleServerClient) {
-    super(appId, shuffleId, partitionId, readBufferSize, expectBlockIds, processBlockIds);
+      ShuffleServerClient shuffleServerClient,
+      ShuffleDataDistributionType distributionType,
+      int startMapIndex,
+      int endMapIndex) {
+    super(
+        appId, shuffleId, partitionId, readBufferSize, expectBlockIds,
+        processBlockIds, distributionType, startMapIndex, endMapIndex
+    );
     this.shuffleServerClient = shuffleServerClient;
     this.partitionNumPerRange = partitionNumPerRange;
     this.partitionNum = partitionNum;

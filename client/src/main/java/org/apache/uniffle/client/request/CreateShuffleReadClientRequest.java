@@ -24,6 +24,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.client.util.IdHelper;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
 public class CreateShuffleReadClientRequest {
@@ -42,6 +43,34 @@ public class CreateShuffleReadClientRequest {
   private List<ShuffleServerInfo> shuffleServerInfoList;
   private Configuration hadoopConf;
   private IdHelper idHelper;
+  private ShuffleDataDistributionType shuffleDataDistributionType = ShuffleDataDistributionType.NORMAL;
+  private int startMapIdex = 0;
+  private int endMapIndex = Integer.MAX_VALUE;
+
+  public CreateShuffleReadClientRequest(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      String storageType,
+      String basePath,
+      int indexReadLimit,
+      int readBufferSize,
+      int partitionNumPerRange,
+      int partitionNum,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap taskIdBitmap,
+      List<ShuffleServerInfo> shuffleServerInfoList,
+      Configuration hadoopConf,
+      ShuffleDataDistributionType dataDistributionType,
+      int startMapIdex,
+      int endMapIndex) {
+    this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
+        partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
+        hadoopConf, new DefaultIdHelper());
+    this.startMapIdex = startMapIdex;
+    this.endMapIndex = endMapIndex;
+    this.shuffleDataDistributionType = dataDistributionType;
+  }
 
   public CreateShuffleReadClientRequest(
       String appId,
@@ -147,5 +176,17 @@ public class CreateShuffleReadClientRequest {
 
   public IdHelper getIdHelper() {
     return idHelper;
+  }
+
+  public ShuffleDataDistributionType getShuffleDataDistributionType() {
+    return shuffleDataDistributionType;
+  }
+
+  public int getStartMapIdex() {
+    return startMapIdex;
+  }
+
+  public int getEndMapIndex() {
+    return endMapIndex;
   }
 }

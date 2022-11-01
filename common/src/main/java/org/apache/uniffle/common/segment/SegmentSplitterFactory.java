@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.common.segment;
 
+import org.apache.uniffle.common.ShuffleDataDistributionType;
+
 public class SegmentSplitterFactory {
 
   private SegmentSplitterFactory() {
@@ -27,11 +29,18 @@ public class SegmentSplitterFactory {
     static final SegmentSplitterFactory INSTANCE = new SegmentSplitterFactory();
   }
 
-  public SegmentSplitter get(boolean aqeEnabled, int startMapId, int endMapId, int readBufferSize) {
-    if (aqeEnabled) {
-      return new LocalOrderSegmentSplitter(startMapId, endMapId, readBufferSize);
+  public SegmentSplitter get(
+      ShuffleDataDistributionType distributionType,
+      int startMapId,
+      int endMapId,
+      int readBufferSize) {
+    switch (distributionType) {
+      case LOCAL_ORDER:
+        return new LocalOrderSegmentSplitter(startMapId, endMapId, readBufferSize);
+      case NORMAL:
+      default:
+        return new FixedSizeSegmentSplitter(readBufferSize);
     }
-    return new FixedSizeSegmentSplitter(readBufferSize);
   }
 
   public static SegmentSplitterFactory getInstance() {

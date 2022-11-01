@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
@@ -134,14 +135,36 @@ public class ShuffleTaskManager {
     thread.start();
   }
 
+  /**
+   * Only for test
+   */
+  @VisibleForTesting
   public StatusCode registerShuffle(
       String appId,
       int shuffleId,
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorageInfo,
       String user) {
+    return registerShuffle(
+        appId,
+        shuffleId,
+        partitionRanges,
+        remoteStorageInfo,
+        user,
+        ShuffleDataDistributionType.NORMAL
+    );
+  }
+
+  public StatusCode registerShuffle(
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      RemoteStorageInfo remoteStorageInfo,
+      String user,
+      ShuffleDataDistributionType dataDistType) {
     refreshAppId(appId);
     shuffleTaskInfos.get(appId).setUser(user);
+    shuffleTaskInfos.get(appId).setDataDistType(dataDistType);
     partitionsToBlockIds.putIfAbsent(appId, Maps.newConcurrentMap());
     for (PartitionRange partitionRange : partitionRanges) {
       shuffleBufferManager.registerBuffer(appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
@@ -501,5 +524,9 @@ public class ShuffleTaskManager {
   @VisibleForTesting
   void removeShuffleDataSync(String appId, int shuffleId) {
     removeResourcesByShuffleIds(appId, Arrays.asList(shuffleId));
+  }
+
+  public ShuffleDataDistributionType getDataDistributionType(String appId) {
+    return shuffleTaskInfos.get(appId).getDataDistType();
   }
 }

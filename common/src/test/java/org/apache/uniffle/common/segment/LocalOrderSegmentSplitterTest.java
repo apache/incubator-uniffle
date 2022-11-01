@@ -18,7 +18,6 @@
 package org.apache.uniffle.common.segment;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -40,18 +39,18 @@ public class LocalOrderSegmentSplitterTest {
     splitter = new LocalOrderSegmentSplitter(1, 1, 32);
 
     /**
+     * (length, taskId)
      * case1: (32, 1) (16, 1) (10, 2) (16, 1) (6, 1)
      *
      *        (10, 2) will be dropped
      */
-    List<MockedIndexBlock> mockedBlocks = generateBlocks(
+    byte[] data = generateData(
         Pair.of(32, 1),
         Pair.of(16, 1),
         Pair.of(10, 2),
         Pair.of(16, 1),
         Pair.of(6, 1)
     );
-    byte[] data = generateData(mockedBlocks);
     List<ShuffleDataSegment> dataSegments = splitter.split(new ShuffleIndexResult(data, -1));
     assertEquals(3, dataSegments.size());
 
@@ -70,13 +69,11 @@ public class LocalOrderSegmentSplitterTest {
      *        (32, 2) (16, 2) will be dropped
      */
     data = generateData(
-        generateBlocks(
-            Pair.of(32, 2),
-            Pair.of(16, 1),
-            Pair.of(10, 1),
-            Pair.of(16, 2),
-            Pair.of(6, 1)
-        )
+        Pair.of(32, 2),
+        Pair.of(16, 1),
+        Pair.of(10, 1),
+        Pair.of(16, 2),
+        Pair.of(6, 1)
     );
     dataSegments = splitter.split(new ShuffleIndexResult(data, -1));
     assertEquals(2, dataSegments.size());
@@ -94,13 +91,11 @@ public class LocalOrderSegmentSplitterTest {
      */
     splitter = new LocalOrderSegmentSplitter(1, 4, 32);
     data = generateData(
-        generateBlocks(
-            Pair.of(32, 5),
-            Pair.of(16, 1),
-            Pair.of(10, 3),
-            Pair.of(16, 4),
-            Pair.of(6, 1)
-        )
+        Pair.of(32, 5),
+        Pair.of(16, 1),
+        Pair.of(10, 3),
+        Pair.of(16, 4),
+        Pair.of(6, 1)
     );
     dataSegments = splitter.split(new ShuffleIndexResult(data, -1));
     assertEquals(2, dataSegments.size());
@@ -112,68 +107,19 @@ public class LocalOrderSegmentSplitterTest {
     assertEquals(6, dataSegments.get(1).getLength());
   }
 
-  private byte[] generateData(List<MockedIndexBlock> mockedBlocks) {
-    ByteBuffer byteBuffer = ByteBuffer.allocate(mockedBlocks.size() * 40);
+  private byte[] generateData(Pair<Integer, Integer>... configEntries) {
+    ByteBuffer byteBuffer = ByteBuffer.allocate(configEntries.length * 40);
     int total = 0;
-    for (MockedIndexBlock block : mockedBlocks) {
+    for (Pair<Integer, Integer> entry : configEntries) {
       byteBuffer.putLong(total);
-      byteBuffer.putInt(block.getLength());
+      byteBuffer.putInt(entry.getLeft());
       byteBuffer.putInt(1);
       byteBuffer.putLong(1);
       byteBuffer.putLong(1);
-      byteBuffer.putLong(block.getTaskId());
+      byteBuffer.putLong(entry.getRight());
 
-      total += block.getLength();
+      total += entry.getLeft();
     }
     return byteBuffer.array();
-  }
-
-  static class MockedIndexBlock {
-    private int length;
-    private int taskId;
-
-    public int getLength() {
-      return length;
-    }
-
-    public int getTaskId() {
-      return taskId;
-    }
-
-    public static Builder builder() {
-      return new Builder();
-    }
-
-    static class Builder {
-      private MockedIndexBlock mockedIndexBlock;
-
-      public Builder() {
-        this.mockedIndexBlock = new MockedIndexBlock();
-      }
-
-      public Builder length(int length) {
-        this.mockedIndexBlock.length = length;
-        return this;
-      }
-
-      public Builder taskId(int taskId) {
-        this.mockedIndexBlock.taskId = taskId;
-        return this;
-      }
-
-      public MockedIndexBlock build() {
-        return mockedIndexBlock;
-      }
-    }
-  }
-
-  private List<MockedIndexBlock> generateBlocks(Pair<Integer, Integer>... configEntries) {
-    List<MockedIndexBlock> blocks = new ArrayList<>();
-    for (Pair<Integer, Integer> entry : configEntries) {
-      blocks.add(
-          MockedIndexBlock.builder().length(entry.getLeft()).taskId(entry.getRight()).build()
-      );
-    }
-    return blocks;
   }
 }

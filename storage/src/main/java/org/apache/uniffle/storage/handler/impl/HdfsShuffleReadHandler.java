@@ -26,6 +26,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
@@ -51,11 +52,29 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       int readBufferSize,
       Roaring64NavigableMap expectBlockIds,
       Roaring64NavigableMap processBlockIds,
-      Configuration conf) throws Exception {
-    super(appId, shuffleId, partitionId, readBufferSize, expectBlockIds, processBlockIds);
+      Configuration conf,
+      ShuffleDataDistributionType distributionType,
+      int startMapIndex,
+      int endMapIndex) throws Exception {
+    super(appId, shuffleId, partitionId, readBufferSize, expectBlockIds, processBlockIds,
+        distributionType, startMapIndex, endMapIndex);
     this.filePrefix = filePrefix;
     this.indexReader = createHdfsReader(ShuffleStorageUtils.generateIndexFileName(filePrefix), conf);
     this.dataReader = createHdfsReader(ShuffleStorageUtils.generateDataFileName(filePrefix), conf);
+  }
+
+  // Only for test
+  public HdfsShuffleReadHandler(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      String filePrefix,
+      int readBufferSize,
+      Roaring64NavigableMap expectBlockIds,
+      Roaring64NavigableMap processBlockIds,
+      Configuration conf) throws Exception {
+    this(appId, shuffleId, partitionId, filePrefix, readBufferSize, expectBlockIds,
+        processBlockIds, conf, ShuffleDataDistributionType.NORMAL, 0, Integer.MAX_VALUE);
   }
 
   @Override

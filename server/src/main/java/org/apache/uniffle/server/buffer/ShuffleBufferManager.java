@@ -195,8 +195,14 @@ public class ShuffleBufferManager {
   protected void flushBuffer(ShuffleBuffer buffer, String appId,
       int shuffleId, int startPartition, int endPartition) {
     ShuffleDataFlushEvent event =
-        buffer.toFlushEvent(appId, shuffleId, startPartition, endPartition,
-            () -> bufferPool.containsKey(appId));
+        buffer.toFlushEvent(
+            appId,
+            shuffleId,
+            startPartition,
+            endPartition,
+            () -> bufferPool.containsKey(appId),
+            shuffleFlushManager.getShuffleServer().getShuffleTaskManager().getDataDistributionType(appId)
+        );
     if (event != null) {
       updateShuffleSize(appId, shuffleId, -event.getSize());
       inFlushSize.addAndGet(event.getSize());

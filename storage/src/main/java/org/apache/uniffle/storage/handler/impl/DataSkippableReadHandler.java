@@ -24,10 +24,11 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
-import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.common.segment.SegmentSplitterFactory;
 
 public abstract class DataSkippableReadHandler extends AbstractClientReadHandler {
   private static final Logger LOG = LoggerFactory.getLogger(DataSkippableReadHandler.class);
@@ -38,19 +39,29 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
   protected Roaring64NavigableMap expectBlockIds;
   protected Roaring64NavigableMap processBlockIds;
 
+  protected ShuffleDataDistributionType distributionType;
+  protected int startMapIndex;
+  protected int endMapIndex;
+
   public DataSkippableReadHandler(
       String appId,
       int shuffleId,
       int partitionId,
       int readBufferSize,
       Roaring64NavigableMap expectBlockIds,
-      Roaring64NavigableMap processBlockIds) {
+      Roaring64NavigableMap processBlockIds,
+      ShuffleDataDistributionType distributionType,
+      int startMapIndex,
+      int endMapIndex) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.readBufferSize = readBufferSize;
     this.expectBlockIds = expectBlockIds;
     this.processBlockIds = processBlockIds;
+    this.distributionType = distributionType;
+    this.startMapIndex = startMapIndex;
+    this.endMapIndex = endMapIndex;
   }
 
   protected abstract ShuffleIndexResult readShuffleIndex();
@@ -64,7 +75,11 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
         return null;
       }
 
-      shuffleDataSegments = RssUtils.transIndexDataToSegments(shuffleIndexResult, readBufferSize);
+      shuffleDataSegments =
+          SegmentSplitterFactory
+              .getInstance()
+              .get(distributionType, startMapIndex, endMapIndex, readBufferSize)
+              .split(shuffleIndexResult);
     }
 
     // We should skip unexpected and processed segments when handler is read

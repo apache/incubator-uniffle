@@ -33,6 +33,7 @@ import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssGetShuffleDataResponse;
 import org.apache.uniffle.client.response.RssGetShuffleIndexResponse;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
@@ -95,7 +96,8 @@ public class LocalFileServerReadHandlerTest {
 
     Roaring64NavigableMap processBlockIds =  Roaring64NavigableMap.bitmapOf();
     LocalFileClientReadHandler handler = new LocalFileClientReadHandler(appId, partitionId, shuffleId, -1, 1, 1,
-        readBufferSize, expectBlockIds, processBlockIds, mockShuffleServerClient);
+        readBufferSize, expectBlockIds, processBlockIds, mockShuffleServerClient,
+        ShuffleDataDistributionType.NORMAL, 0, Integer.MAX_VALUE);
     int totalSegment = ((blockSize * actualWriteDataBlock) / bytesPerSegment) + 1;
     int readBlocks = 0;
     for (int i = 0; i < totalSegment; i++) {

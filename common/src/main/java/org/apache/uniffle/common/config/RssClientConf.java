@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.common.config;
 
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.compression.Codec;
 
 import static org.apache.uniffle.common.compression.Codec.Type.LZ4;
@@ -35,4 +36,11 @@ public class RssClientConf {
       .intType()
       .defaultValue(3)
       .withDescription("The zstd compression level, the default level is 3");
+
+  public static final ConfigOption<ShuffleDataDistributionType> DATA_DISTRIBUTION_TYPE = ConfigOptions
+      .key("rss.client.shuffle.data.distribution.type")
+      .enumType(ShuffleDataDistributionType.class)
+      .defaultValue(ShuffleDataDistributionType.NORMAL)
+      .withDescription("The type of partition shuffle data distribution, including normal and local_order. "
+          + "The default value is normal. This config is only valid in Spark3.x");
 }
