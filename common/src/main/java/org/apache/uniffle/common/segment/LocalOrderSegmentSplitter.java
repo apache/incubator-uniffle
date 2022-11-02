@@ -94,7 +94,7 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
           fileOffset = -1;
         }
 
-        if (taskAttemptId >= startMapId && taskAttemptId <= endMapId) {
+        if (taskAttemptId >= startMapId && taskAttemptId < endMapId) {
           if (fileOffset == -1) {
             fileOffset = offset;
           }

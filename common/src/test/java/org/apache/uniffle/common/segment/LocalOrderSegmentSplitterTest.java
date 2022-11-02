@@ -33,10 +33,10 @@ public class LocalOrderSegmentSplitterTest {
 
   @Test
   public void testSplit() {
-    LocalOrderSegmentSplitter splitter = new LocalOrderSegmentSplitter(1, 1, 1000);
+    LocalOrderSegmentSplitter splitter = new LocalOrderSegmentSplitter(1, 2, 1000);
     assertTrue(splitter.split(new ShuffleIndexResult()).isEmpty());
 
-    splitter = new LocalOrderSegmentSplitter(1, 1, 32);
+    splitter = new LocalOrderSegmentSplitter(1, 2, 32);
 
     /**
      * (length, taskId)
@@ -89,7 +89,7 @@ public class LocalOrderSegmentSplitterTest {
      *
      *        (32, 5) will be dropped
      */
-    splitter = new LocalOrderSegmentSplitter(1, 4, 32);
+    splitter = new LocalOrderSegmentSplitter(1, 5, 32);
     data = generateData(
         Pair.of(32, 5),
         Pair.of(16, 1),
