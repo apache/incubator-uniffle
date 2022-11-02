@@ -52,19 +52,13 @@ public class ClientUtils {
       String storageType,
       ShuffleWriteClient shuffleWriteClient) {
     RemoteStorageInfo remoteStorage = defaultRemoteStorage;
-    if (remoteStorage.isEmpty() && requireRemoteStorage(storageType)) {
-      if (dynamicConfEnabled) {
-        // get from coordinator first
+    if (requireRemoteStorage(storageType)) {
+      if (remoteStorage.isEmpty() && dynamicConfEnabled) {
+        // fallback to dynamic conf on coordinator
         remoteStorage = shuffleWriteClient.fetchRemoteStorage(appId);
-        if (remoteStorage.isEmpty()) {
-          // empty from coordinator, use default remote storage
-          remoteStorage = defaultRemoteStorage;
-        }
-      } else {
-        remoteStorage = defaultRemoteStorage;
       }
       if (remoteStorage.isEmpty()) {
-        throw new RuntimeException("Can't find remoteStorage: with storageType[" + storageType + "]");
+        throw new IllegalStateException("Can't find remoteStorage: with storageType[" + storageType + "]");
       }
     }
     return remoteStorage;
