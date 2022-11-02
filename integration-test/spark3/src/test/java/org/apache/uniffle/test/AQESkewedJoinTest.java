@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class AQESkewedJoinTest extends SparkIntegrationTestBase {
 
   @BeforeAll
-  public static void setupServers() throws Exception {
+  private static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
