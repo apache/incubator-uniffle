@@ -143,15 +143,6 @@ public class ShuffleBuffer {
     return new ShuffleDataResult();
   }
 
-
-  //Only for test
-  @VisibleForTesting
-  public synchronized ShuffleDataResult getShuffleData(
-      long lastBlockId, int readBufferSize) {
-    return getShuffleData(lastBlockId, readBufferSize,
-        Roaring64NavigableMap.bitmapOf(), Roaring64NavigableMap.bitmapOf());
-  }
-
   // here is the rule to read data in memory:
   // 1. read from inFlushBlockMap order by eventId asc, then from blocks
   // 2. if can't find lastBlockId, means related data may be flushed to storage, repeat step 1

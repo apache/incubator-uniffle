@@ -166,15 +166,6 @@ public class ShuffleBufferManager {
     return buffer.getShuffleData(blockId, readBufferSize, processedBlockIds, expectBlockIds);
   }
 
-  //Only for test
-  @VisibleForTesting
-  public ShuffleDataResult getShuffleData(
-      String appId, int shuffleId, int partitionId, long blockId,
-      int readBufferSize) {
-    return getShuffleData(appId, shuffleId, partitionId, blockId, readBufferSize,
-        Roaring64NavigableMap.bitmapOf(), Roaring64NavigableMap.bitmapOf());
-  }
-
   void flushSingleBufferIfNecessary(ShuffleBuffer buffer, String appId,
       int shuffleId, int startPartition, int endPartition) {
     // When we use multistorage and trigger single buffer flush, the buffer size should be bigger
