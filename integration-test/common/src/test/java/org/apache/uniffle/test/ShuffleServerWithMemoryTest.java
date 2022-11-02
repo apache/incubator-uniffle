@@ -44,12 +44,14 @@ import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
 import org.apache.uniffle.storage.handler.impl.ComposedClientReadHandler;
 import org.apache.uniffle.storage.handler.impl.LocalFileQuorumClientReadHandler;
+import org.apache.uniffle.storage.handler.impl.MemoryClientReadHandler;
 import org.apache.uniffle.storage.handler.impl.MemoryQuorumClientReadHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
@@ -114,7 +116,8 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
         .getShuffleBuffer(testAppId, shuffleId, 0).getBlocks().size());
     // create memory handler to read data,
     MemoryQuorumClientReadHandler memoryQuorumClientReadHandler = new MemoryQuorumClientReadHandler(
-        testAppId, shuffleId, partitionId, 20, Lists.newArrayList(shuffleServerClient));
+        testAppId, shuffleId, partitionId, 20, Lists.newArrayList(shuffleServerClient),
+        Roaring64NavigableMap.bitmapOf(), expectBlockIds);
     // start to read data, one block data for every call
     ShuffleDataResult sdr  = memoryQuorumClientReadHandler.readShuffleData();
     Map<Long, byte[]> expectedData = Maps.newHashMap();
@@ -138,7 +141,8 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // case: read with ComposedClientReadHandler
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     memoryQuorumClientReadHandler = new MemoryQuorumClientReadHandler(
-        testAppId, shuffleId, partitionId, 50, Lists.newArrayList(shuffleServerClient));
+        testAppId, shuffleId, partitionId, 50, Lists.newArrayList(shuffleServerClient),
+        Roaring64NavigableMap.bitmapOf(), expectBlockIds);
     LocalFileQuorumClientReadHandler localFileQuorumClientReadHandler = new LocalFileQuorumClientReadHandler(
         testAppId, shuffleId, partitionId, 0, 1, 3,
         50, expectBlockIds, processBlockIds, Lists.newArrayList(shuffleServerClient));
@@ -236,7 +240,8 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // read the 1-th segment from memory
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     MemoryQuorumClientReadHandler memoryQuorumClientReadHandler = new MemoryQuorumClientReadHandler(
-        testAppId, shuffleId, partitionId, 150, Lists.newArrayList(shuffleServerClient));
+        testAppId, shuffleId, partitionId, 150, Lists.newArrayList(shuffleServerClient),
+        Roaring64NavigableMap.bitmapOf(), expectBlockIds);
     LocalFileQuorumClientReadHandler localFileQuorumClientReadHandler = new LocalFileQuorumClientReadHandler(
         testAppId, shuffleId, partitionId, 0, 1, 3,
         75, expectBlockIds, processBlockIds, Lists.newArrayList(shuffleServerClient));
@@ -302,6 +307,51 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     sdr  = composedClientReadHandler.readShuffleData();
     assertNull(sdr);
   }
+
+  @Test
+  public void memoryReadFilterTest() throws Exception {
+    String testAppId = "memoryReadFilterTest";
+    int shuffleId = 0;
+    int partitionId = 0;
+    RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest(testAppId, 0,
+        Lists.newArrayList(new PartitionRange(0, 0)), "");
+    shuffleServerClient.registerShuffle(rrsr);
+    Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
+    Map<Long, byte[]> dataMap = Maps.newHashMap();
+    List<ShuffleBlockInfo> blocks = createShuffleBlockList(
+        shuffleId, partitionId, 0, 1, 25,
+        expectBlockIds, dataMap, mockSSI);
+    Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
+    partitionToBlocks.put(partitionId, blocks);
+    Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
+    shuffleToBlocks.put(shuffleId, partitionToBlocks);
+
+    // send data to shuffle server
+    RssSendShuffleDataRequest rssdr = new RssSendShuffleDataRequest(
+        testAppId, 3, 1000, shuffleToBlocks);
+    shuffleServerClient.sendShuffleData(rssdr);
+
+    MemoryClientReadHandler handler = new MemoryClientReadHandler(
+        testAppId, shuffleId, partitionId, 20, shuffleServerClient,  Roaring64NavigableMap.bitmapOf(), expectBlockIds);
+    ShuffleDataResult sdr = handler.readShuffleData();
+    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    expectedData.put(blocks.get(0).getBlockId(), blocks.get(0).getData());
+    validateResult(expectedData, sdr);
+    handler = new MemoryClientReadHandler(
+        testAppId, shuffleId, partitionId, 20, shuffleServerClient,
+        Roaring64NavigableMap.bitmapOf(), Roaring64NavigableMap.bitmapOf());
+    sdr = handler.readShuffleData();
+    assertTrue(sdr.isEmpty());
+
+    Roaring64NavigableMap processedBlockIds = Roaring64NavigableMap.bitmapOf();
+    processedBlockIds.add(blocks.get(0).getBlockId());
+    handler = new MemoryClientReadHandler(
+        testAppId, shuffleId, partitionId, 20, shuffleServerClient,
+        processedBlockIds, Roaring64NavigableMap.bitmapOf());
+    sdr = handler.readShuffleData();
+    assertTrue(sdr.isEmpty());
+  }
+
 
   protected void validateResult(
       Map<Long, byte[]> expectedData,

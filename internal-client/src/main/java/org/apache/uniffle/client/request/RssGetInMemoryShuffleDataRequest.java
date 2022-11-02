@@ -17,20 +17,27 @@
 
 package org.apache.uniffle.client.request;
 
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
 public class RssGetInMemoryShuffleDataRequest {
   private final String appId;
   private final int shuffleId;
   private final int partitionId;
   private final long lastBlockId;
   private final int readBufferSize;
+  private Roaring64NavigableMap processedBlockIds;
+  private Roaring64NavigableMap expectBlockIds;
 
   public RssGetInMemoryShuffleDataRequest(
-      String appId, int shuffleId, int partitionId, long lastBlockId, int readBufferSize) {
+      String appId, int shuffleId, int partitionId, long lastBlockId, int readBufferSize,
+      Roaring64NavigableMap processedBlockIds, Roaring64NavigableMap expectBlockIds) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.lastBlockId = lastBlockId;
     this.readBufferSize = readBufferSize;
+    this.processedBlockIds = processedBlockIds;
+    this.expectBlockIds = expectBlockIds;
   }
 
   public String getAppId() {
@@ -51,5 +58,13 @@ public class RssGetInMemoryShuffleDataRequest {
 
   public int getReadBufferSize() {
     return readBufferSize;
+  }
+
+  public Roaring64NavigableMap getProcessedBlockIds() {
+    return processedBlockIds;
+  }
+
+  public Roaring64NavigableMap getExpectBlockIds() {
+    return expectBlockIds;
   }
 }

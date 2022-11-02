@@ -90,6 +90,8 @@ message GetMemoryShuffleDataRequest {
   int32 partitionId = 3;
   int64 lastBlockId = 4;
   int32 readBufferSize = 5;
+  bytes processedBlockIds = 6;
+  bytes expectBlockIds = 7;
 }
 
 message GetMemoryShuffleDataResponse {

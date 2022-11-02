@@ -29,6 +29,7 @@ import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.Context;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +42,7 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
@@ -606,8 +608,13 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     // todo: if can get the exact memory size?
     if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(readBufferSize)) {
       try {
+        Roaring64NavigableMap processedBlockIds =
+            RssUtils.deserializeBitMap(request.getProcessedBlockIds().toByteArray());
+        Roaring64NavigableMap expectBlockIds =
+            RssUtils.deserializeBitMap(request.getExpectBlockIds().toByteArray());
         ShuffleDataResult shuffleDataResult = shuffleServer.getShuffleTaskManager()
-            .getInMemoryShuffleData(appId, shuffleId, partitionId, blockId, readBufferSize);
+            .getInMemoryShuffleData(appId, shuffleId, partitionId, blockId,
+                readBufferSize, processedBlockIds, expectBlockIds);
         byte[] data = new byte[]{};
         List<BufferSegment> bufferSegments = Lists.newArrayList();
         if (shuffleDataResult != null) {

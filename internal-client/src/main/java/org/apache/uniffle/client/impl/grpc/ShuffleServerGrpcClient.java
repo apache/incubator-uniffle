@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.client.impl.grpc;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -25,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.UnsafeByteOperations;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +63,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RetryUtils;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
@@ -591,6 +595,19 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   @Override
   public RssGetInMemoryShuffleDataResponse getInMemoryShuffleData(
       RssGetInMemoryShuffleDataRequest request) {
+    ByteString processedBlockIds;
+    ByteString expectBlockIds;
+    try {
+      Roaring64NavigableMap processedBlockIdsMap = request.getProcessedBlockIds() == null
+          ? Roaring64NavigableMap.bitmapOf() : request.getProcessedBlockIds();
+      processedBlockIds = UnsafeByteOperations.unsafeWrap(RssUtils.serializeBitMap(processedBlockIdsMap));
+
+      Roaring64NavigableMap expectBlockIdsMap = request.getExpectBlockIds() == null
+          ? Roaring64NavigableMap.bitmapOf() : request.getExpectBlockIds();
+      expectBlockIds = UnsafeByteOperations.unsafeWrap(RssUtils.serializeBitMap(expectBlockIdsMap));
+    } catch (IOException e) {
+      throw new RssException("Fail to serialize bitMap", e);
+    }
     GetMemoryShuffleDataRequest rpcRequest = GetMemoryShuffleDataRequest
         .newBuilder()
         .setAppId(request.getAppId())
@@ -598,6 +615,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setPartitionId(request.getPartitionId())
         .setLastBlockId(request.getLastBlockId())
         .setReadBufferSize(request.getReadBufferSize())
+        .setProcessedBlockIds(processedBlockIds)
+        .setExpectBlockIds(expectBlockIds)
         .build();
 
     long start = System.currentTimeMillis();

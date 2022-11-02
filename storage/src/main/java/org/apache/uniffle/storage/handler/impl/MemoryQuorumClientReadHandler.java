@@ -20,6 +20,7 @@ package org.apache.uniffle.storage.handler.impl;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,14 +40,16 @@ public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
       int shuffleId,
       int partitionId,
       int readBufferSize,
-      List<ShuffleServerClient> shuffleServerClients) {
+      List<ShuffleServerClient> shuffleServerClients,
+      Roaring64NavigableMap processedBlockIds,
+      Roaring64NavigableMap expectBlockIds) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.readBufferSize = readBufferSize;
     shuffleServerClients.forEach(client ->
         handlers.add(new MemoryClientReadHandler(
-            appId, shuffleId, partitionId, readBufferSize, client))
+            appId, shuffleId, partitionId, readBufferSize, client, processedBlockIds, expectBlockIds))
     );
   }
 
