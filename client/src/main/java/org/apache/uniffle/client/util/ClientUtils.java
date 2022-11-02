@@ -30,15 +30,15 @@ public class ClientUtils {
   // taskAttemptId is rest of 20 bit, max value is 2^20 - 1
   public static Long getBlockId(long partitionId, long taskAttemptId, long atomicInt) {
     if (atomicInt < 0 || atomicInt > Constants.MAX_SEQUENCE_NO) {
-      throw new RuntimeException("Can't support sequence[" + atomicInt
+      throw new IllegalArgumentException("Can't support sequence[" + atomicInt
           + "], the max value should be " + Constants.MAX_SEQUENCE_NO);
     }
     if (partitionId < 0 || partitionId > Constants.MAX_PARTITION_ID) {
-      throw new RuntimeException("Can't support partitionId["
+      throw new IllegalArgumentException("Can't support partitionId["
           + partitionId + "], the max value should be " + Constants.MAX_PARTITION_ID);
     }
     if (taskAttemptId < 0 || taskAttemptId > Constants.MAX_TASK_ATTEMPT_ID) {
-      throw new RuntimeException("Can't support taskAttemptId["
+      throw new IllegalArgumentException("Can't support taskAttemptId["
           + taskAttemptId + "], the max value should be " + Constants.MAX_TASK_ATTEMPT_ID);
     }
     return (atomicInt << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))

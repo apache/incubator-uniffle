@@ -23,11 +23,9 @@ import org.apache.uniffle.client.util.ClientUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ClientUtilsTest {
-
-  private static String EXCEPTION_EXPECTED = "Exception excepted";
 
   @Test
   public void getBlockIdTest() {
@@ -40,23 +38,14 @@ public class ClientUtilsTest {
     // min value of blockId
     assertEquals(
         new Long(0L), ClientUtils.getBlockId(0, 0, 0));
-    try {
-      ClientUtils.getBlockId(16777216, 0, 0);
-      fail(EXCEPTION_EXPECTED);
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("Can't support partitionId[16777216], the max value should be 16777215"));
-    }
-    try {
-      ClientUtils.getBlockId(0, 2097152, 0);
-      fail(EXCEPTION_EXPECTED);
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("Can't support taskAttemptId[2097152], the max value should be 2097151"));
-    }
-    try {
-      ClientUtils.getBlockId(0, 0, 262144);
-      fail(EXCEPTION_EXPECTED);
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("Can't support sequence[262144], the max value should be 262143"));
-    }
+
+    final Throwable e1 = assertThrows(IllegalArgumentException.class, () -> ClientUtils.getBlockId(16777216, 0, 0));
+    assertTrue(e1.getMessage().contains("Can't support partitionId[16777216], the max value should be 16777215"));
+
+    final Throwable e2 = assertThrows(IllegalArgumentException.class, () -> ClientUtils.getBlockId(0, 2097152, 0));
+    assertTrue(e2.getMessage().contains("Can't support taskAttemptId[2097152], the max value should be 2097151"));
+
+    final Throwable e3 = assertThrows(IllegalArgumentException.class, () -> ClientUtils.getBlockId(0, 0, 262144));
+    assertTrue(e3.getMessage().contains("Can't support sequence[262144], the max value should be 262143"));
   }
 }
