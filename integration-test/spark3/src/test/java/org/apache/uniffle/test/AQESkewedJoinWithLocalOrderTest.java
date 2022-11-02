@@ -17,9 +17,6 @@
 
 package org.apache.uniffle.test;
 
-import java.util.Map;
-
-import com.google.common.collect.Maps;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,21 +32,17 @@ public class AQESkewedJoinWithLocalOrderTest extends AQESkewedJoinTest {
   @BeforeAll
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
-    Map<String, String> dynamicConf = Maps.newHashMap();
-    // Use the HDFS storage type to ensure the data will be flushed by local_order mechanism
-    dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
-    addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    // Use the LOCALFILE storage type to ensure the data will be flushed by local_order mechanism
+    shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
     createShuffleServer(shuffleServerConf);
     startServers();
   }
 
   @Override
   public void updateSparkConfCustomer(SparkConf sparkConf) {
-    sparkConf.set(RssSparkConfig.RSS_STORAGE_TYPE.key(), "HDFS");
-    sparkConf.set(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
+    sparkConf.set(RssSparkConfig.RSS_STORAGE_TYPE.key(), "LOCALFILE");
     sparkConf.set("spark." + RssClientConf.DATA_DISTRIBUTION_TYPE.key(),
         ShuffleDataDistributionType.LOCAL_ORDER.name());
   }

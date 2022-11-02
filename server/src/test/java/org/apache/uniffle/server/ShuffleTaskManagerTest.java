@@ -137,7 +137,6 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED, 3000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
     ShuffleServer shuffleServer = new ShuffleServer(conf);
-    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
     ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
     shuffleTaskManager.registerShuffle(
         appId,
@@ -180,6 +179,8 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     assertEquals(1, bufferIds.size());
     assertEquals(StatusCode.SUCCESS, sc);
     shuffleTaskManager.commitShuffle(appId, shuffleId);
+    
+    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
     assertEquals(1, shuffleFlushManager.getCommittedBlockIds(appId, shuffleId).getLongCardinality());
 
     // flush for partition 1-1
