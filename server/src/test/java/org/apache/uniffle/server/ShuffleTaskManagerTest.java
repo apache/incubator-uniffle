@@ -137,9 +137,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED, 3000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
     ShuffleServer shuffleServer = new ShuffleServer(conf);
-    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
     ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
-    StorageManager storageManager = shuffleServer.getStorageManager();
     ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
     shuffleTaskManager.registerShuffle(
         appId,
@@ -277,7 +275,6 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
 
     ShuffleServer shuffleServer = new ShuffleServer(conf);
 
-    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
     ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
 
     String appId = "removeShuffleDataTest1";
@@ -307,6 +304,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
 
     assertEquals(1, shuffleTaskManager.getAppIds().size());
 
+    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
     RangeMap<Integer, ShuffleBuffer> rangeMap = shuffleBufferManager.getBufferPool().get(appId).get(0);
     assertFalse(rangeMap.asMapOfRanges().isEmpty());
     shuffleTaskManager.commitShuffle(appId, 0);

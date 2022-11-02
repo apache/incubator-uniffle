@@ -67,6 +67,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.compression.Lz4Codec;
@@ -386,7 +387,8 @@ public class FetcherTest {
         String appId,
         int shuffleId,
         List<PartitionRange> partitionRanges,
-        RemoteStorageInfo storageType) {
+        RemoteStorageInfo storageType,
+        ShuffleDataDistributionType distributionType) {
 
     }
 
