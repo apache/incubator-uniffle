@@ -109,19 +109,19 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
     p0.put(1, blocks2);
     p0.put(2, blocks3);
 
-    List<ShuffleBlockInfo> blocks4 = createShuffleBlockList(
+    final List<ShuffleBlockInfo> blocks4 = createShuffleBlockList(
         0, 1, 1, 5, 25, bitmaps[1], expectedData, mockSSI);
-    Map<Integer, List<ShuffleBlockInfo>> p1 = new HashMap<>();
+    final Map<Integer, List<ShuffleBlockInfo>> p1 = new HashMap<>();
     p1.put(1, blocks4);
 
-    List<ShuffleBlockInfo> blocks5 = createShuffleBlockList(
+    final List<ShuffleBlockInfo> blocks5 = createShuffleBlockList(
         0, 2, 2, 4, 25, bitmaps[2], expectedData, mockSSI);
-    Map<Integer, List<ShuffleBlockInfo>> p2 = new HashMap<>();
+    final Map<Integer, List<ShuffleBlockInfo>> p2 = new HashMap<>();
     p2.put(2, blocks5);
 
-    List<ShuffleBlockInfo> blocks6 = createShuffleBlockList(
+    final List<ShuffleBlockInfo> blocks6 = createShuffleBlockList(
         0, 3, 3, 1, 25, bitmaps[3], expectedData, mockSSI);
-    Map<Integer, List<ShuffleBlockInfo>> p3 = new HashMap<>();
+    final Map<Integer, List<ShuffleBlockInfo>> p3 = new HashMap<>();
     p1.put(3, blocks6);
 
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> partitionToBlocks = Maps.newHashMap();
