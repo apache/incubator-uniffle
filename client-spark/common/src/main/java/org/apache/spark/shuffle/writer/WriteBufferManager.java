@@ -112,7 +112,11 @@ public class WriteBufferManager extends MemoryConsumer {
     final long start = System.currentTimeMillis();
     arrayOutputStream.reset();
     serializeStream.writeKey(key, ClassTag$.MODULE$.apply(key.getClass()));
-    serializeStream.writeValue(value, ClassTag$.MODULE$.apply(value.getClass()));
+    if (value != null) {
+      serializeStream.writeValue(value, ClassTag$.MODULE$.apply(value.getClass()));
+    } else {
+      serializeStream.writeValue(null, null);
+    }
     serializeStream.flush();
     serializeTime += System.currentTimeMillis() - start;
     byte[] serializedData = arrayOutputStream.getBuf();
