@@ -30,6 +30,7 @@ import org.roaringbitmap.RoaringBitmap;
 
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -168,8 +169,11 @@ public class LocalStorageTest {
     LocalStorage item = LocalStorage.newBuilder().basePath(testBaseDir.getAbsolutePath()).build();
     String appId = "writeHandlerTest";
     assertFalse(item.containsWriteHandler(appId, 0, 1));
-    CreateShuffleWriteHandlerRequest createWriterHandlerRequest =
-        item.getCreateWriterHandlerRequest(appId, 0, 1);
-    item.containsWriteHandler(appId, 0, 1);
+    String[] storageBasePaths = {testBaseDir.getAbsolutePath()};
+    CreateShuffleWriteHandlerRequest request = new CreateShuffleWriteHandlerRequest(
+        StorageType.LOCALFILE.name(), appId, 0, 1, 1, storageBasePaths,
+        "ss1", null, 1, null);
+    item.getOrCreateWriteHandler(request);
+    assertTrue(item.containsWriteHandler(appId, 0, 1));
   }
 }
