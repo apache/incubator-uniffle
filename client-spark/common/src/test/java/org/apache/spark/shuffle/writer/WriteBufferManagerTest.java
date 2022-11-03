@@ -139,6 +139,20 @@ public class WriteBufferManagerTest {
   }
 
   @Test
+  public void addNullValueRecordTest() {
+    SparkConf conf = getConf();
+    WriteBufferManager wbm = createManager(conf);
+    String testKey = "key";
+    String testValue = null;
+    List<ShuffleBlockInfo> result = wbm.addRecord(0, testKey, testValue);
+    assertEquals(0, result.size());
+    assertEquals(512, wbm.getAllocatedBytes());
+    assertEquals(32, wbm.getUsedBytes());
+    assertEquals(0, wbm.getInSendListBytes());
+    assertEquals(1, wbm.getBuffers().size());
+  }
+
+  @Test
   public void createBlockIdTest() {
     SparkConf conf = getConf();
     WriteBufferManager wbm = createManager(conf);
