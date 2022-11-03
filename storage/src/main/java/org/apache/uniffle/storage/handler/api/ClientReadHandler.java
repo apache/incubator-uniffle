@@ -39,5 +39,5 @@ public interface ClientReadHandler {
 
   boolean finished();
 
-  void setMaxHanderFailTimes(int maxHanderFailTimes);
+  void setMaxHandlerFailTimes(int maxHandlerFailTimes);
 }

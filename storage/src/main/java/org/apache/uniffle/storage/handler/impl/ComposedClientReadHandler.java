@@ -263,7 +263,7 @@ public class ComposedClientReadHandler implements ClientReadHandler {
   }
 
   @Override
-  public void setMaxHanderFailTimes(int maxHanderFailTimes) {
+  public void setMaxHandlerFailTimes(int maxHandlerFailTimes) {
     throw new UnsupportedOperationException();
   }
 

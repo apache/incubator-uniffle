@@ -64,7 +64,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
       try {
         shuffleIndexResult = readShuffleIndex();
       } catch (Exception e) {
-        if (++failTimes > maxHanderFailTimes) {
+        if (++failTimes > maxHandlerFailTimes) {
           isFinished = true;
         }
         throw e;
@@ -93,7 +93,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
           try {
             result = readShuffleData(segment);
           } catch (Exception e) {
-            if (++failTimes > maxHanderFailTimes) {
+            if (++failTimes > maxHandlerFailTimes) {
               isFinished = true;
             }
             throw e;

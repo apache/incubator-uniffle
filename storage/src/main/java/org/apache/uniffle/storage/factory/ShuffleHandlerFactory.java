@@ -93,7 +93,7 @@ public class ShuffleHandlerFactory {
         handlers
             .stream()
             .map(x -> {
-              x.setMaxHanderFailTimes(request.getMaxHanderFailTimes());
+              x.setMaxHandlerFailTimes(request.getMaxHandlerFailTimes());
               return (Callable<ClientReadHandler>) () -> x;
             })
             .collect(Collectors.toList())

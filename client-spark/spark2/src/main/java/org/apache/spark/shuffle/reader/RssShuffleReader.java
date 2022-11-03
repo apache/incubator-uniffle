@@ -70,7 +70,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private List<ShuffleServerInfo> shuffleServerInfoList;
   private Configuration hadoopConf;
   private RssConf rssConf;
-  private final int maxHanderFailTimes;
+  private final int maxHandlerFailTimes;
 
   public RssShuffleReader(
       int startPartition,
@@ -107,7 +107,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.shuffleServerInfoList =
         (List<ShuffleServerInfo>) (rssShuffleHandle.getPartitionToServers().get(startPartition));
     this.rssConf = rssConf;
-    this.maxHanderFailTimes = rssConf.getInteger(RssClientConfig.RSS_CLIENT_HANDLER_READ_MAX_FAIL_TIMES,
+    this.maxHandlerFailTimes = rssConf.getInteger(RssClientConfig.RSS_CLIENT_HANDLER_READ_MAX_FAIL_TIMES,
         RssClientConfig.RSS_CLIENT_HANDLER_READ_MAX_FAIL_TIMES_DEFAULT_VALUE);
   }
 
@@ -118,7 +118,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
         appId, shuffleId, startPartition, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
-        hadoopConf, maxHanderFailTimes);
+        hadoopConf, maxHandlerFailTimes);
     ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
     RssShuffleDataIterator rssShuffleDataIterator = new RssShuffleDataIterator<K, C>(
         shuffleDependency.serializer(), shuffleReadClient,

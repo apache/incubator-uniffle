@@ -28,7 +28,7 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
   protected int partitionId;
   protected int readBufferSize;
   protected int failTimes;
-  protected int maxHanderFailTimes;
+  protected int maxHandlerFailTimes;
 
   @Override
   public ShuffleDataResult readShuffleData() {
@@ -52,8 +52,8 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
 
   }
 
-  public void setMaxHanderFailTimes(int maxHanderFailTimes) {
-    this.maxHanderFailTimes = maxHanderFailTimes;
+  public void setMaxHandlerFailTimes(int maxHandlerFailTimes) {
+    this.maxHandlerFailTimes = maxHandlerFailTimes;
   }
 
 }

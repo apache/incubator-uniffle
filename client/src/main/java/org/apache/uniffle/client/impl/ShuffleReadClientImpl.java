@@ -99,7 +99,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
       IdHelper idHelper,
-      int maxHanderFailTimes) {
+      int maxHandlerFailTimes) {
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.blockIdBitmap = blockIdBitmap;
@@ -120,7 +120,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setHadoopConf(hadoopConf);
     request.setExpectBlockIds(blockIdBitmap);
     request.setProcessBlockIds(processedBlockIds);
-    request.setMaxHanderFailTimes(maxHanderFailTimes);
+    request.setMaxHandlerFailTimes(maxHandlerFailTimes);
 
     List<Long> removeBlockIds = Lists.newArrayList();
     blockIdBitmap.forEach(bid -> {
