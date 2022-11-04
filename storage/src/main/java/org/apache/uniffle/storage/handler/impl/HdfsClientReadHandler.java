@@ -55,8 +55,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
   private long readUncompressLength = 0L;
 
   private ShuffleDataDistributionType distributionType;
-  private int startMapIndex;
-  private int endMapIndex;
+  private Roaring64NavigableMap expectTaskIds;
 
   public HdfsClientReadHandler(
       String appId,
@@ -71,8 +70,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       String storageBasePath,
       Configuration hadoopConf,
       ShuffleDataDistributionType distributionType,
-      int startMapIndex,
-      int endMapIndex) {
+      Roaring64NavigableMap expectTaskIds) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -85,8 +83,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
     this.hadoopConf = hadoopConf;
     this.readHandlerIndex = 0;
     this.distributionType = distributionType;
-    this.startMapIndex = startMapIndex;
-    this.endMapIndex = endMapIndex;
+    this.expectTaskIds = expectTaskIds;
   }
 
   // Only for test
@@ -103,8 +100,8 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       String storageBasePath,
       Configuration hadoopConf) {
     this(appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange, partitionNum, readBufferSize,
-        expectBlockIds, processBlockIds, storageBasePath, hadoopConf, ShuffleDataDistributionType.NORMAL, 0,
-        Integer.MAX_VALUE);
+        expectBlockIds, processBlockIds, storageBasePath, hadoopConf, ShuffleDataDistributionType.NORMAL,
+        Roaring64NavigableMap.bitmapOf());
   }
 
   protected void init(String fullShufflePath) {
@@ -137,7 +134,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
           HdfsShuffleReadHandler handler = new HdfsShuffleReadHandler(
               appId, shuffleId, partitionId, filePrefix,
               readBufferSize, expectBlockIds, processBlockIds, hadoopConf,
-              distributionType, startMapIndex, endMapIndex);
+              distributionType, expectTaskIds);
           readHandlers.add(handler);
         } catch (Exception e) {
           LOG.warn("Can't create ShuffleReaderHandler for " + filePrefix, e);

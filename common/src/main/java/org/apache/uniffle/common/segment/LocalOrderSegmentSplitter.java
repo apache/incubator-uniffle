@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataSegment;
@@ -30,13 +31,11 @@ import org.apache.uniffle.common.exception.RssException;
 
 public class LocalOrderSegmentSplitter implements SegmentSplitter {
 
-  private int startMapId;
-  private int endMapId;
+  private Roaring64NavigableMap expectTaskIds;
   private int readBufferSize;
 
-  public LocalOrderSegmentSplitter(int startMapId, int endMapId, int readBufferSize) {
-    this.startMapId = startMapId;
-    this.endMapId = endMapId;
+  public LocalOrderSegmentSplitter(Roaring64NavigableMap expectTaskIds, int readBufferSize) {
+    this.expectTaskIds = expectTaskIds;
     this.readBufferSize = readBufferSize;
   }
 
@@ -94,7 +93,7 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
           fileOffset = -1;
         }
 
-        if (taskAttemptId >= startMapId && taskAttemptId < endMapId) {
+        if (expectTaskIds.contains(taskAttemptId)) {
           if (fileOffset == -1) {
             fileOffset = offset;
           }

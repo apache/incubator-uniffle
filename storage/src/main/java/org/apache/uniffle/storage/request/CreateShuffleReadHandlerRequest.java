@@ -43,8 +43,7 @@ public class CreateShuffleReadHandlerRequest {
   private Roaring64NavigableMap expectBlockIds;
   private Roaring64NavigableMap processBlockIds;
   private ShuffleDataDistributionType distributionType;
-  private int startMapIndex;
-  private int endMapIndex;
+  private Roaring64NavigableMap expectTaskIds;
 
   public CreateShuffleReadHandlerRequest() {
   }
@@ -169,19 +168,11 @@ public class CreateShuffleReadHandlerRequest {
     this.distributionType = distributionType;
   }
 
-  public int getStartMapIndex() {
-    return startMapIndex;
+  public Roaring64NavigableMap getExpectTaskIds() {
+    return expectTaskIds;
   }
 
-  public void setStartMapIndex(int startMapIndex) {
-    this.startMapIndex = startMapIndex;
-  }
-
-  public int getEndMapIndex() {
-    return endMapIndex;
-  }
-
-  public void setEndMapIndex(int endMapIndex) {
-    this.endMapIndex = endMapIndex;
+  public void setExpectTaskIds(Roaring64NavigableMap expectTaskIds) {
+    this.expectTaskIds = expectTaskIds;
   }
 }

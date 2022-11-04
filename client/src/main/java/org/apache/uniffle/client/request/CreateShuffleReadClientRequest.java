@@ -44,8 +44,6 @@ public class CreateShuffleReadClientRequest {
   private Configuration hadoopConf;
   private IdHelper idHelper;
   private ShuffleDataDistributionType shuffleDataDistributionType = ShuffleDataDistributionType.NORMAL;
-  private int startMapIdex = 0;
-  private int endMapIndex = Integer.MAX_VALUE;
 
   public CreateShuffleReadClientRequest(
       String appId,
@@ -61,14 +59,10 @@ public class CreateShuffleReadClientRequest {
       Roaring64NavigableMap taskIdBitmap,
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
-      ShuffleDataDistributionType dataDistributionType,
-      int startMapIdex,
-      int endMapIndex) {
+      ShuffleDataDistributionType dataDistributionType) {
     this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
         hadoopConf, new DefaultIdHelper());
-    this.startMapIdex = startMapIdex;
-    this.endMapIndex = endMapIndex;
     this.shuffleDataDistributionType = dataDistributionType;
   }
 
@@ -180,13 +174,5 @@ public class CreateShuffleReadClientRequest {
 
   public ShuffleDataDistributionType getShuffleDataDistributionType() {
     return shuffleDataDistributionType;
-  }
-
-  public int getStartMapIdex() {
-    return startMapIdex;
-  }
-
-  public int getEndMapIndex() {
-    return endMapIndex;
   }
 }

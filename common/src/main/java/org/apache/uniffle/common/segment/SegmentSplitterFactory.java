@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.common.segment;
 
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 
 public class SegmentSplitterFactory {
@@ -31,12 +33,11 @@ public class SegmentSplitterFactory {
 
   public SegmentSplitter get(
       ShuffleDataDistributionType distributionType,
-      int startMapId,
-      int endMapId,
+      Roaring64NavigableMap expectTaskIds,
       int readBufferSize) {
     switch (distributionType) {
       case LOCAL_ORDER:
-        return new LocalOrderSegmentSplitter(startMapId, endMapId, readBufferSize);
+        return new LocalOrderSegmentSplitter(expectTaskIds, readBufferSize);
       case NORMAL:
       default:
         return new FixedSizeSegmentSplitter(readBufferSize);

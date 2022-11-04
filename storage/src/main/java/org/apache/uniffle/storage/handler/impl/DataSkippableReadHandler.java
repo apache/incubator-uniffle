@@ -40,8 +40,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
   protected Roaring64NavigableMap processBlockIds;
 
   protected ShuffleDataDistributionType distributionType;
-  protected int startMapIndex;
-  protected int endMapIndex;
+  protected Roaring64NavigableMap expectTaskIds;
 
   public DataSkippableReadHandler(
       String appId,
@@ -51,8 +50,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
       Roaring64NavigableMap expectBlockIds,
       Roaring64NavigableMap processBlockIds,
       ShuffleDataDistributionType distributionType,
-      int startMapIndex,
-      int endMapIndex) {
+      Roaring64NavigableMap expectTaskIds) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -60,8 +58,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
     this.expectBlockIds = expectBlockIds;
     this.processBlockIds = processBlockIds;
     this.distributionType = distributionType;
-    this.startMapIndex = startMapIndex;
-    this.endMapIndex = endMapIndex;
+    this.expectTaskIds = expectTaskIds;
   }
 
   protected abstract ShuffleIndexResult readShuffleIndex();
@@ -78,7 +75,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
       shuffleDataSegments =
           SegmentSplitterFactory
               .getInstance()
-              .get(distributionType, startMapIndex, endMapIndex, readBufferSize)
+              .get(distributionType, expectTaskIds, readBufferSize)
               .split(shuffleIndexResult);
     }
 

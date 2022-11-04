@@ -54,10 +54,9 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       Roaring64NavigableMap processBlockIds,
       Configuration conf,
       ShuffleDataDistributionType distributionType,
-      int startMapIndex,
-      int endMapIndex) throws Exception {
+      Roaring64NavigableMap expectTaskIds) throws Exception {
     super(appId, shuffleId, partitionId, readBufferSize, expectBlockIds, processBlockIds,
-        distributionType, startMapIndex, endMapIndex);
+        distributionType, expectTaskIds);
     this.filePrefix = filePrefix;
     this.indexReader = createHdfsReader(ShuffleStorageUtils.generateIndexFileName(filePrefix), conf);
     this.dataReader = createHdfsReader(ShuffleStorageUtils.generateDataFileName(filePrefix), conf);
@@ -74,7 +73,7 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       Roaring64NavigableMap processBlockIds,
       Configuration conf) throws Exception {
     this(appId, shuffleId, partitionId, filePrefix, readBufferSize, expectBlockIds,
-        processBlockIds, conf, ShuffleDataDistributionType.NORMAL, 0, Integer.MAX_VALUE);
+        processBlockIds, conf, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf());
   }
 
   @Override

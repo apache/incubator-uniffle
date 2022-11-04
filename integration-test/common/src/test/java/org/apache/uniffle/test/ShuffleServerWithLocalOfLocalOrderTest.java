@@ -41,6 +41,7 @@ import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
+import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -183,6 +184,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
         .filter(x -> expectedBlockIds1.contains(x.getKey()))
         .collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
 
+    Roaring64NavigableMap taskIds = Roaring64NavigableMap.bitmapOf(0);
     ShuffleDataResult sdr  = readShuffleData(
         shuffleServerClient,
         testAppId,
@@ -192,7 +194,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
         10,
         1000,
         0,
-        new LocalOrderSegmentSplitter(0, 1, 1000)
+        new LocalOrderSegmentSplitter(taskIds, 1000)
     );
     validate(
         sdr,
@@ -209,6 +211,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
     final Map<Long, byte[]> expectedData2 = expectedData.entrySet().stream()
         .filter(x -> expectedBlockIds2.contains(x.getKey()))
         .collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
+    taskIds = Roaring64NavigableMap.bitmapOf(0, 1);
     sdr  = readShuffleData(
         shuffleServerClient,
         testAppId,
@@ -218,7 +221,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
         10,
         1000,
         0,
-        new LocalOrderSegmentSplitter(0, 2, 1000)
+        new LocalOrderSegmentSplitter(taskIds, 1000)
     );
     validate(
         sdr,
@@ -240,6 +243,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
     final Map<Long, byte[]> expectedData3 = expectedData.entrySet().stream()
         .filter(x -> expectedBlockIds3.contains(x.getKey()))
         .collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
+    taskIds = Roaring64NavigableMap.bitmapOf(1, 2);
     sdr  = readShuffleData(
         shuffleServerClient,
         testAppId,
@@ -249,7 +253,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
         10,
         1000,
         0,
-        new LocalOrderSegmentSplitter(1, 3, 1000)
+        new LocalOrderSegmentSplitter(taskIds, 1000)
     );
     validate(
         sdr,
@@ -265,6 +269,10 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
     final Map<Long, byte[]> expectedData4 = expectedData.entrySet().stream()
         .filter(x -> expectedBlockIds4.contains(x.getKey()))
         .collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
+    taskIds = Roaring64NavigableMap.bitmapOf();
+    for (long blockId : expectedBlockIds4) {
+      taskIds.add(new DefaultIdHelper().getTaskAttemptId(blockId));
+    }
     sdr  = readShuffleData(
         shuffleServerClient,
         testAppId,
@@ -274,7 +282,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
         10,
         10000,
         0,
-        new LocalOrderSegmentSplitter(0, Integer.MAX_VALUE, 100000)
+        new LocalOrderSegmentSplitter(taskIds, 100000)
     );
     validate(
         sdr,

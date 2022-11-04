@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
@@ -33,10 +34,11 @@ public class LocalOrderSegmentSplitterTest {
 
   @Test
   public void testSplit() {
-    LocalOrderSegmentSplitter splitter = new LocalOrderSegmentSplitter(1, 2, 1000);
+    Roaring64NavigableMap taskIds = Roaring64NavigableMap.bitmapOf(1);
+    LocalOrderSegmentSplitter splitter = new LocalOrderSegmentSplitter(taskIds, 1000);
     assertTrue(splitter.split(new ShuffleIndexResult()).isEmpty());
 
-    splitter = new LocalOrderSegmentSplitter(1, 2, 32);
+    splitter = new LocalOrderSegmentSplitter(taskIds, 32);
 
     /**
      * (length, taskId)
@@ -89,7 +91,8 @@ public class LocalOrderSegmentSplitterTest {
      *
      *        (32, 5) will be dropped
      */
-    splitter = new LocalOrderSegmentSplitter(1, 5, 32);
+    taskIds = Roaring64NavigableMap.bitmapOf(1, 2, 3, 4);
+    splitter = new LocalOrderSegmentSplitter(taskIds, 32);
     data = generateData(
         Pair.of(32, 5),
         Pair.of(16, 1),

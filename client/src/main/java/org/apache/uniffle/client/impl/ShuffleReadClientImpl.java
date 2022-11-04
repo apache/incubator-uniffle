@@ -62,8 +62,6 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private ClientReadHandler clientReadHandler;
   private final IdHelper idHelper;
   private ShuffleDataDistributionType dataDistributionType = ShuffleDataDistributionType.NORMAL;
-  private int mapStartIndex = 0;
-  private int mapEndIndex = Integer.MAX_VALUE;
 
   public ShuffleReadClientImpl(
       String storageType,
@@ -80,15 +78,11 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
       IdHelper idHelper,
-      ShuffleDataDistributionType dataDistributionType,
-      int startMapIndex,
-      int endMapIndex) {
+      ShuffleDataDistributionType dataDistributionType) {
     this(storageType, appId, shuffleId, partitionId, indexReadLimit,
         partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
         blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf, idHelper);
     this.dataDistributionType = dataDistributionType;
-    this.mapStartIndex = startMapIndex;
-    this.mapEndIndex = endMapIndex;
   }
 
   public ShuffleReadClientImpl(
@@ -127,8 +121,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setExpectBlockIds(blockIdBitmap);
     request.setProcessBlockIds(processedBlockIds);
     request.setDistributionType(dataDistributionType);
-    request.setStartMapIndex(mapStartIndex);
-    request.setEndMapIndex(mapEndIndex);
+    request.setExpectTaskIds(taskIdBitmap);
 
     List<Long> removeBlockIds = Lists.newArrayList();
     blockIdBitmap.forEach(bid -> {

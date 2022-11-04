@@ -122,7 +122,7 @@ public class ShuffleHandlerFactory {
         request.getAppId(), request.getShuffleId(), request.getPartitionId(),
         request.getIndexReadLimit(), request.getPartitionNumPerRange(), request.getPartitionNum(),
         request.getReadBufferSize(), request.getExpectBlockIds(), request.getProcessBlockIds(),
-        shuffleServerClients, request.getDistributionType(), request.getStartMapIndex(), request.getEndMapIndex()
+        shuffleServerClients, request.getDistributionType(), request.getExpectTaskIds()
     );
   }
 
@@ -140,8 +140,7 @@ public class ShuffleHandlerFactory {
         request.getStorageBasePath(),
         request.getHadoopConf(),
         request.getDistributionType(),
-        request.getStartMapIndex(),
-        request.getEndMapIndex()
+        request.getExpectTaskIds()
     );
   }
 
