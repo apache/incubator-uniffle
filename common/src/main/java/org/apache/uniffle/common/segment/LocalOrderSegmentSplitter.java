@@ -61,7 +61,7 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
     /**
      * One ShuffleDataSegment should meet following requirements:
      *
-     * 1. taskId in [startMapId, endMapId]
+     * 1. taskId in [startMapId, endMapId) taskIds bitmap
      * 2. ShuffleDataSegment size should < readBufferSize
      * 3. ShuffleDataSegment's blocks should be continuous
      *
