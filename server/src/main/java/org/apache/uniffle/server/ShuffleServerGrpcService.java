@@ -19,6 +19,7 @@ package org.apache.uniffle.server;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
@@ -138,8 +139,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int shuffleId = req.getShuffleId();
     String remoteStoragePath = req.getRemoteStorage().getPath();
     String user = req.getUser();
+
     ShuffleDataDistributionType shuffleDataDistributionType =
-        ShuffleDataDistributionType.valueOf(req.getShuffleDataDistribution().name());
+            ShuffleDataDistributionType.valueOf(
+                Optional
+                    .ofNullable(req.getShuffleDataDistribution())
+                    .orElse(RssProtos.DataDistribution.NORMAL)
+                    .name()
+            );
 
     Map<String, String> remoteStorageConf = req
         .getRemoteStorage()
