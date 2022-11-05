@@ -118,10 +118,12 @@ public class ShuffleHandlerFactory {
     List<ShuffleServerClient> shuffleServerClients = shuffleServerInfoList.stream().map(
         ssi -> ShuffleServerClientFactory.getInstance().getShuffleServerClient(ClientType.GRPC.name(), ssi)).collect(
         Collectors.toList());
-    return new LocalFileQuorumClientReadHandler(request.getAppId(), request.getShuffleId(), request.getPartitionId(),
+    return new LocalFileQuorumClientReadHandler(
+        request.getAppId(), request.getShuffleId(), request.getPartitionId(),
         request.getIndexReadLimit(), request.getPartitionNumPerRange(), request.getPartitionNum(),
         request.getReadBufferSize(), request.getExpectBlockIds(), request.getProcessBlockIds(),
-        shuffleServerClients);
+        shuffleServerClients, request.getDistributionType(), request.getExpectTaskIds()
+    );
   }
 
   private ClientReadHandler getHdfsClientReadHandler(CreateShuffleReadHandlerRequest request) {
@@ -136,7 +138,10 @@ public class ShuffleHandlerFactory {
         request.getExpectBlockIds(),
         request.getProcessBlockIds(),
         request.getStorageBasePath(),
-        request.getHadoopConf());
+        request.getHadoopConf(),
+        request.getDistributionType(),
+        request.getExpectTaskIds()
+    );
   }
 
   public ShuffleDeleteHandler createShuffleDeleteHandler(CreateShuffleDeleteHandlerRequest request) {

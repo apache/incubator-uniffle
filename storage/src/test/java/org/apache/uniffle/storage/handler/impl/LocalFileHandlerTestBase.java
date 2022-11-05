@@ -32,8 +32,8 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.segment.FixedSizeSegmentSplitter;
 import org.apache.uniffle.common.util.ChecksumUtils;
-import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
@@ -97,8 +97,7 @@ public class LocalFileHandlerTestBase {
       return shuffleDataResults;
     }
 
-    List<ShuffleDataSegment> shuffleDataSegments =
-        RssUtils.transIndexDataToSegments(shuffleIndexResult, 32);
+    List<ShuffleDataSegment> shuffleDataSegments = new FixedSizeSegmentSplitter(32).split(shuffleIndexResult);
 
     for (ShuffleDataSegment shuffleDataSegment : shuffleDataSegments) {
       byte[] shuffleData =

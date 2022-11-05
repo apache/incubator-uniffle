@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.exception.RssException;
 
@@ -49,7 +50,9 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
       int readBufferSize,
       Roaring64NavigableMap expectBlockIds,
       Roaring64NavigableMap processBlockIds,
-      List<ShuffleServerClient> shuffleServerClients) {
+      List<ShuffleServerClient> shuffleServerClients,
+      ShuffleDataDistributionType distributionType,
+      Roaring64NavigableMap expectTaskIds) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -65,9 +68,32 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
           readBufferSize,
           expectBlockIds,
           processBlockIds,
-          client
+          client,
+          distributionType,
+          expectBlockIds
       ));
     }
+  }
+
+  /**
+   * Only for test
+   */
+  public LocalFileQuorumClientReadHandler(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int indexReadLimit,
+      int partitionNumPerRange,
+      int partitionNum,
+      int readBufferSize,
+      Roaring64NavigableMap expectBlockIds,
+      Roaring64NavigableMap processBlockIds,
+      List<ShuffleServerClient> shuffleServerClients) {
+    this(
+        appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange,
+        partitionNum, readBufferSize, expectBlockIds, processBlockIds,
+        shuffleServerClients, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf()
+    );
   }
 
   @Override

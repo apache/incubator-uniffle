@@ -39,9 +39,10 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.segment.FixedSizeSegmentSplitter;
+import org.apache.uniffle.common.segment.SegmentSplitter;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.Constants;
-import org.apache.uniffle.common.util.RssUtils;
 
 
 public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
@@ -131,8 +132,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
     RssGetShuffleIndexRequest rgsir = new RssGetShuffleIndexRequest(
         appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
     ShuffleIndexResult shuffleIndexResult = shuffleServerClient.getShuffleIndex(rgsir).getShuffleIndexResult();
-    return RssUtils.transIndexDataToSegments(shuffleIndexResult, readBufferSize);
-
+    return new FixedSizeSegmentSplitter(readBufferSize).split(shuffleIndexResult);
   }
 
   public static ShuffleDataResult readShuffleData(
@@ -167,28 +167,51 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
       int partitionNumPerRange,
       int partitionNum,
       int readBufferSize,
-      int segmentIndex) {
-    // read index file
+      int segmentIndex,
+      SegmentSplitter segmentSplitter) {
     RssGetShuffleIndexRequest rgsir = new RssGetShuffleIndexRequest(
         appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
     ShuffleIndexResult shuffleIndexResult = shuffleServerClient.getShuffleIndex(rgsir).getShuffleIndexResult();
     if (shuffleIndexResult == null) {
       return new ShuffleDataResult();
     }
-    List<ShuffleDataSegment> sds = RssUtils.transIndexDataToSegments(shuffleIndexResult, readBufferSize);
+    List<ShuffleDataSegment> sds = segmentSplitter.split(shuffleIndexResult);
 
     if (segmentIndex >= sds.size()) {
       return new ShuffleDataResult();
     }
 
-    // read shuffle data
     ShuffleDataSegment segment = sds.get(segmentIndex);
     RssGetShuffleDataRequest rgsdr = new RssGetShuffleDataRequest(
         appId, shuffleId, partitionId, partitionNumPerRange, partitionNum,
         segment.getOffset(), segment.getLength());
 
+    // read shuffle data
     return new ShuffleDataResult(
         shuffleServerClient.getShuffleData(rgsdr).getShuffleData(),
         segment.getBufferSegments());
+  }
+
+  public static ShuffleDataResult readShuffleData(
+      ShuffleServerGrpcClient shuffleServerClient,
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int partitionNumPerRange,
+      int partitionNum,
+      int readBufferSize,
+      int segmentIndex) {
+    // read index file
+    return readShuffleData(
+        shuffleServerClient,
+        appId,
+        shuffleId,
+        partitionId,
+        partitionNumPerRange,
+        partitionNum,
+        readBufferSize,
+        segmentIndex,
+        new FixedSizeSegmentSplitter(readBufferSize)
+    );
   }
 }

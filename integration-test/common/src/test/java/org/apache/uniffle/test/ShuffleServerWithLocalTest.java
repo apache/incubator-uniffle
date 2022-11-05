@@ -58,7 +58,7 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
   private ShuffleServerGrpcClient shuffleServerClient;
 
   @BeforeAll
-  public static void setupServers() throws Exception {
+  private static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();

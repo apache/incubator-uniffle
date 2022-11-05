@@ -37,6 +37,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
@@ -290,7 +291,8 @@ public class SortWriteBufferManagerTest {
         String appId,
         int shuffleId,
         List<PartitionRange> partitionRanges,
-        RemoteStorageInfo remoteStorage) {
+        RemoteStorageInfo remoteStorage,
+        ShuffleDataDistributionType distributionType) {
     }
 
     @Override
