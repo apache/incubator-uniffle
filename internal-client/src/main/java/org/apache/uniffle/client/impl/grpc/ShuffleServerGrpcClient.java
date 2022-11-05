@@ -132,7 +132,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       int shuffleId,
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorageInfo,
-      String user, ShuffleDataDistributionType dataDistributionType) {
+      String user,
+      ShuffleDataDistributionType dataDistributionType) {
     ShuffleRegisterRequest.Builder reqBuilder = ShuffleRegisterRequest.newBuilder();
     reqBuilder
         .setAppId(appId)
