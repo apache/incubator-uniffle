@@ -36,6 +36,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.ThreadUtils;
@@ -360,7 +361,7 @@ public class ShuffleFlushManager {
     }
   }
 
-  public ShuffleServer getShuffleServer() {
-    return shuffleServer;
+  public ShuffleDataDistributionType getDataDistributionType(String appId) {
+    return shuffleServer.getShuffleTaskManager().getDataDistributionType(appId);
   }
 }

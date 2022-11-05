@@ -73,7 +73,6 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     mockShuffleServer = mock(ShuffleServer.class);
     mockShuffleTaskManager = mock(ShuffleTaskManager.class);
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
-    when(mockShuffleFlushManager.getShuffleServer()).thenReturn(mockShuffleServer);
     shuffleBufferManager = new ShuffleBufferManager(conf, mockShuffleFlushManager);
   }
 

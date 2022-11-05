@@ -201,7 +201,7 @@ public class ShuffleBufferManager {
             startPartition,
             endPartition,
             () -> bufferPool.containsKey(appId),
-            shuffleFlushManager.getShuffleServer().getShuffleTaskManager().getDataDistributionType(appId)
+            shuffleFlushManager.getDataDistributionType(appId)
         );
     if (event != null) {
       updateShuffleSize(appId, shuffleId, -event.getSize());
