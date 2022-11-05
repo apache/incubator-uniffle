@@ -29,6 +29,19 @@ import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.exception.RssException;
 
+/**
+ * {@class LocalOrderSegmentSplitter} will be initialized only when the {@class ShuffleDataDistributionType}
+ * is LOCAL_ORDER, which means the index file will be split into several segments according to its
+ * locally ordered properties. And it will skip some blocks, but the remaining blocks in a segment
+ * are continuous.
+ *
+ * This strategy will be useful for Spark AQE skew optimization, it will split the single partition into
+ * multiple shuffle readers, and each one will fetch partial single partition data which is in the range of
+ * [StartMapId, endMapId). And so if one reader uses this, it will skip lots of unnecessary blocks.
+ *
+ * Last but not least, this split strategy depends on LOCAL_ORDER of index file, which must be guaranteed by
+ * the shuffle server.
+ */
 public class LocalOrderSegmentSplitter implements SegmentSplitter {
 
   private Roaring64NavigableMap expectTaskIds;
