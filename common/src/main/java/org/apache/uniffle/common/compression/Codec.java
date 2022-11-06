@@ -31,6 +31,8 @@ public abstract class Codec {
     switch (type) {
       case ZSTD:
         return new ZstdCodec(rssConf.get(ZSTD_COMPRESSION_LEVEL));
+      case SNAPPY:
+        return new SnappyCodec();
       case NOOP:
         return new NoOpCodec();
       case LZ4:
@@ -39,13 +41,24 @@ public abstract class Codec {
     }
   }
 
+  /**
+   *
+   * @param src
+   * @param uncompressedLen
+   * @param dest
+   * @param destOffset
+   */
   public abstract void decompress(ByteBuffer src, int uncompressedLen, ByteBuffer dest, int destOffset);
 
+  /**
+   *  Compress bytes into a byte array.
+   */
   public abstract byte[] compress(byte[] src);
 
   public enum Type {
     LZ4,
     ZSTD,
     NOOP,
+    SNAPPY,
   }
 }
