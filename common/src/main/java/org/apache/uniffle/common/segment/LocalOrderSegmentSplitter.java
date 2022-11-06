@@ -70,6 +70,7 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
     long totalLen = 0;
 
     long lastTaskAttemptId = -1;
+    long lastExpectedBlockIndex = -1;
 
     /**
      * One ShuffleDataSegment should meet following requirements:
@@ -79,6 +80,7 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
      * 3. ShuffleDataSegment's blocks should be continuous
      *
      */
+    int index = 0;
     while (byteBuffer.hasRemaining()) {
       try {
         long offset = byteBuffer.getLong();
@@ -98,7 +100,8 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
           break;
         }
 
-        if ((taskAttemptId < lastTaskAttemptId && bufferSegments.size() > 0) || bufferOffset >= readBufferSize) {
+        if ((taskAttemptId < lastTaskAttemptId && bufferSegments.size() > 0 && index - lastExpectedBlockIndex != 1)
+            || bufferOffset >= readBufferSize) {
           ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
           dataFileSegments.add(sds);
           bufferSegments = Lists.newArrayList();
@@ -107,14 +110,20 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
         }
 
         if (expectTaskIds.contains(taskAttemptId)) {
+          if (bufferOffset != 0 && index - lastExpectedBlockIndex > 1) {
+            throw new RssException("There are discontinuous blocks which should not happen when using LOCAL_ORDER.");
+          }
+
           if (fileOffset == -1) {
             fileOffset = offset;
           }
           bufferSegments.add(new BufferSegment(blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
           bufferOffset += length;
+          lastExpectedBlockIndex = index;
         }
 
         lastTaskAttemptId = taskAttemptId;
+        index++;
       } catch (BufferUnderflowException ue) {
         throw new RssException("Read index data under flow", ue);
       }
@@ -124,7 +133,6 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
       ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
       dataFileSegments.add(sds);
     }
-
     return dataFileSegments;
   }
 }
