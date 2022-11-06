@@ -29,7 +29,7 @@ public class RssClientConf {
       .enumType(Codec.Type.class)
       .defaultValue(LZ4)
       .withDescription("The compression codec is used to compress the shuffle data. "
-          + "Default codec is `LZ4`, `ZSTD` also can be used.");
+          + "Default codec is `LZ4`. Other options are`ZSTD` and `SNAPPY`.");
 
   public static final ConfigOption<Integer> ZSTD_COMPRESSION_LEVEL = ConfigOptions
       .key("rss.client.io.compression.zstd.level")
