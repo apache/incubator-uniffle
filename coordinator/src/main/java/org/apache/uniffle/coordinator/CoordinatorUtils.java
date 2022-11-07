@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -51,6 +52,42 @@ public class CoordinatorUtils {
       idx = 0;
     }
     return idx;
+  }
+
+  /**
+   * Assign multiple adjacent partitionRanges to several servers
+   */
+  public static List<List<PartitionRange>> generateRangesGroup(int totalPartitionNum, int partitionNumPerRange,
+      int serverNum) {
+    List<List<PartitionRange>> res = Lists.newArrayList();
+    if (totalPartitionNum <= 0 || partitionNumPerRange <= 0) {
+      return res;
+    }
+    int rangePerServer = Math.floorDiv(totalPartitionNum, partitionNumPerRange * serverNum);
+    int remainRange = rangePerServer > 0 ? ((totalPartitionNum) / partitionNumPerRange) % rangePerServer :
+                          totalPartitionNum;
+    int groupCount = 0;
+    int rangeInGroupCount = 0;
+
+    List<PartitionRange> rangeGroup = Lists.newArrayList();
+    for (int start = 0; start < totalPartitionNum; start += partitionNumPerRange) {
+      int end = start + partitionNumPerRange - 1;
+      PartitionRange range = new PartitionRange(start, end);
+      rangeGroup.add(range);
+      rangeInGroupCount += 1;
+      if ((groupCount < remainRange && rangeInGroupCount == rangePerServer + 1)
+              || (groupCount >= remainRange && rangeInGroupCount == rangePerServer)) {
+        res.add(Lists.newArrayList(rangeGroup));
+        rangeGroup.clear();
+        groupCount += 1;
+        rangeInGroupCount = 0;
+      }
+    }
+
+    if (!rangeGroup.isEmpty()) {
+      res.add(Lists.newArrayList(rangeGroup));
+    }
+    return res;
   }
 
   public static List<PartitionRange> generateRanges(int totalPartitionNum, int partitionNumPerRange) {

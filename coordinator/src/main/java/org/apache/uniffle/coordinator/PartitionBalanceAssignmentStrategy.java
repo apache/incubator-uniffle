@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -122,16 +123,16 @@ public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrate
 
       List<ServerNode> candidatesNodes = getCandidateNodes(nodes, expectNum);
       int idx = 0;
-      List<PartitionRange> ranges = CoordinatorUtils.generateRanges(totalPartitionNum, 1);
-      for (PartitionRange range : ranges) {
+      List<List<PartitionRange>> rangesGroup = CoordinatorUtils.generateRangesGroup(totalPartitionNum, 1, expectNum);
+      for (List<PartitionRange> ranges : rangesGroup) {
         List<ServerNode> assignNodes = Lists.newArrayList();
         for (int rc = 0; rc < replica; rc++) {
-          ServerNode node =  candidatesNodes.get(idx);
-          idx = CoordinatorUtils.nextIdx(idx,  candidatesNodes.size());
-          serverToPartitions.get(node).incrementPartitionNum();
+          ServerNode node = candidatesNodes.get(idx);
+          idx = CoordinatorUtils.nextIdx(idx, candidatesNodes.size());
+          serverToPartitions.get(node).incrementPartitionNum(ranges.size());
           assignNodes.add(node);
         }
-        assignments.put(range, assignNodes);
+        ranges.forEach(range -> assignments.put(range, assignNodes));
       }
     }
     return new PartitionRangeAssignment(assignments);
@@ -162,6 +163,10 @@ public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrate
 
     public void incrementPartitionNum() {
       partitionNum++;
+    }
+
+    public void incrementPartitionNum(int val) {
+      partitionNum += val;
     }
 
     public long getTimestamp() {
