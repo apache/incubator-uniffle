@@ -93,13 +93,13 @@ public class CoordinatorUtilsTest {
 
   @Test
   public void testGenerateRangesGroup() {
-    List<List<PartitionRange>> res = CoordinatorUtils.generateRangesGroup(44 ,2 ,5);
+    List<List<PartitionRange>> res = CoordinatorUtils.generateRangesGroup(44,2, 5);
     assertEquals(5, res.size());
     assertEquals(5, res.get(0).size());
     assertEquals(5, res.get(1).size());
     assertEquals(4, res.get(2).size());
 
-    res = CoordinatorUtils.generateRangesGroup(1 ,1 ,5);
+    res = CoordinatorUtils.generateRangesGroup(1, 1, 5);
     assertEquals(1, res.size());
     assertEquals(1, res.get(0).size());
   }
