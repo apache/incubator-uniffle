@@ -37,7 +37,7 @@ public class RssBaseConf extends RssConf {
   public static final ConfigOption<Integer> RPC_SERVER_PORT = ConfigOptions
       .key("rss.rpc.server.port")
       .intType()
-      .noDefaultValue()
+      .defaultValue(30011)
       .withDescription("Shuffle server service port");
 
   public static final ConfigOption<Boolean> RPC_METRICS_ENABLED = ConfigOptions
@@ -49,7 +49,7 @@ public class RssBaseConf extends RssConf {
   public static final ConfigOption<Integer> JETTY_HTTP_PORT = ConfigOptions
       .key("rss.jetty.http.port")
       .intType()
-      .noDefaultValue()
+      .defaultValue(30012)
       .withDescription("jetty http port");
 
   public static final ConfigOption<Integer> JETTY_CORE_POOL_SIZE = ConfigOptions
