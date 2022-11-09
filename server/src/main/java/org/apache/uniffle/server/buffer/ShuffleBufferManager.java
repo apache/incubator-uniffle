@@ -456,6 +456,10 @@ public class ShuffleBufferManager {
     shuffleIdSet.add(shuffleId);
   }
 
+  public long getReadDataMemory() {
+    return readDataMemory.get();
+  }
+
   public void removeBufferByShuffleId(String appId, Integer... shuffleIds) {
     Map<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers = bufferPool.get(appId);
     if (shuffleIdToBuffers == null) {
@@ -483,5 +487,26 @@ public class ShuffleBufferManager {
       }
       shuffleIdToBuffers.remove(shuffleId);
     }
+  }
+
+  public void setPreAllocatedSize(AtomicLong preAllocatedSize) {
+    this.preAllocatedSize = preAllocatedSize;
+  }
+
+  public void setInFlushSize(AtomicLong inFlushSize) {
+    this.inFlushSize = inFlushSize;
+  }
+
+  public void setUsedMemory(AtomicLong usedMemory) {
+    this.usedMemory = usedMemory;
+  }
+
+  public void setReadDataMemory(AtomicLong readDataMemory) {
+    this.readDataMemory = readDataMemory;
+  }
+
+  public void setShuffleSizeMap(
+      Map<String, Map<Integer, AtomicLong>> shuffleSizeMap) {
+    this.shuffleSizeMap = shuffleSizeMap;
   }
 }

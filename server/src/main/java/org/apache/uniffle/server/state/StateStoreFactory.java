@@ -15,23 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common;
+package org.apache.uniffle.server.state;
 
-import picocli.CommandLine.Option;
+public class StateStoreFactory {
 
-public class Arguments {
-
-  @Option(names = {"-c", "--conf"}, description = "config file")
-  private String configFile;
-
-  @Option(names = {"-r", "--recover"}, description = "indicator whether to recover from state")
-  private boolean recoverEnable = false;
-
-  public String getConfigFile() {
-    return this.configFile;
+  public enum Type {
+    KRYO_SERIALIZATION
   }
 
-  public boolean isRecoverEnable() {
-    return recoverEnable;
+  private StateStoreFactory() {
+    // ignore
+  }
+
+  private static class LazyHolder {
+    static final StateStoreFactory INSTANCE = new StateStoreFactory();
+  }
+
+  public static StateStoreFactory getInstance() {
+    return LazyHolder.INSTANCE;
+  }
+
+  public StateStore get(Type storeType, String storeLocation) {
+    switch (storeType) {
+      case KRYO_SERIALIZATION:
+      default:
+        return new KryoSerializationStateStore(storeLocation);
+    }
   }
 }

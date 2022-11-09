@@ -15,23 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common;
+package org.apache.uniffle.server.state;
 
-import picocli.CommandLine.Option;
+public interface StateStore {
 
-public class Arguments {
+  void export(ShuffleServerState state) throws Exception;
 
-  @Option(names = {"-c", "--conf"}, description = "config file")
-  private String configFile;
+  ShuffleServerState restore() throws Exception;
 
-  @Option(names = {"-r", "--recover"}, description = "indicator whether to recover from state")
-  private boolean recoverEnable = false;
 
-  public String getConfigFile() {
-    return this.configFile;
-  }
-
-  public boolean isRecoverEnable() {
-    return recoverEnable;
-  }
 }

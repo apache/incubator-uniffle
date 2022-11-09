@@ -292,7 +292,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
     );
   }
 
-  private void validate(ShuffleDataResult sdr, Set<Long> expectedBlockIds,
+  public static void validate(ShuffleDataResult sdr, Set<Long> expectedBlockIds,
       Map<Long, byte[]> expectedData, Set<Long> expectedTaskAttemptIds) {
     byte[] buffer = sdr.getData();
     List<BufferSegment> bufferSegments = sdr.getBufferSegments();

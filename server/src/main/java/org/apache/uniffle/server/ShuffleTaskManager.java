@@ -26,11 +26,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -38,6 +41,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.roaringbitmap.longlong.LongIterator;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -63,6 +67,8 @@ import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
+
+import static org.apache.uniffle.server.ShuffleServerConf.STATEFUL_UPGRADE_FLUSH_ALL_DATA_THREAD_POOL_SIZE;
 
 public class ShuffleTaskManager {
 
@@ -187,6 +193,43 @@ public class ShuffleTaskManager {
 
   public void removeRequireBufferId(long requireId) {
     requireBufferIds.remove(requireId);
+  }
+
+  public void persistShuffleData() throws Exception {
+    List<Pair<String, Integer>> appIdAndShuffleIds =
+        shuffleTaskInfos
+            .entrySet()
+            .stream()
+            .flatMap(x -> x.getValue().getCachedBlockIds().keySet()
+                .stream().map(shuffleId -> Pair.of(x.getKey(), shuffleId)))
+            .collect(Collectors.toList());
+
+    ExecutorService executorService = Executors.newFixedThreadPool(
+        conf.get(STATEFUL_UPGRADE_FLUSH_ALL_DATA_THREAD_POOL_SIZE)
+    );
+
+    CountDownLatch countDownLatch = new CountDownLatch(appIdAndShuffleIds.size());
+    Set<String> appFailedSet = new HashSet<>();
+
+    for (Pair<String, Integer> task : appIdAndShuffleIds) {
+      String appId = task.getKey();
+      int shuffleId = task.getValue();
+      executorService.submit(() -> {
+        try {
+          commitShuffle(appId, shuffleId);
+        } catch (Exception exception) {
+          LOG.error("Errors on flushing memory data to persistent storage. AppId: {}, shuffleId: {}",
+              appId, shuffleId, exception);
+          appFailedSet.add(appId);
+        } finally {
+          countDownLatch.countDown();
+        }
+      });
+    }
+    countDownLatch.await();
+    executorService.shutdown();
+    LOG.info("Flushing all shuffle data, total app: {}, failed app: {}",
+        appIdAndShuffleIds.size(), appFailedSet.size());
   }
 
   public StatusCode commitShuffle(String appId, int shuffleId) throws Exception {
@@ -528,5 +571,36 @@ public class ShuffleTaskManager {
 
   public ShuffleDataDistributionType getDataDistributionType(String appId) {
     return shuffleTaskInfos.get(appId).getDataDistType();
+  }
+
+  public AtomicLong getRequireBufferId() {
+    return requireBufferId;
+  }
+
+  public Map<String, ShuffleTaskInfo> getShuffleTaskInfos() {
+    return shuffleTaskInfos;
+  }
+
+  public void setPartitionsToBlockIds(
+      Map<String, Map<Integer, Roaring64NavigableMap[]>> partitionsToBlockIds) {
+    this.partitionsToBlockIds = partitionsToBlockIds;
+  }
+
+  public void setShuffleTaskInfos(Map<String, ShuffleTaskInfo> shuffleTaskInfos) {
+    this.shuffleTaskInfos = shuffleTaskInfos;
+  }
+
+  public void setRequireBufferIds(
+      Map<Long, PreAllocatedBufferInfo> requireBufferIds) {
+    this.requireBufferIds = requireBufferIds;
+  }
+
+  public void stopValidAppCheck() {
+    if (scheduledExecutorService != null) {
+      scheduledExecutorService.shutdown();
+    }
+    if (expiredAppCleanupExecutorService != null) {
+      expiredAppCleanupExecutorService.shutdown();
+    }
   }
 }

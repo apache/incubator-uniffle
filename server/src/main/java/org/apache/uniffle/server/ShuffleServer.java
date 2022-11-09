@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
 import org.apache.uniffle.common.rpc.ServerInterface;
@@ -50,6 +51,8 @@ import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_K
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_PRINCIPAL;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KRB5_CONF_FILE;
+import static org.apache.uniffle.server.ShuffleServerConf.STATEFUL_UPGRADE_ENABLED;
+import static org.apache.uniffle.server.ShuffleServerConf.__INTERNAL_STATEFUL_UPGRADE_RECOVERABLE_START_ENABLED;
 
 /**
  * Server that manages startup/shutdown of a {@code Greeter} server.
@@ -62,6 +65,7 @@ public class ShuffleServer {
   private String ip;
   private int port;
   private ShuffleServerConf shuffleServerConf;
+  private boolean recoverableStart;
   private JettyServer jettyServer;
   private ShuffleTaskManager shuffleTaskManager;
   private ServerInterface server;
@@ -72,9 +76,17 @@ public class ShuffleServer {
   private Set<String> tags = Sets.newHashSet();
   private AtomicBoolean isHealthy = new AtomicBoolean(true);
   private GRPCMetrics grpcMetrics;
+  private StatefulUpgradeManager statefulUpgradeManager;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
+    this(shuffleServerConf, false);
+  }
+
+  public ShuffleServer(ShuffleServerConf shuffleServerConf, boolean recoverableStart) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
+    this.recoverableStart = recoverableStart;
+    shuffleServerConf.set(__INTERNAL_STATEFUL_UPGRADE_RECOVERABLE_START_ENABLED, recoverableStart);
+
     try {
       initialization();
     } catch (Exception e) {
@@ -93,8 +105,13 @@ public class ShuffleServer {
     String configFile = arguments.getConfigFile();
     LOG.info("Start to init shuffle server using config {}", configFile);
 
+    boolean recoverableStart = arguments.isRecoverEnable();
+    if (recoverableStart) {
+      LOG.info("Start to recover from the state.");
+    }
+
     ShuffleServerConf shuffleServerConf = new ShuffleServerConf(configFile);
-    final ShuffleServer shuffleServer = new ShuffleServer(shuffleServerConf);
+    final ShuffleServer shuffleServer = new ShuffleServer(shuffleServerConf, recoverableStart);
     shuffleServer.start();
 
     shuffleServer.blockUntilShutdown();
@@ -164,6 +181,12 @@ public class ShuffleServer {
     }
     SecurityContextFactory.get().init(securityConfig);
 
+    boolean statefulUpgradeEnable = shuffleServerConf.get(STATEFUL_UPGRADE_ENABLED);
+    if (!statefulUpgradeEnable && recoverableStart) {
+      throw new RssException("The config of " + STATEFUL_UPGRADE_ENABLED.key()
+          + " must be enabled when using recoverable start.");
+    }
+
     storageManager = StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     storageManager.start();
 
@@ -180,6 +203,14 @@ public class ShuffleServer {
     shuffleBufferManager = new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager);
     shuffleTaskManager = new ShuffleTaskManager(shuffleServerConf, shuffleFlushManager,
         shuffleBufferManager, storageManager);
+
+    if (statefulUpgradeEnable) {
+      LOG.info("Enable stateful upgrade manager.");
+      this.statefulUpgradeManager = new StatefulUpgradeManager(this, shuffleServerConf);
+      if (recoverableStart) {
+        statefulUpgradeManager.recoverState();
+      }
+    }
 
     setServer();
 
@@ -305,7 +336,16 @@ public class ShuffleServer {
     return isHealthy.get();
   }
 
+  public void markUnhealthy() {
+    isHealthy.set(false);
+  }
+
   public GRPCMetrics getGrpcMetrics() {
     return grpcMetrics;
+  }
+
+  // only for test case
+  public StatefulUpgradeManager getStatefulUpgradeManager() {
+    return statefulUpgradeManager;
   }
 }

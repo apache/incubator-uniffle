@@ -258,6 +258,10 @@ public class ShuffleFlushManager {
     return blockIds;
   }
 
+  public Map<String, Map<Integer, Roaring64NavigableMap>> getCommittedBlockIds() {
+    return committedBlockIds;
+  }
+
   public void removeResources(String appId) {
     handlers.remove(appId);
     committedBlockIds.remove(appId);
@@ -363,5 +367,10 @@ public class ShuffleFlushManager {
 
   public ShuffleDataDistributionType getDataDistributionType(String appId) {
     return shuffleServer.getShuffleTaskManager().getDataDistributionType(appId);
+  }
+
+  public void setCommittedBlockIds(
+      Map<String, Map<Integer, Roaring64NavigableMap>> committedBlockIds) {
+    this.committedBlockIds = committedBlockIds;
   }
 }

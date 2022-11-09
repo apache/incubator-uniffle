@@ -27,6 +27,7 @@ import org.apache.uniffle.common.config.ConfigOptions;
 import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.server.state.StateStoreFactory;
 
 public class ShuffleServerConf extends RssBaseConf {
 
@@ -307,6 +308,36 @@ public class ShuffleServerConf extends RssBaseConf {
       .longType()
       .defaultValue(60 * 1000L)
       .withDescription("The timeout of the cache which record the mapping information");
+
+  public static final ConfigOption<Boolean> __INTERNAL_STATEFUL_UPGRADE_RECOVERABLE_START_ENABLED = ConfigOptions
+      .key("__internal.rss.server.stateful.upgrade.recoverable.start.enable")
+      .booleanType()
+      .defaultValue(false)
+      .withDescription("");
+
+  public static final ConfigOption<Boolean> STATEFUL_UPGRADE_ENABLED = ConfigOptions
+      .key("rss.server.stateful.upgrade.enable")
+      .booleanType()
+      .defaultValue(true)
+      .withDescription("The switch for stateful upgrade");
+
+  public static final ConfigOption<StateStoreFactory.Type> STATEFUL_UPGRADE_STATE_STORE_TYPE = ConfigOptions
+      .key("rss.server.stateful.upgrade.state.store.type")
+      .enumType(StateStoreFactory.Type.class)
+      .defaultValue(StateStoreFactory.Type.KRYO_SERIALIZATION)
+      .withDescription("The type of state store, currently only the kyro serialization is supported.");
+
+  public static final ConfigOption<String> STATEFUL_UPGRADE_STATE_STORE_EXPORT_DATA_LOCATION = ConfigOptions
+      .key("rss.server.stateful.upgrade.state.export.location")
+      .stringType()
+      .noDefaultValue()
+      .withDescription("The location of state exported, currently only local file path is supported.");
+
+  public static final ConfigOption<Integer> STATEFUL_UPGRADE_FLUSH_ALL_DATA_THREAD_POOL_SIZE = ConfigOptions
+      .key("rss.server.stateful.upgrade.flush.data.thread.pool.size")
+      .intType()
+      .defaultValue(10)
+      .withDescription("The thread pool size of flushing all memory data to persistent storage. Default value is 10");
 
   public ShuffleServerConf() {
   }

@@ -44,6 +44,7 @@ public class LocalStorage extends AbstractStorage {
   private static final Logger LOG = LoggerFactory.getLogger(LocalStorage.class);
   public static final String STORAGE_HOST = "local";
 
+  private boolean recoverableStart;
   private long capacity;
   private final String basePath;
   private final double cleanupThreshold;
@@ -57,7 +58,6 @@ public class LocalStorage extends AbstractStorage {
   private boolean isSpaceEnough = true;
   private volatile boolean isCorrupted = false;
 
-
   private LocalStorage(Builder builder) {
     this.basePath = builder.basePath;
     this.cleanupThreshold = builder.cleanupThreshold;
@@ -66,27 +66,33 @@ public class LocalStorage extends AbstractStorage {
     this.lowWaterMarkOfWrite = builder.lowWaterMarkOfWrite;
     this.capacity = builder.capacity;
     this.shuffleExpiredTimeoutMs = builder.shuffleExpiredTimeoutMs;
+    this.recoverableStart = builder.recoverableStart;
 
     File baseFolder = new File(basePath);
-    try {
-      FileUtils.deleteDirectory(baseFolder);
-      if (!baseFolder.mkdirs()) {
-        throw new IOException("Failed to create base folder: " + basePath);
+    if (!recoverableStart) {
+      try {
+        LOG.info("Cleaning up the remaining shuffle data from local disk.");
+        FileUtils.deleteDirectory(baseFolder);
+        if (!baseFolder.mkdirs()) {
+          throw new IOException("Failed to create base folder: " + basePath);
+        }
+      } catch (IOException ioe) {
+        LOG.warn("Init base directory " + basePath + " fail, the disk should be corrupted", ioe);
+        throw new RuntimeException(ioe);
       }
-    } catch (IOException ioe) {
-      LOG.warn("Init base directory " + basePath + " fail, the disk should be corrupted", ioe);
-      throw new RuntimeException(ioe);
+
+      if (capacity > 0L) {
+        long freeSpace = baseFolder.getFreeSpace();
+        if (freeSpace < capacity) {
+          throw new IllegalArgumentException("The Disk of " + basePath + " Available Capacity " + freeSpace
+              + " is smaller than configuration");
+        }
+      }
     }
     if (capacity < 0L) {
       this.capacity = baseFolder.getTotalSpace();
       LOG.info("Make the disk capacity the total space when \"rss.server.disk.capacity\" is not specified "
           + "or less than 0");
-    } else {
-      long freeSpace = baseFolder.getFreeSpace();
-      if (freeSpace < capacity) {
-        throw new IllegalArgumentException("The Disk of " + basePath + " Available Capacity " + freeSpace
-            + " is smaller than configuration");
-      }
     }
   }
 
@@ -324,6 +330,7 @@ public class LocalStorage extends AbstractStorage {
     private String basePath;
     private long cleanIntervalMs;
     private long shuffleExpiredTimeoutMs;
+    private boolean recoverableStart;
 
     private Builder() {
     }
@@ -360,6 +367,11 @@ public class LocalStorage extends AbstractStorage {
 
     public Builder shuffleExpiredTimeoutMs(long shuffleExpiredTimeoutMs) {
       this.shuffleExpiredTimeoutMs = shuffleExpiredTimeoutMs;
+      return this;
+    }
+
+    public Builder recoverableStart(boolean recoverableStart) {
+      this.recoverableStart = recoverableStart;
       return this;
     }
 

@@ -68,11 +68,13 @@ public class LocalStorageManager extends SingleStorageManager {
   private final LocalStorageChecker checker;
   private List<LocalStorage> unCorruptedStorages = Lists.newArrayList();
   private final Set<String> corruptedStorages = Sets.newConcurrentHashSet();
+  private boolean recoverableStart;
 
   @VisibleForTesting
   LocalStorageManager(ShuffleServerConf conf) {
     super(conf);
-    storageBasePaths = conf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
+    this.storageBasePaths = conf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
+    this.recoverableStart = conf.get(ShuffleServerConf.__INTERNAL_STATEFUL_UPGRADE_RECOVERABLE_START_ENABLED);
     if (CollectionUtils.isEmpty(storageBasePaths)) {
       throw new IllegalArgumentException("Base path dirs must not be empty");
     }
@@ -100,6 +102,7 @@ public class LocalStorageManager extends SingleStorageManager {
               .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
               .highWaterMarkOfWrite(highWaterMarkOfWrite)
               .shuffleExpiredTimeoutMs(shuffleExpiredTimeoutMs)
+              .recoverableStart(recoverableStart)
               .build();
           successCount.incrementAndGet();
         } catch (Exception e) {
