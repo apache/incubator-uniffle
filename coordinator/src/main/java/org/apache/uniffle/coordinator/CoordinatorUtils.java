@@ -56,6 +56,13 @@ public class CoordinatorUtils {
 
   /**
    * Assign multiple adjacent partitionRanges to several servers
+   * Suppose totalPartitionNum=52, partition NumPerRange=2, serverNum=5, estimateTaskConcurrency=20
+   * The final result generated is:
+   * server1: [0,1] [2,3] [4,5] [6,7] [40,41] [42,43]
+   * server2: [8,9] [10,11] [12,13] [14,15] [44,45]
+   * server3: [16,17] [18,19] [20,21] [22,23] [46,47]
+   * server4: [24,25] [26,27] [28,29] [30,31] [48,49]
+   * server5: [32,33] [34,35] [36,37] [38,39] [50,51]
    */
   public static List<List<PartitionRange>> generateRangesGroup(int totalPartitionNum, int partitionNumPerRange,
       int serverNum, int estimateTaskConcurrency) {
