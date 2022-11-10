@@ -210,7 +210,8 @@ public class RssMRAppMaster extends MRAppMaster {
                           numReduceTasks,
                           1,
                           Sets.newHashSet(assignmentTags),
-                          requiredAssignmentShuffleServersNum
+                          requiredAssignmentShuffleServersNum,
+                          -1
                   );
 
           Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =

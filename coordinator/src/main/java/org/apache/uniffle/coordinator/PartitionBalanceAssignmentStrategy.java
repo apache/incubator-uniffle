@@ -17,15 +17,14 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.TreeMap;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,13 +67,14 @@ public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrate
       int partitionNumPerRange,
       int replica,
       Set<String> requiredTags,
-      int requiredShuffleServerNumber) {
+      int requiredShuffleServerNumber,
+      int estimateTaskConcurrency) {
 
     if (partitionNumPerRange != 1) {
       throw new RuntimeException("PartitionNumPerRange must be one");
     }
 
-    SortedMap<PartitionRange, List<ServerNode>> assignments = new TreeMap<>();
+    SortedMap<PartitionRange, List<ServerNode>> assignments;
     synchronized (this) {
       List<ServerNode> nodes = clusterManager.getServerList(requiredTags);
       Map<ServerNode, PartitionAssignmentInfo> newPartitionInfos = Maps.newConcurrentMap();
@@ -121,18 +121,10 @@ public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrate
       }
 
       List<ServerNode> candidatesNodes = getCandidateNodes(nodes, expectNum);
-      int idx = 0;
-      List<List<PartitionRange>> rangesGroup = CoordinatorUtils.generateRangesGroup(totalPartitionNum, 1, expectNum);
-      for (List<PartitionRange> ranges : rangesGroup) {
-        List<ServerNode> assignNodes = Lists.newArrayList();
-        for (int rc = 0; rc < replica; rc++) {
-          ServerNode node = candidatesNodes.get(idx);
-          idx = CoordinatorUtils.nextIdx(idx, candidatesNodes.size());
-          serverToPartitions.get(node).incrementPartitionNum(ranges.size());
-          assignNodes.add(node);
-        }
-        ranges.forEach(range -> assignments.put(range, assignNodes));
-      }
+      assignments = getPartitionAssignment(totalPartitionNum, partitionNumPerRange, replica,
+          candidatesNodes, estimateTaskConcurrency);
+      assignments.values().stream().flatMap(Collection::stream)
+          .forEach(server -> serverToPartitions.get(server).incrementPartitionNum());
     }
     return new PartitionRangeAssignment(assignments);
   }

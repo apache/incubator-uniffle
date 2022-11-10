@@ -17,11 +17,15 @@
 
 package org.apache.uniffle.coordinator;
 
-import java.util.Set;
+import java.util.List;
+import java.util.SortedMap;
 
-public interface AssignmentStrategy {
+import org.apache.uniffle.common.PartitionRange;
 
-  PartitionRangeAssignment assign(int totalPartitionNum, int partitionNumPerRange,
-      int replica, Set<String> requiredTags, int requiredShuffleServerNumber, int estimateTaskConcurrency);
-
+public interface SelectPartitionStrategy {
+  /**
+   * Partition allocation strategy, which defines how to assign several partitions to several servers
+   */
+  SortedMap<PartitionRange, List<ServerNode>> assign(int totalPartitionNum,
+      int replica, int partitionNumPerRange, List<ServerNode> candidatesNodes, int estimateTaskConcurrency);
 }

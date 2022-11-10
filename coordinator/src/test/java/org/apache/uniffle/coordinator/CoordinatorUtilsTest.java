@@ -93,15 +93,43 @@ public class CoordinatorUtilsTest {
 
   @Test
   public void testGenerateRangesGroup() {
-    List<List<PartitionRange>> res = CoordinatorUtils.generateRangesGroup(44,2, 5);
-    assertEquals(5, res.size());
-    assertEquals(5, res.get(0).size());
-    assertEquals(5, res.get(1).size());
-    assertEquals(4, res.get(2).size());
+    List<List<PartitionRange>> rangesGroup = CoordinatorUtils.generateRangesGroup(52,2, 5, 20);
+    assertEquals(10, rangesGroup.size());
+    validate(new int[]{4, 4, 4, 4, 4, 2, 1, 1, 1, 1}, rangesGroup);
 
-    res = CoordinatorUtils.generateRangesGroup(1, 1, 5);
-    assertEquals(1, res.size());
-    assertEquals(1, res.get(0).size());
+    rangesGroup = CoordinatorUtils.generateRangesGroup(48,2, 5, 20);
+    assertEquals(9, rangesGroup.size());
+    validate(new int[]{4, 4, 4, 4, 4, 1, 1, 1, 1}, rangesGroup);
+
+    rangesGroup = CoordinatorUtils.generateRangesGroup(96,2, 5, 20);
+    assertEquals(15, rangesGroup.size());
+    validate(new int[]{4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 2, 2, 1, 1}, rangesGroup);
+
+    rangesGroup = CoordinatorUtils.generateRangesGroup(96,2, 5, 30);
+    assertEquals(10, rangesGroup.size());
+    validate(new int[]{6, 6, 6, 6, 6, 4, 4, 4, 3, 3}, rangesGroup);
+
+    rangesGroup = CoordinatorUtils.generateRangesGroup(48,1, 5, 20);
+    assertEquals(15, rangesGroup.size());
+    validate(new int[]{4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 2, 2, 1, 1}, rangesGroup);
+
+    rangesGroup = CoordinatorUtils.generateRangesGroup(26,2, 5, 4);
+    assertEquals(13, rangesGroup.size());
+    validate(new int[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, rangesGroup);
+
+    rangesGroup = CoordinatorUtils.generateRangesGroup(2,2, 5, 4);
+    assertEquals(1, rangesGroup.size());
+    validate(new int[]{1}, rangesGroup);
+
+    rangesGroup = CoordinatorUtils.generateRangesGroup(12,2, 5, 0);
+    assertEquals(6, rangesGroup.size());
+    validate(new int[]{1, 1, 1, 1, 1, 1}, rangesGroup);
+  }
+
+  private void validate(int[] expect, List<List<PartitionRange>> rangesGroup) {
+    for (int i = 0; i < expect.length; i++) {
+      assertEquals(expect[i], rangesGroup.get(i).size());
+    }
   }
 
 }

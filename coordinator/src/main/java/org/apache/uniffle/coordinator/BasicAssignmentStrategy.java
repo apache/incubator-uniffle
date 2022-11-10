@@ -18,11 +18,9 @@
 package org.apache.uniffle.coordinator;
 
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,8 +40,7 @@ public class BasicAssignmentStrategy extends AbstractAssignmentStrategy {
 
   @Override
   public PartitionRangeAssignment assign(int totalPartitionNum, int partitionNumPerRange,
-      int replica, Set<String> requiredTags, int requiredShuffleServerNumber) {
-    List<PartitionRange> ranges = CoordinatorUtils.generateRanges(totalPartitionNum, partitionNumPerRange);
+      int replica, Set<String> requiredTags, int requiredShuffleServerNumber, int estimateTaskConcurrency) {
     int shuffleNodesMax = clusterManager.getShuffleNodesMax();
     int expectedShuffleNodesNum = shuffleNodesMax;
     if (requiredShuffleServerNumber < shuffleNodesMax && requiredShuffleServerNumber > 0) {
@@ -54,20 +51,8 @@ public class BasicAssignmentStrategy extends AbstractAssignmentStrategy {
       return new PartitionRangeAssignment(null);
     }
 
-    SortedMap<PartitionRange, List<ServerNode>> assignments = new TreeMap<>();
-    int idx = 0;
-    int size = servers.size();
-
-    for (PartitionRange range : ranges) {
-      List<ServerNode> nodes = new LinkedList<>();
-      for (int i = 0; i < replica; ++i) {
-        ServerNode node = servers.get(idx);
-        nodes.add(node);
-        idx = CoordinatorUtils.nextIdx(idx, size);
-      }
-
-      assignments.put(range, nodes);
-    }
+    SortedMap<PartitionRange, List<ServerNode>> assignments =
+        getPartitionAssignment(totalPartitionNum, partitionNumPerRange, replica, servers, estimateTaskConcurrency);
 
     return new PartitionRangeAssignment(assignments);
   }

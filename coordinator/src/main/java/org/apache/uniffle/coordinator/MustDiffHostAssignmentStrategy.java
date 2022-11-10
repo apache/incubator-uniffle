@@ -17,11 +17,26 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-public interface AssignmentStrategy {
-
-  PartitionRangeAssignment assign(int totalPartitionNum, int partitionNumPerRange,
-      int replica, Set<String> requiredTags, int requiredShuffleServerNumber, int estimateTaskConcurrency);
-
+public class MustDiffHostAssignmentStrategy implements HostAssignmentStrategy {
+  @Override
+  public List<ServerNode> assign(List<ServerNode> allNodes, int expectNum) {
+    List<ServerNode> candidatesNodes = new ArrayList<>();
+    Set<String> hostIpCandidate = new HashSet<>();
+    for (ServerNode node : allNodes) {
+      if (hostIpCandidate.contains(node.getIp())) {
+        continue;
+      }
+      hostIpCandidate.add(node.getIp());
+      candidatesNodes.add(node);
+      if (candidatesNodes.size() >= expectNum) {
+        break;
+      }
+    }
+    return candidatesNodes;
+  }
 }

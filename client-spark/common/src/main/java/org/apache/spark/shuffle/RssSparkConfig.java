@@ -241,6 +241,20 @@ public class RssSparkConfig {
           .doc("Coordinator quorum"))
       .createWithDefault("");
 
+  public static final ConfigEntry<Double> RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR = createDoubleBuilder(
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX +  RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR)
+          .doc("Between 0 and 1, used to estimate task concurrency, how likely is this part of the resource between"
+                   + " spark.dynamicAllocation.minExecutors and spark.dynamicAllocation.maxExecutors"
+                   + " to be allocated"))
+      .createWithDefault(RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR_DEFAULT_VALUE);
+
+  public static final ConfigEntry<Boolean> RSS_ESTIMATE_TASK_CONCURRENCY_ENABLED = createBooleanBuilder(
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_ENABLED)
+          .doc("When the Coordinator enables rss.coordinator.select.partition.strategy,"
+                   + " this configuration item is valid and is used to estimate how many consecutive"
+                   + " PartitionRanges should be allocated to a ShuffleServer"))
+      .createWithDefault(RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DEFAULT_VALUE);
+
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
       ImmutableSet.of(RSS_STORAGE_TYPE.key(), RSS_REMOTE_STORAGE_PATH.key());
 

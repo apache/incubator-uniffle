@@ -42,8 +42,8 @@ public class CoordinatorUtils {
     List<RssProtos.PartitionRangeAssignment> praList = pra.convertToGrpcProto();
 
     return GetShuffleAssignmentsResponse.newBuilder()
-        .addAllAssignments(praList)
-        .build();
+               .addAllAssignments(praList)
+               .build();
   }
 
   public static int nextIdx(int idx, int size) {
@@ -58,15 +58,19 @@ public class CoordinatorUtils {
    * Assign multiple adjacent partitionRanges to several servers
    */
   public static List<List<PartitionRange>> generateRangesGroup(int totalPartitionNum, int partitionNumPerRange,
-      int serverNum) {
+      int serverNum, int estimateTaskConcurrency) {
     List<List<PartitionRange>> res = Lists.newArrayList();
     if (totalPartitionNum <= 0 || partitionNumPerRange <= 0) {
       return res;
     }
-    int rangePerServer = Math.floorDiv(totalPartitionNum, partitionNumPerRange * serverNum);
-    int remainRange = rangePerServer > 0 ? ((totalPartitionNum) / partitionNumPerRange) % rangePerServer :
-                          totalPartitionNum;
+    int rangePerGroup = estimateTaskConcurrency > serverNum
+                            ? Math.floorDiv(estimateTaskConcurrency, serverNum) : 1;
+    int totalRanges = (int) Math.ceil(totalPartitionNum * 1.0 / partitionNumPerRange);
     int groupCount = 0;
+    int round =  Math.floorDiv(totalRanges, rangePerGroup * serverNum);
+    int remainRange = totalRanges % (rangePerGroup * serverNum);
+    int lastRoundRangePerGroup = Math.floorDiv(remainRange, serverNum);
+    int lastRoundRemainRange = remainRange % serverNum;
     int rangeInGroupCount = 0;
 
     List<PartitionRange> rangeGroup = Lists.newArrayList();
@@ -75,12 +79,18 @@ public class CoordinatorUtils {
       PartitionRange range = new PartitionRange(start, end);
       rangeGroup.add(range);
       rangeInGroupCount += 1;
-      if ((groupCount < remainRange && rangeInGroupCount == rangePerServer + 1)
-              || (groupCount >= remainRange && rangeInGroupCount == rangePerServer)) {
+
+      boolean isLastRound = groupCount >= round * serverNum;
+      if ((!isLastRound && rangeInGroupCount == rangePerGroup)
+              || (isLastRound
+                      && ((groupCount % serverNum < lastRoundRemainRange
+                               && rangeInGroupCount == lastRoundRangePerGroup + 1)
+                              || (groupCount % serverNum >= lastRoundRemainRange
+                                      && rangeInGroupCount == lastRoundRangePerGroup)))) {
         res.add(Lists.newArrayList(rangeGroup));
         rangeGroup.clear();
-        groupCount += 1;
         rangeInGroupCount = 0;
+        groupCount += 1;
       }
     }
 

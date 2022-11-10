@@ -233,7 +233,7 @@ public class RssShuffleManager implements ShuffleManager {
       partitionToServers = RetryUtils.retry(() -> {
         ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
                 appId, shuffleId, dependency.partitioner().numPartitions(),
-                partitionNumPerRange, assignmentTags, requiredShuffleServerNumber);
+                partitionNumPerRange, assignmentTags, requiredShuffleServerNumber, -1);
         registerShuffleServers(appId, shuffleId, response.getServerToPartitionRanges(), remoteStorage);
         return response.getPartitionToServers();
       }, retryInterval, retryTimes);

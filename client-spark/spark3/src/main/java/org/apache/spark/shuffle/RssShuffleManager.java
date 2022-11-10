@@ -282,6 +282,9 @@ public class RssShuffleManager implements ShuffleManager {
     // retryInterval must bigger than `rss.server.heartbeat.timeout`, or maybe it will return the same result
     long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL);
     int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES);
+    boolean enabledEstimateTaskConcurrency = sparkConf.get(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_ENABLED);
+    int estimateTaskConcurrency = enabledEstimateTaskConcurrency
+                                  ? RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf) : -1;
     Map<Integer, List<ShuffleServerInfo>> partitionToServers;
     try {
       partitionToServers = RetryUtils.retry(() -> {
@@ -291,7 +294,8 @@ public class RssShuffleManager implements ShuffleManager {
                 dependency.partitioner().numPartitions(),
                 1,
                 assignmentTags,
-                requiredShuffleServerNumber);
+                requiredShuffleServerNumber,
+                estimateTaskConcurrency);
         registerShuffleServers(id.get(), shuffleId, response.getServerToPartitionRanges(), remoteStorage);
         return response.getPartitionToServers();
       }, retryInterval, retryTimes);
