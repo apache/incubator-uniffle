@@ -28,12 +28,12 @@ import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.common.exception.RssException;
 
-public class KryoSerializationStateStore implements StateStore {
+public class FileStateStore implements StateStore {
 
   // todo: Support storing state to remote filesystem, like HDFS/S3 and so on.
   private String stateLocationPath;
 
-  public KryoSerializationStateStore(@Nonnull String stateLocationPath) {
+  public FileStateStore(@Nonnull String stateLocationPath) {
     if (StringUtils.isEmpty(stateLocationPath)) {
       throw new RssException("State store location should be not empty");
     }
@@ -42,6 +42,7 @@ public class KryoSerializationStateStore implements StateStore {
 
   public void export(ShuffleServerState state) throws Exception {
     Output output = new Output(new FileOutputStream(stateLocationPath));
+    // todo: Extract the serialization method as a general interface to support more serialization mode.
     new Kryo().writeObject(output, state);
     output.close();
   }

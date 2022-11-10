@@ -29,19 +29,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class KryoSerializationStateStoreTest {
+public class FileStateStoreTest {
 
   @Test
   public void testIllegalArgs() {
     try {
-      new KryoSerializationStateStore("");
+      new FileStateStore("");
       fail();
     } catch (Exception e) {
       // ignore
     }
 
     try {
-      new KryoSerializationStateStore(null);
+      new FileStateStore(null);
       fail();
     } catch (Exception e) {
       // ignore
@@ -51,7 +51,7 @@ public class KryoSerializationStateStoreTest {
   @Test
   public void test(@TempDir File tempDir) throws Exception {
     String location = tempDir.getAbsolutePath() + "/state.bin";
-    StateStore stateStore = new KryoSerializationStateStore(location);
+    StateStore stateStore = new FileStateStore(location);
 
     Map<String, Map<Integer, Roaring64NavigableMap[]>> partitionsToBlockIds = Maps.newConcurrentMap();
     partitionsToBlockIds.putIfAbsent("testAppId", Maps.newConcurrentMap());

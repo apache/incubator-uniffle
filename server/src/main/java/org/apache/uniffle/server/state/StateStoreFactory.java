@@ -20,7 +20,7 @@ package org.apache.uniffle.server.state;
 public class StateStoreFactory {
 
   public enum Type {
-    KRYO_SERIALIZATION
+    FILE
   }
 
   private StateStoreFactory() {
@@ -37,9 +37,9 @@ public class StateStoreFactory {
 
   public StateStore get(Type storeType, String storeLocation) {
     switch (storeType) {
-      case KRYO_SERIALIZATION:
+      case FILE:
       default:
-        return new KryoSerializationStateStore(storeLocation);
+        return new FileStateStore(storeLocation);
     }
   }
 }

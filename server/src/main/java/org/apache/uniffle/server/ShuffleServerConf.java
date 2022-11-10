@@ -324,8 +324,8 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<StateStoreFactory.Type> STATEFUL_UPGRADE_STATE_STORE_TYPE = ConfigOptions
       .key("rss.server.stateful.upgrade.state.store.type")
       .enumType(StateStoreFactory.Type.class)
-      .defaultValue(StateStoreFactory.Type.KRYO_SERIALIZATION)
-      .withDescription("The type of state store, currently only the kyro serialization is supported.");
+      .defaultValue(StateStoreFactory.Type.FILE)
+      .withDescription("The type of state store, currently only the FILE is supported.");
 
   public static final ConfigOption<String> STATEFUL_UPGRADE_STATE_STORE_EXPORT_DATA_LOCATION = ConfigOptions
       .key("rss.server.stateful.upgrade.state.export.location")
