@@ -85,7 +85,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
   }
 
   public CoordinatorGrpcClient(String host, int port, int maxRetryAttempts, boolean usePlaintext) {
-    super(host, port, maxRetryAttempts, usePlaintext);
+    super(host, port, maxRetryAttempts, usePlaintext, null);
     blockingStub = CoordinatorServerGrpc.newBlockingStub(channel);
   }
 

@@ -318,7 +318,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Boolean> STATEFUL_UPGRADE_ENABLED = ConfigOptions
       .key("rss.server.stateful.upgrade.enable")
       .booleanType()
-      .defaultValue(true)
+      .defaultValue(false)
       .withDescription("The switch for stateful upgrade");
 
   public static final ConfigOption<StateStoreFactory.Type> STATEFUL_UPGRADE_STATE_STORE_TYPE = ConfigOptions

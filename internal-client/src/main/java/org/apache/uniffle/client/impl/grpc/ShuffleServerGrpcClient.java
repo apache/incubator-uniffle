@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
+import io.grpc.ClientInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +54,7 @@ import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
+import org.apache.uniffle.client.retry.StatefulUpgradeRetryStrategy;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -105,6 +107,10 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   private long rpcTimeout = RPC_TIMEOUT_DEFAULT_MS;
   private ShuffleServerBlockingStub blockingStub;
 
+  private static ClientInterceptor[] clientInterceptors = new ClientInterceptor[]{
+      new RetryInterceptor(new StatefulUpgradeRetryStrategy(150, 2000, 2000))
+  };
+
   public ShuffleServerGrpcClient(String host, int port) {
     this(host, port, 3);
   }
@@ -114,7 +120,13 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   }
 
   public ShuffleServerGrpcClient(String host, int port, int maxRetryAttempts, boolean usePlaintext) {
-    super(host, port, maxRetryAttempts, usePlaintext);
+    super(host, port, maxRetryAttempts, usePlaintext, clientInterceptors);
+    blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
+  }
+
+  @VisibleForTesting
+  public ShuffleServerGrpcClient(String host, int port, ClientInterceptor[] clientInterceptors) {
+    super(host, port, 3, true, clientInterceptors);
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
   }
   

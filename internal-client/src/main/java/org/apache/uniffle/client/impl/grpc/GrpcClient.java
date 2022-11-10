@@ -19,6 +19,7 @@ package org.apache.uniffle.client.impl.grpc;
 
 import java.util.concurrent.TimeUnit;
 
+import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
@@ -33,7 +34,12 @@ public abstract class GrpcClient {
   protected int maxRetryAttempts;
   protected ManagedChannel channel;
 
-  protected GrpcClient(String host, int port, int maxRetryAttempts, boolean usePlaintext) {
+  protected GrpcClient(
+      String host,
+      int port,
+      int maxRetryAttempts,
+      boolean usePlaintext,
+      ClientInterceptor[] clientInterceptors) {
     this.host = host;
     this.port = port;
     this.maxRetryAttempts = maxRetryAttempts;
@@ -49,6 +55,11 @@ public abstract class GrpcClient {
     if (maxRetryAttempts > 0) {
       channelBuilder.enableRetry().maxRetryAttempts(maxRetryAttempts);
     }
+
+    if (clientInterceptors != null && clientInterceptors.length > 0) {
+      channelBuilder.intercept(clientInterceptors);
+    }
+
     channelBuilder.maxInboundMessageSize(Integer.MAX_VALUE);
 
     channel = channelBuilder.build();
