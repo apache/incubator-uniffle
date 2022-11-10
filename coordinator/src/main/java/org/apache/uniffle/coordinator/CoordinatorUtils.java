@@ -56,7 +56,7 @@ public class CoordinatorUtils {
 
   /**
    * Assign multiple adjacent partitionRanges to several servers
-   * Suppose totalPartitionNum=52, partition NumPerRange=2, serverNum=5, estimateTaskConcurrency=20
+   * Suppose totalPartitionNum=52, partitionNumPerRange=2, serverNum=5, estimateTaskConcurrency=20
    * The final result generated is:
    * server1: [0,1] [2,3] [4,5] [6,7] [40,41] [42,43]
    * server2: [8,9] [10,11] [12,13] [14,15] [44,45]
@@ -70,8 +70,8 @@ public class CoordinatorUtils {
     if (totalPartitionNum <= 0 || partitionNumPerRange <= 0) {
       return res;
     }
-    int rangePerGroup = estimateTaskConcurrency > serverNum
-                            ? Math.floorDiv(estimateTaskConcurrency, serverNum) : 1;
+    int rangePerGroup = estimateTaskConcurrency > serverNum * partitionNumPerRange
+                            ? Math.floorDiv(estimateTaskConcurrency, serverNum * partitionNumPerRange) : 1;
     int totalRanges = (int) Math.ceil(totalPartitionNum * 1.0 / partitionNumPerRange);
     int groupCount = 0;
     int round =  Math.floorDiv(totalRanges, rangePerGroup * serverNum);

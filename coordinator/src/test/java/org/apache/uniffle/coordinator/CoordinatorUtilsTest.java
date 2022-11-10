@@ -94,20 +94,20 @@ public class CoordinatorUtilsTest {
   @Test
   public void testGenerateRangesGroup() {
     List<List<PartitionRange>> rangesGroup = CoordinatorUtils.generateRangesGroup(52,2, 5, 20);
-    assertEquals(10, rangesGroup.size());
-    validate(new int[]{4, 4, 4, 4, 4, 2, 1, 1, 1, 1}, rangesGroup);
+    assertEquals(15, rangesGroup.size());
+    validate(new int[]{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1}, rangesGroup);
 
     rangesGroup = CoordinatorUtils.generateRangesGroup(48,2, 5, 20);
-    assertEquals(9, rangesGroup.size());
-    validate(new int[]{4, 4, 4, 4, 4, 1, 1, 1, 1}, rangesGroup);
+    assertEquals(14, rangesGroup.size());
+    validate(new int[]{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1}, rangesGroup);
 
     rangesGroup = CoordinatorUtils.generateRangesGroup(96,2, 5, 20);
-    assertEquals(15, rangesGroup.size());
-    validate(new int[]{4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 2, 2, 1, 1}, rangesGroup);
+    assertEquals(25, rangesGroup.size());
+    validate(new int[]{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1}, rangesGroup);
 
     rangesGroup = CoordinatorUtils.generateRangesGroup(96,2, 5, 30);
-    assertEquals(10, rangesGroup.size());
-    validate(new int[]{6, 6, 6, 6, 6, 4, 4, 4, 3, 3}, rangesGroup);
+    assertEquals(18, rangesGroup.size());
+    validate(new int[]{3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1}, rangesGroup);
 
     rangesGroup = CoordinatorUtils.generateRangesGroup(48,1, 5, 20);
     assertEquals(15, rangesGroup.size());
