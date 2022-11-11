@@ -158,4 +158,34 @@ public class RssSparkShuffleUtilsTest {
     assertEquals(Integer.toString(RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE),
         conf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX.key()));
   }
+
+  @Test
+  public void testEstimateTaskConcurrency() {
+    SparkConf sparkConf = new SparkConf();
+    sparkConf.set(Constants.SPARK_DYNAMIC_ENABLED, "true");
+    sparkConf.set(Constants.SPARK_MAX_DYNAMIC_EXECUTOR, "200");
+    sparkConf.set(Constants.SPARK_MIN_DYNAMIC_EXECUTOR, "100");
+    sparkConf.set(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_ENABLED, true);
+    sparkConf.set(Constants.SPARK_EXECUTOR_CORES, "2");
+    int taskConcurrency;
+
+    sparkConf.set(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR, 1.0);
+    taskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
+    assertEquals(400, taskConcurrency);
+
+    sparkConf.set(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR, 0.3);
+    taskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
+    assertEquals(260, taskConcurrency);
+
+    sparkConf.set(Constants.SPARK_TASK_CPUS, "2");
+    sparkConf.set(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR, 0.3);
+    taskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
+    assertEquals(130, taskConcurrency);
+
+    sparkConf.set(Constants.SPARK_DYNAMIC_ENABLED, "false");
+    sparkConf.set(Constants.SPARK_EXECUTOR_INSTANTS, "70");
+    sparkConf.set(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR, 1.0);
+    taskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
+    assertEquals(70, taskConcurrency);
+  }
 }

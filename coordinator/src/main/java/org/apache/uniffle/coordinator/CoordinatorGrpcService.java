@@ -110,6 +110,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     final int replica = request.getDataReplica();
     final Set<String> requiredTags = Sets.newHashSet(request.getRequireTagsList());
     final int requiredShuffleServerNumber = request.getAssignmentShuffleServerNumber();
+    final int estimateTaskConcurrency = request.getEstimateTaskConcurrency();
 
     LOG.info("Request of getShuffleAssignments for appId[" + appId
         + "], shuffleId[" + shuffleId + "], partitionNum[" + partitionNum
@@ -127,7 +128,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       final PartitionRangeAssignment pra =
           coordinatorServer
               .getAssignmentStrategy()
-              .assign(partitionNum, partitionNumPerRange, replica, requiredTags, requiredShuffleServerNumber);
+              .assign(partitionNum, partitionNumPerRange, replica, requiredTags,
+                  requiredShuffleServerNumber, estimateTaskConcurrency);
       response =
           CoordinatorUtils.toGetShuffleAssignmentsResponse(pra);
       logAssignmentResult(appId, shuffleId, pra);

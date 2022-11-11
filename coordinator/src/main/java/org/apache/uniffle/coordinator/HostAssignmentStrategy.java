@@ -17,11 +17,8 @@
 
 package org.apache.uniffle.coordinator;
 
-import java.util.Set;
+import java.util.List;
 
-public interface AssignmentStrategy {
-
-  PartitionRangeAssignment assign(int totalPartitionNum, int partitionNumPerRange,
-      int replica, Set<String> requiredTags, int requiredShuffleServerNumber, int estimateTaskConcurrency);
-
+public interface HostAssignmentStrategy {
+  List<ServerNode> assign(List<ServerNode> allNodes, int expectNum);
 }

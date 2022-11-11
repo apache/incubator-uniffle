@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
 
 public class RssSparkShuffleUtils {
@@ -134,5 +135,30 @@ public class RssSparkShuffleUtils {
     }
     assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
     return assignmentTags;
+  }
+
+  public static int estimateTaskConcurrency(SparkConf sparkConf) {
+    int taskConcurrency;
+    double dynamicAllocationFactor = sparkConf.get(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR);
+    if (dynamicAllocationFactor > 1 || dynamicAllocationFactor < 0) {
+      throw new RssException("dynamicAllocationFactor is not valid: " + dynamicAllocationFactor);
+    }
+    int executorCores = sparkConf.getInt(Constants.SPARK_EXECUTOR_CORES, Constants.SPARK_EXECUTOR_CORES_DEFAULT_VALUE);
+    int taskCpus = sparkConf.getInt(Constants.SPARK_TASK_CPUS, Constants.SPARK_TASK_CPUS_DEFAULT_VALUE);
+    int taskConcurrencyPerExecutor = Math.floorDiv(executorCores, taskCpus);
+    if (!sparkConf.getBoolean(Constants.SPARK_DYNAMIC_ENABLED, false)) {
+      int executorInstances = sparkConf.getInt(Constants.SPARK_EXECUTOR_INSTANTS,
+          Constants.SPARK_EXECUTOR_INSTANTS_DEFAULT_VALUE);
+      taskConcurrency =  executorInstances > 0 ? executorInstances * taskConcurrencyPerExecutor : 0;
+    } else {
+      // Default is infinity
+      int maxExecutors = Math.min(sparkConf.getInt(Constants.SPARK_MAX_DYNAMIC_EXECUTOR,
+          Constants.SPARK_DYNAMIC_EXECUTOR_DEFAULT_VALUE), Constants.SPARK_MAX_DYNAMIC_EXECUTOR_LIMIT);
+      int minExecutors = sparkConf.getInt(Constants.SPARK_MIN_DYNAMIC_EXECUTOR,
+          Constants.SPARK_DYNAMIC_EXECUTOR_DEFAULT_VALUE);
+      taskConcurrency = (int)((maxExecutors - minExecutors) * dynamicAllocationFactor + minExecutors)
+                            * taskConcurrencyPerExecutor;
+    }
+    return taskConcurrency;
   }
 }
