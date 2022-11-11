@@ -72,7 +72,7 @@ public class ApplicationManager {
   private FileSystem hadoopFileSystem;
   private final AtomicLong quotaFileLastModify = new AtomicLong(0L);
   private Map<String, Integer> defaultUserApps = Maps.newConcurrentMap();
-  // it's only for test case to checkResource if status checkResource has problem
+  // it's only for test case to check if status check has problem
   private boolean hasErrorInStatusCheck = false;
 
   public ApplicationManager(CoordinatorConf conf) {
@@ -123,7 +123,6 @@ public class ApplicationManager {
     // if appId created successfully, we need to remove the uuid
     appAndTime.remove(uuidFromApp);
     appAndTime.put(appId, currentTimeMillis);
-    LOG.error("SSSSSS: user: {}, appSet: {}, appId: {}.", user, appAndTime, appId);
   }
 
   public void refreshRemoteStorage(String remoteStoragePath, String remoteStorageConf) {
@@ -266,15 +265,15 @@ public class ApplicationManager {
       for (Map<String, Long> appAndTimes : appAndNums) {
         for (Map.Entry<String, Long> appAndTime : appAndTimes.entrySet()) {
           String appId = appAndTime.getKey();
-          appIds.put(appId, appAndTime.getValue());
           long lastReport = appAndTime.getValue();
+          appIds.put(appId, lastReport);
           if (System.currentTimeMillis() - lastReport > expired) {
             expiredAppIds.add(appId);
             appAndTimes.remove(appId);
           }
         }
       }
-      LOG.info("Start to checkResource status for " + appIds.size() + " applications");
+      LOG.info("Start to check status for " + appIds.size() + " applications");
       for (String appId : expiredAppIds) {
         LOG.info("Remove expired application:" + appId);
         appIds.remove(appId);

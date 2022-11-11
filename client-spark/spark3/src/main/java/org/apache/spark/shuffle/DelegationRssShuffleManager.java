@@ -128,6 +128,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
           RssAccessClusterResponse response = coordinatorClient.accessCluster(new RssAccessClusterRequest(
               accessId, assignmentTags, accessTimeoutMs, extraProperties, user));
           if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+            LOG.warn("Success to access cluster {} using {}", coordinatorClient.getDesc(), accessId);
             uuid = response.getUuid();
             return true;
           } else if (response.getStatusCode() == ResponseStatusCode.ACCESS_DENIED) {

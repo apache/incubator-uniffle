@@ -77,7 +77,7 @@ public class ShuffleUnregisterWithLocalfileTest extends SparkIntegrationTestBase
     JavaPairRDD<String, Iterable<String>> javaPairRDD = javaPairRDD1.groupByKey().sortByKey();
     Map map = javaPairRDD.collectAsMap();
 
-    // The second run will use the rss. and we should checkResource the effectiveness of unregisterShuffle method.
+    // The second run will use the rss. and we should check the effectiveness of unregisterShuffle method.
     if (runCounter == 1) {
       String path = shuffleServers.get(0).getShuffleServerConf()
           .get(RssBaseConf.RSS_STORAGE_BASE_PATH).get(0);

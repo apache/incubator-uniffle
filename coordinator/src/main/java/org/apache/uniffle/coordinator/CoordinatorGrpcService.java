@@ -243,8 +243,6 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         .setRetMsg(result.getMsg())
         .setUuid(result.getUuid())
         .build();
-    LOG.error("SSSSSS: handle request for user {}, uuid is {}, code is {}",
-        accessInfo, response.getUuid(), response.getStatus());
 
     if (Context.current().isCancelled()) {
       responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
