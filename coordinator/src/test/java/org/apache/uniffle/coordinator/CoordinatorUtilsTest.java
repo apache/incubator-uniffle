@@ -124,6 +124,10 @@ public class CoordinatorUtilsTest {
     rangesGroup = CoordinatorUtils.generateRangesGroup(12,2, 5, 0);
     assertEquals(6, rangesGroup.size());
     validate(new int[]{1, 1, 1, 1, 1, 1}, rangesGroup);
+
+    rangesGroup = CoordinatorUtils.generateRangesGroup(24,2, 5, 50);
+    assertEquals(7, rangesGroup.size());
+    validate(new int[]{2, 2, 2, 2, 2, 1, 1}, rangesGroup);
   }
 
   private void validate(int[] expect, List<List<PartitionRange>> rangesGroup) {

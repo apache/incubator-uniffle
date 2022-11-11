@@ -55,7 +55,9 @@ public class CoordinatorUtils {
   }
 
   /**
-   * Assign multiple adjacent partitionRanges to several servers
+   * Assign multiple adjacent partitionRanges to several servers, The result returned is a double
+   * PartitionRange list, the first list will be assigned to server1,
+   * the second list will be assigned to server2, and so on.
    * Suppose totalPartitionNum=52, partitionNumPerRange=2, serverNum=5, estimateTaskConcurrency=20
    * The final result generated is:
    * server1: [0,1] [2,3] [4,5] [6,7] [40,41] [42,43]
@@ -70,6 +72,7 @@ public class CoordinatorUtils {
     if (totalPartitionNum <= 0 || partitionNumPerRange <= 0) {
       return res;
     }
+    estimateTaskConcurrency = Math.min(totalPartitionNum, estimateTaskConcurrency);
     int rangePerGroup = estimateTaskConcurrency > serverNum * partitionNumPerRange
                             ? Math.floorDiv(estimateTaskConcurrency, serverNum * partitionNumPerRange) : 1;
     int totalRanges = (int) Math.ceil(totalPartitionNum * 1.0 / partitionNumPerRange);
@@ -88,11 +91,12 @@ public class CoordinatorUtils {
       rangeInGroupCount += 1;
 
       boolean isLastRound = groupCount >= round * serverNum;
+      int groupIndexInRound = groupCount % serverNum;
       if ((!isLastRound && rangeInGroupCount == rangePerGroup)
               || (isLastRound
-                      && ((groupCount % serverNum < lastRoundRemainRange
+                      && ((groupIndexInRound < lastRoundRemainRange
                                && rangeInGroupCount == lastRoundRangePerGroup + 1)
-                              || (groupCount % serverNum >= lastRoundRemainRange
+                              || (groupIndexInRound >= lastRoundRemainRange
                                       && rangeInGroupCount == lastRoundRangePerGroup)))) {
         res.add(Lists.newArrayList(rangeGroup));
         rangeGroup.clear();
