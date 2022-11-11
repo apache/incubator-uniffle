@@ -200,7 +200,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       AppHeartBeatRequest request,
       StreamObserver<AppHeartBeatResponse> responseObserver) {
     String appId = request.getAppId();
-    coordinatorServer.getApplicationManager().refreshAppId(appId);
+    String user = request.getUser();
+    coordinatorServer.getApplicationManager().refreshAppId(appId, user);
     LOG.debug("Got heartbeat from application: " + appId);
     AppHeartBeatResponse response = AppHeartBeatResponse
         .newBuilder()
@@ -228,7 +229,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
             new AccessInfo(
                 request.getAccessId(),
                 Sets.newHashSet(request.getTagsList()),
-                request.getExtraPropertiesMap()
+                request.getExtraPropertiesMap(),
+                request.getUser()
             );
     AccessCheckResult result = accessManager.handleAccessRequest(accessInfo);
     if (!result.isSuccess()) {
@@ -239,7 +241,10 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         .newBuilder()
         .setStatus(statusCode)
         .setRetMsg(result.getMsg())
+        .setUuid(result.getUuid())
         .build();
+    LOG.error("SSSSSS: handle request for user {}, uuid is {}, code is {}",
+        accessInfo, response.getUuid(), response.getStatus());
 
     if (Context.current().isCancelled()) {
       responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());

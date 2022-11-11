@@ -25,15 +25,16 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.uniffle.coordinator.AccessCandidatesChecker;
+import org.apache.uniffle.coordinator.AccessInfo;
+import org.apache.uniffle.coordinator.AccessManager;
+import org.apache.uniffle.coordinator.ApplicationManager;
+import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.coordinator.CoordinatorMetrics;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.coordinator.AccessCandidatesChecker;
-import org.apache.uniffle.coordinator.AccessInfo;
-import org.apache.uniffle.coordinator.AccessManager;
-import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.coordinator.CoordinatorMetrics;
 import org.apache.uniffle.storage.HdfsTestBase;
 
 import static java.lang.Thread.sleep;
@@ -70,11 +71,11 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, clusterPrefix);
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
         "org.apache.uniffle.coordinator.AccessCandidatesChecker");
-
+    ApplicationManager applicationManager = new ApplicationManager(conf);
     // file load checking at startup
     Exception expectedException = null;
     try {
-      new AccessManager(conf, null, new Configuration());
+      new AccessManager(conf, null, applicationManager, new Configuration());
     } catch (RuntimeException e) {
       expectedException = e;
     }
@@ -84,7 +85,7 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, candidatesFile);
     expectedException = null;
     try {
-      new AccessManager(conf, null, new Configuration());
+      new AccessManager(conf, null, applicationManager, new Configuration());
     } catch (RuntimeException e) {
       expectedException = e;
     }
@@ -101,7 +102,7 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
     printWriter.println("2 ");
     printWriter.flush();
     printWriter.close();
-    AccessManager accessManager = new AccessManager(conf, null, hadoopConf);
+    AccessManager accessManager = new AccessManager(conf, null, applicationManager, hadoopConf);
     AccessCandidatesChecker checker = (AccessCandidatesChecker) accessManager.getAccessCheckers().get(0);
     // load the config at the beginning
     sleep(1200);

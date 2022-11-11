@@ -101,8 +101,8 @@ public class ApplicationManagerTest {
   public void clearWithoutRemoteStorageTest() throws Exception {
     // test case for storage type without remote storage,
     // NPE shouldn't happen when clear the resource
-    String testApp = "clearWithoutRemoteStorageTest";
-    applicationManager.refreshAppId(testApp);
+    String testApp = "application_clearWithoutRemoteStorageTest";
+    applicationManager.refreshAppId(testApp, "user");
     // just set a value != 0, it should be reset to 0 if everything goes well
     CoordinatorMetrics.gaugeRunningAppNum.set(100.0);
     assertEquals(1, applicationManager.getAppIds().size());

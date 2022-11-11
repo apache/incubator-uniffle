@@ -302,6 +302,7 @@ service CoordinatorServer {
 
 message AppHeartBeatRequest {
   string appId = 1;
+  string user = 2;
 }
 
 message AppHeartBeatResponse {
@@ -371,11 +372,13 @@ message AccessClusterRequest {
   string accessId = 1;
   repeated string tags = 2;
   map<string, string> extraProperties = 3;
+  string user=4;
 }
 
 message AccessClusterResponse {
   StatusCode status = 1;
   string retMsg = 2;
+  string uuid = 3;
 }
 
 message FetchClientConfResponse {

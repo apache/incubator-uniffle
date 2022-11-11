@@ -548,8 +548,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   @Override
-  public void sendAppHeartbeat(String appId, long timeoutMs) {
-    RssAppHeartBeatRequest request = new RssAppHeartBeatRequest(appId, timeoutMs);
+  public void sendAppHeartbeat(String appId, long timeoutMs, String user) {
+    RssAppHeartBeatRequest request = new RssAppHeartBeatRequest(appId, timeoutMs, user);
     List<Callable<Void>> callableList = Lists.newArrayList();
     shuffleServerInfoSet.stream().forEach(shuffleServerInfo -> {
           callableList.add(() -> {
@@ -573,7 +573,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         try {
           RssAppHeartBeatResponse response = coordinatorClient.sendAppHeartBeat(request);
           if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
-            LOG.warn("Failed to send heartbeat to " + coordinatorClient.getDesc());
+            LOG.error("Failed to send heartbeat to " + coordinatorClient.getDesc());
           } else {
             LOG.info("Successfully send heartbeat to " + coordinatorClient.getDesc());
           }

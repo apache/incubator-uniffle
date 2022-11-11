@@ -59,12 +59,12 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker {
     List<ServerNode> servers = clusterManager.getServerList(tags);
     int size = (int) servers.stream().filter(ServerNode::isHealthy).filter(this::checkMemory).count();
 
-    // If the hard constraint number exist, directly check it
+    // If the hard constraint number exist, directly checkResource it
     if (availableServerNumThreshold != -1 && size >= availableServerNumThreshold) {
       return new AccessCheckResult(true, Constants.COMMON_SUCCESS_MESSAGE);
     }
 
-    // If the hard constraint is missing, check the available servers number meet the job's required server size
+    // If the hard constraint is missing, checkResource the available servers number meet the job's required server size
     if (availableServerNumThreshold == -1) {
       String requiredNodesNumRaw = accessInfo.getExtraProperties().get(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM);
       int requiredNodesNum = defaultRequiredShuffleServerNumber;

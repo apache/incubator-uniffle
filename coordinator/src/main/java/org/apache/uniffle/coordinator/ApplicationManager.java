@@ -17,25 +17,37 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.RankValue;
@@ -47,7 +59,6 @@ public class ApplicationManager {
   public static final List<String> REMOTE_PATH_SCHEMA = Arrays.asList("hdfs");
   private final long expired;
   private final StrategyName storageStrategy;
-  private final Map<String, Long> appIds = Maps.newConcurrentMap();
   private final SelectStorageStrategy selectStorageStrategy;
   // store appId -> remote path to make sure all shuffle data of the same application
   // will be written to the same remote storage
@@ -56,7 +67,12 @@ public class ApplicationManager {
   private final Map<String, RankValue> remoteStoragePathRankValue;
   private final Map<String, String> remoteStorageToHost = Maps.newConcurrentMap();
   private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
-  // it's only for test case to check if status check has problem
+  private Map<String, Map<String, Long>> currentUserAndApp = Maps.newConcurrentMap();
+  private final String quotaFilePath;
+  private FileSystem hadoopFileSystem;
+  private final AtomicLong quotaFileLastModify = new AtomicLong(0L);
+  private Map<String, Integer> defaultUserApps = Maps.newConcurrentMap();
+  // it's only for test case to checkResource if status checkResource has problem
   private boolean hasErrorInStatusCheck = false;
 
   public ApplicationManager(CoordinatorConf conf) {
@@ -74,6 +90,12 @@ public class ApplicationManager {
       throw new UnsupportedOperationException("Unsupported selected storage strategy.");
     }
     expired = conf.getLong(CoordinatorConf.COORDINATOR_APP_EXPIRED);
+    quotaFilePath = conf.get(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH);
+    try {
+      hadoopFileSystem = HadoopFilesystemProvider.getFilesystem(new Path(quotaFilePath), new Configuration());
+    } catch (Exception e) {
+      LOG.error("Cannot init remoteFS on path : " + quotaFilePath, e);
+    }
     // the thread for checking application status
     ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("ApplicationManager-%d"));
@@ -87,12 +109,21 @@ public class ApplicationManager {
         conf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME), TimeUnit.MILLISECONDS);
   }
 
-  public void refreshAppId(String appId) {
-    if (!appIds.containsKey(appId)) {
+  public void refreshAppId(String appId, String user) {
+    // using computeIfAbsent is just for MR and spark which is used RssShuffleManager as implementation class
+    // in such case by default, there is no currentUserAndApp, so a unified user implementation named "user" is used.
+    Map<String, Long> appAndTime = currentUserAndApp.computeIfAbsent(user, x -> Maps.newConcurrentMap());
+    if (!appAndTime.containsKey(appId)) {
       CoordinatorMetrics.counterTotalAppNum.inc();
       LOG.info("New application is registered: {}", appId);
     }
-    appIds.put(appId, System.currentTimeMillis());
+    long currentTimeMillis = System.currentTimeMillis();
+    String[] appIdAndUuid = appId.split("_");
+    String uuidFromApp = appIdAndUuid[appIdAndUuid.length - 1];
+    // if appId created successfully, we need to remove the uuid
+    appAndTime.remove(uuidFromApp);
+    appAndTime.put(appId, currentTimeMillis);
+    LOG.error("SSSSSS: user: {}, appSet: {}, appId: {}.", user, appAndTime, appId);
   }
 
   public void refreshRemoteStorage(String remoteStoragePath, String remoteStorageConf) {
@@ -191,7 +222,12 @@ public class ApplicationManager {
   }
 
   public Set<String> getAppIds() {
-    return appIds.keySet();
+    List<Map<String, Long>> appAndTimeList = Lists.newArrayList(currentUserAndApp.values());
+    HashSet<String> appIds = Sets.newHashSet();
+    for (Map<String, Long> appAndTime : appAndTimeList) {
+      appIds.addAll(appAndTime.keySet());
+    }
+    return appIds;
   }
 
   @VisibleForTesting
@@ -220,16 +256,25 @@ public class ApplicationManager {
   }
 
   private void statusCheck() {
+    List<Map<String, Long>> appAndNums = Lists.newArrayList(currentUserAndApp.values());
+    Map<String, Long> appIds = Maps.newHashMap();
+    // The reason for setting an expired uuid here is that there is a scenario where accessCluster succeeds,
+    // but the registration of shuffle fails, resulting in no normal heartbeat, and no normal update of uuid to appId.
+    // Therefore, an expiration time is set to automatically remove expired uuids
+    Set<String> expiredAppIds = Sets.newHashSet();
     try {
-      LOG.info("Start to check status for " + appIds.size() + " applications");
-      long current = System.currentTimeMillis();
-      Set<String> expiredAppIds = Sets.newHashSet();
-      for (Map.Entry<String, Long> entry : appIds.entrySet()) {
-        long lastReport = entry.getValue();
-        if (current - lastReport > expired) {
-          expiredAppIds.add(entry.getKey());
+      for (Map<String, Long> appAndTimes : appAndNums) {
+        for (Map.Entry<String, Long> appAndTime : appAndTimes.entrySet()) {
+          String appId = appAndTime.getKey();
+          appIds.put(appId, appAndTime.getValue());
+          long lastReport = appAndTime.getValue();
+          if (System.currentTimeMillis() - lastReport > expired) {
+            expiredAppIds.add(appId);
+            appAndTimes.remove(appId);
+          }
         }
       }
+      LOG.info("Start to checkResource status for " + appIds.size() + " applications");
       for (String appId : expiredAppIds) {
         LOG.info("Remove expired application:" + appId);
         appIds.remove(appId);
@@ -238,6 +283,8 @@ public class ApplicationManager {
           appIdToRemoteStorageInfo.remove(appId);
         }
       }
+      // begin to update app default app num
+      detectUserResource();
       CoordinatorMetrics.gaugeRunningAppNum.set(appIds.size());
       updateRemoteStorageMetrics();
     } catch (Exception e) {
@@ -280,6 +327,58 @@ public class ApplicationManager {
       LOG.warn("Invalid format of remoteStoragePath to get host, {}", remoteStoragePath);
     }
     return storageHost;
+  }
+
+  public void detectUserResource() {
+    if (quotaFilePath != null && hadoopFileSystem != null) {
+      try {
+        Path hadoopPath = new Path(quotaFilePath);
+        FileStatus fileStatus = hadoopFileSystem.getFileStatus(hadoopPath);
+        if (fileStatus != null && fileStatus.isFile()) {
+          long latestModificationTime = fileStatus.getModificationTime();
+          if (quotaFileLastModify.get() != latestModificationTime) {
+            parseQuotaFile(hadoopFileSystem.open(hadoopPath));
+            quotaFileLastModify.set(latestModificationTime);
+          }
+        }
+      } catch (FileNotFoundException fileNotFoundException) {
+        LOG.error("Can't find this file {}", quotaFilePath);
+      } catch (Exception e) {
+        LOG.warn("Error when updating quotaFile, the exclude nodes file path: {}", quotaFilePath);
+      }
+    }
+  }
+
+  public void parseQuotaFile(DataInputStream fsDataInputStream) {
+    String content;
+    try (BufferedReader bufferedReader =
+             new BufferedReader(new InputStreamReader(fsDataInputStream, StandardCharsets.UTF_8))) {
+      while ((content = bufferedReader.readLine()) != null) {
+        String user = content.split(Constants.EQUAL_SPLIT_CHAR)[0].trim();
+        Integer appNum = Integer.valueOf(content.split(Constants.EQUAL_SPLIT_CHAR)[1].trim());
+        defaultUserApps.put(user, appNum);
+      }
+    } catch (Exception e) {
+      LOG.error("Error occur when parsing file {}", quotaFilePath, e);
+    }
+  }
+
+  public Map<String, Integer> getDefaultUserApps() {
+    return defaultUserApps;
+  }
+
+  public Map<String, Map<String, Long>> getCurrentUserApps() {
+    return currentUserAndApp;
+  }
+
+  @VisibleForTesting
+  public void setCurrentUserAppSet(Map<String, Map<String, Long>> currentUserAppSet) {
+    this.currentUserAndApp = currentUserAppSet;
+  }
+
+  @VisibleForTesting
+  public void setDefaultUserApps(Map<String, Integer> defaultUserApps) {
+    this.defaultUserApps = defaultUserApps;
   }
 
   public enum StrategyName {

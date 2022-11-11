@@ -39,6 +39,7 @@ public class CoordinatorMetrics {
   private static final String TOTAL_ACCESS_REQUEST = "total_access_request";
   private static final String TOTAL_CANDIDATES_DENIED_REQUEST = "total_candidates_denied_request";
   private static final String TOTAL_LOAD_DENIED_REQUEST = "total_load_denied_request";
+  private static final String TOTAL_QUOTA_DENIED_REQUEST = "total_quota_denied_request";
   public static final String REMOTE_STORAGE_IN_USED_PREFIX = "remote_storage_in_used_";
 
   static Gauge gaugeTotalServerNum;
@@ -48,6 +49,7 @@ public class CoordinatorMetrics {
   static Counter counterTotalAppNum;
   static Counter counterTotalAccessRequest;
   static Counter counterTotalCandidatesDeniedRequest;
+  static Counter counterTotalQuotaDeniedRequest;
   static Counter counterTotalLoadDeniedRequest;
   static final Map<String, Gauge> gaugeInUsedRemoteStorage = Maps.newConcurrentMap();
 
@@ -102,6 +104,7 @@ public class CoordinatorMetrics {
     counterTotalAppNum = metricsManager.addCounter(TOTAL_APP_NUM);
     counterTotalAccessRequest = metricsManager.addCounter(TOTAL_ACCESS_REQUEST);
     counterTotalCandidatesDeniedRequest = metricsManager.addCounter(TOTAL_CANDIDATES_DENIED_REQUEST);
+    counterTotalQuotaDeniedRequest = metricsManager.addCounter(TOTAL_QUOTA_DENIED_REQUEST);
     counterTotalLoadDeniedRequest = metricsManager.addCounter(TOTAL_LOAD_DENIED_REQUEST);
   }
 }

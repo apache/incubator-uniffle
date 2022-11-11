@@ -281,7 +281,7 @@ public class SortWriteBufferManagerTest {
     }
 
     @Override
-    public void sendAppHeartbeat(String appId, long timeoutMs) {
+    public void sendAppHeartbeat(String appId, long timeoutMs, String user) {
 
     }
 

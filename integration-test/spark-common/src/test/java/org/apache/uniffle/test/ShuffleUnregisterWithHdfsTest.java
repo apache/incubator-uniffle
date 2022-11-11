@@ -76,7 +76,7 @@ public class ShuffleUnregisterWithHdfsTest extends SparkIntegrationTestBase {
     JavaPairRDD<String, Iterable<String>> javaPairRDD = javaPairRDD1.groupByKey().sortByKey();
     Map map = javaPairRDD.collectAsMap();
 
-    // The second run will use the rss. and we should check the effectiveness of unregisterShuffle method.
+    // The second run will use the rss. and we should checkResource the effectiveness of unregisterShuffle method.
     if (runCounter == 1) {
       String basePath = HDFS_URI + "rss/test";
       String appPath = fs.listStatus(new Path(basePath))[0].getPath().toUri().getPath();

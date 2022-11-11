@@ -21,10 +21,12 @@ public class RssAppHeartBeatRequest {
 
   private final String appId;
   private final long timeoutMs;
+  private final String user;
 
-  public RssAppHeartBeatRequest(String appId, long timeoutMs) {
+  public RssAppHeartBeatRequest(String appId, long timeoutMs, String user) {
     this.appId = appId;
     this.timeoutMs = timeoutMs;
+    this.user = user;
   }
 
   public String getAppId() {
@@ -33,5 +35,9 @@ public class RssAppHeartBeatRequest {
 
   public long getTimeoutMs() {
     return timeoutMs;
+  }
+
+  public String getUser() {
+    return user;
   }
 }

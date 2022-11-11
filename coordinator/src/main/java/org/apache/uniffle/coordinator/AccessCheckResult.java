@@ -21,10 +21,18 @@ public class AccessCheckResult {
 
   private final boolean success;
   private final String msg;
+  private final String uuid;
+
+  public AccessCheckResult(boolean success, String msg, String uuid) {
+    this.success = success;
+    this.msg = msg;
+    this.uuid = uuid;
+  }
 
   public AccessCheckResult(boolean success, String msg) {
     this.success = success;
     this.msg = msg;
+    this.uuid = "";
   }
 
   public boolean isSuccess() {
@@ -33,5 +41,9 @@ public class AccessCheckResult {
 
   public String getMsg() {
     return msg;
+  }
+
+  public String getUuid() {
+    return uuid;
   }
 }

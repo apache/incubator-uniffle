@@ -69,7 +69,8 @@ public class CoordinatorGrpcServerTest {
     assertEquals(0, connSize);
 
     CoordinatorGrpcClient coordinatorGrpcClient = new CoordinatorGrpcClient("localhost", 20001);
-    coordinatorGrpcClient.sendAppHeartBeat(new RssAppHeartBeatRequest("testGrpcConnectionSize", 10000));
+    coordinatorGrpcClient.sendAppHeartBeat(
+        new RssAppHeartBeatRequest("testGrpcConnectionSize", 10000, "user"));
 
     connSize = grpcMetrics.getGaugeMap().get(GRCP_SERVER_CONNECTION_NUMBER_KEY).get();
     assertEquals(1, connSize);
@@ -77,8 +78,8 @@ public class CoordinatorGrpcServerTest {
     // case2: test the multiple connections
     CoordinatorGrpcClient client1 = new CoordinatorGrpcClient("localhost", 20001);
     CoordinatorGrpcClient client2 = new CoordinatorGrpcClient("localhost", 20001);
-    client1.sendAppHeartBeat(new RssAppHeartBeatRequest("testGrpcConnectionSize", 10000));
-    client2.sendAppHeartBeat(new RssAppHeartBeatRequest("testGrpcConnectionSize", 10000));
+    client1.sendAppHeartBeat(new RssAppHeartBeatRequest("testGrpcConnectionSize", 10000, "user"));
+    client2.sendAppHeartBeat(new RssAppHeartBeatRequest("testGrpcConnectionSize", 10000, "user"));
 
     connSize = grpcMetrics.getGaugeMap().get(GRCP_SERVER_CONNECTION_NUMBER_KEY).get();
     assertEquals(3, connSize);

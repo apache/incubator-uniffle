@@ -201,21 +201,24 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
   @Test
   public void appHeartbeatTest() throws Exception {
     RssAppHeartBeatResponse response =
-        coordinatorClient.sendAppHeartBeat(new RssAppHeartBeatRequest("appHeartbeatTest1", 1000));
+        coordinatorClient.sendAppHeartBeat(
+            new RssAppHeartBeatRequest("application_appHeartbeatTest1", 1000, "user"));
     assertEquals(ResponseStatusCode.SUCCESS, response.getStatusCode());
-    assertEquals(Sets.newHashSet("appHeartbeatTest1"),
+    assertEquals(Sets.newHashSet("application_appHeartbeatTest1"),
         coordinators.get(0).getApplicationManager().getAppIds());
-    coordinatorClient.sendAppHeartBeat(new RssAppHeartBeatRequest("appHeartbeatTest2", 1000));
-    assertEquals(Sets.newHashSet("appHeartbeatTest1", "appHeartbeatTest2"),
+    coordinatorClient.sendAppHeartBeat(
+        new RssAppHeartBeatRequest("application_appHeartbeatTest2", 1000, "user"));
+    assertEquals(Sets.newHashSet("application_appHeartbeatTest1", "application_appHeartbeatTest2"),
         coordinators.get(0).getApplicationManager().getAppIds());
     int retry = 0;
     while (retry < 5) {
-      coordinatorClient.sendAppHeartBeat(new RssAppHeartBeatRequest("appHeartbeatTest1", 1000));
+      coordinatorClient.sendAppHeartBeat(
+          new RssAppHeartBeatRequest("application_appHeartbeatTest1", 1000, "user"));
       retry++;
       Thread.sleep(1000);
     }
     // appHeartbeatTest2 was removed because of expired
-    assertEquals(Sets.newHashSet("appHeartbeatTest1"),
+    assertEquals(Sets.newHashSet("application_appHeartbeatTest1"),
         coordinators.get(0).getApplicationManager().getAppIds());
   }
 

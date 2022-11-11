@@ -72,8 +72,8 @@ public class AppBalanceSelectStorageStrategyTest {
     // do inc for remotePath1 to make sure pick storage will be remotePath2 in next call
     applicationManager.incRemoteStorageCounter(remotePath1);
     applicationManager.incRemoteStorageCounter(remotePath1);
-    String testApp1 = "testApp1";
-    applicationManager.refreshAppId(testApp1);
+    String testApp1 = "application_test_" + 1;
+    applicationManager.refreshAppId(testApp1, "user");
     assertEquals(remotePath2, applicationManager.pickRemoteStorage(testApp1).getPath());
     assertEquals(remotePath2, applicationManager.getAppIdToRemoteStorageInfo().get(testApp1).getPath());
     assertEquals(1, applicationManager.getRemoteStoragePathRankValue().get(remotePath2).getAppNum().get());
@@ -88,7 +88,7 @@ public class AppBalanceSelectStorageStrategyTest {
 
     // refresh app1, got remotePath2, then remove remotePath2,
     // it should be existed in counter until it expired
-    applicationManager.refreshAppId(testApp1);
+    applicationManager.refreshAppId(testApp1, "user");
     assertEquals(remotePath2, applicationManager.pickRemoteStorage(testApp1).getPath());
     remoteStoragePath = remotePath1;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
@@ -115,29 +115,29 @@ public class AppBalanceSelectStorageStrategyTest {
     String remoteStoragePath = remotePath1 + Constants.COMMA_SPLIT_CHAR + remotePath2
         + Constants.COMMA_SPLIT_CHAR + remotePath3;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
-    String appPrefix = "testAppId";
+    String testApp1 = "application_testAppId";
     // init detectStorageScheduler
     Thread.sleep(2000);
     Thread pickThread1 = new Thread(() -> {
       for (int i = 0; i < 1000; i++) {
-        String appId = appPrefix + i;
-        applicationManager.refreshAppId(appId);
+        String appId = testApp1 + i;
+        applicationManager.refreshAppId(appId, "user");
         applicationManager.pickRemoteStorage(appId);
       }
     });
 
     Thread pickThread2 = new Thread(() -> {
       for (int i = 1000; i < 2000; i++) {
-        String appId = appPrefix + i;
-        applicationManager.refreshAppId(appId);
+        String appId = testApp1 + i;
+        applicationManager.refreshAppId(appId, "user");
         applicationManager.pickRemoteStorage(appId);
       }
     });
 
     Thread pickThread3 = new Thread(() -> {
       for (int i = 2000; i < 3000; i++) {
-        String appId = appPrefix + i;
-        applicationManager.refreshAppId(appId);
+        String appId = testApp1 + i;
+        applicationManager.refreshAppId(appId, "user");
         applicationManager.pickRemoteStorage(appId);
       }
     });

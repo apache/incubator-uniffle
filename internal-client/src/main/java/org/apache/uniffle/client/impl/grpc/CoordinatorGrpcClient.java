@@ -207,7 +207,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
 
   @Override
   public RssAppHeartBeatResponse sendAppHeartBeat(RssAppHeartBeatRequest request) {
-    AppHeartBeatRequest rpcRequest = AppHeartBeatRequest.newBuilder().setAppId(request.getAppId()).build();
+    AppHeartBeatRequest rpcRequest =
+        AppHeartBeatRequest.newBuilder().setAppId(request.getAppId()).setUser(request.getUser()).build();
     AppHeartBeatResponse rpcResponse = blockingStub
         .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS).appHeartbeat(rpcRequest);
     RssAppHeartBeatResponse response;
@@ -260,6 +261,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
     AccessClusterRequest rpcRequest = AccessClusterRequest
         .newBuilder()
         .setAccessId(request.getAccessId())
+        .setUser(request.getUser())
         .addAllTags(request.getTags())
         .putAllExtraProperties(request.getExtraProperties())
         .build();
@@ -277,7 +279,9 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       case SUCCESS:
         response = new RssAccessClusterResponse(
             ResponseStatusCode.SUCCESS,
-            rpcResponse.getRetMsg());
+            rpcResponse.getRetMsg(),
+            rpcResponse.getUuid()
+        );
         break;
       default:
         response = new RssAccessClusterResponse(ResponseStatusCode.ACCESS_DENIED, rpcResponse.getRetMsg());
