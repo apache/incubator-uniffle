@@ -33,13 +33,13 @@ import org.apache.uniffle.client.retry.RetryStrategy;
 /**
  * This class refers to https://github.com/grpc/grpc-java/issues/5856
  */
-class RetryInterceptor implements ClientInterceptor {
+public class RetryInterceptor implements ClientInterceptor {
   private static final Logger LOGGER = LoggerFactory.getLogger(RetryInterceptor.class);
 
   private int retryNumber = 0;
   private RetryStrategy retryStrategy;
 
-  RetryInterceptor(RetryStrategy retryStrategy) {
+  public RetryInterceptor(RetryStrategy retryStrategy) {
     this.retryStrategy = retryStrategy;
   }
 

@@ -38,6 +38,8 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.ConnectionOptions;
+import org.apache.uniffle.client.StatefulUpgradeClientOptions;
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
@@ -69,6 +71,7 @@ import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
+import org.apache.uniffle.client.retry.NetworkUnavailableRetryStrategy;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
@@ -94,9 +97,51 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private int replicaRead;
   private boolean replicaSkipEnabled;
   private int dataCommitPoolSize = -1;
+  private ConnectionOptions connectionOptions = ConnectionOptions.builder().build();
   private final ForkJoinPool dataTransferPool;
   private final int unregisterThreadPoolSize;
   private final int unregisterRequestTimeSec;
+
+  public ShuffleWriteClientImpl(
+      String clientType,
+      int retryMax,
+      long retryIntervalMax,
+      int heartBeatThreadNum,
+      int replica,
+      int replicaWrite,
+      int replicaRead,
+      boolean replicaSkipEnabled,
+      int dataTranferPoolSize,
+      int dataCommitPoolSize,
+      int unregisterThreadPoolSize,
+      int unregisterRequestTimeSec,
+      StatefulUpgradeClientOptions statefulUpgradeClientOptions) {
+    this(
+        clientType,
+        retryMax,
+        retryIntervalMax,
+        heartBeatThreadNum,
+        replica,
+        replicaWrite,
+        replicaRead,
+        replicaSkipEnabled,
+        dataTranferPoolSize,
+        dataCommitPoolSize,
+        unregisterThreadPoolSize,
+        unregisterRequestTimeSec
+    );
+
+    if (statefulUpgradeClientOptions != null && statefulUpgradeClientOptions.isStatefulUpgradeEnable()) {
+      this.connectionOptions = ConnectionOptions
+          .builder()
+          .retryStrategy(new NetworkUnavailableRetryStrategy(
+              statefulUpgradeClientOptions.getRetryMaxNumber(),
+              statefulUpgradeClientOptions.getRetryIntervalMax(),
+              statefulUpgradeClientOptions.getBackOffBase()
+          ))
+          .build();
+    }
+  }
 
   public ShuffleWriteClientImpl(
       String clientType,
@@ -555,7 +600,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           callableList.add(() -> {
             try {
               ShuffleServerClient client =
-                  ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
+                  ShuffleServerClientFactory.getInstance().getShuffleServerClient(
+                      clientType, shuffleServerInfo, connectionOptions);
               RssAppHeartBeatResponse response = client.sendHeartBeat(request);
               if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
                 LOG.warn("Failed to send heartbeat to " + shuffleServerInfo);
@@ -611,7 +657,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           callableList.add(() -> {
             try {
               ShuffleServerClient client =
-                  ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
+                  ShuffleServerClientFactory.getInstance().getShuffleServerClient(
+                      clientType, shuffleServerInfo, connectionOptions);
               RssUnregisterShuffleResponse response = client.unregisterShuffle(request);
               if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
                 LOG.warn("Failed to unregister shuffle to " + shuffleServerInfo);
@@ -655,7 +702,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @VisibleForTesting
   public ShuffleServerClient getShuffleServerClient(ShuffleServerInfo shuffleServerInfo) {
-    return ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
+    return ShuffleServerClientFactory.getInstance()
+        .getShuffleServerClient(clientType, shuffleServerInfo, connectionOptions);
   }
-
 }

@@ -53,6 +53,8 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 
+import static org.apache.spark.shuffle.RssSparkShuffleUtils.getStatefulUpgradeOptions;
+
 public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleReader.class);
   private final Map<Integer, List<ShuffleServerInfo>> partitionToShuffleServers;
@@ -206,7 +208,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
             appId, shuffleId, partition, storageType, basePath, indexReadLimit, readBufferSize,
             1, partitionNum, partitionToExpectBlocks.get(partition), taskIdBitmap, shuffleServerInfoList,
-            hadoopConf, dataDistributionType);
+            hadoopConf, dataDistributionType, getStatefulUpgradeOptions(rssConf));
         ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
         RssShuffleDataIterator iterator = new RssShuffleDataIterator<K, C>(
             shuffleDependency.serializer(), shuffleReadClient,

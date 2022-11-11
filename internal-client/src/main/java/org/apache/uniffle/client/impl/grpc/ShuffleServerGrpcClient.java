@@ -29,6 +29,7 @@ import io.grpc.ClientInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.ConnectionOptions;
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
@@ -54,7 +55,7 @@ import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
-import org.apache.uniffle.client.retry.StatefulUpgradeRetryStrategy;
+import org.apache.uniffle.client.retry.NetworkUnavailableRetryStrategy;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -63,6 +64,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RetryUtils;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
@@ -108,7 +110,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   private ShuffleServerBlockingStub blockingStub;
 
   private static ClientInterceptor[] clientInterceptors = new ClientInterceptor[]{
-      new RetryInterceptor(new StatefulUpgradeRetryStrategy(150, 2000, 2000))
+      new RetryInterceptor(new NetworkUnavailableRetryStrategy(150, 2000, 2000))
   };
 
   public ShuffleServerGrpcClient(String host, int port) {
@@ -120,7 +122,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   }
 
   public ShuffleServerGrpcClient(String host, int port, int maxRetryAttempts, boolean usePlaintext) {
-    super(host, port, maxRetryAttempts, usePlaintext, clientInterceptors);
+    super(host, port, maxRetryAttempts, usePlaintext, null);
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
   }
 
@@ -129,7 +131,20 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     super(host, port, 3, true, clientInterceptors);
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
   }
-  
+
+  public ShuffleServerGrpcClient(String host, int port, ConnectionOptions connectionOptions) {
+    super(
+        host,
+        port,
+        3,
+        true,
+        RssUtils.isEmpty(connectionOptions.getRetryStrategies()) ? null : new ClientInterceptor[] {
+            new RetryInterceptor(connectionOptions.getRetryStrategies().get(0))
+        }
+    );
+    blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
+  }
+
   public ShuffleServerBlockingStub getBlockingStub() {
     return blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
   }
@@ -186,7 +201,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
 
   private AppHeartBeatResponse doSendHeartBeat(String appId, long timeout) {
     AppHeartBeatRequest request = AppHeartBeatRequest.newBuilder().setAppId(appId).build();
-    return blockingStub.withDeadlineAfter(timeout, TimeUnit.MILLISECONDS).appHeartbeat(request);
+    return blockingStub.appHeartbeat(request);
   }
 
   public long requirePreAllocation(int requireSize, int retryMax, long retryIntervalMax) {

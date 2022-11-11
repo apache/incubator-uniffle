@@ -72,6 +72,8 @@ import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
+import static org.apache.spark.shuffle.RssSparkShuffleUtils.getStatefulUpgradeOptions;
+
 public class RssShuffleManager implements ShuffleManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleManager.class);
@@ -169,7 +171,8 @@ public class RssShuffleManager implements ShuffleManager {
         .getInstance()
         .createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum,
             dataReplica, dataReplicaWrite, dataReplicaRead, dataReplicaSkipEnabled, dataTransferPoolSize,
-            dataCommitPoolSize, unregisterThreadPoolSize, unregisterRequestTimeoutSec);
+            dataCommitPoolSize, unregisterThreadPoolSize, unregisterRequestTimeoutSec,
+            getStatefulUpgradeOptions(sparkConf));
     registerCoordinator();
     // fetch client conf and apply them if necessary and disable ESS
     if (isDriver && dynamicConfEnabled) {
@@ -241,7 +244,8 @@ public class RssShuffleManager implements ShuffleManager {
             dataTransferPoolSize,
             dataCommitPoolSize,
             unregisterThreadPoolSize,
-            unregisterRequestTimeoutSec
+            unregisterRequestTimeoutSec,
+            getStatefulUpgradeOptions(sparkConf)
         );
     this.taskToSuccessBlockIds = taskToSuccessBlockIds;
     this.taskToFailedBlockIds = taskToFailedBlockIds;

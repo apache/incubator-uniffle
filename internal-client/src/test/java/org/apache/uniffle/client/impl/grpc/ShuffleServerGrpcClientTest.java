@@ -22,7 +22,7 @@ import io.grpc.ClientInterceptor;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
-import org.apache.uniffle.client.retry.StatefulUpgradeRetryStrategy;
+import org.apache.uniffle.client.retry.NetworkUnavailableRetryStrategy;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 
@@ -35,7 +35,7 @@ public class ShuffleServerGrpcClientTest {
   @Test
   public void retryWhenServerDown() {
     ClientInterceptor[] clientInterceptors = new ClientInterceptor[]{
-        new RetryInterceptor(new StatefulUpgradeRetryStrategy(3, 1000, 1000))
+        new RetryInterceptor(new NetworkUnavailableRetryStrategy(3, 1000, 1000))
     };
 
     ShuffleServerGrpcClient grpcClient = new ShuffleServerGrpcClient("127.0.0.1", 19999, clientInterceptors);

@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.StatefulUpgradeClientOptions;
 import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.client.util.IdHelper;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
@@ -44,6 +45,7 @@ public class CreateShuffleReadClientRequest {
   private Configuration hadoopConf;
   private IdHelper idHelper;
   private ShuffleDataDistributionType shuffleDataDistributionType = ShuffleDataDistributionType.NORMAL;
+  private StatefulUpgradeClientOptions statefulUpgradeClientOptions;
 
   public CreateShuffleReadClientRequest(
       String appId,
@@ -59,11 +61,13 @@ public class CreateShuffleReadClientRequest {
       Roaring64NavigableMap taskIdBitmap,
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
-      ShuffleDataDistributionType dataDistributionType) {
+      ShuffleDataDistributionType dataDistributionType,
+      StatefulUpgradeClientOptions statefulUpgradeClientOptions) {
     this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
         hadoopConf, new DefaultIdHelper());
     this.shuffleDataDistributionType = dataDistributionType;
+    this.statefulUpgradeClientOptions = statefulUpgradeClientOptions;
   }
 
   public CreateShuffleReadClientRequest(
@@ -79,10 +83,34 @@ public class CreateShuffleReadClientRequest {
       Roaring64NavigableMap blockIdBitmap,
       Roaring64NavigableMap taskIdBitmap,
       List<ShuffleServerInfo> shuffleServerInfoList,
-      Configuration hadoopConf) {
+      Configuration hadoopConf,
+      StatefulUpgradeClientOptions statefulUpgradeClientOptions) {
     this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
         hadoopConf, new DefaultIdHelper());
+    this.statefulUpgradeClientOptions = statefulUpgradeClientOptions;
+  }
+
+  public CreateShuffleReadClientRequest(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      String storageType,
+      String basePath,
+      int indexReadLimit,
+      int readBufferSize,
+      int partitionNumPerRange,
+      int partitionNum,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap taskIdBitmap,
+      List<ShuffleServerInfo> shuffleServerInfoList,
+      Configuration hadoopConf,
+      IdHelper idHelper,
+      StatefulUpgradeClientOptions statefulUpgradeClientOptions) {
+    this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
+        partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
+        hadoopConf, idHelper);
+    this.statefulUpgradeClientOptions = statefulUpgradeClientOptions;
   }
 
   public CreateShuffleReadClientRequest(
@@ -174,5 +202,9 @@ public class CreateShuffleReadClientRequest {
 
   public ShuffleDataDistributionType getShuffleDataDistributionType() {
     return shuffleDataDistributionType;
+  }
+
+  public StatefulUpgradeClientOptions getStatefulUpgradeClientOptions() {
+    return statefulUpgradeClientOptions;
   }
 }

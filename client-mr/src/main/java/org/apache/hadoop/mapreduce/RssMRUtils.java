@@ -29,11 +29,18 @@ import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.StatefulUpgradeClientOptions;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
+
+import static org.apache.uniffle.common.config.RssClientConf.STATEFUL_UPGRADE_CLIENT_BACKOFF_BASE;
+import static org.apache.uniffle.common.config.RssClientConf.STATEFUL_UPGRADE_CLIENT_ENABLE;
+import static org.apache.uniffle.common.config.RssClientConf.STATEFUL_UPGRADE_CLIENT_RETRY_INTERVAL_MAX;
+import static org.apache.uniffle.common.config.RssClientConf.STATEFUL_UPGRADE_CLIENT_RETRY_MAX_NUMBER;
 
 public class RssMRUtils {
 
@@ -97,8 +104,19 @@ public class RssMRUtils {
         .getInstance()
         .createShuffleWriteClient(clientType, retryMax, retryIntervalMax,
             heartBeatThreadNum, replica, replicaWrite, replicaRead, replicaSkipEnabled,
-            dataTransferPoolSize, dataCommitPoolSize);
+            dataTransferPoolSize, dataCommitPoolSize, getStatefulUpgradeOptions(jobConf));
     return client;
+  }
+
+  public static StatefulUpgradeClientOptions getStatefulUpgradeOptions(JobConf jobConf) {
+    RssConf clientConfig = RssMRConfig.toRssConf(jobConf);
+    return StatefulUpgradeClientOptions
+        .builder()
+        .statefulUpgradeEnable(clientConfig.get(STATEFUL_UPGRADE_CLIENT_ENABLE))
+        .retryIntervalMax(clientConfig.get(STATEFUL_UPGRADE_CLIENT_RETRY_INTERVAL_MAX))
+        .retryMaxNumber(clientConfig.get(STATEFUL_UPGRADE_CLIENT_RETRY_MAX_NUMBER))
+        .backOffBase(clientConfig.get(STATEFUL_UPGRADE_CLIENT_BACKOFF_BASE))
+        .build();
   }
 
   public static Set<ShuffleServerInfo> getAssignedServers(JobConf jobConf, int reduceID) {

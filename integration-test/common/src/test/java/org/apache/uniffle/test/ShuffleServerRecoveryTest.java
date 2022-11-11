@@ -24,18 +24,25 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
+import io.grpc.ClientInterceptor;
 import org.apache.commons.lang3.tuple.Pair;
+import org.awaitility.Awaitility;
+import org.awaitility.Durations;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.impl.grpc.RetryInterceptor;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
+import org.apache.uniffle.client.response.ResponseStatusCode;
+import org.apache.uniffle.client.retry.NetworkUnavailableRetryStrategy;
 import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -48,6 +55,8 @@ import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.StatefulUpgradeManager;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.uniffle.client.response.ResponseStatusCode.INTERNAL_ERROR;
+import static org.apache.uniffle.client.response.ResponseStatusCode.SUCCESS;
 import static org.apache.uniffle.common.ShuffleDataDistributionType.LOCAL_ORDER;
 import static org.apache.uniffle.test.ShuffleServerWithLocalOfLocalOrderTest.createTestDataWithMultiMapIdx;
 import static org.apache.uniffle.test.ShuffleServerWithLocalOfLocalOrderTest.validate;
@@ -79,6 +88,36 @@ public class ShuffleServerRecoveryTest extends ShuffleReadWriteBase {
     shuffleServers.get(0).start();
   }
 
+  @Test
+  public void testSingleRequestHangUntilServerStarted() throws Exception {
+    setupCoordinator();
+
+    AtomicReference<ResponseStatusCode> response = new AtomicReference<>(INTERNAL_ERROR);
+    Thread thread = new Thread(() -> {
+      ShuffleServerGrpcClient shuffleServerClient =
+          new ShuffleServerGrpcClient(
+              LOCALHOST,
+              SHUFFLE_SERVER_PORT,
+              new ClientInterceptor[]{
+                  new RetryInterceptor(new NetworkUnavailableRetryStrategy(150, 2000, 2000))
+              }
+          );
+      RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest("testAppId", 0,
+          Lists.newArrayList(new PartitionRange(1, 1)), new RemoteStorageInfo(""), "", LOCAL_ORDER);
+      response.set(shuffleServerClient.registerShuffle(rrsr).getStatusCode());
+    });
+    thread.start();
+    Thread.sleep(1000 * 1);
+    setupServers(false);
+    Awaitility
+        .await()
+        .timeout(Durations.TEN_SECONDS)
+        .pollDelay(Durations.ONE_SECOND)
+        .until(() -> response.get() == SUCCESS);
+
+    shutdownServers();
+  }
+
   /**
    * Test reading shuffle-data from the restarted shuffle-server.
    */
@@ -88,7 +127,13 @@ public class ShuffleServerRecoveryTest extends ShuffleReadWriteBase {
     setupServers(false);
 
     ShuffleServerGrpcClient shuffleServerClient =
-        new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
+        new ShuffleServerGrpcClient(
+            LOCALHOST,
+            SHUFFLE_SERVER_PORT,
+            new ClientInterceptor[]{
+                new RetryInterceptor(new NetworkUnavailableRetryStrategy(150, 2000, 2000))
+            }
+        );
 
     String testAppId = "testWriteAndReadInRecovery";
 
@@ -163,5 +208,7 @@ public class ShuffleServerRecoveryTest extends ShuffleReadWriteBase {
         expectedData4,
         new HashSet<>(Arrays.asList(0L, 1L, 2L))
     );
+
+    shutdownServers();
   }
 }

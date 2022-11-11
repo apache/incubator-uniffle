@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.ConnectionOptions;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
@@ -44,6 +45,7 @@ public class CreateShuffleReadHandlerRequest {
   private Roaring64NavigableMap processBlockIds;
   private ShuffleDataDistributionType distributionType;
   private Roaring64NavigableMap expectTaskIds;
+  private ConnectionOptions connectionOptions;
 
   public CreateShuffleReadHandlerRequest() {
   }
@@ -174,5 +176,13 @@ public class CreateShuffleReadHandlerRequest {
 
   public void setExpectTaskIds(Roaring64NavigableMap expectTaskIds) {
     this.expectTaskIds = expectTaskIds;
+  }
+
+  public ConnectionOptions getConnectionOptions() {
+    return connectionOptions;
+  }
+
+  public void setConnectionOptions(ConnectionOptions connectionOptions) {
+    this.connectionOptions = connectionOptions;
   }
 }

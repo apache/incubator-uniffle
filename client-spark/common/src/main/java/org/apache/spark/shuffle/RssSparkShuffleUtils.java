@@ -31,11 +31,18 @@ import org.apache.spark.deploy.SparkHadoopUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.StatefulUpgradeClientOptions;
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.Constants;
+
+import static org.apache.uniffle.common.config.RssClientConf.STATEFUL_UPGRADE_CLIENT_BACKOFF_BASE;
+import static org.apache.uniffle.common.config.RssClientConf.STATEFUL_UPGRADE_CLIENT_ENABLE;
+import static org.apache.uniffle.common.config.RssClientConf.STATEFUL_UPGRADE_CLIENT_RETRY_INTERVAL_MAX;
+import static org.apache.uniffle.common.config.RssClientConf.STATEFUL_UPGRADE_CLIENT_RETRY_MAX_NUMBER;
 
 public class RssSparkShuffleUtils {
 
@@ -149,15 +156,15 @@ public class RssSparkShuffleUtils {
     if (!sparkConf.getBoolean(Constants.SPARK_DYNAMIC_ENABLED, false)) {
       int executorInstances = sparkConf.getInt(Constants.SPARK_EXECUTOR_INSTANTS,
           Constants.SPARK_EXECUTOR_INSTANTS_DEFAULT_VALUE);
-      taskConcurrency =  executorInstances > 0 ? executorInstances * taskConcurrencyPerExecutor : 0;
+      taskConcurrency = executorInstances > 0 ? executorInstances * taskConcurrencyPerExecutor : 0;
     } else {
       // Default is infinity
       int maxExecutors = Math.min(sparkConf.getInt(Constants.SPARK_MAX_DYNAMIC_EXECUTOR,
           Constants.SPARK_DYNAMIC_EXECUTOR_DEFAULT_VALUE), Constants.SPARK_MAX_DYNAMIC_EXECUTOR_LIMIT);
       int minExecutors = sparkConf.getInt(Constants.SPARK_MIN_DYNAMIC_EXECUTOR,
           Constants.SPARK_DYNAMIC_EXECUTOR_DEFAULT_VALUE);
-      taskConcurrency = (int)((maxExecutors - minExecutors) * dynamicAllocationFactor + minExecutors)
-                            * taskConcurrencyPerExecutor;
+      taskConcurrency = (int) ((maxExecutors - minExecutors) * dynamicAllocationFactor + minExecutors)
+          * taskConcurrencyPerExecutor;
     }
     return taskConcurrency;
   }
@@ -171,5 +178,20 @@ public class RssSparkShuffleUtils {
     int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
     int taskConcurrencyPerServer = sparkConf.get(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER);
     return (int) Math.ceil(estimateTaskConcurrency * 1.0 / taskConcurrencyPerServer);
+  }
+
+  public static StatefulUpgradeClientOptions getStatefulUpgradeOptions(RssConf clientConfig) {
+    return StatefulUpgradeClientOptions
+        .builder()
+        .statefulUpgradeEnable(clientConfig.get(STATEFUL_UPGRADE_CLIENT_ENABLE))
+        .retryIntervalMax(clientConfig.get(STATEFUL_UPGRADE_CLIENT_RETRY_INTERVAL_MAX))
+        .retryMaxNumber(clientConfig.get(STATEFUL_UPGRADE_CLIENT_RETRY_MAX_NUMBER))
+        .backOffBase(clientConfig.get(STATEFUL_UPGRADE_CLIENT_BACKOFF_BASE))
+        .build();
+  }
+
+  public static StatefulUpgradeClientOptions getStatefulUpgradeOptions(SparkConf sparkConf) {
+    RssConf clientConfig = RssSparkConfig.toRssConf(sparkConf);
+    return getStatefulUpgradeOptions(clientConfig);
   }
 }

@@ -102,7 +102,7 @@ public class ShuffleHandlerFactory {
     List<ShuffleServerInfo> shuffleServerInfoList = request.getShuffleServerInfoList();
     List<ShuffleServerClient> shuffleServerClients = shuffleServerInfoList.stream().map(
         ssi -> ShuffleServerClientFactory.getInstance().getShuffleServerClient(
-            ClientType.GRPC.name(), ssi)).collect(
+            ClientType.GRPC.name(), ssi, request.getConnectionOptions())).collect(
         Collectors.toList());
     ClientReadHandler memoryClientReadHandler = new MemoryQuorumClientReadHandler(
         request.getAppId(),
@@ -115,9 +115,14 @@ public class ShuffleHandlerFactory {
 
   private ClientReadHandler getLocalfileClientReaderHandler(CreateShuffleReadHandlerRequest request) {
     List<ShuffleServerInfo> shuffleServerInfoList = request.getShuffleServerInfoList();
-    List<ShuffleServerClient> shuffleServerClients = shuffleServerInfoList.stream().map(
-        ssi -> ShuffleServerClientFactory.getInstance().getShuffleServerClient(ClientType.GRPC.name(), ssi)).collect(
-        Collectors.toList());
+    List<ShuffleServerClient> shuffleServerClients = shuffleServerInfoList
+        .stream()
+        .map(
+            ssi -> ShuffleServerClientFactory
+                .getInstance()
+                .getShuffleServerClient(ClientType.GRPC.name(), ssi, request.getConnectionOptions())
+        )
+        .collect(Collectors.toList());
     return new LocalFileQuorumClientReadHandler(
         request.getAppId(), request.getShuffleId(), request.getPartitionId(),
         request.getIndexReadLimit(), request.getPartitionNumPerRange(), request.getPartitionNum(),

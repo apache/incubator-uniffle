@@ -84,6 +84,7 @@ public class StatefulUpgradeTest extends SparkSQLTest {
             shuffleServer.getStatefulUpgradeManager().finalizeAndMaterializeState();
             shuffleServer.stopServer();
             shuffleServers = new ArrayList<>();
+            Thread.sleep(1000 * 5);
             shuffleServers.add(new ShuffleServer(shuffleServerConf, true));
             shuffleServers.get(0).start();
             shuffleServer = shuffleServers.get(0);
@@ -103,6 +104,7 @@ public class StatefulUpgradeTest extends SparkSQLTest {
   @Override
   public void updateRssStorage(SparkConf sparkConf) {
     sparkConf.set("spark.shuffle.manager", "org.apache.uniffle.test.StatefulUpgradeTest$MockRssShuffleManager");
+    sparkConf.set("spark.rss.client.stateful.upgrade.enable", "true");
   }
 
   @Override

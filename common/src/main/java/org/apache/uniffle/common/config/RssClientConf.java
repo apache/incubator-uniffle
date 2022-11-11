@@ -43,4 +43,29 @@ public class RssClientConf {
       .defaultValue(ShuffleDataDistributionType.NORMAL)
       .withDescription("The type of partition shuffle data distribution, including normal and local_order. "
           + "The default value is normal. This config is only valid in Spark3.x");
+
+  public static final ConfigOption<Boolean> STATEFUL_UPGRADE_CLIENT_ENABLE = ConfigOptions
+      .key("rss.client.stateful.upgrade.enable")
+      .booleanType()
+      .defaultValue(false)
+      .withDescription("Indicator whether to wait when shuffle-server is stateful upgrading, which will"
+          + " be disable by default.");
+
+  public static final ConfigOption<Integer> STATEFUL_UPGRADE_CLIENT_RETRY_INTERVAL_MAX =  ConfigOptions
+      .key("rss.client.stateful.upgrade.retry.interval.max")
+      .intType()
+      .defaultValue(2000)
+      .withDescription("Max retry interval, default value is 2000 (ms). Unit: ms");
+
+  public static final ConfigOption<Integer> STATEFUL_UPGRADE_CLIENT_RETRY_MAX_NUMBER = ConfigOptions
+      .key("rss.client.stateful.upgrade.retry.max.times")
+      .intType()
+      .defaultValue(150)
+      .withDescription("Max retry times, default value is 150.");
+
+  public static final ConfigOption<Integer> STATEFUL_UPGRADE_CLIENT_BACKOFF_BASE = ConfigOptions
+      .key("rss.client.stateful.upgrade.retry.backoff")
+      .intType()
+      .defaultValue(2000)
+      .withDescription("Retry backoff time, default value is 2000, unit: ms");
 }

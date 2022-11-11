@@ -31,6 +31,7 @@ import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -269,5 +270,16 @@ public class RssUtils {
       }
     }
     return serverToPartitions;
+  }
+
+
+  public static <T> boolean isEmpty(Collection<T> collection) {
+    if (collection == null) {
+      return true;
+    }
+    if (collection.isEmpty()) {
+      return true;
+    }
+    return false;
   }
 }

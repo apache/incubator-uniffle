@@ -17,6 +17,9 @@
 
 package org.apache.uniffle.client.factory;
 
+import com.google.common.annotations.VisibleForTesting;
+
+import org.apache.uniffle.client.StatefulUpgradeClientOptions;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
@@ -40,11 +43,13 @@ public class ShuffleClientFactory {
   public ShuffleWriteClient createShuffleWriteClient(
       String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
       int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled, int dataTransferPoolSize,
-      int dataCommitPoolSize) {
+      int dataCommitPoolSize, StatefulUpgradeClientOptions options) {
     return createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum, replica,
-        replicaWrite, replicaRead, replicaSkipEnabled, dataTransferPoolSize, dataCommitPoolSize, 10, 10);
+        replicaWrite, replicaRead, replicaSkipEnabled, dataTransferPoolSize, dataCommitPoolSize, 10, 10, options);
   }
 
+  // For test
+  @VisibleForTesting
   public ShuffleWriteClient createShuffleWriteClient(
       String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
       int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled, int dataTransferPoolSize,
@@ -65,11 +70,34 @@ public class ShuffleClientFactory {
     );
   }
 
+  public ShuffleWriteClient createShuffleWriteClient(
+      String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
+      int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled, int dataTransferPoolSize,
+      int dataCommitPoolSize, int unregisterThreadPoolSize, int unregisterRequestTimeoutSec,
+      StatefulUpgradeClientOptions statefulUpgradeClientOptions) {
+    return new ShuffleWriteClientImpl(
+        clientType,
+        retryMax,
+        retryIntervalMax,
+        heartBeatThreadNum,
+        replica,
+        replicaWrite,
+        replicaRead,
+        replicaSkipEnabled,
+        dataTransferPoolSize,
+        dataCommitPoolSize,
+        unregisterThreadPoolSize,
+        unregisterRequestTimeoutSec,
+        statefulUpgradeClientOptions
+    );
+  }
+
   public ShuffleReadClient createShuffleReadClient(CreateShuffleReadClientRequest request) {
     return new ShuffleReadClientImpl(request.getStorageType(), request.getAppId(), request.getShuffleId(),
         request.getPartitionId(), request.getIndexReadLimit(), request.getPartitionNumPerRange(),
         request.getPartitionNum(), request.getReadBufferSize(), request.getBasePath(),
         request.getBlockIdBitmap(), request.getTaskIdBitmap(), request.getShuffleServerInfoList(),
-        request.getHadoopConf(), request.getIdHelper(), request.getShuffleDataDistributionType());
+        request.getHadoopConf(), request.getIdHelper(), request.getShuffleDataDistributionType(),
+        request.getStatefulUpgradeClientOptions());
   }
 }

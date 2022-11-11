@@ -19,8 +19,10 @@ package org.apache.uniffle.client.factory;
 
 import java.util.Map;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 
+import org.apache.uniffle.client.ConnectionOptions;
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.util.ClientType;
@@ -42,20 +44,33 @@ public class ShuffleServerClientFactory {
     return LazyHolder.INSTANCE;
   }
 
-  private ShuffleServerClient createShuffleServerClient(String clientType, ShuffleServerInfo shuffleServerInfo) {
+  private ShuffleServerClient createShuffleServerClient(
+      String clientType, ShuffleServerInfo shuffleServerInfo, ConnectionOptions connectionOptions) {
     if (clientType.equalsIgnoreCase(ClientType.GRPC.name())) {
-      return new ShuffleServerGrpcClient(shuffleServerInfo.getHost(), shuffleServerInfo.getPort());
+      return new ShuffleServerGrpcClient(shuffleServerInfo.getHost(), shuffleServerInfo.getPort(), connectionOptions);
     } else {
       throw new UnsupportedOperationException("Unsupported client type " + clientType);
     }
   }
 
   public synchronized ShuffleServerClient getShuffleServerClient(
+      String clientType, ShuffleServerInfo shuffleServerInfo, ConnectionOptions connectionOptions) {
+    clients.putIfAbsent(clientType, Maps.newConcurrentMap());
+    Map<ShuffleServerInfo, ShuffleServerClient> serverToClients = clients.get(clientType);
+    if (serverToClients.get(shuffleServerInfo) == null) {
+      serverToClients.put(shuffleServerInfo, createShuffleServerClient(
+          clientType, shuffleServerInfo, connectionOptions));
+    }
+    return serverToClients.get(shuffleServerInfo);
+  }
+
+  @VisibleForTesting
+  public synchronized ShuffleServerClient getShuffleServerClient(
       String clientType, ShuffleServerInfo shuffleServerInfo) {
     clients.putIfAbsent(clientType, Maps.newConcurrentMap());
     Map<ShuffleServerInfo, ShuffleServerClient> serverToClients = clients.get(clientType);
     if (serverToClients.get(shuffleServerInfo) == null) {
-      serverToClients.put(shuffleServerInfo, createShuffleServerClient(clientType, shuffleServerInfo));
+      serverToClients.put(shuffleServerInfo, createShuffleServerClient(clientType, shuffleServerInfo, null));
     }
     return serverToClients.get(shuffleServerInfo);
   }
