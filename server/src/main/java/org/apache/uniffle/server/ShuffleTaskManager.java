@@ -204,6 +204,8 @@ public class ShuffleTaskManager {
                 .stream().map(shuffleId -> Pair.of(x.getKey(), shuffleId)))
             .collect(Collectors.toList());
 
+    LOG.info("Persisting memory shuffle data, shuffle ids: {}", appIdAndShuffleIds);
+
     ExecutorService executorService = Executors.newFixedThreadPool(
         conf.get(STATEFUL_UPGRADE_FLUSH_ALL_DATA_THREAD_POOL_SIZE)
     );

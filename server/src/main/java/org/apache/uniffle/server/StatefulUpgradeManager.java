@@ -73,14 +73,16 @@ public class StatefulUpgradeManager {
     shuffleServer.getServer().stop();
     shuffleServer.markUnhealthy();
 
+    LOGGER.info("Flushing all memory data to persistent storage.");
     long flushDataStart = System.currentTimeMillis();
     taskManager.persistShuffleData();
-    LOGGER.info("Flushing all memory data to persistent storage costs: {} ms",
+    LOGGER.info("Flushed all memory data to persistent storage costs: {} ms",
         System.currentTimeMillis() - flushDataStart);
 
+    LOGGER.info("Exporting all state to persistent storage.");
     long exportStateStart = System.currentTimeMillis();
     stateStore.export(buildInternalState());
-    LOGGER.info("Exporting all state to persistent stoarge costs: {} ms",
+    LOGGER.info("Exported all state to persistent storage costs: {} ms",
         System.currentTimeMillis() - exportStateStart);
   }
 
@@ -88,6 +90,7 @@ public class StatefulUpgradeManager {
     int exitCode = 1;
     try {
       finalizeAndMaterializeState();
+      exitCode = 0;
     } catch (Exception e) {
       LOGGER.error("Failed to finalize state when doing stateful upgrade.", e);
     }
