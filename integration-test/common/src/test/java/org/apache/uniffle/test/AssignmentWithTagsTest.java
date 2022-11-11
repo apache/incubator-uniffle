@@ -154,7 +154,7 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
     // Case1 : only set the single default shuffle version tag
     ShuffleAssignmentsInfo assignmentsInfo =
         shuffleWriteClient.getShuffleAssignments("app-1",
-            1, 1, 1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 1);
+            1, 1, 1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 1, -1);
 
     List<Integer> assignedServerPorts = assignmentsInfo
         .getPartitionToServers()
@@ -169,7 +169,7 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
     // Case2: Set the single non-exist shuffle server tag
     try {
       assignmentsInfo = shuffleWriteClient.getShuffleAssignments("app-2",
-          1, 1, 1, Sets.newHashSet("non-exist"), 1);
+          1, 1, 1, Sets.newHashSet("non-exist"), 1, -1);
       fail();
     } catch (Exception e) {
       assertTrue(e.getMessage().startsWith("Error happened when getShuffleAssignments with"));
@@ -177,7 +177,7 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
 
     // Case3: Set the single fixed tag
     assignmentsInfo = shuffleWriteClient.getShuffleAssignments("app-3",
-        1, 1, 1, Sets.newHashSet("fixed"), 1);
+        1, 1, 1, Sets.newHashSet("fixed"), 1, -1);
     assignedServerPorts = assignmentsInfo
         .getPartitionToServers()
         .values()
@@ -190,7 +190,7 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
 
     // case4: Set the multiple tags if exists
     assignmentsInfo = shuffleWriteClient.getShuffleAssignments("app-4",
-        1, 1, 1, Sets.newHashSet("fixed", Constants.SHUFFLE_SERVER_VERSION), 1);
+        1, 1, 1, Sets.newHashSet("fixed", Constants.SHUFFLE_SERVER_VERSION), 1, -1);
     assignedServerPorts = assignmentsInfo
         .getPartitionToServers()
         .values()
@@ -204,7 +204,7 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
     // case5: Set the multiple tags if non-exist
     try {
       assignmentsInfo = shuffleWriteClient.getShuffleAssignments("app-5",
-          1, 1, 1, Sets.newHashSet("fixed", "elastic", Constants.SHUFFLE_SERVER_VERSION), 1);
+          1, 1, 1, Sets.newHashSet("fixed", "elastic", Constants.SHUFFLE_SERVER_VERSION), 1, -1);
       fail();
     } catch (Exception e) {
       assertTrue(e.getMessage().startsWith("Error happened when getShuffleAssignments with"));

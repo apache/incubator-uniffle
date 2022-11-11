@@ -394,9 +394,11 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @Override
   public ShuffleAssignmentsInfo getShuffleAssignments(String appId, int shuffleId, int partitionNum,
-      int partitionNumPerRange, Set<String> requiredTags, int assignmentShuffleServerNumber) {
+      int partitionNumPerRange, Set<String> requiredTags, int assignmentShuffleServerNumber,
+      int estimateTaskConcurrency) {
     RssGetShuffleAssignmentsRequest request = new RssGetShuffleAssignmentsRequest(
-        appId, shuffleId, partitionNum, partitionNumPerRange, replica, requiredTags, assignmentShuffleServerNumber);
+        appId, shuffleId, partitionNum, partitionNumPerRange, replica, requiredTags,
+        assignmentShuffleServerNumber, estimateTaskConcurrency);
 
     RssGetShuffleAssignmentsResponse response = new RssGetShuffleAssignmentsResponse(ResponseStatusCode.INTERNAL_ERROR);
     for (CoordinatorClient coordinatorClient : coordinatorClients) {

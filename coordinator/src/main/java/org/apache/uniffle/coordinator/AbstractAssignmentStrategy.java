@@ -17,69 +17,69 @@
 
 package org.apache.uniffle.coordinator;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.SortedMap;
 
-import static org.apache.uniffle.coordinator.CoordinatorConf.COORDINATOR_ASSGINMENT_HOST_STRATEGY;
+import org.apache.uniffle.common.PartitionRange;
+
+import static org.apache.uniffle.coordinator.CoordinatorConf.COORDINATOR_ASSIGNMENT_HOST_STRATEGY;
+import static org.apache.uniffle.coordinator.CoordinatorConf.COORDINATOR_SELECT_PARTITION_STRATEGY;
 
 public abstract class AbstractAssignmentStrategy implements AssignmentStrategy {
   protected final CoordinatorConf conf;
-  private final HostAssignmentStrategy assignmentHostStrategy;
+  private HostAssignmentStrategy hostAssignmentStrategy;
+  private SelectPartitionStrategy selectPartitionStrategy;
 
   public AbstractAssignmentStrategy(CoordinatorConf conf) {
     this.conf = conf;
-    assignmentHostStrategy = conf.get(COORDINATOR_ASSGINMENT_HOST_STRATEGY);
+    loadHostAssignmentStrategy();
+    loadSelectPartitionStrategy();
+  }
+
+  private void loadSelectPartitionStrategy() {
+    SelectPartitionStrategyName selectPartitionStrategyName =
+        conf.get(COORDINATOR_SELECT_PARTITION_STRATEGY);
+    if (selectPartitionStrategyName == SelectPartitionStrategyName.ROUND) {
+      selectPartitionStrategy = new RoundSelectPartitionStrategy();
+    } else if (selectPartitionStrategyName == SelectPartitionStrategyName.CONTINUOUS) {
+      selectPartitionStrategy = new ContinuousSelectPartitionStrategy();
+    } else {
+      throw new RuntimeException("Unsupported partition assignment strategy:" + selectPartitionStrategyName);
+    }
+  }
+
+  private void loadHostAssignmentStrategy() {
+    HostAssignmentStrategyName hostAssignmentStrategyName = conf.get(COORDINATOR_ASSIGNMENT_HOST_STRATEGY);
+    if (hostAssignmentStrategyName == HostAssignmentStrategyName.MUST_DIFF) {
+      hostAssignmentStrategy = new MustDiffHostAssignmentStrategy();
+    } else if (hostAssignmentStrategyName == HostAssignmentStrategyName.PREFER_DIFF) {
+      hostAssignmentStrategy = new PerferDiffHostAssignmentStrategy();
+    } else if (hostAssignmentStrategyName == HostAssignmentStrategyName.NONE) {
+      hostAssignmentStrategy = new BasicHostAssignmentStrategy();
+    } else {
+      throw new RuntimeException("Unsupported partition assignment strategy:" + hostAssignmentStrategyName);
+    }
   }
 
   protected List<ServerNode> getCandidateNodes(List<ServerNode> allNodes, int expectNum) {
-    switch (assignmentHostStrategy) {
-      case MUST_DIFF: return getCandidateNodesWithDiffHost(allNodes, expectNum);
-      case PREFER_DIFF: return tryGetCandidateNodesWithDiffHost(allNodes, expectNum);
-      case NONE: return allNodes.subList(0, expectNum);
-      default: throw new RuntimeException("Unsupported host assignment strategy:" + assignmentHostStrategy);
-    }
+    return hostAssignmentStrategy.assign(allNodes, expectNum);
   }
 
-  protected List<ServerNode> tryGetCandidateNodesWithDiffHost(List<ServerNode> allNodes, int expectNum) {
-    List<ServerNode> candidatesNodes = getCandidateNodesWithDiffHost(allNodes, expectNum);
-    Set<ServerNode> candidatesNodeSet = candidatesNodes.stream().collect(Collectors.toSet());
-    if (candidatesNodes.size() < expectNum) {
-      for (ServerNode node : allNodes) {
-        if (candidatesNodeSet.contains(node)) {
-          continue;
-        }
-        candidatesNodes.add(node);
-        if (candidatesNodes.size() >= expectNum) {
-          break;
-        }
-      }
-    }
-    return candidatesNodes;
+  protected SortedMap<PartitionRange, List<ServerNode>> getPartitionAssignment(
+      int totalPartitionNum, int partitionNumPerRange, int replica, List<ServerNode> candidatesNodes,
+      int estimateTaskConcurrency) {
+    return selectPartitionStrategy.assign(totalPartitionNum, partitionNumPerRange, replica,
+        candidatesNodes, estimateTaskConcurrency);
   }
 
-  protected List<ServerNode> getCandidateNodesWithDiffHost(List<ServerNode> allNodes, int expectNum) {
-    List<ServerNode> candidatesNodes = new ArrayList<>();
-    Set<String> hostIpCandidate = new HashSet<>();
-    for (ServerNode node : allNodes) {
-      if (hostIpCandidate.contains(node.getIp())) {
-        continue;
-      }
-      hostIpCandidate.add(node.getIp());
-      candidatesNodes.add(node);
-      if (candidatesNodes.size() >= expectNum) {
-        break;
-      }
-    }
-    return candidatesNodes;
-  }
-
-
-  public enum HostAssignmentStrategy {
+  public enum HostAssignmentStrategyName {
     MUST_DIFF,
     PREFER_DIFF,
     NONE
+  }
+
+  public enum SelectPartitionStrategyName {
+    ROUND,
+    CONTINUOUS
   }
 }

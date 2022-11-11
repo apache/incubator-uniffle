@@ -56,15 +56,30 @@ After apply the patch and rebuild spark, add following configuration in spark co
 
 ### Support Spark AQE
 
-To improve performance of AQE skew optimization, uniffle introduces the LOCAL_ORDER shuffle-data distribution mechanism
-to filter the lots of data to reduce network bandwidth and shuffle-server local-disk pressure.
+To improve performance of AQE skew optimization, uniffle introduces the LOCAL_ORDER shuffle-data distribution mechanism 
+and Continuous partition assignment mechanism.
 
-It can be enabled by the following config
-  ```bash
-  # Default value is NORMAL, it will directly append to file when the memory data is flushed to external storage 
-  spark.rss.client.shuffle.data.distribution.type LOCAL_ORDER
-  ```
+1. LOCAL_ORDER shuffle-data distribution mechanism filter the lots of data to reduce network bandwidth and shuffle-server local-disk pressure.
 
+    It can be enabled by the following config
+      ```bash
+      # Default value is NORMAL, it will directly append to file when the memory data is flushed to external storage 
+      spark.rss.client.shuffle.data.distribution.type LOCAL_ORDER
+      ```
+
+2. Continuous partition assignment mechanism assign consecutive partitions to the same ShuffleServer to reduce the frequency of getShuffleResult.
+
+    It can be enabled by the following config
+      ```bash
+        # Default value is ROUND, it will poll to allocate partitions to ShuffleServer
+        rss.coordinator.select.partition.strategy CONTINUOUS
+    
+        # Default value is false, the CONTINUOUS allocation mechanism relies on enabling this configuration, and estimates how many consecutive allocations should be allocated based on task concurrency
+        --conf spark.rss.estimate.task.concurrency.enabled=true
+        
+        # Default value is 1.0, used to estimate task concurrency, how likely is this part of the resource between spark.dynamicAllocation.minExecutors and spark.dynamicAllocation.maxExecutors to be allocated
+        --conf spark.rss.estimate.task.concurrency.dynamic.factor=1.0
+        ```
 ### Deploy MapReduce Client Plugin
 
 1. Add client jar to the classpath of each NodeManager, e.g., <HADOOP>/share/hadoop/mapreduce/
@@ -103,6 +118,8 @@ These configurations are shared by all types of clients.
 |<client_type>.rss.client.io.compression.codec|lz4|The compression codec is used to compress the shuffle data. Default codec is `lz4`. Other options are`ZSTD` and `SNAPPY`.|
 |<client_type>.rss.client.io.compression.zstd.level|3|The zstd compression level, the default level is 3|
 |<client_type>.rss.client.shuffle.data.distribution.type|NORMAL|The type of partition shuffle data distribution, including normal and local_order. The default value is normal. Now this config is only valid in Spark3.x|
+|<client_type>.rss.estimate.task.concurrency.enabled|false|Only works in spark3, whether to enable task concurrency estimation, only valid if rss.coordinator.select.partition.strategy is CONTINUOUS, this feature can improve performance in AQE scenarios.|
+|<client_type>.rss.estimate.task.concurrency.dynamic.factor|1.0|Between 0 and 1, used to estimate task concurrency, how likely is this part of the resource between spark.dynamicAllocation.minExecutors and spark.dynamicAllocation.maxExecutors to be allocated. Only works in spark3, <client_type>.rss.estimate.task.concurrency.enabled=true, and Coordinator's rss.coordinator.select.partition.strategy is CONTINUOUS.|
 Notice:
 
 1. `<client_type>` should be `spark` or `mapreduce`
