@@ -74,7 +74,7 @@ public class LocalStorageManager extends SingleStorageManager {
   LocalStorageManager(ShuffleServerConf conf) {
     super(conf);
     this.storageBasePaths = conf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
-    this.recoverableStart = conf.get(ShuffleServerConf.__INTERNAL_STATEFUL_UPGRADE_RECOVERABLE_START_ENABLED);
+    this.recoverableStart = conf.get(ShuffleServerConf.INTERNAL_STATEFUL_UPGRADE_RECOVERABLE_START_ENABLED);
     if (CollectionUtils.isEmpty(storageBasePaths)) {
       throw new IllegalArgumentException("Base path dirs must not be empty");
     }

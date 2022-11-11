@@ -79,6 +79,9 @@ public class ShuffleServerRecoveryTest extends ShuffleReadWriteBase {
     shuffleServers.get(0).start();
   }
 
+  /**
+   * Test reading shuffle-data from the restarted shuffle-server.
+   */
   @Test
   public void testWriteAndReadInRecovery() throws Exception {
     setupCoordinator();
@@ -120,7 +123,8 @@ public class ShuffleServerRecoveryTest extends ShuffleReadWriteBase {
     shuffleServerClient.sendShuffleData(rssdr);
 
     /**
-     * Restart the shuffle-server from the state
+     * Restart the shuffle-server from the state. And the shuffleClient still could
+     * retrieve the data from the restarted shuffle-server
      */
     ShuffleServer shuffleServer = shuffleServers.get(0);
     StatefulUpgradeManager statefulUpgradeManager = shuffleServer.getStatefulUpgradeManager();

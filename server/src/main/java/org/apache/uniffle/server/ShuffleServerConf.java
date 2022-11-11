@@ -309,7 +309,7 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(60 * 1000L)
       .withDescription("The timeout of the cache which record the mapping information");
 
-  public static final ConfigOption<Boolean> __INTERNAL_STATEFUL_UPGRADE_RECOVERABLE_START_ENABLED = ConfigOptions
+  public static final ConfigOption<Boolean> INTERNAL_STATEFUL_UPGRADE_RECOVERABLE_START_ENABLED = ConfigOptions
       .key("__internal.rss.server.stateful.upgrade.recoverable.start.enable")
       .booleanType()
       .defaultValue(false)

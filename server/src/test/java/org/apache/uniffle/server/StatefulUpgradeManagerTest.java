@@ -24,22 +24,40 @@ import com.google.common.collect.Maps;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.rpc.ServerInterface;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 
+import static org.apache.uniffle.server.ShuffleServerConf.STATEFUL_UPGRADE_ENABLED;
 import static org.apache.uniffle.server.ShuffleServerConf.STATEFUL_UPGRADE_STATE_STORE_EXPORT_DATA_LOCATION;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class StatefulUpgradeManagerTest {
+  private static final Logger LOGGER = LoggerFactory.getLogger(StatefulUpgradeManager.class);
 
   @Test
-  public void test(@TempDir File tmpDir) throws Exception {
+  public void testInvalid() throws Exception {
+    ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
+    StatefulUpgradeManager statefulUpgradeManager = new StatefulUpgradeManager(null, shuffleServerConf);
+    try {
+      statefulUpgradeManager.recoverState();
+      fail();
+    } catch (Exception e) {
+      LOGGER.info("It should throw exception when recovering state", e);
+    }
+  }
+
+  @Test
+  public void testNormal(@TempDir File tmpDir) throws Exception {
     String locationPath = tmpDir.getAbsolutePath() + "/state.bin";
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.set(STATEFUL_UPGRADE_STATE_STORE_EXPORT_DATA_LOCATION, locationPath);
+    conf.set(STATEFUL_UPGRADE_ENABLED, true);
 
     ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
     when(mockShuffleServer.getShuffleServerConf()).thenReturn(conf);

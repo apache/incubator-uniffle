@@ -39,7 +39,7 @@ class RetryInterceptor implements ClientInterceptor {
   private int retryNumber = 0;
   private RetryStrategy retryStrategy;
 
-  public RetryInterceptor(RetryStrategy retryStrategy) {
+  RetryInterceptor(RetryStrategy retryStrategy) {
     this.retryStrategy = retryStrategy;
   }
 
@@ -137,8 +137,8 @@ class RetryInterceptor implements ClientInterceptor {
           startCall(new CheckingListener()); // to allow multiple retries
         }
       }
-
     }
+
     return new RetryingUnaryRequestClientCall<>();
   }
 }

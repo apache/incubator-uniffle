@@ -25,17 +25,20 @@ import org.slf4j.LoggerFactory;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.state.ShuffleServerState;
 import org.apache.uniffle.server.state.StateStore;
 import org.apache.uniffle.server.state.StateStoreFactory;
 
+import static org.apache.uniffle.server.ShuffleServerConf.STATEFUL_UPGRADE_ENABLED;
 import static org.apache.uniffle.server.ShuffleServerConf.STATEFUL_UPGRADE_STATE_STORE_EXPORT_DATA_LOCATION;
 import static org.apache.uniffle.server.ShuffleServerConf.STATEFUL_UPGRADE_STATE_STORE_TYPE;
 
 public class StatefulUpgradeManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(StatefulUpgradeManager.class);
 
+  private final boolean statefulUpgradeEnable;
   private final ShuffleServer shuffleServer;
   private final ShuffleServerConf shuffleServerConf;
 
@@ -44,14 +47,22 @@ public class StatefulUpgradeManager {
   public StatefulUpgradeManager(ShuffleServer shuffleServer, ShuffleServerConf shuffleServerConf) {
     this.shuffleServer = shuffleServer;
     this.shuffleServerConf = shuffleServerConf;
+    this.statefulUpgradeEnable = shuffleServerConf.get(STATEFUL_UPGRADE_ENABLED);
+
+    if (!statefulUpgradeEnable) {
+      LOGGER.info("The stateful upgrading is invalid.");
+      return;
+    }
 
     this.stateStore = StateStoreFactory.getInstance().get(
         shuffleServerConf.get(STATEFUL_UPGRADE_STATE_STORE_TYPE),
         shuffleServerConf.get(STATEFUL_UPGRADE_STATE_STORE_EXPORT_DATA_LOCATION)
     );
 
-    // todo: introduce the abstract interface to support more triggers.
+    // todo: introduce the abstract interface to support more triggers, like admin api
     new StatefulUpgradeSignalHandler(this::finalizeAndShutdown).register();
+
+    LOGGER.info("The stateful upgrading is valid.");
   }
 
   @VisibleForTesting
@@ -73,7 +84,7 @@ public class StatefulUpgradeManager {
         System.currentTimeMillis() - exportStateStart);
   }
 
-  public void finalizeAndShutdown() {
+  private void finalizeAndShutdown() {
     int exitCode = 1;
     try {
       finalizeAndMaterializeState();
@@ -104,6 +115,11 @@ public class StatefulUpgradeManager {
   }
 
   public boolean recoverState() throws Exception {
+    if (!statefulUpgradeEnable) {
+      throw new RssException("The config of " + STATEFUL_UPGRADE_ENABLED.key()
+          + " must be enabled when using recoverable start.");
+    }
+
     long restoreStateStart = System.currentTimeMillis();
     ShuffleServerState state = stateStore.restore();
     LOGGER.info("Restore the state from external persistent storage costs: {} ms",
@@ -133,7 +149,7 @@ public class StatefulUpgradeManager {
     private static final String SIGNAL_NAME = "TERM";
     private final Runnable handler;
 
-    public StatefulUpgradeSignalHandler(Runnable handler) {
+    StatefulUpgradeSignalHandler(Runnable handler) {
       this.handler = handler;
     }
 
