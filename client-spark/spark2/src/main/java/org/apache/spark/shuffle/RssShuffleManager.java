@@ -145,7 +145,6 @@ public class RssShuffleManager implements ShuffleManager {
     this.sparkConf = sparkConf;
     this.user = sparkConf.get("spark.rss.quota.user", "user");
     this.uuid = sparkConf.get("spark.rss.quota.uuid",  Long.toString(System.currentTimeMillis()));
-    LOG.error("SSSSS user: {}, uuid: {}", user, uuid);
     // set & check replica config
     this.dataReplica = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA);
     this.dataReplicaWrite = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_WRITE);
