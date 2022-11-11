@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.common.config;
 
+import org.apache.uniffle.common.ClientType;
+
 import java.util.List;
 import java.util.Map;
 
@@ -120,10 +122,10 @@ public class RssBaseConf extends RssConf {
       .defaultValue(1024L * 1024L * 1024L)
       .withDescription("Max size of rpc message (byte)");
 
-  public static final ConfigOption<String> RSS_CLIENT_TYPE = ConfigOptions
+  public static final ConfigOption<ClientType> RSS_CLIENT_TYPE = ConfigOptions
       .key("rss.rpc.client.type")
-      .stringType()
-      .defaultValue("GRPC")
+      .enumType(ClientType.class)
+      .defaultValue(ClientType.GRPC)
       .withDescription("client type for rss");
 
   public static final ConfigOption<String> RSS_STORAGE_TYPE = ConfigOptions

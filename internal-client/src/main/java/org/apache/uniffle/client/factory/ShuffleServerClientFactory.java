@@ -23,7 +23,7 @@ import com.google.common.collect.Maps;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
-import org.apache.uniffle.client.util.ClientType;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
 public class ShuffleServerClientFactory {

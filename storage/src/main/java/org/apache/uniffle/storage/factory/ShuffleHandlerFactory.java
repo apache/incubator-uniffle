@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
-import org.apache.uniffle.client.util.ClientType;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;

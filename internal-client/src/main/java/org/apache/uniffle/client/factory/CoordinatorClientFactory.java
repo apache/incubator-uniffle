@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
-import org.apache.uniffle.client.util.ClientType;
+import org.apache.uniffle.common.ClientType;
 
 public class CoordinatorClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorClientFactory.class);
