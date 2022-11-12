@@ -56,6 +56,10 @@ public class ShuffleBuffer {
     this.inFlushBlockMap = Maps.newConcurrentMap();
   }
 
+  public ShuffleBuffer() {
+    this.capacity = 0;
+  }
+
   public long append(ShufflePartitionedData data) {
     long mSize = 0;
 

@@ -28,6 +28,7 @@ import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.state.StateStoreFactory;
+import org.apache.uniffle.server.upgrade.StatefulUpgradeTriggerFactory;
 
 public class ShuffleServerConf extends RssBaseConf {
 
@@ -338,6 +339,19 @@ public class ShuffleServerConf extends RssBaseConf {
       .intType()
       .defaultValue(10)
       .withDescription("The thread pool size of flushing all memory data to persistent storage. Default value is 10");
+
+  public static final ConfigOption<StatefulUpgradeTriggerFactory.Type>
+      STATEFUL_UPGRADE_TRIGGER_TYPE = ConfigOptions
+      .key("rss.server.stateful.upgrade.trigger.type")
+      .enumType(StatefulUpgradeTriggerFactory.Type.class)
+      .defaultValue(StatefulUpgradeTriggerFactory.Type.FILE)
+      .withDescription("The type of state upgrade trigger, currently only the mode of FILE-based is supported.");
+
+  public static final ConfigOption<String> STATEFUL_UPGRADE_TRIGGER_STATUS_FILE_PATH = ConfigOptions
+      .key("rss.server.stateful.upgrade.trigger.status.file.path")
+      .stringType()
+      .noDefaultValue()
+      .withDescription("The path of file-based trigger file");
 
   public ShuffleServerConf() {
   }

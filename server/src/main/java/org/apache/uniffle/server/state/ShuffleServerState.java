@@ -20,10 +20,12 @@ package org.apache.uniffle.server.state;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.collect.RangeMap;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.server.ShuffleTaskInfo;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
+import org.apache.uniffle.server.buffer.ShuffleBuffer;
 
 public class ShuffleServerState {
   // ShuffleTaskManager
@@ -37,6 +39,7 @@ public class ShuffleServerState {
   private long usedMemory;
   private long readDataMemory;
   private Map<String, Map<Integer, AtomicLong>> shuffleSizeMap;
+  private Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool;
 
   // ShuffleFlushManager
   private Map<String, Map<Integer, Roaring64NavigableMap>> committedBlockIds;
@@ -79,6 +82,10 @@ public class ShuffleServerState {
 
   public Map<String, Map<Integer, Roaring64NavigableMap>> getCommittedBlockIds() {
     return committedBlockIds;
+  }
+
+  public Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> getBufferPool() {
+    return bufferPool;
   }
 
   public static Builder builder() {
@@ -131,6 +138,11 @@ public class ShuffleServerState {
     public Builder committedBlockIds(
         Map<String, Map<Integer, Roaring64NavigableMap>> committedBlockIds) {
       this.state.committedBlockIds = committedBlockIds;
+      return this;
+    }
+
+    public Builder bufferPool(Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool) {
+      this.state.bufferPool = bufferPool;
       return this;
     }
 

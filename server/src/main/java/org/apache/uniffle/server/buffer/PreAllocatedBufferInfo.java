@@ -23,6 +23,9 @@ public class PreAllocatedBufferInfo {
   private long timestamp;
   private int requireSize;
 
+  public PreAllocatedBufferInfo() {
+  }
+
   public PreAllocatedBufferInfo(long requireId, long timestamp, int requireSize) {
     this.requireId = requireId;
     this.timestamp = timestamp;
@@ -39,5 +42,17 @@ public class PreAllocatedBufferInfo {
 
   public int getRequireSize() {
     return requireSize;
+  }
+
+  public void setRequireId(long requireId) {
+    this.requireId = requireId;
+  }
+
+  public void setTimestamp(long timestamp) {
+    this.timestamp = timestamp;
+  }
+
+  public void setRequireSize(int requireSize) {
+    this.requireSize = requireSize;
   }
 }

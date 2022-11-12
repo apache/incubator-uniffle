@@ -65,6 +65,7 @@ public class ShuffleServerRecoveryTest extends ShuffleReadWriteBase {
   private static File tmpDir = Files.createTempDir();
   private static File dataDir;
   private static String stateLocation;
+
   static {
     dataDir = new File(tmpDir, "data1");
     stateLocation = tmpDir.getAbsolutePath() + "/state.bin";

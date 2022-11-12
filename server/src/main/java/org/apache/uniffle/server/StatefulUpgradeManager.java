@@ -22,14 +22,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
 
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.state.ShuffleServerState;
 import org.apache.uniffle.server.state.StateStore;
 import org.apache.uniffle.server.state.StateStoreFactory;
+import org.apache.uniffle.server.upgrade.StatefulUpgradeTrigger;
+import org.apache.uniffle.server.upgrade.StatefulUpgradeTriggerFactory;
 
 import static org.apache.uniffle.server.ShuffleServerConf.STATEFUL_UPGRADE_ENABLED;
 import static org.apache.uniffle.server.ShuffleServerConf.STATEFUL_UPGRADE_STATE_STORE_EXPORT_DATA_LOCATION;
@@ -50,7 +50,7 @@ public class StatefulUpgradeManager {
     this.statefulUpgradeEnable = shuffleServerConf.get(STATEFUL_UPGRADE_ENABLED);
 
     if (!statefulUpgradeEnable) {
-      LOGGER.info("The stateful upgrading is invalid.");
+      LOGGER.info("The stateful upgrading manager is invalid.");
       return;
     }
 
@@ -59,10 +59,10 @@ public class StatefulUpgradeManager {
         shuffleServerConf.get(STATEFUL_UPGRADE_STATE_STORE_EXPORT_DATA_LOCATION)
     );
 
-    // todo: introduce the abstract interface to support more triggers, like admin api
-    new StatefulUpgradeSignalHandler(this::finalizeAndShutdown).register();
+    StatefulUpgradeTrigger trigger = StatefulUpgradeTriggerFactory.getInstance().get(shuffleServerConf);
+    trigger.register(this::finalizeAndShutdown);
 
-    LOGGER.info("The stateful upgrading is valid.");
+    LOGGER.info("The stateful upgrading manager is valid.");
   }
 
   @VisibleForTesting
@@ -112,6 +112,7 @@ public class StatefulUpgradeManager {
         .readDataMemory(bufferManager.getReadDataMemory())
         .shuffleSizeMap(bufferManager.getShuffleSizeMap())
         .committedBlockIds(flushManager.getCommittedBlockIds())
+        .bufferPool(bufferManager.getBufferPool())
         .build();
 
     return state;
@@ -141,31 +142,11 @@ public class StatefulUpgradeManager {
     bufferManager.setUsedMemory(new AtomicLong(state.getUsedMemory()));
     bufferManager.setPreAllocatedSize(new AtomicLong(state.getPreAllocatedSize()));
     bufferManager.setShuffleSizeMap(state.getShuffleSizeMap());
+    bufferManager.setBufferPool(state.getBufferPool());
 
     ShuffleFlushManager flushManager = shuffleServer.getShuffleFlushManager();
     flushManager.setCommittedBlockIds(state.getCommittedBlockIds());
 
     return true;
-  }
-
-  class StatefulUpgradeSignalHandler implements SignalHandler {
-    private static final String SIGNAL_NAME = "TERM";
-    private final Runnable handler;
-
-    StatefulUpgradeSignalHandler(Runnable handler) {
-      this.handler = handler;
-    }
-
-    public void register() {
-      Signal signal = new Signal(SIGNAL_NAME);
-      Signal.handle(signal, this);
-    }
-
-    @Override
-    public void handle(Signal signal) {
-      LOGGER.info("Capture the signal of {}", signal.getName());
-      handler.run();
-      LOGGER.info("Succeed to handle the signal.");
-    }
   }
 }

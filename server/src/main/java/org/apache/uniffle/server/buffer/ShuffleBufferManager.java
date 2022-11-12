@@ -509,4 +509,9 @@ public class ShuffleBufferManager {
       Map<String, Map<Integer, AtomicLong>> shuffleSizeMap) {
     this.shuffleSizeMap = shuffleSizeMap;
   }
+
+  public void setBufferPool(
+      Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool) {
+    this.bufferPool = bufferPool;
+  }
 }

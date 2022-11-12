@@ -15,12 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.server.state;
+package org.apache.uniffle.server.upgrade;
 
-public interface StateStore {
+public interface StatefulUpgradeTrigger {
 
-  void export(ShuffleServerState state) throws Exception;
-
-  ShuffleServerState restore() throws Exception;
+  void register(Runnable handler);
 
 }
