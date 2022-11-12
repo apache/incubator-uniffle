@@ -118,6 +118,7 @@ public class StatefulUpgradeTest extends SparkSQLTest {
       super(conf, isDriver);
     }
 
+    @Override
     public <K, C> ShuffleReader<K, C> getReaderImpl(
         ShuffleHandle handle,
         int startMapIndex,

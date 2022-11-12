@@ -55,8 +55,6 @@ public class FileStateStoreTest {
 
   @Test
   public void test(@TempDir File tempDir) throws Exception {
-    String location = tempDir.getAbsolutePath() + "/state.bin";
-
     Map<String, Map<Integer, Roaring64NavigableMap[]>> partitionsToBlockIds = Maps.newConcurrentMap();
     partitionsToBlockIds.putIfAbsent("testAppId", Maps.newConcurrentMap());
     partitionsToBlockIds.get("testAppId").put(1,
@@ -78,6 +76,7 @@ public class FileStateStoreTest {
         .bufferPool(bufferPool)
         .build();
 
+    String location = tempDir.getAbsolutePath() + "/state.bin";
     StateStore stateStore = new FileStateStore(location);
     stateStore.export(state);
 
