@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Test;
 import static org.apache.uniffle.common.util.Constants.ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM;
 import static org.apache.uniffle.coordinator.CoordinatorConf.COORDINATOR_ACCESS_CHECKERS;
 import static org.apache.uniffle.coordinator.CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_APP_NUM;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -126,7 +125,7 @@ public class AccessQuotaCheckerTest {
     applicationManager = new ApplicationManager(conf);
     accessManager = new AccessManager(conf, clusterManager, applicationManager, new Configuration());
     accessQuotaChecker = (AccessQuotaChecker) accessManager.getAccessCheckers().get(0);
-    AccessClusterLoadChecker accessClusterLoadChecker =
+    final AccessClusterLoadChecker accessClusterLoadChecker =
         (AccessClusterLoadChecker) accessManager.getAccessCheckers().get(1);
     properties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, "100");
     accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
