@@ -145,7 +145,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   }
 
   private static ClientInterceptor[] getClientInterceptors(ConnectionOptions connectionOptions) {
-    if (RssUtils.isEmpty(connectionOptions.getRetryStrategies())) {
+    if (connectionOptions == null) {
       return null;
     }
     if (RssUtils.isEmpty(connectionOptions.getRetryStrategies())) {
