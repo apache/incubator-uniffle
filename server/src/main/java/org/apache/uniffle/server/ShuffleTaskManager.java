@@ -243,6 +243,7 @@ public class ShuffleTaskManager {
     Object lock = shuffleTaskInfo.getCommitLocks().computeIfAbsent(shuffleId, x -> new Object());
     synchronized (lock) {
       long commitTimeout = conf.get(ShuffleServerConf.SERVER_COMMIT_TIMEOUT);
+      // todo: it's better to use the concurrent lock timeout
       if (System.currentTimeMillis() - start > commitTimeout) {
         throw new RuntimeException("Shuffle data commit timeout for " + commitTimeout + " ms");
       }

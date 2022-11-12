@@ -35,8 +35,8 @@ import org.apache.uniffle.client.StatefulUpgradeClientOptions;
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
 
 import static org.apache.uniffle.common.config.RssClientConf.STATEFUL_UPGRADE_CLIENT_BACKOFF_BASE;

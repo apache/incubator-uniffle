@@ -30,17 +30,19 @@ public class NetworkUnavailableRetryStrategy implements RetryStrategy {
   private int retryIntervalMax;
   private int backOffBase;
 
+  private Random random;
+
   public NetworkUnavailableRetryStrategy(int retryMaxNumber, int retryIntervalMax, int backOffBase) {
     this.retryMaxNumber = retryMaxNumber;
     this.retryIntervalMax = retryIntervalMax;
     this.backOffBase = backOffBase;
+    this.random = new Random();
   }
 
   @Override
   public boolean needToRetry(String status, int retryNumber) {
     try {
       if (STATUS_CODE.equalsIgnoreCase(status) && retryNumber < retryMaxNumber) {
-        Random random = new Random();
         long backoffTime =
             Math.min(retryIntervalMax, backOffBase * (1L << Math.min(retryNumber, 16)) + random.nextInt(backOffBase));
         LOGGER.info("Sleep: {}", backoffTime);

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -138,11 +139,27 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         port,
         3,
         true,
-        RssUtils.isEmpty(connectionOptions.getRetryStrategies()) ? null : new ClientInterceptor[] {
-            new RetryInterceptor(connectionOptions.getRetryStrategies().get(0))
-        }
+        getClientInterceptors(connectionOptions)
     );
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
+  }
+
+  private static ClientInterceptor[] getClientInterceptors(ConnectionOptions connectionOptions) {
+    if (RssUtils.isEmpty(connectionOptions.getRetryStrategies())) {
+      return null;
+    }
+    if (RssUtils.isEmpty(connectionOptions.getRetryStrategies())) {
+      return null;
+    }
+
+    return connectionOptions
+        .getRetryStrategies()
+        .stream()
+        .map(x -> new RetryInterceptor(x))
+        .collect(Collectors.toList())
+        .toArray(
+            new RetryInterceptor[0]
+        );
   }
 
   public ShuffleServerBlockingStub getBlockingStub() {
