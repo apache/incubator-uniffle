@@ -59,6 +59,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RetryUtils;
@@ -232,7 +233,7 @@ public class RssShuffleManager implements ShuffleManager {
       partitionToServers = RetryUtils.retry(() -> {
         ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
                 appId, shuffleId, dependency.partitioner().numPartitions(),
-                partitionNumPerRange, assignmentTags, requiredShuffleServerNumber);
+                partitionNumPerRange, assignmentTags, requiredShuffleServerNumber, -1);
         registerShuffleServers(appId, shuffleId, response.getServerToPartitionRanges(), remoteStorage);
         return response.getPartitionToServers();
       }, retryInterval, retryTimes);
@@ -279,7 +280,13 @@ public class RssShuffleManager implements ShuffleManager {
         .stream()
         .forEach(entry -> {
           shuffleWriteClient.registerShuffle(
-              entry.getKey(), appId, shuffleId, entry.getValue(), remoteStorage);
+              entry.getKey(),
+              appId,
+              shuffleId,
+              entry.getValue(),
+              remoteStorage,
+              ShuffleDataDistributionType.NORMAL
+          );
         });
     LOG.info("Finish register shuffleId[" + shuffleId + "] with " + (System.currentTimeMillis() - start) + " ms");
   }

@@ -153,11 +153,11 @@ public class CoordinatorConf extends RssBaseConf {
       .intType()
       .defaultValue(3)
       .withDescription("The number of times to read and write HDFS files");
-  public static final ConfigOption<AbstractAssignmentStrategy.HostAssignmentStrategy>
-      COORDINATOR_ASSGINMENT_HOST_STRATEGY =
+  public static final ConfigOption<AbstractAssignmentStrategy.HostAssignmentStrategyName>
+      COORDINATOR_ASSIGNMENT_HOST_STRATEGY =
       ConfigOptions.key("rss.coordinator.assignment.host.strategy")
-          .enumType(AbstractAssignmentStrategy.HostAssignmentStrategy.class)
-          .defaultValue(AbstractAssignmentStrategy.HostAssignmentStrategy.PREFER_DIFF)
+          .enumType(AbstractAssignmentStrategy.HostAssignmentStrategyName.class)
+          .defaultValue(AbstractAssignmentStrategy.HostAssignmentStrategyName.PREFER_DIFF)
           .withDescription("Strategy for selecting shuffle servers");
   public static final ConfigOption<Boolean> COORDINATOR_START_SILENT_PERIOD_ENABLED = ConfigOptions
       .key("rss.coordinator.startup-silent-period.enabled")
@@ -172,6 +172,12 @@ public class CoordinatorConf extends RssBaseConf {
       .defaultValue(20 * 1000L)
       .withDescription("The waiting duration(ms) when conf of "
           + COORDINATOR_START_SILENT_PERIOD_ENABLED + " is enabled.");
+  public static final ConfigOption<AbstractAssignmentStrategy.SelectPartitionStrategyName>
+      COORDINATOR_SELECT_PARTITION_STRATEGY =
+      ConfigOptions.key("rss.coordinator.select.partition.strategy")
+          .enumType(AbstractAssignmentStrategy.SelectPartitionStrategyName.class)
+          .defaultValue(AbstractAssignmentStrategy.SelectPartitionStrategyName.ROUND)
+          .withDescription("Strategy for selecting partitions");
 
   public CoordinatorConf() {
   }

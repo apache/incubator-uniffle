@@ -42,6 +42,7 @@ import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -272,8 +273,14 @@ public class QuorumTest extends ShuffleReadWriteBase {
         shuffleServerInfo2, shuffleServerInfo3, shuffleServerInfo4);
 
     for (int i = 0; i < replica; i++) {
-      shuffleWriteClientImpl.registerShuffle(allServers.get(i),
-          testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), new RemoteStorageInfo(""));
+      shuffleWriteClientImpl.registerShuffle(
+          allServers.get(i),
+          testAppId,
+          0,
+          Lists.newArrayList(new PartitionRange(0, 0)),
+          new RemoteStorageInfo(""),
+          ShuffleDataDistributionType.NORMAL
+      );
     }
   }
 

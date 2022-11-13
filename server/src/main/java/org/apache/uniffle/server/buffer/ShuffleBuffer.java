@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
@@ -74,12 +75,16 @@ public class ShuffleBuffer {
       int shuffleId,
       int startPartition,
       int endPartition,
-      Supplier<Boolean> isValid) {
+      Supplier<Boolean> isValid,
+      ShuffleDataDistributionType dataDistributionType) {
     if (blocks.isEmpty()) {
       return null;
     }
     // buffer will be cleared, and new list must be created for async flush
     List<ShufflePartitionedBlock> spBlocks = new LinkedList<>(blocks);
+    if (dataDistributionType == ShuffleDataDistributionType.LOCAL_ORDER) {
+      spBlocks.sort((o1, o2) -> new Long(o1.getTaskAttemptId()).compareTo(o2.getTaskAttemptId()));
+    }
     long eventId = ShuffleFlushManager.ATOMIC_EVENT_ID.getAndIncrement();
     final ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
         eventId,
@@ -95,6 +100,18 @@ public class ShuffleBuffer {
     blocks.clear();
     size = 0;
     return event;
+  }
+
+  /**
+   * Only for test
+   */
+  public synchronized ShuffleDataFlushEvent toFlushEvent(
+      String appId,
+      int shuffleId,
+      int startPartition,
+      int endPartition,
+      Supplier<Boolean> isValid) {
+    return toFlushEvent(appId, shuffleId, startPartition, endPartition, isValid, ShuffleDataDistributionType.NORMAL);
   }
 
   public List<ShufflePartitionedBlock> getBlocks() {

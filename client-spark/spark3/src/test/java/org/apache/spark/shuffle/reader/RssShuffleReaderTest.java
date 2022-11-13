@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import scala.Option;
 
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.storage.handler.impl.HdfsShuffleWriteHandler;
 import org.apache.uniffle.storage.util.StorageType;
@@ -94,7 +95,10 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
         1,
         partitionToExpectBlocks,
         taskIdBitmap,
-        new ShuffleReadMetrics(), new RssConf()));
+        new ShuffleReadMetrics(),
+        new RssConf(),
+        ShuffleDataDistributionType.NORMAL
+    ));
     validateResult(rssShuffleReaderSpy.read(), expectedData, 10);
 
     writeTestData(writeHandler1, 2, 4, expectedData,
@@ -115,8 +119,10 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
         2,
         partitionToExpectBlocks,
         taskIdBitmap,
-        new ShuffleReadMetrics(), new RssConf())
-    );
+        new ShuffleReadMetrics(),
+        new RssConf(),
+        ShuffleDataDistributionType.NORMAL
+    ));
     validateResult(rssShuffleReaderSpy1.read(), expectedData, 18);
 
     RssShuffleReader rssShuffleReaderSpy2 = spy(new RssShuffleReader<String, String>(
@@ -134,7 +140,10 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
         2,
         partitionToExpectBlocks,
         Roaring64NavigableMap.bitmapOf(),
-        new ShuffleReadMetrics(), new RssConf()));
+        new ShuffleReadMetrics(),
+        new RssConf(),
+        ShuffleDataDistributionType.NORMAL
+    ));
     validateResult(rssShuffleReaderSpy2.read(), Maps.newHashMap(), 0);
   }
 

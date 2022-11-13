@@ -54,6 +54,8 @@ import static org.mockito.Mockito.when;
 public class ShuffleBufferManagerTest extends BufferTestBase {
   private ShuffleBufferManager shuffleBufferManager;
   private ShuffleFlushManager mockShuffleFlushManager;
+  private ShuffleServer mockShuffleServer;
+  private ShuffleTaskManager mockShuffleTaskManager;
   private ShuffleServerConf conf;
 
   @BeforeEach
@@ -68,6 +70,9 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 80.0);
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     mockShuffleFlushManager = mock(ShuffleFlushManager.class);
+    mockShuffleServer = mock(ShuffleServer.class);
+    mockShuffleTaskManager = mock(ShuffleTaskManager.class);
+    when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
     shuffleBufferManager = new ShuffleBufferManager(conf, mockShuffleFlushManager);
   }
 

@@ -82,8 +82,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
     ShuffleServer shuffleServer = new ShuffleServer(conf);
-    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf,
-        shuffleServer.getShuffleFlushManager(), shuffleServer.getShuffleBufferManager(), null);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
 
     String appId = "registerTest1";
     int shuffleId = 1;
@@ -138,11 +137,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED, 3000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
     ShuffleServer shuffleServer = new ShuffleServer(conf);
-    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
-    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
-    StorageManager storageManager = shuffleServer.getStorageManager();
-    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(
-        conf, shuffleFlushManager, shuffleBufferManager, storageManager);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
     shuffleTaskManager.registerShuffle(
         appId,
         shuffleId,
@@ -184,6 +179,8 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     assertEquals(1, bufferIds.size());
     assertEquals(StatusCode.SUCCESS, sc);
     shuffleTaskManager.commitShuffle(appId, shuffleId);
+
+    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
     assertEquals(1, shuffleFlushManager.getCommittedBlockIds(appId, shuffleId).getLongCardinality());
 
     // flush for partition 1-1
@@ -279,11 +276,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
 
     ShuffleServer shuffleServer = new ShuffleServer(conf);
 
-    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
-    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
-    StorageManager storageManager = shuffleServer.getStorageManager();
-    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(
-        conf, shuffleFlushManager, shuffleBufferManager, storageManager);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
 
     String appId = "removeShuffleDataTest1";
     for (int i = 0; i < 4; i++) {
@@ -312,6 +305,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
 
     assertEquals(1, shuffleTaskManager.getAppIds().size());
 
+    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
     RangeMap<Integer, ShuffleBuffer> rangeMap = shuffleBufferManager.getBufferPool().get(appId).get(0);
     assertFalse(rangeMap.asMapOfRanges().isEmpty());
     shuffleTaskManager.commitShuffle(appId, 0);
@@ -351,12 +345,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
         path1.toAbsolutePath().toString() + "," + path2.toAbsolutePath().toString());
 
     ShuffleServer shuffleServer = new ShuffleServer(conf);
-
-    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
-    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
-    StorageManager storageManager = shuffleServer.getStorageManager();
-    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(
-        conf, shuffleFlushManager, shuffleBufferManager, storageManager);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
 
     String appId = "removeShuffleDataWithLocalfileTest";
 
@@ -411,11 +400,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
 
     ShuffleServer shuffleServer = new ShuffleServer(conf);
-    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
-    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
-    StorageManager storageManager = shuffleServer.getStorageManager();
-    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf, shuffleFlushManager,
-        shuffleBufferManager, storageManager);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
     shuffleTaskManager.registerShuffle(
         "clearTest1",
         shuffleId,

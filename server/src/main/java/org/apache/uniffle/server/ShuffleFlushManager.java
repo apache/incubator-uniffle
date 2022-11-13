@@ -36,6 +36,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.ThreadUtils;
@@ -166,18 +167,18 @@ public class ShuffleFlushManager {
               shuffleServer.getShuffleTaskManager().getUserByAppId(event.getAppId()),
               StringUtils.EMPTY
           );
-          ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(new CreateShuffleWriteHandlerRequest(
-              storageType,
-              event.getAppId(),
-              event.getShuffleId(),
-              event.getStartPartition(),
-              event.getEndPartition(),
-              storageBasePaths.toArray(new String[storageBasePaths.size()]),
-              shuffleServerId,
-              hadoopConf,
-              storageDataReplica,
-              user)
-          );
+          CreateShuffleWriteHandlerRequest request = new CreateShuffleWriteHandlerRequest(
+                  storageType,
+                  event.getAppId(),
+                  event.getShuffleId(),
+                  event.getStartPartition(),
+                  event.getEndPartition(),
+                  storageBasePaths.toArray(new String[storageBasePaths.size()]),
+                  shuffleServerId,
+                  hadoopConf,
+                  storageDataReplica,
+                  user);
+          ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
           do {
             if (event.getRetryTimes() > retryMax) {
               LOG.error("Failed to write data for " + event + " in " + retryMax + " times, shuffle data will be lost");
@@ -358,5 +359,9 @@ public class ShuffleFlushManager {
     public long getCreateTimeStamp() {
       return createTimeStamp;
     }
+  }
+
+  public ShuffleDataDistributionType getDataDistributionType(String appId) {
+    return shuffleServer.getShuffleTaskManager().getDataDistributionType(appId);
   }
 }

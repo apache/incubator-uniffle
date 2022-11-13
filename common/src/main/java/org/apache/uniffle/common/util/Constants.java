@@ -45,4 +45,21 @@ public class Constants {
           RSS_CLIENT_CONF_COMMON_PREFIX + CONF_REMOTE_STORAGE_PATH;
 
   public static final String ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM = "access_info_required_shuffle_nodes_num";
+  public static final String SPARK_DYNAMIC_ENABLED = "spark.dynamicAllocation.enabled";
+  public static final String SPARK_MAX_DYNAMIC_EXECUTOR = "spark.dynamicAllocation.maxExecutors";
+  public static final String SPARK_MIN_DYNAMIC_EXECUTOR = "spark.dynamicAllocation.minExecutors";
+  public static final int SPARK_DYNAMIC_EXECUTOR_DEFAULT_VALUE = 0;
+  public static final String SPARK_EXECUTOR_INSTANTS = "spark.executor.instances";
+  public static final int SPARK_EXECUTOR_INSTANTS_DEFAULT_VALUE = -1;
+  public static final String SPARK_EXECUTOR_CORES = "spark.executor.cores";
+  public static final int SPARK_EXECUTOR_CORES_DEFAULT_VALUE = 1;
+  public static final String SPARK_TASK_CPUS = "spark.task.cpus";
+  public static final int SPARK_TASK_CPUS_DEFAULT_VALUE = 1;
+  public static final int SPARK_MAX_DYNAMIC_EXECUTOR_LIMIT = 10000;
+
+  public static final String MR_MAPS = "mapreduce.job.maps";
+  public static final String MR_REDUCES = "mapreduce.job.reduces";
+  public static final String MR_MAP_LIMIT = "mapreduce.job.running.map.limit";
+  public static final String MR_REDUCE_LIMIT = "mapreduce.job.running.reduce.limit";
+  public static final String MR_SLOW_START = "mapreduce.job.reduce.slowstart.completedmaps";
 }

@@ -30,15 +30,17 @@ public class RssGetShuffleAssignmentsRequest {
   private int dataReplica;
   private Set<String> requiredTags;
   private int assignmentShuffleServerNumber;
+  private int estimateTaskConcurrency;
 
   @VisibleForTesting
   public RssGetShuffleAssignmentsRequest(String appId, int shuffleId, int partitionNum,
       int partitionNumPerRange, int dataReplica, Set<String> requiredTags) {
-    this(appId, shuffleId, partitionNum, partitionNumPerRange, dataReplica, requiredTags, -1);
+    this(appId, shuffleId, partitionNum, partitionNumPerRange, dataReplica, requiredTags, -1, -1);
   }
 
   public RssGetShuffleAssignmentsRequest(String appId, int shuffleId, int partitionNum,
-      int partitionNumPerRange, int dataReplica, Set<String> requiredTags, int assignmentShuffleServerNumber) {
+      int partitionNumPerRange, int dataReplica, Set<String> requiredTags, int assignmentShuffleServerNumber,
+      int estimateTaskConcurrency) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionNum = partitionNum;
@@ -46,6 +48,7 @@ public class RssGetShuffleAssignmentsRequest {
     this.dataReplica = dataReplica;
     this.requiredTags = requiredTags;
     this.assignmentShuffleServerNumber = assignmentShuffleServerNumber;
+    this.estimateTaskConcurrency = estimateTaskConcurrency;
   }
 
   public String getAppId() {
@@ -74,5 +77,9 @@ public class RssGetShuffleAssignmentsRequest {
 
   public int getAssignmentShuffleServerNumber() {
     return assignmentShuffleServerNumber;
+  }
+
+  public int getEstimateTaskConcurrency() {
+    return estimateTaskConcurrency;
   }
 }

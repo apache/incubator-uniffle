@@ -90,4 +90,50 @@ public class CoordinatorUtilsTest {
       }
     }
   }
+
+  @Test
+  public void testGenerateRangesGroup() {
+    List<List<PartitionRange>> rangesGroup = CoordinatorUtils.generateRangesGroup(52,2, 5, 20);
+    assertEquals(15, rangesGroup.size());
+    validate(new int[]{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1}, rangesGroup);
+
+    rangesGroup = CoordinatorUtils.generateRangesGroup(48,2, 5, 20);
+    assertEquals(14, rangesGroup.size());
+    validate(new int[]{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1}, rangesGroup);
+
+    rangesGroup = CoordinatorUtils.generateRangesGroup(96,2, 5, 20);
+    assertEquals(25, rangesGroup.size());
+    validate(new int[]{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1}, rangesGroup);
+
+    rangesGroup = CoordinatorUtils.generateRangesGroup(96,2, 5, 30);
+    assertEquals(18, rangesGroup.size());
+    validate(new int[]{3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1}, rangesGroup);
+
+    rangesGroup = CoordinatorUtils.generateRangesGroup(48,1, 5, 20);
+    assertEquals(15, rangesGroup.size());
+    validate(new int[]{4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 2, 2, 1, 1}, rangesGroup);
+
+    rangesGroup = CoordinatorUtils.generateRangesGroup(26,2, 5, 4);
+    assertEquals(13, rangesGroup.size());
+    validate(new int[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, rangesGroup);
+
+    rangesGroup = CoordinatorUtils.generateRangesGroup(2,2, 5, 4);
+    assertEquals(1, rangesGroup.size());
+    validate(new int[]{1}, rangesGroup);
+
+    rangesGroup = CoordinatorUtils.generateRangesGroup(12,2, 5, 0);
+    assertEquals(6, rangesGroup.size());
+    validate(new int[]{1, 1, 1, 1, 1, 1}, rangesGroup);
+
+    rangesGroup = CoordinatorUtils.generateRangesGroup(24,2, 5, 50);
+    assertEquals(7, rangesGroup.size());
+    validate(new int[]{2, 2, 2, 2, 2, 1, 1}, rangesGroup);
+  }
+
+  private void validate(int[] expect, List<List<PartitionRange>> rangesGroup) {
+    for (int i = 0; i < expect.length; i++) {
+      assertEquals(expect[i], rangesGroup.get(i).size());
+    }
+  }
+
 }

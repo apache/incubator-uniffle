@@ -30,8 +30,6 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
-import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -49,11 +47,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.BufferSegment;
-import org.apache.uniffle.common.ShuffleDataSegment;
-import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.common.exception.RssException;
 
 public class RssUtils {
 
@@ -182,71 +176,6 @@ public class RssUtils {
     Roaring64NavigableMap clone = Roaring64NavigableMap.bitmapOf();
     clone.or(bitmap);
     return clone;
-  }
-
-  public static List<ShuffleDataSegment> transIndexDataToSegments(
-      ShuffleIndexResult shuffleIndexResult, int readBufferSize) {
-    if (shuffleIndexResult == null || shuffleIndexResult.isEmpty()) {
-      return Lists.newArrayList();
-    }
-
-    byte[] indexData = shuffleIndexResult.getIndexData();
-    long dataFileLen = shuffleIndexResult.getDataFileLen();
-    return transIndexDataToSegments(indexData, readBufferSize, dataFileLen);
-  }
-
-  private static List<ShuffleDataSegment> transIndexDataToSegments(byte[] indexData,
-      int readBufferSize, long dataFileLen) {
-    ByteBuffer byteBuffer = ByteBuffer.wrap(indexData);
-    List<BufferSegment> bufferSegments = Lists.newArrayList();
-    List<ShuffleDataSegment> dataFileSegments = Lists.newArrayList();
-    int bufferOffset = 0;
-    long fileOffset = -1;
-    long totalLength = 0;
-
-    while (byteBuffer.hasRemaining()) {
-      try {
-        long offset = byteBuffer.getLong();
-        int length = byteBuffer.getInt();
-        int uncompressLength = byteBuffer.getInt();
-        long crc = byteBuffer.getLong();
-        long blockId = byteBuffer.getLong();
-        long taskAttemptId = byteBuffer.getLong();
-        // The index file is written, read and parsed sequentially, so these parsed index segments
-        // index a continuous shuffle data in the corresponding data file and the first segment's
-        // offset field is the offset of these shuffle data in the data file.
-        if (fileOffset == -1) {
-          fileOffset = offset;
-        }
-
-        bufferSegments.add(new BufferSegment(blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
-        bufferOffset += length;
-        totalLength += length;
-
-        // If ShuffleServer is flushing the file at this time, the length in the index file record may be greater
-        // than the length in the actual data file, and it needs to be returned at this time to avoid EOFException
-        if (dataFileLen != -1 && totalLength >= dataFileLen) {
-          break;
-        }
-
-        if (bufferOffset >= readBufferSize) {
-          ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
-          dataFileSegments.add(sds);
-          bufferSegments = Lists.newArrayList();
-          bufferOffset = 0;
-          fileOffset = -1;
-        }
-      } catch (BufferUnderflowException ue) {
-        throw new RssException("Read index data under flow", ue);
-      }
-    }
-
-    if (bufferOffset > 0) {
-      ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
-      dataFileSegments.add(sds);
-    }
-
-    return dataFileSegments;
   }
 
   public static String generateShuffleKey(String appId, int shuffleId) {

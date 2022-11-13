@@ -73,8 +73,12 @@ public abstract class AbstractStorage implements Storage {
   protected abstract ServerReadHandler newReadHandler(CreateShuffleReadHandlerRequest request);
 
   public boolean containsWriteHandler(String appId, int shuffleId, int partition) {
+    Map<String, ShuffleWriteHandler> map = writerHandlers.get(appId);
+    if (map == null || map.isEmpty()) {
+      return false;
+    }
     String partitionKey = RssUtils.generatePartitionKey(appId, shuffleId, partition);
-    return writerHandlers.containsKey(partitionKey);
+    return map.containsKey(partitionKey);
   }
 
   @Override

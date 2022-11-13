@@ -54,6 +54,7 @@ import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.Constants;
@@ -63,6 +64,7 @@ import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerGrpcMetrics;
 import org.apache.uniffle.server.ShuffleServerMetrics;
+import org.apache.uniffle.server.storage.MultiStorageManager;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -111,7 +113,10 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
         new ShuffleServerInfo("127.0.0.1-20001", "127.0.0.1", 20001),
         "clearResourceTest1",
         0,
-        Lists.newArrayList(new PartitionRange(0, 1)), new RemoteStorageInfo(""));
+        Lists.newArrayList(new PartitionRange(0, 1)),
+        new RemoteStorageInfo(""),
+        ShuffleDataDistributionType.NORMAL
+    );
 
     shuffleWriteClient.sendAppHeartbeat("clearResourceTest1", 1000L);
     shuffleWriteClient.sendAppHeartbeat("clearResourceTest2", 1000L);
@@ -369,7 +374,8 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
         EVENT_THRESHOLD_SIZE + 1, null, null, null);
     try {
       // can't find storage info with appId2
-      shuffleServers.get(0).getStorageManager().selectStorage(event2).getStoragePath();
+      ((MultiStorageManager)shuffleServers.get(0).getStorageManager()).getColdStorageManager()
+          .selectStorage(event2).getStoragePath();
       fail("Exception should be thrown with un-register appId");
     } catch (Exception e) {
       // expected exception, ignore

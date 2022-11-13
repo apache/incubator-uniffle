@@ -24,6 +24,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.client.util.IdHelper;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
 public class CreateShuffleReadClientRequest {
@@ -43,6 +44,29 @@ public class CreateShuffleReadClientRequest {
   private Configuration hadoopConf;
   private IdHelper idHelper;
   private int maxHandlerFailTimes;
+  private ShuffleDataDistributionType shuffleDataDistributionType = ShuffleDataDistributionType.NORMAL;
+
+  public CreateShuffleReadClientRequest(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      String storageType,
+      String basePath,
+      int indexReadLimit,
+      int readBufferSize,
+      int partitionNumPerRange,
+      int partitionNum,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap taskIdBitmap,
+      List<ShuffleServerInfo> shuffleServerInfoList,
+      Configuration hadoopConf,
+      ShuffleDataDistributionType dataDistributionType,
+      int maxHandlerFailTimes) {
+    this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
+        partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
+        hadoopConf, new DefaultIdHelper(), maxHandlerFailTimes);
+    this.shuffleDataDistributionType = dataDistributionType;
+  }
 
   public CreateShuffleReadClientRequest(
       String appId,
@@ -155,5 +179,9 @@ public class CreateShuffleReadClientRequest {
 
   public int getMaxHandlerFailTimes() {
     return maxHandlerFailTimes;
+  }
+  
+  public ShuffleDataDistributionType getShuffleDataDistributionType() {
+    return shuffleDataDistributionType;
   }
 }

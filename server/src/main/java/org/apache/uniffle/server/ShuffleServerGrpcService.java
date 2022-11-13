@@ -19,6 +19,7 @@ package org.apache.uniffle.server;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
@@ -138,6 +140,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String remoteStoragePath = req.getRemoteStorage().getPath();
     String user = req.getUser();
 
+    ShuffleDataDistributionType shuffleDataDistributionType =
+            ShuffleDataDistributionType.valueOf(
+                Optional
+                    .ofNullable(req.getShuffleDataDistribution())
+                    .orElse(RssProtos.DataDistribution.NORMAL)
+                    .name()
+            );
+
     Map<String, String> remoteStorageConf = req
         .getRemoteStorage()
         .getRemoteStorageConfList()
@@ -156,7 +166,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             shuffleId,
             partitionRanges,
             new RemoteStorageInfo(remoteStoragePath, remoteStorageConf),
-            user
+            user,
+            shuffleDataDistributionType
         );
 
     reply = ShuffleRegisterResponse

@@ -72,7 +72,7 @@ public class ShuffleServerWithLocalOfExceptionTest extends ShuffleReadWriteBase 
 
   @Test
   public void testReadWhenConnectionFailed() throws Exception {
-    String testAppId = "testReadWhenException";
+    String testAppId = "testReadWhenConnectionFailed";
     int shuffleId = 0;
     int partitionId = 0;
 

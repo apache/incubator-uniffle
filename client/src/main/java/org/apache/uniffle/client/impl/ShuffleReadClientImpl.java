@@ -34,6 +34,7 @@ import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.client.util.IdHelper;
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
@@ -46,7 +47,7 @@ import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleReadClientImpl.class);
-
+  public static final int DEFAULT_MAX_FAIL_TIMES = 3;
   private int shuffleId;
   private int partitionId;
   private byte[] readBuffer;
@@ -60,7 +61,30 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private AtomicLong crcCheckTime = new AtomicLong(0);
   private ClientReadHandler clientReadHandler;
   private final IdHelper idHelper;
-  public static final int DEFAULT_MAX_FAIL_TIMES = 3;
+  private ShuffleDataDistributionType dataDistributionType = ShuffleDataDistributionType.NORMAL;
+
+  public ShuffleReadClientImpl(
+      String storageType,
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int indexReadLimit,
+      int partitionNumPerRange,
+      int partitionNum,
+      int readBufferSize,
+      String storageBasePath,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap taskIdBitmap,
+      List<ShuffleServerInfo> shuffleServerInfoList,
+      Configuration hadoopConf,
+      IdHelper idHelper,
+      ShuffleDataDistributionType dataDistributionType,
+      int maxHandlerFailTimes) {
+    this(storageType, appId, shuffleId, partitionId, indexReadLimit,
+        partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
+        blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf, idHelper, maxHandlerFailTimes);
+    this.dataDistributionType = dataDistributionType;
+  }
 
   // Only for test
   @VisibleForTesting
@@ -121,6 +145,8 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setExpectBlockIds(blockIdBitmap);
     request.setProcessBlockIds(processedBlockIds);
     request.setMaxHandlerFailTimes(maxHandlerFailTimes);
+    request.setDistributionType(dataDistributionType);
+    request.setExpectTaskIds(taskIdBitmap);
 
     List<Long> removeBlockIds = Lists.newArrayList();
     blockIdBitmap.forEach(bid -> {

@@ -35,6 +35,7 @@ import org.apache.spark.serializer.SerializerInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.reflect.ClassTag$;
+import scala.reflect.ManifestFactory$;
 
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ShuffleBlockInfo;
@@ -112,7 +113,11 @@ public class WriteBufferManager extends MemoryConsumer {
     final long start = System.currentTimeMillis();
     arrayOutputStream.reset();
     serializeStream.writeKey(key, ClassTag$.MODULE$.apply(key.getClass()));
-    serializeStream.writeValue(value, ClassTag$.MODULE$.apply(value.getClass()));
+    if (value != null) {
+      serializeStream.writeValue(value, ClassTag$.MODULE$.apply(value.getClass()));
+    } else {
+      serializeStream.writeValue(null, ManifestFactory$.MODULE$.Null());
+    }
     serializeStream.flush();
     serializeTime += System.currentTimeMillis() - start;
     byte[] serializedData = arrayOutputStream.getBuf();

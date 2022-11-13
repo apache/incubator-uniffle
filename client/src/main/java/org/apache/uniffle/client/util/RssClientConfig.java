@@ -77,4 +77,11 @@ public class RssClientConfig {
 
   public static final String RSS_CLIENT_HANDLER_READ_MAX_FAIL_TIMES = "rss.client.handler.read.fail.times.max";
   public static final int RSS_CLIENT_HANDLER_READ_MAX_FAIL_TIMES_DEFAULT_VALUE = 3;
+
+  public static final String RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR =
+      "rss.estimate.task.concurrency.dynamic.factor";
+  public static final double RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR_DEFAULT_VALUE = 1.0;
+
+  public static final String RSS_ESTIMATE_TASK_CONCURRENCY_ENABLED = "rss.estimate.task.concurrency.enabled";
+  public static final boolean RSS_ESTIMATE_TASK_CONCURRENCY_DEFAULT_VALUE = false;
 }
