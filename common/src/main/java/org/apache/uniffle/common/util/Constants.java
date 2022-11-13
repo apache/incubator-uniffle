@@ -61,5 +61,8 @@ public class Constants {
   public static final String MR_REDUCES = "mapreduce.job.reduces";
   public static final String MR_MAP_LIMIT = "mapreduce.job.running.map.limit";
   public static final String MR_REDUCE_LIMIT = "mapreduce.job.running.reduce.limit";
+  public static int MR_MAP_LIMIT_DEFAULT_VALUE = 0;
+  public static int MR_REDUCE_LIMIT_DEFAULT_VALUE = 0;
   public static final String MR_SLOW_START = "mapreduce.job.reduce.slowstart.completedmaps";
+  public static double MR_SLOW_START_DEFAULT_VALUE = 0.05;
 }
