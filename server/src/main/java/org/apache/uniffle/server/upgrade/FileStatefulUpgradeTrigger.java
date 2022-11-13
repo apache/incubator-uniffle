@@ -19,8 +19,11 @@ package org.apache.uniffle.server.upgrade;
 
 import java.io.File;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.uniffle.server.ShuffleServerConf.STATEFUL_UPGRADE_TRIGGER_STATUS_FILE_PATH;
 
 public class FileStatefulUpgradeTrigger implements StatefulUpgradeTrigger {
   private static final Logger LOGGER = LoggerFactory.getLogger(FileStatefulUpgradeTrigger.class);
@@ -28,6 +31,11 @@ public class FileStatefulUpgradeTrigger implements StatefulUpgradeTrigger {
   private String statusFilePath;
 
   public FileStatefulUpgradeTrigger(String statusFilePath) {
+    if (StringUtils.isEmpty(statusFilePath)) {
+      throw new RuntimeException(
+          "The conf of " + STATEFUL_UPGRADE_TRIGGER_STATUS_FILE_PATH.key()
+              + " must be specified when file-existence based trigger is enabled.");
+    }
     this.statusFilePath = statusFilePath;
     LOGGER.info("The {} is enabled", this.getClass().getSimpleName());
   }
