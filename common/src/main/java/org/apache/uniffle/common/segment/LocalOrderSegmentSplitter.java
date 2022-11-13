@@ -19,10 +19,14 @@ package org.apache.uniffle.common.segment;
 
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import org.roaringbitmap.longlong.LongIterator;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataSegment;
@@ -43,6 +47,7 @@ import org.apache.uniffle.common.exception.RssException;
  * the shuffle server.
  */
 public class LocalOrderSegmentSplitter implements SegmentSplitter {
+  private static final Logger LOGGER = LoggerFactory.getLogger(LocalOrderSegmentSplitter.class);
 
   private Roaring64NavigableMap expectTaskIds;
   private int readBufferSize;
@@ -72,6 +77,8 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
     long lastTaskAttemptId = -1;
     long lastExpectedBlockIndex = -1;
 
+    List<Long> indexTaskIds = new ArrayList<>();
+
     /**
      * One ShuffleDataSegment should meet following requirements:
      *
@@ -90,6 +97,8 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
         long blockId = byteBuffer.getLong();
         long taskAttemptId = byteBuffer.getLong();
 
+        indexTaskIds.add(taskAttemptId);
+
         if (lastTaskAttemptId == -1) {
           lastTaskAttemptId = taskAttemptId;
         }
@@ -100,7 +109,9 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
           break;
         }
 
-        if ((taskAttemptId < lastTaskAttemptId && bufferSegments.size() > 0 && index - lastExpectedBlockIndex != 1)
+        if ((taskAttemptId < lastTaskAttemptId
+            && bufferSegments.size() > 0
+            && (expectTaskIds.contains(taskAttemptId) ? index - lastExpectedBlockIndex != 1 : true))
             || bufferOffset >= readBufferSize) {
           ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
           dataFileSegments.add(sds);
@@ -111,6 +122,10 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
 
         if (expectTaskIds.contains(taskAttemptId)) {
           if (bufferOffset != 0 && index - lastExpectedBlockIndex > 1) {
+            List<Long> expectedTaskIds = getExpectedTaskIds(expectTaskIds);
+            LOGGER.error("There are discontinuous blocks, all task ids in index file: {}, all expected task ids: {}, "
+                    + "current expected task id: {}, last unexpected task id: {}, current data segment size: {}",
+                indexTaskIds, expectedTaskIds, taskAttemptId, lastTaskAttemptId, dataFileSegments.size());
             throw new RssException("There are discontinuous blocks which should not happen when using LOCAL_ORDER.");
           }
 
@@ -134,5 +149,14 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
       dataFileSegments.add(sds);
     }
     return dataFileSegments;
+  }
+
+  private List<Long> getExpectedTaskIds(Roaring64NavigableMap expectTaskIds) {
+    List<Long> taskIds = new ArrayList<>();
+    LongIterator iterator = expectTaskIds.getLongIterator();
+    while (iterator.hasNext()) {
+      taskIds.add(iterator.next());
+    }
+    return taskIds;
   }
 }
