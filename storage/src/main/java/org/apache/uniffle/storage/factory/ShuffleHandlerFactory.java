@@ -92,10 +92,7 @@ public class ShuffleHandlerFactory {
     Callable<ClientReadHandler>[] callables =
         handlers
             .stream()
-            .map(x -> {
-              x.setMaxHandlerFailTimes(request.getMaxHandlerFailTimes());
-              return (Callable<ClientReadHandler>) () -> x;
-            })
+            .map(x -> (Callable<ClientReadHandler>) () -> x)
             .collect(Collectors.toList())
             .toArray(new Callable[handlers.size()]);
     return new ComposedClientReadHandler(callables);
@@ -112,7 +109,8 @@ public class ShuffleHandlerFactory {
         request.getShuffleId(),
         request.getPartitionId(),
         request.getReadBufferSize(),
-        shuffleServerClients);
+        shuffleServerClients,
+        request.getMaxHandlerFailTimes());
     return memoryClientReadHandler;
   }
 
@@ -125,7 +123,8 @@ public class ShuffleHandlerFactory {
         request.getAppId(), request.getShuffleId(), request.getPartitionId(),
         request.getIndexReadLimit(), request.getPartitionNumPerRange(), request.getPartitionNum(),
         request.getReadBufferSize(), request.getExpectBlockIds(), request.getProcessBlockIds(),
-        shuffleServerClients, request.getDistributionType(), request.getExpectTaskIds()
+        shuffleServerClients, request.getDistributionType(), request.getExpectTaskIds(),
+        request.getMaxHandlerFailTimes()
     );
   }
 
@@ -143,7 +142,8 @@ public class ShuffleHandlerFactory {
         request.getStorageBasePath(),
         request.getHadoopConf(),
         request.getDistributionType(),
-        request.getExpectTaskIds()
+        request.getExpectTaskIds(),
+        request.getMaxHandlerFailTimes()
     );
   }
 

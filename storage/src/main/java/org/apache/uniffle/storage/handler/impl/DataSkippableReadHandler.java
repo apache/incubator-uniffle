@@ -51,7 +51,8 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
       Roaring64NavigableMap expectBlockIds,
       Roaring64NavigableMap processBlockIds,
       ShuffleDataDistributionType distributionType,
-      Roaring64NavigableMap expectTaskIds) {
+      Roaring64NavigableMap expectTaskIds,
+      int maxHandlerFailTimes) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -60,6 +61,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
     this.processBlockIds = processBlockIds;
     this.distributionType = distributionType;
     this.expectTaskIds = expectTaskIds;
+    this.maxHandlerFailTimes = maxHandlerFailTimes;
   }
 
   protected abstract ShuffleIndexResult readShuffleIndex();
@@ -72,7 +74,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
       try {
         shuffleIndexResult = readShuffleIndex();
       } catch (Exception e) {
-        if (++failTimes > maxHandlerFailTimes) {
+        if (++failTimes >= maxHandlerFailTimes) {
           isFinished = true;
         }
         throw e;
@@ -105,7 +107,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
           try {
             result = readShuffleData(segment);
           } catch (Exception e) {
-            if (++failTimes > maxHandlerFailTimes) {
+            if (++failTimes >= maxHandlerFailTimes) {
               isFinished = true;
             }
             throw e;

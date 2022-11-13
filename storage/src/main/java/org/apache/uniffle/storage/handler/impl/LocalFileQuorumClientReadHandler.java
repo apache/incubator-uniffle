@@ -51,7 +51,8 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
       Roaring64NavigableMap processBlockIds,
       List<ShuffleServerClient> shuffleServerClients,
       ShuffleDataDistributionType distributionType,
-      Roaring64NavigableMap expectTaskIds) {
+      Roaring64NavigableMap expectTaskIds,
+      int maxHandlerFailTimes) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -69,7 +70,8 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
           processBlockIds,
           client,
           distributionType,
-          expectBlockIds
+          expectBlockIds,
+          maxHandlerFailTimes
       ));
     }
   }
@@ -91,7 +93,7 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
     this(
         appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange,
         partitionNum, readBufferSize, expectBlockIds, processBlockIds,
-        shuffleServerClients, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf()
+        shuffleServerClients, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf(), 3
     );
   }
 

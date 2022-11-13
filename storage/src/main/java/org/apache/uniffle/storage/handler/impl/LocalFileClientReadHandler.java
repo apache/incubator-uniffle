@@ -50,10 +50,11 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
       Roaring64NavigableMap processBlockIds,
       ShuffleServerClient shuffleServerClient,
       ShuffleDataDistributionType distributionType,
-      Roaring64NavigableMap expectTaskIds) {
+      Roaring64NavigableMap expectTaskIds,
+      int maxHandlerFailTimes) {
     super(
         appId, shuffleId, partitionId, readBufferSize, expectBlockIds,
-        processBlockIds, distributionType, expectTaskIds
+        processBlockIds, distributionType, expectTaskIds, maxHandlerFailTimes
     );
     this.shuffleServerClient = shuffleServerClient;
     this.partitionNumPerRange = partitionNumPerRange;

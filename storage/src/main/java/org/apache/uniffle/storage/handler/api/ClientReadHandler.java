@@ -38,6 +38,4 @@ public interface ClientReadHandler {
   void nextRound();
 
   boolean finished();
-
-  void setMaxHandlerFailTimes(int maxHandlerFailTimes);
 }

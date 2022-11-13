@@ -262,11 +262,6 @@ public class ComposedClientReadHandler implements ClientReadHandler {
     return true;
   }
 
-  @Override
-  public void setMaxHandlerFailTimes(int maxHandlerFailTimes) {
-    throw new UnsupportedOperationException();
-  }
-
   @VisibleForTesting
   public String getReadBlokNumInfo() {
     long totalBlockNum = hotReadBlockNum + warmReadBlockNum

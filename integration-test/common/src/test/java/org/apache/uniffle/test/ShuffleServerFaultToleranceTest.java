@@ -38,6 +38,7 @@ import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
@@ -51,7 +52,9 @@ import org.apache.uniffle.storage.handler.impl.LocalFileQuorumClientReadHandler;
 import org.apache.uniffle.storage.handler.impl.MemoryQuorumClientReadHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
@@ -180,6 +183,46 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     // all segments are processed
     sdr  = composedClientReadHandler.readShuffleData();
     assertNull(sdr);
+  }
+
+  @Test
+  public void testMaxHandlerFailTimes() throws Exception {
+    String testAppId = "ShuffleServerFaultToleranceTest.testMaxHandlerFailTimes";
+    int shuffleId = 0;
+    int partitionId = 0;
+
+    RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest(testAppId, shuffleId,
+        Lists.newArrayList(new PartitionRange(0, 0)), "");
+    registerShuffle(rrsr);
+    Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
+    Map<Long, byte[]> dataMap = Maps.newHashMap();
+    Roaring64NavigableMap[] bitmaps = new Roaring64NavigableMap[1];
+    bitmaps[0] = Roaring64NavigableMap.bitmapOf();
+    createShuffleBlockList(
+        shuffleId, partitionId, 0, 3, 25,
+        expectBlockIds, dataMap, mockSSI);
+
+    int maxHandlerFailTimes = 4;
+    Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
+    MemoryQuorumClientReadHandler memoryQuorumClientReadHandler = new MemoryQuorumClientReadHandler(
+        testAppId, shuffleId, partitionId, 150, shuffleServerClients.subList(0, 1), maxHandlerFailTimes);
+    LocalFileQuorumClientReadHandler localFileQuorumClientReadHandler = new LocalFileQuorumClientReadHandler(
+        testAppId, shuffleId, partitionId, 0, 1, 1,
+        75, expectBlockIds, processBlockIds, shuffleServerClients.subList(0, 1),
+        ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf(), maxHandlerFailTimes);
+    ClientReadHandler[] handlers = new ClientReadHandler[2];
+    handlers[0] = memoryQuorumClientReadHandler;
+    handlers[1] = localFileQuorumClientReadHandler;
+    ComposedClientReadHandler composedClientReadHandler = new ComposedClientReadHandler(handlers);
+    shuffleServers.get(0).stopServer();
+    ShuffleDataResult sdr;
+    for (int i = 0; i < maxHandlerFailTimes; i++) {
+      assertFalse(composedClientReadHandler.finished());
+      sdr = composedClientReadHandler.readShuffleData();
+      assertNull(sdr);
+      composedClientReadHandler.nextRound();
+    }
+    assertTrue(composedClientReadHandler.finished());
   }
 
   private RssSendShuffleDataRequest getRssSendShuffleDataRequest(

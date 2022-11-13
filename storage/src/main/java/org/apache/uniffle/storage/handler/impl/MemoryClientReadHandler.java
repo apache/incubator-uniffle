@@ -42,12 +42,14 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
       int shuffleId,
       int partitionId,
       int readBufferSize,
-      ShuffleServerClient shuffleServerClient) {
+      ShuffleServerClient shuffleServerClient,
+      int maxHandlerFailTimes) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.readBufferSize = readBufferSize;
     this.shuffleServerClient = shuffleServerClient;
+    this.maxHandlerFailTimes = maxHandlerFailTimes;
   }
 
   @Override
@@ -63,7 +65,7 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
       result = new ShuffleDataResult(response.getData(), response.getBufferSegments());
       failTimes = 0;
     } catch (Exception e) {
-      if (++failTimes > maxHandlerFailTimes) {
+      if (++failTimes >= maxHandlerFailTimes) {
         isFinished = true;
       }
       throw new RssException("Failed to read in memory shuffle data with "

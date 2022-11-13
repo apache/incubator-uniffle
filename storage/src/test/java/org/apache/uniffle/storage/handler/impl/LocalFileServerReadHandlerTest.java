@@ -97,7 +97,7 @@ public class LocalFileServerReadHandlerTest {
     Roaring64NavigableMap processBlockIds =  Roaring64NavigableMap.bitmapOf();
     LocalFileClientReadHandler handler = new LocalFileClientReadHandler(appId, partitionId, shuffleId, -1, 1, 1,
         readBufferSize, expectBlockIds, processBlockIds, mockShuffleServerClient,
-        ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf());
+        ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf(), 3);
     int totalSegment = ((blockSize * actualWriteDataBlock) / bytesPerSegment) + 1;
     int readBlocks = 0;
     for (int i = 0; i < totalSegment; i++) {

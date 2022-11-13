@@ -38,15 +38,28 @@ public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
       int shuffleId,
       int partitionId,
       int readBufferSize,
-      List<ShuffleServerClient> shuffleServerClients) {
+      List<ShuffleServerClient> shuffleServerClients,
+      int maxHandlerFailTimes) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.readBufferSize = readBufferSize;
     shuffleServerClients.forEach(client ->
         handlers.add(new MemoryClientReadHandler(
-            appId, shuffleId, partitionId, readBufferSize, client))
+            appId, shuffleId, partitionId, readBufferSize, client, maxHandlerFailTimes))
     );
+  }
+
+  /**
+   * Only for test
+   */
+  public MemoryQuorumClientReadHandler(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int readBufferSize,
+      List<ShuffleServerClient> shuffleServerClients) {
+    this(appId, shuffleId, partitionId, readBufferSize, shuffleServerClients, 3);
   }
 
   @Override

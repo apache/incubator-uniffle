@@ -51,9 +51,4 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
   public void nextRound() {
 
   }
-
-  public void setMaxHandlerFailTimes(int maxHandlerFailTimes) {
-    this.maxHandlerFailTimes = maxHandlerFailTimes;
-  }
-
 }
