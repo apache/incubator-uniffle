@@ -56,7 +56,6 @@ import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
-import org.apache.uniffle.client.retry.NetworkUnavailableRetryStrategy;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -109,10 +108,6 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   private static final long RPC_TIMEOUT_DEFAULT_MS = 60000;
   private long rpcTimeout = RPC_TIMEOUT_DEFAULT_MS;
   private ShuffleServerBlockingStub blockingStub;
-
-  private static ClientInterceptor[] clientInterceptors = new ClientInterceptor[]{
-      new RetryInterceptor(new NetworkUnavailableRetryStrategy(150, 2000, 2000))
-  };
 
   public ShuffleServerGrpcClient(String host, int port) {
     this(host, port, 3);

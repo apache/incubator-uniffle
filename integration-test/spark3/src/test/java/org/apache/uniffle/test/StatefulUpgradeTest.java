@@ -59,8 +59,8 @@ public class StatefulUpgradeTest extends SparkSQLTest {
     createCoordinatorServer(coordinatorConf);
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000);
-    shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 4000);
+    shuffleServerConf.setLong("rss.server.heartbeat.interval", 500000);
+    shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 400000);
     File tmpDir = Files.createTempDir();
     tmpDir.deleteOnExit();
     shuffleDataFile = new File(tmpDir, "data1");
@@ -85,7 +85,7 @@ public class StatefulUpgradeTest extends SparkSQLTest {
             shuffleServer.getStatefulUpgradeManager().finalizeAndMaterializeState();
             shuffleServer.stopServer();
             shuffleServers = new ArrayList<>();
-            Thread.sleep(1000 * 5);
+            Thread.sleep(1000);
             shuffleServers.add(new ShuffleServer(shuffleServerConf, true));
             shuffleServers.get(0).start();
             shuffleServer = shuffleServers.get(0);
