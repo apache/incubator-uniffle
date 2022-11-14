@@ -71,6 +71,7 @@ public class StatefulUpgradeTest extends SparkSQLTest {
         "rss.server.stateful.upgrade.state.export.location",
         shuffleDataFile.getAbsolutePath() + "/state.bin"
     );
+    shuffleServerConf.setString("rss.server.stateful.upgrade.trigger.status.file.path", "/tmp/no-existence.file");
 
     createShuffleServer(shuffleServerConf);
     startServers();

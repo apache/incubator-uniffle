@@ -85,6 +85,7 @@ public class ShuffleServerRecoveryTest extends ShuffleReadWriteBase {
     shuffleServerConf.setString("rss.server.app.expired.withoutHeartbeat", "5000");
     shuffleServerConf.setBoolean("rss.server.stateful.upgrade.enable", true);
     shuffleServerConf.setString("rss.server.stateful.upgrade.state.export.location", stateLocation);
+    shuffleServerConf.setString("rss.server.stateful.upgrade.trigger.status.file.path", "/tmp/no-existence.file");
     shuffleServers.add(new ShuffleServer(shuffleServerConf, recoverableStart));
     shuffleServers.get(0).start();
   }

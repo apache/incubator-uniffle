@@ -32,6 +32,7 @@ import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 
 import static org.apache.uniffle.server.ShuffleServerConf.STATEFUL_UPGRADE_ENABLED;
 import static org.apache.uniffle.server.ShuffleServerConf.STATEFUL_UPGRADE_STATE_STORE_EXPORT_DATA_LOCATION;
+import static org.apache.uniffle.server.ShuffleServerConf.STATEFUL_UPGRADE_TRIGGER_STATUS_FILE_PATH;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
@@ -58,6 +59,7 @@ public class StatefulUpgradeManagerTest {
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.set(STATEFUL_UPGRADE_STATE_STORE_EXPORT_DATA_LOCATION, locationPath);
     conf.set(STATEFUL_UPGRADE_ENABLED, true);
+    conf.set(STATEFUL_UPGRADE_TRIGGER_STATUS_FILE_PATH, "/tmp/no-existence.file");
 
     ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
     when(mockShuffleServer.getShuffleServerConf()).thenReturn(conf);
