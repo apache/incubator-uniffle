@@ -35,6 +35,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -51,6 +52,8 @@ public class StatefulUpgradeTest extends SparkSQLTest {
 
   @BeforeAll
   public static void setupServers() throws Exception {
+    ShuffleServerClientFactory.getInstance().cleanupClientCache();
+
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setLong("rss.coordinator.app.expired", 5000);
     Map<String, String> dynamicConf = Maps.newHashMap();
@@ -85,7 +88,7 @@ public class StatefulUpgradeTest extends SparkSQLTest {
             shuffleServer.getStatefulUpgradeManager().finalizeAndMaterializeState();
             shuffleServer.stopServer();
             shuffleServers = new ArrayList<>();
-            Thread.sleep(1000);
+            Thread.sleep(1000 * 5);
             shuffleServers.add(new ShuffleServer(shuffleServerConf, true));
             shuffleServers.get(0).start();
             shuffleServer = shuffleServers.get(0);

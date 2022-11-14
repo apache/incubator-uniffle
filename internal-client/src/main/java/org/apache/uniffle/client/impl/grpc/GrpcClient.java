@@ -57,6 +57,7 @@ public abstract class GrpcClient {
     }
 
     if (clientInterceptors != null && clientInterceptors.length > 0) {
+      logger.info("Enable {} interceptors", clientInterceptors.length);
       channelBuilder.intercept(clientInterceptors);
     }
 

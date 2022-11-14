@@ -27,6 +27,7 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.AfterAll;
 
+import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.CoordinatorServer;
@@ -71,6 +72,8 @@ public abstract class IntegrationTestBase extends HdfsTestBase {
     coordinators = Lists.newArrayList();
     ShuffleServerMetrics.clear();
     CoordinatorMetrics.clear();
+
+    ShuffleServerClientFactory.getInstance().cleanupClientCache();
   }
 
   protected static CoordinatorConf getCoordinatorConf() {

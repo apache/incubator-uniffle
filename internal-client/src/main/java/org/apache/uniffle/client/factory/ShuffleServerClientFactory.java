@@ -74,4 +74,10 @@ public class ShuffleServerClientFactory {
     }
     return serverToClients.get(shuffleServerInfo);
   }
+
+  // only for tests
+  @VisibleForTesting
+  public void cleanupClientCache() {
+    clients = Maps.newConcurrentMap();
+  }
 }
