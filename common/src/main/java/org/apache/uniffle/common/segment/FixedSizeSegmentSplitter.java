@@ -71,15 +71,16 @@ public class FixedSizeSegmentSplitter implements SegmentSplitter {
           fileOffset = offset;
         }
 
-        bufferSegments.add(new BufferSegment(blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
-        bufferOffset += length;
         totalLength += length;
 
         // If ShuffleServer is flushing the file at this time, the length in the index file record may be greater
         // than the length in the actual data file, and it needs to be returned at this time to avoid EOFException
-        if (dataFileLen != -1 && totalLength >= dataFileLen) {
+        if (dataFileLen != -1 && totalLength > dataFileLen) {
           break;
         }
+
+        bufferSegments.add(new BufferSegment(blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
+        bufferOffset += length;
 
         if (bufferOffset >= readBufferSize) {
           ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);

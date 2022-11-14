@@ -34,6 +34,28 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class FixedSizeSegmentSplitterTest {
 
   @Test
+  public void testAvoidEOFException() {
+    SegmentSplitter splitter = new FixedSizeSegmentSplitter(1000);
+    byte[] data = generateData(
+        Pair.of(32, 0),
+        Pair.of(16, 0),
+        Pair.of(10, 0)
+    );
+
+    // case1
+    List<ShuffleDataSegment> shuffleDataSegments = splitter.split(new ShuffleIndexResult(data, 49));
+    assertEquals(1, shuffleDataSegments.size());
+    assertEquals(0, shuffleDataSegments.get(0).getOffset());
+    assertEquals(48, shuffleDataSegments.get(0).getLength());
+
+    // case2
+    shuffleDataSegments = splitter.split(new ShuffleIndexResult(data, 48));
+    assertEquals(1, shuffleDataSegments.size());
+    assertEquals(0, shuffleDataSegments.get(0).getOffset());
+    assertEquals(48, shuffleDataSegments.get(0).getLength());
+  }
+
+  @Test
   public void testSplit() {
     SegmentSplitter splitter = new FixedSizeSegmentSplitter(100);
     ShuffleIndexResult shuffleIndexResult = new ShuffleIndexResult();
