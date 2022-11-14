@@ -45,7 +45,6 @@ public class NetworkUnavailableRetryStrategy implements RetryStrategy {
       if (STATUS_CODE.equalsIgnoreCase(status) && retryNumber < retryMaxNumber) {
         long backoffTime =
             Math.min(retryIntervalMax, backOffBase * (1L << Math.min(retryNumber, 16)) + random.nextInt(backOffBase));
-        LOGGER.info("Sleep: {}", backoffTime);
         Thread.sleep(backoffTime);
         return true;
       }

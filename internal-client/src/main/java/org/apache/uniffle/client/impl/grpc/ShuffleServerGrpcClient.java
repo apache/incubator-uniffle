@@ -218,7 +218,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
 
   private AppHeartBeatResponse doSendHeartBeat(String appId, long timeout) {
     AppHeartBeatRequest request = AppHeartBeatRequest.newBuilder().setAppId(appId).build();
-    return blockingStub.appHeartbeat(request);
+    return blockingStub.withDeadlineAfter(timeout, TimeUnit.MILLISECONDS).appHeartbeat(request);
   }
 
   public long requirePreAllocation(int requireSize, int retryMax, long retryIntervalMax) {
@@ -375,7 +375,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
           return response;
         }, request.getRetryIntervalMax(), maxRetryAttempts);
       } catch (Throwable throwable) {
-        LOG.warn(throwable.getMessage());
+        LOG.warn("Errors on sending data to shuffle-server: {}. appId: {}", host, appId, throwable);
         isSuccessful = false;
         break;
       }

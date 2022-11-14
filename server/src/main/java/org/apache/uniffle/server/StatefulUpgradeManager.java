@@ -134,6 +134,8 @@ public class StatefulUpgradeManager {
     // refresh the app heartbeat time to avoid cleaning up
     state.getShuffleTaskInfos().values().stream().forEach(x -> x.setCurrentTimes(System.currentTimeMillis()));
     taskManager.setShuffleTaskInfos(state.getShuffleTaskInfos());
+    // refresh the app preAllocationInfo to avoid removing
+    state.getRequireBufferIds().values().stream().forEach(x -> x.setTimestamp(System.currentTimeMillis()));
     taskManager.setRequireBufferIds(state.getRequireBufferIds());
 
     ShuffleBufferManager bufferManager = shuffleServer.getShuffleBufferManager();

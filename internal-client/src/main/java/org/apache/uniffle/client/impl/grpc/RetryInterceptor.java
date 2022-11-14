@@ -36,7 +36,6 @@ import org.apache.uniffle.client.retry.RetryStrategy;
 public class RetryInterceptor implements ClientInterceptor {
   private static final Logger LOGGER = LoggerFactory.getLogger(RetryInterceptor.class);
 
-  private int retryNumber = 0;
   private RetryStrategy retryStrategy;
 
   public RetryInterceptor(RetryStrategy retryStrategy) {
@@ -56,11 +55,17 @@ public class RetryInterceptor implements ClientInterceptor {
       ReqT msg;
       int req;
       ClientCall call;
+      long start;
+      int retries;
 
       @Override
       public void start(Listener listener, Metadata metadata) {
         this.listener = listener;
         this.metadata = metadata;
+
+        if (start == 0) {
+          this.start = System.currentTimeMillis();
+        }
       }
 
       @Override
@@ -129,11 +134,15 @@ public class RetryInterceptor implements ClientInterceptor {
             super.onClose(status, trailers);
             return;
           }
-          if (!retryStrategy.needToRetry(status.getCode().name(), retryNumber++)) {
+          LOGGER.warn("RPC of {} retries: {}", method.getFullMethodName(), retries);
+          if (!retryStrategy.needToRetry(status.getCode().name(), retries)) {
+            LOGGER.warn("Finish rpc retry of {}, cost: {}(sec)", method.getFullMethodName(),
+                (System.currentTimeMillis() - start) / 1000);
             delegate = listener;
             super.onClose(status, trailers);
             return;
           }
+          retries += 1;
           startCall(new CheckingListener()); // to allow multiple retries
         }
       }
