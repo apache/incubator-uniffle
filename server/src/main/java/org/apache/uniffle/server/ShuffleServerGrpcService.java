@@ -186,6 +186,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String appId = req.getAppId();
     int shuffleId = req.getShuffleId();
     long requireBufferId = req.getRequireBufferId();
+    long sendTime = req.getSendTime();
+    if (sendTime > 0) {
+      shuffleServer.getGrpcMetrics().recordSendTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD,
+          System.currentTimeMillis() - sendTime);
+    }
     int requireSize = shuffleServer
         .getShuffleTaskManager().getRequireBufferSize(requireBufferId);
 
@@ -240,8 +245,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         }
       }
       reply = SendShuffleDataResponse.newBuilder().setStatus(valueOf(ret)).setRetMsg(responseMessage).build();
+      long costTime = System.currentTimeMillis() - start;
+      shuffleServer.getGrpcMetrics().recordProcessTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, costTime);
       LOG.debug("Cache Shuffle Data for appId[" + appId + "], shuffleId[" + shuffleId
-          + "], cost " + (System.currentTimeMillis() - start)
+          + "], cost " + costTime
           + " ms with " + shufflePartitionedData.size() + " blocks and " + requireSize + " bytes");
     } else {
       reply = SendShuffleDataResponse
@@ -476,6 +483,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int partitionNum = request.getPartitionNum();
     long offset = request.getOffset();
     int length = request.getLength();
+    long sendTime = request.getSendTime();
+    if (sendTime > 0) {
+      shuffleServer.getGrpcMetrics().recordSendTime(
+          ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, System.currentTimeMillis() - sendTime);
+    }
     String storageType = shuffleServer.getShuffleServerConf().get(RssBaseConf.RSS_STORAGE_TYPE);
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
@@ -497,6 +509,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         ShuffleServerMetrics.counterTotalReadTime.inc(readTime);
         ShuffleServerMetrics.counterTotalReadDataSize.inc(sdr.getData().length);
         ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(sdr.getData().length);
+        shuffleServer.getGrpcMetrics().recordProcessTime(
+            ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, readTime);
         LOG.info("Successfully getShuffleData cost {} ms for shuffle"
             + " data with {}", readTime, requestInfo);
         reply = GetLocalShuffleDataResponse.newBuilder()
@@ -607,6 +621,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int partitionId = request.getPartitionId();
     long blockId = request.getLastBlockId();
     int readBufferSize = request.getReadBufferSize();
+    long sendTime = request.getSendTime();
+    if (sendTime > 0) {
+      shuffleServer.getGrpcMetrics().recordSendTime(
+          ShuffleServerGrpcMetrics.GET_IN_MEMORY_SHUFFLE_DATA_METHOD, System.currentTimeMillis() - sendTime);
+    }
     long start = System.currentTimeMillis();
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
@@ -627,8 +646,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           ShuffleServerMetrics.counterTotalReadDataSize.inc(data.length);
           ShuffleServerMetrics.counterTotalReadMemoryDataSize.inc(data.length);
         }
+        long costTime = System.currentTimeMillis() - start;
+        shuffleServer.getGrpcMetrics().recordProcessTime(
+            ShuffleServerGrpcMetrics.GET_IN_MEMORY_SHUFFLE_DATA_METHOD, costTime);
         LOG.info("Successfully getInMemoryShuffleData cost {} ms with {} bytes shuffle"
-            + " data for {}", (System.currentTimeMillis() - start), data.length, requestInfo);
+            + " data for {}", costTime, data.length, requestInfo);
 
         reply = GetMemoryShuffleDataResponse.newBuilder()
             .setStatus(valueOf(status))

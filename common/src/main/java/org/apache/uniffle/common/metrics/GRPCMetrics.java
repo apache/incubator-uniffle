@@ -23,6 +23,9 @@ import com.google.common.collect.Maps;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
+import io.prometheus.client.Summary;
+
+import org.apache.uniffle.common.util.Constants;
 
 public abstract class GRPCMetrics {
   // Grpc server internal executor metrics
@@ -36,6 +39,8 @@ public abstract class GRPCMetrics {
   private boolean isRegister = false;
   protected Map<String, Counter> counterMap = Maps.newConcurrentMap();
   protected Map<String, Gauge> gaugeMap = Maps.newConcurrentMap();
+  protected Map<String, Summary> sendTimeSummaryMap = Maps.newConcurrentMap();
+  protected Map<String, Summary> processTimeSummaryMap = Maps.newConcurrentMap();
   protected Gauge gaugeGrpcOpen;
   protected Counter counterGrpcTotal;
   protected MetricsManager metricsManager;
@@ -97,6 +102,20 @@ public abstract class GRPCMetrics {
         gauge.dec();
       }
       gaugeGrpcOpen.dec();
+    }
+  }
+
+  public void recordSendTime(String methodName, long sendTimeInMillionSecond) {
+    Summary summary = sendTimeSummaryMap.get(methodName);
+    if (summary != null) {
+      summary.observe(sendTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND);
+    }
+  }
+
+  public void recordProcessTime(String methodName, long processTimeInMillionSecond) {
+    Summary summary = processTimeSummaryMap.get(methodName);
+    if (summary != null) {
+      summary.observe(processTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND);
     }
   }
 
