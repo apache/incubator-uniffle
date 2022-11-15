@@ -17,6 +17,7 @@
 
 package org.apache.spark.shuffle;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -210,6 +211,16 @@ public class RssShuffleManager implements ShuffleManager {
     if ("".equals(appId)) {
       appId = SparkEnv.get().conf().getAppId() + "_" + System.currentTimeMillis();
       LOG.info("Generate application id used in rss: " + appId);
+    }
+
+    if (dependency.partitioner().numPartitions() == 0) {
+      LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum is 0, return the empty RssShuffleHandle directly");
+      return new RssShuffleHandle(shuffleId,
+        appId,
+        dependency.rdd().getNumPartitions(),
+        dependency,
+        Collections.emptyMap(),
+        RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
     }
 
     String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
