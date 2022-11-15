@@ -23,6 +23,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.InterruptibleIterator;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.TaskContext;
+import org.apache.spark.executor.ShuffleReadMetrics;
+import org.apache.spark.executor.TempShuffleReadMetrics;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.ShuffleReader;
@@ -115,13 +117,15 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         appId, shuffleId, startPartition, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf);
     ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
+    context.taskMetrics().createTempShuffleReadMetrics();
     RssShuffleDataIterator rssShuffleDataIterator = new RssShuffleDataIterator<K, C>(
         shuffleDependency.serializer(), shuffleReadClient,
-        context.taskMetrics().shuffleReadMetrics(), rssConf);
+        new ReadMetrics(context.taskMetrics().createTempShuffleReadMetrics()), rssConf);
     CompletionIterator completionIterator =
         CompletionIterator$.MODULE$.apply(rssShuffleDataIterator, new AbstractFunction0<BoxedUnit>() {
           @Override
           public BoxedUnit apply() {
+            context.taskMetrics().mergeShuffleReadMetrics();
             return rssShuffleDataIterator.cleanup();
           }
         });
@@ -193,5 +197,28 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 
   public Configuration getHadoopConf() {
     return hadoopConf;
+  }
+
+  static class ReadMetrics extends ShuffleReadMetrics {
+    private TempShuffleReadMetrics tempShuffleReadMetrics;
+
+    ReadMetrics(TempShuffleReadMetrics tempShuffleReadMetric) {
+      this.tempShuffleReadMetrics = tempShuffleReadMetric;
+    }
+
+    @Override
+    public void incRemoteBytesRead(long v) {
+      tempShuffleReadMetrics.incRemoteBytesRead(v);
+    }
+
+    @Override
+    public void incFetchWaitTime(long v) {
+      tempShuffleReadMetrics.incFetchWaitTime(v);
+    }
+
+    @Override
+    public void incRecordsRead(long v) {
+      tempShuffleReadMetrics.incRecordsRead(v);
+    }
   }
 }
