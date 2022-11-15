@@ -21,7 +21,7 @@ public class StatefulUpgradeClientOptions {
   private boolean statefulUpgradeEnable;
   private int retryMaxNumber = 150;
   private int retryIntervalMax = 2000;
-  private int backOffBase = 2000;
+  private int backoffBase = 2000;
 
   private StatefulUpgradeClientOptions() {
     // ignore
@@ -39,8 +39,8 @@ public class StatefulUpgradeClientOptions {
     return retryIntervalMax;
   }
 
-  public int getBackOffBase() {
-    return backOffBase;
+  public int getBackoffBase() {
+    return backoffBase;
   }
 
   public static Builder builder() {
@@ -69,8 +69,8 @@ public class StatefulUpgradeClientOptions {
       return this;
     }
 
-    public Builder backOffBase(int backOffBase) {
-      options.backOffBase = backOffBase;
+    public Builder backoffBase(int backoffBase) {
+      options.backoffBase = backoffBase;
       return this;
     }
 

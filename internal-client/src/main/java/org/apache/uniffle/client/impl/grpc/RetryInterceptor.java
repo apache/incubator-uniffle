@@ -17,6 +17,9 @@
 
 package org.apache.uniffle.client.impl.grpc;
 
+import java.time.Duration;
+
+import com.google.common.util.concurrent.Uninterruptibles;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
@@ -28,6 +31,7 @@ import io.grpc.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.retry.RetryFactors;
 import org.apache.uniffle.client.retry.RetryStrategy;
 
 /**
@@ -135,7 +139,15 @@ public class RetryInterceptor implements ClientInterceptor {
             return;
           }
           LOGGER.warn("RPC of {} retries: {}", method.getFullMethodName(), retries);
-          if (!retryStrategy.needToRetry(status.getCode().name(), retries)) {
+          Duration retryDelay = retryStrategy.getRetryDelay(
+              RetryFactors
+                  .builder()
+                  .retryNumber(retries)
+                  .rpcMethod(method.getFullMethodName())
+                  .rpcStatus(status.getCode().name())
+                  .build()
+          );
+          if (retryDelay == null || retryDelay.isZero()) {
             LOGGER.warn("Finish rpc retry of {}, cost: {}(sec)", method.getFullMethodName(),
                 (System.currentTimeMillis() - start) / 1000);
             delegate = listener;
@@ -143,6 +155,7 @@ public class RetryInterceptor implements ClientInterceptor {
             return;
           }
           retries += 1;
+          Uninterruptibles.sleepUninterruptibly(retryDelay);
           startCall(new CheckingListener()); // to allow multiple retries
         }
       }

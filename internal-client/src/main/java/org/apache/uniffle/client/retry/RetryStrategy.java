@@ -17,8 +17,14 @@
 
 package org.apache.uniffle.client.retry;
 
+import java.time.Duration;
+
 public interface RetryStrategy {
 
-  boolean needToRetry(String status, int retryNumber);
+  /**
+   * @return Duration, which is the retry delay to indicate the retry waiting time
+   * if null or zero, it should not retry.
+   */
+  Duration getRetryDelay(RetryFactors retryFactors);
 
 }

@@ -17,41 +17,38 @@
 
 package org.apache.uniffle.client.retry;
 
+import java.time.Duration;
 import java.util.Random;
+import java.util.function.Function;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class NetworkUnavailableRetryStrategy implements RetryStrategy {
-  private static final Logger LOGGER = LoggerFactory.getLogger(NetworkUnavailableRetryStrategy.class);
-  private static final String STATUS_CODE = "UNAVAILABLE";
-
+public class DefaultBackoffRetryStrategy implements RetryStrategy {
+  private Function<RetryFactors, Boolean> allowRetryFunction;
   private int retryMaxNumber;
   private int retryIntervalMax;
-  private int backOffBase;
+  private int backoffBase;
 
   private Random random;
 
-  public NetworkUnavailableRetryStrategy(int retryMaxNumber, int retryIntervalMax, int backOffBase) {
+  public DefaultBackoffRetryStrategy(Function<RetryFactors, Boolean> allowRetryFunction,
+      int retryMaxNumber, int retryIntervalMax, int backOffBase) {
+    this.allowRetryFunction = allowRetryFunction;
     this.retryMaxNumber = retryMaxNumber;
     this.retryIntervalMax = retryIntervalMax;
-    this.backOffBase = backOffBase;
+    this.backoffBase = backOffBase;
     this.random = new Random();
   }
 
   @Override
-  public boolean needToRetry(String status, int retryNumber) {
-    try {
-      if (STATUS_CODE.equalsIgnoreCase(status) && retryNumber < retryMaxNumber) {
-        long backoffTime =
-            Math.min(retryIntervalMax, backOffBase * (1L << Math.min(retryNumber, 16)) + random.nextInt(backOffBase));
-        Thread.sleep(backoffTime);
-        return true;
-      }
-    } catch (Exception e) {
-      LOGGER.error("Failed to apply {}. Status: {}, retryNumber: {}",
-          this.getClass().getSimpleName(), status, retryNumber, e);
+  public Duration getRetryDelay(RetryFactors retryFactors) {
+    if (!allowRetryFunction.apply(retryFactors)) {
+      return Duration.ZERO;
     }
-    return false;
+    int retryNumber = retryFactors.getRetryNumber();
+    if (retryNumber >= retryMaxNumber) {
+      return Duration.ZERO;
+    }
+    long backoffTime = Math.min(retryIntervalMax,
+        backoffBase * (1L << Math.min(retryNumber, 16)) + random.nextInt(backoffBase));
+    return Duration.ofMillis(backoffTime);
   }
 }

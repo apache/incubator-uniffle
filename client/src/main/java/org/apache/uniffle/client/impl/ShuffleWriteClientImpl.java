@@ -71,7 +71,7 @@ import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
-import org.apache.uniffle.client.retry.NetworkUnavailableRetryStrategy;
+import org.apache.uniffle.client.retry.DefaultBackoffRetryStrategy;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
@@ -134,10 +134,11 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     if (statefulUpgradeClientOptions != null && statefulUpgradeClientOptions.isStatefulUpgradeEnable()) {
       this.connectionOptions = ConnectionOptions
           .builder()
-          .retryStrategy(new NetworkUnavailableRetryStrategy(
+          .retryStrategy(new DefaultBackoffRetryStrategy(
+              (factors) -> "UNAVAILABLE".equals(factors.getRpcStatus()),
               statefulUpgradeClientOptions.getRetryMaxNumber(),
               statefulUpgradeClientOptions.getRetryIntervalMax(),
-              statefulUpgradeClientOptions.getBackOffBase()
+              statefulUpgradeClientOptions.getBackoffBase()
           ))
           .build();
     }

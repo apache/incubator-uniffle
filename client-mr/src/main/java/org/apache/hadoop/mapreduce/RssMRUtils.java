@@ -115,7 +115,7 @@ public class RssMRUtils {
         .statefulUpgradeEnable(clientConfig.get(STATEFUL_UPGRADE_CLIENT_ENABLE))
         .retryIntervalMax(clientConfig.get(STATEFUL_UPGRADE_CLIENT_RETRY_INTERVAL_MAX))
         .retryMaxNumber(clientConfig.get(STATEFUL_UPGRADE_CLIENT_RETRY_MAX_NUMBER))
-        .backOffBase(clientConfig.get(STATEFUL_UPGRADE_CLIENT_BACKOFF_BASE))
+        .backoffBase(clientConfig.get(STATEFUL_UPGRADE_CLIENT_BACKOFF_BASE))
         .build();
   }
 

@@ -17,38 +17,51 @@
 
 package org.apache.uniffle.client.impl.grpc;
 
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+
 import com.google.common.collect.Lists;
 import io.grpc.ClientInterceptor;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
-import org.apache.uniffle.client.retry.NetworkUnavailableRetryStrategy;
+import org.apache.uniffle.client.retry.DefaultBackoffRetryStrategy;
+import org.apache.uniffle.client.retry.RetryFactors;
+import org.apache.uniffle.client.retry.RetryStrategy;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 
 import static org.apache.uniffle.common.ShuffleDataDistributionType.LOCAL_ORDER;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleServerGrpcClientTest {
 
+  private RetryStrategy createRetryStrategy() {
+    Function<RetryFactors, Boolean> retryFunction = (factors) -> "UNAVAILABLE".equals(factors.getRpcStatus());
+    return new DefaultBackoffRetryStrategy(retryFunction, 2, 1000, 1000);
+  }
+
   @Test
   public void retryWhenServerDown() {
     ClientInterceptor[] clientInterceptors = new ClientInterceptor[]{
-        new RetryInterceptor(new NetworkUnavailableRetryStrategy(3, 1000, 1000))
+        new RetryInterceptor(createRetryStrategy())
     };
 
     ShuffleServerGrpcClient grpcClient = new ShuffleServerGrpcClient("127.0.0.1", 19999, clientInterceptors);
 
-    long start = System.currentTimeMillis();
-    try {
-      RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest("testAppId", 0,
-          Lists.newArrayList(new PartitionRange(1, 1)), new RemoteStorageInfo(""), "", LOCAL_ORDER);
-      grpcClient.registerShuffle(rrsr);
-      fail();
-    } catch (Exception e) {
-      // ignore
-    }
-    assertTrue(System.currentTimeMillis() - start > 2 * 1000);
+    AtomicReference<Boolean> finished = new AtomicReference<>(false);
+    new Thread(() -> {
+      try {
+        RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest("testAppId", 0,
+            Lists.newArrayList(new PartitionRange(1, 1)), new RemoteStorageInfo(""), "", LOCAL_ORDER);
+        grpcClient.registerShuffle(rrsr);
+        fail();
+      } catch (Exception e) {
+        finished.set(true);
+      }
+    }).start();
+    Awaitility.await().timeout(Duration.ofSeconds(3)).until(() -> finished.get());
   }
 }

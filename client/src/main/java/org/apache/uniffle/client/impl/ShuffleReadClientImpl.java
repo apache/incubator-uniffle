@@ -34,7 +34,7 @@ import org.apache.uniffle.client.ConnectionOptions;
 import org.apache.uniffle.client.StatefulUpgradeClientOptions;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
-import org.apache.uniffle.client.retry.NetworkUnavailableRetryStrategy;
+import org.apache.uniffle.client.retry.DefaultBackoffRetryStrategy;
 import org.apache.uniffle.client.util.IdHelper;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
@@ -108,10 +108,11 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     if (statefulUpgradeClientOptions != null && statefulUpgradeClientOptions.isStatefulUpgradeEnable()) {
       ConnectionOptions connectionOptions = ConnectionOptions
           .builder()
-          .retryStrategy(new NetworkUnavailableRetryStrategy(
+          .retryStrategy(new DefaultBackoffRetryStrategy(
+              (factors) -> "UNAVAILABLE".equals(factors.getRpcStatus()),
               statefulUpgradeClientOptions.getRetryMaxNumber(),
               statefulUpgradeClientOptions.getRetryIntervalMax(),
-              statefulUpgradeClientOptions.getBackOffBase()
+              statefulUpgradeClientOptions.getBackoffBase()
           ))
           .build();
       request.setConnectionOptions(connectionOptions);

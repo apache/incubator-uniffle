@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
@@ -42,7 +43,9 @@ import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
-import org.apache.uniffle.client.retry.NetworkUnavailableRetryStrategy;
+import org.apache.uniffle.client.retry.DefaultBackoffRetryStrategy;
+import org.apache.uniffle.client.retry.RetryFactors;
+import org.apache.uniffle.client.retry.RetryStrategy;
 import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -90,18 +93,24 @@ public class ShuffleServerRecoveryTest extends ShuffleReadWriteBase {
     shuffleServers.get(0).start();
   }
 
+  private RetryStrategy createRetryStrategy() {
+    Function<RetryFactors, Boolean> retryFunction = (factors) -> "UNAVAILABLE".equals(factors.getRpcStatus());
+    return new DefaultBackoffRetryStrategy(retryFunction, 150, 2000, 2000);
+  }
+
   @Test
   public void testSingleRequestHangUntilServerStarted() throws Exception {
     setupCoordinator();
 
     AtomicReference<ResponseStatusCode> response = new AtomicReference<>(INTERNAL_ERROR);
+
     Thread thread = new Thread(() -> {
       ShuffleServerGrpcClient shuffleServerClient =
           new ShuffleServerGrpcClient(
               LOCALHOST,
               SHUFFLE_SERVER_PORT,
               new ClientInterceptor[]{
-                  new RetryInterceptor(new NetworkUnavailableRetryStrategy(150, 2000, 2000))
+                  new RetryInterceptor(createRetryStrategy())
               }
           );
       RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest("testAppId", 0,
@@ -133,7 +142,7 @@ public class ShuffleServerRecoveryTest extends ShuffleReadWriteBase {
             LOCALHOST,
             SHUFFLE_SERVER_PORT,
             new ClientInterceptor[]{
-                new RetryInterceptor(new NetworkUnavailableRetryStrategy(150, 2000, 2000))
+                new RetryInterceptor(createRetryStrategy())
             }
         );
 

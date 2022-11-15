@@ -63,6 +63,7 @@ public class FileStateStore implements StateStore {
   public ShuffleServerState restore() throws Exception {
     Input input = new Input(new FileInputStream(stateLocationPath));
     ShuffleServerState state = kryo.readObject(input, ShuffleServerState.class);
+    input.close();
 
     File stateFile = new File(stateLocationPath);
     stateFile.delete();
