@@ -165,7 +165,6 @@ public class RssSparkShuffleUtilsTest {
     sparkConf.set(Constants.SPARK_DYNAMIC_ENABLED, "true");
     sparkConf.set(Constants.SPARK_MAX_DYNAMIC_EXECUTOR, "200");
     sparkConf.set(Constants.SPARK_MIN_DYNAMIC_EXECUTOR, "100");
-    sparkConf.set(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_ENABLED, true);
     sparkConf.set(Constants.SPARK_EXECUTOR_CORES, "2");
     int taskConcurrency;
 
@@ -187,5 +186,28 @@ public class RssSparkShuffleUtilsTest {
     sparkConf.set(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR, 1.0);
     taskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
     assertEquals(70, taskConcurrency);
+  }
+
+  @Test
+  public void testGetRequiredShuffleServerNumber() {
+    SparkConf sparkConf = new SparkConf();
+    sparkConf.set(Constants.SPARK_DYNAMIC_ENABLED, "true");
+    sparkConf.set(Constants.SPARK_MAX_DYNAMIC_EXECUTOR, "200");
+    sparkConf.set(Constants.SPARK_MIN_DYNAMIC_EXECUTOR, "100");
+    sparkConf.set(Constants.SPARK_EXECUTOR_CORES, "4");
+
+    assertEquals(-1, RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf));
+
+    sparkConf.set(RssSparkConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED, true);
+    assertEquals(10, RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf));
+
+    sparkConf.set(Constants.SPARK_TASK_CPUS, "2");
+    assertEquals(5, RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf));
+
+    sparkConf.set(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR, 0.5);
+    assertEquals(4, RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf));
+
+    sparkConf.set(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER, 100);
+    assertEquals(3, RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf));
   }
 }

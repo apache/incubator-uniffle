@@ -170,4 +170,46 @@ public class RssMRUtilsTest {
     assertEquals(Integer.toString(RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE),
         conf.get(RssMRConfig.RSS_CLIENT_RETRY_MAX));
   }
+
+  @Test
+  public void testEstimateTaskConcurrency() {
+    JobConf jobConf = new JobConf();
+    jobConf.setInt("mapreduce.job.maps", 500);
+    jobConf.setInt("mapreduce.job.reduces", 20);
+    assertEquals(495, RssMRUtils.estimateTaskConcurrency(jobConf));
+
+    jobConf.setDouble(Constants.MR_SLOW_START, 1.0);
+    assertEquals(500, RssMRUtils.estimateTaskConcurrency(jobConf));
+    jobConf.setInt(Constants.MR_MAP_LIMIT, 200);
+    jobConf.setInt(Constants.MR_REDUCE_LIMIT, 200);
+    assertEquals(200, RssMRUtils.estimateTaskConcurrency(jobConf));
+
+    jobConf.setDouble("mapreduce.rss.estimate.task.concurrency.dynamic.factor", 0.5);
+    assertEquals(100, RssMRUtils.estimateTaskConcurrency(jobConf));
+  }
+
+  @Test
+  public void testGetRequiredShuffleServerNumber() {
+    JobConf jobConf = new JobConf();
+    jobConf.setInt("mapreduce.job.maps", 500);
+    jobConf.setInt("mapreduce.job.reduces", 20);
+    jobConf.setInt(RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER, 10);
+    assertEquals(10, RssMRUtils.getRequiredShuffleServerNumber(jobConf));
+
+    jobConf.setBoolean(RssMRConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED, true);
+    assertEquals(10, RssMRUtils.getRequiredShuffleServerNumber(jobConf));
+
+    jobConf.unset(RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER);
+    assertEquals(7, RssMRUtils.getRequiredShuffleServerNumber(jobConf));
+
+    jobConf.setDouble(Constants.MR_SLOW_START, 1.0);
+    assertEquals(7, RssMRUtils.getRequiredShuffleServerNumber(jobConf));
+
+    jobConf.setInt(Constants.MR_MAP_LIMIT, 200);
+    jobConf.setInt(Constants.MR_REDUCE_LIMIT, 200);
+    assertEquals(3, RssMRUtils.getRequiredShuffleServerNumber(jobConf));
+
+    jobConf.setDouble("mapreduce.rss.estimate.task.concurrency.dynamic.factor", 0.5);
+    assertEquals(2, RssMRUtils.getRequiredShuffleServerNumber(jobConf));
+  }
 }
