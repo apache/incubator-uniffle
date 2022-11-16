@@ -109,7 +109,8 @@ public class GetReaderTest extends IntegrationTestBase {
     assertTrue(remoteStorageInfo1.getConfItems().isEmpty());
 
     // emptyRDD case
-    JavaPairRDD<String, Tuple2<Integer, Integer>> javaEmptyPairRDD1 = TestUtils.combineByKeyRDD(TestUtils.getEmptyRDD(jsc1));
+    JavaPairRDD<String, Tuple2<Integer, Integer>> javaEmptyPairRDD1 = TestUtils.combineByKeyRDD(
+        TestUtils.getEmptyRDD(jsc1));
     ShuffleDependency emptyShuffleDependency1 = (ShuffleDependency) javaEmptyPairRDD1.rdd().dependencies().head();
     RssShuffleHandle emptyRssShuffleHandle1 = (RssShuffleHandle) emptyShuffleDependency1.shuffleHandle();
     assertEquals(javaEmptyPairRDD1.rdd().dependencies().head().rdd().getNumPartitions(), 0);

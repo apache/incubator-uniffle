@@ -17,6 +17,9 @@
 
 package org.apache.uniffle.test;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+
 import com.google.common.collect.Lists;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -25,21 +28,20 @@ import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import scala.Tuple2;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-
 public class TestUtils {
   private TestUtils() {
 
   }
 
   static JavaPairRDD<String, Integer> getEmptyRDD(JavaSparkContext jsc) {
-    JavaPairRDD<String, Integer> javaPairRDD1 = jsc.emptyRDD().flatMapToPair(new PairFlatMapFunction<Object, String, Integer>() {
-      @Override
-      public Iterator<Tuple2<String, Integer>> call(Object s) throws Exception {
-        return new ArrayList<Tuple2<String, Integer>>().iterator();
-      }
-    });
+    JavaPairRDD<String, Integer> javaPairRDD1 = jsc.emptyRDD().flatMapToPair(
+        new PairFlatMapFunction<Object, String, Integer>() {
+          @Override
+          public Iterator<Tuple2<String, Integer>> call(Object s) throws Exception {
+            return new ArrayList<Tuple2<String, Integer>>().iterator();
+          }
+        }
+    );
     return javaPairRDD1;
   }
 

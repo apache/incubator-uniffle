@@ -214,7 +214,8 @@ public class RssShuffleManager implements ShuffleManager {
     }
 
     if (dependency.partitioner().numPartitions() == 0) {
-      LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum is 0, return the empty RssShuffleHandle directly");
+      LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum is 0, "
+          + "return the empty RssShuffleHandle directly");
       return new RssShuffleHandle(shuffleId,
         appId,
         dependency.rdd().getNumPartitions(),
