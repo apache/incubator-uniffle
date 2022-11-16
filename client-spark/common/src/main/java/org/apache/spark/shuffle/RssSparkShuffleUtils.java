@@ -161,4 +161,15 @@ public class RssSparkShuffleUtils {
     }
     return taskConcurrency;
   }
+
+  public static int getRequiredShuffleServerNumber(SparkConf sparkConf) {
+    boolean enabledEstimateServer = sparkConf.get(RssSparkConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED);
+    int requiredShuffleServerNumber = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER);
+    if (!enabledEstimateServer || requiredShuffleServerNumber > 0) {
+      return requiredShuffleServerNumber;
+    }
+    int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
+    int taskConcurrencyPerServer = sparkConf.get(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER);
+    return (int) Math.ceil(estimateTaskConcurrency * 1.0 / taskConcurrencyPerServer);
+  }
 }
