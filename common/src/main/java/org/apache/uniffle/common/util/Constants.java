@@ -65,4 +65,6 @@ public class Constants {
   public static int MR_REDUCE_LIMIT_DEFAULT_VALUE = 0;
   public static final String MR_SLOW_START = "mapreduce.job.reduce.slowstart.completedmaps";
   public static double MR_SLOW_START_DEFAULT_VALUE = 0.05;
+  
+  public static final double MILLION_SECONDS_PER_SECOND = 1E3D;
 }

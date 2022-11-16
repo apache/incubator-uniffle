@@ -21,9 +21,12 @@ import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
+import io.prometheus.client.Summary;
 
 public class MetricsManager {
   private CollectorRegistry collectorRegistry;
+  private static final double[] QUANTILES = {0.50, 0.75, 0.90, 0.95, 0.99};
+  private static final double QUANTILE_ERROR = 0.01;
 
   public MetricsManager() {
     this(null);
@@ -63,5 +66,13 @@ public class MetricsManager {
 
   public Histogram addHistogram(String name, String help, double[] buckets, String[] labels) {
     return Histogram.build().name(name).buckets(buckets).labelNames(labels).help(help).register(collectorRegistry);
+  }
+
+  public Summary addSummary(String name) {
+    Summary.Builder builder = Summary.build().name(name).help("Summary " + name);
+    for (int i = 0; i < QUANTILES.length; i++) {
+      builder = builder.quantile(QUANTILES[i], QUANTILE_ERROR);
+    }
+    return builder.register(collectorRegistry);
   }
 }

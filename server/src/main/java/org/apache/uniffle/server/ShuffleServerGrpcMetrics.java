@@ -60,6 +60,18 @@ public class ShuffleServerGrpcMetrics extends GRPCMetrics {
       "grpc_get_in_memory_shuffle_data_total";
   private static final String GRPC_GET_SHUFFLE_INDEX_TOTAL = "grpc_get_local_shuffle_index_total";
 
+  private static final String GRPC_SEND_SHUFFLE_DATA_TRANSPORT_LATENCY =
+      "grpc_send_shuffle_data_transport_latency";
+  private static final String GRPC_GET_SHUFFLE_DATA_TRANSPORT_LATENCY =
+      "grpc_get_local_shuffle_data_transport_latency";
+  private static final String GRPC_GET_IN_MEMORY_SHUFFLE_DATA_TRANSPORT_LATENCY =
+      "grpc_get_in_memory_shuffle_data_transport_latency";
+
+  private static final String GRPC_SEND_SHUFFLE_DATA_PROCESS_LATENCY = "grpc_send_shuffle_data_process_latency";
+  private static final String GRPC_GET_SHUFFLE_DATA_PROCESS_LATENCY = "grpc_get_local_shuffle_data_process_latency";
+  private static final String GRPC_GET_IN_MEMORY_SHUFFLE_DATA_PROCESS_LATENCY =
+      "grpc_get_in_memory_shuffle_data_process_latency";
+
   @Override
   public void registerMetrics() {
     gaugeGrpcOpen = metricsManager.addGauge(GRPC_OPEN);
@@ -110,6 +122,20 @@ public class ShuffleServerGrpcMetrics extends GRPCMetrics {
         metricsManager.addCounter(GRPC_GET_IN_MEMORY_SHUFFLE_DATA_TOTAL));
     counterMap.putIfAbsent(GET_SHUFFLE_INDEX_METHOD,
         metricsManager.addCounter(GRPC_GET_SHUFFLE_INDEX_TOTAL));
+
+    transportTimeSummaryMap.putIfAbsent(SEND_SHUFFLE_DATA_METHOD,
+        metricsManager.addSummary(GRPC_SEND_SHUFFLE_DATA_TRANSPORT_LATENCY));
+    transportTimeSummaryMap.putIfAbsent(GET_SHUFFLE_DATA_METHOD,
+        metricsManager.addSummary(GRPC_GET_SHUFFLE_DATA_TRANSPORT_LATENCY));
+    transportTimeSummaryMap.putIfAbsent(GET_IN_MEMORY_SHUFFLE_DATA_METHOD,
+        metricsManager.addSummary(GRPC_GET_IN_MEMORY_SHUFFLE_DATA_TRANSPORT_LATENCY));
+
+    processTimeSummaryMap.putIfAbsent(SEND_SHUFFLE_DATA_METHOD,
+        metricsManager.addSummary(GRPC_SEND_SHUFFLE_DATA_PROCESS_LATENCY));
+    processTimeSummaryMap.putIfAbsent(GET_SHUFFLE_DATA_METHOD,
+        metricsManager.addSummary(GRPC_GET_SHUFFLE_DATA_PROCESS_LATENCY));
+    processTimeSummaryMap.putIfAbsent(GET_IN_MEMORY_SHUFFLE_DATA_METHOD,
+        metricsManager.addSummary(GRPC_GET_IN_MEMORY_SHUFFLE_DATA_PROCESS_LATENCY));
   }
 
 }
