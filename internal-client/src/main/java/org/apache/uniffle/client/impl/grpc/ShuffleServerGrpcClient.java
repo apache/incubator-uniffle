@@ -313,7 +313,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
               .setShuffleId(stb.getKey())
               .setRequireBufferId(requireId)
               .addAllShuffleData(shuffleData)
-              .setSendTime(start)
+              .setTimestamp(start)
               .build();
           SendShuffleDataResponse response = getBlockingStub().sendShuffleData(rpcRequest);
           LOG.info("Do sendShuffleData to {}:{} rpc cost:" + (System.currentTimeMillis() - start)
@@ -533,7 +533,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setPartitionNum(request.getPartitionNum())
         .setOffset(request.getOffset())
         .setLength(request.getLength())
-        .setSendTime(start)
+        .setTimestamp(start)
         .build();
     GetLocalShuffleDataResponse rpcResponse = getBlockingStub().getLocalShuffleData(rpcRequest);
     String requestInfo = "appId[" + request.getAppId() + "], shuffleId["
@@ -605,7 +605,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setPartitionId(request.getPartitionId())
         .setLastBlockId(request.getLastBlockId())
         .setReadBufferSize(request.getReadBufferSize())
-        .setSendTime(start)
+        .setTimestamp(start)
         .build();
 
     GetMemoryShuffleDataResponse rpcResponse = getBlockingStub().getMemoryShuffleData(rpcRequest);

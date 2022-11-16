@@ -186,7 +186,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String appId = req.getAppId();
     int shuffleId = req.getShuffleId();
     long requireBufferId = req.getRequireBufferId();
-    long sendTime = req.getSendTime();
+    long sendTime = req.getTimestamp();
     if (sendTime > 0) {
       /*
       * Here we record the transport time, but we don't consider the impact of data size on transport time.
@@ -488,7 +488,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int partitionNum = request.getPartitionNum();
     long offset = request.getOffset();
     int length = request.getLength();
-    long sendTime = request.getSendTime();
+    long sendTime = request.getTimestamp();
     if (sendTime > 0) {
       shuffleServer.getGrpcMetrics().recordTransportTime(
           ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, System.currentTimeMillis() - sendTime);
@@ -626,7 +626,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int partitionId = request.getPartitionId();
     long blockId = request.getLastBlockId();
     int readBufferSize = request.getReadBufferSize();
-    long sendTime = request.getSendTime();
+    long sendTime = request.getTimestamp();
     if (sendTime > 0) {
       shuffleServer.getGrpcMetrics().recordTransportTime(
           ShuffleServerGrpcMetrics.GET_IN_MEMORY_SHUFFLE_DATA_METHOD, System.currentTimeMillis() - sendTime);
