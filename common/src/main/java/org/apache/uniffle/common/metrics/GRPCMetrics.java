@@ -138,4 +138,12 @@ public abstract class GRPCMetrics {
   public Counter getCounterGrpcTotal() {
     return counterGrpcTotal;
   }
+
+  public Map<String, Summary> getSendTimeSummaryMap() {
+    return sendTimeSummaryMap;
+  }
+
+  public Map<String, Summary> getProcessTimeSummaryMap() {
+    return processTimeSummaryMap;
+  }
 }
