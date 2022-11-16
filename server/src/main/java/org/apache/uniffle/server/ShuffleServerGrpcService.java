@@ -188,7 +188,12 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     long requireBufferId = req.getRequireBufferId();
     long sendTime = req.getSendTime();
     if (sendTime > 0) {
-      shuffleServer.getGrpcMetrics().recordSendTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD,
+      /*
+      * Here we record the transport time, but we don't consider the impact of data size on transport time.
+      * The amount of data will not cause great fluctuations in latency. For example, 100K costs 1ms,
+      * and 1M costs 10ms. This seems like a normal fluctuation, but it may rise to 10s when the server load is high.
+      * */
+      shuffleServer.getGrpcMetrics().recordTransportTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD,
           System.currentTimeMillis() - sendTime);
     }
     int requireSize = shuffleServer
@@ -485,7 +490,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int length = request.getLength();
     long sendTime = request.getSendTime();
     if (sendTime > 0) {
-      shuffleServer.getGrpcMetrics().recordSendTime(
+      shuffleServer.getGrpcMetrics().recordTransportTime(
           ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, System.currentTimeMillis() - sendTime);
     }
     String storageType = shuffleServer.getShuffleServerConf().get(RssBaseConf.RSS_STORAGE_TYPE);
@@ -623,7 +628,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int readBufferSize = request.getReadBufferSize();
     long sendTime = request.getSendTime();
     if (sendTime > 0) {
-      shuffleServer.getGrpcMetrics().recordSendTime(
+      shuffleServer.getGrpcMetrics().recordTransportTime(
           ShuffleServerGrpcMetrics.GET_IN_MEMORY_SHUFFLE_DATA_METHOD, System.currentTimeMillis() - sendTime);
     }
     long start = System.currentTimeMillis();

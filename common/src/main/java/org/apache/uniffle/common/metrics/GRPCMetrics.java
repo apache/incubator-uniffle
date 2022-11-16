@@ -39,7 +39,7 @@ public abstract class GRPCMetrics {
   private boolean isRegister = false;
   protected Map<String, Counter> counterMap = Maps.newConcurrentMap();
   protected Map<String, Gauge> gaugeMap = Maps.newConcurrentMap();
-  protected Map<String, Summary> sendTimeSummaryMap = Maps.newConcurrentMap();
+  protected Map<String, Summary> transportTimeSummaryMap = Maps.newConcurrentMap();
   protected Map<String, Summary> processTimeSummaryMap = Maps.newConcurrentMap();
   protected Gauge gaugeGrpcOpen;
   protected Counter counterGrpcTotal;
@@ -105,10 +105,10 @@ public abstract class GRPCMetrics {
     }
   }
 
-  public void recordSendTime(String methodName, long sendTimeInMillionSecond) {
-    Summary summary = sendTimeSummaryMap.get(methodName);
+  public void recordTransportTime(String methodName, long transportTimeInMillionSecond) {
+    Summary summary = transportTimeSummaryMap.get(methodName);
     if (summary != null) {
-      summary.observe(sendTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND);
+      summary.observe(transportTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND);
     }
   }
 
@@ -139,8 +139,8 @@ public abstract class GRPCMetrics {
     return counterGrpcTotal;
   }
 
-  public Map<String, Summary> getSendTimeSummaryMap() {
-    return sendTimeSummaryMap;
+  public Map<String, Summary> getTransportTimeSummaryMap() {
+    return transportTimeSummaryMap;
   }
 
   public Map<String, Summary> getProcessTimeSummaryMap() {
