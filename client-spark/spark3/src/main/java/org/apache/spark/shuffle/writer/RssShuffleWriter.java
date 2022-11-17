@@ -127,9 +127,21 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   @Override
   public void write(Iterator<Product2<K, V>> records) throws IOException {
+    try {
+      doWrite(records);
+    } catch (Exception e) {
+      shuffleManager.markFailedTask(taskId);
+      throw e;
+    }
+  }
+
+  private void doWrite(Iterator<Product2<K,V>> records) {
     List<ShuffleBlockInfo> shuffleBlockInfos = null;
     Set<Long> blockIds = Sets.newConcurrentHashSet();
     while (records.hasNext()) {
+      // Task should fast fail when sending data failed
+      checkIfBlocksFailed();
+
       Product2<K, V> record = records.next();
       K key = record._1();
       int partition = getPartition(key);
@@ -214,17 +226,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   protected void checkBlockSendResult(Set<Long> blockIds) throws RuntimeException {
     long start = System.currentTimeMillis();
     while (true) {
+      checkIfBlocksFailed();
       Set<Long> successBlockIds = shuffleManager.getSuccessBlockIds(taskId);
-      Set<Long> failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
-
-      if (!failedBlockIds.isEmpty()) {
-        String errorMsg = "Send failed: Task[" + taskId + "]"
-            + " failed because " + failedBlockIds.size()
-            + " blocks can't be sent to shuffle server.";
-        LOG.error(errorMsg);
-        throw new RssException(errorMsg);
-      }
-
       blockIds.removeAll(successBlockIds);
       if (blockIds.isEmpty()) {
         break;
@@ -237,6 +240,17 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         LOG.error(errorMsg);
         throw new RssException(errorMsg);
       }
+    }
+  }
+
+  private void checkIfBlocksFailed() {
+    Set<Long> failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
+    if (!failedBlockIds.isEmpty()) {
+      String errorMsg = "Send failed: Task[" + taskId + "]"
+          + " failed because " + failedBlockIds.size()
+          + " blocks can't be sent to shuffle server.";
+      LOG.error(errorMsg);
+      throw new RssException(errorMsg);
     }
   }
 

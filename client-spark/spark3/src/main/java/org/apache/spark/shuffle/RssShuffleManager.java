@@ -98,6 +98,7 @@ public class RssShuffleManager implements ShuffleManager {
   private final ShuffleDataDistributionType dataDistributionType;
   private String user;
   private String uuid;
+  private Set<String> failedTaskIds = Sets.newConcurrentHashSet();
   private final EventLoop eventLoop;
   private final EventLoop defaultEventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
 
@@ -118,7 +119,11 @@ public class RssShuffleManager implements ShuffleManager {
 
     private void sendShuffleData(String taskId, List<ShuffleBlockInfo> shuffleDataInfoList) {
       try {
-        SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(id.get(), shuffleDataInfoList);
+        SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(
+            id.get(),
+            shuffleDataInfoList,
+            () -> isValidTask(taskId)
+        );
         putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
         putBlockId(taskToFailedBlockIds, taskId, result.getFailedBlockIds());
       } finally {
@@ -771,5 +776,14 @@ public class RssShuffleManager implements ShuffleManager {
 
   public String getId() {
     return id.get();
+  }
+
+  public void markFailedTask(String taskId) {
+    LOG.info("Mark the task: {} failed.", taskId);
+    failedTaskIds.add(taskId);
+  }
+
+  public boolean isValidTask(String taskId) {
+    return !failedTaskIds.contains(taskId);
   }
 }

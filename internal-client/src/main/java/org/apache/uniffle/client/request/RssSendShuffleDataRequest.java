@@ -19,6 +19,7 @@ package org.apache.uniffle.client.request;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
 
@@ -28,13 +29,20 @@ public class RssSendShuffleDataRequest {
   private int retryMax;
   private long retryIntervalMax;
   private Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks;
+  private Supplier<Boolean> isValid;
 
   public RssSendShuffleDataRequest(String appId, int retryMax, long retryIntervalMax,
       Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks) {
+    this(appId, retryMax, retryIntervalMax, shuffleIdToBlocks, () -> true);
+  }
+
+  public RssSendShuffleDataRequest(String appId, int retryMax, long retryIntervalMax,
+      Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks, Supplier<Boolean> isValid) {
     this.appId = appId;
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
     this.shuffleIdToBlocks = shuffleIdToBlocks;
+    this.isValid = isValid;
   }
 
   public String getAppId() {
@@ -51,5 +59,9 @@ public class RssSendShuffleDataRequest {
 
   public Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> getShuffleIdToBlocks() {
     return shuffleIdToBlocks;
+  }
+
+  public Supplier<Boolean> getIsValid() {
+    return isValid;
   }
 }

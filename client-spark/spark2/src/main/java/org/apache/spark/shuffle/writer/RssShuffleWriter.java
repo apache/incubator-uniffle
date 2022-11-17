@@ -133,6 +133,15 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   @Override
   public void write(Iterator<Product2<K, V>> records) {
+    try {
+      doWrite(records);
+    } catch (Exception e) {
+      shuffleManager.markFailedTask(taskId);
+      throw e;
+    }
+  }
+
+  private void doWrite(Iterator<Product2<K,V>> records) {
     List<ShuffleBlockInfo> shuffleBlockInfos = null;
     Set<Long> blockIds = Sets.newConcurrentHashSet();
     while (records.hasNext()) {

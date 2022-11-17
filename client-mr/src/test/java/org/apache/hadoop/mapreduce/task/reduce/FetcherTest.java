@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Supplier;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -352,7 +353,8 @@ public class FetcherTest {
     public List<byte[]> data = new LinkedList<>();
 
     @Override
-    public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList) {
+    public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList,
+        Supplier<Boolean> isValid) {
       if (mode == 0) {
         throw new RssException("send data failed");
       } else if (mode == 1) {

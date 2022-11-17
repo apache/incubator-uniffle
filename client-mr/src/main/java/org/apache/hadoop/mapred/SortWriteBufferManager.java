@@ -240,7 +240,7 @@ public class SortWriteBufferManager<K, V> {
           for (ShuffleBlockInfo block : shuffleBlocks) {
             size += block.getFreeMemory();
           }
-          SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(appId, shuffleBlocks);
+          SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(appId, shuffleBlocks, () -> true);
           successBlockIds.addAll(result.getSuccessBlockIds());
           failedBlockIds.addAll(result.getFailedBlockIds());
         } catch (Throwable t) {

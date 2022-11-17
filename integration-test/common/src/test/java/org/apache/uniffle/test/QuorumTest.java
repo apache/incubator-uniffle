@@ -70,7 +70,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
   private static ShuffleServerInfo fakedShuffleServerInfo2;
   private static ShuffleServerInfo fakedShuffleServerInfo3;
   private static ShuffleServerInfo fakedShuffleServerInfo4;
-  private ShuffleWriteClientImpl shuffleWriteClientImpl;
+  private MockedShuffleWriteClientImpl shuffleWriteClientImpl;
 
   public static MockedShuffleServer createServer(int id) throws Exception {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
@@ -263,10 +263,24 @@ public class QuorumTest extends ShuffleReadWriteBase {
         .disableMockedTimeout();
   }
 
+  static class MockedShuffleWriteClientImpl extends ShuffleWriteClientImpl {
+    MockedShuffleWriteClientImpl(String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
+        int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled, int dataTranferPoolSize,
+        int dataCommitPoolSize, int unregisterThreadPoolSize, int unregisterRequestTimeSec) {
+      super(clientType, retryMax, retryIntervalMax, heartBeatThreadNum, replica, replicaWrite, replicaRead,
+          replicaSkipEnabled, dataTranferPoolSize, dataCommitPoolSize, unregisterThreadPoolSize,
+          unregisterRequestTimeSec);
+    }
+
+    public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList) {
+      return super.sendShuffleData(appId, shuffleBlockInfoList, () -> true);
+    }
+  }
+
   private void registerShuffleServer(String testAppId,
       int replica, int replicaWrite, int replicaRead, boolean replicaSkip) {
 
-    shuffleWriteClientImpl = new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1,
+    shuffleWriteClientImpl = new MockedShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1,
       replica, replicaWrite, replicaRead, replicaSkip, 1, 1, 10, 10);
 
     List<ShuffleServerInfo> allServers = Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1,

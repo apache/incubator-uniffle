@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.client.impl;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -27,13 +28,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -98,7 +100,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private int replicaRead;
   private boolean replicaSkipEnabled;
   private int dataCommitPoolSize = -1;
-  private final ForkJoinPool dataTransferPool;
+  private final ExecutorService dataTransferPool;
   private final int unregisterThreadPoolSize;
   private final int unregisterRequestTimeSec;
 
@@ -125,27 +127,71 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     this.replicaWrite = replicaWrite;
     this.replicaRead = replicaRead;
     this.replicaSkipEnabled = replicaSkipEnabled;
-    this.dataTransferPool = new ForkJoinPool(dataTranferPoolSize);
+    this.dataTransferPool = Executors.newFixedThreadPool(dataTranferPoolSize);
     this.dataCommitPoolSize = dataCommitPoolSize;
     this.unregisterThreadPoolSize = unregisterThreadPoolSize;
     this.unregisterRequestTimeSec = unregisterRequestTimeSec;
+  }
+
+  @VisibleForTesting
+  public static boolean waitUntilDoneOrFail(List<Future<Boolean>> futures, boolean allowFastFail) {
+    int expected = futures.size();
+    int failed = 0;
+
+    List<Future> finished = new ArrayList<>();
+    while (true) {
+      for (Future<Boolean> future : futures) {
+        if (future.isDone() && !finished.contains(future)) {
+          finished.add(future);
+          try {
+            if (!future.get()) {
+              failed++;
+            }
+          } catch (Exception e) {
+            failed++;
+          }
+        }
+      }
+
+      if (expected == finished.size()) {
+        return failed <= 0;
+      }
+
+      if (failed > 0 && allowFastFail) {
+        futures.stream().filter(x -> !x.isDone()).forEach(x -> x.cancel(true));
+        return false;
+      }
+
+      Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
+    }
   }
 
   private boolean sendShuffleDataAsync(
       String appId,
       Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
       Map<ShuffleServerInfo, List<Long>> serverToBlockIds,
-      Map<Long, AtomicInteger> blockIdsTracker) {
+      Map<Long, AtomicInteger> blockIdsTracker, boolean allowFastFail,
+      Supplier<Boolean> needCancelRequest) {
+
+    if (serverToBlockIds == null) {
+      return true;
+    }
+
     // If one or more servers is failed, the sending is not totally successful.
-    AtomicBoolean isAllServersSuccess = new AtomicBoolean(true);
-    if (serverToBlocks != null) {
-      dataTransferPool.submit(() -> serverToBlocks.entrySet().parallelStream().forEach(entry -> {
+    List<Future<Boolean>> futures = new ArrayList<>();
+    for (Map.Entry<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> entry :
+        serverToBlocks.entrySet()) {
+      Future<Boolean> future = dataTransferPool.submit(() -> {
+        if (!needCancelRequest.get()) {
+          LOG.info("The upstream task has been failed. Abort this data send.");
+          return true;
+        }
         ShuffleServerInfo ssi = entry.getKey();
         try {
           Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks = entry.getValue();
           // todo: compact unnecessary blocks that reach replicaWrite
           RssSendShuffleDataRequest request = new RssSendShuffleDataRequest(
-              appId, retryMax, retryIntervalMax, shuffleIdToBlocks);
+              appId, retryMax, retryIntervalMax, shuffleIdToBlocks, needCancelRequest);
           long s = System.currentTimeMillis();
           RssSendShuffleDataResponse response = getShuffleServerClient(ssi).sendShuffleData(request);
 
@@ -157,16 +203,24 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             serverToBlockIds.get(ssi).forEach(block -> blockIdsTracker.get(block).incrementAndGet());
             LOG.info("{} successfully.", logMsg);
           } else {
-            isAllServersSuccess.set(false);
             LOG.warn("{}, it failed wth statusCode[{}]", logMsg, response.getStatusCode());
+            return false;
           }
         } catch (Exception e) {
-          isAllServersSuccess.set(false);
           LOG.warn("Send: " + serverToBlockIds.get(ssi).size() + " blocks to [" + ssi.getId() + "] failed.", e);
+          return false;
         }
-      })).join();
+        return true;
+      });
+      futures.add(future);
     }
-    return isAllServersSuccess.get();
+
+    boolean result = waitUntilDoneOrFail(futures, allowFastFail);
+    if (!result) {
+      LOG.error("Some shuffle data can't be sent to shuffle-server, is fast fail: {}, cancelled task size: {}",
+          allowFastFail, futures.size());
+    }
+    return result;
   }
 
   private void genServerToBlocks(ShuffleBlockInfo sbi, List<ShuffleServerInfo> serverList,
@@ -196,8 +250,12 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
   }
 
+  /**
+   * The batch of sending belongs to the same task
+   */
   @Override
-  public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList) {
+  public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList,
+      Supplier<Boolean> isValid) {
 
     // shuffleServer -> shuffleId -> partitionId -> blocks
     Map<ShuffleServerInfo, Map<Integer,
@@ -247,15 +305,28 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
     // sent the primary round of blocks.
     boolean isAllSuccess = sendShuffleDataAsync(
-        appId, primaryServerToBlocks, primaryServerToBlockIds, blockIdsTracker);
+        appId,
+        primaryServerToBlocks,
+        primaryServerToBlockIds,
+        blockIdsTracker,
+        secondaryServerToBlocks.isEmpty(),
+        isValid
+    );
 
     // The secondary round of blocks is sent only when the primary group issues failed sending.
     // This should be infrequent.
     // Even though the secondary round may send blocks more than replicaWrite replicas,
     // we do not apply complicated skipping logic, because server crash is rare in production environment.
-    if (!isAllSuccess && !secondaryServerToBlocks.isEmpty()) {
+    if (!isAllSuccess && !secondaryServerToBlocks.isEmpty() && isValid.get()) {
       LOG.info("The sending of primary round is failed partially, so start the secondary round");
-      sendShuffleDataAsync(appId, secondaryServerToBlocks, secondaryServerToBlockIds, blockIdsTracker);
+      sendShuffleDataAsync(
+          appId,
+          secondaryServerToBlocks,
+          secondaryServerToBlockIds,
+          blockIdsTracker,
+          true,
+          isValid
+      );
     }
 
     // check success and failed blocks according to the replicaWrite

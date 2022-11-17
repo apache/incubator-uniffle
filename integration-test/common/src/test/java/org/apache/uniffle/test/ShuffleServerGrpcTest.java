@@ -515,7 +515,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
 
   @Disabled("flaky test")
   @Test
-  public void rpcMetricsTest() {
+  public void rpcMetricsTest() throws Exception {
     String appId = "rpcMetricsTest";
     int shuffleId = 0;
     final double oldGrpcTotal = shuffleServers.get(0).getGrpcMetrics().getCounterGrpcTotal().get();
