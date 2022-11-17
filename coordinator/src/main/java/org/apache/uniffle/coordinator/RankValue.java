@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common;
+package org.apache.uniffle.coordinator;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;

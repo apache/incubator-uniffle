@@ -26,7 +26,6 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import org.apache.uniffle.common.RankValue;
 import org.apache.uniffle.common.exception.RssException;
 
 /**
