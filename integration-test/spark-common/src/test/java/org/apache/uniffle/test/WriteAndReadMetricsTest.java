@@ -64,10 +64,18 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
 
   private StageData getFirstStageData(SparkSession spark, int stageId)
       throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    AppStatusStore statestore = spark.sparkContext().statusStore();
     try {
-      return spark.sparkContext().statusStore().stageData(stageId, false).toList().head();
+      return ((Seq<StageData>)statestore
+          .getClass()
+          .getDeclaredMethod(
+              "stageData",
+              int.class,
+              boolean.class
+          ).invoke(
+              statestore, stageId, false)).
+          toList().head();
     } catch (Exception e) {
-      AppStatusStore statestore = spark.sparkContext().statusStore();
       return ((Seq<StageData>)statestore
           .getClass()
           .getDeclaredMethod(
@@ -78,7 +86,8 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
               boolean.class,
               double[].class
           ).invoke(
-              statestore, stageId, true, new ArrayList<>(), false, new double[]{})).toList().head();
+              statestore, stageId, false, new ArrayList<>(), false, new double[]{}))
+          .toList().head();
     }
   }
 }
