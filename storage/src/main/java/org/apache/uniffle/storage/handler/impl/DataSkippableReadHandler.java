@@ -38,7 +38,6 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
 
   protected Roaring64NavigableMap expectBlockIds;
   protected Roaring64NavigableMap processBlockIds;
-  private boolean isFinished;
 
   protected ShuffleDataDistributionType distributionType;
   protected Roaring64NavigableMap expectTaskIds;
@@ -74,9 +73,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
       try {
         shuffleIndexResult = readShuffleIndex();
       } catch (Exception e) {
-        if (++failTimes >= maxHandlerFailTimes) {
-          isFinished = true;
-        }
+        incrFailTimes();
         throw e;
       }
       if (shuffleIndexResult == null || shuffleIndexResult.isEmpty()) {
@@ -107,9 +104,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
           try {
             result = readShuffleData(segment);
           } catch (Exception e) {
-            if (++failTimes >= maxHandlerFailTimes) {
-              isFinished = true;
-            }
+            incrFailTimes();
             throw e;
           }
           segmentIndex++;
@@ -118,15 +113,15 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
       }
       segmentIndex++;
     }
-    failTimes = 0;
+    if (result == null) {
+      incrFailTimes();
+    } else {
+      failTimes = 0;
+    }
+
     if (segmentIndex >= shuffleDataSegments.size()) {
       isFinished = true;
     }
     return result;
-  }
-
-  @Override
-  public boolean finished() {
-    return isFinished;
   }
 }

@@ -35,7 +35,6 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
   private static final Logger LOG = LoggerFactory.getLogger(MemoryClientReadHandler.class);
   private long lastBlockId = Constants.INVALID_BLOCK_ID;
   private ShuffleServerClient shuffleServerClient;
-  private boolean isFinished;
 
   public MemoryClientReadHandler(
       String appId,
@@ -65,9 +64,7 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
       result = new ShuffleDataResult(response.getData(), response.getBufferSegments());
       failTimes = 0;
     } catch (Exception e) {
-      if (++failTimes >= maxHandlerFailTimes) {
-        isFinished = true;
-      }
+      incrFailTimes();
       throw new RssException("Failed to read in memory shuffle data with "
           + shuffleServerClient.getClientInfo() + " due to " + e);
     }
@@ -81,10 +78,5 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
     }
 
     return result;
-  }
-
-  @Override
-  public boolean finished() {
-    return isFinished;
   }
 }

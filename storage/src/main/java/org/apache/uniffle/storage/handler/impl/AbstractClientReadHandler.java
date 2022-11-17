@@ -29,6 +29,7 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
   protected int readBufferSize;
   protected int failTimes;
   protected int maxHandlerFailTimes;
+  protected boolean isFinished;
 
   @Override
   public ShuffleDataResult readShuffleData() {
@@ -50,5 +51,16 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
   @Override
   public void nextRound() {
 
+  }
+
+  protected void incrFailTimes() {
+    if (++failTimes >= maxHandlerFailTimes) {
+      isFinished = true;
+    }
+  }
+
+  @Override
+  public boolean finished() {
+    return isFinished;
   }
 }
