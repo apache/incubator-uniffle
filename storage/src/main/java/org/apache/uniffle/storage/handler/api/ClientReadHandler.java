@@ -35,6 +35,10 @@ public interface ClientReadHandler {
   // Display the statistics of consumed blocks
   void logConsumedBlockInfo();
 
+  /**
+   * If blocks read inconsistent, we need try again.
+   * And maybe we need do something before try again.
+   */
   void nextRound();
 
   boolean finished();

@@ -113,6 +113,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
       }
       segmentIndex++;
     }
+    // if result is null, it means exception was catched when read shuffle data.
     if (result == null) {
       incrFailTimes();
     } else {

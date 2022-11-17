@@ -28,6 +28,14 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
 
+/**
+ * Composed read handler for all storage types and all replicas.
+ * 1.The storage types reading order is as follows: HOT -> WARM -> COLD -> FROZEN
+ * 2.If blocks read inconsistent in the client of upper level. {@link ComposedClientReadHandler#nextRound}
+ *   will be invoked and start read from HOT storage.
+ * 3.Each storage handler determines how to read their replicas.
+ * @see <a href="https://github.com/apache/incubator-uniffle/pull/276">PR-276</a>
+ */
 public class ComposedClientReadHandler implements ClientReadHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(ComposedClientReadHandler.class);
@@ -228,6 +236,10 @@ public class ComposedClientReadHandler implements ClientReadHandler {
     LOG.info(getReadUncompressLengthInfo());
   }
 
+  /**
+   * If blocks read inconsistent, we need try again.
+   * And the low-level handlers may need do something before try.
+   */
   @Override
   public void nextRound() {
     currentHandler = HOT;

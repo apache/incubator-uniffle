@@ -137,7 +137,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     this(storageType, appId, shuffleId, partitionId, indexReadLimit,
         partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
         blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf,
-        idHelper, ShuffleDataDistributionType.NORMAL, DEFAULT_MAX_FAIL_TIMES);
+        idHelper, ShuffleDataDistributionType.NORMAL, 3);
   }
 
   @Override
@@ -155,6 +155,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     // if need request new data from shuffle server
     if (bufferSegmentQueue.isEmpty()) {
       while (read() <= 0) {
+        // read until all handlers finished
         if (clientReadHandler.finished()) {
           return null;
         }
