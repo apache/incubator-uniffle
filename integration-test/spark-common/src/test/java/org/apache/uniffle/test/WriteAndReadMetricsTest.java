@@ -72,9 +72,8 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
               "stageData",
               int.class,
               boolean.class
-          ).invoke(
-              statestore, stageId, false)).
-          toList().head();
+          ).invoke(statestore, stageId, false))
+          .toList().head();
     } catch (Exception e) {
       return ((Seq<StageData>)statestore
           .getClass()
