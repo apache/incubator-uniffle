@@ -352,7 +352,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     String msg = "Error happened when registerShuffle with appId[" + appId + "], shuffleId[" + shuffleId
         + "], " + shuffleServerInfo;
     throwExceptionIfNecessary(response, msg);
-    registerShuffleServer(appId, shuffleId, shuffleServerInfo);
+    addShuffleServer(appId, shuffleId, shuffleServerInfo);
   }
 
   @Override
@@ -655,7 +655,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       if (executorService != null) {
         executorService.shutdownNow();
       }
-      unRegisterShuffleServer(appId, shuffleId);
+      removeShuffleServer(appId, shuffleId);
     }
   }
 
@@ -684,7 +684,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   @VisibleForTesting
-  void registerShuffleServer(String appId, int shuffleId, ShuffleServerInfo serverInfo) {
+  void addShuffleServer(String appId, int shuffleId, ShuffleServerInfo serverInfo) {
     Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
     if (appServerMap == null) {
       appServerMap = Maps.newConcurrentMap();
@@ -699,7 +699,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   @VisibleForTesting
-  void unRegisterShuffleServer(String appId, int shuffleId) {
+  void removeShuffleServer(String appId, int shuffleId) {
     Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
     if (appServerMap != null) {
       appServerMap.remove(shuffleId);

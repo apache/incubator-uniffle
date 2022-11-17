@@ -67,12 +67,12 @@ public class ShuffleWriteClientImplTest {
     ShuffleServerInfo server1 = new ShuffleServerInfo("host1-0", "host1", 0);
     ShuffleServerInfo server2 = new ShuffleServerInfo("host2-0", "host2", 0);
     ShuffleServerInfo server3 = new ShuffleServerInfo("host3-0", "host3", 0);
-    shuffleWriteClient.registerShuffleServer(appId1, 0, server1);
-    shuffleWriteClient.registerShuffleServer(appId1, 1, server2);
-    shuffleWriteClient.registerShuffleServer(appId2, 1, server3);
+    shuffleWriteClient.addShuffleServer(appId1, 0, server1);
+    shuffleWriteClient.addShuffleServer(appId1, 1, server2);
+    shuffleWriteClient.addShuffleServer(appId2, 1, server3);
     assertEquals(2, shuffleWriteClient.getAllShuffleServers(appId1).size());
     assertEquals(1, shuffleWriteClient.getAllShuffleServers(appId2).size());
-    shuffleWriteClient.registerShuffleServer(appId1, 1, server1);
+    shuffleWriteClient.addShuffleServer(appId1, 1, server1);
     shuffleWriteClient.unregisterShuffle(appId1, 1);
     assertEquals(1, shuffleWriteClient.getAllShuffleServers(appId1).size());
   }
