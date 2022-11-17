@@ -172,8 +172,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     throw new RssException("Send commit to host[" + host + "], port[" + port + "] failed");
   }
 
-  private AppHeartBeatResponse doSendHeartBeat(String appId, long timeout, String user) {
-    AppHeartBeatRequest request = AppHeartBeatRequest.newBuilder().setAppId(appId).setUser(user).build();
+  private AppHeartBeatResponse doSendHeartBeat(String appId, long timeout) {
+    AppHeartBeatRequest request = AppHeartBeatRequest.newBuilder().setAppId(appId).build();
     return blockingStub.withDeadlineAfter(timeout, TimeUnit.MILLISECONDS).appHeartbeat(request);
   }
 
@@ -366,12 +366,10 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
 
   @Override
   public RssAppHeartBeatResponse sendHeartBeat(RssAppHeartBeatRequest request) {
-    AppHeartBeatResponse appHeartBeatResponse = doSendHeartBeat(
-        request.getAppId(), request.getTimeoutMs(), request.getUser());
+    AppHeartBeatResponse appHeartBeatResponse = doSendHeartBeat(request.getAppId(), request.getTimeoutMs());
     if (appHeartBeatResponse.getStatus() != StatusCode.SUCCESS) {
       String msg = "Can't send heartbeat to " + host + ":" + port
-          + " for [appId=" + request.getAppId() + ", user=" + request.getUser()
-          + ", timeout=" + request.getTimeoutMs() + "ms], "
+          + " for [appId=" + request.getAppId() + ", timeout=" + request.getTimeoutMs() + "ms], "
           + "errorMsg:" + appHeartBeatResponse.getRetMsg();
       LOG.error(msg);
       return new RssAppHeartBeatResponse(ResponseStatusCode.INTERNAL_ERROR);

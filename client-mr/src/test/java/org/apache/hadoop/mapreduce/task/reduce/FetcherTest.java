@@ -377,7 +377,12 @@ public class FetcherTest {
     }
 
     @Override
-    public void sendAppHeartbeat(String appId, long timeoutMs, String user) {
+    public void sendAppHeartbeat(String appId, long timeoutMs) {
+
+    }
+
+    @Override
+    public void registerApplicationInfo(String appId, long timeoutMs, String user) {
 
     }
 

@@ -22,7 +22,7 @@ import io.prometheus.client.CollectorRegistry;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
-import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
+import org.apache.uniffle.client.request.RssApplicationInfoRequest;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.rpc.GrpcServer;
@@ -40,10 +40,10 @@ public class CoordinatorGrpcServerTest {
 
   static class MockedCoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorServerImplBase {
     @Override
-    public void appHeartbeat(
-        RssProtos.AppHeartBeatRequest request,
-        StreamObserver<RssProtos.AppHeartBeatResponse> responseObserver) {
-      RssProtos.AppHeartBeatResponse response = RssProtos.AppHeartBeatResponse
+    public void registerApplicationInfo(
+        RssProtos.ApplicationInfoRequest request,
+        StreamObserver<RssProtos.ApplicationInfoResponse> responseObserver) {
+      RssProtos.ApplicationInfoResponse response = RssProtos.ApplicationInfoResponse
           .newBuilder()
           .setRetMsg("")
           .setStatus(RssProtos.StatusCode.SUCCESS)
@@ -69,8 +69,8 @@ public class CoordinatorGrpcServerTest {
     assertEquals(0, connSize);
 
     CoordinatorGrpcClient coordinatorGrpcClient = new CoordinatorGrpcClient("localhost", 20001);
-    coordinatorGrpcClient.sendAppHeartBeat(
-        new RssAppHeartBeatRequest("testGrpcConnectionSize", 10000, "user"));
+    coordinatorGrpcClient.sendApplicationInfo(
+        new RssApplicationInfoRequest("testGrpcConnectionSize", 10000, "user"));
 
     connSize = grpcMetrics.getGaugeMap().get(GRCP_SERVER_CONNECTION_NUMBER_KEY).get();
     assertEquals(1, connSize);
@@ -78,8 +78,8 @@ public class CoordinatorGrpcServerTest {
     // case2: test the multiple connections
     CoordinatorGrpcClient client1 = new CoordinatorGrpcClient("localhost", 20001);
     CoordinatorGrpcClient client2 = new CoordinatorGrpcClient("localhost", 20001);
-    client1.sendAppHeartBeat(new RssAppHeartBeatRequest("testGrpcConnectionSize", 10000, "user"));
-    client2.sendAppHeartBeat(new RssAppHeartBeatRequest("testGrpcConnectionSize", 10000, "user"));
+    client1.sendApplicationInfo(new RssApplicationInfoRequest("testGrpcConnectionSize", 10000, "user"));
+    client2.sendApplicationInfo(new RssApplicationInfoRequest("testGrpcConnectionSize", 10000, "user"));
 
     connSize = grpcMetrics.getGaugeMap().get(GRCP_SERVER_CONNECTION_NUMBER_KEY).get();
     assertEquals(3, connSize);

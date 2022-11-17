@@ -288,7 +288,7 @@ service CoordinatorServer {
   rpc reportClientOperation(ReportShuffleClientOpRequest) returns (ReportShuffleClientOpResponse);
 
   // Heartbeat between Shuffle Application and Coordinator Server
-  rpc appHeartbeat(AppHeartBeatRequest) returns (AppHeartBeatResponse);
+  rpc registerApplicationInfo(ApplicationInfoRequest) returns (ApplicationInfoResponse);
 
   // Access to the remote shuffle service cluster
   rpc accessCluster(AccessClusterRequest) returns (AccessClusterResponse);
@@ -302,10 +302,19 @@ service CoordinatorServer {
 
 message AppHeartBeatRequest {
   string appId = 1;
-  string user = 2;
 }
 
 message AppHeartBeatResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
+}
+
+message ApplicationInfoRequest {
+  string appId = 1;
+  string user = 2;
+}
+
+message ApplicationInfoResponse {
   StatusCode status = 1;
   string retMsg = 2;
 }

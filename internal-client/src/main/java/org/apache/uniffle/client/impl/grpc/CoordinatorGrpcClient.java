@@ -35,14 +35,14 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.request.RssAccessClusterRequest;
-import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
+import org.apache.uniffle.client.request.RssApplicationInfoRequest;
 import org.apache.uniffle.client.request.RssFetchClientConfRequest;
 import org.apache.uniffle.client.request.RssFetchRemoteStorageRequest;
 import org.apache.uniffle.client.request.RssGetShuffleAssignmentsRequest;
 import org.apache.uniffle.client.request.RssSendHeartBeatRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
-import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
+import org.apache.uniffle.client.response.RssApplicationInfoResponse;
 import org.apache.uniffle.client.response.RssFetchClientConfResponse;
 import org.apache.uniffle.client.response.RssFetchRemoteStorageResponse;
 import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
@@ -56,8 +56,8 @@ import org.apache.uniffle.proto.CoordinatorServerGrpc.CoordinatorServerBlockingS
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.AccessClusterRequest;
 import org.apache.uniffle.proto.RssProtos.AccessClusterResponse;
-import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
-import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
+import org.apache.uniffle.proto.RssProtos.ApplicationInfoRequest;
+import org.apache.uniffle.proto.RssProtos.ApplicationInfoResponse;
 import org.apache.uniffle.proto.RssProtos.ClientConfItem;
 import org.apache.uniffle.proto.RssProtos.FetchClientConfResponse;
 import org.apache.uniffle.proto.RssProtos.FetchRemoteStorageRequest;
@@ -206,19 +206,19 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
   }
 
   @Override
-  public RssAppHeartBeatResponse sendAppHeartBeat(RssAppHeartBeatRequest request) {
-    AppHeartBeatRequest rpcRequest =
-        AppHeartBeatRequest.newBuilder().setAppId(request.getAppId()).setUser(request.getUser()).build();
-    AppHeartBeatResponse rpcResponse = blockingStub
-        .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS).appHeartbeat(rpcRequest);
-    RssAppHeartBeatResponse response;
+  public RssApplicationInfoResponse sendApplicationInfo(RssApplicationInfoRequest request) {
+    ApplicationInfoRequest rpcRequest =
+        ApplicationInfoRequest.newBuilder().setAppId(request.getAppId()).setUser(request.getUser()).build();
+    ApplicationInfoResponse rpcResponse = blockingStub
+        .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS).registerApplicationInfo(rpcRequest);
+    RssApplicationInfoResponse response;
     StatusCode statusCode = rpcResponse.getStatus();
     switch (statusCode) {
       case SUCCESS:
-        response = new RssAppHeartBeatResponse(ResponseStatusCode.SUCCESS);
+        response = new RssApplicationInfoResponse(ResponseStatusCode.SUCCESS);
         break;
       default:
-        response = new RssAppHeartBeatResponse(ResponseStatusCode.INTERNAL_ERROR);
+        response = new RssApplicationInfoResponse(ResponseStatusCode.INTERNAL_ERROR);
     }
     return response;
   }

@@ -35,7 +35,9 @@ public interface ShuffleWriteClient {
 
   SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList);
 
-  void sendAppHeartbeat(String appId, long timeoutMs, String user);
+  void sendAppHeartbeat(String appId, long timeoutMs);
+
+  void registerApplicationInfo(String appId, long timeoutMs, String user);
 
   void registerShuffle(
       ShuffleServerInfo shuffleServerInfo,

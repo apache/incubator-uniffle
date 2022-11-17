@@ -17,14 +17,16 @@
 
 package org.apache.uniffle.client.request;
 
-public class RssAppHeartBeatRequest {
+public class RssApplicationInfoRequest {
 
   private final String appId;
   private final long timeoutMs;
+  private final String user;
 
-  public RssAppHeartBeatRequest(String appId, long timeoutMs) {
+  public RssApplicationInfoRequest(String appId, long timeoutMs, String user) {
     this.appId = appId;
     this.timeoutMs = timeoutMs;
+    this.user = user;
   }
 
   public String getAppId() {
@@ -35,4 +37,7 @@ public class RssAppHeartBeatRequest {
     return timeoutMs;
   }
 
+  public String getUser() {
+    return user;
+  }
 }

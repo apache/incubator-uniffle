@@ -27,10 +27,10 @@ import com.google.common.collect.Sets;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
+import org.apache.uniffle.client.request.RssApplicationInfoRequest;
 import org.apache.uniffle.client.request.RssGetShuffleAssignmentsRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
-import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
+import org.apache.uniffle.client.response.RssApplicationInfoResponse;
 import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleRegisterInfo;
@@ -200,20 +200,20 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
 
   @Test
   public void appHeartbeatTest() throws Exception {
-    RssAppHeartBeatResponse response =
-        coordinatorClient.sendAppHeartBeat(
-            new RssAppHeartBeatRequest("application_appHeartbeatTest1", 1000, "user"));
+    RssApplicationInfoResponse response =
+        coordinatorClient.sendApplicationInfo(
+            new RssApplicationInfoRequest("application_appHeartbeatTest1", 1000, "user"));
     assertEquals(ResponseStatusCode.SUCCESS, response.getStatusCode());
     assertEquals(Sets.newHashSet("application_appHeartbeatTest1"),
         coordinators.get(0).getApplicationManager().getAppIds());
-    coordinatorClient.sendAppHeartBeat(
-        new RssAppHeartBeatRequest("application_appHeartbeatTest2", 1000, "user"));
+    coordinatorClient.sendApplicationInfo(
+        new RssApplicationInfoRequest("application_appHeartbeatTest2", 1000, "user"));
     assertEquals(Sets.newHashSet("application_appHeartbeatTest1", "application_appHeartbeatTest2"),
         coordinators.get(0).getApplicationManager().getAppIds());
     int retry = 0;
     while (retry < 5) {
-      coordinatorClient.sendAppHeartBeat(
-          new RssAppHeartBeatRequest("application_appHeartbeatTest1", 1000, "user"));
+      coordinatorClient.sendApplicationInfo(
+          new RssApplicationInfoRequest("application_appHeartbeatTest1", 1000, "user"));
       retry++;
       Thread.sleep(1000);
     }

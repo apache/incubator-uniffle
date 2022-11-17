@@ -36,8 +36,8 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.proto.CoordinatorServerGrpc;
 import org.apache.uniffle.proto.RssProtos.AccessClusterRequest;
 import org.apache.uniffle.proto.RssProtos.AccessClusterResponse;
-import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
-import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
+import org.apache.uniffle.proto.RssProtos.ApplicationInfoRequest;
+import org.apache.uniffle.proto.RssProtos.ApplicationInfoResponse;
 import org.apache.uniffle.proto.RssProtos.CheckServiceAvailableResponse;
 import org.apache.uniffle.proto.RssProtos.ClientConfItem;
 import org.apache.uniffle.proto.RssProtos.FetchClientConfResponse;
@@ -196,14 +196,14 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
   }
 
   @Override
-  public void appHeartbeat(
-      AppHeartBeatRequest request,
-      StreamObserver<AppHeartBeatResponse> responseObserver) {
+  public void registerApplicationInfo(
+      ApplicationInfoRequest request,
+      StreamObserver<ApplicationInfoResponse> responseObserver) {
     String appId = request.getAppId();
     String user = request.getUser();
     coordinatorServer.getApplicationManager().refreshAppId(appId, user);
     LOG.debug("Got heartbeat from application: " + appId);
-    AppHeartBeatResponse response = AppHeartBeatResponse
+    ApplicationInfoResponse response = ApplicationInfoResponse
         .newBuilder()
         .setRetMsg("")
         .setStatus(StatusCode.SUCCESS)

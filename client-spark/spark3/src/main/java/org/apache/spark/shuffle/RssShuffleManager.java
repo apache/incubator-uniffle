@@ -659,7 +659,9 @@ public class RssShuffleManager implements ShuffleManager {
       heartBeatScheduledExecutorService.scheduleAtFixedRate(
           () -> {
             try {
-              shuffleWriteClient.sendAppHeartbeat(id.get(), heartbeatTimeout, user);
+              String appId = id.get();
+              shuffleWriteClient.sendAppHeartbeat(appId, heartbeatTimeout);
+              shuffleWriteClient.registerApplicationInfo(appId, heartbeatTimeout, user);
               LOG.info("Finish send heartbeat to coordinator and servers");
             } catch (Exception e) {
               LOG.warn("Fail to send heartbeat to coordinator and servers", e);
