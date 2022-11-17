@@ -82,6 +82,10 @@ public class RssClientConfig {
       "rss.estimate.task.concurrency.dynamic.factor";
   public static final double RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR_DEFAULT_VALUE = 1.0;
 
-  public static final String RSS_ESTIMATE_TASK_CONCURRENCY_ENABLED = "rss.estimate.task.concurrency.enabled";
-  public static final boolean RSS_ESTIMATE_TASK_CONCURRENCY_DEFAULT_VALUE = false;
+  public static final String RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED = "rss.estimate.server.assignment.enabled";
+  public static final boolean RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED_DEFAULT_VALUE = false;
+
+  public static final String RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER = "rss.estimate.task.concurrency.per.server";
+  public static final int RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE = 80;
+
 }

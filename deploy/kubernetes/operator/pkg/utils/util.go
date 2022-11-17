@@ -26,7 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
@@ -34,20 +33,6 @@ import (
 
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/constants"
 )
-
-// CreatePodInformerFactory creates pod informer factory by label selector.
-func CreatePodInformerFactory(kubeClient kubernetes.Interface,
-	key, value string) informers.SharedInformerFactory {
-	option := func(options *metav1.ListOptions) {
-		if len(value) > 0 {
-			options.LabelSelector = key + "=" + value
-		} else {
-			options.LabelSelector = key
-		}
-	}
-	return informers.NewSharedInformerFactoryWithOptions(kubeClient, 0,
-		informers.WithTweakListOptions(option))
-}
 
 // GetCurrentNamespace returns current namespace.
 func GetCurrentNamespace() string {

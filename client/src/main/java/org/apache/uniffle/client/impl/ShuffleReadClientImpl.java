@@ -47,7 +47,6 @@ import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleReadClientImpl.class);
-  public static final int DEFAULT_MAX_FAIL_TIMES = 3;
   private int shuffleId;
   private int partitionId;
   private byte[] readBuffer;
@@ -61,7 +60,6 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private AtomicLong crcCheckTime = new AtomicLong(0);
   private ClientReadHandler clientReadHandler;
   private final IdHelper idHelper;
-  private ShuffleDataDistributionType dataDistributionType = ShuffleDataDistributionType.NORMAL;
 
   public ShuffleReadClientImpl(
       String storageType,
@@ -79,50 +77,6 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       Configuration hadoopConf,
       IdHelper idHelper,
       ShuffleDataDistributionType dataDistributionType,
-      int maxHandlerFailTimes) {
-    this(storageType, appId, shuffleId, partitionId, indexReadLimit,
-        partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
-        blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf, idHelper, maxHandlerFailTimes);
-    this.dataDistributionType = dataDistributionType;
-  }
-
-  // Only for test
-  @VisibleForTesting
-  public ShuffleReadClientImpl(
-      String storageType,
-      String appId,
-      int shuffleId,
-      int partitionId,
-      int indexReadLimit,
-      int partitionNumPerRange,
-      int partitionNum,
-      int readBufferSize,
-      String storageBasePath,
-      Roaring64NavigableMap blockIdBitmap,
-      Roaring64NavigableMap taskIdBitmap,
-      List<ShuffleServerInfo> shuffleServerInfoList,
-      Configuration hadoopConf,
-      IdHelper idHelper) {
-    this(storageType, appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange,
-        partitionNum, readBufferSize, storageBasePath, blockIdBitmap, taskIdBitmap,
-        shuffleServerInfoList, hadoopConf, idHelper, DEFAULT_MAX_FAIL_TIMES);
-  }
-
-  public ShuffleReadClientImpl(
-      String storageType,
-      String appId,
-      int shuffleId,
-      int partitionId,
-      int indexReadLimit,
-      int partitionNumPerRange,
-      int partitionNum,
-      int readBufferSize,
-      String storageBasePath,
-      Roaring64NavigableMap blockIdBitmap,
-      Roaring64NavigableMap taskIdBitmap,
-      List<ShuffleServerInfo> shuffleServerInfoList,
-      Configuration hadoopConf,
-      IdHelper idHelper,
       int maxHandlerFailTimes) {
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -163,6 +117,27 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     pendingBlockIds = RssUtils.cloneBitMap(blockIdBitmap);
 
     clientReadHandler = ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
+  }
+
+  public ShuffleReadClientImpl(
+      String storageType,
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int indexReadLimit,
+      int partitionNumPerRange,
+      int partitionNum,
+      int readBufferSize,
+      String storageBasePath,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap taskIdBitmap,
+      List<ShuffleServerInfo> shuffleServerInfoList,
+      Configuration hadoopConf,
+      IdHelper idHelper) {
+    this(storageType, appId, shuffleId, partitionId, indexReadLimit,
+        partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
+        blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf,
+        idHelper, ShuffleDataDistributionType.NORMAL, DEFAULT_MAX_FAIL_TIMES);
   }
 
   @Override
