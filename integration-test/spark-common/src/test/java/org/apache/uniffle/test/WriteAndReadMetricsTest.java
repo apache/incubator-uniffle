@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.test;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,8 +27,10 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
+import org.apache.spark.status.AppStatusStore;
 import org.apache.spark.status.api.v1.StageData;
 import org.junit.jupiter.api.Test;
+import scala.collection.Seq;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -51,16 +55,30 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
     Map<String, Integer> result = new HashMap<>();
     result.put("size", list.size());
 
-    List<StageData> stageData =
-        scala.collection.JavaConverters.seqAsJavaList(spark.sparkContext().statusStore().stageData(0, false));
-    long writeRecords = stageData.get(0).shuffleWriteRecords();
-
-    stageData =
-        scala.collection.JavaConverters.seqAsJavaList(spark.sparkContext().statusStore().stageData(1, false));
-    long readRecords = stageData.get(0).shuffleReadRecords();
-
+    long writeRecords = getFirstStageData(spark, 0).shuffleWriteRecords();
+    long readRecords = getFirstStageData(spark, 1).shuffleReadRecords();
     assertEquals(writeRecords, readRecords);
 
     return result;
+  }
+
+  private StageData getFirstStageData(SparkSession spark, int stageId)
+      throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    try {
+      return spark.sparkContext().statusStore().stageData(stageId, false).toList().head();
+    } catch (Exception e) {
+      AppStatusStore statestore = spark.sparkContext().statusStore();
+      return ((Seq<StageData>)statestore
+          .getClass()
+          .getDeclaredMethod(
+              "stageData",
+              int.class,
+              boolean.class,
+              List.class,
+              boolean.class,
+              double[].class
+          ).invoke(
+              statestore, stageId, true, new ArrayList<>(), false, new double[]{})).toList().head();
+    }
   }
 }

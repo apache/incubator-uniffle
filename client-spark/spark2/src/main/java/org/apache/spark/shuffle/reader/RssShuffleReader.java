@@ -117,7 +117,6 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         appId, shuffleId, startPartition, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf);
     ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
-    context.taskMetrics().createTempShuffleReadMetrics();
     RssShuffleDataIterator rssShuffleDataIterator = new RssShuffleDataIterator<K, C>(
         shuffleDependency.serializer(), shuffleReadClient,
         new ReadMetrics(context.taskMetrics().createTempShuffleReadMetrics()), rssConf);
