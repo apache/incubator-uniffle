@@ -32,10 +32,10 @@ public class ShuffleServerGrpcMetricsTest {
     metrics.register(new CollectorRegistry(true));
     metrics.recordTransportTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, 1000);
     metrics.recordTransportTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, 500);
-    metrics.recordTransportTime(ShuffleServerGrpcMetrics.GET_IN_MEMORY_SHUFFLE_DATA_METHOD, 200);
+    metrics.recordTransportTime(ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD, 200);
     metrics.recordProcessTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, 1000);
     metrics.recordProcessTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, 500);
-    metrics.recordProcessTime(ShuffleServerGrpcMetrics.GET_IN_MEMORY_SHUFFLE_DATA_METHOD, 200);
+    metrics.recordProcessTime(ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD, 200);
     Map<String, Summary> sendTimeSummaryTime = metrics.getTransportTimeSummaryMap();
     Map<String, Summary> processTimeSummaryTime = metrics.getProcessTimeSummaryMap();
     assertEquals(3, sendTimeSummaryTime.size());
@@ -46,14 +46,14 @@ public class ShuffleServerGrpcMetricsTest {
     assertEquals(0.5D, sendTimeSummaryTime.get(
         ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD).get().sum);
     assertEquals(0.2D, sendTimeSummaryTime.get(
-        ShuffleServerGrpcMetrics.GET_IN_MEMORY_SHUFFLE_DATA_METHOD).get().sum);
+        ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD).get().sum);
 
     assertEquals(1D, processTimeSummaryTime.get(
         ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD).get().sum);
     assertEquals(0.5D, processTimeSummaryTime.get(
         ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD).get().sum);
     assertEquals(0.2D, processTimeSummaryTime.get(
-        ShuffleServerGrpcMetrics.GET_IN_MEMORY_SHUFFLE_DATA_METHOD).get().sum);
+        ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD).get().sum);
   }
 
 }

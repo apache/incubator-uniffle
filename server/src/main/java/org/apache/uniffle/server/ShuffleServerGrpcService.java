@@ -639,7 +639,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       long transportTime = System.currentTimeMillis() - timestamp;
       if (transportTime > 0) {
         shuffleServer.getGrpcMetrics().recordTransportTime(
-            ShuffleServerGrpcMetrics.GET_IN_MEMORY_SHUFFLE_DATA_METHOD, transportTime);
+            ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD, transportTime);
       }
     }
     long start = System.currentTimeMillis();
@@ -664,7 +664,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         }
         long costTime = System.currentTimeMillis() - start;
         shuffleServer.getGrpcMetrics().recordProcessTime(
-            ShuffleServerGrpcMetrics.GET_IN_MEMORY_SHUFFLE_DATA_METHOD, costTime);
+            ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD, costTime);
         LOG.info("Successfully getInMemoryShuffleData cost {} ms with {} bytes shuffle"
             + " data for {}", costTime, data.length, requestInfo);
 
