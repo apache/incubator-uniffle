@@ -72,8 +72,7 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
               "stageData",
               int.class,
               boolean.class
-          ).invoke(statestore, stageId, false))
-          .toList().head();
+          ).invoke(statestore, stageId, false)).toList().head();
     } catch (Exception e) {
       return ((Seq<StageData>)statestore
           .getClass()
@@ -85,8 +84,7 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
               boolean.class,
               double[].class
           ).invoke(
-              statestore, stageId, false, new ArrayList<>(), false, new double[]{}))
-          .toList().head();
+              statestore, stageId, false, new ArrayList<>(), false, new double[]{})).toList().head();
     }
   }
 }
