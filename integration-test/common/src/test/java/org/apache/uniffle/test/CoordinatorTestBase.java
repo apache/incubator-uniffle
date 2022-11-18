@@ -31,7 +31,7 @@ public class CoordinatorTestBase extends IntegrationTestBase {
   public void createClient() {
     coordinatorClient =
         (CoordinatorGrpcClient) CoordinatorClientFactory.getInstance().createCoordinatorClient("GRPC",
-            LOCALHOST + ":" + COORDINATOR_PORT_1);
+            LOCALHOST + ":" + COORDINATOR_PORT_1).get(0);
   }
 
   @AfterEach
