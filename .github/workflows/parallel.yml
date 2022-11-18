@@ -80,7 +80,7 @@ jobs:
     - name: Set up Go 1.16
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.15
+          go-version: 1.16
     - name: Execute maven with -P${{ matrix.profile }}
       if: ${{ !inputs.experimental }}
       run: mvn -B -fae -P${{ matrix.profile }} ${{ inputs.maven-args }} | tee /tmp/maven.log
