@@ -60,5 +60,5 @@ jobs:
   package:
     uses: ./.github/workflows/parallel.yml
     with:
-      maven-args: package
+      maven-args: package -DskipTests
       reports-path: "**/target/surefire-reports/*.txt"
