@@ -18,7 +18,6 @@
 #
 
 set -e
-set -o pipefail
 set -u
 
 for filename in config/crd/bases/*.yaml; do
