@@ -203,7 +203,10 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
             shuffleDependency.serializer(), shuffleReadClient,
             readMetrics);
         CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>> completionIterator =
-            CompletionIterator$.MODULE$.apply(iterator, () -> iterator.cleanup());
+            CompletionIterator$.MODULE$.apply(iterator, () -> {
+              context.taskMetrics().mergeShuffleReadMetrics();
+              return iterator.cleanup();
+            });
         iterators.add(completionIterator);
       }
       iterator = iterators.iterator();

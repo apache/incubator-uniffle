@@ -55,7 +55,8 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
   private Input deserializationInput = null;
   private DeserializationStream deserializationStream = null;
   private ByteBufInputStream byteBufInputStream = null;
-  private long unCompressionLength = 0;
+  private long compressedBytesLength = 0;
+  private long unCompressedBytesLength = 0;
   private ByteBuffer uncompressedData;
 
   public RssShuffleDataIterator(
@@ -108,8 +109,10 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       long fetchDuration = System.currentTimeMillis() - startFetch;
       shuffleReadMetrics.incFetchWaitTime(fetchDuration);
       if (compressedData != null) {
-        shuffleReadMetrics.incRemoteBytesRead(compressedData.limit() - compressedData.position());
-        // Directbytebuffers are not collected in time will cause executor easy 
+        long compressedDataLength = compressedData.limit() - compressedData.position();
+        compressedBytesLength += compressedDataLength;
+        shuffleReadMetrics.incRemoteBytesRead(compressedDataLength);
+        // Directbytebuffers are not collected in time will cause executor easy
         // be killed by cluster managers(such as YARN) for using too much offheap memory
         if (uncompressedData != null && uncompressedData.isDirect()) {
           try {
@@ -121,7 +124,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
         long startDecompress = System.currentTimeMillis();
         uncompressedData = RssShuffleUtils.decompressData(
             compressedData, compressedBlock.getUncompressLength());
-        unCompressionLength += compressedBlock.getUncompressLength();
+        unCompressedBytesLength += compressedBlock.getUncompressLength();
         long decompressDuration = System.currentTimeMillis() - startDecompress;
         decompressTime += decompressDuration;
         // create new iterator for shuffle data
@@ -134,9 +137,9 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
         // finish reading records, check data consistent
         shuffleReadClient.checkProcessedBlockIds();
         shuffleReadClient.logStatics();
-        LOG.info("Fetch " + shuffleReadMetrics.remoteBytesRead() + " bytes cost " + readTime + " ms and "
+        LOG.info("Fetch " + compressedBytesLength + " bytes cost " + readTime + " ms and "
             + serializeTime + " ms to serialize, " + decompressTime + " ms to decompress with unCompressionLength["
-            + unCompressionLength + "]");
+            + unCompressedBytesLength + "]");
         return false;
       }
     }
