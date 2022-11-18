@@ -63,6 +63,7 @@ jobs:
           - spark3.2
           - spark3.2.0
           - mr
+          - kubernetes
       fail-fast: false
     name: -P${{ matrix.profile }}
     steps:
@@ -76,6 +77,10 @@ jobs:
         java-version: ${{ inputs.java-version }}
         distribution: ${{ inputs.jdk-distro }}
         cache: maven
+    - name: Set up Go 1.16
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.15
     - name: Execute maven with -P${{ matrix.profile }}
       if: ${{ !inputs.experimental }}
       run: mvn -B -fae -P${{ matrix.profile }} ${{ inputs.maven-args }} | tee /tmp/maven.log

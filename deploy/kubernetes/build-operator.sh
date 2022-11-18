@@ -18,3 +18,4 @@
 #
 
 echo "Build kubernetes operator..."
+cd operator && make build
