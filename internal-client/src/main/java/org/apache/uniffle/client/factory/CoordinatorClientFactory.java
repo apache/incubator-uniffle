@@ -88,4 +88,8 @@ public class CoordinatorClientFactory {
         coordinatorClients.stream().map(CoordinatorClient::getDesc).collect(Collectors.joining(", ")));
     return coordinatorClients;
   }
+
+  public void cleanupCache() {
+    this.clients = Maps.newConcurrentMap();
+  }
 }

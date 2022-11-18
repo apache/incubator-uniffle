@@ -29,6 +29,7 @@ public class CoordinatorTestBase extends IntegrationTestBase {
 
   @BeforeEach
   public void createClient() {
+    CoordinatorClientFactory.getInstance().cleanupCache();
     coordinatorClient =
         (CoordinatorGrpcClient) CoordinatorClientFactory.getInstance().createCoordinatorClient("GRPC",
             LOCALHOST + ":" + COORDINATOR_PORT_1).get(0);
