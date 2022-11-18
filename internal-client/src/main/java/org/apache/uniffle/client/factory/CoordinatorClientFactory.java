@@ -19,35 +19,43 @@ package org.apache.uniffle.client.factory;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
 import org.apache.uniffle.client.util.ClientType;
+import org.apache.uniffle.common.CoordinatorInfo;
 
 public class CoordinatorClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorClientFactory.class);
 
-  private String clientType;
+  private Map<String, Map<CoordinatorInfo, CoordinatorClient>> clients;
 
-  public CoordinatorClientFactory(String clientType) {
-    this.clientType = clientType;
+  private static class LazyHolder {
+    static final CoordinatorClientFactory INSTANCE = new CoordinatorClientFactory();
   }
 
-  public CoordinatorClient createCoordinatorClient(String host, int port) {
-    if (clientType.equalsIgnoreCase(ClientType.GRPC.name())) {
-      return new CoordinatorGrpcClient(host, port);
-    } else {
+  private CoordinatorClientFactory() {
+    clients = Maps.newConcurrentMap();
+  }
+
+  public static CoordinatorClientFactory getInstance() {
+    return LazyHolder.INSTANCE;
+  }
+
+  public List<CoordinatorClient> createCoordinatorClient(String clientType, String coordinators) {
+    LOG.info("Start to create coordinator clients from {}", coordinators);
+
+    if (!clientType.equalsIgnoreCase(ClientType.GRPC.name())) {
       throw new UnsupportedOperationException("Unsupported client type " + clientType);
     }
-  }
 
-  public List<CoordinatorClient> createCoordinatorClient(String coordinators) {
-    LOG.info("Start to create coordinator clients from {}", coordinators);
     List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
     String[] coordinatorList = coordinators.trim().split(",");
     if (coordinatorList.length <= 0) {
@@ -66,7 +74,13 @@ public class CoordinatorClientFactory {
 
       String host = ipPort[0];
       int port = Integer.parseInt(ipPort[1]);
-      CoordinatorClient coordinatorClient = createCoordinatorClient(host, port);
+
+      clients.putIfAbsent(clientType, Maps.newConcurrentMap());
+      Map<CoordinatorInfo, CoordinatorClient> cache = clients.get(clientType);
+      CoordinatorInfo coordinatorInfo = new CoordinatorInfo(host, port);
+      cache.computeIfAbsent(coordinatorInfo, (x) -> new CoordinatorGrpcClient(host, port));
+
+      CoordinatorClient coordinatorClient = cache.get(coordinatorInfo);
       coordinatorClients.add(coordinatorClient);
       LOG.info("Add coordinator client {}", coordinatorClient.getDesc());
     }

@@ -25,13 +25,13 @@ import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
 
 public class CoordinatorTestBase extends IntegrationTestBase {
 
-  protected CoordinatorClientFactory factory = new CoordinatorClientFactory("GRPC");
   protected CoordinatorGrpcClient coordinatorClient;
 
   @BeforeEach
   public void createClient() {
     coordinatorClient =
-        (CoordinatorGrpcClient) factory.createCoordinatorClient(LOCALHOST, COORDINATOR_PORT_1);
+        (CoordinatorGrpcClient) CoordinatorClientFactory.getInstance().createCoordinatorClient("GRPC",
+            LOCALHOST + ":" + COORDINATOR_PORT_1);
   }
 
   @AfterEach

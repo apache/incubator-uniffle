@@ -57,9 +57,12 @@ public class RegisterHeartBeat {
     this.heartBeatInterval = conf.getLong(ShuffleServerConf.SERVER_HEARTBEAT_INTERVAL);
     this.heartBeatTimeout = conf.getLong(ShuffleServerConf.SERVER_HEARTBEAT_TIMEOUT);
     this.coordinatorQuorum = conf.getString(ShuffleServerConf.RSS_COORDINATOR_QUORUM);
-    CoordinatorClientFactory factory =
-        new CoordinatorClientFactory(conf.getString(ShuffleServerConf.RSS_CLIENT_TYPE));
-    this.coordinatorClients = factory.createCoordinatorClient(this.coordinatorQuorum);
+    this.coordinatorClients = CoordinatorClientFactory
+        .getInstance()
+        .createCoordinatorClient(
+            conf.getString(ShuffleServerConf.RSS_CLIENT_TYPE),
+            coordinatorQuorum
+        );
     this.shuffleServer = shuffleServer;
     this.heartBeatExecutorService = Executors.newFixedThreadPool(
         conf.getInteger(ShuffleServerConf.SERVER_HEARTBEAT_THREAD_NUM),

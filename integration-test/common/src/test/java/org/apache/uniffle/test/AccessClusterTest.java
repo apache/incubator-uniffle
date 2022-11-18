@@ -154,8 +154,8 @@ public class AccessClusterTest extends CoordinatorTestBase {
     shuffleServer.start();
     Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
 
-    CoordinatorClient client = new CoordinatorClientFactory("GRPC")
-        .createCoordinatorClient(LOCALHOST, COORDINATOR_PORT_1 + 13);
+    CoordinatorClient client = CoordinatorClientFactory.getInstance()
+        .createCoordinatorClient("GRPC", LOCALHOST + ":" + COORDINATOR_PORT_1 + 13).get(0);
     request = new RssAccessClusterRequest(
         accessId, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000);
     response = client.accessCluster(request);

@@ -77,8 +77,7 @@ public class RssSparkShuffleUtils {
   public static List<CoordinatorClient> createCoordinatorClients(SparkConf sparkConf) throws RuntimeException {
     String clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
     String coordinators = sparkConf.get(RssSparkConfig.RSS_COORDINATOR_QUORUM);
-    CoordinatorClientFactory coordinatorClientFactory = new CoordinatorClientFactory(clientType);
-    return coordinatorClientFactory.createCoordinatorClient(coordinators);
+    return CoordinatorClientFactory.getInstance().createCoordinatorClient(clientType, coordinators);
   }
 
   public static void applyDynamicClientConf(SparkConf sparkConf, Map<String, String> confItems) {

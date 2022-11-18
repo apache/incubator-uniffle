@@ -89,7 +89,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
   //appId -> shuffleId -> servers
   private Map<String, Map<Integer, Set<ShuffleServerInfo>>> shuffleServerInfoMap = Maps.newConcurrentMap();
-  private CoordinatorClientFactory coordinatorClientFactory;
   private ExecutorService heartBeatExecutorService;
   private int replica;
   private int replicaWrite;
@@ -116,7 +115,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     this.clientType = clientType;
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
-    this.coordinatorClientFactory = new CoordinatorClientFactory(clientType);
     this.heartBeatExecutorService = Executors.newFixedThreadPool(heartBeatThreadNum,
         ThreadUtils.getThreadFactory("client-heartbeat-%d"));
     this.replica = replica;
@@ -357,7 +355,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @Override
   public void registerCoordinators(String coordinators) {
-    List<CoordinatorClient> clients = coordinatorClientFactory.createCoordinatorClient(coordinators);
+    List<CoordinatorClient> clients = CoordinatorClientFactory
+        .getInstance()
+        .createCoordinatorClient(clientType, coordinators);
     coordinatorClients.addAll(clients);
   }
 
