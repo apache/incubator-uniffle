@@ -18,4 +18,6 @@
 #
 
 echo "Build and Test kubernetes operator..."
+
+# todo: separate the build process from test process, we need to modify the Makefile
 cd operator && make build
