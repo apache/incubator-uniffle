@@ -22,6 +22,8 @@ import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
@@ -32,6 +34,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class FixedSizeSegmentSplitterTest {
+
+  @ParameterizedTest
+  @ValueSource(ints = {48, 49, 57})
+  public void testAvoidEOFException(int dataLength) {
+    SegmentSplitter splitter = new FixedSizeSegmentSplitter(1000);
+    byte[] data = generateData(
+        Pair.of(32, 0),
+        Pair.of(16, 0),
+        Pair.of(10, 0)
+    );
+
+    List<ShuffleDataSegment> shuffleDataSegments = splitter.split(new ShuffleIndexResult(data, dataLength));
+    assertEquals(1, shuffleDataSegments.size());
+    assertEquals(0, shuffleDataSegments.get(0).getOffset());
+    assertEquals(48, shuffleDataSegments.get(0).getLength());
+  }
 
   @Test
   public void testSplit() {

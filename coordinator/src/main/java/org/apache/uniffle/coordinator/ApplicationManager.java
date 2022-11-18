@@ -50,7 +50,6 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ThreadUtils;
-import org.apache.uniffle.coordinator.LowestIOSampleCostSelectStorageStrategy.RankValue;
 
 public class ApplicationManager {
 

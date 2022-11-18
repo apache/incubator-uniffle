@@ -76,6 +76,7 @@ message GetLocalShuffleDataRequest {
   int32 partitionNum = 5;
   int64 offset = 6;
   int32 length = 7;
+  int64 timestamp = 8;
 }
 
 message GetLocalShuffleDataResponse {
@@ -90,6 +91,7 @@ message GetMemoryShuffleDataRequest {
   int32 partitionId = 3;
   int64 lastBlockId = 4;
   int32 readBufferSize = 5;
+  int64 timestamp = 6;
 }
 
 message GetMemoryShuffleDataResponse {
@@ -195,6 +197,7 @@ message SendShuffleDataRequest {
   int32 shuffleId = 2;
   int64 requireBufferId = 3;
   repeated ShuffleData shuffleData = 4;
+  int64 timestamp = 5;
 }
 
 message SendShuffleDataResponse {

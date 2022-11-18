@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.client.impl;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -88,7 +89,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private int retryMax;
   private long retryIntervalMax;
   private List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
-  private Set<ShuffleServerInfo> shuffleServerInfoSet = Sets.newConcurrentHashSet();
+  //appId -> shuffleId -> servers
+  private Map<String, Map<Integer, Set<ShuffleServerInfo>>> shuffleServerInfoMap = Maps.newConcurrentMap();
   private CoordinatorClientFactory coordinatorClientFactory;
   private ExecutorService heartBeatExecutorService;
   private int replica;
@@ -352,7 +354,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     String msg = "Error happened when registerShuffle with appId[" + appId + "], shuffleId[" + shuffleId
         + "], " + shuffleServerInfo;
     throwExceptionIfNecessary(response, msg);
-    shuffleServerInfoSet.add(shuffleServerInfo);
+    addShuffleServer(appId, shuffleId, shuffleServerInfo);
   }
 
   @Override
@@ -575,7 +577,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   public void sendAppHeartbeat(String appId, long timeoutMs) {
     RssAppHeartBeatRequest request = new RssAppHeartBeatRequest(appId, timeoutMs);
     List<Callable<Void>> callableList = Lists.newArrayList();
-    shuffleServerInfoSet.forEach(shuffleServerInfo -> {
+    Set<ShuffleServerInfo> allShuffleServers = getAllShuffleServers(appId);
+    allShuffleServers.forEach(shuffleServerInfo -> {
           callableList.add(() -> {
             try {
               ShuffleServerClient client =
@@ -606,7 +609,16 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     RssUnregisterShuffleRequest request = new RssUnregisterShuffleRequest(appId, shuffleId);
     List<Callable<Void>> callableList = Lists.newArrayList();
 
-    shuffleServerInfoSet.stream().forEach(shuffleServerInfo -> {
+    Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
+    if (appServerMap == null) {
+      return;
+    }
+    Set<ShuffleServerInfo> shuffleServerInfos = appServerMap.get(shuffleId);
+    if (shuffleServerInfos == null) {
+      return;
+    }
+
+    shuffleServerInfos.forEach(shuffleServerInfo -> {
           callableList.add(() -> {
             try {
               ShuffleServerClient client =
@@ -627,7 +639,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     try {
       executorService =
           Executors.newFixedThreadPool(
-              Math.min(unregisterThreadPoolSize, shuffleServerInfoSet.size()),
+              Math.min(unregisterThreadPoolSize, shuffleServerInfos.size()),
               ThreadUtils.getThreadFactory("unregister-shuffle-%d")
           );
       List<Future<Void>> futures = executorService.invokeAll(callableList, unregisterRequestTimeSec, TimeUnit.SECONDS);
@@ -642,6 +654,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       if (executorService != null) {
         executorService.shutdownNow();
       }
+      removeShuffleServer(appId, shuffleId);
     }
   }
 
@@ -650,6 +663,18 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       LOG.error(errorMsg);
       throw new RssException(errorMsg);
     }
+  }
+
+  Set<ShuffleServerInfo> getAllShuffleServers(String appId) {
+    Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
+    if (appServerMap == null) {
+      return Collections.EMPTY_SET;
+    }
+    Set<ShuffleServerInfo> serverInfos = Sets.newHashSet();
+    appServerMap.values().forEach((serverSet) -> {
+      serverInfos.addAll(serverSet);
+    });
+    return serverInfos;
   }
 
   @VisibleForTesting
@@ -668,6 +693,28 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       }
     } catch (InterruptedException ie) {
       LOG.warn("heartbeat is interrupted", ie);
+    }
+  }
+
+  void addShuffleServer(String appId, int shuffleId, ShuffleServerInfo serverInfo) {
+    Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
+    if (appServerMap == null) {
+      appServerMap = Maps.newConcurrentMap();
+      shuffleServerInfoMap.put(appId, appServerMap);
+    }
+    Set<ShuffleServerInfo> shuffleServerInfos = appServerMap.get(shuffleId);
+    if (shuffleServerInfos == null) {
+      shuffleServerInfos = Sets.newConcurrentHashSet();
+      appServerMap.put(shuffleId, shuffleServerInfos);
+    }
+    shuffleServerInfos.add(serverInfo);
+  }
+
+  @VisibleForTesting
+  void removeShuffleServer(String appId, int shuffleId) {
+    Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
+    if (appServerMap != null) {
+      appServerMap.remove(shuffleId);
     }
   }
 }

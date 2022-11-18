@@ -57,7 +57,8 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
   private Input deserializationInput = null;
   private DeserializationStream deserializationStream = null;
   private ByteBufInputStream byteBufInputStream = null;
-  private long unCompressionLength = 0;
+  private long compressedBytesLength = 0;
+  private long unCompressedBytesLength = 0;
   private ByteBuffer uncompressedData;
   private Codec codec;
 
@@ -120,7 +121,9 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       long fetchDuration = System.currentTimeMillis() - startFetch;
       shuffleReadMetrics.incFetchWaitTime(fetchDuration);
       if (compressedData != null) {
-        shuffleReadMetrics.incRemoteBytesRead(compressedData.limit() - compressedData.position());
+        long compressedDataLength = compressedData.limit() - compressedData.position();
+        compressedBytesLength += compressedDataLength;
+        shuffleReadMetrics.incRemoteBytesRead(compressedDataLength);
 
         int uncompressedLen = compressedBlock.getUncompressLength();
         if (uncompressedData == null || uncompressedData.capacity() < uncompressedLen) {
@@ -129,7 +132,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
         uncompressedData.clear();
         long startDecompress = System.currentTimeMillis();
         codec.decompress(compressedData, uncompressedLen, uncompressedData, 0);
-        unCompressionLength += compressedBlock.getUncompressLength();
+        unCompressedBytesLength += compressedBlock.getUncompressLength();
         long decompressDuration = System.currentTimeMillis() - startDecompress;
         decompressTime += decompressDuration;
         // create new iterator for shuffle data
@@ -142,9 +145,9 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
         // finish reading records, check data consistent
         shuffleReadClient.checkProcessedBlockIds();
         shuffleReadClient.logStatics();
-        LOG.info("Fetch " + shuffleReadMetrics.remoteBytesRead() + " bytes cost " + readTime + " ms and "
+        LOG.info("Fetch " + compressedBytesLength + " bytes cost " + readTime + " ms and "
             + serializeTime + " ms to serialize, " + decompressTime + " ms to decompress with unCompressionLength["
-            + unCompressionLength + "]");
+            + unCompressedBytesLength + "]");
         return false;
       }
     }

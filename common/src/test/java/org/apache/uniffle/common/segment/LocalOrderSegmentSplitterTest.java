@@ -196,6 +196,45 @@ public class LocalOrderSegmentSplitterTest {
 
     assertEquals(74, dataSegments.get(1).getOffset());
     assertEquals(6, dataSegments.get(1).getLength());
+
+    /**
+     * case4
+     */
+    data = generateData(
+        Pair.of(16, 229),
+        Pair.of(16, 230),
+        Pair.of(16, 221),
+        Pair.of(16, 229),
+        Pair.of(16, 230)
+    );
+    taskIds = Roaring64NavigableMap.bitmapOf(230);
+    dataSegments = new LocalOrderSegmentSplitter(taskIds, 10000).split(new ShuffleIndexResult(data, -1));
+    assertEquals(2, dataSegments.size());
+    assertEquals(16, dataSegments.get(0).getOffset());
+    assertEquals(16, dataSegments.get(0).getLength());
+    assertEquals(64, dataSegments.get(1).getOffset());
+    assertEquals(16, dataSegments.get(1).getLength());
+
+    /**
+     * case5
+     */
+    data = generateData(
+        Pair.of(1, 2),
+        Pair.of(1, 3),
+        Pair.of(1, 4),
+        Pair.of(1, 5),
+        Pair.of(1, 6),
+        Pair.of(1, 4),
+        Pair.of(1, 5),
+        Pair.of(1, 6)
+    );
+    taskIds = Roaring64NavigableMap.bitmapOf(2, 3, 4);
+    dataSegments = new LocalOrderSegmentSplitter(taskIds, 10000).split(new ShuffleIndexResult(data, -1));
+    assertEquals(2, dataSegments.size());
+    assertEquals(0, dataSegments.get(0).getOffset());
+    assertEquals(3, dataSegments.get(0).getLength());
+    assertEquals(5, dataSegments.get(1).getOffset());
+    assertEquals(1, dataSegments.get(1).getLength());
   }
 
   public static byte[] generateData(Pair<Integer, Integer>... configEntries) {

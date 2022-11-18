@@ -205,4 +205,40 @@ public class RssMRUtils {
         & MAX_ATTEMPT_ID;
     return (attemptId << (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH)) + mapId;
   }
+
+  public static int estimateTaskConcurrency(JobConf jobConf) {
+    double dynamicFactor = jobConf.getDouble(RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR,
+        RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR_DEFAULT_VALUE);
+    double slowStart = jobConf.getDouble(Constants.MR_SLOW_START, Constants.MR_SLOW_START_DEFAULT_VALUE);
+    int mapNum = jobConf.getNumMapTasks();
+    int reduceNum = jobConf.getNumReduceTasks();
+    int mapLimit = jobConf.getInt(Constants.MR_MAP_LIMIT, Constants.MR_MAP_LIMIT_DEFAULT_VALUE);
+    int reduceLimit = jobConf.getInt(Constants.MR_REDUCE_LIMIT, Constants.MR_REDUCE_LIMIT_DEFAULT_VALUE);
+
+    int estimateMapNum = mapLimit > 0 ? Math.min(mapNum, mapLimit) : mapNum;
+    int estimateReduceNum = reduceLimit > 0 ? Math.min(reduceNum, reduceLimit) : reduceNum;
+    if (slowStart == 1) {
+      return (int) (Math.max(estimateMapNum, estimateReduceNum) * dynamicFactor);
+    } else {
+      return (int) (((1 - slowStart) * estimateMapNum + estimateReduceNum) * dynamicFactor);
+    }
+  }
+
+  public static int getRequiredShuffleServerNumber(JobConf jobConf) {
+    int requiredShuffleServerNumber = jobConf.getInt(
+        RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER,
+        RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER_DEFAULT_VALUE
+    );
+    boolean enabledEstimateServer = jobConf.getBoolean(
+        RssMRConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED,
+        RssMRConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED_DEFAULT_VALUE
+    );
+    if (!enabledEstimateServer || requiredShuffleServerNumber > 0) {
+      return requiredShuffleServerNumber;
+    }
+    int taskConcurrency = estimateTaskConcurrency(jobConf);
+    int taskConcurrencyPerServer = jobConf.getInt(RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER,
+        RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE);
+    return (int) Math.ceil(taskConcurrency * 1.0 / taskConcurrencyPerServer);
+  }
 }

@@ -61,7 +61,6 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private AtomicLong crcCheckTime = new AtomicLong(0);
   private ClientReadHandler clientReadHandler;
   private final IdHelper idHelper;
-  private ShuffleDataDistributionType dataDistributionType = ShuffleDataDistributionType.NORMAL;
 
   public ShuffleReadClientImpl(
       String storageType,
@@ -79,27 +78,6 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       Configuration hadoopConf,
       IdHelper idHelper,
       ShuffleDataDistributionType dataDistributionType) {
-    this(storageType, appId, shuffleId, partitionId, indexReadLimit,
-        partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
-        blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf, idHelper);
-    this.dataDistributionType = dataDistributionType;
-  }
-
-  public ShuffleReadClientImpl(
-      String storageType,
-      String appId,
-      int shuffleId,
-      int partitionId,
-      int indexReadLimit,
-      int partitionNumPerRange,
-      int partitionNum,
-      int readBufferSize,
-      String storageBasePath,
-      Roaring64NavigableMap blockIdBitmap,
-      Roaring64NavigableMap taskIdBitmap,
-      List<ShuffleServerInfo> shuffleServerInfoList,
-      Configuration hadoopConf,
-      IdHelper idHelper) {
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.blockIdBitmap = blockIdBitmap;
@@ -138,6 +116,27 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     pendingBlockIds = RssUtils.cloneBitMap(blockIdBitmap);
 
     clientReadHandler = ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
+  }
+
+  public ShuffleReadClientImpl(
+      String storageType,
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int indexReadLimit,
+      int partitionNumPerRange,
+      int partitionNum,
+      int readBufferSize,
+      String storageBasePath,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap taskIdBitmap,
+      List<ShuffleServerInfo> shuffleServerInfoList,
+      Configuration hadoopConf,
+      IdHelper idHelper) {
+    this(storageType, appId, shuffleId, partitionId, indexReadLimit,
+        partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
+        blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf,
+        idHelper, ShuffleDataDistributionType.NORMAL);
   }
 
   @Override
