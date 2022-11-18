@@ -18,4 +18,3 @@
 #
 
 echo "Test Kubernetes Operator.."
-cd operator && make build

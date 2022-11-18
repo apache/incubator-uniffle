@@ -17,5 +17,5 @@
 # limitations under the License.
 #
 
-echo "Build kubernetes operator..."
+echo "Build and Test kubernetes operator..."
 cd operator && make build
