@@ -49,7 +49,16 @@ public class CoordinatorClientFactory {
     return LazyHolder.INSTANCE;
   }
 
-  public List<CoordinatorClient> createCoordinatorClient(String clientType, String coordinators) {
+  // for tests
+  public CoordinatorClient createCoordinatorClient(String clientType, String host, int port) {
+    if (!clientType.equalsIgnoreCase(ClientType.GRPC.name())) {
+      throw new UnsupportedOperationException("Unsupported client type " + clientType);
+    }
+
+    return new CoordinatorGrpcClient(host, port);
+  }
+
+  public List<CoordinatorClient> getOrCreateCoordinatorClient(String clientType, String coordinators) {
     LOG.info("Start to create coordinator clients from {}", coordinators);
 
     if (!clientType.equalsIgnoreCase(ClientType.GRPC.name())) {
@@ -78,7 +87,7 @@ public class CoordinatorClientFactory {
       clients.putIfAbsent(clientType, Maps.newConcurrentMap());
       Map<CoordinatorInfo, CoordinatorClient> cache = clients.get(clientType);
       CoordinatorInfo coordinatorInfo = new CoordinatorInfo(host, port);
-      cache.computeIfAbsent(coordinatorInfo, (x) -> new CoordinatorGrpcClient(host, port));
+      cache.computeIfAbsent(coordinatorInfo, (x) -> createCoordinatorClient(clientType, host, port));
 
       CoordinatorClient coordinatorClient = cache.get(coordinatorInfo);
       coordinatorClients.add(coordinatorClient);
@@ -87,9 +96,5 @@ public class CoordinatorClientFactory {
     LOG.info("Finish create coordinator clients {}",
         coordinatorClients.stream().map(CoordinatorClient::getDesc).collect(Collectors.joining(", ")));
     return coordinatorClients;
-  }
-
-  public void cleanupCache() {
-    this.clients = Maps.newConcurrentMap();
   }
 }

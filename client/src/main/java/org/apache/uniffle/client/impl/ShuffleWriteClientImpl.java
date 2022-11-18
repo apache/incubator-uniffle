@@ -357,7 +357,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   public void registerCoordinators(String coordinators) {
     List<CoordinatorClient> clients = CoordinatorClientFactory
         .getInstance()
-        .createCoordinatorClient(clientType, coordinators);
+        .getOrCreateCoordinatorClient(clientType, coordinators);
     coordinatorClients.addAll(clients);
   }
 

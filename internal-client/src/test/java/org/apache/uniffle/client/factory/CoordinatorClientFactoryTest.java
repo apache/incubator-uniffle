@@ -15,30 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.test;
+package org.apache.uniffle.client.factory;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.client.factory.CoordinatorClientFactory;
-import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class CoordinatorTestBase extends IntegrationTestBase {
+public class CoordinatorClientFactoryTest {
 
-  protected CoordinatorGrpcClient coordinatorClient;
-
-  @BeforeEach
-  public void createClient() {
-    coordinatorClient =
-        (CoordinatorGrpcClient) CoordinatorClientFactory
-            .getInstance()
-            .createCoordinatorClient("GRPC", LOCALHOST, COORDINATOR_PORT_1);
-  }
-
-  @AfterEach
-  public void closeClient() {
-    if (coordinatorClient != null) {
-      coordinatorClient.close();
-    }
+  @Test
+  public void testCachedCoordinatorClient() {
+    assertEquals(
+        CoordinatorClientFactory.getInstance().getOrCreateCoordinatorClient("GRPC", "localhost:19999"),
+        CoordinatorClientFactory.getInstance().getOrCreateCoordinatorClient("GRPC", "localhost:19999")
+    );
   }
 }
