@@ -37,8 +37,6 @@ public class CoordinatorTestBase extends IntegrationTestBase {
 
   @AfterEach
   public void closeClient() {
-    if (coordinatorClient != null) {
-      coordinatorClient.close();
-    }
+    CoordinatorClientFactory.getInstance().cleanupCache();
   }
 }
