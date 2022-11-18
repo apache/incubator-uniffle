@@ -82,8 +82,9 @@ public class FixedSizeSegmentSplitter implements SegmentSplitter {
         // than the length in the actual data file, and it needs to be returned at this time to avoid EOFException
         if (dataFileLen != -1 && totalLength > dataFileLen) {
           long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;
-          LOGGER.warn("Abort inconsistent data, the data length: {}(bytes) recorded in index file is greater than "
-                  + "the real data file length: {}(bytes). Partition id: {}. This should not happen.",
+          LOGGER.info("Abort inconsistent data, the data length: {}(bytes) recorded in index file is greater than "
+                  + "the real data file length: {}(bytes). Partition id: {}. "
+                  + "This may happen when the data is flushing, please ignore.",
               totalLength, dataFileLen, Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask));
           break;
         }
