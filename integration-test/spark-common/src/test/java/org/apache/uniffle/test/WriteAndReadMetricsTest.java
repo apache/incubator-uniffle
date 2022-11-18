@@ -32,8 +32,6 @@ import org.apache.spark.status.api.v1.StageData;
 import org.junit.jupiter.api.Test;
 import scala.collection.Seq;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 public class WriteAndReadMetricsTest extends SimpleTestBase {
 
   @Test
@@ -52,12 +50,15 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
     df1.createOrReplaceTempView("table1");
 
     List list = spark.sql("select count(value1) from table1 group by key1").collectAsList();
-    Map<String, Integer> result = new HashMap<>();
-    result.put("size", list.size());
+    Map<String, Long> result = new HashMap<>();
+    result.put("size", Long.valueOf(list.size()));
 
-    long writeRecords = getFirstStageData(spark, 0).shuffleWriteRecords();
-    long readRecords = getFirstStageData(spark, 1).shuffleReadRecords();
-    assertEquals(writeRecords, readRecords);
+    for (int stageId : spark.sparkContext().statusTracker().getJobInfo(0).get().stageIds()) {
+      long writeRecords = getFirstStageData(spark, stageId).shuffleWriteRecords();
+      long readRecords = getFirstStageData(spark, stageId).shuffleReadRecords();
+      result.put(stageId + "-write-records", writeRecords);
+      result.put(stageId + "-read-records", readRecords);
+    }
 
     return result;
   }
@@ -84,7 +85,7 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
               boolean.class,
               double[].class
           ).invoke(
-              statestore, stageId, false, new ArrayList<>(), false, new double[]{})).toList().head();
+              statestore, stageId, false, new ArrayList<>(), true, new double[]{})).toList().head();
     }
   }
 }
