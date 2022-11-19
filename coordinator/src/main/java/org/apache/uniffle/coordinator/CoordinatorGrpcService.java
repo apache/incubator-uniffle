@@ -36,6 +36,8 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.proto.CoordinatorServerGrpc;
 import org.apache.uniffle.proto.RssProtos.AccessClusterRequest;
 import org.apache.uniffle.proto.RssProtos.AccessClusterResponse;
+import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
+import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
 import org.apache.uniffle.proto.RssProtos.ApplicationInfoRequest;
 import org.apache.uniffle.proto.RssProtos.ApplicationInfoResponse;
 import org.apache.uniffle.proto.RssProtos.CheckServiceAvailableResponse;
@@ -196,13 +198,36 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
   }
 
   @Override
+  public void appHeartbeat(
+      AppHeartBeatRequest request,
+      StreamObserver<AppHeartBeatResponse> responseObserver) {
+    String appId = request.getAppId();
+    coordinatorServer.getApplicationManager().refreshAppId(appId);
+    LOG.debug("Got heartbeat from application: " + appId);
+    AppHeartBeatResponse response = AppHeartBeatResponse
+        .newBuilder()
+        .setRetMsg("")
+        .setStatus(StatusCode.SUCCESS)
+        .build();
+
+    if (Context.current().isCancelled()) {
+      responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
+      LOG.warn("Cancelled by client {} for after deadline.", appId);
+      return;
+    }
+
+    responseObserver.onNext(response);
+    responseObserver.onCompleted();
+  }
+
+  @Override
   public void registerApplicationInfo(
       ApplicationInfoRequest request,
       StreamObserver<ApplicationInfoResponse> responseObserver) {
     String appId = request.getAppId();
     String user = request.getUser();
-    coordinatorServer.getApplicationManager().refreshAppId(appId, user);
-    LOG.debug("Got heartbeat from application: " + appId);
+    coordinatorServer.getApplicationManager().registerApplicationInfo(appId, user);
+    LOG.debug("Got a registered application info: " + appId);
     ApplicationInfoResponse response = ApplicationInfoResponse
         .newBuilder()
         .setRetMsg("")

@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.request.RssAccessClusterRequest;
+import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
 import org.apache.uniffle.client.request.RssApplicationInfoRequest;
 import org.apache.uniffle.client.request.RssFetchClientConfRequest;
 import org.apache.uniffle.client.request.RssFetchRemoteStorageRequest;
@@ -42,6 +43,7 @@ import org.apache.uniffle.client.request.RssGetShuffleAssignmentsRequest;
 import org.apache.uniffle.client.request.RssSendHeartBeatRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
+import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
 import org.apache.uniffle.client.response.RssApplicationInfoResponse;
 import org.apache.uniffle.client.response.RssFetchClientConfResponse;
 import org.apache.uniffle.client.response.RssFetchRemoteStorageResponse;
@@ -201,6 +203,24 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         break;
       default:
         response = new RssSendHeartBeatResponse(ResponseStatusCode.INTERNAL_ERROR);
+    }
+    return response;
+  }
+
+  @Override
+  public RssAppHeartBeatResponse sendAppHeartBeat(RssAppHeartBeatRequest request) {
+    RssProtos.AppHeartBeatRequest rpcRequest =
+        RssProtos.AppHeartBeatRequest.newBuilder().setAppId(request.getAppId()).build();
+    RssProtos.AppHeartBeatResponse rpcResponse = blockingStub
+        .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS).appHeartbeat(rpcRequest);
+    RssAppHeartBeatResponse response;
+    StatusCode statusCode = rpcResponse.getStatus();
+    switch (statusCode) {
+      case SUCCESS:
+        response = new RssAppHeartBeatResponse(ResponseStatusCode.SUCCESS);
+        break;
+      default:
+        response = new RssAppHeartBeatResponse(ResponseStatusCode.INTERNAL_ERROR);
     }
     return response;
   }

@@ -75,8 +75,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class ShuffleServerGrpcTest extends IntegrationTestBase {
 
   private ShuffleServerGrpcClient shuffleServerClient;
-  private AtomicInteger atomicInteger = new AtomicInteger(0);
-  private static Long EVENT_THRESHOLD_SIZE = 2048L;
+  private final AtomicInteger atomicInteger = new AtomicInteger(0);
+  private static final Long EVENT_THRESHOLD_SIZE = 2048L;
   private static final int GB = 1024 * 1024 * 1024;
 
   @BeforeAll
@@ -117,10 +117,10 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
         new RemoteStorageInfo(""),
         ShuffleDataDistributionType.NORMAL
     );
-    shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest1", 500L);
     shuffleWriteClient.registerApplicationInfo("application_clearResourceTest1", 500L, "user");
-    shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest2", 500L);
+    shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest1", 500L);
     shuffleWriteClient.registerApplicationInfo("application_clearResourceTest2", 500L, "user");
+    shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest2", 500L);
 
     RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest("application_clearResourceTest1", 0,
         Lists.newArrayList(new PartitionRange(0, 1)), "");
@@ -136,7 +136,6 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
       int i = 0;
       while (i < 20) {
         shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest1", 500L);
-        shuffleWriteClient.registerApplicationInfo("application_clearResourceTest1", 500L, "user");
         i++;
         try {
           Thread.sleep(1000);
@@ -533,8 +532,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
 
     oldValue = shuffleServers.get(0).getGrpcMetrics().getCounterMap().get(
         ShuffleServerGrpcMetrics.APP_HEARTBEAT_METHOD).get();
-    shuffleServerClient.sendHeartBeat(new RssAppHeartBeatRequest(
-        appId, 10000));
+    shuffleServerClient.sendHeartBeat(new RssAppHeartBeatRequest(appId, 10000));
     newValue = shuffleServers.get(0).getGrpcMetrics().getCounterMap().get(
         ShuffleServerGrpcMetrics.APP_HEARTBEAT_METHOD).get();
     assertEquals(oldValue + 1, newValue, 0.5);

@@ -263,12 +263,12 @@ public class RssShuffleManager implements ShuffleManager {
   }
 
   private void startHeartbeat() {
+    shuffleWriteClient.registerApplicationInfo(appId, heartbeatTimeout, user);
     if (!sparkConf.getBoolean(RssSparkConfig.RSS_TEST_FLAG.key(), false) && !heartbeatStarted) {
       heartBeatScheduledExecutorService.scheduleAtFixedRate(
           () -> {
             try {
               shuffleWriteClient.sendAppHeartbeat(appId, heartbeatTimeout);
-              shuffleWriteClient.registerApplicationInfo(appId, heartbeatTimeout, user);
               LOG.info("Finish send heartbeat to coordinator and servers");
             } catch (Exception e) {
               LOG.warn("Fail to send heartbeat to coordinator and servers", e);

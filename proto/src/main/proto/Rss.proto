@@ -287,10 +287,13 @@ service CoordinatorServer {
   rpc getShuffleDataStorageInfo(google.protobuf.Empty) returns (GetShuffleDataStorageInfoResponse);
   rpc checkServiceAvailable(google.protobuf.Empty) returns (CheckServiceAvailableResponse);
 
+  // Heartbeat between Shuffle Application and Coordinator Server
+  rpc appHeartbeat(AppHeartBeatRequest) returns (AppHeartBeatResponse);
+
   // Report a client operation's result to coordinator server
   rpc reportClientOperation(ReportShuffleClientOpRequest) returns (ReportShuffleClientOpResponse);
 
-  // Heartbeat between Shuffle Application and Coordinator Server
+  // Report a application info to Coordinator Server
   rpc registerApplicationInfo(ApplicationInfoRequest) returns (ApplicationInfoResponse);
 
   // Access to the remote shuffle service cluster

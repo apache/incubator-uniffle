@@ -570,7 +570,16 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         return null;
       });
     });
-    getFutureResult(callableList, timeoutMs);
+    try {
+      List<Future<Void>> futures = heartBeatExecutorService.invokeAll(callableList, timeoutMs, TimeUnit.MILLISECONDS);
+      for (Future<Void> future : futures) {
+        if (!future.isDone()) {
+          future.cancel(true);
+        }
+      }
+    } catch (InterruptedException ie) {
+      LOG.warn("register application is interrupted", ie);
+    }
   }
 
   @Override
@@ -594,7 +603,32 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           });
         }
     );
-    getFutureResult(callableList, timeoutMs);
+
+    coordinatorClients.forEach(coordinatorClient -> {
+      callableList.add(() -> {
+        try {
+          RssAppHeartBeatResponse response = coordinatorClient.sendAppHeartBeat(request);
+          if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
+            LOG.warn("Failed to send heartbeat to " + coordinatorClient.getDesc());
+          } else {
+            LOG.info("Successfully send heartbeat to " + coordinatorClient.getDesc());
+          }
+        } catch (Exception e) {
+          LOG.warn("Error happened when send heartbeat to " + coordinatorClient.getDesc(), e);
+        }
+        return null;
+      });
+    });
+    try {
+      List<Future<Void>> futures = heartBeatExecutorService.invokeAll(callableList, timeoutMs, TimeUnit.MILLISECONDS);
+      for (Future<Void> future : futures) {
+        if (!future.isDone()) {
+          future.cancel(true);
+        }
+      }
+    } catch (InterruptedException ie) {
+      LOG.warn("heartbeat is interrupted", ie);
+    }
   }
 
   @Override
@@ -680,20 +714,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   @VisibleForTesting
   public ShuffleServerClient getShuffleServerClient(ShuffleServerInfo shuffleServerInfo) {
     return ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
-  }
-
-  @VisibleForTesting
-  public void getFutureResult(List<Callable<Void>> callableList, long timeoutMs) {
-    try {
-      List<Future<Void>> futures = heartBeatExecutorService.invokeAll(callableList, timeoutMs, TimeUnit.MILLISECONDS);
-      for (Future<Void> future : futures) {
-        if (!future.isDone()) {
-          future.cancel(true);
-        }
-      }
-    } catch (InterruptedException ie) {
-      LOG.warn("heartbeat is interrupted", ie);
-    }
   }
 
   void addShuffleServer(String appId, int shuffleId, ShuffleServerInfo serverInfo) {

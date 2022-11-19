@@ -105,7 +105,8 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     applicationManager.incRemoteStorageCounter(remoteStorage1);
     applicationManager.incRemoteStorageCounter(remoteStorage1);
     String testApp1 = "application_test_" + 1;
-    applicationManager.refreshAppId(testApp1, "user");
+    applicationManager.registerApplicationInfo(testApp1, "user");
+    applicationManager.refreshAppId(testApp1);
     Thread.sleep(1000);
     final long current = System.currentTimeMillis();
     fs.create(path);
@@ -129,7 +130,8 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
 
     // refresh app1, got remotePath2, then remove remotePath2,
     // it should be existed in counter until it expired
-    applicationManager.refreshAppId(testApp1, "user");
+    applicationManager.registerApplicationInfo(testApp1, "user");
+    applicationManager.refreshAppId(testApp1);
     assertEquals(remoteStorage2, applicationManager.pickRemoteStorage(testApp1).getPath());
     remoteStoragePath = remoteStorage1;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
@@ -164,7 +166,8 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     Thread pickThread1 = new Thread(() -> {
       for (int i = 0; i < 1000; i++) {
         String appId = testApp1 + i;
-        applicationManager.refreshAppId(appId, "user");
+        applicationManager.registerApplicationInfo(appId, "user");
+        applicationManager.refreshAppId(appId);
         applicationManager.pickRemoteStorage(appId);
       }
     });
@@ -172,7 +175,8 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     Thread pickThread2 = new Thread(() -> {
       for (int i = 1000; i < 2000; i++) {
         String appId = testApp1 + i;
-        applicationManager.refreshAppId(appId, "user");
+        applicationManager.registerApplicationInfo(appId, "user");
+        applicationManager.refreshAppId(appId);
         applicationManager.pickRemoteStorage(appId);
       }
     });
@@ -180,7 +184,8 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     Thread pickThread3 = new Thread(() -> {
       for (int i = 2000; i < 3000; i++) {
         String appId = testApp1 + i;
-        applicationManager.refreshAppId(appId, "user");
+        applicationManager.registerApplicationInfo(appId, "user");
+        applicationManager.refreshAppId(appId);
         applicationManager.pickRemoteStorage(appId);
       }
     });

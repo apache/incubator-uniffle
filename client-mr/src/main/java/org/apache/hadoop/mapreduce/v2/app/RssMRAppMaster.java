@@ -239,11 +239,11 @@ public class RssMRAppMaster extends MRAppMaster {
       long heartbeatInterval = conf.getLong(RssMRConfig.RSS_HEARTBEAT_INTERVAL,
           RssMRConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
       long heartbeatTimeout = conf.getLong(RssMRConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
+      client.registerApplicationInfo(appId, heartbeatTimeout, "user");
       scheduledExecutorService.scheduleAtFixedRate(
           () -> {
             try {
               client.sendAppHeartbeat(appId, heartbeatTimeout);
-              client.registerApplicationInfo(appId, heartbeatTimeout, "user");
               LOG.info("Finish send heartbeat to coordinator and servers");
             } catch (Exception e) {
               LOG.warn("Fail to send heartbeat to coordinator and servers", e);

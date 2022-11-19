@@ -25,7 +25,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,6 +66,7 @@ public class ApplicationManager {
   private final Map<String, String> remoteStorageToHost = Maps.newConcurrentMap();
   private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
   private Map<String, Map<String, Long>> currentUserAndApp = Maps.newConcurrentMap();
+  private final Map<String, String> appIdToUser = Maps.newConcurrentMap();
   private final String quotaFilePath;
   private FileSystem hadoopFileSystem;
   private final AtomicLong quotaFileLastModify = new AtomicLong(0L);
@@ -108,10 +108,11 @@ public class ApplicationManager {
         conf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME), TimeUnit.MILLISECONDS);
   }
 
-  public void refreshAppId(String appId, String user) {
+  public void registerApplicationInfo(String appId, String user) {
     // using computeIfAbsent is just for MR and spark which is used RssShuffleManager as implementation class
     // in such case by default, there is no currentUserAndApp, so a unified user implementation named "user" is used.
     Map<String, Long> appAndTime = currentUserAndApp.computeIfAbsent(user, x -> Maps.newConcurrentMap());
+    appIdToUser.put(appId, user);
     if (!appAndTime.containsKey(appId)) {
       CoordinatorMetrics.counterTotalAppNum.inc();
       LOG.info("New application is registered: {}", appId);
@@ -122,6 +123,11 @@ public class ApplicationManager {
     // if appId created successfully, we need to remove the uuid
     appAndTime.remove(uuidFromApp);
     appAndTime.put(appId, currentTimeMillis);
+  }
+
+  public void refreshAppId(String appId) {
+    Map<String, Long> appAndTime = currentUserAndApp.get(appIdToUser.get(appId));
+    appAndTime.put(appId, System.currentTimeMillis());
   }
 
   public void refreshRemoteStorage(String remoteStoragePath, String remoteStorageConf) {
@@ -220,12 +226,7 @@ public class ApplicationManager {
   }
 
   public Set<String> getAppIds() {
-    List<Map<String, Long>> appAndTimeList = Lists.newArrayList(currentUserAndApp.values());
-    HashSet<String> appIds = Sets.newHashSet();
-    for (Map<String, Long> appAndTime : appAndTimeList) {
-      appIds.addAll(appAndTime.keySet());
-    }
-    return appIds;
+    return appIdToUser.keySet();
   }
 
   @VisibleForTesting
@@ -269,6 +270,7 @@ public class ApplicationManager {
           if (System.currentTimeMillis() - lastReport > expired) {
             expiredAppIds.add(appId);
             appAndTimes.remove(appId);
+            appIdToUser.remove(appId);
           }
         }
       }

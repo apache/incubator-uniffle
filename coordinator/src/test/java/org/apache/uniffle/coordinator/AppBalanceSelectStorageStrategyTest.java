@@ -73,7 +73,8 @@ public class AppBalanceSelectStorageStrategyTest {
     applicationManager.incRemoteStorageCounter(remotePath1);
     applicationManager.incRemoteStorageCounter(remotePath1);
     String testApp1 = "application_test_" + 1;
-    applicationManager.refreshAppId(testApp1, "user");
+    applicationManager.registerApplicationInfo(testApp1, "user");
+    applicationManager.refreshAppId(testApp1);
     assertEquals(remotePath2, applicationManager.pickRemoteStorage(testApp1).getPath());
     assertEquals(remotePath2, applicationManager.getAppIdToRemoteStorageInfo().get(testApp1).getPath());
     assertEquals(1, applicationManager.getRemoteStoragePathRankValue().get(remotePath2).getAppNum().get());
@@ -88,7 +89,8 @@ public class AppBalanceSelectStorageStrategyTest {
 
     // refresh app1, got remotePath2, then remove remotePath2,
     // it should be existed in counter until it expired
-    applicationManager.refreshAppId(testApp1, "user");
+    applicationManager.registerApplicationInfo(testApp1, "user");
+    applicationManager.refreshAppId(testApp1);
     assertEquals(remotePath2, applicationManager.pickRemoteStorage(testApp1).getPath());
     remoteStoragePath = remotePath1;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
@@ -121,7 +123,8 @@ public class AppBalanceSelectStorageStrategyTest {
     Thread pickThread1 = new Thread(() -> {
       for (int i = 0; i < 1000; i++) {
         String appId = testApp1 + i;
-        applicationManager.refreshAppId(appId, "user");
+        applicationManager.registerApplicationInfo(appId, "user");
+        applicationManager.refreshAppId(appId);
         applicationManager.pickRemoteStorage(appId);
       }
     });
@@ -129,7 +132,8 @@ public class AppBalanceSelectStorageStrategyTest {
     Thread pickThread2 = new Thread(() -> {
       for (int i = 1000; i < 2000; i++) {
         String appId = testApp1 + i;
-        applicationManager.refreshAppId(appId, "user");
+        applicationManager.registerApplicationInfo(appId, "user");
+        applicationManager.refreshAppId(appId);
         applicationManager.pickRemoteStorage(appId);
       }
     });
@@ -137,7 +141,8 @@ public class AppBalanceSelectStorageStrategyTest {
     Thread pickThread3 = new Thread(() -> {
       for (int i = 2000; i < 3000; i++) {
         String appId = testApp1 + i;
-        applicationManager.refreshAppId(appId, "user");
+        applicationManager.registerApplicationInfo(appId, "user");
+        applicationManager.refreshAppId(appId);
         applicationManager.pickRemoteStorage(appId);
       }
     });

@@ -665,13 +665,13 @@ public class RssShuffleManager implements ShuffleManager {
   }
 
   private synchronized void startHeartbeat() {
+    shuffleWriteClient.registerApplicationInfo(id.get(), heartbeatTimeout, user);
     if (!heartbeatStarted) {
       heartBeatScheduledExecutorService.scheduleAtFixedRate(
           () -> {
             try {
               String appId = id.get();
               shuffleWriteClient.sendAppHeartbeat(appId, heartbeatTimeout);
-              shuffleWriteClient.registerApplicationInfo(appId, heartbeatTimeout, user);
               LOG.info("Finish send heartbeat to coordinator and servers");
             } catch (Exception e) {
               LOG.warn("Fail to send heartbeat to coordinator and servers", e);
