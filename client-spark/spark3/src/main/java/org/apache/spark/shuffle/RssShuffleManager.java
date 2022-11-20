@@ -264,6 +264,16 @@ public class RssShuffleManager implements ShuffleManager {
   // pass that ShuffleHandle to executors (getWriter/getReader)
   @Override
   public <K, V, C> ShuffleHandle registerShuffle(int shuffleId, ShuffleDependency<K, V, C> dependency) {
+    //Spark have three kinds of serializer:
+    //org.apache.spark.serializer.JavaSerializer
+    //org.apache.spark.sql.execution.UnsafeRowSerializer
+    //org.apache.spark.serializer.KryoSerializer,
+    //Only org.apache.spark.serializer.JavaSerializer don't support RelocationOfSerializedObjects.
+    //So when we find the parameters to use org.apache.spark.serializer.JavaSerializer, We should throw an exception
+    if (!dependency.serializer.supportsRelocationOfSerializedObjects) {
+      throw new IllegalArgumentException("Can't use serialized shuffle for shuffle "+ shuffleId +", because the serializer: " +
+              dependency.serializer.getClass.getName+" does not support object relocation.");
+    }
 
     if (id.get() == null) {
       id.compareAndSet(null, SparkEnv.get().conf().getAppId() + "_" + System.currentTimeMillis());
