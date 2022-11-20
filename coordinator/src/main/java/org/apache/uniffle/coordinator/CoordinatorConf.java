@@ -189,6 +189,11 @@ public class CoordinatorConf extends RssBaseConf {
       .stringType()
       .noDefaultValue()
       .withDescription("A configuration file for the number of apps for a user-defined user");
+  public static final ConfigOption<Long> COORDINATOR_QUOTA_UPDATE_INTERVAL = ConfigOptions
+      .key("rss.coordinator.quota.update.interval")
+      .longType()
+      .defaultValue(60 * 1000L)
+      .withDescription("Update interval for the default number of submitted apps per user");
 
   public CoordinatorConf() {
   }

@@ -17,13 +17,8 @@
 
 package org.apache.uniffle.coordinator;
 
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -31,22 +26,16 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ThreadUtils;
 
@@ -65,12 +54,9 @@ public class ApplicationManager {
   private final Map<String, RankValue> remoteStoragePathRankValue;
   private final Map<String, String> remoteStorageToHost = Maps.newConcurrentMap();
   private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
-  private Map<String, Map<String, Long>> currentUserAndApp = Maps.newConcurrentMap();
-  private final Map<String, String> appIdToUser = Maps.newConcurrentMap();
-  private final String quotaFilePath;
-  private FileSystem hadoopFileSystem;
-  private final AtomicLong quotaFileLastModify = new AtomicLong(0L);
-  private Map<String, Integer> defaultUserApps = Maps.newConcurrentMap();
+  private final Map<String, Map<String, Long>> currentUserAndApp;
+  private final Map<String, String> appIdToUser;
+  private final Map<String, Integer> defaultUserApps;
   // it's only for test case to check if status check has problem
   private boolean hasErrorInStatusCheck = false;
 
@@ -89,12 +75,10 @@ public class ApplicationManager {
       throw new UnsupportedOperationException("Unsupported selected storage strategy.");
     }
     expired = conf.getLong(CoordinatorConf.COORDINATOR_APP_EXPIRED);
-    quotaFilePath = conf.get(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH);
-    try {
-      hadoopFileSystem = HadoopFilesystemProvider.getFilesystem(new Path(quotaFilePath), new Configuration());
-    } catch (Exception e) {
-      LOG.error("Cannot init remoteFS on path : " + quotaFilePath, e);
-    }
+    QuotaManager quotaManager = new QuotaManager(conf);
+    this.currentUserAndApp = quotaManager.getCurrentUserAndApp();
+    this.appIdToUser = quotaManager.getAppIdToUser();
+    this.defaultUserApps = quotaManager.getDefaultUserApps();
     // the thread for checking application status
     ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("ApplicationManager-%d"));
@@ -283,8 +267,6 @@ public class ApplicationManager {
           appIdToRemoteStorageInfo.remove(appId);
         }
       }
-      // begin to update app default app num
-      detectUserResource();
       CoordinatorMetrics.gaugeRunningAppNum.set(appIds.size());
       updateRemoteStorageMetrics();
     } catch (Exception e) {
@@ -329,56 +311,12 @@ public class ApplicationManager {
     return storageHost;
   }
 
-  public void detectUserResource() {
-    if (quotaFilePath != null && hadoopFileSystem != null) {
-      try {
-        Path hadoopPath = new Path(quotaFilePath);
-        FileStatus fileStatus = hadoopFileSystem.getFileStatus(hadoopPath);
-        if (fileStatus != null && fileStatus.isFile()) {
-          long latestModificationTime = fileStatus.getModificationTime();
-          if (quotaFileLastModify.get() != latestModificationTime) {
-            parseQuotaFile(hadoopFileSystem.open(hadoopPath));
-            quotaFileLastModify.set(latestModificationTime);
-          }
-        }
-      } catch (FileNotFoundException fileNotFoundException) {
-        LOG.error("Can't find this file {}", quotaFilePath);
-      } catch (Exception e) {
-        LOG.warn("Error when updating quotaFile, the exclude nodes file path: {}", quotaFilePath);
-      }
-    }
-  }
-
-  public void parseQuotaFile(DataInputStream fsDataInputStream) {
-    String content;
-    try (BufferedReader bufferedReader =
-             new BufferedReader(new InputStreamReader(fsDataInputStream, StandardCharsets.UTF_8))) {
-      while ((content = bufferedReader.readLine()) != null) {
-        String user = content.split(Constants.EQUAL_SPLIT_CHAR)[0].trim();
-        Integer appNum = Integer.valueOf(content.split(Constants.EQUAL_SPLIT_CHAR)[1].trim());
-        defaultUserApps.put(user, appNum);
-      }
-    } catch (Exception e) {
-      LOG.error("Error occur when parsing file {}", quotaFilePath, e);
-    }
-  }
-
   public Map<String, Integer> getDefaultUserApps() {
     return defaultUserApps;
   }
 
   public Map<String, Map<String, Long>> getCurrentUserApps() {
     return currentUserAndApp;
-  }
-
-  @VisibleForTesting
-  public void setCurrentUserAppSet(Map<String, Map<String, Long>> currentUserAppSet) {
-    this.currentUserAndApp = currentUserAppSet;
-  }
-
-  @VisibleForTesting
-  public void setDefaultUserApps(Map<String, Integer> defaultUserApps) {
-    this.defaultUserApps = defaultUserApps;
   }
 
   public enum StrategyName {
