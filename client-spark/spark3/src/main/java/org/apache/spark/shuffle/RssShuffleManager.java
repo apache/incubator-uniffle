@@ -270,9 +270,9 @@ public class RssShuffleManager implements ShuffleManager {
     //org.apache.spark.serializer.KryoSerializer,
     //Only org.apache.spark.serializer.JavaSerializer don't support RelocationOfSerializedObjects.
     //So when we find the parameters to use org.apache.spark.serializer.JavaSerializer, We should throw an exception
-    if (!dependency.serializer.supportsRelocationOfSerializedObjects) {
-      throw new IllegalArgumentException("Can't use serialized shuffle for shuffle "+ shuffleId +", because the serializer: " +
-              dependency.serializer.getClass.getName+" does not support object relocation.");
+    if (!SparkEnv.get().serializer().supportsRelocationOfSerializedObjects()) {
+      throw new IllegalArgumentException("Can't use serialized shuffle for shuffle " + shuffleId + ", because the serializer: " +
+              SparkEnv.get().serializer().getClass().getName() + " does not support object relocation.");
     }
 
     if (id.get() == null) {
