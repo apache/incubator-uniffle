@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -374,7 +375,8 @@ public class RssShuffleManager implements ShuffleManager {
     taskToBufferManager.put(taskId, bufferManager);
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
     return new RssShuffleWriter(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(), bufferManager,
-        writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle);
+        writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle,
+        (Function<String, Boolean>) tid -> markFailedTask(tid));
   }
 
   @Override
@@ -778,9 +780,10 @@ public class RssShuffleManager implements ShuffleManager {
     return id.get();
   }
 
-  public void markFailedTask(String taskId) {
+  public boolean markFailedTask(String taskId) {
     LOG.info("Mark the task: {} failed.", taskId);
     failedTaskIds.add(taskId);
+    return true;
   }
 
   public boolean isValidTask(String taskId) {

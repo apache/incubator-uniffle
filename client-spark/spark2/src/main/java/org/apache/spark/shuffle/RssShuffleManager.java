@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -358,7 +359,8 @@ public class RssShuffleManager implements ShuffleManager {
       taskToBufferManager.put(taskId, bufferManager);
 
       return new RssShuffleWriter(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(), bufferManager,
-          writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle);
+          writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle,
+          (Function<String, Boolean>) tid -> markFailedTask(tid));
     } else {
       throw new RuntimeException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
@@ -528,9 +530,10 @@ public class RssShuffleManager implements ShuffleManager {
     this.appId = appId;
   }
 
-  public void markFailedTask(String taskId) {
+  public boolean markFailedTask(String taskId) {
     LOG.info("Mark the task: {} failed.", taskId);
     failedTaskIds.add(taskId);
+    return true;
   }
 
   public boolean isValidTask(String taskId) {
