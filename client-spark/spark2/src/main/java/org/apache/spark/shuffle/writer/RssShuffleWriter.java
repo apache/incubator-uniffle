@@ -83,7 +83,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private long sendCheckInterval;
   private long sendSizeLimit;
   private boolean isMemoryShuffleEnabled;
-  private final Function<String, Boolean> markFailedTaskFunc;
+  private final Function<String, Boolean> taskFailureCallback;
 
   public RssShuffleWriter(
       String appId,
@@ -122,7 +122,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
       RssShuffleHandle rssHandle,
-      Function<String, Boolean> markFailedTaskFunc) {
+      Function<String, Boolean> taskFailureCallback) {
     this.appId = appId;
     this.bufferManager = bufferManager;
     this.shuffleId = shuffleId;
@@ -145,7 +145,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.partitionToServers = rssHandle.getPartitionToServers();
     this.isMemoryShuffleEnabled = isMemoryShuffleEnabled(
         sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
-    this.markFailedTaskFunc = markFailedTaskFunc;
+    this.taskFailureCallback = taskFailureCallback;
   }
 
   private boolean isMemoryShuffleEnabled(String storageType) {
@@ -166,7 +166,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     try {
       doWrite(records);
     } catch (Exception e) {
-      markFailedTaskFunc.apply(taskId);
+      taskFailureCallback.apply(taskId);
       throw e;
     }
   }
