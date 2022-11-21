@@ -51,20 +51,23 @@ public class AccessQuotaChecker extends AbstractAccessChecker {
     COUNTER.increment();
     final String uuid = hostIp.hashCode() + "-" + COUNTER.sum();
     final String user = accessInfo.getUser();
-    Map<String, Map<String, Long>> currentUserApps = applicationManager.getCurrentUserApps();
-    Map<String, Long> appAndTimes = currentUserApps.computeIfAbsent(user, x -> Maps.newConcurrentMap());
-    Integer defaultAppNum = applicationManager.getDefaultUserApps().getOrDefault(user,
-        conf.getInteger(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_APP_NUM));
-    int currentAppNum = appAndTimes.size();
-    if (currentAppNum >= defaultAppNum) {
-      String msg = "Denied by AccessClusterLoadChecker => "
-          + "User: " + user + ", current app num is: " + currentAppNum
-          + ", default app num is: " + defaultAppNum + ". We will reject this app[uuid=" + uuid + "].";
-      LOG.error(msg);
-      CoordinatorMetrics.counterTotalQuotaDeniedRequest.inc();
-      return new AccessCheckResult(false, msg);
+    // low version client user attribute is an empty string
+    if (!"".equals(user)) {
+      Map<String, Map<String, Long>> currentUserApps = applicationManager.getCurrentUserApps();
+      Map<String, Long> appAndTimes = currentUserApps.computeIfAbsent(user, x -> Maps.newConcurrentMap());
+      Integer defaultAppNum = applicationManager.getDefaultUserApps().getOrDefault(user,
+          conf.getInteger(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_APP_NUM));
+      int currentAppNum = appAndTimes.size();
+      if (currentAppNum >= defaultAppNum) {
+        String msg = "Denied by AccessClusterLoadChecker => "
+            + "User: " + user + ", current app num is: " + currentAppNum
+            + ", default app num is: " + defaultAppNum + ". We will reject this app[uuid=" + uuid + "].";
+        LOG.error(msg);
+        CoordinatorMetrics.counterTotalQuotaDeniedRequest.inc();
+        return new AccessCheckResult(false, msg);
+      }
+      appAndTimes.put(uuid, System.currentTimeMillis());
     }
-    appAndTimes.put(uuid, System.currentTimeMillis());
     return new AccessCheckResult(true, Constants.COMMON_SUCCESS_MESSAGE, uuid);
   }
 

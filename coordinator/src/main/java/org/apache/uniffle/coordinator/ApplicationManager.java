@@ -110,8 +110,14 @@ public class ApplicationManager {
   }
 
   public void refreshAppId(String appId) {
-    Map<String, Long> appAndTime = currentUserAndApp.get(appIdToUser.get(appId));
-    appAndTime.put(appId, System.currentTimeMillis());
+    String user = appIdToUser.get(appId);
+    // compatible with lower version clients
+    if (user == null) {
+      registerApplicationInfo(appId, "");
+    } else {
+      Map<String, Long> appAndTime = currentUserAndApp.get(user);
+      appAndTime.put(appId, System.currentTimeMillis());
+    }
   }
 
   public void refreshRemoteStorage(String remoteStoragePath, String remoteStorageConf) {
