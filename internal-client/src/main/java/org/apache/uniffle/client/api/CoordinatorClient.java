@@ -36,7 +36,7 @@ public interface CoordinatorClient {
 
   RssAppHeartBeatResponse sendAppHeartBeat(RssAppHeartBeatRequest request);
 
-  RssApplicationInfoResponse sendApplicationInfo(RssApplicationInfoRequest request);
+  RssApplicationInfoResponse registerApplicationInfo(RssApplicationInfoRequest request);
 
   RssSendHeartBeatResponse sendHeartBeat(RssSendHeartBeatRequest request);
 

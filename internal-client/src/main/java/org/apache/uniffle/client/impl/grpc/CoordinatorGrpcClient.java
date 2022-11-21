@@ -226,7 +226,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
   }
 
   @Override
-  public RssApplicationInfoResponse sendApplicationInfo(RssApplicationInfoRequest request) {
+  public RssApplicationInfoResponse registerApplicationInfo(RssApplicationInfoRequest request) {
     ApplicationInfoRequest rpcRequest =
         ApplicationInfoRequest.newBuilder().setAppId(request.getAppId()).setUser(request.getUser()).build();
     ApplicationInfoResponse rpcResponse = blockingStub

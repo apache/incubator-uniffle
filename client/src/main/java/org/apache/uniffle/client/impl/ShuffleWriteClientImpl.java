@@ -558,7 +558,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     coordinatorClients.forEach(coordinatorClient -> {
       callableList.add(() -> {
         try {
-          RssApplicationInfoResponse response = coordinatorClient.sendApplicationInfo(request);
+          RssApplicationInfoResponse response = coordinatorClient.registerApplicationInfo(request);
           if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
             LOG.error("Failed to send applicationInfo to " + coordinatorClient.getDesc());
           } else {

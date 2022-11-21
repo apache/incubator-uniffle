@@ -201,18 +201,18 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
   @Test
   public void appHeartbeatTest() throws Exception {
     RssApplicationInfoResponse response =
-        coordinatorClient.sendApplicationInfo(
+        coordinatorClient.registerApplicationInfo(
             new RssApplicationInfoRequest("application_appHeartbeatTest1", 1000, "user"));
     assertEquals(ResponseStatusCode.SUCCESS, response.getStatusCode());
     assertEquals(Sets.newHashSet("application_appHeartbeatTest1"),
         coordinators.get(0).getApplicationManager().getAppIds());
-    coordinatorClient.sendApplicationInfo(
+    coordinatorClient.registerApplicationInfo(
         new RssApplicationInfoRequest("application_appHeartbeatTest2", 1000, "user"));
     assertEquals(Sets.newHashSet("application_appHeartbeatTest1", "application_appHeartbeatTest2"),
         coordinators.get(0).getApplicationManager().getAppIds());
     int retry = 0;
     while (retry < 5) {
-      coordinatorClient.sendApplicationInfo(
+      coordinatorClient.registerApplicationInfo(
           new RssApplicationInfoRequest("application_appHeartbeatTest1", 1000, "user"));
       retry++;
       Thread.sleep(1000);
