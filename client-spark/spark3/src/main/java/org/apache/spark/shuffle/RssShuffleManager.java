@@ -123,7 +123,7 @@ public class RssShuffleManager implements ShuffleManager {
         SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(
             id.get(),
             shuffleDataInfoList,
-            () -> isValidTask(taskId)
+            () -> !isValidTask(taskId)
         );
         putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
         putBlockId(taskToFailedBlockIds, taskId, result.getFailedBlockIds());

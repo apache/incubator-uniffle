@@ -354,7 +354,7 @@ public class FetcherTest {
 
     @Override
     public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList,
-        Supplier<Boolean> isValid) {
+        Supplier<Boolean> needCancelRequest) {
       if (mode == 0) {
         throw new RssException("send data failed");
       } else if (mode == 1) {

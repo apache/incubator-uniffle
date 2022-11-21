@@ -249,7 +249,11 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             + "because upstream task has been failed.");
       }
 
-      Thread.sleep(10);
+      try {
+        future.get(10, TimeUnit.MILLISECONDS);
+      } catch (Exception e) {
+        // ignore
+      }
     }
   }
 
@@ -379,7 +383,11 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
               throw new NotRetryException("The request is invalid. Cancel it.");
             }
 
-            Thread.sleep(10);
+            try {
+              future.get(10, TimeUnit.MILLISECONDS);
+            } catch (Exception e) {
+              // ignore
+            }
           }
           LOG.info("Do sendShuffleData to {}:{} rpc cost:" + (System.currentTimeMillis() - start)
               + " ms for " + allocateSize + " bytes with " + finalBlockNum + " blocks", host, port);

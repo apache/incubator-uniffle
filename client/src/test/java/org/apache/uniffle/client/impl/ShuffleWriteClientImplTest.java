@@ -17,11 +17,7 @@
 
 package org.apache.uniffle.client.impl;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
@@ -29,8 +25,6 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.response.ResponseStatusCode;
@@ -39,63 +33,14 @@ import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
-import static org.apache.uniffle.client.impl.ShuffleWriteClientImpl.waitUntilDoneOrFail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ShuffleWriteClientImplTest {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ShuffleWriteClientImplTest.class);
-  private ExecutorService executorService = Executors.newFixedThreadPool(10);
-
-  private List<Future<Boolean>> getFutures(boolean fail) {
-    List<Future<Boolean>> futures = new ArrayList<>();
-    for (int i = 0; i < 3; i++) {
-      final int index = i;
-      Future<Boolean> future = executorService.submit(() -> {
-        if (index == 2) {
-          try {
-            Thread.sleep(3000);
-          } catch (InterruptedException interruptedException) {
-            LOGGER.info("Capture the InterruptedException");
-            return false;
-          }
-          LOGGER.info("Finished index: " + index);
-          return true;
-        }
-        if (fail && index == 1) {
-          return false;
-        }
-        return true;
-      });
-      futures.add(future);
-    }
-    return futures;
-  }
-
-  @Test
-  public void testWaitUntilDoneOrFail() {
-    // case1: enable fail fast
-    List<Future<Boolean>> futures1 = getFutures(true);
-    Awaitility.await().timeout(2, TimeUnit.SECONDS).until(() -> !waitUntilDoneOrFail(futures1, true));
-
-    // case2: disable fail fast
-    List<Future<Boolean>> futures2 = getFutures(true);
-    try {
-      Awaitility.await().timeout(2, TimeUnit.SECONDS).until(() -> !waitUntilDoneOrFail(futures2, false));
-      fail();
-    } catch (Exception e) {
-      // ignore
-    }
-
-    // case3: all succeed
-    List<Future<Boolean>> futures3 = getFutures(false);
-    Awaitility.await().timeout(4, TimeUnit.SECONDS).until(() -> waitUntilDoneOrFail(futures3, true));
-  }
 
   @Test
   public void testAbandonEventWhenTaskFailed() {
@@ -117,7 +62,7 @@ public class ShuffleWriteClientImplTest {
 
     // It should directly exit and wont do rpc request.
     Awaitility.await().timeout(1, TimeUnit.SECONDS).until(() -> {
-      spyClient.sendShuffleData("appId", shuffleBlockInfoList, () -> false);
+      spyClient.sendShuffleData("appId", shuffleBlockInfoList, () -> true);
       return true;
     });
   }
@@ -136,7 +81,7 @@ public class ShuffleWriteClientImplTest {
         Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
     List<ShuffleBlockInfo> shuffleBlockInfoList = Lists.newArrayList(new ShuffleBlockInfo(
         0, 0, 10, 10, 10, new byte[]{1}, shuffleServerInfoList, 10, 100, 0));
-    SendShuffleDataResult result = spyClient.sendShuffleData("appId", shuffleBlockInfoList, () -> true);
+    SendShuffleDataResult result = spyClient.sendShuffleData("appId", shuffleBlockInfoList, () -> false);
 
     assertTrue(result.getFailedBlockIds().contains(10L));
   }

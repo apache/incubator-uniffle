@@ -35,7 +35,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 public interface ShuffleWriteClient {
 
   SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList,
-      Supplier<Boolean> isValidTaskId);
+      Supplier<Boolean> needCancelRequest);
 
   void sendAppHeartbeat(String appId, long timeoutMs);
 

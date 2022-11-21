@@ -268,7 +268,7 @@ public class SortWriteBufferManagerTest {
 
     @Override
     public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList,
-        Supplier<Boolean> isValidTaskId) {
+        Supplier<Boolean> needCancelRequest) {
       if (mode == 0) {
         throw new RssException("send data failed");
       } else if (mode == 1) {

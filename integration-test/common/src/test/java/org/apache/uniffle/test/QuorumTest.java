@@ -273,7 +273,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     }
 
     public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList) {
-      return super.sendShuffleData(appId, shuffleBlockInfoList, () -> true);
+      return super.sendShuffleData(appId, shuffleBlockInfoList, () -> false);
     }
   }
 
