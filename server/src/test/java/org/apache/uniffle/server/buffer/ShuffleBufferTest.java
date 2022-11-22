@@ -24,6 +24,7 @@ import com.google.common.collect.Lists;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
@@ -79,6 +80,46 @@ public class ShuffleBufferTest extends BufferTestBase {
     assertEquals(42, event.getSize());
     assertEquals(0, shuffleBuffer.getSize());
     assertEquals(0, shuffleBuffer.getBlocks().size());
+  }
+
+  @Test
+  public void getShuffleDataWithLocalOrderTest() {
+    ShuffleBuffer shuffleBuffer = new ShuffleBuffer(200);
+    ShufflePartitionedData spd1 = createData(1, 1, 15);
+    ShufflePartitionedData spd2 = createData(1, 0, 15);
+    ShufflePartitionedData spd3 = createData(1, 2, 15);
+    shuffleBuffer.append(spd1);
+    shuffleBuffer.append(spd2);
+    shuffleBuffer.append(spd3);
+
+    // First read from the cached data
+    ShuffleDataResult sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 16);
+    byte[] expectedData = getExpectedData(spd1, spd2);
+    compareBufferSegment(shuffleBuffer.getBlocks(), sdr.getBufferSegments(), 0, 2);
+    assertArrayEquals(expectedData, sdr.getData());
+
+    // Second read after flushed
+    ShuffleDataFlushEvent event1 = shuffleBuffer.toFlushEvent(
+        "appId",
+        0,
+        0,
+        1,
+        null,
+        ShuffleDataDistributionType.LOCAL_ORDER
+    );
+    long lastBlockId = sdr.getBufferSegments().get(1).getBlockId();
+    sdr = shuffleBuffer.getShuffleData(lastBlockId, 16);
+    expectedData = getExpectedData(spd3);
+    compareBufferSegment(shuffleBuffer.getInFlushBlockMap().get(event1.getEventId()), sdr.getBufferSegments(), 2, 1);
+    assertArrayEquals(expectedData, sdr.getData());
+
+    assertEquals(0, event1.getShuffleBlocks().get(0).getTaskAttemptId());
+    assertEquals(1, event1.getShuffleBlocks().get(1).getTaskAttemptId());
+    assertEquals(2, event1.getShuffleBlocks().get(2).getTaskAttemptId());
+
+    assertEquals(1, shuffleBuffer.getInFlushBlockMap().get(event1.getEventId()).get(0).getTaskAttemptId());
+    assertEquals(0, shuffleBuffer.getInFlushBlockMap().get(event1.getEventId()).get(1).getTaskAttemptId());
+    assertEquals(2, shuffleBuffer.getInFlushBlockMap().get(event1.getEventId()).get(2).getTaskAttemptId());
   }
 
   @Test
