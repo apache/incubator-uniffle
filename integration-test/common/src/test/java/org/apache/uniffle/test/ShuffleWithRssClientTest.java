@@ -254,7 +254,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     List<ShuffleBlockInfo> blocks = createShuffleBlockList(
         0, 0, 0, 3, 25, blockIdBitmap,
         expectedData, Lists.newArrayList(shuffleServerInfo1, shuffleServerInfo2));
-    shuffleWriteClientImpl.sendShuffleData(testAppId, blocks, () -> false;
+    shuffleWriteClientImpl.sendShuffleData(testAppId, blocks, () -> false);
     // send 1st commit, finish commit won't be sent to Shuffle server and data won't be persisted to disk
     boolean commitResult = shuffleWriteClientImpl
         .sendCommit(Sets.newHashSet(shuffleServerInfo1, shuffleServerInfo2), testAppId, 0, 2);
