@@ -70,7 +70,7 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
           processBlockIds,
           client,
           distributionType,
-          expectBlockIds,
+          expectTaskIds,
           maxHandlerFailTimes
       ));
     }
