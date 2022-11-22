@@ -29,20 +29,20 @@ public class RssSendShuffleDataRequest {
   private int retryMax;
   private long retryIntervalMax;
   private Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks;
-  private Supplier<Boolean> isValid;
+  private Supplier<Boolean> needCancelRequest;
 
   public RssSendShuffleDataRequest(String appId, int retryMax, long retryIntervalMax,
       Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks) {
-    this(appId, retryMax, retryIntervalMax, shuffleIdToBlocks, () -> true);
+    this(appId, retryMax, retryIntervalMax, shuffleIdToBlocks, () -> false);
   }
 
   public RssSendShuffleDataRequest(String appId, int retryMax, long retryIntervalMax,
-      Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks, Supplier<Boolean> isValid) {
+      Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks, Supplier<Boolean> needCancelRequest) {
     this.appId = appId;
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
     this.shuffleIdToBlocks = shuffleIdToBlocks;
-    this.isValid = isValid;
+    this.needCancelRequest = needCancelRequest;
   }
 
   public String getAppId() {
@@ -61,7 +61,7 @@ public class RssSendShuffleDataRequest {
     return shuffleIdToBlocks;
   }
 
-  public Supplier<Boolean> getIsValid() {
-    return isValid;
+  public Supplier<Boolean> getNeedCancelRequest() {
+    return needCancelRequest;
   }
 }

@@ -191,10 +191,11 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
    */
   @VisibleForTesting
   public long requirePreAllocation(int requireSize, int retryMax, long retryIntervalMax) throws Exception {
-    return requirePreAllocation(requireSize, retryMax, retryIntervalMax, () -> true);
+    return requirePreAllocation(requireSize, retryMax, retryIntervalMax, () -> false);
   }
 
-  public long requirePreAllocation(int requireSize, int retryMax, long retryIntervalMax, Supplier<Boolean> isValid)
+  public long requirePreAllocation(int requireSize, int retryMax, long retryIntervalMax,
+      Supplier<Boolean> needCancelRequest)
       throws Exception {
     RequireBufferRequest rpcRequest = RequireBufferRequest.newBuilder().setRequireSize(requireSize).build();
     long start = System.currentTimeMillis();
@@ -223,7 +224,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
           LOG.warn("Exception happened when require pre allocation from " + host + ":" + port, e);
         }
       }
-      rpcResponse = doRequirePreAllocation(rpcRequest, isValid);
+      rpcResponse = doRequirePreAllocation(rpcRequest, needCancelRequest);
       retry++;
     } while (rpcResponse != null && rpcResponse.getStatus() == StatusCode.NO_BUFFER);
 
@@ -236,14 +237,14 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   }
 
   private RequireBufferResponse doRequirePreAllocation(RequireBufferRequest rpcRequest,
-      Supplier<Boolean> isValid) throws Exception {
+      Supplier<Boolean> needCancelRequest) throws Exception {
     ListenableFuture<RequireBufferResponse> future = getFutureStub().requireBuffer(rpcRequest);
     while (true) {
       if (future.isDone()) {
         return future.get();
       }
 
-      if (!isValid.get()) {
+      if (needCancelRequest.get()) {
         future.cancel(true);
         throw new Exception("Abort the request when requiring PreAllocation memory, "
             + "because upstream task has been failed.");
@@ -347,15 +348,15 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       final int finalBlockNum = blockNum;
       try {
         RetryUtils.retry(() -> {
-          Supplier<Boolean> isValid = Optional.ofNullable(request.getIsValid()).orElse(() -> true);
-          if (!isValid.get()) {
+          Supplier<Boolean> needCancelRequest = Optional.ofNullable(request.getNeedCancelRequest()).orElse(() -> false);
+          if (needCancelRequest.get()) {
             throw new NotRetryException("Abort retry due to upstream task has been failed.");
           }
           long requireId = requirePreAllocation(
               allocateSize,
               request.getRetryMax(),
               request.getRetryIntervalMax(),
-              isValid
+              needCancelRequest
           );
           if (requireId == FAILED_REQUIRE_ID) {
             throw new RssException(String.format(
@@ -377,7 +378,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
               break;
             }
 
-            if (!isValid.get()) {
+            if (needCancelRequest.get()) {
               LOG.info("The request is invalid. Cancel it.");
               future.cancel(true);
               throw new NotRetryException("The request is invalid. Cancel it.");

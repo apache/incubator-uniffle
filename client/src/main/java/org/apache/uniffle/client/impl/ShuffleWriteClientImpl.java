@@ -285,7 +285,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     // This should be infrequent.
     // Even though the secondary round may send blocks more than replicaWrite replicas,
     // we do not apply complicated skipping logic, because server crash is rare in production environment.
-    if (!isAllSuccess && !secondaryServerToBlocks.isEmpty() && needCancelRequest.get()) {
+    if (!isAllSuccess && !secondaryServerToBlocks.isEmpty() && !needCancelRequest.get()) {
       LOG.info("The sending of primary round is failed partially, so start the secondary round");
       sendShuffleDataAsync(
           appId,
