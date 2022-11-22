@@ -77,7 +77,8 @@ public class CoordinatorConf extends RssBaseConf {
       .key("rss.coordinator.access.checkers")
       .stringType()
       .asList()
-      .defaultValues("org.apache.uniffle.coordinator.AccessClusterLoadChecker")
+      .defaultValues("org.apache.uniffle.coordinator.AccessClusterLoadChecker",
+          "org.apache.uniffle.coordinator.AccessQuotaChecker")
       .withDescription("Access checkers");
   public static final ConfigOption<Integer> COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC = ConfigOptions
       .key("rss.coordinator.access.candidates.updateIntervalSec")
@@ -178,6 +179,21 @@ public class CoordinatorConf extends RssBaseConf {
           .enumType(AbstractAssignmentStrategy.SelectPartitionStrategyName.class)
           .defaultValue(AbstractAssignmentStrategy.SelectPartitionStrategyName.ROUND)
           .withDescription("Strategy for selecting partitions");
+  public static final ConfigOption<Integer> COORDINATOR_QUOTA_DEFAULT_APP_NUM = ConfigOptions
+      .key("rss.coordinator.quota.default.app.num")
+      .intType()
+      .defaultValue(5)
+      .withDescription("Default number of apps at user level");
+  public static final ConfigOption<String> COORDINATOR_QUOTA_DEFAULT_PATH = ConfigOptions
+      .key("rss.coordinator.quota.default.path")
+      .stringType()
+      .noDefaultValue()
+      .withDescription("A configuration file for the number of apps for a user-defined user");
+  public static final ConfigOption<Long> COORDINATOR_QUOTA_UPDATE_INTERVAL = ConfigOptions
+      .key("rss.coordinator.quota.update.interval")
+      .longType()
+      .defaultValue(60 * 1000L)
+      .withDescription("Update interval for the default number of submitted apps per user");
 
   public CoordinatorConf() {
   }

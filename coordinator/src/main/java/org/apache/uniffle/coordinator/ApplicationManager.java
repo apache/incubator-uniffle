@@ -46,7 +46,6 @@ public class ApplicationManager {
   public static final List<String> REMOTE_PATH_SCHEMA = Arrays.asList("hdfs");
   private final long expired;
   private final StrategyName storageStrategy;
-  private final Map<String, Long> appIds = Maps.newConcurrentMap();
   private final SelectStorageStrategy selectStorageStrategy;
   // store appId -> remote path to make sure all shuffle data of the same application
   // will be written to the same remote storage
@@ -55,6 +54,9 @@ public class ApplicationManager {
   private final Map<String, RankValue> remoteStoragePathRankValue;
   private final Map<String, String> remoteStorageToHost = Maps.newConcurrentMap();
   private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
+  private final Map<String, Map<String, Long>> currentUserAndApp;
+  private final Map<String, String> appIdToUser;
+  private final Map<String, Integer> defaultUserApps;
   // it's only for test case to check if status check has problem
   private boolean hasErrorInStatusCheck = false;
 
@@ -73,6 +75,10 @@ public class ApplicationManager {
       throw new UnsupportedOperationException("Unsupported selected storage strategy.");
     }
     expired = conf.getLong(CoordinatorConf.COORDINATOR_APP_EXPIRED);
+    QuotaManager quotaManager = new QuotaManager(conf);
+    this.currentUserAndApp = quotaManager.getCurrentUserAndApp();
+    this.appIdToUser = quotaManager.getAppIdToUser();
+    this.defaultUserApps = quotaManager.getDefaultUserApps();
     // the thread for checking application status
     ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("ApplicationManager-%d"));
@@ -86,12 +92,32 @@ public class ApplicationManager {
         conf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME), TimeUnit.MILLISECONDS);
   }
 
-  public void refreshAppId(String appId) {
-    if (!appIds.containsKey(appId)) {
+  public void registerApplicationInfo(String appId, String user) {
+    // using computeIfAbsent is just for MR and spark which is used RssShuffleManager as implementation class
+    // in such case by default, there is no currentUserAndApp, so a unified user implementation named "user" is used.
+    Map<String, Long> appAndTime = currentUserAndApp.computeIfAbsent(user, x -> Maps.newConcurrentMap());
+    appIdToUser.put(appId, user);
+    if (!appAndTime.containsKey(appId)) {
       CoordinatorMetrics.counterTotalAppNum.inc();
       LOG.info("New application is registered: {}", appId);
     }
-    appIds.put(appId, System.currentTimeMillis());
+    long currentTimeMillis = System.currentTimeMillis();
+    String[] appIdAndUuid = appId.split("_");
+    String uuidFromApp = appIdAndUuid[appIdAndUuid.length - 1];
+    // if appId created successfully, we need to remove the uuid
+    appAndTime.remove(uuidFromApp);
+    appAndTime.put(appId, currentTimeMillis);
+  }
+
+  public void refreshAppId(String appId) {
+    String user = appIdToUser.get(appId);
+    // compatible with lower version clients
+    if (user == null) {
+      registerApplicationInfo(appId, "");
+    } else {
+      Map<String, Long> appAndTime = currentUserAndApp.get(user);
+      appAndTime.put(appId, System.currentTimeMillis());
+    }
   }
 
   public void refreshRemoteStorage(String remoteStoragePath, String remoteStorageConf) {
@@ -190,7 +216,7 @@ public class ApplicationManager {
   }
 
   public Set<String> getAppIds() {
-    return appIds.keySet();
+    return appIdToUser.keySet();
   }
 
   @VisibleForTesting
@@ -219,16 +245,26 @@ public class ApplicationManager {
   }
 
   private void statusCheck() {
+    List<Map<String, Long>> appAndNums = Lists.newArrayList(currentUserAndApp.values());
+    Map<String, Long> appIds = Maps.newHashMap();
+    // The reason for setting an expired uuid here is that there is a scenario where accessCluster succeeds,
+    // but the registration of shuffle fails, resulting in no normal heartbeat, and no normal update of uuid to appId.
+    // Therefore, an expiration time is set to automatically remove expired uuids
+    Set<String> expiredAppIds = Sets.newHashSet();
     try {
-      LOG.info("Start to check status for " + appIds.size() + " applications");
-      long current = System.currentTimeMillis();
-      Set<String> expiredAppIds = Sets.newHashSet();
-      for (Map.Entry<String, Long> entry : appIds.entrySet()) {
-        long lastReport = entry.getValue();
-        if (current - lastReport > expired) {
-          expiredAppIds.add(entry.getKey());
+      for (Map<String, Long> appAndTimes : appAndNums) {
+        for (Map.Entry<String, Long> appAndTime : appAndTimes.entrySet()) {
+          String appId = appAndTime.getKey();
+          long lastReport = appAndTime.getValue();
+          appIds.put(appId, lastReport);
+          if (System.currentTimeMillis() - lastReport > expired) {
+            expiredAppIds.add(appId);
+            appAndTimes.remove(appId);
+            appIdToUser.remove(appId);
+          }
         }
       }
+      LOG.info("Start to check status for " + appIds.size() + " applications");
       for (String appId : expiredAppIds) {
         LOG.info("Remove expired application:" + appId);
         appIds.remove(appId);
@@ -279,6 +315,14 @@ public class ApplicationManager {
       LOG.warn("Invalid format of remoteStoragePath to get host, {}", remoteStoragePath);
     }
     return storageHost;
+  }
+
+  public Map<String, Integer> getDefaultUserApps() {
+    return defaultUserApps;
+  }
+
+  public Map<String, Map<String, Long>> getCurrentUserApps() {
+    return currentUserAndApp;
   }
 
   public enum StrategyName {

@@ -96,6 +96,8 @@ public class RssShuffleManager implements ShuffleManager {
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
   private final ShuffleDataDistributionType dataDistributionType;
+  private String user;
+  private String uuid;
   private final EventLoop eventLoop;
   private final EventLoop defaultEventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
 
@@ -144,7 +146,8 @@ public class RssShuffleManager implements ShuffleManager {
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
-
+    this.user = sparkConf.get("spark.rss.quota.user", "user");
+    this.uuid = sparkConf.get("spark.rss.quota.uuid",  Long.toString(System.currentTimeMillis()));
     // set & check replica config
     this.dataReplica = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA);
     this.dataReplicaWrite =  sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_WRITE);
@@ -278,7 +281,7 @@ public class RssShuffleManager implements ShuffleManager {
     }
 
     if (id.get() == null) {
-      id.compareAndSet(null, SparkEnv.get().conf().getAppId() + "_" + System.currentTimeMillis());
+      id.compareAndSet(null, SparkEnv.get().conf().getAppId() + "_" + uuid);
     }
     LOG.info("Generate application id used in rss: " + id.get());
 
@@ -674,11 +677,13 @@ public class RssShuffleManager implements ShuffleManager {
   }
 
   private synchronized void startHeartbeat() {
+    shuffleWriteClient.registerApplicationInfo(id.get(), heartbeatTimeout, user);
     if (!heartbeatStarted) {
       heartBeatScheduledExecutorService.scheduleAtFixedRate(
           () -> {
             try {
-              shuffleWriteClient.sendAppHeartbeat(id.get(), heartbeatTimeout);
+              String appId = id.get();
+              shuffleWriteClient.sendAppHeartbeat(appId, heartbeatTimeout);
               LOG.info("Finish send heartbeat to coordinator and servers");
             } catch (Exception e) {
               LOG.warn("Fail to send heartbeat to coordinator and servers", e);

@@ -37,6 +37,8 @@ public interface ShuffleWriteClient {
 
   void sendAppHeartbeat(String appId, long timeoutMs);
 
+  void registerApplicationInfo(String appId, long timeoutMs, String user);
+
   void registerShuffle(
       ShuffleServerInfo shuffleServerInfo,
       String appId,

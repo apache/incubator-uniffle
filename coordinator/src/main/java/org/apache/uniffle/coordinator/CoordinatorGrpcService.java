@@ -38,6 +38,8 @@ import org.apache.uniffle.proto.RssProtos.AccessClusterRequest;
 import org.apache.uniffle.proto.RssProtos.AccessClusterResponse;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
+import org.apache.uniffle.proto.RssProtos.ApplicationInfoRequest;
+import org.apache.uniffle.proto.RssProtos.ApplicationInfoResponse;
 import org.apache.uniffle.proto.RssProtos.CheckServiceAvailableResponse;
 import org.apache.uniffle.proto.RssProtos.ClientConfItem;
 import org.apache.uniffle.proto.RssProtos.FetchClientConfResponse;
@@ -219,6 +221,30 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
   }
 
   @Override
+  public void registerApplicationInfo(
+      ApplicationInfoRequest request,
+      StreamObserver<ApplicationInfoResponse> responseObserver) {
+    String appId = request.getAppId();
+    String user = request.getUser();
+    coordinatorServer.getApplicationManager().registerApplicationInfo(appId, user);
+    LOG.debug("Got a registered application info: " + appId);
+    ApplicationInfoResponse response = ApplicationInfoResponse
+        .newBuilder()
+        .setRetMsg("")
+        .setStatus(StatusCode.SUCCESS)
+        .build();
+
+    if (Context.current().isCancelled()) {
+      responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
+      LOG.warn("Cancelled by client {} for after deadline.", appId);
+      return;
+    }
+
+    responseObserver.onNext(response);
+    responseObserver.onCompleted();
+  }
+
+  @Override
   public void accessCluster(AccessClusterRequest request, StreamObserver<AccessClusterResponse> responseObserver) {
     StatusCode statusCode = StatusCode.SUCCESS;
     AccessClusterResponse response;
@@ -228,7 +254,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
             new AccessInfo(
                 request.getAccessId(),
                 Sets.newHashSet(request.getTagsList()),
-                request.getExtraPropertiesMap()
+                request.getExtraPropertiesMap(),
+                request.getUser()
             );
     AccessCheckResult result = accessManager.handleAccessRequest(accessInfo);
     if (!result.isSuccess()) {
@@ -239,6 +266,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         .newBuilder()
         .setStatus(statusCode)
         .setRetMsg(result.getMsg())
+        .setUuid(result.getUuid())
         .build();
 
     if (Context.current().isCancelled()) {

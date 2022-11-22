@@ -286,6 +286,11 @@ public class SortWriteBufferManagerTest {
     }
 
     @Override
+    public void registerApplicationInfo(String appId, long timeoutMs, String user) {
+
+    }
+
+    @Override
     public void registerShuffle(
         ShuffleServerInfo shuffleServerInfo,
         String appId,

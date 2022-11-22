@@ -21,21 +21,25 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 
 public class AccessInfo {
   private final String accessId;
   private final Set<String> tags;
   private final Map<String, String> extraProperties;
+  private final String user;
 
-  public AccessInfo(String accessId, Set<String> tags, Map<String, String> extraProperties) {
+  public AccessInfo(String accessId, Set<String> tags, Map<String, String> extraProperties, String user) {
     this.accessId = accessId;
     this.tags = tags;
     this.extraProperties = extraProperties == null ? Collections.emptyMap() : extraProperties;
+    this.user = user;
   }
 
+  @VisibleForTesting
   public AccessInfo(String accessId) {
-    this(accessId, Sets.newHashSet(), Collections.emptyMap());
+    this(accessId, Sets.newHashSet(), Collections.emptyMap(), "");
   }
 
   public String getAccessId() {
@@ -50,10 +54,15 @@ public class AccessInfo {
     return extraProperties;
   }
 
+  public String getUser() {
+    return user;
+  }
+
   @Override
   public String toString() {
     return "AccessInfo{"
             + "accessId='" + accessId + '\''
+            + ", user= " + user
             + ", tags=" + tags
             + ", extraProperties=" + extraProperties
             + '}';

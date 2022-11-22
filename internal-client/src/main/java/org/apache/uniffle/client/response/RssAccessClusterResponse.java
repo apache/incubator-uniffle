@@ -19,7 +19,18 @@ package org.apache.uniffle.client.response;
 
 public class RssAccessClusterResponse extends ClientResponse {
 
+  private String uuid;
+
   public RssAccessClusterResponse(ResponseStatusCode statusCode, String messge) {
     super(statusCode, messge);
+  }
+
+  public RssAccessClusterResponse(ResponseStatusCode statusCode, String messge, String uuid) {
+    super(statusCode, messge);
+    this.uuid = uuid;
+  }
+
+  public String getUuid() {
+    return uuid;
   }
 }

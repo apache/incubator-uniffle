@@ -58,11 +58,11 @@ public class AccessCandidatesCheckerTest {
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, tempDir.toURI().toString());
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
         "org.apache.uniffle.coordinator.AccessCandidatesChecker");
-
+    final ApplicationManager applicationManager = new ApplicationManager(conf);
     // file load checking at startup
     Exception expectedException = null;
     try {
-      new AccessManager(conf, null, new Configuration());
+      new AccessManager(conf, null, applicationManager, new Configuration());
     } catch (RuntimeException e) {
       expectedException = e;
     }
@@ -72,7 +72,7 @@ public class AccessCandidatesCheckerTest {
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, cfgFile.toURI().toString());
     expectedException = null;
     try {
-      new AccessManager(conf, null, new Configuration());
+      new AccessManager(conf, null, applicationManager, new Configuration());
     } catch (RuntimeException e) {
       expectedException = e;
     }
@@ -88,7 +88,7 @@ public class AccessCandidatesCheckerTest {
     printWriter.println("2 ");
     printWriter.flush();
     printWriter.close();
-    AccessManager accessManager = new AccessManager(conf, null, new Configuration());
+    AccessManager accessManager = new AccessManager(conf, null, applicationManager, new Configuration());
     AccessCandidatesChecker checker = (AccessCandidatesChecker) accessManager.getAccessCheckers().get(0);
     sleep(1200);
     assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());

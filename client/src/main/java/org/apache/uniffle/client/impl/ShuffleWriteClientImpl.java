@@ -45,6 +45,7 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
 import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
+import org.apache.uniffle.client.request.RssApplicationInfoRequest;
 import org.apache.uniffle.client.request.RssFetchClientConfRequest;
 import org.apache.uniffle.client.request.RssFetchRemoteStorageRequest;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
@@ -59,6 +60,7 @@ import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
 import org.apache.uniffle.client.response.ClientResponse;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
+import org.apache.uniffle.client.response.RssApplicationInfoResponse;
 import org.apache.uniffle.client.response.RssFetchClientConfResponse;
 import org.apache.uniffle.client.response.RssFetchRemoteStorageResponse;
 import org.apache.uniffle.client.response.RssFinishShuffleResponse;
@@ -550,6 +552,37 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   @Override
+  public void registerApplicationInfo(String appId, long timeoutMs, String user) {
+    RssApplicationInfoRequest request = new RssApplicationInfoRequest(appId, timeoutMs, user);
+    List<Callable<Void>> callableList = Lists.newArrayList();
+    coordinatorClients.forEach(coordinatorClient -> {
+      callableList.add(() -> {
+        try {
+          RssApplicationInfoResponse response = coordinatorClient.registerApplicationInfo(request);
+          if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
+            LOG.error("Failed to send applicationInfo to " + coordinatorClient.getDesc());
+          } else {
+            LOG.info("Successfully send applicationInfo to " + coordinatorClient.getDesc());
+          }
+        } catch (Exception e) {
+          LOG.warn("Error happened when send applicationInfo to " + coordinatorClient.getDesc(), e);
+        }
+        return null;
+      });
+    });
+    try {
+      List<Future<Void>> futures = heartBeatExecutorService.invokeAll(callableList, timeoutMs, TimeUnit.MILLISECONDS);
+      for (Future<Void> future : futures) {
+        if (!future.isDone()) {
+          future.cancel(true);
+        }
+      }
+    } catch (InterruptedException ie) {
+      LOG.warn("register application is interrupted", ie);
+    }
+  }
+
+  @Override
   public void sendAppHeartbeat(String appId, long timeoutMs) {
     RssAppHeartBeatRequest request = new RssAppHeartBeatRequest(appId, timeoutMs);
     List<Callable<Void>> callableList = Lists.newArrayList();
@@ -571,7 +604,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         }
     );
 
-    coordinatorClients.stream().forEach(coordinatorClient -> {
+    coordinatorClients.forEach(coordinatorClient -> {
       callableList.add(() -> {
         try {
           RssAppHeartBeatResponse response = coordinatorClient.sendAppHeartBeat(request);
@@ -683,7 +716,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     return ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
   }
 
-  @VisibleForTesting
   void addShuffleServer(String appId, int shuffleId, ShuffleServerInfo serverInfo) {
     Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
     if (appServerMap == null) {

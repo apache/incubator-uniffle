@@ -88,6 +88,8 @@ public class RssShuffleManager implements ShuffleManager {
   private final int dataCommitPoolSize;
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
+  private final String user;
+  private final String uuid;
   private ThreadPoolExecutor threadPoolExecutor;
   private EventLoop eventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
 
@@ -142,7 +144,8 @@ public class RssShuffleManager implements ShuffleManager {
       throw new IllegalArgumentException("Spark2 doesn't support AQE, spark.sql.adaptive.enabled should be false.");
     }
     this.sparkConf = sparkConf;
-
+    this.user = sparkConf.get("spark.rss.quota.user", "user");
+    this.uuid = sparkConf.get("spark.rss.quota.uuid",  Long.toString(System.currentTimeMillis()));
     // set & check replica config
     this.dataReplica = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA);
     this.dataReplicaWrite = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_WRITE);
@@ -217,12 +220,12 @@ public class RssShuffleManager implements ShuffleManager {
     }
 
     // If yarn enable retry ApplicationMaster, appId will be not unique and shuffle data will be incorrect,
-    // appId + timestamp can avoid such problem,
+    // appId + uuid can avoid such problem,
     // can't get appId in construct because SparkEnv is not created yet,
     // appId will be initialized only once in this method which
     // will be called many times depend on how many shuffle stage
     if ("".equals(appId)) {
-      appId = SparkEnv.get().conf().getAppId() + "_" + System.currentTimeMillis();
+      appId = SparkEnv.get().conf().getAppId() + "_" + uuid;
       LOG.info("Generate application id used in rss: " + appId);
     }
 
@@ -273,6 +276,7 @@ public class RssShuffleManager implements ShuffleManager {
   }
 
   private void startHeartbeat() {
+    shuffleWriteClient.registerApplicationInfo(appId, heartbeatTimeout, user);
     if (!sparkConf.getBoolean(RssSparkConfig.RSS_TEST_FLAG.key(), false) && !heartbeatStarted) {
       heartBeatScheduledExecutorService.scheduleAtFixedRate(
           () -> {
