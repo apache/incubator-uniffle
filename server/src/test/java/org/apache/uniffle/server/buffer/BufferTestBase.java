@@ -47,13 +47,16 @@ public abstract class BufferTestBase {
   }
 
   protected ShufflePartitionedData createData(int partitionId, int len) {
+    return createData(partitionId, 0, len);
+  }
+
+  protected ShufflePartitionedData createData(int partitionId, int taskAttemptId, int len) {
     byte[] buf = new byte[len];
     new Random().nextBytes(buf);
     ShufflePartitionedBlock block = new ShufflePartitionedBlock(
-        len, len, ChecksumUtils.getCrc32(buf), atomBlockId.incrementAndGet(), 0, buf);
+        len, len, ChecksumUtils.getCrc32(buf), atomBlockId.incrementAndGet(), taskAttemptId, buf);
     ShufflePartitionedData data = new ShufflePartitionedData(
         partitionId, new ShufflePartitionedBlock[]{block});
     return data;
   }
-
 }
