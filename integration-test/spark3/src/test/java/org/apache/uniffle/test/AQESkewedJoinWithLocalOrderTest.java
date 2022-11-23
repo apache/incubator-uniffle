@@ -19,30 +19,16 @@ package org.apache.uniffle.test;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
-import org.junit.jupiter.api.BeforeAll;
 
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.config.RssClientConf;
-import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
 public class AQESkewedJoinWithLocalOrderTest extends AQESkewedJoinTest {
 
-  @BeforeAll
-  public static void setupServers() throws Exception {
-    CoordinatorConf coordinatorConf = getCoordinatorConf();
-    createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    // Use the LOCALFILE storage type to ensure the data will be flushed by local_order mechanism
-    shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
-    createShuffleServer(shuffleServerConf);
-    startServers();
-  }
-
   @Override
   public void updateSparkConfCustomer(SparkConf sparkConf) {
-    sparkConf.set(RssSparkConfig.RSS_STORAGE_TYPE.key(), "LOCALFILE");
+    sparkConf.set(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     sparkConf.set("spark." + RssClientConf.DATA_DISTRIBUTION_TYPE.key(),
         ShuffleDataDistributionType.LOCAL_ORDER.name());
   }
