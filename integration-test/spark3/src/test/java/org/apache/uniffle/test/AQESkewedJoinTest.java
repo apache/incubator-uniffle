@@ -44,12 +44,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class AQESkewedJoinTest extends SparkIntegrationTestBase {
 
   @BeforeAll
-  private static void setupServers() throws Exception {
+  public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
-    Map<String, String> dynamicConf = Maps.newHashMap();
-    dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
-    addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     createShuffleServer(shuffleServerConf);
@@ -68,7 +64,7 @@ public class AQESkewedJoinTest extends SparkIntegrationTestBase {
 
   @Override
   public void updateSparkConfCustomer(SparkConf sparkConf) {
-    sparkConf.set(RssSparkConfig.RSS_STORAGE_TYPE.key(), "HDFS");
+    sparkConf.set(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     sparkConf.set(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
   }
 
