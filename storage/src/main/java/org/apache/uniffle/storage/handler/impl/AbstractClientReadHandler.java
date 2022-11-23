@@ -48,11 +48,6 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
   public void logConsumedBlockInfo() {
   }
 
-  @Override
-  public void nextRound() {
-
-  }
-
   protected void incrFailTimes() {
     if (++failTimes >= maxHandlerFailTimes) {
       isFinished = true;

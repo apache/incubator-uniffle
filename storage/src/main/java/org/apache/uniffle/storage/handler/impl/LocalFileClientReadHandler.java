@@ -38,7 +38,7 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
   private final int partitionNum;
   private ShuffleServerClient shuffleServerClient;
 
-  LocalFileClientReadHandler(
+  public LocalFileClientReadHandler(
       String appId,
       int shuffleId,
       int partitionId,

@@ -154,17 +154,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
 
     // if need request new data from shuffle server
     if (bufferSegmentQueue.isEmpty()) {
-      while (read() <= 0) {
-        // read until all handlers finished
-        if (clientReadHandler.finished()) {
-          return null;
-        }
-        try {
-          checkProcessedBlockIds();
-        } catch (RssException e) {
-          clientReadHandler.nextRound();
-          continue;
-        }
+      if (read() <= 0) {
         return null;
       }
     }
@@ -243,13 +233,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   @Override
   public void checkProcessedBlockIds() {
-    Roaring64NavigableMap cloneBitmap;
-    cloneBitmap = RssUtils.cloneBitMap(blockIdBitmap);
-    cloneBitmap.and(processedBlockIds);
-    if (!blockIdBitmap.equals(cloneBitmap)) {
-      throw new RssException("Blocks read inconsistent: expected " + blockIdBitmap.getLongCardinality()
-          + " blocks, actual " + cloneBitmap.getLongCardinality() + " blocks");
-    }
+    RssUtils.checkProcessedBlockIds(blockIdBitmap, processedBlockIds);
   }
 
   @Override

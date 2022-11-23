@@ -17,9 +17,11 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,10 +46,6 @@ public class ComposedClientReadHandler implements ClientReadHandler {
   private ClientReadHandler warmDataReadHandler;
   private ClientReadHandler coldDataReadHandler;
   private ClientReadHandler frozenDataReadHandler;
-  private Callable<ClientReadHandler> hotHandlerCreator;
-  private Callable<ClientReadHandler> warmHandlerCreator;
-  private Callable<ClientReadHandler> coldHandlerCreator;
-  private Callable<ClientReadHandler> frozenHandlerCreator;
   private static final int HOT = 1;
   private static final int WARM = 2;
   private static final int COLD = 3;
@@ -71,34 +69,22 @@ public class ComposedClientReadHandler implements ClientReadHandler {
   private long frozenReadUncompressLength = 0L;
 
   public ComposedClientReadHandler(ClientReadHandler... handlers) {
-    topLevelOfHandler = handlers.length;
-    if (topLevelOfHandler > 0) {
-      this.hotDataReadHandler = handlers[0];
-    }
-    if (topLevelOfHandler > 1) {
-      this.warmDataReadHandler = handlers[1];
-    }
-    if (topLevelOfHandler > 2) {
-      this.coldDataReadHandler = handlers[2];
-    }
-    if (topLevelOfHandler > 3) {
-      this.frozenDataReadHandler = handlers[3];
-    }
+    this(Lists.newArrayList(handlers));
   }
 
-  public ComposedClientReadHandler(Callable<ClientReadHandler>... creators) {
-    topLevelOfHandler = creators.length;
+  public ComposedClientReadHandler(List<ClientReadHandler> handlers) {
+    topLevelOfHandler = handlers.size();
     if (topLevelOfHandler > 0) {
-      this.hotHandlerCreator = creators[0];
+      this.hotDataReadHandler = handlers.get(0);
     }
     if (topLevelOfHandler > 1) {
-      this.warmHandlerCreator = creators[1];
+      this.warmDataReadHandler = handlers.get(1);
     }
     if (topLevelOfHandler > 2) {
-      this.coldHandlerCreator = creators[2];
+      this.coldDataReadHandler = handlers.get(2);
     }
     if (topLevelOfHandler > 3) {
-      this.frozenHandlerCreator = creators[3];
+      this.frozenDataReadHandler = handlers.get(3);
     }
   }
 
@@ -108,27 +94,15 @@ public class ComposedClientReadHandler implements ClientReadHandler {
     try {
       switch (currentHandler) {
         case HOT:
-          if (hotDataReadHandler == null) {
-            hotDataReadHandler = createReadHandlerIfNotExist(hotHandlerCreator);
-          }
           shuffleDataResult = hotDataReadHandler.readShuffleData();
           break;
         case WARM:
-          if (warmDataReadHandler == null) {
-            warmDataReadHandler = createReadHandlerIfNotExist(warmHandlerCreator);
-          }
           shuffleDataResult = warmDataReadHandler.readShuffleData();
           break;
         case COLD:
-          if (coldDataReadHandler == null) {
-            coldDataReadHandler = createReadHandlerIfNotExist(coldHandlerCreator);
-          }
           shuffleDataResult = coldDataReadHandler.readShuffleData();
           break;
         case FROZEN:
-          if (frozenDataReadHandler == null) {
-            frozenDataReadHandler = createReadHandlerIfNotExist(frozenHandlerCreator);
-          }
           shuffleDataResult = frozenDataReadHandler.readShuffleData();
           break;
         default:
@@ -234,27 +208,6 @@ public class ComposedClientReadHandler implements ClientReadHandler {
     LOG.info(getReadBlokNumInfo());
     LOG.info(getReadLengthInfo());
     LOG.info(getReadUncompressLengthInfo());
-  }
-
-  /**
-   * If blocks read inconsistent, we need try again.
-   * And the low-level handlers may need do something before try.
-   */
-  @Override
-  public void nextRound() {
-    currentHandler = HOT;
-    if (hotDataReadHandler != null) {
-      hotDataReadHandler.nextRound();
-    }
-    if (warmDataReadHandler != null) {
-      warmDataReadHandler.nextRound();
-    }
-    if (coldDataReadHandler != null) {
-      coldDataReadHandler.nextRound();
-    }
-    if (frozenDataReadHandler != null) {
-      frozenDataReadHandler.nextRound();
-    }
   }
 
   @Override

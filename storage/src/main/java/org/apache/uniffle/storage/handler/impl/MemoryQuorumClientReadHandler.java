@@ -27,6 +27,7 @@ import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.util.Constants;
 
+@Deprecated
 public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(MemoryQuorumClientReadHandler.class);

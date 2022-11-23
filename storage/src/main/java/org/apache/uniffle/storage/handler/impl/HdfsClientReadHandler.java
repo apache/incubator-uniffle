@@ -43,6 +43,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
   protected final int partitionNumPerRange;
   protected final int partitionNum;
   protected final int readBufferSize;
+  private final String shuffleServerId;
   protected Roaring64NavigableMap expectBlockIds;
   protected Roaring64NavigableMap processBlockIds;
   protected final String storageBasePath;
@@ -71,7 +72,8 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       Configuration hadoopConf,
       ShuffleDataDistributionType distributionType,
       Roaring64NavigableMap expectTaskIds,
-      int maxHandlerFailTimes) {
+      int maxHandlerFailTimes,
+      String shuffleServerId) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -86,6 +88,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
     this.distributionType = distributionType;
     this.expectTaskIds = expectTaskIds;
     this.maxHandlerFailTimes = maxHandlerFailTimes;
+    this.shuffleServerId = shuffleServerId;
   }
 
   // Only for test
@@ -103,7 +106,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       Configuration hadoopConf) {
     this(appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange, partitionNum, readBufferSize,
         expectBlockIds, processBlockIds, storageBasePath, hadoopConf, ShuffleDataDistributionType.NORMAL,
-        Roaring64NavigableMap.bitmapOf(), 3);
+        Roaring64NavigableMap.bitmapOf(), 3, null);
   }
 
   protected void init(String fullShufflePath) {
@@ -121,7 +124,8 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
     try {
       // get all index files
       indexFiles = fs.listStatus(baseFolder,
-          file -> file.getName().endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX));
+          file -> file.getName().endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX)
+              && (shuffleServerId == null || file.getName().startsWith(shuffleServerId)));
     } catch (Exception e) {
       LOG.error(failedGetIndexFileMsg, e);
       return;
@@ -223,11 +227,6 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
   public void logConsumedBlockInfo() {
     LOG.info("Client read " + readBlockNum + " blocks,"
         + " bytes:" +  readLength + "  uncompressed bytes:" + readUncompressLength);
-  }
-
-  @Override
-  public void nextRound() {
-    readHandlerIndex = 0;
   }
 
   @Override

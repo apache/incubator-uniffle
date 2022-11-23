@@ -73,4 +73,6 @@ public interface ShuffleServerClient {
   void close();
 
   String getClientInfo();
+
+  String getId();
 }
