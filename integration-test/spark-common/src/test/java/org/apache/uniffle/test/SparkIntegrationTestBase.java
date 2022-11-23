@@ -70,7 +70,11 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
   }
 
   protected Map runSparkApp(SparkConf sparkConf, String testFileName) throws Exception {
-    SparkSession spark = SparkSession.builder().config(sparkConf).getOrCreate();
+    SparkSession spark = SparkSession.getActiveSession().getOrElse(() -> null);
+    if (spark != null) {
+      spark.close();
+    }
+    spark = SparkSession.builder().config(sparkConf).getOrCreate();
     Map resultWithRss = runTest(spark, testFileName);
     spark.stop();
     return resultWithRss;

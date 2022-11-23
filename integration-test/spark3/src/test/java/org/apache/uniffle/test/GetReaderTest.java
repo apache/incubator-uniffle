@@ -170,6 +170,8 @@ public class GetReaderTest extends IntegrationTestBase {
     commonHadoopConf = jsc2.hadoopConfiguration();
     assertNull(commonHadoopConf.get("k1"));
     assertNull(commonHadoopConf.get("k2"));
+
+    sparkSession.close();
   }
 
   private static class MockTaskContext extends TaskContext {
