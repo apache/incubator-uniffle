@@ -24,6 +24,7 @@ import java.util.Set;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.TaskContext;
@@ -48,6 +49,8 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   private final List<CoordinatorClient> coordinatorClients;
   private final int accessTimeoutMs;
   private final SparkConf sparkConf;
+  private String user;
+  private String uuid;
 
   public DelegationRssShuffleManager(SparkConf sparkConf, boolean isDriver) throws Exception {
     this.sparkConf = sparkConf;
@@ -67,10 +70,20 @@ public class DelegationRssShuffleManager implements ShuffleManager {
 
   private ShuffleManager createShuffleManagerInDriver() throws RssException {
     ShuffleManager shuffleManager;
-
+    user = "user";
+    try {
+      user = UserGroupInformation.getCurrentUser().getShortUserName();
+    } catch (Exception e) {
+      LOG.error("Error on getting user from ugi." + e);
+    }
     boolean canAccess = tryAccessCluster();
+    if (uuid == null || "".equals(uuid)) {
+      uuid = String.valueOf(System.currentTimeMillis());
+    }
     if (canAccess) {
       try {
+        sparkConf.set("spark.rss.quota.user", user);
+        sparkConf.set("spark.rss.quota.uuid", uuid);
         shuffleManager = new RssShuffleManager(sparkConf, true);
         sparkConf.set(RssSparkConfig.RSS_ENABLED.key(), "true");
         sparkConf.set("spark.shuffle.manager", RssShuffleManager.class.getCanonicalName());
@@ -113,9 +126,10 @@ public class DelegationRssShuffleManager implements ShuffleManager {
       try {
         canAccess = RetryUtils.retry(() -> {
           RssAccessClusterResponse response = coordinatorClient.accessCluster(new RssAccessClusterRequest(
-              accessId, assignmentTags, accessTimeoutMs, extraProperties));
+              accessId, assignmentTags, accessTimeoutMs, extraProperties, user));
           if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
             LOG.warn("Success to access cluster {} using {}", coordinatorClient.getDesc(), accessId);
+            uuid = response.getUuid();
             return true;
           } else if (response.getStatusCode() == ResponseStatusCode.ACCESS_DENIED) {
             throw new RssException("Request to access cluster " + coordinatorClient.getDesc() + " is denied using "

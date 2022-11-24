@@ -307,13 +307,14 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             throw new RssException(String.format(
                 "requirePreAllocation failed! size[%s], host[%s], port[%s]", allocateSize, host, port));
           }
+          long start = System.currentTimeMillis();
           SendShuffleDataRequest rpcRequest = SendShuffleDataRequest.newBuilder()
               .setAppId(appId)
               .setShuffleId(stb.getKey())
               .setRequireBufferId(requireId)
               .addAllShuffleData(shuffleData)
+              .setTimestamp(start)
               .build();
-          long start = System.currentTimeMillis();
           SendShuffleDataResponse response = getBlockingStub().sendShuffleData(rpcRequest);
           LOG.info("Do sendShuffleData to {}:{} rpc cost:" + (System.currentTimeMillis() - start)
               + " ms for " + allocateSize + " bytes with " + finalBlockNum + " blocks", host, port);
@@ -522,6 +523,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
 
   @Override
   public RssGetShuffleDataResponse getShuffleData(RssGetShuffleDataRequest request) {
+    long start = System.currentTimeMillis();
     GetLocalShuffleDataRequest rpcRequest = GetLocalShuffleDataRequest
         .newBuilder()
         .setAppId(request.getAppId())
@@ -531,8 +533,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setPartitionNum(request.getPartitionNum())
         .setOffset(request.getOffset())
         .setLength(request.getLength())
+        .setTimestamp(start)
         .build();
-    long start = System.currentTimeMillis();
     GetLocalShuffleDataResponse rpcResponse = getBlockingStub().getLocalShuffleData(rpcRequest);
     String requestInfo = "appId[" + request.getAppId() + "], shuffleId["
         + request.getShuffleId() + "], partitionId[" + request.getPartitionId() + "]";
@@ -595,6 +597,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   @Override
   public RssGetInMemoryShuffleDataResponse getInMemoryShuffleData(
       RssGetInMemoryShuffleDataRequest request) {
+    long start = System.currentTimeMillis();
     GetMemoryShuffleDataRequest rpcRequest = GetMemoryShuffleDataRequest
         .newBuilder()
         .setAppId(request.getAppId())
@@ -602,9 +605,9 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setPartitionId(request.getPartitionId())
         .setLastBlockId(request.getLastBlockId())
         .setReadBufferSize(request.getReadBufferSize())
+        .setTimestamp(start)
         .build();
 
-    long start = System.currentTimeMillis();
     GetMemoryShuffleDataResponse rpcResponse = getBlockingStub().getMemoryShuffleData(rpcRequest);
     String requestInfo = "appId[" + request.getAppId() + "], shuffleId["
         + request.getShuffleId() + "], partitionId[" + request.getPartitionId() + "]";

@@ -35,15 +35,19 @@ public class AccessManager {
 
   private final CoordinatorConf coordinatorConf;
   private final ClusterManager clusterManager;
+  private final ApplicationManager applicationManager;
   private final Configuration hadoopConf;
   private List<AccessChecker> accessCheckers = Lists.newArrayList();
 
   public AccessManager(
-          CoordinatorConf conf, ClusterManager clusterManager,
-          Configuration hadoopConf) throws Exception {
+      CoordinatorConf conf,
+      ClusterManager clusterManager,
+      ApplicationManager applicationManager,
+      Configuration hadoopConf) throws Exception {
     this.coordinatorConf = conf;
     this.clusterManager = clusterManager;
     this.hadoopConf = hadoopConf;
+    this.applicationManager = applicationManager;
     init();
   }
 
@@ -58,15 +62,20 @@ public class AccessManager {
   }
 
   public AccessCheckResult handleAccessRequest(AccessInfo accessInfo) {
+    String uuid = "";
     CoordinatorMetrics.counterTotalAccessRequest.inc();
     for (AccessChecker checker : accessCheckers) {
       AccessCheckResult accessCheckResult = checker.check(accessInfo);
       if (!accessCheckResult.isSuccess()) {
         return accessCheckResult;
       }
+      String resultUuid = accessCheckResult.getUuid();
+      if (!"".equals(resultUuid)) {
+        uuid = resultUuid;
+      }
     }
 
-    return new AccessCheckResult(true, Constants.COMMON_SUCCESS_MESSAGE);
+    return new AccessCheckResult(true, Constants.COMMON_SUCCESS_MESSAGE, uuid);
   }
 
   public CoordinatorConf getCoordinatorConf() {
@@ -83,6 +92,10 @@ public class AccessManager {
 
   public Configuration getHadoopConf() {
     return hadoopConf;
+  }
+
+  public ApplicationManager getApplicationManager() {
+    return applicationManager;
   }
 
   public void close() throws IOException {

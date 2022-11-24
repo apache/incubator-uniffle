@@ -195,6 +195,7 @@ public class RssUtils {
 
     List<T> extensions = Lists.newArrayList();
     for (String name : classes) {
+      name = name.trim();
       try {
         Class<?> klass = Class.forName(name);
         if (!extClass.isAssignableFrom(klass)) {

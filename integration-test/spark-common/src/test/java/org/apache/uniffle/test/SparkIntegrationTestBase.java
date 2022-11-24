@@ -26,6 +26,7 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Option;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -69,8 +70,16 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
 
   }
 
+  private static <T> T getIfExists(Option<T> o) {
+    return o.isDefined() ? o.get() : null;
+  }
+
   protected Map runSparkApp(SparkConf sparkConf, String testFileName) throws Exception {
-    SparkSession spark = SparkSession.builder().config(sparkConf).getOrCreate();
+    SparkSession spark = getIfExists(SparkSession.getActiveSession());
+    if (spark != null) {
+      spark.close();
+    }
+    spark = SparkSession.builder().config(sparkConf).getOrCreate();
     Map resultWithRss = runTest(spark, testFileName);
     spark.stop();
     return resultWithRss;

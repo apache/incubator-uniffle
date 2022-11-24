@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -133,58 +132,5 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
     }
     LOG.warn("No remote storage is available, we will default to the first.");
     return availableRemoteStorageInfo.values().iterator().next();
-  }
-
-  static class RankValue {
-    AtomicLong costTime;
-    AtomicInteger appNum;
-    AtomicBoolean isHealthy;
-
-    RankValue(int appNum) {
-      this.costTime = new AtomicLong(0);
-      this.appNum = new AtomicInteger(appNum);
-      this.isHealthy = new AtomicBoolean(true);
-    }
-
-    RankValue(long costTime, int appNum) {
-      this.costTime = new AtomicLong(costTime);
-      this.appNum = new AtomicInteger(appNum);
-      this.isHealthy = new AtomicBoolean(true);
-    }
-
-    public AtomicLong getCostTime() {
-      return costTime;
-    }
-
-    public AtomicInteger getAppNum() {
-      return appNum;
-    }
-
-    public AtomicBoolean getHealthy() {
-      return isHealthy;
-    }
-
-    public void setCostTime(AtomicLong readAndWriteTime) {
-      this.costTime = readAndWriteTime;
-    }
-
-    public void setAppNum(AtomicInteger appNum) {
-      this.appNum = appNum;
-    }
-
-    public void setHealthy(AtomicBoolean isHealthy) {
-      this.isHealthy = isHealthy;
-      if (!isHealthy.get()) {
-        this.costTime.set(Long.MAX_VALUE);
-      }
-    }
-
-    @Override
-    public String toString() {
-      return "RankValue{"
-          + "costTime=" + costTime
-          + ", appNum=" + appNum
-          + '}';
-    }
   }
 }

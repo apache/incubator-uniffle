@@ -31,6 +31,10 @@ github:
     issues: true
     # Enable projects for project management boards
     projects: true
+  collaborators:
+    - smallzhongfeng
+    - xianjingfeng
+    - leixm
   enabled_merge_buttons:
     squash: true
     merge: false

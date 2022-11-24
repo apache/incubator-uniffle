@@ -22,6 +22,8 @@ import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.BufferSegment;
@@ -30,25 +32,168 @@ import org.apache.uniffle.common.ShuffleIndexResult;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class LocalOrderSegmentSplitterTest {
 
   @Test
-  public void testSplitWithDiscontinuousBlocksShouldThrowException() {
-    Roaring64NavigableMap taskIds = Roaring64NavigableMap.bitmapOf(1, 2, 4);
-    LocalOrderSegmentSplitter splitter = new LocalOrderSegmentSplitter(taskIds, 32);
+  public void testDiscontinuousMapTaskIds() {
+    // case1
+    Roaring64NavigableMap taskIds = Roaring64NavigableMap.bitmapOf(6, 7, 9);
     byte[] data = generateData(
+        Pair.of(8, 4),
+        Pair.of(8, 5),
+        Pair.of(8, 6),
+        Pair.of(8, 7),
+        Pair.of(8, 8),
+        Pair.of(8, 9),
+        Pair.of(8, 6),
+        Pair.of(8, 9)
+    );
+    List<ShuffleDataSegment> dataSegments1 = new LocalOrderSegmentSplitter(taskIds, 1000)
+        .split(new ShuffleIndexResult(data, -1));
+
+    assertEquals(2, dataSegments1.size());
+    assertEquals(16, dataSegments1.get(0).getOffset());
+    assertEquals(16, dataSegments1.get(0).getLength());
+    assertEquals(40, dataSegments1.get(1).getOffset());
+    assertEquals(24, dataSegments1.get(1).getLength());
+
+    assertEquals(2, dataSegments1.get(0).getBufferSegments().size());
+    assertEquals(3, dataSegments1.get(1).getBufferSegments().size());
+
+    BufferSegment bufferSegment = dataSegments1.get(0).getBufferSegments().get(0);
+    assertEquals(0, bufferSegment.getOffset());
+    assertEquals(8, bufferSegment.getLength());
+    bufferSegment = dataSegments1.get(0).getBufferSegments().get(1);
+    assertEquals(8, bufferSegment.getOffset());
+    assertEquals(8, bufferSegment.getLength());
+
+    bufferSegment = dataSegments1.get(1).getBufferSegments().get(0);
+    assertEquals(0, bufferSegment.getOffset());
+    assertEquals(8, bufferSegment.getLength());
+    bufferSegment = dataSegments1.get(1).getBufferSegments().get(1);
+    assertEquals(8, bufferSegment.getOffset());
+    assertEquals(8, bufferSegment.getLength());
+    bufferSegment = dataSegments1.get(1).getBufferSegments().get(2);
+    assertEquals(16, bufferSegment.getOffset());
+    assertEquals(8, bufferSegment.getLength());
+
+    // case2
+    taskIds = Roaring64NavigableMap.bitmapOf(1, 2, 4);
+    data = generateData(
         Pair.of(1, 1),
         Pair.of(1, 2),
         Pair.of(1, 3),
         Pair.of(1, 4)
     );
-    try {
-      splitter.split(new ShuffleIndexResult(data, -1));
-      fail();
-    } catch (Exception e) {
-      // ignore
+    List<ShuffleDataSegment> dataSegments2 =
+        new LocalOrderSegmentSplitter(taskIds, 32).split(new ShuffleIndexResult(data, -1));
+    assertEquals(2, dataSegments2.size());
+    assertEquals(0, dataSegments2.get(0).getOffset());
+    assertEquals(2, dataSegments2.get(0).getLength());
+    assertEquals(2, dataSegments2.get(0).getBufferSegments().size());
+
+    assertEquals(3, dataSegments2.get(1).getOffset());
+    assertEquals(1, dataSegments2.get(1).getLength());
+    assertEquals(1, dataSegments2.get(1).getBufferSegments().size());
+
+    // case3
+    taskIds = Roaring64NavigableMap.bitmapOf(1, 2, 4);
+    data = generateData(
+        Pair.of(1, 1),
+        Pair.of(1, 2),
+        Pair.of(1, 1),
+        Pair.of(1, 1),
+        Pair.of(1, 3),
+        Pair.of(1, 4),
+        Pair.of(1, 1)
+    );
+    List<ShuffleDataSegment> dataSegments3 =
+        new LocalOrderSegmentSplitter(taskIds, 3).split(new ShuffleIndexResult(data, -1));
+    assertEquals(3, dataSegments3.size());
+    assertEquals(0, dataSegments3.get(0).getOffset());
+    assertEquals(3, dataSegments3.get(0).getLength());
+    assertEquals(3, dataSegments3.get(0).getBufferSegments().size());
+
+    assertEquals(3, dataSegments3.get(1).getOffset());
+    assertEquals(1, dataSegments3.get(1).getLength());
+    assertEquals(1, dataSegments3.get(1).getBufferSegments().size());
+
+    assertEquals(5, dataSegments3.get(2).getOffset());
+    assertEquals(2, dataSegments3.get(2).getLength());
+    assertEquals(2, dataSegments3.get(2).getBufferSegments().size());
+
+    // case4
+    taskIds = Roaring64NavigableMap.bitmapOf(1, 3);
+    data = generateData(
+        Pair.of(1, 1),
+        Pair.of(1, 2),
+        Pair.of(1, 3),
+        Pair.of(1, 2),
+        Pair.of(1, 4)
+    );
+    List<ShuffleDataSegment> dataSegments4 =
+        new LocalOrderSegmentSplitter(taskIds, 3).split(new ShuffleIndexResult(data, -1));
+    assertEquals(2, dataSegments4.size());
+  }
+
+  /**
+   * When no spark skew optimization and LOCAL_ORDER is enabled,
+   * the LOCAL_ORDER split segments should be consistent with the
+   * NORMAL
+   */
+  @ParameterizedTest()
+  @ValueSource(ints = {-1, 32, 33, 48, 49, 57})
+  public void testConsistentWithFixSizeSplitterWhenNoSkew(int realDataLength) {
+    Roaring64NavigableMap taskIds = Roaring64NavigableMap.bitmapOf(1, 2, 3, 4, 5, 6);
+    byte[] data = generateData(
+        Pair.of(8, 6),
+        Pair.of(8, 5),
+        Pair.of(8, 4),
+        Pair.of(8, 3),
+        Pair.of(8, 1),
+        Pair.of(8, 2),
+        Pair.of(8, 3),
+        Pair.of(8, 2),
+        Pair.of(8, 3),
+        Pair.of(8, 3),
+        Pair.of(8, 4),
+        Pair.of(8, 5)
+    );
+    List<ShuffleDataSegment> dataSegments1 = new LocalOrderSegmentSplitter(taskIds, 32)
+        .split(new ShuffleIndexResult(data, realDataLength));
+
+    List<ShuffleDataSegment> dataSegments2 = new FixedSizeSegmentSplitter(32)
+        .split(new ShuffleIndexResult(data, realDataLength));
+
+    checkConsistency(dataSegments1, dataSegments2);
+  }
+
+  private void checkConsistency(List<ShuffleDataSegment> dataSegments1, List<ShuffleDataSegment> dataSegments2) {
+    assertEquals(dataSegments1.size(), dataSegments2.size());
+
+    for (int i = 0; i < dataSegments1.size(); i++) {
+      ShuffleDataSegment segment1 = dataSegments1.get(i);
+      ShuffleDataSegment segment2 = dataSegments2.get(i);
+
+      assertEquals(segment1.getLength(), segment2.getLength());
+      assertEquals(segment1.getOffset(), segment2.getOffset());
+
+      List<BufferSegment> bufferSegments1 = segment1.getBufferSegments();
+      List<BufferSegment> bufferSegments2 = segment2.getBufferSegments();
+
+      assertEquals(bufferSegments1.size(), bufferSegments2.size());
+
+      for (int j = 0; j < bufferSegments1.size(); j++) {
+        BufferSegment bs1 = bufferSegments1.get(j);
+        BufferSegment bs2 = bufferSegments2.get(j);
+        assertEquals(bs1.getLength(), bs2.getLength());
+        assertEquals(bs1.getOffset(), bs2.getOffset());
+        assertEquals(bs1.getBlockId(), bs2.getBlockId());
+        assertEquals(bs1.getCrc(), bs2.getCrc());
+        assertEquals(bs1.getUncompressLength(), bs2.getUncompressLength());
+        assertEquals(bs1.getTaskAttemptId(), bs2.getTaskAttemptId());
+      }
     }
   }
 

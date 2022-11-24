@@ -15,35 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator;
+package org.apache.uniffle.client.request;
 
-public class AccessCheckResult {
+public class RssApplicationInfoRequest {
 
-  private final boolean success;
-  private final String msg;
-  private final String uuid;
+  private final String appId;
+  private final long timeoutMs;
+  private final String user;
 
-  public AccessCheckResult(boolean success, String msg, String uuid) {
-    this.success = success;
-    this.msg = msg;
-    this.uuid = uuid;
+  public RssApplicationInfoRequest(String appId, long timeoutMs, String user) {
+    this.appId = appId;
+    this.timeoutMs = timeoutMs;
+    this.user = user;
   }
 
-  public AccessCheckResult(boolean success, String msg) {
-    this.success = success;
-    this.msg = msg;
-    this.uuid = "";
+  public String getAppId() {
+    return appId;
   }
 
-  public boolean isSuccess() {
-    return success;
+  public long getTimeoutMs() {
+    return timeoutMs;
   }
 
-  public String getMsg() {
-    return msg;
-  }
-
-  public String getUuid() {
-    return uuid;
+  public String getUser() {
+    return user;
   }
 }

@@ -110,13 +110,13 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     coordinatorConf.setBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
     coordinatorConf.setString(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
     coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 3);
-    coordinatorConf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 200);
+    coordinatorConf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 1000);
     coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES, 1);
     createCoordinatorServer(coordinatorConf);
     startServers();
 
     waitForUpdate(Sets.newHashSet(remotePath1), coordinators.get(0).getApplicationManager());
-    String appId = "testFetchRemoteStorageApp";
+    String appId = "application_testFetchRemoteStorageApp_" + 1;
     RssFetchRemoteStorageRequest request = new RssFetchRemoteStorageRequest(appId);
     RssFetchRemoteStorageResponse response = coordinatorClient.fetchRemoteStorage(request);
     RemoteStorageInfo remoteStorageInfo = response.getRemoteStorageInfo();
@@ -136,7 +136,8 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     assertEquals(remotePath1, remoteStorageInfo.getPath());
     assertTrue(remoteStorageInfo.getConfItems().isEmpty());
 
-    request = new RssFetchRemoteStorageRequest(appId + "another");
+    String newAppId = "application_testFetchRemoteStorageApp_" + 2;
+    request = new RssFetchRemoteStorageRequest(newAppId);
     response = coordinatorClient.fetchRemoteStorage(request);
     // got the remotePath2 for new appId
     remoteStorageInfo = response.getRemoteStorageInfo();
@@ -161,14 +162,14 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     coordinatorConf.setBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
     coordinatorConf.setString(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
     coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 2);
-    coordinatorConf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 100);
+    coordinatorConf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 1000);
     coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES, 1);
     coordinatorConf.set(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY, IO_SAMPLE);
     createCoordinatorServer(coordinatorConf);
     startServers();
 
     waitForUpdate(Sets.newHashSet(remotePath1), coordinators.get(0).getApplicationManager());
-    String appId = "testFetchRemoteStorageApp";
+    String appId = "application_testFetchRemoteStorageApp_" + 1;
     RssFetchRemoteStorageRequest request = new RssFetchRemoteStorageRequest(appId);
     RssFetchRemoteStorageResponse response = coordinatorClient.fetchRemoteStorage(request);
     RemoteStorageInfo remoteStorageInfo = response.getRemoteStorageInfo();
@@ -189,7 +190,8 @@ public class FetchClientConfTest extends CoordinatorTestBase {
 
     // ensure sizeList can be updated
     Thread.sleep(2000);
-    request = new RssFetchRemoteStorageRequest(appId + "another");
+    String newAppId = "application_testFetchRemoteStorageApp_" + 2;
+    request = new RssFetchRemoteStorageRequest(newAppId);
     response = coordinatorClient.fetchRemoteStorage(request);
     // got the remotePath2 for new appId
     remoteStorageInfo = response.getRemoteStorageInfo();
