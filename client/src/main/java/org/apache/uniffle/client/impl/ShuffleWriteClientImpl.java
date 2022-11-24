@@ -159,7 +159,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks = entry.getValue();
           // todo: compact unnecessary blocks that reach replicaWrite
           RssSendShuffleDataRequest request = new RssSendShuffleDataRequest(
-              appId, retryMax, retryIntervalMax, shuffleIdToBlocks, needCancelRequest);
+              appId, retryMax, retryIntervalMax, shuffleIdToBlocks);
           long s = System.currentTimeMillis();
           RssSendShuffleDataResponse response = getShuffleServerClient(ssi).sendShuffleData(request);
 

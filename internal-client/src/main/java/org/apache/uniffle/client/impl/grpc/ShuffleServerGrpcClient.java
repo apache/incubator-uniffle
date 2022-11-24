@@ -19,14 +19,11 @@ package org.apache.uniffle.client.impl.grpc;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,7 +103,6 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   private static final long FAILED_REQUIRE_ID = -1;
   private static final long RPC_TIMEOUT_DEFAULT_MS = 60000;
   private long rpcTimeout = RPC_TIMEOUT_DEFAULT_MS;
-  private ShuffleServerGrpc.ShuffleServerFutureStub futureStub;
   private ShuffleServerBlockingStub blockingStub;
 
   public ShuffleServerGrpcClient(String host, int port) {
@@ -120,15 +116,10 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   public ShuffleServerGrpcClient(String host, int port, int maxRetryAttempts, boolean usePlaintext) {
     super(host, port, maxRetryAttempts, usePlaintext);
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
-    futureStub = ShuffleServerGrpc.newFutureStub(channel);
   }
 
   public ShuffleServerBlockingStub getBlockingStub() {
     return blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
-  }
-
-  public ShuffleServerGrpc.ShuffleServerFutureStub getFutureStub() {
-    return futureStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
   }
 
   @Override
@@ -186,76 +177,39 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     return blockingStub.withDeadlineAfter(timeout, TimeUnit.MILLISECONDS).appHeartbeat(request);
   }
 
-  /**
-   * Only for tests
-   */
-  @VisibleForTesting
-  public long requirePreAllocation(int requireSize, int retryMax, long retryIntervalMax) throws Exception {
-    return requirePreAllocation(requireSize, retryMax, retryIntervalMax, () -> false);
-  }
-
-  public long requirePreAllocation(int requireSize, int retryMax, long retryIntervalMax,
-      Supplier<Boolean> needCancelRequest)
-      throws Exception {
+  public long requirePreAllocation(int requireSize, int retryMax, long retryIntervalMax) {
     RequireBufferRequest rpcRequest = RequireBufferRequest.newBuilder().setRequireSize(requireSize).build();
     long start = System.currentTimeMillis();
-
-    int retry = -1;
+    RequireBufferResponse rpcResponse = getBlockingStub().requireBuffer(rpcRequest);
+    int retry = 0;
     long result = FAILED_REQUIRE_ID;
     Random random = new Random();
-    final int backoffBase = 2000;
-    RequireBufferResponse rpcResponse;
-
-    do {
-      if (retry != -1) {
-        LOG.info("Can't require " + requireSize + " bytes from " + host + ":" + port + ", sleep and try["
-            + retry + "] again");
-        if (retry >= retryMax) {
-          LOG.warn("ShuffleServer " + host + ":" + port + " is full and can't send shuffle"
-                  + " data successfully after retry " + retryMax + " times, cost: {}(ms)",
-              System.currentTimeMillis() - start);
-          return result;
-        }
-        try {
-          long backoffTime =
-              Math.min(retryIntervalMax, backoffBase * (1L << Math.min(retry, 16)) + random.nextInt(backoffBase));
-          Thread.sleep(backoffTime);
-        } catch (Exception e) {
-          LOG.warn("Exception happened when require pre allocation from " + host + ":" + port, e);
-        }
+    final int backOffBase = 2000;
+    while (rpcResponse.getStatus() == StatusCode.NO_BUFFER) {
+      LOG.info("Can't require " + requireSize + " bytes from " + host + ":" + port + ", sleep and try["
+          + retry + "] again");
+      if (retry >= retryMax) {
+        LOG.warn("ShuffleServer " + host + ":" + port + " is full and can't send shuffle"
+                + " data successfully after retry " + retryMax + " times, cost: {}(ms)",
+            System.currentTimeMillis() - start);
+        return result;
       }
-      rpcResponse = doRequirePreAllocation(rpcRequest, needCancelRequest);
+      try {
+        long backoffTime =
+            Math.min(retryIntervalMax, backOffBase * (1L << Math.min(retry, 16)) + random.nextInt(backOffBase));
+        Thread.sleep(backoffTime);
+      } catch (Exception e) {
+        LOG.warn("Exception happened when require pre allocation from " + host + ":" + port, e);
+      }
+      rpcResponse = getBlockingStub().requireBuffer(rpcRequest);
       retry++;
-    } while (rpcResponse != null && rpcResponse.getStatus() == StatusCode.NO_BUFFER);
-
+    }
     if (rpcResponse.getStatus() == StatusCode.SUCCESS) {
       LOG.info("Require preAllocated size of {} from {}:{}, cost: {}(ms)",
           requireSize, host, port, System.currentTimeMillis() - start);
       result = rpcResponse.getRequireBufferId();
     }
     return result;
-  }
-
-  private RequireBufferResponse doRequirePreAllocation(RequireBufferRequest rpcRequest,
-      Supplier<Boolean> needCancelRequest) throws Exception {
-    ListenableFuture<RequireBufferResponse> future = getFutureStub().requireBuffer(rpcRequest);
-    while (true) {
-      if (future.isDone()) {
-        return future.get();
-      }
-
-      if (needCancelRequest.get()) {
-        future.cancel(true);
-        throw new Exception("Abort the request when requiring PreAllocation memory, "
-            + "because upstream task has been failed.");
-      }
-
-      try {
-        future.get(10, TimeUnit.MILLISECONDS);
-      } catch (Exception e) {
-        // ignore
-      }
-    }
   }
 
   private RssProtos.ShuffleUnregisterResponse doUnregisterShuffle(String appId, int shuffleId) {
@@ -348,16 +302,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       final int finalBlockNum = blockNum;
       try {
         RetryUtils.retry(() -> {
-          Supplier<Boolean> needCancelRequest = Optional.ofNullable(request.getNeedCancelRequest()).orElse(() -> false);
-          if (needCancelRequest.get()) {
-            throw new NotRetryException("Abort retry due to upstream task has been failed.");
-          }
-          long requireId = requirePreAllocation(
-              allocateSize,
-              request.getRetryMax(),
-              request.getRetryIntervalMax(),
-              needCancelRequest
-          );
+          long requireId = requirePreAllocation(allocateSize, request.getRetryMax(), request.getRetryIntervalMax());
           if (requireId == FAILED_REQUIRE_ID) {
             throw new RssException(String.format(
                 "requirePreAllocation failed! size[%s], host[%s], port[%s]", allocateSize, host, port));
@@ -370,26 +315,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
               .addAllShuffleData(shuffleData)
               .setTimestamp(start)
               .build();
-          SendShuffleDataResponse response;
-          ListenableFuture<SendShuffleDataResponse> future = getFutureStub().sendShuffleData(rpcRequest);
-          while (true) {
-            if (future.isDone()) {
-              response = future.get();
-              break;
-            }
-
-            if (needCancelRequest.get()) {
-              LOG.info("The request is invalid. Cancel it.");
-              future.cancel(true);
-              throw new NotRetryException("The request is invalid. Cancel it.");
-            }
-
-            try {
-              future.get(10, TimeUnit.MILLISECONDS);
-            } catch (Exception e) {
-              // ignore
-            }
-          }
+          SendShuffleDataResponse response = getBlockingStub().sendShuffleData(rpcRequest);
           LOG.info("Do sendShuffleData to {}:{} rpc cost:" + (System.currentTimeMillis() - start)
               + " ms for " + allocateSize + " bytes with " + finalBlockNum + " blocks", host, port);
           if (response.getStatus() != StatusCode.SUCCESS) {
