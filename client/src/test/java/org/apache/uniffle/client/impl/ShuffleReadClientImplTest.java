@@ -279,7 +279,7 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.HDFS.name(),
         "appId", 0, 1, 100, 2, 10, 1000,
         "basePath", Roaring64NavigableMap.bitmapOf(), Roaring64NavigableMap.bitmapOf(),
-        Lists.newArrayList(), new Configuration(), new DefaultIdHelper());
+        Lists.newArrayList(ssi1), new Configuration(), new DefaultIdHelper());
     assertNull(readClient.readShuffleBlockData());
     readClient.checkProcessedBlockIds();
   }

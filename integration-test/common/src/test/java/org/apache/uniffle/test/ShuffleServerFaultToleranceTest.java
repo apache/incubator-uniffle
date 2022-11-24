@@ -49,16 +49,10 @@ import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.factory.ShuffleHandlerFactory;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
-import org.apache.uniffle.storage.handler.impl.ComposedClientReadHandler;
-import org.apache.uniffle.storage.handler.impl.LocalFileQuorumClientReadHandler;
-import org.apache.uniffle.storage.handler.impl.MemoryQuorumClientReadHandler;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
 
