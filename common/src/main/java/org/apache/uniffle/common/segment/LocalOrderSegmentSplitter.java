@@ -112,15 +112,15 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
           break;
         }
 
-        boolean condition1 =
+        boolean conditionOfDiscontinuousBlocks =
             lastExpectedBlockIndex != -1
                 && bufferSegments.size() > 0
                 && expectTaskIds.contains(taskAttemptId)
                 && index - lastExpectedBlockIndex != 1;
 
-        boolean condition2 = bufferOffset >= readBufferSize;
+        boolean conditionOfLimitedBufferSize = bufferOffset >= readBufferSize;
 
-        if (condition1 || condition2) {
+        if (conditionOfDiscontinuousBlocks || conditionOfLimitedBufferSize) {
           ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
           dataFileSegments.add(sds);
           bufferSegments = Lists.newArrayList();
