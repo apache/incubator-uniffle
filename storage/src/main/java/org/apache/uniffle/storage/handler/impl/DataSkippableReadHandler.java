@@ -99,7 +99,6 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
       }
       segmentIndex++;
     }
-
     return result;
   }
 }

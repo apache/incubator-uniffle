@@ -171,7 +171,7 @@ public class CreateShuffleReadClientRequest {
   public IdHelper getIdHelper() {
     return idHelper;
   }
-  
+
   public ShuffleDataDistributionType getShuffleDataDistributionType() {
     return shuffleDataDistributionType;
   }
