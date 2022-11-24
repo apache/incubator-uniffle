@@ -119,8 +119,8 @@ public class ShuffleTaskManager {
     this.leakShuffleDataCheckExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("leakShuffleDataChecker"));
     leakShuffleDataCheckExecutorService.scheduleAtFixedRate(
-        () -> checkLeakShuffleData(), 20000,
-            20000, TimeUnit.MILLISECONDS);
+        () -> checkLeakShuffleData(), leakShuffleDataCheckInterval,
+            leakShuffleDataCheckInterval, TimeUnit.MILLISECONDS);
     // the thread for clear expired resources
     clearResourceThread = () -> {
       while (true) {
