@@ -25,6 +25,10 @@ import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+
 
 public interface StorageManager {
 
@@ -51,4 +55,6 @@ public interface StorageManager {
   boolean canWrite(ShuffleDataFlushEvent event);
 
   // todo: add an interface that check storage isHealthy
+
+  void checkAndClearLeakShuffleData(Collection<String> appIds);
 }

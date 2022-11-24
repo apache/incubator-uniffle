@@ -29,6 +29,7 @@ import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
 public class HdfsShuffleDeleteHandler implements ShuffleDeleteHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(HdfsShuffleDeleteHandler.class);
+  private static final String UNKNOWN_USER_NAME = "unknown";
 
   private Configuration hadoopConf;
 
@@ -68,5 +69,10 @@ public class HdfsShuffleDeleteHandler implements ShuffleDeleteHandler {
             + (System.currentTimeMillis() - start) + " ms");
       }
     }
+  }
+
+  @Override
+  public void delete(String[] storageBasePaths, String appId) {
+    delete(storageBasePaths, appId, UNKNOWN_USER_NAME);
   }
 }

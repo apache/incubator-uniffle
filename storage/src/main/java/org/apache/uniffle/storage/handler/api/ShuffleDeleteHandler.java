@@ -25,4 +25,11 @@ public interface ShuffleDeleteHandler {
    * @param appId ApplicationId for delete
    */
   void delete(String[] storageBasePaths, String appId, String user);
+
+  /**
+   * Delete shuffle data with appId
+   *
+   * @param appId ApplicationId for delete
+   */
+  void delete(String[] storageBasePaths, String appId);
 }

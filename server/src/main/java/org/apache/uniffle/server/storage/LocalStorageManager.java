@@ -19,7 +19,9 @@ package org.apache.uniffle.server.storage;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -216,6 +218,30 @@ public class LocalStorageManager extends SingleStorageManager {
   @Override
   public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo) {
     // ignore
+  }
+
+  @Override
+  public void checkAndClearLeakShuffleData(Collection<String> appIds) {
+    Set<String> appIdsOnStorages = new HashSet<>();
+    for (LocalStorage localStorage : localStorages) {
+      if (!localStorage.isCorrupted()) {
+        Set<String> appIdsOnStorage = localStorage.getAppIds();
+        appIdsOnStorages.addAll(appIdsOnStorage);
+      }
+    }
+
+    for (String appId : appIdsOnStorages) {
+      if (!appIds.contains(appId)) {
+        ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
+            .createShuffleDeleteHandler(
+               new CreateShuffleDeleteHandlerRequest(StorageType.LOCALFILE.name(), new Configuration()));
+        String[] deletePaths = new String[storageBasePaths.size()];
+        for (int i = 0; i < storageBasePaths.size(); i++) {
+          deletePaths[i] = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePaths.get(i), appId);
+        }
+        deleteHandler.delete(deletePaths, appId);
+      }
+    }
   }
 
   void repair() {

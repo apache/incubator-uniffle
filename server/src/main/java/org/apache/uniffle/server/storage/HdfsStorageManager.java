@@ -18,6 +18,7 @@
 package org.apache.uniffle.server.storage;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -133,6 +134,9 @@ public class HdfsStorageManager extends SingleStorageManager {
     }
     appIdToStorages.putIfAbsent(appId, pathToStorages.get(remoteStorage));
   }
+
+  @Override
+  public void checkAndClearLeakShuffleData(Collection<String> appIds) {}
 
   public HdfsStorage getStorageByAppId(String appId) {
     if (!appIdToStorages.containsKey(appId)) {
