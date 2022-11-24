@@ -42,7 +42,7 @@ import org.apache.uniffle.common.util.Constants;
  *
  * This strategy will be useful for Spark AQE skew optimization, it will split the single partition into
  * multiple shuffle readers, and each one will fetch partial single partition data which is in the range of
- * [StartMapId, endMapId). And so if one reader uses this, it will skip lots of unnecessary blocks.
+ * [StartMapIndex, endMapIndex). And so if one reader uses this, it will skip lots of unnecessary blocks.
  *
  * Last but not least, this split strategy depends on LOCAL_ORDER of index file, which must be guaranteed by
  * the shuffle server.
@@ -75,7 +75,6 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
     long fileOffset = -1;
     long totalLen = 0;
 
-    long lastTaskAttemptId = -1;
     long lastExpectedBlockIndex = -1;
 
     List<Long> indexTaskIds = new ArrayList<>();
@@ -83,10 +82,11 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
     /**
      * One ShuffleDataSegment should meet following requirements:
      *
-     * 1. taskId in [startMapId, endMapId) taskIds bitmap
+     * 1. taskId in [startMapIndex, endMapIndex) taskIds bitmap.
+     *    Attention: the index in the range is not the map task id, which means the required task ids are not
+     *               continuous.
      * 2. ShuffleDataSegment size should < readBufferSize
-     * 3. ShuffleDataSegment's blocks should be continuous
-     *
+     * 3. Single shuffleDataSegment's blocks should be continuous
      */
     int index = 0;
     while (byteBuffer.hasRemaining()) {
@@ -101,10 +101,6 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
         totalLen += length;
         indexTaskIds.add(taskAttemptId);
 
-        if (lastTaskAttemptId == -1) {
-          lastTaskAttemptId = taskAttemptId;
-        }
-
         // If ShuffleServer is flushing the file at this time, the length in the index file record may be greater
         // than the length in the actual data file, and it needs to be returned at this time to avoid EOFException
         if (dataFileLen != -1 && totalLen > dataFileLen) {
@@ -116,10 +112,15 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
           break;
         }
 
-        if ((taskAttemptId < lastTaskAttemptId
-            && bufferSegments.size() > 0
-            && (expectTaskIds.contains(taskAttemptId) ? index - lastExpectedBlockIndex != 1 : true))
-            || bufferOffset >= readBufferSize) {
+        boolean conditionOfDiscontinuousBlocks =
+            lastExpectedBlockIndex != -1
+                && bufferSegments.size() > 0
+                && expectTaskIds.contains(taskAttemptId)
+                && index - lastExpectedBlockIndex != 1;
+
+        boolean conditionOfLimitedBufferSize = bufferOffset >= readBufferSize;
+
+        if (conditionOfDiscontinuousBlocks || conditionOfLimitedBufferSize) {
           ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
           dataFileSegments.add(sds);
           bufferSegments = Lists.newArrayList();
@@ -128,14 +129,6 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
         }
 
         if (expectTaskIds.contains(taskAttemptId)) {
-          if (bufferOffset != 0 && index - lastExpectedBlockIndex > 1) {
-            List<Long> expectedTaskIds = getExpectedTaskIds(expectTaskIds);
-            LOGGER.error("There are discontinuous blocks, all task ids in index file: {}, all expected task ids: {}, "
-                    + "current expected task id: {}, last unexpected task id: {}, current data segment size: {}",
-                indexTaskIds, expectedTaskIds, taskAttemptId, lastTaskAttemptId, dataFileSegments.size());
-            throw new RssException("There are discontinuous blocks which should not happen when using LOCAL_ORDER.");
-          }
-
           if (fileOffset == -1) {
             fileOffset = offset;
           }
@@ -143,8 +136,6 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
           bufferOffset += length;
           lastExpectedBlockIndex = index;
         }
-
-        lastTaskAttemptId = taskAttemptId;
         index++;
       } catch (BufferUnderflowException ue) {
         throw new RssException("Read index data under flow", ue);
@@ -154,6 +145,11 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
     if (bufferOffset > 0) {
       ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
       dataFileSegments.add(sds);
+    }
+
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Index file task-ids sequence: {}, expected task-ids: {}",
+          indexTaskIds, getExpectedTaskIds(expectTaskIds));
     }
     return dataFileSegments;
   }
