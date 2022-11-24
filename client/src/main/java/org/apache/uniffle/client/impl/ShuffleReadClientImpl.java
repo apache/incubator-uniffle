@@ -76,8 +76,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
       IdHelper idHelper,
-      ShuffleDataDistributionType dataDistributionType,
-      int maxHandlerFailTimes) {
+      ShuffleDataDistributionType dataDistributionType) {
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.blockIdBitmap = blockIdBitmap;
@@ -98,7 +97,6 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setHadoopConf(hadoopConf);
     request.setExpectBlockIds(blockIdBitmap);
     request.setProcessBlockIds(processedBlockIds);
-    request.setMaxHandlerFailTimes(maxHandlerFailTimes);
     request.setDistributionType(dataDistributionType);
     request.setExpectTaskIds(taskIdBitmap);
 
@@ -137,7 +135,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     this(storageType, appId, shuffleId, partitionId, indexReadLimit,
         partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
         blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf,
-        idHelper, ShuffleDataDistributionType.NORMAL, 3);
+        idHelper, ShuffleDataDistributionType.NORMAL);
   }
 
   @Override

@@ -125,7 +125,6 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     request.setExpectBlockIds(expectBlockIds);
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     request.setProcessBlockIds(processBlockIds);
-    request.setMaxHandlerFailTimes(3);
     request.setDistributionType(ShuffleDataDistributionType.NORMAL);
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     request.setExpectTaskIds(taskIdBitmap);

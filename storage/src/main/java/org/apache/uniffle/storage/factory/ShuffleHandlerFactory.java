@@ -115,8 +115,7 @@ public class ShuffleHandlerFactory {
         request.getShuffleId(),
         request.getPartitionId(),
         request.getReadBufferSize(),
-        shuffleServerClient,
-        request.getMaxHandlerFailTimes());
+        shuffleServerClient);
     return memoryClientReadHandler;
   }
 
@@ -128,8 +127,7 @@ public class ShuffleHandlerFactory {
         request.getAppId(), request.getShuffleId(), request.getPartitionId(),
         request.getIndexReadLimit(), request.getPartitionNumPerRange(), request.getPartitionNum(),
         request.getReadBufferSize(), request.getExpectBlockIds(), request.getProcessBlockIds(),
-        shuffleServerClient, request.getDistributionType(), request.getExpectTaskIds(),
-        request.getMaxHandlerFailTimes()
+        shuffleServerClient, request.getDistributionType(), request.getExpectTaskIds()
     );
   }
 
@@ -148,7 +146,6 @@ public class ShuffleHandlerFactory {
         request.getHadoopConf(),
         request.getDistributionType(),
         request.getExpectTaskIds(),
-        request.getMaxHandlerFailTimes(),
         ssi.getId()
     );
   }

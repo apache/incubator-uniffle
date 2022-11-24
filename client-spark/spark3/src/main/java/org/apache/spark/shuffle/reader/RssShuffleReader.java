@@ -49,7 +49,6 @@ import scala.runtime.BoxedUnit;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
-import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
@@ -78,7 +77,6 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private int mapEndIndex;
   private ShuffleReadMetrics readMetrics;
   private RssConf rssConf;
-  private final int maxHandlerFailTimes;
   private ShuffleDataDistributionType dataDistributionType;
 
   public RssShuffleReader(
@@ -120,8 +118,6 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.readMetrics = readMetrics;
     this.partitionToShuffleServers = rssShuffleHandle.getPartitionToServers();
     this.rssConf = rssConf;
-    this.maxHandlerFailTimes = rssConf.getInteger(RssClientConfig.RSS_CLIENT_HANDLER_READ_MAX_FAIL_TIMES,
-        RssClientConfig.RSS_CLIENT_HANDLER_READ_MAX_FAIL_TIMES_DEFAULT_VALUE);
     this.dataDistributionType = dataDistributionType;
   }
 
@@ -210,7 +206,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
             appId, shuffleId, partition, storageType, basePath, indexReadLimit, readBufferSize,
             1, partitionNum, partitionToExpectBlocks.get(partition), taskIdBitmap, shuffleServerInfoList,
-            hadoopConf, dataDistributionType, maxHandlerFailTimes);
+            hadoopConf, dataDistributionType);
         ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
         RssShuffleDataIterator iterator = new RssShuffleDataIterator<K, C>(
             shuffleDependency.serializer(), shuffleReadClient,

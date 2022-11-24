@@ -57,9 +57,6 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
 
   @Override
   public ShuffleDataResult readShuffleData() {
-    if (finished()) {
-      return null;
-    }
     ClientReadHandler handler;
     ShuffleDataResult result = null;
     do {
@@ -67,10 +64,6 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
         return result;
       }
       handler = handlers.get(readHandlerIndex);
-      if (handler.finished()) {
-        readHandlerIndex++;
-        continue;
-      }
       try {
         result = handler.readShuffleData();
       } catch (Exception e) {
@@ -78,8 +71,8 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
       }
       if (result != null && !result.isEmpty()) {
         return result;
-      }
-      if (handler.finished()) {
+      } else {
+        readHandlerIndex++;
         try {
           RssUtils.checkProcessedBlockIds(blockIdBitmap, processedBlockIds);
           return result;
@@ -104,15 +97,5 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
   public void logConsumedBlockInfo() {
     LOG.info("Client read " + readBlockNum + " blocks,"
         + " bytes:" +  readLength + " uncompressed bytes:" + readUncompressLength);
-  }
-
-  @Override
-  public boolean finished() {
-    for (ClientReadHandler handler : handlers) {
-      if (!handler.finished()) {
-        return false;
-      }
-    }
-    return true;
   }
 }

@@ -39,41 +39,22 @@ public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
       int shuffleId,
       int partitionId,
       int readBufferSize,
-      List<ShuffleServerClient> shuffleServerClients,
-      int maxHandlerFailTimes) {
+      List<ShuffleServerClient> shuffleServerClients) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.readBufferSize = readBufferSize;
     shuffleServerClients.forEach(client ->
         handlers.add(new MemoryClientReadHandler(
-            appId, shuffleId, partitionId, readBufferSize, client, maxHandlerFailTimes))
+            appId, shuffleId, partitionId, readBufferSize, client))
     );
-  }
-
-  /**
-   * Only for test
-   */
-  public MemoryQuorumClientReadHandler(
-      String appId,
-      int shuffleId,
-      int partitionId,
-      int readBufferSize,
-      List<ShuffleServerClient> shuffleServerClients) {
-    this(appId, shuffleId, partitionId, readBufferSize, shuffleServerClients, 3);
   }
 
   @Override
   public ShuffleDataResult readShuffleData() {
-    if (finished()) {
-      return null;
-    }
     ShuffleDataResult result = null;
 
     for (MemoryClientReadHandler handler: handlers) {
-      if (handler.finished()) {
-        continue;
-      }
       try {
         result = handler.readShuffleData();
         break;
@@ -82,15 +63,5 @@ public class MemoryQuorumClientReadHandler extends AbstractClientReadHandler {
       }
     }
     return result;
-  }
-
-  @Override
-  public boolean finished() {
-    for (MemoryClientReadHandler handler : handlers) {
-      if (!handler.finished()) {
-        return false;
-      }
-    }
-    return true;
   }
 }

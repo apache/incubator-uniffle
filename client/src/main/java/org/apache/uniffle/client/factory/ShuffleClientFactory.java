@@ -70,7 +70,6 @@ public class ShuffleClientFactory {
         request.getPartitionId(), request.getIndexReadLimit(), request.getPartitionNumPerRange(),
         request.getPartitionNum(), request.getReadBufferSize(), request.getBasePath(),
         request.getBlockIdBitmap(), request.getTaskIdBitmap(), request.getShuffleServerInfoList(),
-        request.getHadoopConf(), request.getIdHelper(), request.getShuffleDataDistributionType(),
-        request.getMaxHandlerFailTimes());
+        request.getHadoopConf(), request.getIdHelper(), request.getShuffleDataDistributionType());
   }
 }

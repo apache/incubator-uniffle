@@ -61,7 +61,6 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     writeTestData(writeHandler, 2, 5, expectedData,
         blockIdBitmap, "key", KRYO_SERIALIZER, 0);
 
-    TaskContext contextMock = mock(TaskContext.class);
     RssShuffleHandle handleMock = mock(RssShuffleHandle.class);
     ShuffleDependency dependencyMock = mock(ShuffleDependency.class);
     when(handleMock.getAppId()).thenReturn("appId");
@@ -72,6 +71,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     partitionToServers.put(1, Lists.newArrayList(ssi));
     when(handleMock.getPartitionToServers()).thenReturn(partitionToServers);
     when(dependencyMock.serializer()).thenReturn(KRYO_SERIALIZER);
+    TaskContext contextMock = mock(TaskContext.class);
     when(contextMock.taskAttemptId()).thenReturn(1L);
     when(contextMock.attemptNumber()).thenReturn(1);
     when(contextMock.taskMetrics()).thenReturn(new TaskMetrics());

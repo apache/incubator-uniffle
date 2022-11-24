@@ -52,8 +52,7 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
       Roaring64NavigableMap processBlockIds,
       List<ShuffleServerClient> shuffleServerClients,
       ShuffleDataDistributionType distributionType,
-      Roaring64NavigableMap expectTaskIds,
-      int maxHandlerFailTimes) {
+      Roaring64NavigableMap expectTaskIds) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -71,8 +70,7 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
           processBlockIds,
           client,
           distributionType,
-          expectTaskIds,
-          maxHandlerFailTimes
+          expectTaskIds
       ));
     }
   }
@@ -94,20 +92,14 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
     this(
         appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange,
         partitionNum, readBufferSize, expectBlockIds, processBlockIds,
-        shuffleServerClients, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf(), 3
+        shuffleServerClients, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf()
     );
   }
 
   @Override
   public ShuffleDataResult readShuffleData() {
-    if (finished()) {
-      return null;
-    }
     ShuffleDataResult result = null;
     for (LocalFileClientReadHandler handler : handlers) {
-      if (handler.finished()) {
-        continue;
-      }
       try {
         result = handler.readShuffleData();
         break;
@@ -132,15 +124,5 @@ public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler 
   public void logConsumedBlockInfo() {
     LOG.info("Client read " + readBlockNum + " blocks,"
         + " bytes:" +  readLength + " uncompressed bytes:" + readUncompressLength);
-  }
-
-  @Override
-  public boolean finished() {
-    for (LocalFileClientReadHandler handler : handlers) {
-      if (!handler.finished()) {
-        return false;
-      }
-    }
-    return true;
   }
 }

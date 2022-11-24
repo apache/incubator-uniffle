@@ -50,8 +50,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
       Roaring64NavigableMap expectBlockIds,
       Roaring64NavigableMap processBlockIds,
       ShuffleDataDistributionType distributionType,
-      Roaring64NavigableMap expectTaskIds,
-      int maxHandlerFailTimes) {
+      Roaring64NavigableMap expectTaskIds) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -60,7 +59,6 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
     this.processBlockIds = processBlockIds;
     this.distributionType = distributionType;
     this.expectTaskIds = expectTaskIds;
-    this.maxHandlerFailTimes = maxHandlerFailTimes;
   }
 
   protected abstract ShuffleIndexResult readShuffleIndex();
@@ -69,15 +67,8 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
 
   public ShuffleDataResult readShuffleData() {
     if (shuffleDataSegments.isEmpty()) {
-      ShuffleIndexResult shuffleIndexResult;
-      try {
-        shuffleIndexResult = readShuffleIndex();
-      } catch (Exception e) {
-        incrFailTimes();
-        throw e;
-      }
+      ShuffleIndexResult shuffleIndexResult = readShuffleIndex();
       if (shuffleIndexResult == null || shuffleIndexResult.isEmpty()) {
-        isFinished = true;
         return null;
       }
 
@@ -101,28 +92,14 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
         blocksOfSegment.or(processBlockIds);
         blocksOfSegment.xor(processBlockIds);
         if (!blocksOfSegment.isEmpty()) {
-          try {
-            result = readShuffleData(segment);
-          } catch (Exception e) {
-            incrFailTimes();
-            throw e;
-          }
+          result = readShuffleData(segment);
           segmentIndex++;
           break;
         }
       }
       segmentIndex++;
     }
-    // if result is null, it means exception was catched when read shuffle data.
-    if (result == null) {
-      incrFailTimes();
-    } else {
-      failTimes = 0;
-    }
 
-    if (segmentIndex >= shuffleDataSegments.size()) {
-      isFinished = true;
-    }
     return result;
   }
 }

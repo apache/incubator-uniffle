@@ -72,7 +72,6 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       Configuration hadoopConf,
       ShuffleDataDistributionType distributionType,
       Roaring64NavigableMap expectTaskIds,
-      int maxHandlerFailTimes,
       String shuffleServerId) {
     this.appId = appId;
     this.shuffleId = shuffleId;
@@ -87,7 +86,6 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
     this.readHandlerIndex = 0;
     this.distributionType = distributionType;
     this.expectTaskIds = expectTaskIds;
-    this.maxHandlerFailTimes = maxHandlerFailTimes;
     this.shuffleServerId = shuffleServerId;
   }
 
@@ -106,7 +104,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       Configuration hadoopConf) {
     this(appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange, partitionNum, readBufferSize,
         expectBlockIds, processBlockIds, storageBasePath, hadoopConf, ShuffleDataDistributionType.NORMAL,
-        Roaring64NavigableMap.bitmapOf(), 3, null);
+        Roaring64NavigableMap.bitmapOf(), null);
   }
 
   protected void init(String fullShufflePath) {
@@ -140,15 +138,13 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
           HdfsShuffleReadHandler handler = new HdfsShuffleReadHandler(
               appId, shuffleId, partitionId, filePrefix,
               readBufferSize, expectBlockIds, processBlockIds, hadoopConf,
-              distributionType, expectTaskIds, maxHandlerFailTimes);
+              distributionType, expectTaskIds);
           readHandlers.add(handler);
         } catch (Exception e) {
           LOG.warn("Can't create ShuffleReaderHandler for " + filePrefix, e);
         }
       }
       readHandlers.sort(Comparator.comparing(HdfsShuffleReadHandler::getFilePrefix));
-    } else {
-      isFinished = true;
     }
   }
 
@@ -162,10 +158,6 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       init(fullShufflePath);
     }
 
-    if (finished()) {
-      return new ShuffleDataResult();
-    }
-
     HdfsShuffleReadHandler hdfsShuffleFileReader;
     ShuffleDataResult shuffleDataResult;
     do {
@@ -173,10 +165,6 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
         return new ShuffleDataResult();
       }
       hdfsShuffleFileReader = readHandlers.get(readHandlerIndex);
-      if (hdfsShuffleFileReader.finished()) {
-        ++readHandlerIndex;
-        continue;
-      }
       try {
         shuffleDataResult = hdfsShuffleFileReader.readShuffleData();
       } catch (Exception e) {
@@ -187,9 +175,6 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       if (shuffleDataResult == null || shuffleDataResult.isEmpty()) {
         ++readHandlerIndex;
       } else {
-        if (hdfsShuffleFileReader.finished()) {
-          ++readHandlerIndex;
-        }
         return shuffleDataResult;
       }
     } while (true);
@@ -229,19 +214,5 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
   public void logConsumedBlockInfo() {
     LOG.info("Client read " + readBlockNum + " blocks,"
         + " bytes:" +  readLength + "  uncompressed bytes:" + readUncompressLength);
-  }
-
-  @Override
-  public boolean finished() {
-    // init() has not been invoked
-    if (isFinished == false && readHandlers.isEmpty()) {
-      return false;
-    }
-    for (HdfsShuffleReadHandler readHandler : readHandlers) {
-      if (!readHandler.finished()) {
-        return false;
-      }
-    }
-    return true;
   }
 }
