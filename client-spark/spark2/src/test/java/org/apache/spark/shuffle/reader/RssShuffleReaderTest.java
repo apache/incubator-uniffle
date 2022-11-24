@@ -17,8 +17,11 @@
 
 package org.apache.spark.shuffle.reader;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
@@ -31,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import scala.Option;
 
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.storage.handler.impl.HdfsShuffleWriteHandler;
 import org.apache.uniffle.storage.util.StorageType;
@@ -46,10 +50,10 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
 
   @Test
   public void readTest() throws Exception {
-
+    ShuffleServerInfo ssi = new ShuffleServerInfo("127.0.0.1", 0);
     String basePath = HDFS_URI + "readTest1";
     HdfsShuffleWriteHandler writeHandler =
-        new HdfsShuffleWriteHandler("appId", 0, 0, 1, basePath, "test", conf);
+        new HdfsShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi.getId(), conf);
 
     Map<String, String> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -63,6 +67,10 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     when(handleMock.getAppId()).thenReturn("appId");
     when(handleMock.getShuffleId()).thenReturn(1);
     when(handleMock.getDependency()).thenReturn(dependencyMock);
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = new HashMap<>();
+    partitionToServers.put(0, Lists.newArrayList(ssi));
+    partitionToServers.put(1, Lists.newArrayList(ssi));
+    when(handleMock.getPartitionToServers()).thenReturn(partitionToServers);
     when(dependencyMock.serializer()).thenReturn(KRYO_SERIALIZER);
     when(contextMock.taskAttemptId()).thenReturn(1L);
     when(contextMock.attemptNumber()).thenReturn(1);
