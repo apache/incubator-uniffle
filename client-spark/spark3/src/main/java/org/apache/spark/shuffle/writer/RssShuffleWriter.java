@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -82,6 +83,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final Set shuffleServersForData;
   private final long[] partitionLengths;
   private boolean isMemoryShuffleEnabled;
+  private final Function<String, Boolean> taskFailureCallback;
 
   public RssShuffleWriter(
       String appId,
@@ -94,6 +96,33 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
       RssShuffleHandle rssHandle) {
+    this(
+        appId,
+        shuffleId,
+        taskId,
+        taskAttemptId,
+        bufferManager,
+        shuffleWriteMetrics,
+        shuffleManager,
+        sparkConf,
+        shuffleWriteClient,
+        rssHandle,
+        (tid) -> true
+    );
+  }
+
+  public RssShuffleWriter(
+      String appId,
+      int shuffleId,
+      String taskId,
+      long taskAttemptId,
+      WriteBufferManager bufferManager,
+      ShuffleWriteMetrics shuffleWriteMetrics,
+      RssShuffleManager shuffleManager,
+      SparkConf sparkConf,
+      ShuffleWriteClient shuffleWriteClient,
+      RssShuffleHandle rssHandle,
+      Function<String, Boolean> taskFailureCallback) {
     LOG.warn("RssShuffle start write taskAttemptId data" + taskAttemptId);
     this.shuffleManager = shuffleManager;
     this.appId = appId;
@@ -119,6 +148,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     partitionToServers = rssHandle.getPartitionToServers();
     this.isMemoryShuffleEnabled = isMemoryShuffleEnabled(
         sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
+    this.taskFailureCallback = taskFailureCallback;
   }
 
   private boolean isMemoryShuffleEnabled(String storageType) {
@@ -127,9 +157,21 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   @Override
   public void write(Iterator<Product2<K, V>> records) throws IOException {
+    try {
+      writeImpl(records);
+    } catch (Exception e) {
+      taskFailureCallback.apply(taskId);
+      throw e;
+    }
+  }
+
+  private void writeImpl(Iterator<Product2<K,V>> records) {
     List<ShuffleBlockInfo> shuffleBlockInfos = null;
     Set<Long> blockIds = Sets.newConcurrentHashSet();
     while (records.hasNext()) {
+      // Task should fast fail when sending data failed
+      checkIfBlocksFailed();
+
       Product2<K, V> record = records.next();
       K key = record._1();
       int partition = getPartition(key);
@@ -214,17 +256,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   protected void checkBlockSendResult(Set<Long> blockIds) throws RuntimeException {
     long start = System.currentTimeMillis();
     while (true) {
+      checkIfBlocksFailed();
       Set<Long> successBlockIds = shuffleManager.getSuccessBlockIds(taskId);
-      Set<Long> failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
-
-      if (!failedBlockIds.isEmpty()) {
-        String errorMsg = "Send failed: Task[" + taskId + "]"
-            + " failed because " + failedBlockIds.size()
-            + " blocks can't be sent to shuffle server.";
-        LOG.error(errorMsg);
-        throw new RssException(errorMsg);
-      }
-
       blockIds.removeAll(successBlockIds);
       if (blockIds.isEmpty()) {
         break;
@@ -237,6 +270,17 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         LOG.error(errorMsg);
         throw new RssException(errorMsg);
       }
+    }
+  }
+
+  private void checkIfBlocksFailed() {
+    Set<Long> failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
+    if (!failedBlockIds.isEmpty()) {
+      String errorMsg = "Send failed: Task[" + taskId + "]"
+          + " failed because " + failedBlockIds.size()
+          + " blocks can't be sent to shuffle server.";
+      LOG.error(errorMsg);
+      throw new RssException(errorMsg);
     }
   }
 

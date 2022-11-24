@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -98,6 +99,7 @@ public class RssShuffleManager implements ShuffleManager {
   private final ShuffleDataDistributionType dataDistributionType;
   private String user;
   private String uuid;
+  private Set<String> failedTaskIds = Sets.newConcurrentHashSet();
   private final EventLoop eventLoop;
   private final EventLoop defaultEventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
 
@@ -118,7 +120,11 @@ public class RssShuffleManager implements ShuffleManager {
 
     private void sendShuffleData(String taskId, List<ShuffleBlockInfo> shuffleDataInfoList) {
       try {
-        SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(id.get(), shuffleDataInfoList);
+        SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(
+            id.get(),
+            shuffleDataInfoList,
+            () -> !isValidTask(taskId)
+        );
         putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
         putBlockId(taskToFailedBlockIds, taskId, result.getFailedBlockIds());
       } finally {
@@ -369,7 +375,8 @@ public class RssShuffleManager implements ShuffleManager {
     taskToBufferManager.put(taskId, bufferManager);
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
     return new RssShuffleWriter(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(), bufferManager,
-        writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle);
+        writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle,
+        (Function<String, Boolean>) tid -> markFailedTask(tid));
   }
 
   @Override
@@ -771,5 +778,15 @@ public class RssShuffleManager implements ShuffleManager {
 
   public String getId() {
     return id.get();
+  }
+
+  public boolean markFailedTask(String taskId) {
+    LOG.info("Mark the task: {} failed.", taskId);
+    failedTaskIds.add(taskId);
+    return true;
+  }
+
+  public boolean isValidTask(String taskId) {
+    return !failedTaskIds.contains(taskId);
   }
 }

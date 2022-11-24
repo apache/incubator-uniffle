@@ -117,7 +117,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     super(host, port, maxRetryAttempts, usePlaintext);
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
   }
-  
+
   public ShuffleServerBlockingStub getBlockingStub() {
     return blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
   }
@@ -190,7 +190,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
           + retry + "] again");
       if (retry >= retryMax) {
         LOG.warn("ShuffleServer " + host + ":" + port + " is full and can't send shuffle"
-            + " data successfully after retry " + retryMax + " times, cost: {}(ms)",
+                + " data successfully after retry " + retryMax + " times, cost: {}(ms)",
             System.currentTimeMillis() - start);
         return result;
       }

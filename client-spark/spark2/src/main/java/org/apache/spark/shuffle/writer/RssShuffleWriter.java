@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -82,6 +83,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private long sendCheckInterval;
   private long sendSizeLimit;
   private boolean isMemoryShuffleEnabled;
+  private final Function<String, Boolean> taskFailureCallback;
 
   public RssShuffleWriter(
       String appId,
@@ -94,6 +96,33 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
       RssShuffleHandle rssHandle) {
+    this(
+        appId,
+        shuffleId,
+        taskId,
+        taskAttemptId,
+        bufferManager,
+        shuffleWriteMetrics,
+        shuffleManager,
+        sparkConf,
+        shuffleWriteClient,
+        rssHandle,
+        (tid) -> true
+    );
+  }
+
+  public RssShuffleWriter(
+      String appId,
+      int shuffleId,
+      String taskId,
+      long taskAttemptId,
+      WriteBufferManager bufferManager,
+      ShuffleWriteMetrics shuffleWriteMetrics,
+      RssShuffleManager shuffleManager,
+      SparkConf sparkConf,
+      ShuffleWriteClient shuffleWriteClient,
+      RssShuffleHandle rssHandle,
+      Function<String, Boolean> taskFailureCallback) {
     this.appId = appId;
     this.bufferManager = bufferManager;
     this.shuffleId = shuffleId;
@@ -116,6 +145,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.partitionToServers = rssHandle.getPartitionToServers();
     this.isMemoryShuffleEnabled = isMemoryShuffleEnabled(
         sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
+    this.taskFailureCallback = taskFailureCallback;
   }
 
   private boolean isMemoryShuffleEnabled(String storageType) {
@@ -133,6 +163,15 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   @Override
   public void write(Iterator<Product2<K, V>> records) {
+    try {
+      writeImpl(records);
+    } catch (Exception e) {
+      taskFailureCallback.apply(taskId);
+      throw e;
+    }
+  }
+
+  private void writeImpl(Iterator<Product2<K,V>> records) {
     List<ShuffleBlockInfo> shuffleBlockInfos = null;
     Set<Long> blockIds = Sets.newConcurrentHashSet();
     while (records.hasNext()) {
