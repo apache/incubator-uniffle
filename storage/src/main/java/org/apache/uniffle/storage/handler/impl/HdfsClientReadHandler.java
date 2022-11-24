@@ -147,6 +147,8 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
         }
       }
       readHandlers.sort(Comparator.comparing(HdfsShuffleReadHandler::getFilePrefix));
+    } else {
+      isFinished = true;
     }
   }
 
@@ -231,6 +233,10 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
 
   @Override
   public boolean finished() {
+    // init() has not been invoked
+    if (isFinished == false && readHandlers.isEmpty()) {
+      return false;
+    }
     for (HdfsShuffleReadHandler readHandler : readHandlers) {
       if (!readHandler.finished()) {
         return false;

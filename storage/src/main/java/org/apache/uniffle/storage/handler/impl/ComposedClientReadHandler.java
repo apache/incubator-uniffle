@@ -18,7 +18,6 @@
 package org.apache.uniffle.storage.handler.impl;
 
 import java.util.List;
-import java.util.concurrent.Callable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -123,13 +122,6 @@ public class ComposedClientReadHandler implements ClientReadHandler {
     }
 
     return shuffleDataResult;
-  }
-
-  private ClientReadHandler createReadHandlerIfNotExist(Callable<ClientReadHandler> creator) throws Exception {
-    if (creator == null) {
-      throw new IllegalStateException("creator " + getCurrentHandlerName() + " handler doesn't exist");
-    }
-    return creator.call();
   }
 
   private String getCurrentHandlerName() {

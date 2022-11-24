@@ -20,6 +20,8 @@ package org.apache.uniffle.storage.factory;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.collections.CollectionUtils;
+
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
 import org.apache.uniffle.client.util.ClientType;
@@ -52,20 +54,21 @@ public class ShuffleHandlerFactory {
     return INSTANCE;
   }
 
+
   public ClientReadHandler createShuffleReadHandler(CreateShuffleReadHandlerRequest request) {
-    return createShuffleReadHandler(request, null);
+    if (CollectionUtils.isEmpty(request.getShuffleServerInfoList())) {
+      throw new RuntimeException("Shuffle servers should not be empty!");
+    }
+    if (request.getShuffleServerInfoList().size() > 1) {
+      return new MultiReplicaClientReadHandler(request);
+    } else {
+      ShuffleServerInfo serverInfo = request.getShuffleServerInfoList().get(0);
+      return createSingleReplicaClientReadHandler(request, serverInfo);
+    }
   }
 
-  public ClientReadHandler createShuffleReadHandler(CreateShuffleReadHandlerRequest request,
-                                                    ShuffleServerInfo serverInfo) {
-    if (serverInfo == null && request.getShuffleServerInfoList().size() > 1) {
-      return new MultiReplicaClientReadHandler(request);
-    }
-
-    if (serverInfo == null) {
-      serverInfo = request.getShuffleServerInfoList().get(0);
-    }
-
+  public ClientReadHandler createSingleReplicaClientReadHandler(CreateShuffleReadHandlerRequest request,
+                                                                ShuffleServerInfo serverInfo) {
     String storageType = request.getStorageType();
     StorageType type = StorageType.valueOf(storageType);
 

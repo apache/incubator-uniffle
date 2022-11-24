@@ -164,45 +164,6 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     assertEquals(3, blockCount);
   }
 
-  @Test
-  public void testMaxHandlerFailTimes() throws Exception {
-    String testAppId = "ShuffleServerFaultToleranceTest.testMaxHandlerFailTimes";
-    int shuffleId = 0;
-    int partitionId = 0;
-
-    RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest(testAppId, shuffleId,
-        Lists.newArrayList(new PartitionRange(0, 0)), "");
-    registerShuffle(rrsr);
-    Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
-    Map<Long, byte[]> dataMap = Maps.newHashMap();
-    Roaring64NavigableMap[] bitmaps = new Roaring64NavigableMap[1];
-    bitmaps[0] = Roaring64NavigableMap.bitmapOf();
-    createShuffleBlockList(
-        shuffleId, partitionId, 0, 3, 25,
-        expectBlockIds, dataMap, mockSSI);
-
-    int maxHandlerFailTimes = 4;
-    Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
-    MemoryQuorumClientReadHandler memoryQuorumClientReadHandler = new MemoryQuorumClientReadHandler(
-        testAppId, shuffleId, partitionId, 150, shuffleServerClients.subList(0, 1), maxHandlerFailTimes);
-    LocalFileQuorumClientReadHandler localFileQuorumClientReadHandler = new LocalFileQuorumClientReadHandler(
-        testAppId, shuffleId, partitionId, 0, 1, 1,
-        75, expectBlockIds, processBlockIds, shuffleServerClients.subList(0, 1),
-        ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf(), maxHandlerFailTimes);
-    ClientReadHandler[] handlers = new ClientReadHandler[2];
-    handlers[0] = memoryQuorumClientReadHandler;
-    handlers[1] = localFileQuorumClientReadHandler;
-    ComposedClientReadHandler composedClientReadHandler = new ComposedClientReadHandler(handlers);
-    shuffleServers.get(0).stopServer();
-    ShuffleDataResult sdr;
-    for (int i = 0; i < maxHandlerFailTimes; i++) {
-      assertFalse(composedClientReadHandler.finished());
-      sdr = composedClientReadHandler.readShuffleData();
-      assertNull(sdr);
-    }
-    assertTrue(composedClientReadHandler.finished());
-  }
-
   private RssSendShuffleDataRequest getRssSendShuffleDataRequest(
       String appId, int shuffleId, int partitionId, List<ShuffleBlockInfo> blocks) {
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();

@@ -49,7 +49,7 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
   public MultiReplicaClientReadHandler(
       CreateShuffleReadHandlerRequest request) {
     request.getShuffleServerInfoList().forEach((ssi) -> {
-      handlers.add(ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request, ssi));
+      handlers.add(ShuffleHandlerFactory.getInstance().createSingleReplicaClientReadHandler(request, ssi));
     });
     blockIdBitmap = request.getExpectBlockIds();
     processedBlockIds = request.getProcessBlockIds();
