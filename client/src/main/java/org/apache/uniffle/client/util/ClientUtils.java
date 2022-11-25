@@ -17,6 +17,12 @@
 
 package org.apache.uniffle.client.util;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.Constants;
@@ -69,5 +75,43 @@ public class ClientUtils {
         || StorageType.MEMORY_LOCALFILE_HDFS.name().equals(storageType)
         || StorageType.HDFS.name().equals(storageType)
         || StorageType.LOCALFILE_HDFS.name().equals(storageType);
+  }
+
+  public static boolean waitUntilDoneOrFail(List<CompletableFuture<Boolean>> futures, boolean allowFastFail) {
+    int expected = futures.size();
+    int failed = 0;
+
+    CompletableFuture allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+
+    List<Future> finished = new ArrayList<>();
+    while (true) {
+      for (Future<Boolean> future : futures) {
+        if (future.isDone() && !finished.contains(future)) {
+          finished.add(future);
+          try {
+            if (!future.get()) {
+              failed++;
+            }
+          } catch (Exception e) {
+            failed++;
+          }
+        }
+      }
+
+      if (expected == finished.size()) {
+        return failed <= 0;
+      }
+
+      if (failed > 0 && allowFastFail) {
+        futures.stream().filter(x -> !x.isDone()).forEach(x -> x.cancel(true));
+        return false;
+      }
+
+      try {
+        allFutures.get(10, TimeUnit.MILLISECONDS);
+      } catch (Exception e) {
+        // ignore
+      }
+    }
   }
 }

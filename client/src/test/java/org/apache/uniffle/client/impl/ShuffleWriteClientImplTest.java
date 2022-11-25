@@ -18,10 +18,13 @@
 package org.apache.uniffle.client.impl;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.response.ResponseStatusCode;
@@ -40,6 +43,31 @@ import static org.mockito.Mockito.when;
 public class ShuffleWriteClientImplTest {
 
   @Test
+  public void testAbandonEventWhenTaskFailed() {
+    ShuffleWriteClientImpl shuffleWriteClient =
+        new ShuffleWriteClientImpl("GRPC", 3, 2000, 4, 1, 1, 1, true, 1, 1, 10, 10);
+    ShuffleServerClient mockShuffleServerClient = mock(ShuffleServerClient.class);
+    ShuffleWriteClientImpl spyClient = Mockito.spy(shuffleWriteClient);
+    doReturn(mockShuffleServerClient).when(spyClient).getShuffleServerClient(any());
+
+    when(mockShuffleServerClient.sendShuffleData(any())).thenAnswer((Answer<String>) invocation -> {
+      Thread.sleep(50000);
+      return "ABCD1234";
+    });
+
+    List<ShuffleServerInfo> shuffleServerInfoList =
+        Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
+    List<ShuffleBlockInfo> shuffleBlockInfoList = Lists.newArrayList(new ShuffleBlockInfo(
+        0, 0, 10, 10, 10, new byte[]{1}, shuffleServerInfoList, 10, 100, 0));
+
+    // It should directly exit and wont do rpc request.
+    Awaitility.await().timeout(1, TimeUnit.SECONDS).until(() -> {
+      spyClient.sendShuffleData("appId", shuffleBlockInfoList, () -> true);
+      return true;
+    });
+  }
+
+  @Test
   public void testSendData() {
     ShuffleWriteClientImpl shuffleWriteClient =
         new ShuffleWriteClientImpl("GRPC", 3, 2000, 4, 1, 1, 1, true, 1, 1, 10, 10);
@@ -53,7 +81,7 @@ public class ShuffleWriteClientImplTest {
         Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
     List<ShuffleBlockInfo> shuffleBlockInfoList = Lists.newArrayList(new ShuffleBlockInfo(
         0, 0, 10, 10, 10, new byte[]{1}, shuffleServerInfoList, 10, 100, 0));
-    SendShuffleDataResult result = spyClient.sendShuffleData("appId", shuffleBlockInfoList);
+    SendShuffleDataResult result = spyClient.sendShuffleData("appId", shuffleBlockInfoList, () -> false);
 
     assertTrue(result.getFailedBlockIds().contains(10L));
   }
