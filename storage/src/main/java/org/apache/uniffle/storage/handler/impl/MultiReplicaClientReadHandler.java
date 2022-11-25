@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
@@ -34,6 +35,7 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
   private static final Logger LOG = LoggerFactory.getLogger(MultiReplicaClientReadHandler.class);
 
   private final List<ClientReadHandler> handlers;
+  private final List<ShuffleServerInfo> shuffleServerInfos;
 
   private long readBlockNum = 0L;
   private long readLength = 0L;
@@ -45,11 +47,13 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
 
   public MultiReplicaClientReadHandler(
       List<ClientReadHandler> handlers,
+      List<ShuffleServerInfo> shuffleServerInfos,
       Roaring64NavigableMap blockIdBitmap,
       Roaring64NavigableMap processedBlockIds) {
     this.handlers = handlers;
     this.blockIdBitmap = blockIdBitmap;
     this.processedBlockIds = processedBlockIds;
+    this.shuffleServerInfos = shuffleServerInfos;
   }
 
   @Override
@@ -64,18 +68,20 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
       try {
         result = handler.readShuffleData();
       } catch (Exception e) {
-        LOG.warn("Failed to read a replica due to ", e);
+        LOG.warn("Failed to read a replica from [{}] due to ",
+            shuffleServerInfos.get(readHandlerIndex).getId(), e);
       }
       if (result != null && !result.isEmpty()) {
         return result;
       } else {
-        readHandlerIndex++;
         try {
           RssUtils.checkProcessedBlockIds(blockIdBitmap, processedBlockIds);
           return result;
         } catch (RssException e) {
-          LOG.warn(e.getMessage());
+          LOG.warn("Finished read from [{}], but haven't finished read all the blocks.",
+              shuffleServerInfos.get(readHandlerIndex).getId(), e);
         }
+        readHandlerIndex++;
       }
     } while (true);
   }

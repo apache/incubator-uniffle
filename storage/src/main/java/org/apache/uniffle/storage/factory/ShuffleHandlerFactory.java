@@ -65,7 +65,8 @@ public class ShuffleHandlerFactory {
       request.getShuffleServerInfoList().forEach((ssi) -> {
         handlers.add(ShuffleHandlerFactory.getInstance().createSingleReplicaClientReadHandler(request, ssi));
       });
-      return new MultiReplicaClientReadHandler(handlers, request.getExpectBlockIds(), request.getProcessBlockIds());
+      return new MultiReplicaClientReadHandler(handlers, request.getShuffleServerInfoList(),
+          request.getExpectBlockIds(), request.getProcessBlockIds());
     } else {
       ShuffleServerInfo serverInfo = request.getShuffleServerInfoList().get(0);
       return createSingleReplicaClientReadHandler(request, serverInfo);
