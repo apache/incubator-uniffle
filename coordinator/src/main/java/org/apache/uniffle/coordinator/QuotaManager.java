@@ -53,13 +53,14 @@ public class QuotaManager {
   private final Map<String, Integer> defaultUserApps = Maps.newConcurrentMap();
 
   public QuotaManager(CoordinatorConf conf) {
-    this.quotaFilePath = conf.get(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH);;
+    this.quotaFilePath = conf.get(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH);
     final Long updateTime = conf.get(CoordinatorConf.COORDINATOR_QUOTA_UPDATE_INTERVAL);
     try {
       hadoopFileSystem = HadoopFilesystemProvider.getFilesystem(new Path(quotaFilePath), new Configuration());
     } catch (Exception e) {
       LOG.error("Cannot init remoteFS on path : " + quotaFilePath, e);
     }
+    LOG.warn("We will update the quota of users regularly.");
     // Threads that update the number of submitted applications
     ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("UpdateDefaultApp-%d"));
@@ -76,6 +77,7 @@ public class QuotaManager {
           long latestModificationTime = fileStatus.getModificationTime();
           if (quotaFileLastModify.get() != latestModificationTime) {
             parseQuotaFile(hadoopFileSystem.open(hadoopPath));
+            LOG.warn("We have updated the file {}.", hadoopPath);
             quotaFileLastModify.set(latestModificationTime);
           }
         }

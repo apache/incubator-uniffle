@@ -84,7 +84,8 @@ public class AccessQuotaCheckerTest {
         Collections.singletonList("org.apache.uniffle.coordinator.AccessQuotaChecker"));
     conf.set(COORDINATOR_QUOTA_DEFAULT_APP_NUM, 3);
     ApplicationManager applicationManager = new ApplicationManager(conf);
-    AccessManager accessManager = new AccessManager(conf, clusterManager, applicationManager, new Configuration());
+    AccessManager accessManager = new AccessManager(conf, clusterManager,
+        applicationManager.getQuotaManager(), new Configuration());
 
     AccessQuotaChecker accessQuotaChecker =
         (AccessQuotaChecker) accessManager.getAccessCheckers().get(0);
@@ -108,7 +109,7 @@ public class AccessQuotaCheckerTest {
      */
     conf.set(COORDINATOR_QUOTA_DEFAULT_APP_NUM, 0);
     applicationManager = new ApplicationManager(conf);
-    accessManager = new AccessManager(conf, clusterManager, applicationManager, new Configuration());
+    accessManager = new AccessManager(conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
     accessQuotaChecker = (AccessQuotaChecker) accessManager.getAccessCheckers().get(0);
     accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
     assertFalse(accessQuotaChecker.check(accessInfo).isSuccess());
@@ -123,7 +124,7 @@ public class AccessQuotaCheckerTest {
         Arrays.asList("org.apache.uniffle.coordinator.AccessQuotaChecker",
             "org.apache.uniffle.coordinator.AccessClusterLoadChecker"));
     applicationManager = new ApplicationManager(conf);
-    accessManager = new AccessManager(conf, clusterManager, applicationManager, new Configuration());
+    accessManager = new AccessManager(conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
     accessQuotaChecker = (AccessQuotaChecker) accessManager.getAccessCheckers().get(0);
     final AccessClusterLoadChecker accessClusterLoadChecker =
         (AccessClusterLoadChecker) accessManager.getAccessCheckers().get(1);

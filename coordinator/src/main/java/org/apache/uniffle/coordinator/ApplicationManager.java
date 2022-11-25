@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -54,9 +55,10 @@ public class ApplicationManager {
   private final Map<String, RankValue> remoteStoragePathRankValue;
   private final Map<String, String> remoteStorageToHost = Maps.newConcurrentMap();
   private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
-  private final Map<String, Map<String, Long>> currentUserAndApp;
-  private final Map<String, String> appIdToUser;
-  private final Map<String, Integer> defaultUserApps;
+  private Map<String, Map<String, Long>> currentUserAndApp = Maps.newConcurrentMap();
+  private Map<String, String> appIdToUser = Maps.newConcurrentMap();
+  private Map<String, Integer> defaultUserApps = Maps.newConcurrentMap();
+  private QuotaManager quotaManager;
   // it's only for test case to check if status check has problem
   private boolean hasErrorInStatusCheck = false;
 
@@ -75,10 +77,13 @@ public class ApplicationManager {
       throw new UnsupportedOperationException("Unsupported selected storage strategy.");
     }
     expired = conf.getLong(CoordinatorConf.COORDINATOR_APP_EXPIRED);
-    QuotaManager quotaManager = new QuotaManager(conf);
-    this.currentUserAndApp = quotaManager.getCurrentUserAndApp();
-    this.appIdToUser = quotaManager.getAppIdToUser();
-    this.defaultUserApps = quotaManager.getDefaultUserApps();
+    if (conf.get(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS).stream().map(String::trim).collect(Collectors.toList())
+        .contains(AccessQuotaChecker.class.getCanonicalName())) {
+      this.quotaManager = new QuotaManager(conf);
+      this.currentUserAndApp = quotaManager.getCurrentUserAndApp();
+      this.appIdToUser = quotaManager.getAppIdToUser();
+      this.defaultUserApps = quotaManager.getDefaultUserApps();
+    }
     // the thread for checking application status
     ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("ApplicationManager-%d"));
@@ -321,8 +326,8 @@ public class ApplicationManager {
     return defaultUserApps;
   }
 
-  public Map<String, Map<String, Long>> getCurrentUserApps() {
-    return currentUserAndApp;
+  public QuotaManager getQuotaManager() {
+    return quotaManager;
   }
 
   public enum StrategyName {
