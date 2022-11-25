@@ -19,7 +19,6 @@ package org.apache.uniffle.storage.handler.impl;
 
 import java.util.List;
 
-import com.google.common.collect.Lists;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,31 +27,29 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RssUtils;
-import org.apache.uniffle.storage.factory.ShuffleHandlerFactory;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
-import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 
 public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(MultiReplicaClientReadHandler.class);
 
-  private List<ClientReadHandler> handlers = Lists.newLinkedList();
+  private final List<ClientReadHandler> handlers;
 
   private long readBlockNum = 0L;
   private long readLength = 0L;
   private long readUncompressLength = 0L;
-  private Roaring64NavigableMap blockIdBitmap;
-  private Roaring64NavigableMap processedBlockIds;
+  private final Roaring64NavigableMap blockIdBitmap;
+  private final Roaring64NavigableMap processedBlockIds;
 
   private int readHandlerIndex;
 
   public MultiReplicaClientReadHandler(
-      CreateShuffleReadHandlerRequest request) {
-    request.getShuffleServerInfoList().forEach((ssi) -> {
-      handlers.add(ShuffleHandlerFactory.getInstance().createSingleReplicaClientReadHandler(request, ssi));
-    });
-    blockIdBitmap = request.getExpectBlockIds();
-    processedBlockIds = request.getProcessBlockIds();
+      List<ClientReadHandler> handlers,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap processedBlockIds) {
+    this.handlers = handlers;
+    this.blockIdBitmap = blockIdBitmap;
+    this.processedBlockIds = processedBlockIds;
   }
 
   @Override

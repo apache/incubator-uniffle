@@ -20,6 +20,7 @@ package org.apache.uniffle.storage.factory;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
@@ -60,7 +61,11 @@ public class ShuffleHandlerFactory {
       throw new RuntimeException("Shuffle servers should not be empty!");
     }
     if (request.getShuffleServerInfoList().size() > 1) {
-      return new MultiReplicaClientReadHandler(request);
+      List<ClientReadHandler> handlers = Lists.newArrayList();
+      request.getShuffleServerInfoList().forEach((ssi) -> {
+        handlers.add(ShuffleHandlerFactory.getInstance().createSingleReplicaClientReadHandler(request, ssi));
+      });
+      return new MultiReplicaClientReadHandler(handlers, request.getExpectBlockIds(), request.getProcessBlockIds());
     } else {
       ShuffleServerInfo serverInfo = request.getShuffleServerInfoList().get(0);
       return createSingleReplicaClientReadHandler(request, serverInfo);
