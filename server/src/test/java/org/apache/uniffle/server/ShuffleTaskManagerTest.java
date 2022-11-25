@@ -694,8 +694,8 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     assertEquals(appIdsOnDisk.size(), shuffleTaskManager.getAppIds().size());
     assertTrue(appIdsOnDisk.contains(appId));
 
-    // make heartbeat timeout and resources are removed
-    Thread.sleep(3000);
+    // make sure heartbeat timeout and resources are removed
+    Thread.sleep(5000);
 
     appIdsOnDisk = getAppIdsOnDisk(localStorageManager);
     assertFalse(appIdsOnDisk.contains(appId));

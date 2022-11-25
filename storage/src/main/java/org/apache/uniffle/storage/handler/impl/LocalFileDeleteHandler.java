@@ -28,14 +28,12 @@ import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
 public class LocalFileDeleteHandler implements ShuffleDeleteHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(LocalFileDeleteHandler.class);
-  private static final String UNKNOWN_USER_NAME = "unknown";
 
   @Override
   public void delete(String[] shuffleDataStoredPath, String appId, String user) {
     for (String basePath : shuffleDataStoredPath) {
       final String shufflePath = basePath;
       long start = System.currentTimeMillis();
-      LOG.info("Try delete shuffle data for appId[{}] of user[{}] with {}", appId, user, shufflePath);
       try {
         File baseFolder = new File(shufflePath);
         FileUtils.deleteDirectory(baseFolder);
@@ -45,10 +43,5 @@ public class LocalFileDeleteHandler implements ShuffleDeleteHandler {
         LOG.warn("Can't delete shuffle data for appId[" + appId + "] with " + shufflePath, e);
       }
     }
-  }
-
-  @Override
-  public void delete(String[] shuffleDataStoredPath, String appId) {
-    delete(shuffleDataStoredPath, appId, UNKNOWN_USER_NAME);
   }
 }

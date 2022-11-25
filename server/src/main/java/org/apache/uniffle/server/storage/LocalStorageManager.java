@@ -64,6 +64,7 @@ import static org.apache.uniffle.server.ShuffleServerConf.LOCAL_STORAGE_INITIALI
 
 public class LocalStorageManager extends SingleStorageManager {
   private static final Logger LOG = LoggerFactory.getLogger(LocalStorageManager.class);
+  private static final String UNKNOWN_USER_NAME = "unknown";
 
   private final List<LocalStorage> localStorages;
   private final List<String> storageBasePaths;
@@ -239,7 +240,7 @@ public class LocalStorageManager extends SingleStorageManager {
         for (int i = 0; i < storageBasePaths.size(); i++) {
           deletePaths[i] = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePaths.get(i), appId);
         }
-        deleteHandler.delete(deletePaths, appId);
+        deleteHandler.delete(deletePaths, appId, UNKNOWN_USER_NAME);
       }
     }
   }

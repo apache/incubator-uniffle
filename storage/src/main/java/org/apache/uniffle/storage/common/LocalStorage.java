@@ -19,7 +19,6 @@ package org.apache.uniffle.storage.common;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
@@ -29,7 +28,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Queues;
 import org.apache.commons.io.FileUtils;
-import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.roaringbitmap.RoaringBitmap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

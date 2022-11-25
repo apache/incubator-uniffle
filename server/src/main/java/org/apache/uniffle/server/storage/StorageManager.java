@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.util.Collection;
+
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
@@ -24,11 +26,6 @@ import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-
 
 public interface StorageManager {
 
