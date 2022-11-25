@@ -308,6 +308,12 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(60 * 1000L)
       .withDescription("The timeout of the cache which record the mapping information");
 
+  public static final ConfigOption<Long> SERVER_LEAK_SHUFFLE_DATA_CHECK_INTERVAL = ConfigOptions
+          .key("rss.server.leak.shuffledata.check.interval")
+          .longType()
+          .defaultValue(3600 * 1000L)
+          .withDescription("the interval of leak shuffle data check");
+
   public ShuffleServerConf() {
   }
 

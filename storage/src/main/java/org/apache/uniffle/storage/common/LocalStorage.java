@@ -19,6 +19,7 @@ package org.apache.uniffle.storage.common;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
@@ -314,6 +315,20 @@ public class LocalStorage extends AbstractStorage {
 
   public void markCorrupted() {
     isCorrupted = true;
+  }
+
+  public Set<String> getAppIds() {
+    Set<String> appIds = new HashSet<>();
+    File baseFolder = new File(basePath);
+    File[] files = baseFolder.listFiles();
+    if (files != null) {
+      for (File file : files) {
+        if (file.isDirectory()) {
+          appIds.add(file.getName());
+        }
+      }
+    }
+    return appIds;
   }
 
   public static class Builder {
