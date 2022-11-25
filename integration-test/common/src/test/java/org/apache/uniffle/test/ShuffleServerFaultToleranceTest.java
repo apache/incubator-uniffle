@@ -47,16 +47,19 @@ import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.server.MockedShuffleServer;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.storage.factory.ShuffleHandlerFactory;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
 
   private List<ShuffleServerClient> shuffleServerClients;
+
+  private String remoteStoragePath = HDFS_URI + "rss/test";
 
   @BeforeAll
   public static void setupServers() throws Exception {
@@ -90,9 +93,8 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     String testAppId = "ShuffleServerFaultToleranceTest.testReadFaultTolerance";
     int shuffleId = 0;
     int partitionId = 0;
-
     RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest(testAppId, shuffleId,
-        Lists.newArrayList(new PartitionRange(0, 0)), "");
+        Lists.newArrayList(new PartitionRange(0, 0)), remoteStoragePath);
     registerShuffle(rrsr);
     Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
     Map<Long, byte[]> dataMap = Maps.newHashMap();
@@ -102,18 +104,69 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
         shuffleId, partitionId, 0, 3, 25,
         expectBlockIds, dataMap, mockSSI);
 
-
     RssSendShuffleDataRequest rssdr = getRssSendShuffleDataRequest(testAppId, shuffleId, partitionId, blocks);
     shuffleServerClients.get(1).sendShuffleData(rssdr);
-    shuffleServerClients.get(2).sendShuffleData(rssdr);
 
     List<ShuffleServerInfo> shuffleServerInfoList = new ArrayList<>();
     for (ShuffleServer shuffleServer : shuffleServers) {
       shuffleServerInfoList.add(new ShuffleServerInfo(shuffleServer.getId(),
           shuffleServer.getIp(), shuffleServer.getPort()));
     }
+
+    CreateShuffleReadHandlerRequest request = mockCreateShuffleReadHandlerRequest(
+        testAppId, shuffleId, partitionId, shuffleServerInfoList, expectBlockIds, StorageType.MEMORY_LOCALFILE);
+    ClientReadHandler clientReadHandler = ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
+    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    expectedData.clear();
+    blocks.forEach((block) -> {
+      expectedData.put(block.getBlockId(), block.getData());
+    });
+    ShuffleDataResult sdr = clientReadHandler.readShuffleData();
+    TestUtils.validateResult(expectedData, sdr);
+
+    // send data to shuffle server, and wait until flush to localfile
+    List<ShuffleBlockInfo> blocks2 = createShuffleBlockList(
+        shuffleId, partitionId, 0, 3, 25,
+        expectBlockIds, dataMap, mockSSI);
+
+    rssdr = getRssSendShuffleDataRequest(testAppId, shuffleId, partitionId, blocks2);
+    shuffleServerClients.get(1).sendShuffleData(rssdr);
+    RssSendCommitRequest commitRequest = new RssSendCommitRequest(testAppId, shuffleId);
+    shuffleServerClients.get(1).sendCommit(commitRequest);
+    waitFlush(testAppId, shuffleId);
+    request = mockCreateShuffleReadHandlerRequest(
+        testAppId, shuffleId, partitionId, shuffleServerInfoList, expectBlockIds, StorageType.LOCALFILE);
+    clientReadHandler = ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
+    sdr = clientReadHandler.readShuffleData();
+    blocks2.forEach((block) -> {
+      expectedData.put(block.getBlockId(), block.getData());
+    });
+    TestUtils.validateResult(expectedData, sdr);
+
+    // send data to shuffle server, and wait until flush to hdfs
+    List<ShuffleBlockInfo> blocks3 = createShuffleBlockList(
+        shuffleId, partitionId, 0, 3, 150,
+        expectBlockIds, dataMap, mockSSI);
+    expectedData.clear();
+    blocks3.forEach((block) -> {
+      expectedData.put(block.getBlockId(), block.getData());
+    });
+    rssdr = getRssSendShuffleDataRequest(testAppId, shuffleId, partitionId, blocks3);
+    shuffleServerClients.get(1).sendShuffleData(rssdr);
+    shuffleServerClients.get(1).sendCommit(commitRequest);
+    waitFlush(testAppId, shuffleId);
+    request = mockCreateShuffleReadHandlerRequest(
+        testAppId, shuffleId, partitionId, shuffleServerInfoList, expectBlockIds, StorageType.HDFS);
+    clientReadHandler = ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
+    sdr = clientReadHandler.readShuffleData();
+    TestUtils.validateResult(expectedData, sdr);
+  }
+
+  private CreateShuffleReadHandlerRequest mockCreateShuffleReadHandlerRequest(
+      String testAppId, int shuffleId, int partitionId, List<ShuffleServerInfo> shuffleServerInfoList,
+      Roaring64NavigableMap expectBlockIds, StorageType storageType) {
     CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
-    request.setStorageType(StorageType.MEMORY_LOCALFILE.name());
+    request.setStorageType(storageType.name());
     request.setAppId(testAppId);
     request.setShuffleId(shuffleId);
     request.setPartitionId(partitionId);
@@ -121,40 +174,16 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     request.setPartitionNumPerRange(1);
     request.setPartitionNum(1);
     request.setReadBufferSize(14 * 1024 * 1024);
+    request.setStorageBasePath(remoteStoragePath);
     request.setShuffleServerInfoList(shuffleServerInfoList);
+    request.setHadoopConf(conf);
     request.setExpectBlockIds(expectBlockIds);
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     request.setProcessBlockIds(processBlockIds);
     request.setDistributionType(ShuffleDataDistributionType.NORMAL);
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     request.setExpectTaskIds(taskIdBitmap);
-    ClientReadHandler clientReadHandler = ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
-    expectedData.clear();
-    expectedData.put(blocks.get(0).getBlockId(), blocks.get(0).getData());
-    expectedData.put(blocks.get(1).getBlockId(), blocks.get(1).getData());
-    expectedData.put(blocks.get(2).getBlockId(), blocks.get(1).getData());
-    ShuffleDataResult sdr  = clientReadHandler.readShuffleData();
-    TestUtils.validateResult(expectedData, sdr);
-    processBlockIds.addLong(blocks.get(0).getBlockId());
-    processBlockIds.addLong(blocks.get(1).getBlockId());
-    processBlockIds.addLong(blocks.get(2).getBlockId());
-
-    // send data to shuffle server, and wait until flush finish
-    List<ShuffleBlockInfo> blocks2 = createShuffleBlockList(
-        shuffleId, partitionId, 0, 3, 50,
-        expectBlockIds, dataMap, mockSSI);
-    rssdr = getRssSendShuffleDataRequest(testAppId, shuffleId, partitionId, blocks2);
-    shuffleServerClients.get(1).sendShuffleData(rssdr);
-    shuffleServerClients.get(2).sendShuffleData(rssdr);
-    RssSendCommitRequest commitRequest = new RssSendCommitRequest(testAppId, shuffleId);
-    shuffleServerClients.get(1).sendCommit(commitRequest);
-    shuffleServerClients.get(2).sendCommit(commitRequest);
-
-    sdr = clientReadHandler.readShuffleData();
-    long blockCount = sdr.getBufferSegments().stream().filter(bufferSegment ->
-        !processBlockIds.contains(bufferSegment.getBlockId())).count();
-    assertEquals(3, blockCount);
+    return request;
   }
 
   private RssSendShuffleDataRequest getRssSendShuffleDataRequest(
@@ -179,7 +208,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 5000L);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 40.0);
-    shuffleServerConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 500L);
+    shuffleServerConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 600L);
     shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 5000L);
     shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 1000000L);
     shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000);
@@ -188,11 +217,28 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     File dataDir1 = new File(tmpDir, id + "_1");
     File dataDir2 = new File(tmpDir, id + "_2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
-    shuffleServerConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE.name());
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 450L);
     shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + id);
     shuffleServerConf.setInteger("rss.jetty.http.port", 19081 + id * 100);
     shuffleServerConf.setString("rss.storage.basePath", basePath);
     return new MockedShuffleServer(shuffleServerConf);
+  }
+
+  protected void waitFlush(String appId, int shuffleId) throws InterruptedException {
+    int retry = 0;
+    while (true) {
+      if (retry > 5) {
+        fail("Timeout for flush data");
+      }
+      ShuffleBuffer shuffleBuffer = shuffleServers.get(1).getShuffleBufferManager()
+          .getShuffleBuffer(appId, shuffleId, 0);
+      if (shuffleBuffer.getBlocks().size() == 0 && shuffleBuffer.getInFlushBlockMap().size() == 0) {
+        break;
+      }
+      Thread.sleep(1000);
+      retry++;
+    }
   }
 
   public static void cleanCluster() throws Exception {
