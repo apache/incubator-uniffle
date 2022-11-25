@@ -60,6 +60,27 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
     this.partitionNum = partitionNum;
   }
 
+  /**
+   * Only for test
+   */
+  public LocalFileClientReadHandler(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int indexReadLimit,
+      int partitionNumPerRange,
+      int partitionNum,
+      int readBufferSize,
+      Roaring64NavigableMap expectBlockIds,
+      Roaring64NavigableMap processBlockIds,
+      ShuffleServerClient shuffleServerClient) {
+    this(
+        appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange,
+        partitionNum, readBufferSize, expectBlockIds, processBlockIds,
+        shuffleServerClient, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf()
+    );
+  }
+
   @Override
   public ShuffleIndexResult readShuffleIndex() {
     ShuffleIndexResult shuffleIndexResult = null;

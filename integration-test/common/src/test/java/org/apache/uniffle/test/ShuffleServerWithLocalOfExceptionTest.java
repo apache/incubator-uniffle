@@ -19,7 +19,6 @@ package org.apache.uniffle.test;
 
 import java.io.File;
 
-import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -27,15 +26,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
-import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
-import org.apache.uniffle.storage.handler.api.ClientReadHandler;
-import org.apache.uniffle.storage.handler.impl.ComposedClientReadHandler;
-import org.apache.uniffle.storage.handler.impl.MemoryQuorumClientReadHandler;
+import org.apache.uniffle.storage.handler.impl.MemoryClientReadHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleServerWithLocalOfExceptionTest extends ShuffleReadWriteBase {
 
@@ -71,18 +69,19 @@ public class ShuffleServerWithLocalOfExceptionTest extends ShuffleReadWriteBase 
   }
 
   @Test
-  public void testReadWhenConnectionFailed() throws Exception {
-    String testAppId = "testReadWhenConnectionFailed";
+  public void testReadWhenConnectionFailedShouldThrowException() throws Exception {
+    String testAppId = "testReadWhenException";
     int shuffleId = 0;
     int partitionId = 0;
 
-    MemoryQuorumClientReadHandler memoryQuorumClientReadHandler = new MemoryQuorumClientReadHandler(
-        testAppId, shuffleId, partitionId, 150, Lists.newArrayList(shuffleServerClient));
-    ClientReadHandler[] handlers = new ClientReadHandler[1];
-    handlers[0] = memoryQuorumClientReadHandler;
-    ComposedClientReadHandler composedClientReadHandler = new ComposedClientReadHandler(handlers);
+    MemoryClientReadHandler memoryClientReadHandler = new MemoryClientReadHandler(
+        testAppId, shuffleId, partitionId, 150, shuffleServerClient);
     shuffleServers.get(0).stopServer();
-    ShuffleDataResult sdr  = composedClientReadHandler.readShuffleData();
-    assertTrue(sdr == null);
+    try {
+      memoryClientReadHandler.readShuffleData();
+      fail("Should throw connection exception directly.");
+    } catch (RssException rssException) {
+      assertTrue(rssException.getMessage().contains("Failed to read in memory shuffle data with"));
+    }
   }
 }

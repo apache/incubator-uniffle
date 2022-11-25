@@ -43,8 +43,8 @@ import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
 import org.apache.uniffle.storage.handler.impl.ComposedClientReadHandler;
-import org.apache.uniffle.storage.handler.impl.LocalFileQuorumClientReadHandler;
-import org.apache.uniffle.storage.handler.impl.MemoryQuorumClientReadHandler;
+import org.apache.uniffle.storage.handler.impl.LocalFileClientReadHandler;
+import org.apache.uniffle.storage.handler.impl.MemoryClientReadHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -113,37 +113,37 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     assertEquals(3, shuffleServers.get(0).getShuffleBufferManager()
         .getShuffleBuffer(testAppId, shuffleId, 0).getBlocks().size());
     // create memory handler to read data,
-    MemoryQuorumClientReadHandler memoryQuorumClientReadHandler = new MemoryQuorumClientReadHandler(
-        testAppId, shuffleId, partitionId, 20, Lists.newArrayList(shuffleServerClient));
+    MemoryClientReadHandler memoryClientReadHandler = new MemoryClientReadHandler(
+        testAppId, shuffleId, partitionId, 20, shuffleServerClient);
     // start to read data, one block data for every call
-    ShuffleDataResult sdr  = memoryQuorumClientReadHandler.readShuffleData();
+    ShuffleDataResult sdr  = memoryClientReadHandler.readShuffleData();
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     expectedData.put(blocks.get(0).getBlockId(), blocks.get(0).getData());
     validateResult(expectedData, sdr);
 
-    sdr = memoryQuorumClientReadHandler.readShuffleData();
+    sdr = memoryClientReadHandler.readShuffleData();
     expectedData.clear();
     expectedData.put(blocks.get(1).getBlockId(), blocks.get(1).getData());
     validateResult(expectedData, sdr);
 
-    sdr = memoryQuorumClientReadHandler.readShuffleData();
+    sdr = memoryClientReadHandler.readShuffleData();
     expectedData.clear();
     expectedData.put(blocks.get(2).getBlockId(), blocks.get(2).getData());
     validateResult(expectedData, sdr);
 
     // no data in cache, empty return
-    sdr = memoryQuorumClientReadHandler.readShuffleData();
+    sdr = memoryClientReadHandler.readShuffleData();
     assertEquals(0, sdr.getBufferSegments().size());
 
     // case: read with ComposedClientReadHandler
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
-    memoryQuorumClientReadHandler = new MemoryQuorumClientReadHandler(
-        testAppId, shuffleId, partitionId, 50, Lists.newArrayList(shuffleServerClient));
-    LocalFileQuorumClientReadHandler localFileQuorumClientReadHandler = new LocalFileQuorumClientReadHandler(
+    memoryClientReadHandler = new MemoryClientReadHandler(
+        testAppId, shuffleId, partitionId, 50, shuffleServerClient);
+    LocalFileClientReadHandler localFileQuorumClientReadHandler = new LocalFileClientReadHandler(
         testAppId, shuffleId, partitionId, 0, 1, 3,
-        50, expectBlockIds, processBlockIds, Lists.newArrayList(shuffleServerClient));
+        50, expectBlockIds, processBlockIds, shuffleServerClient);
     ClientReadHandler[] handlers = new ClientReadHandler[2];
-    handlers[0] = memoryQuorumClientReadHandler;
+    handlers[0] = memoryClientReadHandler;
     handlers[1] = localFileQuorumClientReadHandler;
     ComposedClientReadHandler composedClientReadHandler = new ComposedClientReadHandler(handlers);
     // read from memory with ComposedClientReadHandler
@@ -235,14 +235,14 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
 
     // read the 1-th segment from memory
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
-    MemoryQuorumClientReadHandler memoryQuorumClientReadHandler = new MemoryQuorumClientReadHandler(
-        testAppId, shuffleId, partitionId, 150, Lists.newArrayList(shuffleServerClient));
-    LocalFileQuorumClientReadHandler localFileQuorumClientReadHandler = new LocalFileQuorumClientReadHandler(
+    MemoryClientReadHandler memoryClientReadHandler = new MemoryClientReadHandler(
+        testAppId, shuffleId, partitionId, 150, shuffleServerClient);
+    LocalFileClientReadHandler localFileClientReadHandler = new LocalFileClientReadHandler(
         testAppId, shuffleId, partitionId, 0, 1, 3,
-        75, expectBlockIds, processBlockIds, Lists.newArrayList(shuffleServerClient));
+        75, expectBlockIds, processBlockIds, shuffleServerClient);
     ClientReadHandler[] handlers = new ClientReadHandler[2];
-    handlers[0] = memoryQuorumClientReadHandler;
-    handlers[1] = localFileQuorumClientReadHandler;
+    handlers[0] = memoryClientReadHandler;
+    handlers[1] = localFileClientReadHandler;
     ComposedClientReadHandler composedClientReadHandler = new ComposedClientReadHandler(handlers);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     expectedData.clear();
