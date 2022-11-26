@@ -17,10 +17,10 @@
 
 package org.apache.uniffle.common.config;
 
-import org.apache.uniffle.common.ClientType;
-
 import java.util.List;
 import java.util.Map;
+
+import org.apache.uniffle.common.ClientType;
 
 public class RssBaseConf extends RssConf {
 
