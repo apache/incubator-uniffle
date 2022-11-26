@@ -90,18 +90,6 @@ public class QuotaManagerTest {
   public void testQuotaManagerWithoutAccessQuotaChecker() throws Exception {
     final String quotaFile =
         new Path(remotePath.getAbsolutePath()).getFileSystem(hdfsConf).getName() + "/quotaFile.properties";
-    final FSDataOutputStream fsDataOutputStream =
-        new Path(remotePath.toString()).getFileSystem(hdfsConf).create(new Path(quotaFile));
-    String quota1 = "user1 =10";
-    String quota2 = "user2= 20";
-    String quota3 = "user3 = 30";
-    fsDataOutputStream.write(quota1.getBytes(StandardCharsets.UTF_8));
-    fsDataOutputStream.write("\n".getBytes(StandardCharsets.UTF_8));
-    fsDataOutputStream.write(quota2.getBytes(StandardCharsets.UTF_8));
-    fsDataOutputStream.write("\n".getBytes(StandardCharsets.UTF_8));
-    fsDataOutputStream.write(quota3.getBytes(StandardCharsets.UTF_8));
-    fsDataOutputStream.flush();
-    fsDataOutputStream.close();
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH,
         quotaFile);
@@ -110,11 +98,6 @@ public class QuotaManagerTest {
     ApplicationManager applicationManager = new ApplicationManager(conf);
     Thread.sleep(500);
     // it didn't detectUserResource because `org.apache.unifle.coordinator.AccessQuotaChecker` is not configured
-    Integer user1 = applicationManager.getDefaultUserApps().get("user1");
-    Integer user2 = applicationManager.getDefaultUserApps().get("user2");
-    Integer user3 = applicationManager.getDefaultUserApps().get("user3");
-    assertNull(user1);
-    assertNull(user2);
-    assertNull(user3);
+    assertNull(applicationManager.getQuotaManager());
   }
 }

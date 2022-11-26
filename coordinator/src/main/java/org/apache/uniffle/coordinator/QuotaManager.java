@@ -28,6 +28,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -54,22 +55,28 @@ public class QuotaManager {
 
   public QuotaManager(CoordinatorConf conf) {
     this.quotaFilePath = conf.get(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH);
-    final Long updateTime = conf.get(CoordinatorConf.COORDINATOR_QUOTA_UPDATE_INTERVAL);
-    try {
-      hadoopFileSystem = HadoopFilesystemProvider.getFilesystem(new Path(quotaFilePath), new Configuration());
-    } catch (Exception e) {
-      LOG.error("Cannot init remoteFS on path : " + quotaFilePath, e);
+    if (quotaFilePath == null) {
+      LOG.warn("{} is not configured, each user will use the default quota : {}",
+          CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH.key(),
+          conf.get(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_APP_NUM));
+    } else {
+      final Long updateTime = conf.get(CoordinatorConf.COORDINATOR_QUOTA_UPDATE_INTERVAL);
+      try {
+        hadoopFileSystem = HadoopFilesystemProvider.getFilesystem(new Path(quotaFilePath), new Configuration());
+      } catch (Exception e) {
+        LOG.error("Cannot init remoteFS on path : " + quotaFilePath, e);
+      }
+      // Threads that update the number of submitted applications
+      ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
+          ThreadUtils.getThreadFactory("UpdateDefaultApp-%d"));
+      scheduledExecutorService.scheduleAtFixedRate(
+          this::detectUserResource, 0, updateTime / 2, TimeUnit.MILLISECONDS);
+      LOG.warn("QuotaManager initialized successfully.");
     }
-    LOG.warn("We will update the quota of users regularly.");
-    // Threads that update the number of submitted applications
-    ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("UpdateDefaultApp-%d"));
-    scheduledExecutorService.scheduleAtFixedRate(
-        this::detectUserResource, 0, updateTime / 2, TimeUnit.MILLISECONDS);
   }
 
   public void detectUserResource() {
-    if (quotaFilePath != null && hadoopFileSystem != null) {
+    if (hadoopFileSystem != null) {
       try {
         Path hadoopPath = new Path(quotaFilePath);
         FileStatus fileStatus = hadoopFileSystem.getFileStatus(hadoopPath);
@@ -103,6 +110,7 @@ public class QuotaManager {
     }
   }
 
+  @VisibleForTesting
   public Map<String, Integer> getDefaultUserApps() {
     return defaultUserApps;
   }
