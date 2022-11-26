@@ -19,6 +19,7 @@ package org.apache.uniffle.server.storage;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.cache.Cache;
@@ -157,6 +158,11 @@ public class MultiStorageManager implements StorageManager {
   @Override
   public boolean canWrite(ShuffleDataFlushEvent event) {
     return warmStorageManager.canWrite(event) || coldStorageManager.canWrite(event);
+  }
+
+  @Override
+  public void checkAndClearLeakShuffleData(Collection<String> appIds) {
+    warmStorageManager.checkAndClearLeakShuffleData(appIds);
   }
 
   public void removeResources(PurgeEvent event) {

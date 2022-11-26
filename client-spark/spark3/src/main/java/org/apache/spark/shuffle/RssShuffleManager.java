@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -96,6 +97,9 @@ public class RssShuffleManager implements ShuffleManager {
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
   private final ShuffleDataDistributionType dataDistributionType;
+  private String user;
+  private String uuid;
+  private Set<String> failedTaskIds = Sets.newConcurrentHashSet();
   private final EventLoop eventLoop;
   private final EventLoop defaultEventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
 
@@ -116,7 +120,11 @@ public class RssShuffleManager implements ShuffleManager {
 
     private void sendShuffleData(String taskId, List<ShuffleBlockInfo> shuffleDataInfoList) {
       try {
-        SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(id.get(), shuffleDataInfoList);
+        SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(
+            id.get(),
+            shuffleDataInfoList,
+            () -> !isValidTask(taskId)
+        );
         putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
         putBlockId(taskToFailedBlockIds, taskId, result.getFailedBlockIds());
       } finally {
@@ -144,7 +152,8 @@ public class RssShuffleManager implements ShuffleManager {
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
-
+    this.user = sparkConf.get("spark.rss.quota.user", "user");
+    this.uuid = sparkConf.get("spark.rss.quota.uuid",  Long.toString(System.currentTimeMillis()));
     // set & check replica config
     this.dataReplica = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA);
     this.dataReplicaWrite =  sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_WRITE);
@@ -265,8 +274,20 @@ public class RssShuffleManager implements ShuffleManager {
   @Override
   public <K, V, C> ShuffleHandle registerShuffle(int shuffleId, ShuffleDependency<K, V, C> dependency) {
 
+    //Spark have three kinds of serializer:
+    //org.apache.spark.serializer.JavaSerializer
+    //org.apache.spark.sql.execution.UnsafeRowSerializer
+    //org.apache.spark.serializer.KryoSerializer,
+    //Only org.apache.spark.serializer.JavaSerializer don't support RelocationOfSerializedObjects.
+    //So when we find the parameters to use org.apache.spark.serializer.JavaSerializer, We should throw an exception
+    if (!SparkEnv.get().serializer().supportsRelocationOfSerializedObjects()) {
+      throw new IllegalArgumentException("Can't use serialized shuffle for shuffleId: " + shuffleId + ", because the"
+              + " serializer: " + SparkEnv.get().serializer().getClass().getName() + " does not support object "
+              + "relocation.");
+    }
+
     if (id.get() == null) {
-      id.compareAndSet(null, SparkEnv.get().conf().getAppId() + "_" + System.currentTimeMillis());
+      id.compareAndSet(null, SparkEnv.get().conf().getAppId() + "_" + uuid);
     }
     LOG.info("Generate application id used in rss: " + id.get());
 
@@ -354,7 +375,8 @@ public class RssShuffleManager implements ShuffleManager {
     taskToBufferManager.put(taskId, bufferManager);
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
     return new RssShuffleWriter(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(), bufferManager,
-        writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle);
+        writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle,
+        (Function<String, Boolean>) tid -> markFailedTask(tid));
   }
 
   @Override
@@ -662,11 +684,13 @@ public class RssShuffleManager implements ShuffleManager {
   }
 
   private synchronized void startHeartbeat() {
+    shuffleWriteClient.registerApplicationInfo(id.get(), heartbeatTimeout, user);
     if (!heartbeatStarted) {
       heartBeatScheduledExecutorService.scheduleAtFixedRate(
           () -> {
             try {
-              shuffleWriteClient.sendAppHeartbeat(id.get(), heartbeatTimeout);
+              String appId = id.get();
+              shuffleWriteClient.sendAppHeartbeat(appId, heartbeatTimeout);
               LOG.info("Finish send heartbeat to coordinator and servers");
             } catch (Exception e) {
               LOG.warn("Fail to send heartbeat to coordinator and servers", e);
@@ -754,5 +778,15 @@ public class RssShuffleManager implements ShuffleManager {
 
   public String getId() {
     return id.get();
+  }
+
+  public boolean markFailedTask(String taskId) {
+    LOG.info("Mark the task: {} failed.", taskId);
+    failedTaskIds.add(taskId);
+    return true;
+  }
+
+  public boolean isValidTask(String taskId) {
+    return !failedTaskIds.contains(taskId);
   }
 }

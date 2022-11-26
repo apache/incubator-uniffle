@@ -77,7 +77,7 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     Thread.sleep(500L);
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_APP_EXPIRED, appExpiredTime);
-    conf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 200);
+    conf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 1000);
     conf.set(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY, IO_SAMPLE);
     applicationManager = new ApplicationManager(conf);
     selectStorageStrategy = (LowestIOSampleCostSelectStorageStrategy) applicationManager.getSelectStorageStrategy();
@@ -104,10 +104,11 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     // compare with two remote path
     applicationManager.incRemoteStorageCounter(remoteStorage1);
     applicationManager.incRemoteStorageCounter(remoteStorage1);
-    String testApp1 = "testApp1";
+    String testApp1 = "application_test_" + 1;
+    applicationManager.registerApplicationInfo(testApp1, "user");
+    applicationManager.refreshAppId(testApp1);
     Thread.sleep(1000);
     final long current = System.currentTimeMillis();
-    applicationManager.refreshAppId(testApp1);
     fs.create(path);
     selectStorageStrategy.sortPathByRankValue(remoteStorage2, testFile, current);
     fs.create(path);
@@ -129,6 +130,7 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
 
     // refresh app1, got remotePath2, then remove remotePath2,
     // it should be existed in counter until it expired
+    applicationManager.registerApplicationInfo(testApp1, "user");
     applicationManager.refreshAppId(testApp1);
     assertEquals(remoteStorage2, applicationManager.pickRemoteStorage(testApp1).getPath());
     remoteStoragePath = remoteStorage1;
@@ -158,12 +160,13 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     String remoteStoragePath = remoteStorage1 + Constants.COMMA_SPLIT_CHAR + remoteStorage2
         + Constants.COMMA_SPLIT_CHAR + remoteStorage3;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
-    String appPrefix = "testAppId";
+    String testApp1 = "application_testAppId";
     // init detectStorageScheduler
     Thread.sleep(2000);
     Thread pickThread1 = new Thread(() -> {
       for (int i = 0; i < 1000; i++) {
-        String appId = appPrefix + i;
+        String appId = testApp1 + i;
+        applicationManager.registerApplicationInfo(appId, "user");
         applicationManager.refreshAppId(appId);
         applicationManager.pickRemoteStorage(appId);
       }
@@ -171,7 +174,8 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
 
     Thread pickThread2 = new Thread(() -> {
       for (int i = 1000; i < 2000; i++) {
-        String appId = appPrefix + i;
+        String appId = testApp1 + i;
+        applicationManager.registerApplicationInfo(appId, "user");
         applicationManager.refreshAppId(appId);
         applicationManager.pickRemoteStorage(appId);
       }
@@ -179,7 +183,8 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
 
     Thread pickThread3 = new Thread(() -> {
       for (int i = 2000; i < 3000; i++) {
-        String appId = appPrefix + i;
+        String appId = testApp1 + i;
+        applicationManager.registerApplicationInfo(appId, "user");
         applicationManager.refreshAppId(appId);
         applicationManager.pickRemoteStorage(appId);
       }

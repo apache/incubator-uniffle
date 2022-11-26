@@ -86,8 +86,9 @@ public class AccessClusterLoadCheckerTest {
     conf.set(COORDINATOR_ACCESS_CHECKERS, Arrays.asList("org.apache.uniffle.coordinator.AccessClusterLoadChecker"));
     conf.set(COORDINATOR_SHUFFLE_NODES_MAX, 3);
     conf.set(COORDINATOR_ACCESS_LOADCHECKER_MEMORY_PERCENTAGE, 20.0);
-
-    AccessManager accessManager = new AccessManager(conf, clusterManager, new Configuration());
+    ApplicationManager applicationManager = new ApplicationManager(conf);
+    AccessManager accessManager = new AccessManager(conf, clusterManager,
+        applicationManager.getQuotaManager(), new Configuration());
 
     AccessClusterLoadChecker accessClusterLoadChecker =
         (AccessClusterLoadChecker) accessManager.getAccessCheckers().get(0);
@@ -99,7 +100,7 @@ public class AccessClusterLoadCheckerTest {
      */
     Map<String, String> properties = new HashMap<>();
     properties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, "-1");
-    AccessInfo accessInfo = new AccessInfo("test", new HashSet<>(), properties);
+    AccessInfo accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
     assertFalse(accessClusterLoadChecker.check(accessInfo).isSuccess());
 
     /**
@@ -108,7 +109,7 @@ public class AccessClusterLoadCheckerTest {
      * the COORDINATOR_SHUFFLE_NODES_MAX, it should return true
      */
     properties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, "1");
-    accessInfo = new AccessInfo("test", new HashSet<>(), properties);
+    accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
     assertTrue(accessClusterLoadChecker.check(accessInfo).isSuccess());
 
     /**
@@ -117,7 +118,7 @@ public class AccessClusterLoadCheckerTest {
      * the COORDINATOR_SHUFFLE_NODES_MAX, it should return false
      */
     properties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, "100");
-    accessInfo = new AccessInfo("test", new HashSet<>(), properties);
+    accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
     assertFalse(accessClusterLoadChecker.check(accessInfo).isSuccess());
 
     /**
@@ -126,7 +127,7 @@ public class AccessClusterLoadCheckerTest {
      * default shuffle nodes max from coordinator conf.
      */
     properties = new HashMap<>();
-    accessInfo = new AccessInfo("test", new HashSet<>(), properties);
+    accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
     assertFalse(accessClusterLoadChecker.check(accessInfo).isSuccess());
   }
 
@@ -150,7 +151,9 @@ public class AccessClusterLoadCheckerTest {
     CoordinatorConf conf = new CoordinatorConf(filePath);
     conf.setString(COORDINATOR_ACCESS_CHECKERS.key(),
         "org.apache.uniffle.coordinator.AccessClusterLoadChecker");
-    AccessManager accessManager = new AccessManager(conf, clusterManager, new Configuration());
+    ApplicationManager applicationManager = new ApplicationManager(conf);
+    AccessManager accessManager = new AccessManager(conf, clusterManager,
+        applicationManager.getQuotaManager(), new Configuration());
     AccessClusterLoadChecker accessClusterLoadChecker =
         (AccessClusterLoadChecker) accessManager.getAccessCheckers().get(0);
     when(clusterManager.getServerList(any())).thenReturn(serverNodeList);

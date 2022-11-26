@@ -239,6 +239,7 @@ public class RssMRAppMaster extends MRAppMaster {
       long heartbeatInterval = conf.getLong(RssMRConfig.RSS_HEARTBEAT_INTERVAL,
           RssMRConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
       long heartbeatTimeout = conf.getLong(RssMRConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
+      client.registerApplicationInfo(appId, heartbeatTimeout, "user");
       scheduledExecutorService.scheduleAtFixedRate(
           () -> {
             try {

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -266,7 +267,8 @@ public class SortWriteBufferManagerTest {
     }
 
     @Override
-    public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList) {
+    public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList,
+        Supplier<Boolean> needCancelRequest) {
       if (mode == 0) {
         throw new RssException("send data failed");
       } else if (mode == 1) {
@@ -282,6 +284,11 @@ public class SortWriteBufferManagerTest {
 
     @Override
     public void sendAppHeartbeat(String appId, long timeoutMs) {
+
+    }
+
+    @Override
+    public void registerApplicationInfo(String appId, long timeoutMs, String user) {
 
     }
 

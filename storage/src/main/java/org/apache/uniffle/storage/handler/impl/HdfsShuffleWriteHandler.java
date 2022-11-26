@@ -104,18 +104,15 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
   public void write(
       List<ShufflePartitionedBlock> shuffleBlocks) throws IOException, IllegalStateException {
     final long start = System.currentTimeMillis();
-    HdfsFileWriter dataWriter = null;
-    HdfsFileWriter indexWriter = null;
     writeLock.lock();
     try {
-      try {
-        final long ss = System.currentTimeMillis();
-        // Write to HDFS will be failed with lease problem, and can't write the same file again
-        // change the prefix of file name if write failed before
-        String dataFileName = ShuffleStorageUtils.generateDataFileName(fileNamePrefix + "_" + failTimes);
-        String indexFileName = ShuffleStorageUtils.generateIndexFileName(fileNamePrefix + "_" + failTimes);
-        dataWriter = createWriter(dataFileName);
-        indexWriter = createWriter(indexFileName);
+      final long ss = System.currentTimeMillis();
+      // Write to HDFS will be failed with lease problem, and can't write the same file again
+      // change the prefix of file name if write failed before
+      String dataFileName = ShuffleStorageUtils.generateDataFileName(fileNamePrefix + "_" + failTimes);
+      String indexFileName = ShuffleStorageUtils.generateIndexFileName(fileNamePrefix + "_" + failTimes);
+      try (HdfsFileWriter dataWriter = createWriter(dataFileName);
+           HdfsFileWriter indexWriter = createWriter(indexFileName)) {
         for (ShufflePartitionedBlock block : shuffleBlocks) {
           long blockId = block.getBlockId();
           long crc = block.getCrc();
@@ -134,13 +131,6 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
         LOG.warn("Write failed with " + shuffleBlocks.size() + " blocks for " + fileNamePrefix + "_" + failTimes, e);
         failTimes++;
         throw new RuntimeException(e);
-      } finally {
-        if (dataWriter != null) {
-          dataWriter.close();
-        }
-        if (indexWriter != null) {
-          indexWriter.close();
-        }
       }
     } finally {
       writeLock.unlock();

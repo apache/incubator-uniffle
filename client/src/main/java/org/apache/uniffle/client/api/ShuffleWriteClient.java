@@ -20,6 +20,7 @@ package org.apache.uniffle.client.api;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -33,9 +34,12 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 
 public interface ShuffleWriteClient {
 
-  SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList);
+  SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList,
+      Supplier<Boolean> needCancelRequest);
 
   void sendAppHeartbeat(String appId, long timeoutMs);
+
+  void registerApplicationInfo(String appId, long timeoutMs, String user);
 
   void registerShuffle(
       ShuffleServerInfo shuffleServerInfo,

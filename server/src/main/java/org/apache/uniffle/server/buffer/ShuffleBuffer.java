@@ -82,7 +82,14 @@ public class ShuffleBuffer {
     }
     // buffer will be cleared, and new list must be created for async flush
     List<ShufflePartitionedBlock> spBlocks = new LinkedList<>(blocks);
+    List<ShufflePartitionedBlock> inFlushedQueueBlocks = spBlocks;
     if (dataDistributionType == ShuffleDataDistributionType.LOCAL_ORDER) {
+      /**
+       * When reordering the blocks, it will break down the original reads sequence to cause
+       * the data lost in some cases.
+       * So we should create a reference copy to avoid this.
+       */
+      inFlushedQueueBlocks = new LinkedList<>(spBlocks);
       spBlocks.sort((o1, o2) -> new Long(o1.getTaskAttemptId()).compareTo(o2.getTaskAttemptId()));
     }
     long eventId = ShuffleFlushManager.ATOMIC_EVENT_ID.getAndIncrement();
@@ -96,7 +103,7 @@ public class ShuffleBuffer {
         spBlocks,
         isValid,
         this);
-    inFlushBlockMap.put(eventId, spBlocks);
+    inFlushBlockMap.put(eventId, inFlushedQueueBlocks);
     blocks.clear();
     size = 0;
     return event;

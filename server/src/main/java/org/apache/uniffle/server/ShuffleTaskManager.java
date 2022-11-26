@@ -70,12 +70,14 @@ public class ShuffleTaskManager {
   private final ShuffleFlushManager shuffleFlushManager;
   private final ScheduledExecutorService scheduledExecutorService;
   private final ScheduledExecutorService expiredAppCleanupExecutorService;
+  private final ScheduledExecutorService leakShuffleDataCheckExecutorService;
   private final StorageManager storageManager;
   private AtomicLong requireBufferId = new AtomicLong(0);
   private ShuffleServerConf conf;
   private long appExpiredWithoutHB;
   private long preAllocationExpired;
   private long commitCheckIntervalMax;
+  private long leakShuffleDataCheckInterval;
   // appId -> shuffleId -> blockIds to avoid too many appId
   // store taskAttemptId info to filter speculation task
   // Roaring64NavigableMap instance will cost much memory,
@@ -102,6 +104,7 @@ public class ShuffleTaskManager {
     this.appExpiredWithoutHB = conf.getLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT);
     this.commitCheckIntervalMax = conf.getLong(ShuffleServerConf.SERVER_COMMIT_CHECK_INTERVAL_MAX);
     this.preAllocationExpired = conf.getLong(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED);
+    this.leakShuffleDataCheckInterval = conf.getLong(ShuffleServerConf.SERVER_LEAK_SHUFFLE_DATA_CHECK_INTERVAL);
     // the thread for checking application status
     this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("checkResource-%d"));
@@ -113,6 +116,11 @@ public class ShuffleTaskManager {
     expiredAppCleanupExecutorService.scheduleAtFixedRate(
         () -> checkResourceStatus(), appExpiredWithoutHB / 2,
         appExpiredWithoutHB / 2, TimeUnit.MILLISECONDS);
+    this.leakShuffleDataCheckExecutorService = Executors.newSingleThreadScheduledExecutor(
+        ThreadUtils.getThreadFactory("leakShuffleDataChecker"));
+    leakShuffleDataCheckExecutorService.scheduleAtFixedRate(
+        () -> checkLeakShuffleData(), leakShuffleDataCheckInterval,
+            leakShuffleDataCheckInterval, TimeUnit.MILLISECONDS);
     // the thread for clear expired resources
     clearResourceThread = () -> {
       while (true) {
@@ -450,6 +458,17 @@ public class ShuffleTaskManager {
     );
     LOG.info("Finish remove resource for appId[{}], shuffleIds[{}], cost[{}]",
         appId, shuffleIds, System.currentTimeMillis() - start);
+  }
+
+  public void checkLeakShuffleData() {
+    LOG.info("Start check leak shuffle data");
+    try {
+      Set<String> appIds = Sets.newHashSet(shuffleTaskInfos.keySet());
+      storageManager.checkAndClearLeakShuffleData(appIds);
+      LOG.info("Finish check leak shuffle data");
+    } catch (Exception e) {
+      LOG.warn("Error happened in checkLeakShuffleData", e);
+    }
   }
 
   @VisibleForTesting
