@@ -71,7 +71,7 @@ public class QuotaManager {
           ThreadUtils.getThreadFactory("UpdateDefaultApp-%d"));
       scheduledExecutorService.scheduleAtFixedRate(
           this::detectUserResource, 0, updateTime / 2, TimeUnit.MILLISECONDS);
-      LOG.warn("QuotaManager initialized successfully.");
+      LOG.info("QuotaManager initialized successfully.");
     }
   }
 
