@@ -143,8 +143,8 @@ public class CoordinatorServer {
     AssignmentStrategyFactory assignmentStrategyFactory =
         new AssignmentStrategyFactory(coordinatorConf, clusterManager);
     this.assignmentStrategy = assignmentStrategyFactory.getAssignmentStrategy();
-    this.accessManager = new AccessManager(coordinatorConf, clusterManager, applicationManager, hadoopConf);
-
+    this.accessManager = new AccessManager(coordinatorConf, clusterManager,
+        applicationManager.getQuotaManager(), hadoopConf);
     CoordinatorFactory coordinatorFactory = new CoordinatorFactory(this);
     server = coordinatorFactory.getServer();
   }

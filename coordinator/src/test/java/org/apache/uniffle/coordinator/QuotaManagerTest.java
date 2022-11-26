@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
@@ -31,12 +32,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * QuotaManager is a manager for resource restriction.
  */
 public class QuotaManagerTest {
-  public QuotaManager quotaManager;
   private static final Configuration hdfsConf = new Configuration();
   private static MiniDFSCluster cluster;
   @TempDir
@@ -48,8 +49,6 @@ public class QuotaManagerTest {
     hdfsConf.set("dfs.nameservices", "rss");
     hdfsConf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, remotePath.getAbsolutePath());
     cluster = (new MiniDFSCluster.Builder(hdfsConf)).build();
-    CoordinatorConf conf = new CoordinatorConf();
-    quotaManager = new QuotaManager(conf);
   }
 
   @AfterAll
@@ -76,14 +75,29 @@ public class QuotaManagerTest {
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH,
         quotaFile);
-    quotaManager = new QuotaManager(conf);
-    quotaManager.detectUserResource();
+    ApplicationManager applicationManager = new ApplicationManager(conf);
+    Thread.sleep(500);
 
-    Integer user1 = quotaManager.getDefaultUserApps().get("user1");
-    Integer user2 = quotaManager.getDefaultUserApps().get("user2");
-    Integer user3 = quotaManager.getDefaultUserApps().get("user3");
+    Integer user1 = applicationManager.getDefaultUserApps().get("user1");
+    Integer user2 = applicationManager.getDefaultUserApps().get("user2");
+    Integer user3 = applicationManager.getDefaultUserApps().get("user3");
     assertEquals(user1, 10);
     assertEquals(user2, 20);
     assertEquals(user3, 30);
+  }
+
+  @Test
+  public void testQuotaManagerWithoutAccessQuotaChecker() throws Exception {
+    final String quotaFile =
+        new Path(remotePath.getAbsolutePath()).getFileSystem(hdfsConf).getName() + "/quotaFile.properties";
+    CoordinatorConf conf = new CoordinatorConf();
+    conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH,
+        quotaFile);
+    conf.set(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
+        Lists.newArrayList("org.apache.uniffle.coordinator.AccessClusterLoadChecker"));
+    ApplicationManager applicationManager = new ApplicationManager(conf);
+    Thread.sleep(500);
+    // it didn't detectUserResource because `org.apache.unifle.coordinator.AccessQuotaChecker` is not configured
+    assertNull(applicationManager.getQuotaManager());
   }
 }

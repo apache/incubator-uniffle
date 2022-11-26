@@ -34,7 +34,7 @@ import org.apache.uniffle.common.util.RssUtils;
 public class AccessQuotaChecker extends AbstractAccessChecker {
   private static final Logger LOG = LoggerFactory.getLogger(AccessQuotaChecker.class);
 
-  private final ApplicationManager applicationManager;
+  private final QuotaManager quotaManager;
   private final CoordinatorConf conf;
   private static final LongAdder COUNTER = new LongAdder();
   private final String hostIp;
@@ -42,7 +42,7 @@ public class AccessQuotaChecker extends AbstractAccessChecker {
   public AccessQuotaChecker(AccessManager accessManager) throws Exception {
     super(accessManager);
     conf = accessManager.getCoordinatorConf();
-    applicationManager = accessManager.getApplicationManager();
+    quotaManager = accessManager.getQuotaManager();
     hostIp = RssUtils.getHostIp();
   }
 
@@ -53,9 +53,9 @@ public class AccessQuotaChecker extends AbstractAccessChecker {
     final String user = accessInfo.getUser();
     // low version client user attribute is an empty string
     if (!"".equals(user)) {
-      Map<String, Map<String, Long>> currentUserApps = applicationManager.getCurrentUserApps();
+      Map<String, Map<String, Long>> currentUserApps = quotaManager.getCurrentUserAndApp();
       Map<String, Long> appAndTimes = currentUserApps.computeIfAbsent(user, x -> Maps.newConcurrentMap());
-      Integer defaultAppNum = applicationManager.getDefaultUserApps().getOrDefault(user,
+      Integer defaultAppNum = quotaManager.getDefaultUserApps().getOrDefault(user,
           conf.getInteger(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_APP_NUM));
       int currentAppNum = appAndTimes.size();
       if (currentAppNum >= defaultAppNum) {

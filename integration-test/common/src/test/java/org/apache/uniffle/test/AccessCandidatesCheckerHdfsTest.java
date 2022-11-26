@@ -75,7 +75,7 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
     // file load checking at startup
     Exception expectedException = null;
     try {
-      new AccessManager(conf, null, applicationManager, new Configuration());
+      new AccessManager(conf, null, applicationManager.getQuotaManager(), new Configuration());
     } catch (RuntimeException e) {
       expectedException = e;
     }
@@ -85,7 +85,7 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, candidatesFile);
     expectedException = null;
     try {
-      new AccessManager(conf, null, applicationManager, new Configuration());
+      new AccessManager(conf, null, applicationManager.getQuotaManager(), new Configuration());
     } catch (RuntimeException e) {
       expectedException = e;
     }
@@ -102,7 +102,8 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
     printWriter.println("2 ");
     printWriter.flush();
     printWriter.close();
-    AccessManager accessManager = new AccessManager(conf, null, applicationManager, hadoopConf);
+    AccessManager accessManager = new AccessManager(conf, null,
+        applicationManager.getQuotaManager(), hadoopConf);
     AccessCandidatesChecker checker = (AccessCandidatesChecker) accessManager.getAccessCheckers().get(0);
     // load the config at the beginning
     sleep(1200);
