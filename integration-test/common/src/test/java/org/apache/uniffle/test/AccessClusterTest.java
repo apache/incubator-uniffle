@@ -37,6 +37,7 @@ import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.request.RssAccessClusterRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.AccessCheckResult;
 import org.apache.uniffle.coordinator.AccessChecker;
@@ -154,7 +155,7 @@ public class AccessClusterTest extends CoordinatorTestBase {
     shuffleServer.start();
     Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
 
-    CoordinatorClient client = new CoordinatorClientFactory("GRPC")
+    CoordinatorClient client = new CoordinatorClientFactory(ClientType.GRPC)
         .createCoordinatorClient(LOCALHOST, COORDINATOR_PORT_1 + 13);
     request = new RssAccessClusterRequest(
         accessId, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000);

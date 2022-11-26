@@ -69,6 +69,7 @@ import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
@@ -114,7 +115,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     this.clientType = clientType;
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
-    this.coordinatorClientFactory = new CoordinatorClientFactory(clientType);
+    this.coordinatorClientFactory = new CoordinatorClientFactory(ClientType.valueOf(clientType));
     this.heartBeatExecutorService = Executors.newFixedThreadPool(heartBeatThreadNum,
         ThreadUtils.getThreadFactory("client-heartbeat-%d"));
     this.replica = replica;

@@ -32,14 +32,14 @@ import org.apache.uniffle.common.ClientType;
 public class CoordinatorClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorClientFactory.class);
 
-  private String clientType;
+  private ClientType clientType;
 
-  public CoordinatorClientFactory(String clientType) {
+  public CoordinatorClientFactory(ClientType clientType) {
     this.clientType = clientType;
   }
 
   public CoordinatorClient createCoordinatorClient(String host, int port) {
-    if (clientType.equalsIgnoreCase(ClientType.GRPC.name())) {
+    if (clientType.equals(ClientType.GRPC)) {
       return new CoordinatorGrpcClient(host, port);
     } else {
       throw new UnsupportedOperationException("Unsupported client type " + clientType);
