@@ -83,7 +83,7 @@ public class ShuffleBuffer {
     // buffer will be cleared, and new list must be created for async flush
     List<ShufflePartitionedBlock> spBlocks = new LinkedList<>(blocks);
     if (dataDistributionType == ShuffleDataDistributionType.LOCAL_ORDER) {
-      spBlocks.sort((o1, o2) -> o1.getTaskAttemptId() - o2.getTaskAttemptId() > 0 ? 1 : -1);
+      spBlocks.sort((o1, o2) -> new Long(o1.getTaskAttemptId()).compareTo(o2.getTaskAttemptId()));
     }
     long eventId = ShuffleFlushManager.ATOMIC_EVENT_ID.getAndIncrement();
     final ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(

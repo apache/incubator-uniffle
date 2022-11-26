@@ -238,6 +238,9 @@ public class ShuffleTaskManager {
       String appId, Integer shuffleId, Map<Integer, long[]> partitionToBlockIds, int bitmapNum) {
     refreshAppId(appId);
     Map<Integer, Roaring64NavigableMap[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
+    if (shuffleIdToPartitions == null) {
+      throw new RuntimeException("appId[" + appId  + "] is expired!");
+    }
     if (!shuffleIdToPartitions.containsKey(shuffleId)) {
       Roaring64NavigableMap[] blockIds = new Roaring64NavigableMap[bitmapNum];
       for (int i = 0; i < bitmapNum; i++) {

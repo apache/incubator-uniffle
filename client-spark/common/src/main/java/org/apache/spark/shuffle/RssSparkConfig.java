@@ -248,12 +248,17 @@ public class RssSparkConfig {
                    + " to be allocated"))
       .createWithDefault(RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR_DEFAULT_VALUE);
 
-  public static final ConfigEntry<Boolean> RSS_ESTIMATE_TASK_CONCURRENCY_ENABLED = createBooleanBuilder(
-      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_ENABLED)
-          .doc("When the Coordinator enables rss.coordinator.select.partition.strategy,"
-                   + " this configuration item is valid and is used to estimate how many consecutive"
-                   + " PartitionRanges should be allocated to a ShuffleServer"))
-      .createWithDefault(RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DEFAULT_VALUE);
+  public static final ConfigEntry<Boolean> RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED = createBooleanBuilder(
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED)
+          .doc("Whether to estimate the number of ShuffleServers to be allocated based on the number"
+                   + " of concurrent tasks."))
+      .createWithDefault(RssClientConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED_DEFAULT_VALUE);
+
+  public static final ConfigEntry<Integer> RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER = createIntegerBuilder(
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX +  RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER)
+          .doc("How many tasks concurrency to allocate a ShuffleServer, you need to enable"
+                   + " spark.rss.estimate.server.assignment.enabled"))
+      .createWithDefault(RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE);
 
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
       ImmutableSet.of(RSS_STORAGE_TYPE.key(), RSS_REMOTE_STORAGE_PATH.key());

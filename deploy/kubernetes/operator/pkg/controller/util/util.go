@@ -209,9 +209,19 @@ func generateLogVolumeMount(rssPodSpec *v1alpha1.RSSPodSpec) *corev1.VolumeMount
 
 func generateMakeDataDirCommand(rssPodSpec *v1alpha1.RSSPodSpec) []string {
 	var commands []string
-	fsGroup := *rssPodSpec.SecurityContext.FSGroup
+
+	var runAsUser int64
+	if rssPodSpec.SecurityContext != nil && rssPodSpec.SecurityContext.RunAsUser != nil {
+		runAsUser = *rssPodSpec.SecurityContext.RunAsUser
+	}
+
+	var fsGroup int64
+	if rssPodSpec.SecurityContext != nil && rssPodSpec.SecurityContext.FSGroup != nil {
+		fsGroup = *rssPodSpec.SecurityContext.FSGroup
+	}
+
 	for _, mountPath := range rssPodSpec.HostPathMounts {
-		commands = append(commands, fmt.Sprintf("chown -R %v:%v %v", fsGroup, fsGroup, mountPath))
+		commands = append(commands, fmt.Sprintf("chown -R %v:%v %v", runAsUser, fsGroup, mountPath))
 	}
 	return commands
 }

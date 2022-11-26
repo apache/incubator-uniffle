@@ -186,6 +186,21 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String appId = req.getAppId();
     int shuffleId = req.getShuffleId();
     long requireBufferId = req.getRequireBufferId();
+    long timestamp = req.getTimestamp();
+    if (timestamp > 0) {
+      /*
+      * Here we record the transport time, but we don't consider the impact of data size on transport time.
+      * The amount of data will not cause great fluctuations in latency. For example, 100K costs 1ms,
+      * and 1M costs 10ms. This seems like a normal fluctuation, but it may rise to 10s when the server load is high.
+      * In addition, we need to pay attention to that the time of the client machine and the machine
+      * time of the Shuffle Server should be kept in sync. TransportTime is accurate only if this condition is met.
+      * */
+      long transportTime = System.currentTimeMillis() - timestamp;
+      if (transportTime > 0) {
+        shuffleServer.getGrpcMetrics().recordTransportTime(
+            ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, transportTime);
+      }
+    }
     int requireSize = shuffleServer
         .getShuffleTaskManager().getRequireBufferSize(requireBufferId);
 
@@ -240,8 +255,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         }
       }
       reply = SendShuffleDataResponse.newBuilder().setStatus(valueOf(ret)).setRetMsg(responseMessage).build();
+      long costTime = System.currentTimeMillis() - start;
+      shuffleServer.getGrpcMetrics().recordProcessTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, costTime);
       LOG.debug("Cache Shuffle Data for appId[" + appId + "], shuffleId[" + shuffleId
-          + "], cost " + (System.currentTimeMillis() - start)
+          + "], cost " + costTime
           + " ms with " + shufflePartitionedData.size() + " blocks and " + requireSize + " bytes");
     } else {
       reply = SendShuffleDataResponse
@@ -476,6 +493,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int partitionNum = request.getPartitionNum();
     long offset = request.getOffset();
     int length = request.getLength();
+    long timestamp = request.getTimestamp();
+    if (timestamp > 0) {
+      long transportTime = System.currentTimeMillis() - timestamp;
+      if (transportTime > 0) {
+        shuffleServer.getGrpcMetrics().recordTransportTime(
+            ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, transportTime);
+      }
+    }
     String storageType = shuffleServer.getShuffleServerConf().get(RssBaseConf.RSS_STORAGE_TYPE);
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
@@ -497,6 +522,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         ShuffleServerMetrics.counterTotalReadTime.inc(readTime);
         ShuffleServerMetrics.counterTotalReadDataSize.inc(sdr.getData().length);
         ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(sdr.getData().length);
+        shuffleServer.getGrpcMetrics().recordProcessTime(
+            ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, readTime);
         LOG.info("Successfully getShuffleData cost {} ms for shuffle"
             + " data with {}", readTime, requestInfo);
         reply = GetLocalShuffleDataResponse.newBuilder()
@@ -607,6 +634,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int partitionId = request.getPartitionId();
     long blockId = request.getLastBlockId();
     int readBufferSize = request.getReadBufferSize();
+    long timestamp = request.getTimestamp();
+    if (timestamp > 0) {
+      long transportTime = System.currentTimeMillis() - timestamp;
+      if (transportTime > 0) {
+        shuffleServer.getGrpcMetrics().recordTransportTime(
+            ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD, transportTime);
+      }
+    }
     long start = System.currentTimeMillis();
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
@@ -627,8 +662,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           ShuffleServerMetrics.counterTotalReadDataSize.inc(data.length);
           ShuffleServerMetrics.counterTotalReadMemoryDataSize.inc(data.length);
         }
+        long costTime = System.currentTimeMillis() - start;
+        shuffleServer.getGrpcMetrics().recordProcessTime(
+            ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD, costTime);
         LOG.info("Successfully getInMemoryShuffleData cost {} ms with {} bytes shuffle"
-            + " data for {}", (System.currentTimeMillis() - start), data.length, requestInfo);
+            + " data for {}", costTime, data.length, requestInfo);
 
         reply = GetMemoryShuffleDataResponse.newBuilder()
             .setStatus(valueOf(status))
