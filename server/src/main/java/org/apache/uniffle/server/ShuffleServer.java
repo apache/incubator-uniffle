@@ -51,8 +51,8 @@ import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_K
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_PRINCIPAL;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KRB5_CONF_FILE;
-import static org.apache.uniffle.common.config.RssBaseConf.RSS_TEST_MODE_ENABLE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_STORAGE_TYPE;
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_TEST_MODE_ENABLE;
 
 /**
  * Server that manages startup/shutdown of a {@code Greeter} server.
@@ -148,10 +148,10 @@ public class ShuffleServer {
   private void initialization() throws Exception {
     boolean testModeEnable = shuffleServerConf.getBoolean(RSS_TEST_MODE_ENABLE);
     String storageType = shuffleServerConf.getString(RSS_STORAGE_TYPE);
-    if (!testModeEnable && (StorageType.LOCALFILE.name().equals(storageType) ||
-            (StorageType.HDFS.name()).equals(storageType))) {
-      throw new IllegalArgumentException("RSS storage type about LOCALFILE and HDFS should be used in test mode, " +
-              "because of the low performance of these two models.");
+    if (!testModeEnable && (StorageType.LOCALFILE.name().equals(storageType)
+            || (StorageType.HDFS.name()).equals(storageType))) {
+      throw new IllegalArgumentException("RSS storage type about LOCALFILE and HDFS should be used in test mode, "
+              + "because of the poor performance of these two models.");
     }
     ip = RssUtils.getHostIp();
     if (ip == null) {
