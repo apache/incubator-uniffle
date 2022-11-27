@@ -33,9 +33,12 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class RssSparkShuffleUtilsTest {
-
+  
+  private static final String EXPECTED_EXCEPTION_MESSAGE = "Exception should be thrown";
+  
   @Test
   public void testAssignmentTags() {
     SparkConf conf = new SparkConf();
@@ -210,4 +213,29 @@ public class RssSparkShuffleUtilsTest {
     sparkConf.set(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER, 100);
     assertEquals(3, RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf));
   }
+
+  @Test
+  public void testValidateRssClientConf() {
+    SparkConf sparkConf = new SparkConf();
+    try {
+      RssSparkShuffleUtils.validateRssClientConf(sparkConf);
+      fail(EXPECTED_EXCEPTION_MESSAGE);
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("must be set by the client or fetched from coordinators"));
+    }
+    sparkConf.set(RssSparkConfig.RSS_STORAGE_TYPE, "MEMORY_LOCALFILE_HDFS");
+    RssSparkShuffleUtils.validateRssClientConf(sparkConf);
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_RETRY_MAX, 5);
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX, 1000L);
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS, 4999L);
+    try {
+      RssSparkShuffleUtils.validateRssClientConf(sparkConf);
+      fail(EXPECTED_EXCEPTION_MESSAGE);
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("should not bigger than"));
+    }
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS, 5000L);
+    RssSparkShuffleUtils.validateRssClientConf(sparkConf);
+  }
+
 }

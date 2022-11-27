@@ -49,6 +49,11 @@ public class ShuffleClientFactory {
       String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
       int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled, int dataTransferPoolSize,
       int dataCommitPoolSize, int unregisterThreadPoolSize, int unregisterRequestTimeoutSec) {
+    // If replica > replicaWrite, blocks maybe will be sended for 2 rounds.
+    // We need retry less times in this case for let the first round fail fast.
+    if (replicaSkipEnabled && replica > replicaWrite) {
+      retryMax = retryMax / 2;
+    }
     return new ShuffleWriteClientImpl(
         clientType,
         retryMax,
