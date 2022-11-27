@@ -69,7 +69,7 @@ public class RssShuffleWriterTest {
     String taskId = "checkBlockSendResultTest_taskId";
     conf.setAppName("testApp")
         .setMaster("local[2]")
-        .set(RssSparkConfig.RSS_TEST_FLAG.key(), "true")
+        .set(RssSparkConfig.RSS_TEST_MODE.key(), "true")
         .set(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(), "10000")
         .set(RssSparkConfig.RSS_CLIENT_RETRY_MAX.key(), "10")
         .set(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.key(), "1000")
@@ -134,7 +134,7 @@ public class RssShuffleWriterTest {
   public void writeTest() throws Exception {
     SparkConf conf = new SparkConf();
     conf.setAppName("testApp").setMaster("local[2]")
-        .set(RssSparkConfig.RSS_TEST_FLAG.key(), "true")
+        .set(RssSparkConfig.RSS_TEST_MODE.key(), "true")
         .set(RssSparkConfig.RSS_WRITER_BUFFER_SIZE.key(), "32")
         .set(RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE.key(), "32")
         .set(RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE.key(), "64")

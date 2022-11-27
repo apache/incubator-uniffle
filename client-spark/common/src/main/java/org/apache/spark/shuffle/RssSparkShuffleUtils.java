@@ -33,11 +33,11 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
+import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
-import org.apache.uniffle.storage.util.StorageType;
 
 public class RssSparkShuffleUtils {
 
@@ -115,23 +115,19 @@ public class RssSparkShuffleUtils {
       throw new IllegalArgumentException(msg);
     }
     String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
-    boolean rssTest = sparkConf.getBoolean(RssSparkConfig.RSS_TEST_FLAG.key(), false);
-    if (!rssTest && (StorageType.LOCALFILE.name().equals(storageType) ||
-            (StorageType.HDFS.name()).equals(storageType))) {
-      throw new IllegalArgumentException("RSS storage type about LOCALFILE and HDFS should be used in test mode, "
-              + "because of the poor performance of these two types.");
-    }
+    boolean testMode = sparkConf.getBoolean(RssSparkConfig.RSS_TEST_MODE.key(), false);
+    ClientUtils.validateTestModeConf(testMode, storageType);
     int retryMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX);
     long retryIntervalMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);
     long sendCheckTimeout = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS);
     if (retryIntervalMax * retryMax > sendCheckTimeout) {
       throw new IllegalArgumentException(String.format("%s(%s) * %s(%s) should not bigger than %s(%s)",
-              RssSparkConfig.RSS_CLIENT_RETRY_MAX.key(),
-              retryMax,
-              RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.key(),
-              retryIntervalMax,
-              RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(),
-              sendCheckTimeout));
+          RssSparkConfig.RSS_CLIENT_RETRY_MAX.key(),
+          retryMax,
+          RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.key(),
+          retryIntervalMax,
+          RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(),
+          sendCheckTimeout));
     }
   }
 
