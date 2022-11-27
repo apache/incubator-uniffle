@@ -51,7 +51,7 @@ public class ShuffleClientFactory {
       int dataCommitPoolSize, int unregisterThreadPoolSize, int unregisterRequestTimeoutSec) {
     // If replica > replicaWrite, blocks maybe will be sended for 2 rounds.
     // We need retry less times in this case for let the first round fail fast.
-    if (replica > replicaWrite) {
+    if (replicaSkipEnabled && replica > replicaWrite) {
       retryMax = retryMax / 2;
     }
     return new ShuffleWriteClientImpl(

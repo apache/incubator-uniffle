@@ -302,7 +302,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       final int finalBlockNum = blockNum;
       try {
         RetryUtils.retry(() -> {
-          long requireId = requirePreAllocation(allocateSize, request.getRetryMax(), request.getRetryIntervalMax());
+          long requireId = requirePreAllocation(allocateSize, request.getRetryMax() / maxRetryAttempts,
+              request.getRetryIntervalMax());
           if (requireId == FAILED_REQUIRE_ID) {
             throw new RssException(String.format(
                 "requirePreAllocation failed! size[%s], host[%s], port[%s]", allocateSize, host, port));
