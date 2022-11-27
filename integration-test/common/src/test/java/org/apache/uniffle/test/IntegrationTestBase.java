@@ -120,6 +120,7 @@ public abstract class IntegrationTestBase extends HdfsTestBase {
     serverConf.setString("rss.server.hadoop.dfs.replication", "2");
     serverConf.setLong("rss.server.disk.capacity", 10L * 1024L * 1024L * 1024L);
     serverConf.setBoolean("rss.server.health.check.enable", false);
+    serverConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE, true);
     return serverConf;
   }
 
