@@ -184,6 +184,8 @@ public class RssMRConfig {
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
       ImmutableSet.of(RSS_STORAGE_TYPE, RSS_REMOTE_STORAGE_PATH);
 
+  public static final String RSS_TEST_FLAG = MR_RSS_CONFIG_PREFIX + "rss.test";;
+
   public static RssConf toRssConf(JobConf jobConf) {
     RssConf rssConf = new RssConf();
     for (Map.Entry<String, String> entry : jobConf) {

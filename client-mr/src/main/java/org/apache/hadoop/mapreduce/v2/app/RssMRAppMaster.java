@@ -161,6 +161,12 @@ public class RssMRAppMaster extends MRAppMaster {
       }
 
       String storageType = RssMRUtils.getString(extraConf, conf, RssMRConfig.RSS_STORAGE_TYPE);
+      boolean rssTest = RssMRUtils.getBoolean(extraConf, conf, RssMRConfig.RSS_TEST_FLAG, false);
+      if (!rssTest && (StorageType.LOCALFILE.name().equals(storageType) ||
+              (StorageType.HDFS.name()).equals(storageType))) {
+        throw new IllegalArgumentException("RSS storage type about LOCALFILE and HDFS should be used in test mode, "
+                + "because of the poor performance of these two types.");
+      }
       RemoteStorageInfo defaultRemoteStorage =
           new RemoteStorageInfo(conf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH, ""));
       RemoteStorageInfo remoteStorage = ClientUtils.fetchRemoteStorage(
