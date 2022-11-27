@@ -241,4 +241,22 @@ public class RssMRUtils {
         RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE);
     return (int) Math.ceil(taskConcurrency * 1.0 / taskConcurrencyPerServer);
   }
+
+  public static void validateRssClientConf(JobConf rssJobConf, JobConf mrJobConf) {
+    int retryMax = getInt(rssJobConf, mrJobConf, RssMRConfig.RSS_CLIENT_RETRY_MAX,
+        RssMRConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
+    long retryIntervalMax = getLong(rssJobConf, mrJobConf, RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
+        RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
+    long sendCheckTimeout = getLong(rssJobConf, mrJobConf, RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
+        RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE);
+    if (retryIntervalMax * retryMax > sendCheckTimeout) {
+      throw new IllegalArgumentException(String.format("%s(%s) * %s(%s) should not bigger than %s(%s)",
+          RssMRConfig.RSS_CLIENT_RETRY_MAX,
+          retryMax,
+          RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
+          retryIntervalMax,
+          RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
+          sendCheckTimeout));
+    }
+  }
 }

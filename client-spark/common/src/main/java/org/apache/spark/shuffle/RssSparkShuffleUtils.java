@@ -112,6 +112,19 @@ public class RssSparkShuffleUtils {
       LOG.error(msg);
       throw new IllegalArgumentException(msg);
     }
+
+    int retryMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX);
+    long retryIntervalMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);
+    long sendCheckTimeout = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS);
+    if (retryIntervalMax * retryMax > sendCheckTimeout) {
+      throw new IllegalArgumentException(String.format("%s(%s) * %s(%s) should not bigger than %s(%s)",
+          RssSparkConfig.RSS_CLIENT_RETRY_MAX.key(),
+          retryMax,
+          RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.key(),
+          retryIntervalMax,
+          RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(),
+          sendCheckTimeout));
+    }
   }
 
   public static Configuration getRemoteStorageHadoopConf(

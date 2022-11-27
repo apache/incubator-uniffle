@@ -168,7 +168,7 @@ public class RssMRAppMaster extends MRAppMaster {
       // set the remote storage with actual value
       extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_PATH, remoteStorage.getPath());
       extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_CONF, remoteStorage.getConfString());
-
+      RssMRUtils.validateRssClientConf(extraConf, conf);
       // When containers have disk with very limited space, reduce is allowed to spill data to hdfs
       if (conf.getBoolean(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
           RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT)) {

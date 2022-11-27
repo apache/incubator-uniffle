@@ -30,8 +30,11 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class RssMRUtilsTest {
+  
+  private static final String EXPECTED_EXCEPTION_MESSAGE = "Exception should be thrown";
 
   @Test
   public void baskAttemptIdTest() {
@@ -211,5 +214,23 @@ public class RssMRUtilsTest {
 
     jobConf.setDouble("mapreduce.rss.estimate.task.concurrency.dynamic.factor", 0.5);
     assertEquals(2, RssMRUtils.getRequiredShuffleServerNumber(jobConf));
+  }
+
+  @Test
+  public void testValidateRssClientConf() {
+    JobConf jobConf = new JobConf();
+    JobConf rssJobConf = new JobConf();
+    rssJobConf.setInt("mapreduce.job.maps", 500);
+    rssJobConf.setInt("mapreduce.job.reduces", 20);
+    RssMRUtils.validateRssClientConf(rssJobConf, jobConf);
+    rssJobConf.setInt(RssMRConfig.RSS_CLIENT_RETRY_MAX, 5);
+    rssJobConf.setLong(RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX, 1000L);
+    rssJobConf.setLong(RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS, 4999L);
+    try {
+      RssMRUtils.validateRssClientConf(rssJobConf, jobConf);
+      fail(EXPECTED_EXCEPTION_MESSAGE);
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("should not bigger than"));
+    }
   }
 }
