@@ -27,6 +27,13 @@ public class ShuffleServerInfo implements Serializable {
 
   private int port;
 
+  // Only for test
+  public ShuffleServerInfo(String host, int port) {
+    this.id = host + "-" + port;
+    this.host = host;
+    this.port = port;
+  }
+
   public ShuffleServerInfo(String id, String host, int port) {
     this.id = id;
     this.host = host;

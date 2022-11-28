@@ -47,7 +47,6 @@ import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleReadClientImpl.class);
-
   private int shuffleId;
   private int partitionId;
   private byte[] readBuffer;
@@ -232,13 +231,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   @Override
   public void checkProcessedBlockIds() {
-    Roaring64NavigableMap cloneBitmap;
-    cloneBitmap = RssUtils.cloneBitMap(blockIdBitmap);
-    cloneBitmap.and(processedBlockIds);
-    if (!blockIdBitmap.equals(cloneBitmap)) {
-      throw new RssException("Blocks read inconsistent: expected " + blockIdBitmap.getLongCardinality()
-          + " blocks, actual " + cloneBitmap.getLongCardinality() + " blocks");
-    }
+    RssUtils.checkProcessedBlockIds(blockIdBitmap, processedBlockIds);
   }
 
   @Override

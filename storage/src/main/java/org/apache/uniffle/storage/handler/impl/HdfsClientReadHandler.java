@@ -43,6 +43,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
   protected final int partitionNumPerRange;
   protected final int partitionNum;
   protected final int readBufferSize;
+  private final String shuffleServerId;
   protected Roaring64NavigableMap expectBlockIds;
   protected Roaring64NavigableMap processBlockIds;
   protected final String storageBasePath;
@@ -70,7 +71,8 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       String storageBasePath,
       Configuration hadoopConf,
       ShuffleDataDistributionType distributionType,
-      Roaring64NavigableMap expectTaskIds) {
+      Roaring64NavigableMap expectTaskIds,
+      String shuffleServerId) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -84,6 +86,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
     this.readHandlerIndex = 0;
     this.distributionType = distributionType;
     this.expectTaskIds = expectTaskIds;
+    this.shuffleServerId = shuffleServerId;
   }
 
   // Only for test
@@ -101,7 +104,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       Configuration hadoopConf) {
     this(appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange, partitionNum, readBufferSize,
         expectBlockIds, processBlockIds, storageBasePath, hadoopConf, ShuffleDataDistributionType.NORMAL,
-        Roaring64NavigableMap.bitmapOf());
+        Roaring64NavigableMap.bitmapOf(), null);
   }
 
   protected void init(String fullShufflePath) {
@@ -119,7 +122,8 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
     try {
       // get all index files
       indexFiles = fs.listStatus(baseFolder,
-          file -> file.getName().endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX));
+          file -> file.getName().endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX)
+              && (shuffleServerId == null || file.getName().startsWith(shuffleServerId)));
     } catch (Exception e) {
       LOG.error(failedGetIndexFileMsg, e);
       return;
