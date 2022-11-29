@@ -122,7 +122,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.dataDistributionType = dataDistributionType;
     // This mechanism of expectedTaskIdsBitmap filter is to filter out the most of data.
     // especially for AQE skew optimization
-    this.expectedTaskIdsBitmapFilterEnable = mapEndIndex == Integer.MAX_VALUE ? false : true;
+    this.expectedTaskIdsBitmapFilterEnable = !(mapStartIndex == 0 && mapEndIndex == Integer.MAX_VALUE);
   }
 
   @Override
