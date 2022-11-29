@@ -239,10 +239,12 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
 
     RssShuffleDataIterator rssShuffleDataIterator = getDataIterator(basePath, blockIdBitmap,
         taskIdBitmap, Lists.newArrayList(ssi1));
-
+    RssShuffleDataIterator rssShuffleDataIterator2 = getDataIterator(basePath, blockIdBitmap,
+        taskIdBitmap, Lists.newArrayList(ssi1, ssi2));
     // crc32 is incorrect
     try (MockedStatic<ChecksumUtils> checksumUtilsMock = Mockito.mockStatic(ChecksumUtils.class)) {
       checksumUtilsMock.when(() -> ChecksumUtils.getCrc32((ByteBuffer) any())).thenReturn(-1L);
+
       try {
         while (rssShuffleDataIterator.hasNext()) {
           rssShuffleDataIterator.next();
@@ -250,6 +252,15 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
         fail(EXPECTED_EXCEPTION_MESSAGE);
       } catch (Exception e) {
         assertTrue(e.getMessage().startsWith("Unexpected crc value"));
+      }
+
+      try {
+        while (rssShuffleDataIterator2.hasNext()) {
+          rssShuffleDataIterator2.next();
+        }
+        fail(EXPECTED_EXCEPTION_MESSAGE);
+      } catch (Exception e) {
+        assertTrue(e.getMessage().startsWith("Blocks read inconsistent"));
       }
     }
   }

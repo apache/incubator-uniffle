@@ -47,6 +47,7 @@ import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleReadClientImpl.class);
+  private final List<ShuffleServerInfo> shuffleServerInfoList;
   private int shuffleId;
   private int partitionId;
   private byte[] readBuffer;
@@ -83,6 +84,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     this.blockIdBitmap = blockIdBitmap;
     this.taskIdBitmap = taskIdBitmap;
     this.idHelper = idHelper;
+    this.shuffleServerInfoList = shuffleServerInfoList;
 
     CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
     request.setStorageType(storageType);
@@ -177,6 +179,32 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       if (!processedBlockIds.contains(bs.getBlockId())
           && blockIdBitmap.contains(bs.getBlockId())
           && taskIdBitmap.contains(bs.getTaskAttemptId())) {
+        long expectedCrc = -1;
+        long actualCrc = -1;
+        try {
+          long start = System.currentTimeMillis();
+          copyTime.addAndGet(System.currentTimeMillis() - start);
+          start = System.currentTimeMillis();
+          expectedCrc = bs.getCrc();
+          actualCrc = ChecksumUtils.getCrc32(readBuffer, bs.getOffset(), bs.getLength());
+          crcCheckTime.addAndGet(System.currentTimeMillis() - start);
+        } catch (Exception e) {
+          LOG.warn("Can't read data for blockId[" + bs.getBlockId() + "]", e);
+        }
+
+        if (expectedCrc != actualCrc) {
+          String errMsg = "Unexpected crc value for blockId[" + bs.getBlockId()
+              + "], expected:" + expectedCrc + ", actual:" + actualCrc;
+          //If some blocks of one replica are corrupted,but maybe other replicas are not corrupted,
+          //so exception should not be thrown here if blocks have multiple replicas
+          if (shuffleServerInfoList.size() > 1) {
+            LOG.warn(errMsg);
+            continue;
+          } else {
+            throw new RssException(errMsg);
+          }
+        }
+
         // mark block as processed
         processedBlockIds.addLong(bs.getBlockId());
         pendingBlockIds.removeLong(bs.getBlockId());
@@ -190,22 +218,6 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     }
 
     if (bs != null) {
-      long expectedCrc = -1;
-      long actualCrc = -1;
-      try {
-        long start = System.currentTimeMillis();
-        copyTime.addAndGet(System.currentTimeMillis() - start);
-        start = System.currentTimeMillis();
-        expectedCrc = bs.getCrc();
-        actualCrc = ChecksumUtils.getCrc32(readBuffer, bs.getOffset(), bs.getLength());
-        crcCheckTime.addAndGet(System.currentTimeMillis() - start);
-      } catch (Exception e) {
-        LOG.warn("Can't read data for blockId[" + bs.getBlockId() + "]", e);
-      }
-      if (expectedCrc != actualCrc) {
-        throw new RssException("Unexpected crc value for blockId[" + bs.getBlockId()
-            + "], expected:" + expectedCrc + ", actual:" + actualCrc);
-      }
       return new CompressedShuffleBlock(ByteBuffer.wrap(readBuffer,
           bs.getOffset(), bs.getLength()), bs.getUncompressLength());
     }

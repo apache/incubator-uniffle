@@ -35,6 +35,7 @@ import org.roaringbitmap.longlong.LongIterator;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.TestUtils;
+import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -257,6 +258,10 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.HDFS.name(),
         "appId", 0, 1, 100, 2, 10, 1000,
         basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(ssi1), new Configuration(), new DefaultIdHelper());
+    ShuffleReadClientImpl readClient2 = new ShuffleReadClientImpl(StorageType.HDFS.name(),
+        "appId", 0, 1, 100, 2, 10, 1000,
+        basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(ssi1, ssi2),
+        new Configuration(), new DefaultIdHelper());
     // crc32 is incorrect
     try (MockedStatic<ChecksumUtils> checksumUtilsMock = Mockito.mockStatic(ChecksumUtils.class)) {
       checksumUtilsMock.when(() -> ChecksumUtils.getCrc32((ByteBuffer) any())).thenReturn(-1L);
@@ -269,8 +274,12 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
       } catch (Exception e) {
         assertTrue(e.getMessage().startsWith("Unexpected crc value"));
       }
+
+      CompressedShuffleBlock block = readClient2.readShuffleBlockData();
+      assertNull(block);
     }
     readClient.close();
+    readClient2.close();
   }
 
   @Test
