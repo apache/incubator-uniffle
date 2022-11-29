@@ -188,11 +188,11 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
           LOG.warn("Can't read data for blockId[" + bs.getBlockId() + "]", e);
         }
 
-        //If some blocks of one replica are corrupted,but maybe other replicas are not corrupted,
-        //so exception should not be thrown here if blocks have multiple replicas
         if (expectedCrc != actualCrc) {
           String errMsg = "Unexpected crc value for blockId[" + bs.getBlockId()
               + "], expected:" + expectedCrc + ", actual:" + actualCrc;
+          //If some blocks of one replica are corrupted,but maybe other replicas are not corrupted,
+          //so exception should not be thrown here if blocks have multiple replicas
           if (shuffleServerInfoList.size() > 1) {
             LOG.warn(errMsg);
             continue;
