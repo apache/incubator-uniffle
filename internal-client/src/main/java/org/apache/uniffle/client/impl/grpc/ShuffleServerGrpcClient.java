@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.UnsafeByteOperations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +62,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RetryUtils;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
@@ -599,6 +601,16 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   public RssGetInMemoryShuffleDataResponse getInMemoryShuffleData(
       RssGetInMemoryShuffleDataRequest request) {
     long start = System.currentTimeMillis();
+    ByteString serializedTaskIdsBytes = ByteString.EMPTY;
+    try {
+      if (request.getExpectedTaskIds() != null) {
+        serializedTaskIdsBytes =
+            UnsafeByteOperations.unsafeWrap(RssUtils.serializeBitMap(request.getExpectedTaskIds()));
+      }
+    } catch (Exception e) {
+      throw new RssException("Errors on serializing task ids bitmap.", e);
+    }
+
     GetMemoryShuffleDataRequest rpcRequest = GetMemoryShuffleDataRequest
         .newBuilder()
         .setAppId(request.getAppId())
@@ -606,6 +618,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setPartitionId(request.getPartitionId())
         .setLastBlockId(request.getLastBlockId())
         .setReadBufferSize(request.getReadBufferSize())
+        .setSerializedExpectedTaskIdsBitmap(serializedTaskIdsBytes)
         .setTimestamp(start)
         .build();
 

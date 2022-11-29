@@ -26,6 +26,7 @@ import com.google.common.collect.RangeMap;
 import com.google.common.io.Files;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedData;
@@ -97,6 +98,49 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     // register again
     shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
     assertEquals(buffer, bufferPool.get(appId).get(shuffleId).get(0));
+  }
+
+  @Test
+  public void getShuffleDataWithExpectedTaskIdsTest() {
+    String appId = "getShuffleDataWithExpectedTaskIdsTest";
+    shuffleBufferManager.registerBuffer(appId, 1, 0, 1);
+    ShufflePartitionedData spd1 = createData(0, 1, 68);
+    ShufflePartitionedData spd2 = createData(0, 2, 68);
+    ShufflePartitionedData spd3 = createData(0, 1, 68);
+    ShufflePartitionedData spd4 = createData(0, 3, 68);
+    shuffleBufferManager.cacheShuffleData(appId, 1, false, spd1);
+    shuffleBufferManager.cacheShuffleData(appId, 1, false, spd2);
+    shuffleBufferManager.cacheShuffleData(appId, 1, false, spd3);
+    shuffleBufferManager.cacheShuffleData(appId, 1, false, spd4);
+
+    /**
+     * case1: all blocks in cached and read multiple times
+     */
+    ShuffleDataResult result = shuffleBufferManager.getShuffleData(
+        appId,
+        1,
+        0,
+        Constants.INVALID_BLOCK_ID,
+        60,
+        Roaring64NavigableMap.bitmapOf(1)
+    );
+    assertEquals(1, result.getBufferSegments().size());
+    assertEquals(0, result.getBufferSegments().get(0).getOffset());
+    assertEquals(68, result.getBufferSegments().get(0).getLength());
+
+    // 2th read
+    long lastBlockId = result.getBufferSegments().get(0).getBlockId();
+    result = shuffleBufferManager.getShuffleData(
+        appId,
+        1,
+        0,
+        lastBlockId,
+        60,
+        Roaring64NavigableMap.bitmapOf(1)
+    );
+    assertEquals(1, result.getBufferSegments().size());
+    assertEquals(0, result.getBufferSegments().get(0).getOffset());
+    assertEquals(68, result.getBufferSegments().get(0).getLength());
   }
 
   @Test

@@ -92,6 +92,7 @@ message GetMemoryShuffleDataRequest {
   int64 lastBlockId = 4;
   int32 readBufferSize = 5;
   int64 timestamp = 6;
+  optional bytes serializedExpectedTaskIdsBitmap = 7;
 }
 
 message GetMemoryShuffleDataResponse {

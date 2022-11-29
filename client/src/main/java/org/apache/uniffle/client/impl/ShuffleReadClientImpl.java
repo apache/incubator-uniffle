@@ -76,7 +76,8 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
       IdHelper idHelper,
-      ShuffleDataDistributionType dataDistributionType) {
+      ShuffleDataDistributionType dataDistributionType,
+      boolean expectedTaskIdsBitmapFilterEnable) {
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.blockIdBitmap = blockIdBitmap;
@@ -99,6 +100,9 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setProcessBlockIds(processedBlockIds);
     request.setDistributionType(dataDistributionType);
     request.setExpectTaskIds(taskIdBitmap);
+    if (expectedTaskIdsBitmapFilterEnable) {
+      request.useExpectedTaskIdsBitmapFilter();
+    }
 
     List<Long> removeBlockIds = Lists.newArrayList();
     blockIdBitmap.forEach(bid -> {
@@ -135,7 +139,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     this(storageType, appId, shuffleId, partitionId, indexReadLimit,
         partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
         blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf,
-        idHelper, ShuffleDataDistributionType.NORMAL);
+        idHelper, ShuffleDataDistributionType.NORMAL, false);
   }
 
   @Override

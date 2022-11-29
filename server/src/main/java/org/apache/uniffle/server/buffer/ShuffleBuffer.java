@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,16 +143,21 @@ public class ShuffleBuffer {
     return inFlushBlockMap;
   }
 
+  public synchronized ShuffleDataResult getShuffleData(
+      long lastBlockId, int readBufferSize) {
+    return getShuffleData(lastBlockId, readBufferSize, null);
+  }
+
   // 1. generate buffer segments and other info: if blockId exist, start with which eventId
   // 2. according to info from step 1, generate data
   // todo: if block was flushed, it's possible to get duplicated data
   public synchronized ShuffleDataResult getShuffleData(
-      long lastBlockId, int readBufferSize) {
+      long lastBlockId, int readBufferSize, Roaring64NavigableMap expectedTaskIds) {
     try {
       List<BufferSegment> bufferSegments = Lists.newArrayList();
       List<ShufflePartitionedBlock> readBlocks = Lists.newArrayList();
       updateBufferSegmentsAndResultBlocks(
-          lastBlockId, readBufferSize, bufferSegments, readBlocks);
+          lastBlockId, readBufferSize, bufferSegments, readBlocks, expectedTaskIds);
       if (!bufferSegments.isEmpty()) {
         int length = calculateDataLength(bufferSegments);
         byte[] data = new byte[length];
@@ -172,7 +178,8 @@ public class ShuffleBuffer {
       long lastBlockId,
       long readBufferSize,
       List<BufferSegment> bufferSegments,
-      List<ShufflePartitionedBlock> resultBlocks) {
+      List<ShufflePartitionedBlock> resultBlocks,
+      Roaring64NavigableMap expectedTaskIds) {
     long nextBlockId = lastBlockId;
     List<Long> sortedEventId = sortFlushingEventId();
     int offset = 0;
@@ -186,11 +193,11 @@ public class ShuffleBuffer {
         // update bufferSegments with different strategy according to lastBlockId
         if (nextBlockId == Constants.INVALID_BLOCK_ID) {
           updateSegmentsWithoutBlockId(offset, inFlushBlockMap.get(eventId), readBufferSize,
-              bufferSegments, resultBlocks);
+              bufferSegments, resultBlocks, expectedTaskIds);
           hasLastBlockId = true;
         } else {
           hasLastBlockId = updateSegmentsWithBlockId(offset, inFlushBlockMap.get(eventId),
-              readBufferSize, nextBlockId, bufferSegments, resultBlocks);
+              readBufferSize, nextBlockId, bufferSegments, resultBlocks, expectedTaskIds);
           // if last blockId is found, read from begin with next cached blocks
           if (hasLastBlockId) {
             // reset blockId to read from begin in next cached blocks
@@ -208,11 +215,11 @@ public class ShuffleBuffer {
     // try to read from cached blocks which is not in flush queue
     if (blocks.size() > 0 && offset < readBufferSize) {
       if (nextBlockId == Constants.INVALID_BLOCK_ID) {
-        updateSegmentsWithoutBlockId(offset, blocks, readBufferSize, bufferSegments, resultBlocks);
+        updateSegmentsWithoutBlockId(offset, blocks, readBufferSize, bufferSegments, resultBlocks, expectedTaskIds);
         hasLastBlockId = true;
       } else {
         hasLastBlockId = updateSegmentsWithBlockId(offset, blocks,
-            readBufferSize, nextBlockId, bufferSegments, resultBlocks);
+            readBufferSize, nextBlockId, bufferSegments, resultBlocks, expectedTaskIds);
       }
     }
     if ((!inFlushBlockMap.isEmpty() || blocks.size() > 0) && offset == 0 && !hasLastBlockId) {
@@ -220,7 +227,7 @@ public class ShuffleBuffer {
       // but there still has data in memory
       // try read again with blockId = Constants.INVALID_BLOCK_ID
       updateBufferSegmentsAndResultBlocks(
-          Constants.INVALID_BLOCK_ID, readBufferSize, bufferSegments, resultBlocks);
+          Constants.INVALID_BLOCK_ID, readBufferSize, bufferSegments, resultBlocks, expectedTaskIds);
     }
   }
 
@@ -261,10 +268,14 @@ public class ShuffleBuffer {
       List<ShufflePartitionedBlock> cachedBlocks,
       long readBufferSize,
       List<BufferSegment> bufferSegments,
-      List<ShufflePartitionedBlock> readBlocks) {
+      List<ShufflePartitionedBlock> readBlocks,
+      Roaring64NavigableMap expectedTaskIds) {
     int currentOffset = offset;
     // read from first block
     for (ShufflePartitionedBlock block : cachedBlocks) {
+      if (expectedTaskIds != null && !expectedTaskIds.contains(block.getTaskAttemptId())) {
+        continue;
+      }
       // add bufferSegment with block
       bufferSegments.add(new BufferSegment(block.getBlockId(), currentOffset, block.getLength(),
           block.getUncompressLength(), block.getCrc(), block.getTaskAttemptId()));
@@ -284,7 +295,8 @@ public class ShuffleBuffer {
       long readBufferSize,
       long lastBlockId,
       List<BufferSegment> bufferSegments,
-      List<ShufflePartitionedBlock> readBlocks) {
+      List<ShufflePartitionedBlock> readBlocks,
+      Roaring64NavigableMap expectedTaskIds) {
     int currentOffset = offset;
     // find lastBlockId, then read from next block
     boolean foundBlockId = false;
@@ -294,6 +306,9 @@ public class ShuffleBuffer {
         if (block.getBlockId() == lastBlockId) {
           foundBlockId = true;
         }
+        continue;
+      }
+      if (expectedTaskIds != null && !expectedTaskIds.contains(block.getTaskAttemptId())) {
         continue;
       }
       // add bufferSegment with block

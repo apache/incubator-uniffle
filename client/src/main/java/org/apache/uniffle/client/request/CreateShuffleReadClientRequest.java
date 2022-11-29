@@ -44,6 +44,7 @@ public class CreateShuffleReadClientRequest {
   private Configuration hadoopConf;
   private IdHelper idHelper;
   private ShuffleDataDistributionType shuffleDataDistributionType = ShuffleDataDistributionType.NORMAL;
+  private boolean expectedTaskIdsBitmapFilterEnable = false;
 
   public CreateShuffleReadClientRequest(
       String appId,
@@ -59,11 +60,13 @@ public class CreateShuffleReadClientRequest {
       Roaring64NavigableMap taskIdBitmap,
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
-      ShuffleDataDistributionType dataDistributionType) {
+      ShuffleDataDistributionType dataDistributionType,
+      boolean expectedTaskIdsBitmapFilterEnable) {
     this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
         hadoopConf, new DefaultIdHelper());
     this.shuffleDataDistributionType = dataDistributionType;
+    this.expectedTaskIdsBitmapFilterEnable = expectedTaskIdsBitmapFilterEnable;
   }
 
   public CreateShuffleReadClientRequest(
@@ -174,5 +177,9 @@ public class CreateShuffleReadClientRequest {
 
   public ShuffleDataDistributionType getShuffleDataDistributionType() {
     return shuffleDataDistributionType;
+  }
+
+  public boolean isExpectedTaskIdsBitmapFilterEnable() {
+    return expectedTaskIdsBitmapFilterEnable;
   }
 }
