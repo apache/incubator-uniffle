@@ -83,6 +83,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
     conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
     ShuffleServer shuffleServer = new ShuffleServer(conf);
@@ -137,6 +138,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
     conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED, 3000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
@@ -267,6 +269,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     String confFile = ClassLoader.getSystemResource("server.conf").getFile();
     ShuffleServerConf conf = new ShuffleServerConf(confFile);
     String storageBasePath = HDFS_URI + "rss/clearTest";
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.RPC_SERVER_PORT, 1234);
     conf.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:9527");
     conf.set(ShuffleServerConf.JETTY_HTTP_PORT, 12345);
@@ -343,6 +346,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
 
     conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, "LOCALFILE");
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     java.nio.file.Path path1 = Files.createTempDirectory("removeShuffleDataWithLocalfileTest");
     java.nio.file.Path path2 = Files.createTempDirectory("removeShuffleDataWithLocalfileTest");
     conf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH.key(),
@@ -399,6 +403,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storageBasePath));
     conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
@@ -551,6 +556,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storageBasePath));
     conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
@@ -618,6 +624,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storageBasePath));
     conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
@@ -655,6 +662,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     // make sure not to check leak shuffle data automatically
     conf.setLong(ShuffleServerConf.SERVER_LEAK_SHUFFLE_DATA_CHECK_INTERVAL, 600 * 1000L);
