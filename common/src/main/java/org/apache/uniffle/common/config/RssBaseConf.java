@@ -193,11 +193,11 @@ public class RssBaseConf extends RssConf {
       .defaultValue(60L)
       .withDescription("The kerberos authentication relogin interval. unit: sec");
 
-  public static final ConfigOption<Boolean> RSS_TEST_MODE = ConfigOptions
-          .key("rss.test.mode")
-          .booleanType()
-          .defaultValue(false)
-          .withDescription("Whether enable test mode for the shuffle server.");
+  public static final ConfigOption<Boolean> RSS_TEST_MODE_ENABLE = ConfigOptions
+      .key("rss.test.mode.enable")
+      .booleanType()
+      .defaultValue(false)
+      .withDescription("Whether enable test mode for the shuffle server.");
 
   public boolean loadCommonConf(Map<String, String> properties) {
     if (properties == null) {

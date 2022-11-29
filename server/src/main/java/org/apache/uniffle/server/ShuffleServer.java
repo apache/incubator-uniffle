@@ -52,7 +52,7 @@ import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_K
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KRB5_CONF_FILE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_STORAGE_TYPE;
-import static org.apache.uniffle.common.config.RssBaseConf.RSS_TEST_MODE;
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_TEST_MODE_ENABLE;
 
 /**
  * Server that manages startup/shutdown of a {@code Greeter} server.
@@ -146,7 +146,7 @@ public class ShuffleServer {
   }
 
   private void initialization() throws Exception {
-    boolean testMode = shuffleServerConf.getBoolean(RSS_TEST_MODE);
+    boolean testMode = shuffleServerConf.getBoolean(RSS_TEST_MODE_ENABLE);
     String storageType = shuffleServerConf.getString(RSS_STORAGE_TYPE);
     if (!testMode && (StorageType.LOCALFILE.name().equals(storageType)
             || (StorageType.HDFS.name()).equals(storageType))) {

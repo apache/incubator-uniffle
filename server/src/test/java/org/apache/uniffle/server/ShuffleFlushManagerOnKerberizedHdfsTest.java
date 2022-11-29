@@ -66,7 +66,7 @@ public class ShuffleFlushManagerOnKerberizedHdfsTest extends KerberizedHdfsBase 
     ShuffleServerMetrics.register();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.emptyList());
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
-    shuffleServerConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE, true);
+    shuffleServerConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     LogManager.getRootLogger().setLevel(Level.INFO);
 
     initHadoopSecurityContext();

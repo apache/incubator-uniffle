@@ -52,7 +52,7 @@ public class RepartitionWithLocalFileRssTest extends RepartitionTest {
     File dataDir2 = new File(tmpDir, "data2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
     shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
-    shuffleServerConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE, true);
+    shuffleServerConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     shuffleServerConf.setString("rss.storage.basePath", basePath);
     createShuffleServer(shuffleServerConf);
     startServers();

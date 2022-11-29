@@ -114,8 +114,9 @@ public class RssSparkShuffleUtils {
       LOG.error(msg);
       throw new IllegalArgumentException(msg);
     }
+
     String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
-    boolean testMode = sparkConf.getBoolean(RssSparkConfig.RSS_TEST_MODE.key(), false);
+    boolean testMode = sparkConf.getBoolean(RssSparkConfig.RSS_TEST_MODE_ENABLE.key(), false);
     ClientUtils.validateTestModeConf(testMode, storageType);
     int retryMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX);
     long retryIntervalMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);

@@ -77,8 +77,12 @@ public class RssSparkConfig {
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS))
       .createWithDefault(RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE);
 
-  public static final ConfigEntry<Boolean> RSS_TEST_MODE = createBooleanBuilder(
-      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_TEST_MODE)
+  public static final ConfigEntry<Boolean> RSS_TEST_FLAG = createBooleanBuilder(
+      new ConfigBuilder("spark.rss.test"))
+      .createWithDefault(false);
+
+  public static final ConfigEntry<Boolean> RSS_TEST_MODE_ENABLE = createBooleanBuilder(
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_TEST_MODE_ENABLE)
           .doc("Whether enable test mode for the Spark Client"))
       .createWithDefault(false);
 

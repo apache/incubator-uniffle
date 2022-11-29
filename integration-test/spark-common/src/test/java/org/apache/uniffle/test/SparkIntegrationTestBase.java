@@ -107,7 +107,7 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
     sparkConf.set(RssSparkConfig.RSS_INDEX_READ_LIMIT.key(), "100");
     sparkConf.set(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key(), "1m");
     sparkConf.set(RssSparkConfig.RSS_HEARTBEAT_INTERVAL.key(), "2000");
-    sparkConf.set(RssSparkConfig.RSS_TEST_MODE.key(), "true");
+    sparkConf.set(RssSparkConfig.RSS_TEST_MODE_ENABLE.key(), "true");
   }
 
   protected void verifyTestResult(Map expected, Map actual) {
