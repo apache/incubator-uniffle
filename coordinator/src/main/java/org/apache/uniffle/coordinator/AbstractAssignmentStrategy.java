@@ -53,7 +53,7 @@ public abstract class AbstractAssignmentStrategy implements AssignmentStrategy {
     if (hostAssignmentStrategyName == HostAssignmentStrategyName.MUST_DIFF) {
       hostAssignmentStrategy = new MustDiffHostAssignmentStrategy();
     } else if (hostAssignmentStrategyName == HostAssignmentStrategyName.PREFER_DIFF) {
-      hostAssignmentStrategy = new PerferDiffHostAssignmentStrategy();
+      hostAssignmentStrategy = new PreferDiffHostAssignmentStrategy();
     } else if (hostAssignmentStrategyName == HostAssignmentStrategyName.NONE) {
       hostAssignmentStrategy = new BasicHostAssignmentStrategy();
     } else {

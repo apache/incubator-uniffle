@@ -21,11 +21,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class PerferDiffHostAssignmentStrategy implements HostAssignmentStrategy {
+public class PreferDiffHostAssignmentStrategy implements HostAssignmentStrategy {
 
   private MustDiffHostAssignmentStrategy strategy;
 
-  public PerferDiffHostAssignmentStrategy() {
+  public PreferDiffHostAssignmentStrategy() {
     strategy = new MustDiffHostAssignmentStrategy();
   }
 
