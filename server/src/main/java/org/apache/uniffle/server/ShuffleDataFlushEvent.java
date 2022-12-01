@@ -23,6 +23,8 @@ import java.util.function.Supplier;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
+import org.apache.uniffle.server.storage.StorageManager;
+import org.apache.uniffle.storage.common.Storage;
 
 public class ShuffleDataFlushEvent {
 
@@ -36,6 +38,9 @@ public class ShuffleDataFlushEvent {
   private final Supplier<Boolean> valid;
   private final ShuffleBuffer shuffleBuffer;
   private final AtomicInteger retryTimes = new AtomicInteger();
+  private boolean isPended = false;
+  private StorageManager underStorageManager;
+  private Storage underStorage;
 
   public ShuffleDataFlushEvent(
       long eventId,
@@ -103,6 +108,30 @@ public class ShuffleDataFlushEvent {
 
   public void increaseRetryTimes() {
     retryTimes.incrementAndGet();
+  }
+
+  public boolean isPended() {
+    return isPended;
+  }
+
+  public void markPended() {
+    isPended = true;
+  }
+
+  public Storage getUnderStorage() {
+    return underStorage;
+  }
+
+  public void setUnderStorage(Storage underStorage) {
+    this.underStorage = underStorage;
+  }
+
+  public StorageManager getUnderStorageManager() {
+    return underStorageManager;
+  }
+
+  public void setUnderStorageManager(StorageManager underStorageManager) {
+    this.underStorageManager = underStorageManager;
   }
 
   @Override

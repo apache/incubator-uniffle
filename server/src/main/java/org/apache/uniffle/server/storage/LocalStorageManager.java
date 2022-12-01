@@ -151,6 +151,7 @@ public class LocalStorageManager extends SingleStorageManager {
     if (storage.isCorrupted()) {
       storage = getRepairedStorage(event.getAppId(), event.getShuffleId(), event.getStartPartition());
     }
+    event.setUnderStorage(storage);
     return storage;
   }
 

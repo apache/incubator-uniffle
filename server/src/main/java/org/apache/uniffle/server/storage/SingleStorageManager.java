@@ -104,7 +104,7 @@ public abstract class SingleStorageManager implements StorageManager {
       } else {
         ShuffleServerMetrics.counterEventSizeThresholdLevel4.inc();
       }
-      Storage storage = selectStorage(event);
+      Storage storage = event.getUnderStorage();
       if (storage != null) {
         storage.updateWriteMetrics(metrics);
       }
