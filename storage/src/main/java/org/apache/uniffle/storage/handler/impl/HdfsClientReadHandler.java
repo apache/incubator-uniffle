@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.Constants;
@@ -42,6 +43,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
   protected final int partitionNumPerRange;
   protected final int partitionNum;
   protected final int readBufferSize;
+  private final String shuffleServerId;
   protected Roaring64NavigableMap expectBlockIds;
   protected Roaring64NavigableMap processBlockIds;
   protected final String storageBasePath;
@@ -52,6 +54,9 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
   private long readBlockNum = 0L;
   private long readLength = 0L;
   private long readUncompressLength = 0L;
+
+  private ShuffleDataDistributionType distributionType;
+  private Roaring64NavigableMap expectTaskIds;
 
   public HdfsClientReadHandler(
       String appId,
@@ -64,7 +69,10 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       Roaring64NavigableMap expectBlockIds,
       Roaring64NavigableMap processBlockIds,
       String storageBasePath,
-      Configuration hadoopConf) {
+      Configuration hadoopConf,
+      ShuffleDataDistributionType distributionType,
+      Roaring64NavigableMap expectTaskIds,
+      String shuffleServerId) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -76,6 +84,27 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
     this.storageBasePath = storageBasePath;
     this.hadoopConf = hadoopConf;
     this.readHandlerIndex = 0;
+    this.distributionType = distributionType;
+    this.expectTaskIds = expectTaskIds;
+    this.shuffleServerId = shuffleServerId;
+  }
+
+  // Only for test
+  public HdfsClientReadHandler(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int indexReadLimit,
+      int partitionNumPerRange,
+      int partitionNum,
+      int readBufferSize,
+      Roaring64NavigableMap expectBlockIds,
+      Roaring64NavigableMap processBlockIds,
+      String storageBasePath,
+      Configuration hadoopConf) {
+    this(appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange, partitionNum, readBufferSize,
+        expectBlockIds, processBlockIds, storageBasePath, hadoopConf, ShuffleDataDistributionType.NORMAL,
+        Roaring64NavigableMap.bitmapOf(), null);
   }
 
   protected void init(String fullShufflePath) {
@@ -93,7 +122,8 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
     try {
       // get all index files
       indexFiles = fs.listStatus(baseFolder,
-          file -> file.getName().endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX));
+          file -> file.getName().endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX)
+              && (shuffleServerId == null || file.getName().startsWith(shuffleServerId)));
     } catch (Exception e) {
       LOG.error(failedGetIndexFileMsg, e);
       return;
@@ -107,7 +137,8 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
         try {
           HdfsShuffleReadHandler handler = new HdfsShuffleReadHandler(
               appId, shuffleId, partitionId, filePrefix,
-              readBufferSize, expectBlockIds, processBlockIds, hadoopConf);
+              readBufferSize, expectBlockIds, processBlockIds, hadoopConf,
+              distributionType, expectTaskIds);
           readHandlers.add(handler);
         } catch (Exception e) {
           LOG.warn("Can't create ShuffleReaderHandler for " + filePrefix, e);

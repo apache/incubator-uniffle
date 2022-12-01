@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.client.impl.grpc;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -27,7 +26,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +58,7 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RetryUtils;
@@ -120,7 +119,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     super(host, port, maxRetryAttempts, usePlaintext);
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
   }
-  
+
   public ShuffleServerBlockingStub getBlockingStub() {
     return blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
   }
@@ -135,12 +134,14 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       int shuffleId,
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorageInfo,
-      String user) {
+      String user,
+      ShuffleDataDistributionType dataDistributionType) {
     ShuffleRegisterRequest.Builder reqBuilder = ShuffleRegisterRequest.newBuilder();
     reqBuilder
         .setAppId(appId)
         .setShuffleId(shuffleId)
         .setUser(user)
+        .setShuffleDataDistribution(RssProtos.DataDistribution.valueOf(dataDistributionType.name()))
         .addAllPartitionRanges(toShufflePartitionRanges(partitionRanges));
     RemoteStorage.Builder rsBuilder = RemoteStorage.newBuilder();
     rsBuilder.setPath(remoteStorageInfo.getPath());
@@ -191,7 +192,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
           + retry + "] again");
       if (retry >= retryMax) {
         LOG.warn("ShuffleServer " + host + ":" + port + " is full and can't send shuffle"
-            + " data successfully after retry " + retryMax + " times, cost: {}(ms)",
+                + " data successfully after retry " + retryMax + " times, cost: {}(ms)",
             System.currentTimeMillis() - start);
         return result;
       }
@@ -249,7 +250,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         request.getShuffleId(),
         request.getPartitionRanges(),
         request.getRemoteStorageInfo(),
-        request.getUser()
+        request.getUser(),
+        request.getDataDistributionType()
     );
 
     RssRegisterShuffleResponse response;
@@ -302,18 +304,20 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       final int finalBlockNum = blockNum;
       try {
         RetryUtils.retry(() -> {
-          long requireId = requirePreAllocation(allocateSize, request.getRetryMax(), request.getRetryIntervalMax());
+          long requireId = requirePreAllocation(allocateSize, request.getRetryMax() / maxRetryAttempts,
+              request.getRetryIntervalMax());
           if (requireId == FAILED_REQUIRE_ID) {
             throw new RssException(String.format(
                 "requirePreAllocation failed! size[%s], host[%s], port[%s]", allocateSize, host, port));
           }
+          long start = System.currentTimeMillis();
           SendShuffleDataRequest rpcRequest = SendShuffleDataRequest.newBuilder()
               .setAppId(appId)
               .setShuffleId(stb.getKey())
               .setRequireBufferId(requireId)
               .addAllShuffleData(shuffleData)
+              .setTimestamp(start)
               .build();
-          long start = System.currentTimeMillis();
           SendShuffleDataResponse response = getBlockingStub().sendShuffleData(rpcRequest);
           LOG.info("Do sendShuffleData to {}:{} rpc cost:" + (System.currentTimeMillis() - start)
               + " ms for " + allocateSize + " bytes with " + finalBlockNum + " blocks", host, port);
@@ -522,6 +526,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
 
   @Override
   public RssGetShuffleDataResponse getShuffleData(RssGetShuffleDataRequest request) {
+    long start = System.currentTimeMillis();
     GetLocalShuffleDataRequest rpcRequest = GetLocalShuffleDataRequest
         .newBuilder()
         .setAppId(request.getAppId())
@@ -531,8 +536,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setPartitionNum(request.getPartitionNum())
         .setOffset(request.getOffset())
         .setLength(request.getLength())
+        .setTimestamp(start)
         .build();
-    long start = System.currentTimeMillis();
     GetLocalShuffleDataResponse rpcResponse = getBlockingStub().getLocalShuffleData(rpcRequest);
     String requestInfo = "appId[" + request.getAppId() + "], shuffleId["
         + request.getShuffleId() + "], partitionId[" + request.getPartitionId() + "]";
@@ -595,19 +600,17 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   @Override
   public RssGetInMemoryShuffleDataResponse getInMemoryShuffleData(
       RssGetInMemoryShuffleDataRequest request) {
-    ByteString processedBlockIds;
-    ByteString expectBlockIds;
+    long start = System.currentTimeMillis();
+    ByteString serializedTaskIdsBytes = ByteString.EMPTY;
     try {
-      Roaring64NavigableMap processedBlockIdsMap = request.getProcessedBlockIds() == null
-          ? Roaring64NavigableMap.bitmapOf() : request.getProcessedBlockIds();
-      processedBlockIds = UnsafeByteOperations.unsafeWrap(RssUtils.serializeBitMap(processedBlockIdsMap));
-
-      Roaring64NavigableMap expectBlockIdsMap = request.getExpectBlockIds() == null
-          ? Roaring64NavigableMap.bitmapOf() : request.getExpectBlockIds();
-      expectBlockIds = UnsafeByteOperations.unsafeWrap(RssUtils.serializeBitMap(expectBlockIdsMap));
-    } catch (IOException e) {
-      throw new RssException("Fail to serialize bitMap", e);
+      if (request.getExpectedTaskIds() != null) {
+        serializedTaskIdsBytes =
+            UnsafeByteOperations.unsafeWrap(RssUtils.serializeBitMap(request.getExpectedTaskIds()));
+      }
+    } catch (Exception e) {
+      throw new RssException("Errors on serializing task ids bitmap.", e);
     }
+
     GetMemoryShuffleDataRequest rpcRequest = GetMemoryShuffleDataRequest
         .newBuilder()
         .setAppId(request.getAppId())
@@ -615,11 +618,10 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setPartitionId(request.getPartitionId())
         .setLastBlockId(request.getLastBlockId())
         .setReadBufferSize(request.getReadBufferSize())
-        .setProcessedBlockIds(processedBlockIds)
-        .setExpectBlockIds(expectBlockIds)
+        .setSerializedExpectedTaskIdsBitmap(serializedTaskIdsBytes)
+        .setTimestamp(start)
         .build();
 
-    long start = System.currentTimeMillis();
     GetMemoryShuffleDataResponse rpcResponse = getBlockingStub().getMemoryShuffleData(rpcRequest);
     String requestInfo = "appId[" + request.getAppId() + "], shuffleId["
         + request.getShuffleId() + "], partitionId[" + request.getPartitionId() + "]";

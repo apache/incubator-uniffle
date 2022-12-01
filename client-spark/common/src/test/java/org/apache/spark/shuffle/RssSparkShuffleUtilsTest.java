@@ -33,9 +33,12 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class RssSparkShuffleUtilsTest {
-
+  
+  private static final String EXPECTED_EXCEPTION_MESSAGE = "Exception should be thrown";
+  
   @Test
   public void testAssignmentTags() {
     SparkConf conf = new SparkConf();
@@ -158,4 +161,81 @@ public class RssSparkShuffleUtilsTest {
     assertEquals(Integer.toString(RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE),
         conf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX.key()));
   }
+
+  @Test
+  public void testEstimateTaskConcurrency() {
+    SparkConf sparkConf = new SparkConf();
+    sparkConf.set(Constants.SPARK_DYNAMIC_ENABLED, "true");
+    sparkConf.set(Constants.SPARK_MAX_DYNAMIC_EXECUTOR, "200");
+    sparkConf.set(Constants.SPARK_MIN_DYNAMIC_EXECUTOR, "100");
+    sparkConf.set(Constants.SPARK_EXECUTOR_CORES, "2");
+    int taskConcurrency;
+
+    sparkConf.set(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR, 1.0);
+    taskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
+    assertEquals(400, taskConcurrency);
+
+    sparkConf.set(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR, 0.3);
+    taskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
+    assertEquals(260, taskConcurrency);
+
+    sparkConf.set(Constants.SPARK_TASK_CPUS, "2");
+    sparkConf.set(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR, 0.3);
+    taskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
+    assertEquals(130, taskConcurrency);
+
+    sparkConf.set(Constants.SPARK_DYNAMIC_ENABLED, "false");
+    sparkConf.set(Constants.SPARK_EXECUTOR_INSTANTS, "70");
+    sparkConf.set(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR, 1.0);
+    taskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
+    assertEquals(70, taskConcurrency);
+  }
+
+  @Test
+  public void testGetRequiredShuffleServerNumber() {
+    SparkConf sparkConf = new SparkConf();
+    sparkConf.set(Constants.SPARK_DYNAMIC_ENABLED, "true");
+    sparkConf.set(Constants.SPARK_MAX_DYNAMIC_EXECUTOR, "200");
+    sparkConf.set(Constants.SPARK_MIN_DYNAMIC_EXECUTOR, "100");
+    sparkConf.set(Constants.SPARK_EXECUTOR_CORES, "4");
+
+    assertEquals(-1, RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf));
+
+    sparkConf.set(RssSparkConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED, true);
+    assertEquals(10, RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf));
+
+    sparkConf.set(Constants.SPARK_TASK_CPUS, "2");
+    assertEquals(5, RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf));
+
+    sparkConf.set(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR, 0.5);
+    assertEquals(4, RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf));
+
+    sparkConf.set(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER, 100);
+    assertEquals(3, RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf));
+  }
+
+  @Test
+  public void testValidateRssClientConf() {
+    SparkConf sparkConf = new SparkConf();
+    try {
+      RssSparkShuffleUtils.validateRssClientConf(sparkConf);
+      fail(EXPECTED_EXCEPTION_MESSAGE);
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("must be set by the client or fetched from coordinators"));
+    }
+    sparkConf.set(RssSparkConfig.RSS_STORAGE_TYPE, "MEMORY_LOCALFILE_HDFS");
+    RssSparkShuffleUtils.validateRssClientConf(sparkConf);
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_RETRY_MAX, 5);
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX, 1000L);
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS, 4999L);
+    try {
+      RssSparkShuffleUtils.validateRssClientConf(sparkConf);
+      fail(EXPECTED_EXCEPTION_MESSAGE);
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("should not bigger than"));
+    }
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS, 5000L);
+    RssSparkShuffleUtils.validateRssClientConf(sparkConf);
+  }
+
 }

@@ -25,6 +25,7 @@ import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
 import org.apache.uniffle.client.request.RssGetShuffleIndexRequest;
 import org.apache.uniffle.client.response.RssGetShuffleDataResponse;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
@@ -37,7 +38,32 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
   private final int partitionNum;
   private ShuffleServerClient shuffleServerClient;
 
-  LocalFileClientReadHandler(
+  public LocalFileClientReadHandler(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int indexReadLimit,
+      int partitionNumPerRange,
+      int partitionNum,
+      int readBufferSize,
+      Roaring64NavigableMap expectBlockIds,
+      Roaring64NavigableMap processBlockIds,
+      ShuffleServerClient shuffleServerClient,
+      ShuffleDataDistributionType distributionType,
+      Roaring64NavigableMap expectTaskIds) {
+    super(
+        appId, shuffleId, partitionId, readBufferSize, expectBlockIds,
+        processBlockIds, distributionType, expectTaskIds
+    );
+    this.shuffleServerClient = shuffleServerClient;
+    this.partitionNumPerRange = partitionNumPerRange;
+    this.partitionNum = partitionNum;
+  }
+
+  /**
+   * Only for test
+   */
+  public LocalFileClientReadHandler(
       String appId,
       int shuffleId,
       int partitionId,
@@ -48,10 +74,11 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
       Roaring64NavigableMap expectBlockIds,
       Roaring64NavigableMap processBlockIds,
       ShuffleServerClient shuffleServerClient) {
-    super(appId, shuffleId, partitionId, readBufferSize, expectBlockIds, processBlockIds);
-    this.shuffleServerClient = shuffleServerClient;
-    this.partitionNumPerRange = partitionNumPerRange;
-    this.partitionNum = partitionNum;
+    this(
+        appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange,
+        partitionNum, readBufferSize, expectBlockIds, processBlockIds,
+        shuffleServerClient, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf()
+    );
   }
 
   @Override

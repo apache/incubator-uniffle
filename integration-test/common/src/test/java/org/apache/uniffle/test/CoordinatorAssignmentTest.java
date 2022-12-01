@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
-import org.apache.uniffle.client.util.ClientType;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -91,7 +91,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     shuffleWriteClient.registerCoordinators(QUORUM);
 
     // Case1: Disable silent period
-    ShuffleAssignmentsInfo info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, -1);
+    ShuffleAssignmentsInfo info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, -1, -1);
     assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
 
     // Case2: Enable silent period mechanism, it should fallback to slave coordinator.
@@ -101,7 +101,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     clusterManager.setStartTime(System.currentTimeMillis() - 1);
 
     if (clusterManager.getNodesNum() < 10) {
-      info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, -1);
+      info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, -1, -1);
       assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
     }
 
@@ -119,28 +119,28 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
      * case1: user specify the illegal shuffle node num(<0)
      * it will use the default shuffle nodes num when having enough servers.
      */
-    ShuffleAssignmentsInfo info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, -1);
+    ShuffleAssignmentsInfo info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, -1, -1);
     assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
 
     /**
      * case2: user specify the illegal shuffle node num(==0)
      * it will use the default shuffle nodes num when having enough servers.
      */
-    info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, 0);
+    info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, 0, -1);
     assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
 
     /**
      * case3: user specify the illegal shuffle node num(>default max limitation)
      * it will use the default shuffle nodes num when having enough servers
      */
-    info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM + 10);
+    info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1);
     assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
 
     /**
      * case4: user specify the legal shuffle node num,
      * it will use the customized shuffle nodes num when having enough servers
      */
-    info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM - 1);
+    info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM - 1, -1);
     assertEquals(SHUFFLE_NODES_MAX - 1, info.getServerToPartitionRanges().keySet().size());
   }
 }

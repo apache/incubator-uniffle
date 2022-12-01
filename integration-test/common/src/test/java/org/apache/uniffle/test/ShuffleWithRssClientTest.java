@@ -35,13 +35,14 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
-import org.apache.uniffle.client.util.ClientType;
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.client.util.DefaultIdHelper;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RetryUtils;
@@ -104,8 +105,14 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
   @Test
   public void rpcFailTest() throws Exception {
     String testAppId = "rpcFailTest";
-    shuffleWriteClientImpl.registerShuffle(shuffleServerInfo1,
-        testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), new RemoteStorageInfo(""));
+    shuffleWriteClientImpl.registerShuffle(
+        shuffleServerInfo1,
+        testAppId,
+        0,
+        Lists.newArrayList(new PartitionRange(0, 0)),
+        new RemoteStorageInfo(""),
+        ShuffleDataDistributionType.NORMAL
+    );
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
 
@@ -115,7 +122,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     List<ShuffleBlockInfo> blocks = createShuffleBlockList(
         0, 0, 0, 3, 25, blockIdBitmap,
         expectedData, Lists.newArrayList(shuffleServerInfo1, fakeShuffleServerInfo));
-    SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
+    SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks, () -> false);
     Roaring64NavigableMap failedBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap succBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
     for (Long blockId : result.getFailedBlockIds()) {
@@ -149,11 +156,23 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
   public void reportMultipleServerTest() throws Exception {
     String testAppId = "reportMultipleServerTest";
 
-    shuffleWriteClientImpl.registerShuffle(shuffleServerInfo1,
-        testAppId, 1, Lists.newArrayList(new PartitionRange(1, 1)), new RemoteStorageInfo(""));
+    shuffleWriteClientImpl.registerShuffle(
+        shuffleServerInfo1,
+        testAppId,
+        1,
+        Lists.newArrayList(new PartitionRange(1, 1)),
+        new RemoteStorageInfo(""),
+        ShuffleDataDistributionType.NORMAL
+    );
 
-    shuffleWriteClientImpl.registerShuffle(shuffleServerInfo2,
-        testAppId, 1, Lists.newArrayList(new PartitionRange(2, 2)), new RemoteStorageInfo(""));
+    shuffleWriteClientImpl.registerShuffle(
+        shuffleServerInfo2,
+        testAppId,
+        1,
+        Lists.newArrayList(new PartitionRange(2, 2)),
+        new RemoteStorageInfo(""),
+        ShuffleDataDistributionType.NORMAL
+    );
 
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
     partitionToServers.putIfAbsent(1, Lists.newArrayList(shuffleServerInfo1));
@@ -212,10 +231,22 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
   @Test
   public void writeReadTest() throws Exception {
     String testAppId = "writeReadTest";
-    shuffleWriteClientImpl.registerShuffle(shuffleServerInfo1,
-        testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), new RemoteStorageInfo(""));
-    shuffleWriteClientImpl.registerShuffle(shuffleServerInfo2,
-        testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), new RemoteStorageInfo(""));
+    shuffleWriteClientImpl.registerShuffle(
+        shuffleServerInfo1,
+        testAppId,
+        0,
+        Lists.newArrayList(new PartitionRange(0, 0)),
+        new RemoteStorageInfo(""),
+        ShuffleDataDistributionType.NORMAL
+    );
+    shuffleWriteClientImpl.registerShuffle(
+        shuffleServerInfo2,
+        testAppId,
+        0,
+        Lists.newArrayList(new PartitionRange(0, 0)),
+        new RemoteStorageInfo(""),
+        ShuffleDataDistributionType.NORMAL
+    );
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
@@ -223,7 +254,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     List<ShuffleBlockInfo> blocks = createShuffleBlockList(
         0, 0, 0, 3, 25, blockIdBitmap,
         expectedData, Lists.newArrayList(shuffleServerInfo1, shuffleServerInfo2));
-    shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
+    shuffleWriteClientImpl.sendShuffleData(testAppId, blocks, () -> false);
     // send 1st commit, finish commit won't be sent to Shuffle server and data won't be persisted to disk
     boolean commitResult = shuffleWriteClientImpl
         .sendCommit(Sets.newHashSet(shuffleServerInfo1, shuffleServerInfo2), testAppId, 0, 2);
@@ -263,8 +294,14 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
   @Test
   public void emptyTaskTest() {
     String testAppId = "emptyTaskTest";
-    shuffleWriteClientImpl.registerShuffle(shuffleServerInfo1,
-        testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), new RemoteStorageInfo(""));
+    shuffleWriteClientImpl.registerShuffle(
+        shuffleServerInfo1,
+        testAppId,
+        0,
+        Lists.newArrayList(new PartitionRange(0, 0)),
+        new RemoteStorageInfo(""),
+        ShuffleDataDistributionType.NORMAL
+    );
     boolean commitResult = shuffleWriteClientImpl
         .sendCommit(Sets.newHashSet(shuffleServerInfo1), testAppId, 0, 2);
     assertTrue(commitResult);
@@ -288,7 +325,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     response = RetryUtils.retry(() -> {
       int currentTryTime = tryTime.incrementAndGet();
       ShuffleAssignmentsInfo shuffleAssignments = shuffleWriteClientImpl.getShuffleAssignments(appId,
-          1, 1, 1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 1);
+          1, 1, 1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 1, -1);
 
       Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
           shuffleAssignments.getServerToPartitionRanges();
@@ -306,7 +343,13 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
           });
         }
         shuffleWriteClientImpl.registerShuffle(
-            entry.getKey(), appId, 0, entry.getValue(), remoteStorage);
+            entry.getKey(),
+            appId,
+            0,
+            entry.getValue(),
+            remoteStorage,
+            ShuffleDataDistributionType.NORMAL
+        );
       });
       return shuffleAssignments;
     }, heartbeatTimeout, maxTryTime);

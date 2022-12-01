@@ -20,6 +20,7 @@ package org.apache.uniffle.server;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -35,6 +36,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.BufferSegment;
@@ -49,8 +51,10 @@ import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
+import org.apache.uniffle.server.storage.LocalStorageManager;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.storage.HdfsTestBase;
+import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.handler.impl.HdfsClientReadHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.apache.uniffle.storage.util.StorageType;
@@ -79,11 +83,11 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
     conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
     ShuffleServer shuffleServer = new ShuffleServer(conf);
-    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf,
-        shuffleServer.getShuffleFlushManager(), shuffleServer.getShuffleBufferManager(), null);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
 
     String appId = "registerTest1";
     int shuffleId = 1;
@@ -134,15 +138,12 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
     conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED, 3000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
     ShuffleServer shuffleServer = new ShuffleServer(conf);
-    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
-    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
-    StorageManager storageManager = shuffleServer.getStorageManager();
-    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(
-        conf, shuffleFlushManager, shuffleBufferManager, storageManager);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
     shuffleTaskManager.registerShuffle(
         appId,
         shuffleId,
@@ -184,6 +185,8 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     assertEquals(1, bufferIds.size());
     assertEquals(StatusCode.SUCCESS, sc);
     shuffleTaskManager.commitShuffle(appId, shuffleId);
+
+    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
     assertEquals(1, shuffleFlushManager.getCommittedBlockIds(appId, shuffleId).getLongCardinality());
 
     // flush for partition 1-1
@@ -266,6 +269,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     String confFile = ClassLoader.getSystemResource("server.conf").getFile();
     ShuffleServerConf conf = new ShuffleServerConf(confFile);
     String storageBasePath = HDFS_URI + "rss/clearTest";
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.RPC_SERVER_PORT, 1234);
     conf.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:9527");
     conf.set(ShuffleServerConf.JETTY_HTTP_PORT, 12345);
@@ -279,11 +283,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
 
     ShuffleServer shuffleServer = new ShuffleServer(conf);
 
-    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
-    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
-    StorageManager storageManager = shuffleServer.getStorageManager();
-    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(
-        conf, shuffleFlushManager, shuffleBufferManager, storageManager);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
 
     String appId = "removeShuffleDataTest1";
     for (int i = 0; i < 4; i++) {
@@ -312,6 +312,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
 
     assertEquals(1, shuffleTaskManager.getAppIds().size());
 
+    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
     RangeMap<Integer, ShuffleBuffer> rangeMap = shuffleBufferManager.getBufferPool().get(appId).get(0);
     assertFalse(rangeMap.asMapOfRanges().isEmpty());
     shuffleTaskManager.commitShuffle(appId, 0);
@@ -345,18 +346,14 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
 
     conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, "LOCALFILE");
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     java.nio.file.Path path1 = Files.createTempDirectory("removeShuffleDataWithLocalfileTest");
     java.nio.file.Path path2 = Files.createTempDirectory("removeShuffleDataWithLocalfileTest");
     conf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH.key(),
         path1.toAbsolutePath().toString() + "," + path2.toAbsolutePath().toString());
 
     ShuffleServer shuffleServer = new ShuffleServer(conf);
-
-    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
-    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
-    StorageManager storageManager = shuffleServer.getStorageManager();
-    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(
-        conf, shuffleFlushManager, shuffleBufferManager, storageManager);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
 
     String appId = "removeShuffleDataWithLocalfileTest";
 
@@ -406,16 +403,13 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storageBasePath));
     conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
 
     ShuffleServer shuffleServer = new ShuffleServer(conf);
-    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
-    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
-    StorageManager storageManager = shuffleServer.getStorageManager();
-    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf, shuffleFlushManager,
-        shuffleBufferManager, storageManager);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
     shuffleTaskManager.registerShuffle(
         "clearTest1",
         shuffleId,
@@ -562,6 +556,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storageBasePath));
     conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
@@ -610,6 +605,129 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
         shuffleTaskManager.getFinishedBlockIds(appId, shuffleId, requestPartitions);
     Roaring64NavigableMap resBlockIds = RssUtils.deserializeBitMap(serializeBitMap);
     assertEquals(expectedBlockIds, resBlockIds);
+  }
+
+
+  @Test
+  public void testAddFinishedBlockIdsWithoutRegister() throws Exception {
+    ShuffleServerConf conf = new ShuffleServerConf();
+    String storageBasePath = HDFS_URI + "rss/test";
+    String appId = "testAddFinishedBlockIdsToExpiredApp";
+    final int shuffleId = 1;
+    final int bitNum = 3;
+    conf.set(ShuffleServerConf.RPC_SERVER_PORT, 1234);
+    conf.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:9527");
+    conf.set(ShuffleServerConf.JETTY_HTTP_PORT, 12345);
+    conf.set(ShuffleServerConf.JETTY_CORE_POOL_SIZE, 64);
+    conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 128L);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storageBasePath));
+    conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
+    conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
+    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
+    conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
+
+    ShuffleServer shuffleServer = new ShuffleServer(conf);
+    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
+    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
+    StorageManager storageManager = shuffleServer.getStorageManager();
+    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf, shuffleFlushManager,
+        shuffleBufferManager, storageManager);
+    Map<Integer, long[]>  blockIdsToReport = Maps.newHashMap();
+    try {
+      shuffleTaskManager.addFinishedBlockIds(appId, shuffleId, blockIdsToReport, bitNum);
+      fail("Exception should be thrown");
+    } catch (RuntimeException e) {
+      assertTrue(e.getMessage().equals("appId[" + appId + "] is expired!"));
+    }
+  }
+
+  @Test
+  public void checkAndClearLeakShuffleDataTest(@TempDir File tempDir) throws Exception {
+    final String appId = "clearLocalTest_appId";
+
+    ShuffleServerConf conf = new ShuffleServerConf();
+    final int shuffleId = 1;
+    conf.set(ShuffleServerConf.RPC_SERVER_PORT, 1234);
+    conf.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:9527");
+    conf.set(ShuffleServerConf.JETTY_HTTP_PORT, 12345);
+    conf.set(ShuffleServerConf.JETTY_CORE_POOL_SIZE, 64);
+    conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 64L);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
+    conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
+    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
+    conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
+    conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
+    // make sure not to check leak shuffle data automatically
+    conf.setLong(ShuffleServerConf.SERVER_LEAK_SHUFFLE_DATA_CHECK_INTERVAL, 600 * 1000L);
+
+    ShuffleServer shuffleServer = new ShuffleServer(conf);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
+    shuffleTaskManager.registerShuffle(
+            appId,
+            shuffleId,
+            Lists.newArrayList(new PartitionRange(0, 1)),
+            RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+            StringUtils.EMPTY
+    );
+
+    shuffleTaskManager.refreshAppId(appId);
+    assertEquals(1, shuffleTaskManager.getAppIds().size());
+
+    ShufflePartitionedData shuffleData = createPartitionedData(1, 1, 48);
+
+    // make sure shuffle data flush to disk
+    int retry = 0;
+    while (retry < 5) {
+      Thread.sleep(1000);
+      shuffleTaskManager.cacheShuffleData(appId, shuffleId, false, shuffleData);
+      shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, shuffleData.getBlockList());
+      shuffleTaskManager.refreshAppId(appId);
+      shuffleTaskManager.checkResourceStatus();
+
+      retry++;
+    }
+
+    StorageManager storageManager = shuffleServer.getStorageManager();
+    assertTrue(storageManager instanceof LocalStorageManager);
+    LocalStorageManager localStorageManager = (LocalStorageManager) storageManager;
+    // parse appIds from storage
+    Set<String> appIdsOnDisk = getAppIdsOnDisk(localStorageManager);
+    assertEquals(appIdsOnDisk.size(), shuffleTaskManager.getAppIds().size());
+    assertTrue(appIdsOnDisk.contains(appId));
+
+    // make sure heartbeat timeout and resources are removed
+    Thread.sleep(5000);
+
+    appIdsOnDisk = getAppIdsOnDisk(localStorageManager);
+    assertFalse(appIdsOnDisk.contains(appId));
+
+    // mock leak shuffle data
+    File file = new File(tempDir, appId);
+    assertFalse(file.exists());
+    file.mkdir();
+    assertTrue(file.exists());
+
+    // execute checkLeakShuffleData
+    shuffleTaskManager.checkLeakShuffleData();
+    assertFalse(file.exists());
+  }
+
+  private Set<String> getAppIdsOnDisk(LocalStorageManager localStorageManager) {
+    Set<String> appIdsOnDisk = new HashSet<>();
+
+    List<LocalStorage> storages = localStorageManager.getStorages();
+    for (LocalStorage storage : storages) {
+      appIdsOnDisk.addAll(storage.getAppIds());
+    }
+
+    return appIdsOnDisk;
   }
 
   // copy from ClientUtils

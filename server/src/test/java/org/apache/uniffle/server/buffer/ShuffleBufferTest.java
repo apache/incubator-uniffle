@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
@@ -92,6 +93,169 @@ public class ShuffleBufferTest extends BufferTestBase {
       }
     }
     return shuffleBuffer.getShuffleData(lastBlockId, readBufferSize, processedBlockIds, exceptBlockIds);
+  }
+
+  @Test
+  public void getShuffleDataWithExpectedTaskIdsFilterTest() {
+    /**
+     * case1: all blocks in cached(or in flushed map) and size < readBufferSize
+     */
+    ShuffleBuffer shuffleBuffer = new ShuffleBuffer(100);
+    ShufflePartitionedData spd1 = createData(1, 1, 15);
+    ShufflePartitionedData spd2 = createData(1, 0, 15);
+    ShufflePartitionedData spd3 = createData(1, 2, 55);
+    ShufflePartitionedData spd4 = createData(1, 1, 45);
+    shuffleBuffer.append(spd1);
+    shuffleBuffer.append(spd2);
+    shuffleBuffer.append(spd3);
+    shuffleBuffer.append(spd4);
+
+    Roaring64NavigableMap expectedTasks = Roaring64NavigableMap.bitmapOf(1, 2);
+    ShuffleDataResult result = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 1000, expectedTasks);
+    assertEquals(3, result.getBufferSegments().size());
+    for (BufferSegment segment : result.getBufferSegments()) {
+      assertTrue(expectedTasks.contains(segment.getTaskAttemptId()));
+    }
+    assertEquals(0, result.getBufferSegments().get(0).getOffset());
+    assertEquals(15, result.getBufferSegments().get(0).getLength());
+    assertEquals(15, result.getBufferSegments().get(1).getOffset());
+    assertEquals(55, result.getBufferSegments().get(1).getLength());
+    assertEquals(70, result.getBufferSegments().get(2).getOffset());
+    assertEquals(45, result.getBufferSegments().get(2).getLength());
+
+    expectedTasks = Roaring64NavigableMap.bitmapOf(0);
+    result = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 1000, expectedTasks);
+    assertEquals(1, result.getBufferSegments().size());
+    assertEquals(15, result.getBufferSegments().get(0).getLength());
+
+    /**
+     * case2: all blocks in cached(or in flushed map) and size > readBufferSize, so it will read multiple times.
+     *
+     * required blocks size list: 15, 55, 45
+     */
+    expectedTasks = Roaring64NavigableMap.bitmapOf(1, 2);
+    result = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 60, expectedTasks);
+    assertEquals(2, result.getBufferSegments().size());
+    assertEquals(0, result.getBufferSegments().get(0).getOffset());
+    assertEquals(15, result.getBufferSegments().get(0).getLength());
+    assertEquals(15, result.getBufferSegments().get(1).getOffset());
+    assertEquals(55, result.getBufferSegments().get(1).getLength());
+
+    // 2th read
+    long lastBlockId = result.getBufferSegments().get(1).getBlockId();
+    result = shuffleBuffer.getShuffleData(lastBlockId, 60, expectedTasks);
+    assertEquals(1, result.getBufferSegments().size());
+    assertEquals(0, result.getBufferSegments().get(0).getOffset());
+    assertEquals(45, result.getBufferSegments().get(0).getLength());
+
+    /**
+     * case3: all blocks in flushed map and size < readBufferSize
+     */
+    expectedTasks = Roaring64NavigableMap.bitmapOf(1, 2);
+    ShuffleDataFlushEvent event1 = shuffleBuffer.toFlushEvent(
+        "appId",
+        0,
+        0,
+        1,
+        null,
+        ShuffleDataDistributionType.LOCAL_ORDER
+    );
+    result = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 1000, expectedTasks);
+    assertEquals(3, result.getBufferSegments().size());
+    for (BufferSegment segment : result.getBufferSegments()) {
+      assertTrue(expectedTasks.contains(segment.getTaskAttemptId()));
+    }
+    assertEquals(0, result.getBufferSegments().get(0).getOffset());
+    assertEquals(15, result.getBufferSegments().get(0).getLength());
+    assertEquals(15, result.getBufferSegments().get(1).getOffset());
+    assertEquals(55, result.getBufferSegments().get(1).getLength());
+    assertEquals(70, result.getBufferSegments().get(2).getOffset());
+    assertEquals(45, result.getBufferSegments().get(2).getLength());
+
+    /**
+     * case4: all blocks in flushed map and size > readBufferSize, it will read multiple times
+     */
+    expectedTasks = Roaring64NavigableMap.bitmapOf(1, 2);
+    result = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 60, expectedTasks);
+    assertEquals(2, result.getBufferSegments().size());
+    assertEquals(0, result.getBufferSegments().get(0).getOffset());
+    assertEquals(15, result.getBufferSegments().get(0).getLength());
+    assertEquals(15, result.getBufferSegments().get(1).getOffset());
+    assertEquals(55, result.getBufferSegments().get(1).getLength());
+
+    // 2th read
+    lastBlockId = result.getBufferSegments().get(1).getBlockId();
+    result = shuffleBuffer.getShuffleData(lastBlockId, 60, expectedTasks);
+    assertEquals(1, result.getBufferSegments().size());
+    assertEquals(0, result.getBufferSegments().get(0).getOffset());
+    assertEquals(45, result.getBufferSegments().get(0).getLength());
+
+    /**
+     * case5: partial blocks in cache and another in flushedMap, and it will read multiple times.
+     *
+     * required size: 15, 55, 45 (in flushed map) 55, 45, 5, 25(in cached)
+     */
+    ShufflePartitionedData spd5 = createData(1, 2, 55);
+    ShufflePartitionedData spd6 = createData(1, 1, 45);
+    ShufflePartitionedData spd7 = createData(1, 1, 5);
+    ShufflePartitionedData spd8 = createData(1, 1, 25);
+    shuffleBuffer.append(spd5);
+    shuffleBuffer.append(spd6);
+    shuffleBuffer.append(spd7);
+    shuffleBuffer.append(spd8);
+
+    expectedTasks = Roaring64NavigableMap.bitmapOf(1, 2);
+    result = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 60, expectedTasks);
+    assertEquals(2, result.getBufferSegments().size());
+
+    // 2th read
+    lastBlockId = result.getBufferSegments().get(1).getBlockId();
+    result = shuffleBuffer.getShuffleData(lastBlockId, 60, expectedTasks);
+    assertEquals(2, result.getBufferSegments().size());
+    // 3th read
+    lastBlockId = result.getBufferSegments().get(1).getBlockId();
+    result = shuffleBuffer.getShuffleData(lastBlockId, 60, expectedTasks);
+    assertEquals(3, result.getBufferSegments().size());
+  }
+
+  @Test
+  public void getShuffleDataWithLocalOrderTest() {
+    ShuffleBuffer shuffleBuffer = new ShuffleBuffer(200);
+    ShufflePartitionedData spd1 = createData(1, 1, 15);
+    ShufflePartitionedData spd2 = createData(1, 0, 15);
+    ShufflePartitionedData spd3 = createData(1, 2, 15);
+    shuffleBuffer.append(spd1);
+    shuffleBuffer.append(spd2);
+    shuffleBuffer.append(spd3);
+
+    // First read from the cached data
+    ShuffleDataResult sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 16);
+    byte[] expectedData = getExpectedData(spd1, spd2);
+    compareBufferSegment(shuffleBuffer.getBlocks(), sdr.getBufferSegments(), 0, 2);
+    assertArrayEquals(expectedData, sdr.getData());
+
+    // Second read after flushed
+    ShuffleDataFlushEvent event1 = shuffleBuffer.toFlushEvent(
+        "appId",
+        0,
+        0,
+        1,
+        null,
+        ShuffleDataDistributionType.LOCAL_ORDER
+    );
+    long lastBlockId = sdr.getBufferSegments().get(1).getBlockId();
+    sdr = shuffleBuffer.getShuffleData(lastBlockId, 16);
+    expectedData = getExpectedData(spd3);
+    compareBufferSegment(shuffleBuffer.getInFlushBlockMap().get(event1.getEventId()), sdr.getBufferSegments(), 2, 1);
+    assertArrayEquals(expectedData, sdr.getData());
+
+    assertEquals(0, event1.getShuffleBlocks().get(0).getTaskAttemptId());
+    assertEquals(1, event1.getShuffleBlocks().get(1).getTaskAttemptId());
+    assertEquals(2, event1.getShuffleBlocks().get(2).getTaskAttemptId());
+
+    assertEquals(1, shuffleBuffer.getInFlushBlockMap().get(event1.getEventId()).get(0).getTaskAttemptId());
+    assertEquals(0, shuffleBuffer.getInFlushBlockMap().get(event1.getEventId()).get(1).getTaskAttemptId());
+    assertEquals(2, shuffleBuffer.getInFlushBlockMap().get(event1.getEventId()).get(2).getTaskAttemptId());
   }
 
   @Test

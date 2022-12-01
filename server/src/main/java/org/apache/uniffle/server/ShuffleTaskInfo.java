@@ -24,6 +24,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.google.common.collect.Maps;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.common.ShuffleDataDistributionType;
+
 /**
  * ShuffleTaskInfo contains the information of submitting the shuffle,
  * the information of the cache block, user and timestamp corresponding to the app
@@ -42,12 +44,15 @@ public class ShuffleTaskInfo {
   private Map<Integer, Roaring64NavigableMap> cachedBlockIds;
   private AtomicReference<String> user;
 
+  private AtomicReference<ShuffleDataDistributionType> dataDistType;
+
   public ShuffleTaskInfo() {
     this.currentTimes = System.currentTimeMillis();
     this.commitCounts = Maps.newConcurrentMap();
     this.commitLocks = Maps.newConcurrentMap();
     this.cachedBlockIds = Maps.newConcurrentMap();
     this.user = new AtomicReference<>();
+    this.dataDistType = new AtomicReference<>();
   }
 
   public Long getCurrentTimes() {
@@ -76,5 +81,14 @@ public class ShuffleTaskInfo {
 
   public void setUser(String user) {
     this.user.set(user);
+  }
+
+  public void setDataDistType(
+      ShuffleDataDistributionType dataDistType) {
+    this.dataDistType.set(dataDistType);
+  }
+
+  public ShuffleDataDistributionType getDataDistType() {
+    return dataDistType.get();
   }
 }

@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 
 public class RssRegisterShuffleRequest {
 
@@ -31,18 +32,21 @@ public class RssRegisterShuffleRequest {
   private List<PartitionRange> partitionRanges;
   private RemoteStorageInfo remoteStorageInfo;
   private String user;
+  private ShuffleDataDistributionType dataDistributionType;
 
   public RssRegisterShuffleRequest(
       String appId,
       int shuffleId,
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorageInfo,
-      String user) {
+      String user,
+      ShuffleDataDistributionType dataDistributionType) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionRanges = partitionRanges;
     this.remoteStorageInfo = remoteStorageInfo;
     this.user = user;
+    this.dataDistributionType = dataDistributionType;
   }
 
   public RssRegisterShuffleRequest(
@@ -50,7 +54,13 @@ public class RssRegisterShuffleRequest {
       int shuffleId,
       List<PartitionRange> partitionRanges,
       String remoteStoragePath) {
-    this(appId, shuffleId, partitionRanges, new RemoteStorageInfo(remoteStoragePath), StringUtils.EMPTY);
+    this(appId,
+        shuffleId,
+        partitionRanges,
+        new RemoteStorageInfo(remoteStoragePath),
+        StringUtils.EMPTY,
+        ShuffleDataDistributionType.NORMAL
+    );
   }
 
   public String getAppId() {
@@ -71,5 +81,9 @@ public class RssRegisterShuffleRequest {
 
   public String getUser() {
     return user;
+  }
+
+  public ShuffleDataDistributionType getDataDistributionType() {
+    return dataDistributionType;
   }
 }

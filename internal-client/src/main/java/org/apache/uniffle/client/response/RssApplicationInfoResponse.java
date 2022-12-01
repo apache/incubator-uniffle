@@ -15,8 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client.util;
+package org.apache.uniffle.client.response;
 
-public enum ClientType {
-  GRPC
+public class RssApplicationInfoResponse extends ClientResponse {
+
+  public RssApplicationInfoResponse(ResponseStatusCode statusCode) {
+    super(statusCode);
+  }
 }

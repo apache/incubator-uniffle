@@ -44,8 +44,8 @@ import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
 import org.apache.uniffle.storage.handler.impl.ComposedClientReadHandler;
 import org.apache.uniffle.storage.handler.impl.HdfsClientReadHandler;
-import org.apache.uniffle.storage.handler.impl.LocalFileQuorumClientReadHandler;
-import org.apache.uniffle.storage.handler.impl.MemoryQuorumClientReadHandler;
+import org.apache.uniffle.storage.handler.impl.LocalFileClientReadHandler;
+import org.apache.uniffle.storage.handler.impl.MemoryClientReadHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -114,18 +114,17 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     shuffleServerClient.sendShuffleData(rssdr);
 
     // read the 1-th segment from memory
-    MemoryQuorumClientReadHandler memoryQuorumClientReadHandler = new MemoryQuorumClientReadHandler(
-        testAppId, shuffleId, partitionId, 150, Lists.newArrayList(shuffleServerClient),
-        Roaring64NavigableMap.bitmapOf(), expectBlockIds);
+    MemoryClientReadHandler memoryClientReadHandler = new MemoryClientReadHandler(
+        testAppId, shuffleId, partitionId, 150, shuffleServerClient);
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
-    LocalFileQuorumClientReadHandler localFileQuorumClientReadHandler = new LocalFileQuorumClientReadHandler(
+    LocalFileClientReadHandler localFileClientReadHandler = new LocalFileClientReadHandler(
         testAppId, shuffleId, partitionId, 0, 1, 3,
-        75, expectBlockIds, processBlockIds, Lists.newArrayList(shuffleServerClient));
+        75, expectBlockIds, processBlockIds, shuffleServerClient);
     HdfsClientReadHandler hdfsClientReadHandler = new HdfsClientReadHandler(testAppId, shuffleId, partitionId, 0, 1, 3,
         500, expectBlockIds, processBlockIds, REMOTE_STORAGE, conf);
     ClientReadHandler[] handlers = new ClientReadHandler[3];
-    handlers[0] = memoryQuorumClientReadHandler;
-    handlers[1] = localFileQuorumClientReadHandler;
+    handlers[0] = memoryClientReadHandler;
+    handlers[1] = localFileClientReadHandler;
     handlers[2] = hdfsClientReadHandler;
     ComposedClientReadHandler composedClientReadHandler = new ComposedClientReadHandler(handlers);
     Map<Long, byte[]> expectedData = Maps.newHashMap();

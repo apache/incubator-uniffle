@@ -22,6 +22,6 @@ import java.util.Set;
 public interface AssignmentStrategy {
 
   PartitionRangeAssignment assign(int totalPartitionNum, int partitionNumPerRange,
-      int replica, Set<String> requiredTags, int requiredShuffleServerNumber);
+      int replica, Set<String> requiredTags, int requiredShuffleServerNumber, int estimateTaskConcurrency);
 
 }

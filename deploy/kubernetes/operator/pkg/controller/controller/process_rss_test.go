@@ -76,26 +76,28 @@ func TestProcessEmptyPhaseRss(t *testing.T) {
 			expectedNeedRetry: false,
 		},
 	} {
-		needRetry, err := rc.processNormal(rss)
-		if err != nil {
-			t.Errorf("process rss object failed: %v", err)
-			return
-		}
-		if needRetry != tt.expectedNeedRetry {
-			t.Errorf("unexpected result indicates whether to retrys: %v, expected: %v",
-				needRetry, tt.expectedNeedRetry)
-			return
-		}
-		updatedRss, getErr := rssClient.UniffleV1alpha1().RemoteShuffleServices(rss.Namespace).
-			Get(context.TODO(), rss.Name, metav1.GetOptions{})
-		if getErr != nil {
-			t.Errorf("get updated rss object failed: %v", err)
-			return
-		}
-		if !reflect.DeepEqual(updatedRss.Status, tt.expectedRssStatus) {
-			t.Errorf("unexpected status of updated rss object: %+v, expected: %+v",
-				updatedRss.Status, tt.expectedRssStatus)
-			return
-		}
+		t.Run(tt.name, func(tc *testing.T) {
+			needRetry, err := rc.processNormal(rss)
+			if err != nil {
+				tc.Errorf("process rss object failed: %v", err)
+				return
+			}
+			if needRetry != tt.expectedNeedRetry {
+				tc.Errorf("unexpected result indicates whether to retrys: %v, expected: %v",
+					needRetry, tt.expectedNeedRetry)
+				return
+			}
+			updatedRss, getErr := rssClient.UniffleV1alpha1().RemoteShuffleServices(rss.Namespace).
+				Get(context.TODO(), rss.Name, metav1.GetOptions{})
+			if getErr != nil {
+				tc.Errorf("get updated rss object failed: %v", err)
+				return
+			}
+			if !reflect.DeepEqual(updatedRss.Status, tt.expectedRssStatus) {
+				tc.Errorf("unexpected status of updated rss object: %+v, expected: %+v",
+					updatedRss.Status, tt.expectedRssStatus)
+				return
+			}
+		})
 	}
 }

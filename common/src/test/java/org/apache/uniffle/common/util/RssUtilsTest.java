@@ -21,7 +21,6 @@ import java.lang.reflect.Field;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -35,9 +34,6 @@ import com.google.common.collect.Sets;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import org.apache.uniffle.common.BufferSegment;
-import org.apache.uniffle.common.ShuffleDataSegment;
-import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -101,69 +97,6 @@ public class RssUtilsTest {
     Roaring64NavigableMap bitmap2 = RssUtils.cloneBitMap(bitmap1);
     assertNotSame(bitmap1, bitmap2);
     assertEquals(bitmap1, bitmap2);
-  }
-
-  @Test
-  public void testShuffleIndexSegment() {
-    ShuffleIndexResult shuffleIndexResult = new ShuffleIndexResult();
-    List<ShuffleDataSegment> shuffleDataSegments =
-        RssUtils.transIndexDataToSegments(shuffleIndexResult, 1000);
-    assertTrue(shuffleDataSegments.isEmpty());
-
-    int readBufferSize = 32;
-    int totalLength = 0;
-    List<BufferSegment> bufferSegments = Lists.newArrayList();
-    int[] dataSegmentLength = new int[]{32, 16, 10, 32, 6};
-
-    for (int i = 0; i < dataSegmentLength.length; ++i) {
-      long offset = totalLength;
-      int length = dataSegmentLength[i];
-      bufferSegments.add(new BufferSegment(i, offset, length, i, i, i));
-      totalLength += length;
-    }
-
-    // those 5 segment's data length are [32, 16, 10, 32, 6] so the index should be
-    // split into 3 ShuffleDataSegment, which are [32, 16 + 10 + 32, 6]
-    int expectedTotalSegmentNum = 3;
-    ByteBuffer byteBuffer = ByteBuffer.allocate(5 * 40);
-
-    for (BufferSegment bufferSegment : bufferSegments) {
-      byteBuffer.putLong(bufferSegment.getOffset());
-      byteBuffer.putInt(bufferSegment.getLength());
-      byteBuffer.putInt(bufferSegment.getUncompressLength());
-      byteBuffer.putLong(bufferSegment.getCrc());
-      byteBuffer.putLong(bufferSegment.getBlockId());
-      byteBuffer.putLong(bufferSegment.getTaskAttemptId());
-    }
-
-    byte[] data = byteBuffer.array();
-    shuffleDataSegments = RssUtils.transIndexDataToSegments(new ShuffleIndexResult(data, -1), readBufferSize);
-    assertEquals(expectedTotalSegmentNum, shuffleDataSegments.size());
-
-    assertEquals(0, shuffleDataSegments.get(0).getOffset());
-    assertEquals(32, shuffleDataSegments.get(0).getLength());
-    assertEquals(1, shuffleDataSegments.get(0).getBufferSegments().size());
-
-    assertEquals(32, shuffleDataSegments.get(1).getOffset());
-    assertEquals(58, shuffleDataSegments.get(1).getLength());
-    assertEquals(3,shuffleDataSegments.get(1).getBufferSegments().size());
-
-    assertEquals(90, shuffleDataSegments.get(2).getOffset());
-    assertEquals(6, shuffleDataSegments.get(2).getLength());
-    assertEquals(1, shuffleDataSegments.get(2).getBufferSegments().size());
-
-    ByteBuffer incompleteByteBuffer = ByteBuffer.allocate(12);
-    incompleteByteBuffer.putLong(1L);
-    incompleteByteBuffer.putInt(2);
-    data = incompleteByteBuffer.array();
-    // It should throw exception
-    try {
-      RssUtils.transIndexDataToSegments(new ShuffleIndexResult(data, -1), readBufferSize);
-      fail();
-    } catch (Exception e) {
-      // ignore
-      assertTrue(e.getMessage().contains("Read index data under flow"));
-    }
   }
 
   @Test

@@ -17,17 +17,30 @@
 
 package org.apache.uniffle.client;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.util.ClientUtils;
 
+import static org.apache.uniffle.client.util.ClientUtils.waitUntilDoneOrFail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class ClientUtilsTest {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ClientUtilsTest.class);
 
-  private static String EXCEPTION_EXPECTED = "Exception excepted";
+  private ExecutorService executorService = Executors.newFixedThreadPool(10);
 
   @Test
   public void getBlockIdTest() {
@@ -40,23 +53,59 @@ public class ClientUtilsTest {
     // min value of blockId
     assertEquals(
         new Long(0L), ClientUtils.getBlockId(0, 0, 0));
-    try {
-      ClientUtils.getBlockId(16777216, 0, 0);
-      fail(EXCEPTION_EXPECTED);
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("Can't support partitionId[16777216], the max value should be 16777215"));
+
+    final Throwable e1 = assertThrows(IllegalArgumentException.class, () -> ClientUtils.getBlockId(16777216, 0, 0));
+    assertTrue(e1.getMessage().contains("Can't support partitionId[16777216], the max value should be 16777215"));
+
+    final Throwable e2 = assertThrows(IllegalArgumentException.class, () -> ClientUtils.getBlockId(0, 2097152, 0));
+    assertTrue(e2.getMessage().contains("Can't support taskAttemptId[2097152], the max value should be 2097151"));
+
+    final Throwable e3 = assertThrows(IllegalArgumentException.class, () -> ClientUtils.getBlockId(0, 0, 262144));
+    assertTrue(e3.getMessage().contains("Can't support sequence[262144], the max value should be 262143"));
+  }
+
+  private List<CompletableFuture<Boolean>> getFutures(boolean fail) {
+    List<CompletableFuture<Boolean>> futures = new ArrayList<>();
+    for (int i = 0; i < 3; i++) {
+      final int index = i;
+      CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
+        if (index == 2) {
+          try {
+            Thread.sleep(3000);
+          } catch (InterruptedException interruptedException) {
+            LOGGER.info("Capture the InterruptedException");
+            return false;
+          }
+          LOGGER.info("Finished index: " + index);
+          return true;
+        }
+        if (fail && index == 1) {
+          return false;
+        }
+        return true;
+      }, executorService);
+      futures.add(future);
     }
+    return futures;
+  }
+
+  @Test
+  public void testWaitUntilDoneOrFail() {
+    // case1: enable fail fast
+    List<CompletableFuture<Boolean>> futures1 = getFutures(true);
+    Awaitility.await().timeout(2, TimeUnit.SECONDS).until(() -> !waitUntilDoneOrFail(futures1, true));
+
+    // case2: disable fail fast
+    List<CompletableFuture<Boolean>> futures2 = getFutures(true);
     try {
-      ClientUtils.getBlockId(0, 2097152, 0);
-      fail(EXCEPTION_EXPECTED);
+      Awaitility.await().timeout(2, TimeUnit.SECONDS).until(() -> !waitUntilDoneOrFail(futures2, false));
+      fail();
     } catch (Exception e) {
-      assertTrue(e.getMessage().contains("Can't support taskAttemptId[2097152], the max value should be 2097151"));
+      // ignore
     }
-    try {
-      ClientUtils.getBlockId(0, 0, 262144);
-      fail(EXCEPTION_EXPECTED);
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("Can't support sequence[262144], the max value should be 262143"));
-    }
+
+    // case3: all succeed
+    List<CompletableFuture<Boolean>> futures3 = getFutures(false);
+    Awaitility.await().timeout(4, TimeUnit.SECONDS).until(() -> waitUntilDoneOrFail(futures3, true));
   }
 }

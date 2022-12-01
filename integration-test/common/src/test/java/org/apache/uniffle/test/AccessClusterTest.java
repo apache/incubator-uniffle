@@ -37,6 +37,7 @@ import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.request.RssAccessClusterRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.AccessCheckResult;
 import org.apache.uniffle.coordinator.AccessChecker;
@@ -83,27 +84,26 @@ public class AccessClusterTest extends CoordinatorTestBase {
     createCoordinatorServer(coordinatorConf);
     startServers();
     Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
-
     // case1: empty map
     String accessID = "acessid";
-    RssAccessClusterRequest request = new RssAccessClusterRequest(
-            accessID, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000);
+    RssAccessClusterRequest request = new RssAccessClusterRequest(accessID,
+        Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, "user");
     RssAccessClusterResponse response = coordinatorClient.accessCluster(request);
     assertEquals(ResponseStatusCode.ACCESS_DENIED, response.getStatusCode());
 
     // case2: illegal names
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("key", "illegalName");
-    request = new RssAccessClusterRequest(
-            accessID, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, extraProperties);
+    request = new RssAccessClusterRequest(accessID, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION),
+        2000, extraProperties, "user");
     response = coordinatorClient.accessCluster(request);
     assertEquals(ResponseStatusCode.ACCESS_DENIED, response.getStatusCode());
 
     // case3: legal names
     extraProperties.clear();
     extraProperties.put("key", "v1");
-    request = new RssAccessClusterRequest(
-            accessID, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, extraProperties);
+    request = new RssAccessClusterRequest(accessID, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION),
+        2000, extraProperties, "user");
     response = coordinatorClient.accessCluster(request);
     assertEquals(ResponseStatusCode.SUCCESS, response.getStatusCode());
 
@@ -135,15 +135,15 @@ public class AccessClusterTest extends CoordinatorTestBase {
     startServers();
     Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
     String accessId = "111111";
-    RssAccessClusterRequest request = new RssAccessClusterRequest(
-        accessId, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000);
+    RssAccessClusterRequest request = new RssAccessClusterRequest(accessId,
+        Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, "user");
     RssAccessClusterResponse response = coordinatorClient.accessCluster(request);
     assertEquals(ResponseStatusCode.ACCESS_DENIED, response.getStatusCode());
     assertTrue(response.getMessage().startsWith("Denied by AccessCandidatesChecker"));
 
     accessId = "135";
-    request = new RssAccessClusterRequest(
-        accessId, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000);
+    request = new RssAccessClusterRequest(accessId,
+        Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, "user");
     response = coordinatorClient.accessCluster(request);
     assertEquals(ResponseStatusCode.ACCESS_DENIED, response.getStatusCode());
     assertTrue(response.getMessage().startsWith("Denied by AccessClusterLoadChecker"));
@@ -154,16 +154,16 @@ public class AccessClusterTest extends CoordinatorTestBase {
     shuffleServer.start();
     Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
 
-    CoordinatorClient client = new CoordinatorClientFactory("GRPC")
+    CoordinatorClient client = new CoordinatorClientFactory(ClientType.GRPC)
         .createCoordinatorClient(LOCALHOST, COORDINATOR_PORT_1 + 13);
-    request = new RssAccessClusterRequest(
-        accessId, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000);
+    request = new RssAccessClusterRequest(accessId,
+        Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, "user");
     response = client.accessCluster(request);
     assertEquals(ResponseStatusCode.INTERNAL_ERROR, response.getStatusCode());
     assertTrue(response.getMessage().startsWith("UNAVAILABLE: io exception"));
 
-    request = new RssAccessClusterRequest(
-        accessId, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000);
+    request = new RssAccessClusterRequest(accessId,
+        Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, "user");
     response = coordinatorClient.accessCluster(request);
     assertEquals(ResponseStatusCode.SUCCESS, response.getStatusCode());
     assertTrue(response.getMessage().startsWith("SUCCESS"));

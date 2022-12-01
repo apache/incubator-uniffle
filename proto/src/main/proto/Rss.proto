@@ -76,6 +76,7 @@ message GetLocalShuffleDataRequest {
   int32 partitionNum = 5;
   int64 offset = 6;
   int32 length = 7;
+  int64 timestamp = 8;
 }
 
 message GetLocalShuffleDataResponse {
@@ -90,8 +91,8 @@ message GetMemoryShuffleDataRequest {
   int32 partitionId = 3;
   int64 lastBlockId = 4;
   int32 readBufferSize = 5;
-  bytes processedBlockIds = 6;
-  bytes expectBlockIds = 7;
+  int64 timestamp = 6;
+  optional bytes serializedExpectedTaskIdsBitmap = 7;
 }
 
 message GetMemoryShuffleDataResponse {
@@ -169,6 +170,12 @@ message ShuffleRegisterRequest {
   repeated ShufflePartitionRange partitionRanges = 3;
   RemoteStorage remoteStorage = 4;
   string user = 5;
+  DataDistribution shuffleDataDistribution = 6;
+}
+
+enum DataDistribution {
+  NORMAL = 0;
+  LOCAL_ORDER = 1;
 }
 
 message ShuffleUnregisterRequest {
@@ -191,6 +198,7 @@ message SendShuffleDataRequest {
   int32 shuffleId = 2;
   int64 requireBufferId = 3;
   repeated ShuffleData shuffleData = 4;
+  int64 timestamp = 5;
 }
 
 message SendShuffleDataResponse {
@@ -280,11 +288,14 @@ service CoordinatorServer {
   rpc getShuffleDataStorageInfo(google.protobuf.Empty) returns (GetShuffleDataStorageInfoResponse);
   rpc checkServiceAvailable(google.protobuf.Empty) returns (CheckServiceAvailableResponse);
 
+  // Heartbeat between Shuffle Application and Coordinator Server
+  rpc appHeartbeat(AppHeartBeatRequest) returns (AppHeartBeatResponse);
+
   // Report a client operation's result to coordinator server
   rpc reportClientOperation(ReportShuffleClientOpRequest) returns (ReportShuffleClientOpResponse);
 
-  // Heartbeat between Shuffle Application and Coordinator Server
-  rpc appHeartbeat(AppHeartBeatRequest) returns (AppHeartBeatResponse);
+  // Report a application info to Coordinator Server
+  rpc registerApplicationInfo(ApplicationInfoRequest) returns (ApplicationInfoResponse);
 
   // Access to the remote shuffle service cluster
   rpc accessCluster(AccessClusterRequest) returns (AccessClusterResponse);
@@ -301,6 +312,16 @@ message AppHeartBeatRequest {
 }
 
 message AppHeartBeatResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
+}
+
+message ApplicationInfoRequest {
+  string appId = 1;
+  string user = 2;
+}
+
+message ApplicationInfoResponse {
   StatusCode status = 1;
   string retMsg = 2;
 }
@@ -324,6 +345,7 @@ message GetShuffleServerRequest {
   int32 dataReplica = 8;
   repeated string requireTags = 9;
   int32 assignmentShuffleServerNumber = 10;
+  int32 estimateTaskConcurrency = 11;
 }
 
 message PartitionRangeAssignment {
@@ -366,11 +388,13 @@ message AccessClusterRequest {
   string accessId = 1;
   repeated string tags = 2;
   map<string, string> extraProperties = 3;
+  string user=4;
 }
 
 message AccessClusterResponse {
   StatusCode status = 1;
   string retMsg = 2;
+  string uuid = 3;
 }
 
 message FetchClientConfResponse {

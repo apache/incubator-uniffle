@@ -27,6 +27,7 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.AfterAll;
 
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.CoordinatorServer;
@@ -40,7 +41,16 @@ import org.apache.uniffle.storage.util.StorageType;
 public abstract class IntegrationTestBase extends HdfsTestBase {
 
   protected static final int SHUFFLE_SERVER_PORT = 20001;
-  protected static final String LOCALHOST = "127.0.0.1";
+  protected static final String LOCALHOST;
+
+  static {
+    try {
+      LOCALHOST = RssUtils.getHostIp();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   protected static final int COORDINATOR_PORT_1 = 19999;
   protected static final int COORDINATOR_PORT_2 = 20030;
   protected static final int JETTY_PORT_1 = 19998;
@@ -110,6 +120,7 @@ public abstract class IntegrationTestBase extends HdfsTestBase {
     serverConf.setString("rss.server.hadoop.dfs.replication", "2");
     serverConf.setLong("rss.server.disk.capacity", 10L * 1024L * 1024L * 1024L);
     serverConf.setBoolean("rss.server.health.check.enable", false);
+    serverConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     return serverConf;
   }
 

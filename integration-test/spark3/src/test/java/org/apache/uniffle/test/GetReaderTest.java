@@ -19,6 +19,7 @@ package org.apache.uniffle.test;
 
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -67,6 +68,7 @@ public class GetReaderTest extends IntegrationTestBase {
   public void test() throws Exception {
     SparkConf sparkConf = new SparkConf();
     sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.RssShuffleManager");
+    sparkConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
     sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
     sparkConf.setMaster("local[4]");
     final String remoteStorage1 = "hdfs://h1/p1";
@@ -106,6 +108,15 @@ public class GetReaderTest extends IntegrationTestBase {
     RemoteStorageInfo remoteStorageInfo1 = rssShuffleHandle1.getRemoteStorage();
     assertEquals(remoteStorage1, remoteStorageInfo1.getPath());
     assertTrue(remoteStorageInfo1.getConfItems().isEmpty());
+
+    // emptyRDD case
+    JavaPairRDD<String, Tuple2<Integer, Integer>> javaEmptyPairRDD1 = TestUtils.combineByKeyRDD(
+        TestUtils.getEmptyRDD(jsc1));
+    ShuffleDependency emptyShuffleDependency1 = (ShuffleDependency) javaEmptyPairRDD1.rdd().dependencies().head();
+    RssShuffleHandle emptyRssShuffleHandle1 = (RssShuffleHandle) emptyShuffleDependency1.shuffleHandle();
+    assertEquals(javaEmptyPairRDD1.rdd().dependencies().head().rdd().getNumPartitions(), 0);
+    assertEquals(emptyRssShuffleHandle1.getPartitionToServers(), Collections.emptyMap());
+    assertEquals(emptyRssShuffleHandle1.getRemoteStorage(),RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
 
     // the same app would get the same storage info
     JavaPairRDD<String, Tuple2<Integer, Integer>> javaPairRDD2 = TestUtils.combineByKeyRDD(TestUtils.getRDD(jsc1));
@@ -159,6 +170,8 @@ public class GetReaderTest extends IntegrationTestBase {
     commonHadoopConf = jsc2.hadoopConfiguration();
     assertNull(commonHadoopConf.get("k1"));
     assertNull(commonHadoopConf.get("k2"));
+
+    sparkSession.close();
   }
 
   private static class MockTaskContext extends TaskContext {

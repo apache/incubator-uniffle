@@ -44,12 +44,15 @@ import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_ENABLE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_PRINCIPAL;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KRB5_CONF_FILE;
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_STORAGE_TYPE;
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_TEST_MODE_ENABLE;
 
 /**
  * Server that manages startup/shutdown of a {@code Greeter} server.
@@ -143,6 +146,13 @@ public class ShuffleServer {
   }
 
   private void initialization() throws Exception {
+    boolean testMode = shuffleServerConf.getBoolean(RSS_TEST_MODE_ENABLE);
+    String storageType = shuffleServerConf.getString(RSS_STORAGE_TYPE);
+    if (!testMode && (StorageType.LOCALFILE.name().equals(storageType)
+            || (StorageType.HDFS.name()).equals(storageType))) {
+      throw new IllegalArgumentException("RSS storage type about LOCALFILE and HDFS should be used in test mode, "
+              + "because of the poor performance of these two types.");
+    }
     ip = RssUtils.getHostIp();
     if (ip == null) {
       throw new RuntimeException("Couldn't acquire host Ip");

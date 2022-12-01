@@ -35,7 +35,7 @@ public class CompressionTest {
 
   static List<Arguments> testCompression() {
     int[] sizes = {1, 1024, 128 * 1024, 512 * 1024, 1024 * 1024, 4 * 1024 * 1024};
-    Codec.Type[] types = {Codec.Type.ZSTD, Codec.Type.LZ4};
+    Codec.Type[] types = {Codec.Type.ZSTD, Codec.Type.LZ4, Codec.Type.SNAPPY};
 
     List<Arguments> arguments = new ArrayList<>();
     for (int size : sizes) {

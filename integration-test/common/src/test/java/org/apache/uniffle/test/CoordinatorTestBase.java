@@ -22,10 +22,11 @@ import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
+import org.apache.uniffle.common.ClientType;
 
 public class CoordinatorTestBase extends IntegrationTestBase {
 
-  protected CoordinatorClientFactory factory = new CoordinatorClientFactory("GRPC");
+  protected CoordinatorClientFactory factory = new CoordinatorClientFactory(ClientType.GRPC);
   protected CoordinatorGrpcClient coordinatorClient;
 
   @BeforeEach

@@ -149,10 +149,22 @@ public class ShuffleBufferManager {
     return entry;
   }
 
+  public ShuffleDataResult getShuffleData(
+      String appId, int shuffleId, int partitionId, long blockId,
+      int readBufferSize) {
+    return getShuffleData(
+        appId,
+        shuffleId,
+        partitionId,
+        blockId,
+        readBufferSize,
+        null
+    );
+  }
 
   public ShuffleDataResult getShuffleData(
-      String appId, Integer shuffleId, Integer partitionId, long blockId,
-      int readBufferSize, Roaring64NavigableMap processedBlockIds, Roaring64NavigableMap expectBlockIds) {
+      String appId, int shuffleId, int partitionId, long blockId,
+      int readBufferSize, Roaring64NavigableMap expectedTaskIds) {
     Map.Entry<Range<Integer>, ShuffleBuffer> entry = getShuffleBufferEntry(
         appId, shuffleId, partitionId);
     if (entry == null) {
@@ -163,7 +175,7 @@ public class ShuffleBufferManager {
     if (buffer == null) {
       return null;
     }
-    return buffer.getShuffleData(blockId, readBufferSize, processedBlockIds, expectBlockIds);
+    return buffer.getShuffleData(blockId, readBufferSize, expectedTaskIds);
   }
 
   void flushSingleBufferIfNecessary(ShuffleBuffer buffer, String appId,
@@ -197,8 +209,14 @@ public class ShuffleBufferManager {
   protected void flushBuffer(ShuffleBuffer buffer, String appId,
       int shuffleId, int startPartition, int endPartition) {
     ShuffleDataFlushEvent event =
-        buffer.toFlushEvent(appId, shuffleId, startPartition, endPartition,
-            () -> bufferPool.containsKey(appId));
+        buffer.toFlushEvent(
+            appId,
+            shuffleId,
+            startPartition,
+            endPartition,
+            () -> bufferPool.containsKey(appId),
+            shuffleFlushManager.getDataDistributionType(appId)
+        );
     if (event != null) {
       updateShuffleSize(appId, shuffleId, -event.getSize());
       inFlushSize.addAndGet(event.getSize());

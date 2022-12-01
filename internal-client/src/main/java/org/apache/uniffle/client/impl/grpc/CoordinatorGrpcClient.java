@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.request.RssAccessClusterRequest;
 import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
+import org.apache.uniffle.client.request.RssApplicationInfoRequest;
 import org.apache.uniffle.client.request.RssFetchClientConfRequest;
 import org.apache.uniffle.client.request.RssFetchRemoteStorageRequest;
 import org.apache.uniffle.client.request.RssGetShuffleAssignmentsRequest;
@@ -43,6 +44,7 @@ import org.apache.uniffle.client.request.RssSendHeartBeatRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
 import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
+import org.apache.uniffle.client.response.RssApplicationInfoResponse;
 import org.apache.uniffle.client.response.RssFetchClientConfResponse;
 import org.apache.uniffle.client.response.RssFetchRemoteStorageResponse;
 import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
@@ -56,8 +58,8 @@ import org.apache.uniffle.proto.CoordinatorServerGrpc.CoordinatorServerBlockingS
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.AccessClusterRequest;
 import org.apache.uniffle.proto.RssProtos.AccessClusterResponse;
-import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
-import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
+import org.apache.uniffle.proto.RssProtos.ApplicationInfoRequest;
+import org.apache.uniffle.proto.RssProtos.ApplicationInfoResponse;
 import org.apache.uniffle.proto.RssProtos.ClientConfItem;
 import org.apache.uniffle.proto.RssProtos.FetchClientConfResponse;
 import org.apache.uniffle.proto.RssProtos.FetchRemoteStorageRequest;
@@ -159,7 +161,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       int partitionNumPerRange,
       int dataReplica,
       Set<String> requiredTags,
-      int assignmentShuffleServerNumber) {
+      int assignmentShuffleServerNumber,
+      int estimateTaskConcurrency) {
 
     RssProtos.GetShuffleServerRequest getServerRequest = RssProtos.GetShuffleServerRequest.newBuilder()
         .setApplicationId(appId)
@@ -169,6 +172,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         .setDataReplica(dataReplica)
         .addAllRequireTags(requiredTags)
         .setAssignmentShuffleServerNumber(assignmentShuffleServerNumber)
+        .setEstimateTaskConcurrency(estimateTaskConcurrency)
         .build();
 
     return blockingStub.getShuffleAssignments(getServerRequest);
@@ -205,8 +209,9 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
 
   @Override
   public RssAppHeartBeatResponse sendAppHeartBeat(RssAppHeartBeatRequest request) {
-    AppHeartBeatRequest rpcRequest = AppHeartBeatRequest.newBuilder().setAppId(request.getAppId()).build();
-    AppHeartBeatResponse rpcResponse = blockingStub
+    RssProtos.AppHeartBeatRequest rpcRequest =
+        RssProtos.AppHeartBeatRequest.newBuilder().setAppId(request.getAppId()).build();
+    RssProtos.AppHeartBeatResponse rpcResponse = blockingStub
         .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS).appHeartbeat(rpcRequest);
     RssAppHeartBeatResponse response;
     StatusCode statusCode = rpcResponse.getStatus();
@@ -221,6 +226,24 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
   }
 
   @Override
+  public RssApplicationInfoResponse registerApplicationInfo(RssApplicationInfoRequest request) {
+    ApplicationInfoRequest rpcRequest =
+        ApplicationInfoRequest.newBuilder().setAppId(request.getAppId()).setUser(request.getUser()).build();
+    ApplicationInfoResponse rpcResponse = blockingStub
+        .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS).registerApplicationInfo(rpcRequest);
+    RssApplicationInfoResponse response;
+    StatusCode statusCode = rpcResponse.getStatus();
+    switch (statusCode) {
+      case SUCCESS:
+        response = new RssApplicationInfoResponse(ResponseStatusCode.SUCCESS);
+        break;
+      default:
+        response = new RssApplicationInfoResponse(ResponseStatusCode.INTERNAL_ERROR);
+    }
+    return response;
+  }
+
+  @Override
   public RssGetShuffleAssignmentsResponse getShuffleAssignments(RssGetShuffleAssignmentsRequest request) {
     RssProtos.GetShuffleAssignmentsResponse rpcResponse = doGetShuffleAssignments(
         request.getAppId(),
@@ -229,7 +252,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         request.getPartitionNumPerRange(),
         request.getDataReplica(),
         request.getRequiredTags(),
-        request.getAssignmentShuffleServerNumber());
+        request.getAssignmentShuffleServerNumber(),
+        request.getEstimateTaskConcurrency());
 
     RssGetShuffleAssignmentsResponse response;
     StatusCode statusCode = rpcResponse.getStatus();
@@ -257,6 +281,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
     AccessClusterRequest rpcRequest = AccessClusterRequest
         .newBuilder()
         .setAccessId(request.getAccessId())
+        .setUser(request.getUser())
         .addAllTags(request.getTags())
         .putAllExtraProperties(request.getExtraProperties())
         .build();
@@ -274,7 +299,9 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       case SUCCESS:
         response = new RssAccessClusterResponse(
             ResponseStatusCode.SUCCESS,
-            rpcResponse.getRetMsg());
+            rpcResponse.getRetMsg(),
+            rpcResponse.getUuid()
+        );
         break;
       default:
         response = new RssAccessClusterResponse(ResponseStatusCode.ACCESS_DENIED, rpcResponse.getRetMsg());

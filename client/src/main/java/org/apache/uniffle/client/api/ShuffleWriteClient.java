@@ -20,6 +20,7 @@ package org.apache.uniffle.client.api;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -28,20 +29,25 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
 public interface ShuffleWriteClient {
 
-  SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList);
+  SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList,
+      Supplier<Boolean> needCancelRequest);
 
   void sendAppHeartbeat(String appId, long timeoutMs);
+
+  void registerApplicationInfo(String appId, long timeoutMs, String user);
 
   void registerShuffle(
       ShuffleServerInfo shuffleServerInfo,
       String appId,
       int shuffleId,
       List<PartitionRange> partitionRanges,
-      RemoteStorageInfo remoteStorage);
+      RemoteStorageInfo remoteStorage,
+      ShuffleDataDistributionType dataDistributionType);
 
   boolean sendCommit(Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);
 
@@ -60,7 +66,8 @@ public interface ShuffleWriteClient {
       int bitmapNum);
 
   ShuffleAssignmentsInfo getShuffleAssignments(String appId, int shuffleId, int partitionNum,
-      int partitionNumPerRange, Set<String> requiredTags, int assignmentShuffleServerNumber);
+      int partitionNumPerRange, Set<String> requiredTags, int assignmentShuffleServerNumber,
+      int estimateTaskConcurrency);
 
   Roaring64NavigableMap getShuffleResult(String clientType, Set<ShuffleServerInfo> shuffleServerInfoSet,
       String appId, int shuffleId, int partitionId);

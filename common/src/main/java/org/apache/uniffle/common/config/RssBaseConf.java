@@ -20,6 +20,8 @@ package org.apache.uniffle.common.config;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.uniffle.common.ClientType;
+
 public class RssBaseConf extends RssConf {
 
   public static final ConfigOption<String> RSS_COORDINATOR_QUORUM = ConfigOptions
@@ -37,7 +39,7 @@ public class RssBaseConf extends RssConf {
   public static final ConfigOption<Integer> RPC_SERVER_PORT = ConfigOptions
       .key("rss.rpc.server.port")
       .intType()
-      .noDefaultValue()
+      .defaultValue(19999)
       .withDescription("Shuffle server service port");
 
   public static final ConfigOption<Boolean> RPC_METRICS_ENABLED = ConfigOptions
@@ -49,7 +51,7 @@ public class RssBaseConf extends RssConf {
   public static final ConfigOption<Integer> JETTY_HTTP_PORT = ConfigOptions
       .key("rss.jetty.http.port")
       .intType()
-      .noDefaultValue()
+      .defaultValue(19998)
       .withDescription("jetty http port");
 
   public static final ConfigOption<Integer> JETTY_CORE_POOL_SIZE = ConfigOptions
@@ -120,10 +122,10 @@ public class RssBaseConf extends RssConf {
       .defaultValue(1024L * 1024L * 1024L)
       .withDescription("Max size of rpc message (byte)");
 
-  public static final ConfigOption<String> RSS_CLIENT_TYPE = ConfigOptions
+  public static final ConfigOption<ClientType> RSS_CLIENT_TYPE = ConfigOptions
       .key("rss.rpc.client.type")
-      .stringType()
-      .defaultValue("GRPC")
+      .enumType(ClientType.class)
+      .defaultValue(ClientType.GRPC)
       .withDescription("client type for rss");
 
   public static final ConfigOption<String> RSS_STORAGE_TYPE = ConfigOptions
@@ -190,6 +192,12 @@ public class RssBaseConf extends RssConf {
       .checkValue(ConfigUtils.POSITIVE_INTEGER_VALIDATOR, "The value must be positive integer")
       .defaultValue(60L)
       .withDescription("The kerberos authentication relogin interval. unit: sec");
+
+  public static final ConfigOption<Boolean> RSS_TEST_MODE_ENABLE = ConfigOptions
+      .key("rss.test.mode.enable")
+      .booleanType()
+      .defaultValue(false)
+      .withDescription("Whether enable test mode for the shuffle server.");
 
   public boolean loadCommonConf(Map<String, String> properties) {
     if (properties == null) {

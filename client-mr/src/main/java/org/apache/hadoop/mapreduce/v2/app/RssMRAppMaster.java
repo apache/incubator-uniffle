@@ -76,6 +76,7 @@ import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
@@ -130,9 +131,6 @@ public class RssMRAppMaster extends MRAppMaster {
       }
       assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
 
-      ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
-      String appId = applicationAttemptId.toString();
-
       final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
           new ThreadFactory() {
             @Override
@@ -160,6 +158,10 @@ public class RssMRAppMaster extends MRAppMaster {
       }
 
       String storageType = RssMRUtils.getString(extraConf, conf, RssMRConfig.RSS_STORAGE_TYPE);
+      boolean testMode = RssMRUtils.getBoolean(extraConf, conf, RssMRConfig.RSS_TEST_MODE_ENABLE, false);
+      ClientUtils.validateTestModeConf(testMode, storageType);
+      ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
+      String appId = applicationAttemptId.toString();
       RemoteStorageInfo defaultRemoteStorage =
           new RemoteStorageInfo(conf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH, ""));
       RemoteStorageInfo remoteStorage = ClientUtils.fetchRemoteStorage(
@@ -167,7 +169,7 @@ public class RssMRAppMaster extends MRAppMaster {
       // set the remote storage with actual value
       extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_PATH, remoteStorage.getPath());
       extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_CONF, remoteStorage.getConfString());
-
+      RssMRUtils.validateRssClientConf(extraConf, conf);
       // When containers have disk with very limited space, reduce is allowed to spill data to hdfs
       if (conf.getBoolean(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
           RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT)) {
@@ -189,11 +191,7 @@ public class RssMRAppMaster extends MRAppMaster {
         conf.setInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, originalAttempts + inc);
       }
       
-      int requiredAssignmentShuffleServersNum = conf.getInt(
-              RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER,
-              RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER_DEFAULT_VALUE
-      );
-      
+      int requiredAssignmentShuffleServersNum = RssMRUtils.getRequiredShuffleServerNumber(conf);
       // retryInterval must bigger than `rss.server.heartbeat.timeout`, or maybe it will return the same result
       long retryInterval = conf.getLong(RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL,
               RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE);
@@ -209,7 +207,8 @@ public class RssMRAppMaster extends MRAppMaster {
                           numReduceTasks,
                           1,
                           Sets.newHashSet(assignmentTags),
-                          requiredAssignmentShuffleServersNum
+                          requiredAssignmentShuffleServersNum,
+                          -1
                   );
 
           Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
@@ -220,10 +219,14 @@ public class RssMRAppMaster extends MRAppMaster {
           }
           LOG.info("Start to register shuffle");
           long start = System.currentTimeMillis();
-          serverToPartitionRanges.entrySet().forEach(entry -> {
-            client.registerShuffle(
-                entry.getKey(), appId, 0, entry.getValue(), remoteStorage);
-          });
+          serverToPartitionRanges.entrySet().forEach(entry -> client.registerShuffle(
+              entry.getKey(),
+              appId,
+              0,
+              entry.getValue(),
+              remoteStorage,
+              ShuffleDataDistributionType.NORMAL
+          ));
           LOG.info("Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
           return shuffleAssignments;
         }, retryInterval, retryTimes);
@@ -237,6 +240,7 @@ public class RssMRAppMaster extends MRAppMaster {
       long heartbeatInterval = conf.getLong(RssMRConfig.RSS_HEARTBEAT_INTERVAL,
           RssMRConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
       long heartbeatTimeout = conf.getLong(RssMRConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
+      client.registerApplicationInfo(appId, heartbeatTimeout, "user");
       scheduledExecutorService.scheduleAtFixedRate(
           () -> {
             try {

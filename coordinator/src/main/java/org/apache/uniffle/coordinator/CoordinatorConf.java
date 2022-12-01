@@ -77,7 +77,8 @@ public class CoordinatorConf extends RssBaseConf {
       .key("rss.coordinator.access.checkers")
       .stringType()
       .asList()
-      .defaultValues("org.apache.uniffle.coordinator.AccessClusterLoadChecker")
+      .defaultValues("org.apache.uniffle.coordinator.AccessClusterLoadChecker",
+          "org.apache.uniffle.coordinator.AccessQuotaChecker")
       .withDescription("Access checkers");
   public static final ConfigOption<Integer> COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC = ConfigOptions
       .key("rss.coordinator.access.candidates.updateIntervalSec")
@@ -153,11 +154,11 @@ public class CoordinatorConf extends RssBaseConf {
       .intType()
       .defaultValue(3)
       .withDescription("The number of times to read and write HDFS files");
-  public static final ConfigOption<AbstractAssignmentStrategy.HostAssignmentStrategy>
-      COORDINATOR_ASSGINMENT_HOST_STRATEGY =
+  public static final ConfigOption<AbstractAssignmentStrategy.HostAssignmentStrategyName>
+      COORDINATOR_ASSIGNMENT_HOST_STRATEGY =
       ConfigOptions.key("rss.coordinator.assignment.host.strategy")
-          .enumType(AbstractAssignmentStrategy.HostAssignmentStrategy.class)
-          .defaultValue(AbstractAssignmentStrategy.HostAssignmentStrategy.PREFER_DIFF)
+          .enumType(AbstractAssignmentStrategy.HostAssignmentStrategyName.class)
+          .defaultValue(AbstractAssignmentStrategy.HostAssignmentStrategyName.PREFER_DIFF)
           .withDescription("Strategy for selecting shuffle servers");
   public static final ConfigOption<Boolean> COORDINATOR_START_SILENT_PERIOD_ENABLED = ConfigOptions
       .key("rss.coordinator.startup-silent-period.enabled")
@@ -172,6 +173,27 @@ public class CoordinatorConf extends RssBaseConf {
       .defaultValue(20 * 1000L)
       .withDescription("The waiting duration(ms) when conf of "
           + COORDINATOR_START_SILENT_PERIOD_ENABLED + " is enabled.");
+  public static final ConfigOption<AbstractAssignmentStrategy.SelectPartitionStrategyName>
+      COORDINATOR_SELECT_PARTITION_STRATEGY =
+      ConfigOptions.key("rss.coordinator.select.partition.strategy")
+          .enumType(AbstractAssignmentStrategy.SelectPartitionStrategyName.class)
+          .defaultValue(AbstractAssignmentStrategy.SelectPartitionStrategyName.ROUND)
+          .withDescription("Strategy for selecting partitions");
+  public static final ConfigOption<Integer> COORDINATOR_QUOTA_DEFAULT_APP_NUM = ConfigOptions
+      .key("rss.coordinator.quota.default.app.num")
+      .intType()
+      .defaultValue(5)
+      .withDescription("Default number of apps at user level");
+  public static final ConfigOption<String> COORDINATOR_QUOTA_DEFAULT_PATH = ConfigOptions
+      .key("rss.coordinator.quota.default.path")
+      .stringType()
+      .noDefaultValue()
+      .withDescription("A configuration file for the number of apps for a user-defined user");
+  public static final ConfigOption<Long> COORDINATOR_QUOTA_UPDATE_INTERVAL = ConfigOptions
+      .key("rss.coordinator.quota.update.interval")
+      .longType()
+      .defaultValue(60 * 1000L)
+      .withDescription("Update interval for the default number of submitted apps per user");
 
   public CoordinatorConf() {
   }

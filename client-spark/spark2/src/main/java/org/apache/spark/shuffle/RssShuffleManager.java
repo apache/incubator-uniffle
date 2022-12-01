@@ -17,6 +17,7 @@
 
 package org.apache.spark.shuffle;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -59,6 +61,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RetryUtils;
@@ -84,8 +87,11 @@ public class RssShuffleManager implements ShuffleManager {
   private final boolean dataReplicaSkipEnabled;
   private final int dataTransferPoolSize;
   private final int dataCommitPoolSize;
+  private Set<String> failedTaskIds = Sets.newConcurrentHashSet();
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
+  private final String user;
+  private final String uuid;
   private ThreadPoolExecutor threadPoolExecutor;
   private EventLoop eventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
 
@@ -96,7 +102,11 @@ public class RssShuffleManager implements ShuffleManager {
 
     private void sendShuffleData(String taskId, List<ShuffleBlockInfo> shuffleDataInfoList) {
       try {
-        SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(appId, shuffleDataInfoList);
+        SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(
+            appId,
+            shuffleDataInfoList,
+            () -> !isValidTask(taskId)
+        );
         putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
         putBlockId(taskToFailedBlockIds, taskId, result.getFailedBlockIds());
       } finally {
@@ -140,7 +150,8 @@ public class RssShuffleManager implements ShuffleManager {
       throw new IllegalArgumentException("Spark2 doesn't support AQE, spark.sql.adaptive.enabled should be false.");
     }
     this.sparkConf = sparkConf;
-
+    this.user = sparkConf.get("spark.rss.quota.user", "user");
+    this.uuid = sparkConf.get("spark.rss.quota.uuid",  Long.toString(System.currentTimeMillis()));
     // set & check replica config
     this.dataReplica = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA);
     this.dataReplicaWrite = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_WRITE);
@@ -201,14 +212,38 @@ public class RssShuffleManager implements ShuffleManager {
   // pass that ShuffleHandle to executors (getWriter/getReader).
   @Override
   public <K, V, C> ShuffleHandle registerShuffle(int shuffleId, int numMaps, ShuffleDependency<K, V, C> dependency) {
+
+    //Spark have three kinds of serializer:
+    //org.apache.spark.serializer.JavaSerializer
+    //org.apache.spark.sql.execution.UnsafeRowSerializer
+    //org.apache.spark.serializer.KryoSerializer,
+    //Only org.apache.spark.serializer.JavaSerializer don't support RelocationOfSerializedObjects.
+    //So when we find the parameters to use org.apache.spark.serializer.JavaSerializer, We should throw an exception
+    if (!SparkEnv.get().serializer().supportsRelocationOfSerializedObjects()) {
+      throw new IllegalArgumentException("Can't use serialized shuffle for shuffleId: " + shuffleId + ", because the"
+              + " serializer: " + SparkEnv.get().serializer().getClass().getName() + " does not support object "
+              + "relocation.");
+    }
+
     // If yarn enable retry ApplicationMaster, appId will be not unique and shuffle data will be incorrect,
-    // appId + timestamp can avoid such problem,
+    // appId + uuid can avoid such problem,
     // can't get appId in construct because SparkEnv is not created yet,
     // appId will be initialized only once in this method which
     // will be called many times depend on how many shuffle stage
     if ("".equals(appId)) {
-      appId = SparkEnv.get().conf().getAppId() + "_" + System.currentTimeMillis();
+      appId = SparkEnv.get().conf().getAppId() + "_" + uuid;
       LOG.info("Generate application id used in rss: " + appId);
+    }
+
+    if (dependency.partitioner().numPartitions() == 0) {
+      LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum is 0, "
+          + "return the empty RssShuffleHandle directly");
+      return new RssShuffleHandle(shuffleId,
+        appId,
+        dependency.rdd().getNumPartitions(),
+        dependency,
+        Collections.emptyMap(),
+        RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
     }
 
     String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
@@ -222,7 +257,7 @@ public class RssShuffleManager implements ShuffleManager {
     // get all register info according to coordinator's response
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
 
-    int requiredShuffleServerNumber = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER);
+    int requiredShuffleServerNumber = RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf);
 
     // retryInterval must bigger than `rss.server.heartbeat.timeout`, or maybe it will return the same result
     long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL);
@@ -232,7 +267,7 @@ public class RssShuffleManager implements ShuffleManager {
       partitionToServers = RetryUtils.retry(() -> {
         ShuffleAssignmentsInfo response = shuffleWriteClient.getShuffleAssignments(
                 appId, shuffleId, dependency.partitioner().numPartitions(),
-                partitionNumPerRange, assignmentTags, requiredShuffleServerNumber);
+                partitionNumPerRange, assignmentTags, requiredShuffleServerNumber, -1);
         registerShuffleServers(appId, shuffleId, response.getServerToPartitionRanges(), remoteStorage);
         return response.getPartitionToServers();
       }, retryInterval, retryTimes);
@@ -247,6 +282,7 @@ public class RssShuffleManager implements ShuffleManager {
   }
 
   private void startHeartbeat() {
+    shuffleWriteClient.registerApplicationInfo(appId, heartbeatTimeout, user);
     if (!sparkConf.getBoolean(RssSparkConfig.RSS_TEST_FLAG.key(), false) && !heartbeatStarted) {
       heartBeatScheduledExecutorService.scheduleAtFixedRate(
           () -> {
@@ -279,7 +315,13 @@ public class RssShuffleManager implements ShuffleManager {
         .stream()
         .forEach(entry -> {
           shuffleWriteClient.registerShuffle(
-              entry.getKey(), appId, shuffleId, entry.getValue(), remoteStorage);
+              entry.getKey(),
+              appId,
+              shuffleId,
+              entry.getValue(),
+              remoteStorage,
+              ShuffleDataDistributionType.NORMAL
+          );
         });
     LOG.info("Finish register shuffleId[" + shuffleId + "] with " + (System.currentTimeMillis() - start) + " ms");
   }
@@ -317,7 +359,8 @@ public class RssShuffleManager implements ShuffleManager {
       taskToBufferManager.put(taskId, bufferManager);
 
       return new RssShuffleWriter(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(), bufferManager,
-          writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle);
+          writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle,
+          (Function<String, Boolean>) tid -> markFailedTask(tid));
     } else {
       throw new RuntimeException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
@@ -487,4 +530,13 @@ public class RssShuffleManager implements ShuffleManager {
     this.appId = appId;
   }
 
+  public boolean markFailedTask(String taskId) {
+    LOG.info("Mark the task: {} failed.", taskId);
+    failedTaskIds.add(taskId);
+    return true;
+  }
+
+  public boolean isValidTask(String taskId) {
+    return !failedTaskIds.contains(taskId);
+  }
 }

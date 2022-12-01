@@ -205,4 +205,58 @@ public class RssMRUtils {
         & MAX_ATTEMPT_ID;
     return (attemptId << (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH)) + mapId;
   }
+
+  public static int estimateTaskConcurrency(JobConf jobConf) {
+    double dynamicFactor = jobConf.getDouble(RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR,
+        RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR_DEFAULT_VALUE);
+    double slowStart = jobConf.getDouble(Constants.MR_SLOW_START, Constants.MR_SLOW_START_DEFAULT_VALUE);
+    int mapNum = jobConf.getNumMapTasks();
+    int reduceNum = jobConf.getNumReduceTasks();
+    int mapLimit = jobConf.getInt(Constants.MR_MAP_LIMIT, Constants.MR_MAP_LIMIT_DEFAULT_VALUE);
+    int reduceLimit = jobConf.getInt(Constants.MR_REDUCE_LIMIT, Constants.MR_REDUCE_LIMIT_DEFAULT_VALUE);
+
+    int estimateMapNum = mapLimit > 0 ? Math.min(mapNum, mapLimit) : mapNum;
+    int estimateReduceNum = reduceLimit > 0 ? Math.min(reduceNum, reduceLimit) : reduceNum;
+    if (slowStart == 1) {
+      return (int) (Math.max(estimateMapNum, estimateReduceNum) * dynamicFactor);
+    } else {
+      return (int) (((1 - slowStart) * estimateMapNum + estimateReduceNum) * dynamicFactor);
+    }
+  }
+
+  public static int getRequiredShuffleServerNumber(JobConf jobConf) {
+    int requiredShuffleServerNumber = jobConf.getInt(
+        RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER,
+        RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER_DEFAULT_VALUE
+    );
+    boolean enabledEstimateServer = jobConf.getBoolean(
+        RssMRConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED,
+        RssMRConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED_DEFAULT_VALUE
+    );
+    if (!enabledEstimateServer || requiredShuffleServerNumber > 0) {
+      return requiredShuffleServerNumber;
+    }
+    int taskConcurrency = estimateTaskConcurrency(jobConf);
+    int taskConcurrencyPerServer = jobConf.getInt(RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER,
+        RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE);
+    return (int) Math.ceil(taskConcurrency * 1.0 / taskConcurrencyPerServer);
+  }
+
+  public static void validateRssClientConf(JobConf rssJobConf, JobConf mrJobConf) {
+    int retryMax = getInt(rssJobConf, mrJobConf, RssMRConfig.RSS_CLIENT_RETRY_MAX,
+        RssMRConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
+    long retryIntervalMax = getLong(rssJobConf, mrJobConf, RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
+        RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
+    long sendCheckTimeout = getLong(rssJobConf, mrJobConf, RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
+        RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE);
+    if (retryIntervalMax * retryMax > sendCheckTimeout) {
+      throw new IllegalArgumentException(String.format("%s(%s) * %s(%s) should not bigger than %s(%s)",
+          RssMRConfig.RSS_CLIENT_RETRY_MAX,
+          retryMax,
+          RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
+          retryIntervalMax,
+          RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
+          sendCheckTimeout));
+    }
+  }
 }

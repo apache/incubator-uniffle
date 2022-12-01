@@ -81,6 +81,11 @@ public class RssSparkConfig {
       new ConfigBuilder("spark.rss.test"))
       .createWithDefault(false);
 
+  public static final ConfigEntry<Boolean> RSS_TEST_MODE_ENABLE = createBooleanBuilder(
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_TEST_MODE_ENABLE)
+          .doc("Whether enable test mode for the Spark Client"))
+      .createWithDefault(false);
+
   public static final ConfigEntry<String> RSS_REMOTE_STORAGE_PATH = createStringBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_STORAGE_PATH))
       .createWithDefault("");
@@ -240,6 +245,25 @@ public class RssSparkConfig {
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_COORDINATOR_QUORUM)
           .doc("Coordinator quorum"))
       .createWithDefault("");
+
+  public static final ConfigEntry<Double> RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR = createDoubleBuilder(
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX +  RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR)
+          .doc("Between 0 and 1, used to estimate task concurrency, how likely is this part of the resource between"
+                   + " spark.dynamicAllocation.minExecutors and spark.dynamicAllocation.maxExecutors"
+                   + " to be allocated"))
+      .createWithDefault(RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR_DEFAULT_VALUE);
+
+  public static final ConfigEntry<Boolean> RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED = createBooleanBuilder(
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED)
+          .doc("Whether to estimate the number of ShuffleServers to be allocated based on the number"
+                   + " of concurrent tasks."))
+      .createWithDefault(RssClientConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED_DEFAULT_VALUE);
+
+  public static final ConfigEntry<Integer> RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER = createIntegerBuilder(
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX +  RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER)
+          .doc("How many tasks concurrency to allocate a ShuffleServer, you need to enable"
+                   + " spark.rss.estimate.server.assignment.enabled"))
+      .createWithDefault(RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE);
 
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
       ImmutableSet.of(RSS_STORAGE_TYPE.key(), RSS_REMOTE_STORAGE_PATH.key());

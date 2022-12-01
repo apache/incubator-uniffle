@@ -46,6 +46,9 @@ import org.apache.uniffle.common.KerberizedHdfsBase;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
+import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.server.ShuffleServer;
@@ -59,9 +62,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
 
+  protected static final String LOCALHOST;
+
+  static {
+    try {
+      LOCALHOST = RssUtils.getHostIp();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   private static final int COORDINATOR_RPC_PROT = 19999;
   private static final int SHUFFLE_SERVER_PORT = 29999;
-  private static final String COORDINATOR_QUORUM = "localhost:" + COORDINATOR_RPC_PROT;
+  private static final String COORDINATOR_QUORUM = LOCALHOST + ":" + COORDINATOR_RPC_PROT;
 
   private ShuffleServerGrpcClient shuffleServerClient;
   private static CoordinatorServer coordinatorServer;
@@ -88,6 +101,7 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
     serverConf.setLong("rss.server.disk.capacity", 10L * 1024L * 1024L * 1024L);
     serverConf.setBoolean("rss.server.health.check.enable", false);
     serverConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    serverConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     return serverConf;
   }
 
@@ -121,7 +135,7 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
   @BeforeEach
   public void beforeEach() throws Exception {
     initHadoopSecurityContext();
-    shuffleServerClient = new ShuffleServerGrpcClient("localhost", SHUFFLE_SERVER_PORT);
+    shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
   }
 
   @AfterEach
@@ -178,7 +192,8 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
         0,
         Lists.newArrayList(new PartitionRange(0, 1)),
         remoteStorageInfo,
-        user
+        user,
+        ShuffleDataDistributionType.NORMAL
     );
     shuffleServerClient.registerShuffle(rrsr);
 
@@ -187,7 +202,8 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
         0,
         Lists.newArrayList(new PartitionRange(2, 3)),
         remoteStorageInfo,
-        user
+        user,
+        ShuffleDataDistributionType.NORMAL
     );
     shuffleServerClient.registerShuffle(rrsr);
 
@@ -209,6 +225,7 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
     shuffleServerClient.sendCommit(rscr);
     RssFinishShuffleRequest rfsr = new RssFinishShuffleRequest(appId, 0);
 
+    ShuffleServerInfo ssi = new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT);
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(
         StorageType.HDFS.name(),
         appId,
@@ -221,7 +238,7 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
         dataBasePath,
         bitmaps[0],
         Roaring64NavigableMap.bitmapOf(0),
-        Lists.newArrayList(),
+        Lists.newArrayList(ssi),
         new Configuration(),
         new DefaultIdHelper()
     );
@@ -262,7 +279,7 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
         1000,
         dataBasePath, bitmaps[0],
         Roaring64NavigableMap.bitmapOf(0),
-        Lists.newArrayList(),
+        Lists.newArrayList(ssi),
         new Configuration(),
         new DefaultIdHelper()
     );
@@ -280,7 +297,7 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
         dataBasePath,
         bitmaps[1],
         Roaring64NavigableMap.bitmapOf(1),
-        Lists.newArrayList(),
+        Lists.newArrayList(ssi),
         new Configuration(),
         new DefaultIdHelper()
     );
@@ -298,7 +315,7 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
         dataBasePath,
         bitmaps[2],
         Roaring64NavigableMap.bitmapOf(2),
-        Lists.newArrayList(),
+        Lists.newArrayList(ssi),
         new Configuration(),
         new DefaultIdHelper()
     );
@@ -316,7 +333,7 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
         dataBasePath,
         bitmaps[3],
         Roaring64NavigableMap.bitmapOf(3),
-        Lists.newArrayList(),
+        Lists.newArrayList(ssi),
         new Configuration(),
         new DefaultIdHelper()
     );

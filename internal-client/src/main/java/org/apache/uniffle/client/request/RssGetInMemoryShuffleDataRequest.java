@@ -25,19 +25,17 @@ public class RssGetInMemoryShuffleDataRequest {
   private final int partitionId;
   private final long lastBlockId;
   private final int readBufferSize;
-  private Roaring64NavigableMap processedBlockIds;
-  private Roaring64NavigableMap expectBlockIds;
+  private final Roaring64NavigableMap expectedTaskIds;
 
   public RssGetInMemoryShuffleDataRequest(
       String appId, int shuffleId, int partitionId, long lastBlockId, int readBufferSize,
-      Roaring64NavigableMap processedBlockIds, Roaring64NavigableMap expectBlockIds) {
+      Roaring64NavigableMap expectedTaskIds) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.lastBlockId = lastBlockId;
     this.readBufferSize = readBufferSize;
-    this.processedBlockIds = processedBlockIds;
-    this.expectBlockIds = expectBlockIds;
+    this.expectedTaskIds = expectedTaskIds;
   }
 
   public String getAppId() {
@@ -60,11 +58,7 @@ public class RssGetInMemoryShuffleDataRequest {
     return readBufferSize;
   }
 
-  public Roaring64NavigableMap getProcessedBlockIds() {
-    return processedBlockIds;
-  }
-
-  public Roaring64NavigableMap getExpectBlockIds() {
-    return expectBlockIds;
+  public Roaring64NavigableMap getExpectedTaskIds() {
+    return expectedTaskIds;
   }
 }

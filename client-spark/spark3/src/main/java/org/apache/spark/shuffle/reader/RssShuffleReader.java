@@ -49,6 +49,7 @@ import scala.runtime.BoxedUnit;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 
@@ -76,6 +77,8 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private int mapEndIndex;
   private ShuffleReadMetrics readMetrics;
   private RssConf rssConf;
+  private ShuffleDataDistributionType dataDistributionType;
+  private boolean expectedTaskIdsBitmapFilterEnable;
 
   public RssShuffleReader(
       int startPartition,
@@ -93,7 +96,8 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       Map<Integer, Roaring64NavigableMap> partitionToExpectBlocks,
       Roaring64NavigableMap taskIdBitmap,
       ShuffleReadMetrics readMetrics,
-      RssConf rssConf) {
+      RssConf rssConf,
+      ShuffleDataDistributionType dataDistributionType) {
     this.appId = rssShuffleHandle.getAppId();
     this.startPartition = startPartition;
     this.endPartition = endPartition;
@@ -115,6 +119,10 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.readMetrics = readMetrics;
     this.partitionToShuffleServers = rssShuffleHandle.getPartitionToServers();
     this.rssConf = rssConf;
+    this.dataDistributionType = dataDistributionType;
+    // This mechanism of expectedTaskIdsBitmap filter is to filter out the most of data.
+    // especially for AQE skew optimization
+    this.expectedTaskIdsBitmapFilterEnable = !(mapStartIndex == 0 && mapEndIndex == Integer.MAX_VALUE);
   }
 
   @Override
@@ -201,13 +209,17 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         List<ShuffleServerInfo> shuffleServerInfoList = partitionToShuffleServers.get(partition);
         CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
             appId, shuffleId, partition, storageType, basePath, indexReadLimit, readBufferSize,
-            1, partitionNum, partitionToExpectBlocks.get(partition), taskIdBitmap, shuffleServerInfoList, hadoopConf);
+            1, partitionNum, partitionToExpectBlocks.get(partition), taskIdBitmap, shuffleServerInfoList,
+            hadoopConf, dataDistributionType, expectedTaskIdsBitmapFilterEnable);
         ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
         RssShuffleDataIterator iterator = new RssShuffleDataIterator<K, C>(
             shuffleDependency.serializer(), shuffleReadClient,
             readMetrics, rssConf);
         CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>> completionIterator =
-            CompletionIterator$.MODULE$.apply(iterator, () -> iterator.cleanup());
+            CompletionIterator$.MODULE$.apply(iterator, () -> {
+              context.taskMetrics().mergeShuffleReadMetrics();
+              return iterator.cleanup();
+            });
         iterators.add(completionIterator);
       }
       iterator = iterators.iterator();

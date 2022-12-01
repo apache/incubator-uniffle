@@ -26,6 +26,7 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Option;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -69,8 +70,16 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
 
   }
 
+  private static <T> T getIfExists(Option<T> o) {
+    return o.isDefined() ? o.get() : null;
+  }
+
   protected Map runSparkApp(SparkConf sparkConf, String testFileName) throws Exception {
-    SparkSession spark = SparkSession.builder().config(sparkConf).getOrCreate();
+    SparkSession spark = getIfExists(SparkSession.getActiveSession());
+    if (spark != null) {
+      spark.close();
+    }
+    spark = SparkSession.builder().config(sparkConf).getOrCreate();
     Map resultWithRss = runTest(spark, testFileName);
     spark.stop();
     return resultWithRss;
@@ -92,11 +101,13 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
     sparkConf.set(RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE.key(), "256k");
     sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
     sparkConf.set(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(), "30000");
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_RETRY_MAX.key(), "10");
     sparkConf.set(RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key(), "1000");
     sparkConf.set(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.key(), "1000");
     sparkConf.set(RssSparkConfig.RSS_INDEX_READ_LIMIT.key(), "100");
     sparkConf.set(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key(), "1m");
     sparkConf.set(RssSparkConfig.RSS_HEARTBEAT_INTERVAL.key(), "2000");
+    sparkConf.set(RssSparkConfig.RSS_TEST_MODE_ENABLE.key(), "true");
   }
 
   protected void verifyTestResult(Map expected, Map actual) {

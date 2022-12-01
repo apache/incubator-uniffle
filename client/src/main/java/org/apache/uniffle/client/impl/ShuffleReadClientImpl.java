@@ -34,6 +34,7 @@ import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.client.util.IdHelper;
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
@@ -46,7 +47,7 @@ import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleReadClientImpl.class);
-
+  private final List<ShuffleServerInfo> shuffleServerInfoList;
   private int shuffleId;
   private int partitionId;
   private byte[] readBuffer;
@@ -75,12 +76,15 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       Roaring64NavigableMap taskIdBitmap,
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
-      IdHelper idHelper) {
+      IdHelper idHelper,
+      ShuffleDataDistributionType dataDistributionType,
+      boolean expectedTaskIdsBitmapFilterEnable) {
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.blockIdBitmap = blockIdBitmap;
     this.taskIdBitmap = taskIdBitmap;
     this.idHelper = idHelper;
+    this.shuffleServerInfoList = shuffleServerInfoList;
 
     CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
     request.setStorageType(storageType);
@@ -96,6 +100,11 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setHadoopConf(hadoopConf);
     request.setExpectBlockIds(blockIdBitmap);
     request.setProcessBlockIds(processedBlockIds);
+    request.setDistributionType(dataDistributionType);
+    request.setExpectTaskIds(taskIdBitmap);
+    if (expectedTaskIdsBitmapFilterEnable) {
+      request.useExpectedTaskIdsBitmapFilter();
+    }
 
     List<Long> removeBlockIds = Lists.newArrayList();
     blockIdBitmap.forEach(bid -> {
@@ -112,6 +121,27 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     pendingBlockIds = RssUtils.cloneBitMap(blockIdBitmap);
 
     clientReadHandler = ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
+  }
+
+  public ShuffleReadClientImpl(
+      String storageType,
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int indexReadLimit,
+      int partitionNumPerRange,
+      int partitionNum,
+      int readBufferSize,
+      String storageBasePath,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap taskIdBitmap,
+      List<ShuffleServerInfo> shuffleServerInfoList,
+      Configuration hadoopConf,
+      IdHelper idHelper) {
+    this(storageType, appId, shuffleId, partitionId, indexReadLimit,
+        partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
+        blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf,
+        idHelper, ShuffleDataDistributionType.NORMAL, false);
   }
 
   @Override
@@ -149,6 +179,32 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       if (!processedBlockIds.contains(bs.getBlockId())
           && blockIdBitmap.contains(bs.getBlockId())
           && taskIdBitmap.contains(bs.getTaskAttemptId())) {
+        long expectedCrc = -1;
+        long actualCrc = -1;
+        try {
+          long start = System.currentTimeMillis();
+          copyTime.addAndGet(System.currentTimeMillis() - start);
+          start = System.currentTimeMillis();
+          expectedCrc = bs.getCrc();
+          actualCrc = ChecksumUtils.getCrc32(readBuffer, bs.getOffset(), bs.getLength());
+          crcCheckTime.addAndGet(System.currentTimeMillis() - start);
+        } catch (Exception e) {
+          LOG.warn("Can't read data for blockId[" + bs.getBlockId() + "]", e);
+        }
+
+        if (expectedCrc != actualCrc) {
+          String errMsg = "Unexpected crc value for blockId[" + bs.getBlockId()
+              + "], expected:" + expectedCrc + ", actual:" + actualCrc;
+          //If some blocks of one replica are corrupted,but maybe other replicas are not corrupted,
+          //so exception should not be thrown here if blocks have multiple replicas
+          if (shuffleServerInfoList.size() > 1) {
+            LOG.warn(errMsg);
+            continue;
+          } else {
+            throw new RssException(errMsg);
+          }
+        }
+
         // mark block as processed
         processedBlockIds.addLong(bs.getBlockId());
         pendingBlockIds.removeLong(bs.getBlockId());
@@ -162,22 +218,6 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     }
 
     if (bs != null) {
-      long expectedCrc = -1;
-      long actualCrc = -1;
-      try {
-        long start = System.currentTimeMillis();
-        copyTime.addAndGet(System.currentTimeMillis() - start);
-        start = System.currentTimeMillis();
-        expectedCrc = bs.getCrc();
-        actualCrc = ChecksumUtils.getCrc32(readBuffer, bs.getOffset(), bs.getLength());
-        crcCheckTime.addAndGet(System.currentTimeMillis() - start);
-      } catch (Exception e) {
-        LOG.warn("Can't read data for blockId[" + bs.getBlockId() + "]", e);
-      }
-      if (expectedCrc != actualCrc) {
-        throw new RssException("Unexpected crc value for blockId[" + bs.getBlockId()
-            + "], expected:" + expectedCrc + ", actual:" + actualCrc);
-      }
       return new CompressedShuffleBlock(ByteBuffer.wrap(readBuffer,
           bs.getOffset(), bs.getLength()), bs.getUncompressLength());
     }
@@ -207,13 +247,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   @Override
   public void checkProcessedBlockIds() {
-    Roaring64NavigableMap cloneBitmap;
-    cloneBitmap = RssUtils.cloneBitMap(blockIdBitmap);
-    cloneBitmap.and(processedBlockIds);
-    if (!blockIdBitmap.equals(cloneBitmap)) {
-      throw new RssException("Blocks read inconsistent: expected " + blockIdBitmap.getLongCardinality()
-          + " blocks, actual " + cloneBitmap.getLongCardinality() + " blocks");
-    }
+    RssUtils.checkProcessedBlockIds(blockIdBitmap, processedBlockIds);
   }
 
   @Override

@@ -49,6 +49,11 @@ public class ShuffleClientFactory {
       String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
       int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled, int dataTransferPoolSize,
       int dataCommitPoolSize, int unregisterThreadPoolSize, int unregisterRequestTimeoutSec) {
+    // If replica > replicaWrite, blocks maybe will be sended for 2 rounds.
+    // We need retry less times in this case for let the first round fail fast.
+    if (replicaSkipEnabled && replica > replicaWrite) {
+      retryMax = retryMax / 2;
+    }
     return new ShuffleWriteClientImpl(
         clientType,
         retryMax,
@@ -66,10 +71,23 @@ public class ShuffleClientFactory {
   }
 
   public ShuffleReadClient createShuffleReadClient(CreateShuffleReadClientRequest request) {
-    return new ShuffleReadClientImpl(request.getStorageType(), request.getAppId(), request.getShuffleId(),
-        request.getPartitionId(), request.getIndexReadLimit(), request.getPartitionNumPerRange(),
-        request.getPartitionNum(), request.getReadBufferSize(), request.getBasePath(),
-        request.getBlockIdBitmap(), request.getTaskIdBitmap(), request.getShuffleServerInfoList(),
-        request.getHadoopConf(), request.getIdHelper());
+    return new ShuffleReadClientImpl(
+        request.getStorageType(),
+        request.getAppId(),
+        request.getShuffleId(),
+        request.getPartitionId(),
+        request.getIndexReadLimit(),
+        request.getPartitionNumPerRange(),
+        request.getPartitionNum(),
+        request.getReadBufferSize(),
+        request.getBasePath(),
+        request.getBlockIdBitmap(),
+        request.getTaskIdBitmap(),
+        request.getShuffleServerInfoList(),
+        request.getHadoopConf(),
+        request.getIdHelper(),
+        request.getShuffleDataDistributionType(),
+        request.isExpectedTaskIdsBitmapFilterEnable()
+    );
   }
 }

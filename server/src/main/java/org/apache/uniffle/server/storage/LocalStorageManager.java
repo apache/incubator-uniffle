@@ -19,7 +19,9 @@ package org.apache.uniffle.server.storage;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -62,6 +64,7 @@ import static org.apache.uniffle.server.ShuffleServerConf.LOCAL_STORAGE_INITIALI
 
 public class LocalStorageManager extends SingleStorageManager {
   private static final Logger LOG = LoggerFactory.getLogger(LocalStorageManager.class);
+  private static final String UNKNOWN_USER_NAME = "unknown";
 
   private final List<LocalStorage> localStorages;
   private final List<String> storageBasePaths;
@@ -143,7 +146,7 @@ public class LocalStorageManager extends SingleStorageManager {
         event.getStartPartition()));
     if (storage.containsWriteHandler(event.getAppId(), event.getShuffleId(), event.getStartPartition())
         && storage.isCorrupted()) {
-      throw new RuntimeException("storage " + storage.getBasePath() + " is corrupted");
+      LOG.error("storage " + storage.getBasePath() + " is corrupted");
     }
     if (storage.isCorrupted()) {
       storage = getRepairedStorage(event.getAppId(), event.getShuffleId(), event.getStartPartition());
@@ -216,6 +219,30 @@ public class LocalStorageManager extends SingleStorageManager {
   @Override
   public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo) {
     // ignore
+  }
+
+  @Override
+  public void checkAndClearLeakShuffleData(Collection<String> appIds) {
+    Set<String> appIdsOnStorages = new HashSet<>();
+    for (LocalStorage localStorage : localStorages) {
+      if (!localStorage.isCorrupted()) {
+        Set<String> appIdsOnStorage = localStorage.getAppIds();
+        appIdsOnStorages.addAll(appIdsOnStorage);
+      }
+    }
+
+    for (String appId : appIdsOnStorages) {
+      if (!appIds.contains(appId)) {
+        ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
+            .createShuffleDeleteHandler(
+               new CreateShuffleDeleteHandlerRequest(StorageType.LOCALFILE.name(), new Configuration()));
+        String[] deletePaths = new String[storageBasePaths.size()];
+        for (int i = 0; i < storageBasePaths.size(); i++) {
+          deletePaths[i] = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePaths.get(i), appId);
+        }
+        deleteHandler.delete(deletePaths, appId, UNKNOWN_USER_NAME);
+      }
+    }
   }
 
   void repair() {

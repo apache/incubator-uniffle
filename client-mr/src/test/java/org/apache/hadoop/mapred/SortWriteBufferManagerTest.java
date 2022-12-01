@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -37,6 +38,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
@@ -265,7 +267,8 @@ public class SortWriteBufferManagerTest {
     }
 
     @Override
-    public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList) {
+    public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList,
+        Supplier<Boolean> needCancelRequest) {
       if (mode == 0) {
         throw new RssException("send data failed");
       } else if (mode == 1) {
@@ -285,12 +288,18 @@ public class SortWriteBufferManagerTest {
     }
 
     @Override
+    public void registerApplicationInfo(String appId, long timeoutMs, String user) {
+
+    }
+
+    @Override
     public void registerShuffle(
         ShuffleServerInfo shuffleServerInfo,
         String appId,
         int shuffleId,
         List<PartitionRange> partitionRanges,
-        RemoteStorageInfo remoteStorage) {
+        RemoteStorageInfo remoteStorage,
+        ShuffleDataDistributionType distributionType) {
     }
 
     @Override
@@ -321,7 +330,8 @@ public class SortWriteBufferManagerTest {
 
     @Override
     public ShuffleAssignmentsInfo getShuffleAssignments(String appId, int shuffleId, int partitionNum,
-        int partitionNumPerRange, Set<String> requiredTags, int assignmentShuffleServerNumber) {
+        int partitionNumPerRange, Set<String> requiredTags, int assignmentShuffleServerNumber,
+        int estimateTaskConcurrency) {
       return null;
     }
 

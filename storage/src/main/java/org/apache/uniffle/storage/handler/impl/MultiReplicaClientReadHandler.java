@@ -19,75 +19,71 @@ package org.apache.uniffle.storage.handler.impl;
 
 import java.util.List;
 
-import com.google.common.collect.Lists;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.storage.handler.api.ClientReadHandler;
 
-public class LocalFileQuorumClientReadHandler extends AbstractClientReadHandler {
+public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
 
-  private static final Logger LOG = LoggerFactory.getLogger(LocalFileQuorumClientReadHandler.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MultiReplicaClientReadHandler.class);
 
-  private List<LocalFileClientReadHandler> handlers = Lists.newLinkedList();
+  private final List<ClientReadHandler> handlers;
+  private final List<ShuffleServerInfo> shuffleServerInfos;
 
   private long readBlockNum = 0L;
   private long readLength = 0L;
   private long readUncompressLength = 0L;
+  private final Roaring64NavigableMap blockIdBitmap;
+  private final Roaring64NavigableMap processedBlockIds;
 
-  public LocalFileQuorumClientReadHandler(
-      String appId,
-      int shuffleId,
-      int partitionId,
-      int indexReadLimit,
-      int partitionNumPerRange,
-      int partitionNum,
-      int readBufferSize,
-      Roaring64NavigableMap expectBlockIds,
-      Roaring64NavigableMap processBlockIds,
-      List<ShuffleServerClient> shuffleServerClients) {
-    this.appId = appId;
-    this.shuffleId = shuffleId;
-    this.partitionId = partitionId;
-    this.readBufferSize = readBufferSize;
-    for (ShuffleServerClient client: shuffleServerClients) {
-      handlers.add(new LocalFileClientReadHandler(
-          appId,
-          shuffleId,
-          partitionId,
-          indexReadLimit,
-          partitionNumPerRange,
-          partitionNum,
-          readBufferSize,
-          expectBlockIds,
-          processBlockIds,
-          client
-      ));
-    }
+  private int readHandlerIndex;
+
+  public MultiReplicaClientReadHandler(
+      List<ClientReadHandler> handlers,
+      List<ShuffleServerInfo> shuffleServerInfos,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap processedBlockIds) {
+    this.handlers = handlers;
+    this.blockIdBitmap = blockIdBitmap;
+    this.processedBlockIds = processedBlockIds;
+    this.shuffleServerInfos = shuffleServerInfos;
   }
 
   @Override
   public ShuffleDataResult readShuffleData() {
-    boolean readSuccessful = false;
+    ClientReadHandler handler;
     ShuffleDataResult result = null;
-    for (LocalFileClientReadHandler handler : handlers) {
+    do {
+      if (readHandlerIndex >= handlers.size()) {
+        return result;
+      }
+      handler = handlers.get(readHandlerIndex);
       try {
         result = handler.readShuffleData();
-        readSuccessful = true;
-        break;
       } catch (Exception e) {
-        LOG.warn("Failed to read a replica due to ", e);
+        LOG.warn("Failed to read a replica from [{}] due to ",
+            shuffleServerInfos.get(readHandlerIndex).getId(), e);
       }
-    }
-    if (!readSuccessful) {
-      throw new RssException("Failed to read all replicas for appId[" + appId + "], shuffleId["
-          + shuffleId + "], partitionId[" + partitionId + "]");
-    }
-    return result;
+      if (result != null && !result.isEmpty()) {
+        return result;
+      } else {
+        try {
+          RssUtils.checkProcessedBlockIds(blockIdBitmap, processedBlockIds);
+          return result;
+        } catch (RssException e) {
+          LOG.warn("Finished read from [{}], but haven't finished read all the blocks.",
+              shuffleServerInfos.get(readHandlerIndex).getId(), e);
+        }
+        readHandlerIndex++;
+      }
+    } while (true);
   }
 
   @Override

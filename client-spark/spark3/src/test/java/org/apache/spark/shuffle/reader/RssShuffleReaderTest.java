@@ -17,8 +17,11 @@
 
 package org.apache.spark.shuffle.reader;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
@@ -32,6 +35,8 @@ import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import scala.Option;
 
+import org.apache.uniffle.common.ShuffleDataDistributionType;
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.storage.handler.impl.HdfsShuffleWriteHandler;
 import org.apache.uniffle.storage.util.StorageType;
@@ -41,19 +46,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
-
 public class RssShuffleReaderTest extends AbstractRssReaderTest {
 
   private static final Serializer KRYO_SERIALIZER = new KryoSerializer(new SparkConf(false));
 
   @Test
   public void readTest() throws Exception {
-
+    ShuffleServerInfo ssi = new ShuffleServerInfo("127.0.0.1", 0);
     String basePath = HDFS_URI + "readTest1";
     HdfsShuffleWriteHandler writeHandler =
-        new HdfsShuffleWriteHandler("appId", 0, 0, 0, basePath, "test", conf);
+        new HdfsShuffleWriteHandler("appId", 0, 0, 0, basePath, ssi.getId(), conf);
     final HdfsShuffleWriteHandler writeHandler1 =
-        new HdfsShuffleWriteHandler("appId", 0, 1, 1, basePath, "test", conf);
+        new HdfsShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi.getId(), conf);
 
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
@@ -62,13 +66,17 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     writeTestData(writeHandler, 2, 5, expectedData,
         blockIdBitmap, "key", KRYO_SERIALIZER, 0);
 
-    TaskContext contextMock = mock(TaskContext.class);
     RssShuffleHandle handleMock = mock(RssShuffleHandle.class);
     ShuffleDependency dependencyMock = mock(ShuffleDependency.class);
     when(handleMock.getAppId()).thenReturn("appId");
     when(handleMock.getDependency()).thenReturn(dependencyMock);
     when(handleMock.getShuffleId()).thenReturn(1);
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = new HashMap<>();
+    partitionToServers.put(0, Lists.newArrayList(ssi));
+    partitionToServers.put(1, Lists.newArrayList(ssi));
+    when(handleMock.getPartitionToServers()).thenReturn(partitionToServers);
     when(dependencyMock.serializer()).thenReturn(KRYO_SERIALIZER);
+    TaskContext contextMock = mock(TaskContext.class);
     when(contextMock.attemptNumber()).thenReturn(1);
     when(contextMock.taskAttemptId()).thenReturn(1L);
     when(contextMock.taskMetrics()).thenReturn(new TaskMetrics());
@@ -94,7 +102,10 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
         1,
         partitionToExpectBlocks,
         taskIdBitmap,
-        new ShuffleReadMetrics(), new RssConf()));
+        new ShuffleReadMetrics(),
+        new RssConf(),
+        ShuffleDataDistributionType.NORMAL
+    ));
     validateResult(rssShuffleReaderSpy.read(), expectedData, 10);
 
     writeTestData(writeHandler1, 2, 4, expectedData,
@@ -115,8 +126,10 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
         2,
         partitionToExpectBlocks,
         taskIdBitmap,
-        new ShuffleReadMetrics(), new RssConf())
-    );
+        new ShuffleReadMetrics(),
+        new RssConf(),
+        ShuffleDataDistributionType.NORMAL
+    ));
     validateResult(rssShuffleReaderSpy1.read(), expectedData, 18);
 
     RssShuffleReader rssShuffleReaderSpy2 = spy(new RssShuffleReader<String, String>(
@@ -134,7 +147,10 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
         2,
         partitionToExpectBlocks,
         Roaring64NavigableMap.bitmapOf(),
-        new ShuffleReadMetrics(), new RssConf()));
+        new ShuffleReadMetrics(),
+        new RssConf(),
+        ShuffleDataDistributionType.NORMAL
+    ));
     validateResult(rssShuffleReaderSpy2.read(), Maps.newHashMap(), 0);
   }
 

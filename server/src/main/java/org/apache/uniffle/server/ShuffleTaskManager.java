@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
@@ -69,12 +70,14 @@ public class ShuffleTaskManager {
   private final ShuffleFlushManager shuffleFlushManager;
   private final ScheduledExecutorService scheduledExecutorService;
   private final ScheduledExecutorService expiredAppCleanupExecutorService;
+  private final ScheduledExecutorService leakShuffleDataCheckExecutorService;
   private final StorageManager storageManager;
   private AtomicLong requireBufferId = new AtomicLong(0);
   private ShuffleServerConf conf;
   private long appExpiredWithoutHB;
   private long preAllocationExpired;
   private long commitCheckIntervalMax;
+  private long leakShuffleDataCheckInterval;
   // appId -> shuffleId -> blockIds to avoid too many appId
   // store taskAttemptId info to filter speculation task
   // Roaring64NavigableMap instance will cost much memory,
@@ -101,6 +104,7 @@ public class ShuffleTaskManager {
     this.appExpiredWithoutHB = conf.getLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT);
     this.commitCheckIntervalMax = conf.getLong(ShuffleServerConf.SERVER_COMMIT_CHECK_INTERVAL_MAX);
     this.preAllocationExpired = conf.getLong(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED);
+    this.leakShuffleDataCheckInterval = conf.getLong(ShuffleServerConf.SERVER_LEAK_SHUFFLE_DATA_CHECK_INTERVAL);
     // the thread for checking application status
     this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("checkResource-%d"));
@@ -112,6 +116,11 @@ public class ShuffleTaskManager {
     expiredAppCleanupExecutorService.scheduleAtFixedRate(
         () -> checkResourceStatus(), appExpiredWithoutHB / 2,
         appExpiredWithoutHB / 2, TimeUnit.MILLISECONDS);
+    this.leakShuffleDataCheckExecutorService = Executors.newSingleThreadScheduledExecutor(
+        ThreadUtils.getThreadFactory("leakShuffleDataChecker"));
+    leakShuffleDataCheckExecutorService.scheduleAtFixedRate(
+        () -> checkLeakShuffleData(), leakShuffleDataCheckInterval,
+            leakShuffleDataCheckInterval, TimeUnit.MILLISECONDS);
     // the thread for clear expired resources
     clearResourceThread = () -> {
       while (true) {
@@ -134,14 +143,36 @@ public class ShuffleTaskManager {
     thread.start();
   }
 
+  /**
+   * Only for test
+   */
+  @VisibleForTesting
   public StatusCode registerShuffle(
       String appId,
       int shuffleId,
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorageInfo,
       String user) {
+    return registerShuffle(
+        appId,
+        shuffleId,
+        partitionRanges,
+        remoteStorageInfo,
+        user,
+        ShuffleDataDistributionType.NORMAL
+    );
+  }
+
+  public StatusCode registerShuffle(
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      RemoteStorageInfo remoteStorageInfo,
+      String user,
+      ShuffleDataDistributionType dataDistType) {
     refreshAppId(appId);
     shuffleTaskInfos.get(appId).setUser(user);
+    shuffleTaskInfos.get(appId).setDataDistType(dataDistType);
     partitionsToBlockIds.putIfAbsent(appId, Maps.newConcurrentMap());
     for (PartitionRange partitionRange : partitionRanges) {
       shuffleBufferManager.registerBuffer(appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
@@ -215,6 +246,9 @@ public class ShuffleTaskManager {
       String appId, Integer shuffleId, Map<Integer, long[]> partitionToBlockIds, int bitmapNum) {
     refreshAppId(appId);
     Map<Integer, Roaring64NavigableMap[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
+    if (shuffleIdToPartitions == null) {
+      throw new RuntimeException("appId[" + appId  + "] is expired!");
+    }
     if (!shuffleIdToPartitions.containsKey(shuffleId)) {
       Roaring64NavigableMap[] blockIds = new Roaring64NavigableMap[bitmapNum];
       for (int i = 0; i < bitmapNum; i++) {
@@ -330,10 +364,9 @@ public class ShuffleTaskManager {
 
   public ShuffleDataResult getInMemoryShuffleData(
       String appId, Integer shuffleId, Integer partitionId, long blockId, int readBufferSize,
-      Roaring64NavigableMap processedBlockIds, Roaring64NavigableMap expectBlockIds) {
+      Roaring64NavigableMap expectedTaskIds) {
     return shuffleBufferManager.getShuffleData(appId,
-        shuffleId, partitionId, blockId, readBufferSize,
-        processedBlockIds, expectBlockIds);
+        shuffleId, partitionId, blockId, readBufferSize, expectedTaskIds);
   }
 
   public ShuffleDataResult getShuffleData(
@@ -428,6 +461,17 @@ public class ShuffleTaskManager {
         appId, shuffleIds, System.currentTimeMillis() - start);
   }
 
+  public void checkLeakShuffleData() {
+    LOG.info("Start check leak shuffle data");
+    try {
+      Set<String> appIds = Sets.newHashSet(shuffleTaskInfos.keySet());
+      storageManager.checkAndClearLeakShuffleData(appIds);
+      LOG.info("Finish check leak shuffle data");
+    } catch (Exception e) {
+      LOG.warn("Error happened in checkLeakShuffleData", e);
+    }
+  }
+
   @VisibleForTesting
   public void removeResources(String appId) {
     LOG.info("Start remove resource for appId[" + appId + "]");
@@ -503,5 +547,9 @@ public class ShuffleTaskManager {
   @VisibleForTesting
   void removeShuffleDataSync(String appId, int shuffleId) {
     removeResourcesByShuffleIds(appId, Arrays.asList(shuffleId));
+  }
+
+  public ShuffleDataDistributionType getDataDistributionType(String appId) {
+    return shuffleTaskInfos.get(appId).getDataDistType();
   }
 }
