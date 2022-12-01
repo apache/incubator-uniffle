@@ -57,16 +57,18 @@ public class AccessQuotaChecker extends AbstractAccessChecker {
       Map<String, Long> appAndTimes = currentUserApps.computeIfAbsent(user, x -> Maps.newConcurrentMap());
       Integer defaultAppNum = quotaManager.getDefaultUserApps().getOrDefault(user,
           conf.getInteger(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_APP_NUM));
-      int currentAppNum = appAndTimes.size();
-      if (currentAppNum >= defaultAppNum) {
-        String msg = "Denied by AccessClusterLoadChecker => "
-            + "User: " + user + ", current app num is: " + currentAppNum
-            + ", default app num is: " + defaultAppNum + ". We will reject this app[uuid=" + uuid + "].";
-        LOG.error(msg);
-        CoordinatorMetrics.counterTotalQuotaDeniedRequest.inc();
-        return new AccessCheckResult(false, msg);
+      synchronized (ApplicationManager.class) {
+        int currentAppNum = appAndTimes.size();
+        if (currentAppNum >= defaultAppNum) {
+          String msg = "Denied by AccessQuotaChecker => "
+              + "User: " + user + ", current app num is: " + currentAppNum
+              + ", default app num is: " + defaultAppNum + ". We will reject this app[uuid=" + uuid + "].";
+          LOG.error(msg);
+          CoordinatorMetrics.counterTotalQuotaDeniedRequest.inc();
+          return new AccessCheckResult(false, msg);
+        }
+        appAndTimes.put(uuid, System.currentTimeMillis());
       }
-      appAndTimes.put(uuid, System.currentTimeMillis());
     }
     return new AccessCheckResult(true, Constants.COMMON_SUCCESS_MESSAGE, uuid);
   }
