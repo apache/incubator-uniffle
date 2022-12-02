@@ -140,4 +140,8 @@ public class MultiStorageManager implements StorageManager {
   public StorageManager getColdStorageManager() {
     return coldStorageManager;
   }
+
+  public StorageManager getWarmStorageManager() {
+    return warmStorageManager;
+  }
 }

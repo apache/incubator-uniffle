@@ -57,7 +57,7 @@ public class MultiStorageManagerTest {
   }
 
   @Test
-  public void selectStorageManagerIfCanNotWriteTest() {
+  public void underStorageManagerSelectionTest() {
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 10000L);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("test"));
@@ -69,7 +69,21 @@ public class MultiStorageManagerTest {
     String remoteStorage = "test";
     String appId = "selectStorageManagerIfCanNotWriteTest_appId";
     manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
-    List<ShufflePartitionedBlock> blocks = Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, null));
+
+    /**
+     * case1: big event should be written into cold storage directly
+     */
+    List<ShufflePartitionedBlock> blocks = Lists.newArrayList(
+        new ShufflePartitionedBlock(10001, 1000, 1, 1, 1L, null)
+    );
+    ShuffleDataFlushEvent hugeEvent = new ShuffleDataFlushEvent(
+        1, appId, 1, 1, 1, 10001, blocks, null, null);
+    assertTrue(manager.selectStorage(hugeEvent) instanceof HdfsStorage);
+
+    /**
+     * case2: fallback when disk can not write
+     */
+    blocks = Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, null));
     ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
         1, appId, 1, 1, 1, 1000, blocks, null, null);
     Storage storage = manager.selectStorage(event);
