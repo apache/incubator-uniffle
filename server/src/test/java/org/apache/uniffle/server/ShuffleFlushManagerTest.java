@@ -435,9 +435,12 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
       do {
         Thread.sleep(1 * 1000);
       } while (manager.getEventNumInFlush() != 0);
+
       List<ShufflePartitionedBlock> blocks = Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, null));
       ShuffleDataFlushEvent bigEvent = new ShuffleDataFlushEvent(1, "1", 1, 1, 1, 100, blocks, null, null);
+      bigEvent.setUnderStorage(storageManager.selectStorage(event));
       storageManager.updateWriteMetrics(bigEvent, 0);
+
       manager.addPendingEvents(event);
       manager.addPendingEvents(event);
       manager.addPendingEvents(event);
