@@ -331,6 +331,12 @@ public class LocalStorage extends AbstractStorage {
     return appIds;
   }
 
+  // Only for test
+  @VisibleForTesting
+  public void markSpaceFull() {
+    isSpaceEnough = false;
+  }
+
   public static class Builder {
     private long capacity;
     private double lowWaterMarkOfWrite;

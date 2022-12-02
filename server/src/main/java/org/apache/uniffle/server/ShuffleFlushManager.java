@@ -146,8 +146,9 @@ public class ShuffleFlushManager {
   private void flushToFileImpl(ShuffleDataFlushEvent event) {
     long start = System.currentTimeMillis();
     boolean writeSuccess = false;
-    try {
-      while (true) {
+
+    while (true) {
+      try {
         if (!event.isValid()) {
           writeSuccess = true;
           LOG.warn("AppId {} was removed already, event {} should be dropped", event.getAppId(), event);
@@ -213,20 +214,21 @@ public class ShuffleFlushManager {
           event.increaseRetryTimes();
           ShuffleServerMetrics.incStorageRetryCounter(storage.getStorageHost());
         }
+      } catch (Exception e) {
+        // just log the error, don't throw the exception and stop the flush thread
+        LOG.error("Exception happened when process flush shuffle data for " + event, e);
+        event.increaseRetryTimes();
       }
-    } catch (Exception e) {
-      // just log the error, don't throw the exception and stop the flush thread
-      LOG.error("Exception happened when process flush shuffle data for " + event, e);
-    } finally {
-      cleanupFlushEventData(event);
-      if (shuffleServer != null) {
-        long duration = System.currentTimeMillis() - start;
-        if (writeSuccess) {
-          LOG.debug("Flush to file success in " + duration + " ms and release " + event.getSize() + " bytes");
-        } else {
-          LOG.error("Flush to file for " + event + " failed in "
-              + duration + " ms and release " + event.getSize() + " bytes");
-        }
+    }
+
+    cleanupFlushEventData(event);
+    if (shuffleServer != null) {
+      long duration = System.currentTimeMillis() - start;
+      if (writeSuccess) {
+        LOG.debug("Flush to file success in " + duration + " ms and release " + event.getSize() + " bytes");
+      } else {
+        LOG.error("Flush to file for " + event + " failed in "
+            + duration + " ms and release " + event.getSize() + " bytes");
       }
     }
   }

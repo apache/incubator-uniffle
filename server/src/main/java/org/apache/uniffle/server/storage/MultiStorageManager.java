@@ -102,7 +102,7 @@ public class MultiStorageManager implements StorageManager {
       storageManager = warmStorageManager;
     }
 
-    if (!storageManager.canWrite(event)) {
+    if (!storageManager.canWrite(event) || event.getRetryTimes() > 0) {
       storageManager = storageManagerFallbackStrategy.tryFallback(
           storageManager, event, warmStorageManager, coldStorageManager);
     }
