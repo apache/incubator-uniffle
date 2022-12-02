@@ -60,7 +60,7 @@ public abstract class MultiStorageFaultToleranceBase extends ShuffleReadWriteBas
     shuffleServerClient.close();
   }
 
-  abstract public void makeChaos();
+  abstract void makeChaos();
 
   @Test
   public void fallbackTest() throws Exception {
