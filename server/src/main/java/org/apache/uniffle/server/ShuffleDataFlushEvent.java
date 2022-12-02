@@ -39,7 +39,6 @@ public class ShuffleDataFlushEvent {
   private final ShuffleBuffer shuffleBuffer;
   private final AtomicInteger retryTimes = new AtomicInteger();
   private boolean isPended = false;
-  private StorageManager underStorageManager;
   private Storage underStorage;
 
   public ShuffleDataFlushEvent(
@@ -124,14 +123,6 @@ public class ShuffleDataFlushEvent {
 
   public void setUnderStorage(Storage underStorage) {
     this.underStorage = underStorage;
-  }
-
-  public StorageManager getUnderStorageManager() {
-    return underStorageManager;
-  }
-
-  public void setUnderStorageManager(StorageManager underStorageManager) {
-    this.underStorageManager = underStorageManager;
   }
 
   @Override
