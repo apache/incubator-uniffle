@@ -20,6 +20,9 @@ package org.apache.uniffle.coordinator;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
@@ -33,6 +36,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * QuotaManager is a manager for resource restriction.
@@ -99,5 +103,34 @@ public class QuotaManagerTest {
     Thread.sleep(500);
     // it didn't detectUserResource because `org.apache.unifle.coordinator.AccessQuotaChecker` is not configured
     assertNull(applicationManager.getQuotaManager());
+  }
+
+  @Test
+  public void testCheckQuota() throws Exception {
+    final String quotaFile =
+        new Path(remotePath.getAbsolutePath()).getFileSystem(hdfsConf).getName() + "/quotaFile.properties";
+    CoordinatorConf conf = new CoordinatorConf();
+    conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH,
+        quotaFile);
+    final ApplicationManager applicationManager = new ApplicationManager(conf);
+    final AtomicInteger uuid = new AtomicInteger();
+    Map<String, Long> uuidAndTime = new ConcurrentHashMap<>();
+    uuidAndTime.put(String.valueOf(uuid.incrementAndGet()), System.currentTimeMillis());
+    uuidAndTime.put(String.valueOf(uuid.incrementAndGet()), System.currentTimeMillis());
+    uuidAndTime.put(String.valueOf(uuid.incrementAndGet()), System.currentTimeMillis());
+    uuidAndTime.put(String.valueOf(uuid.incrementAndGet()), System.currentTimeMillis());
+    final int i1 = uuid.incrementAndGet();
+    uuidAndTime.put(String.valueOf(i1), System.currentTimeMillis());
+    Map<String, Long> appAndTime = applicationManager.getQuotaManager().getCurrentUserAndApp()
+        .computeIfAbsent("user1", x -> uuidAndTime);
+    // This thread may remove the uuid and put the appId in.
+    final Thread registerThread = new Thread(() ->
+        applicationManager.getQuotaManager().registerApplicationInfo("application_test_" + i1, appAndTime));
+    registerThread.start();
+    final boolean icCheck = applicationManager.getQuotaManager()
+        .checkQuota("user1", String.valueOf(i1));
+    registerThread.join();
+    assertTrue(icCheck);
+    assertEquals(applicationManager.getQuotaManager().getCurrentUserAndApp().get("user1").size(), 5);
   }
 }
