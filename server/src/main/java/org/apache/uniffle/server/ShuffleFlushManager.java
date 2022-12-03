@@ -99,7 +99,7 @@ public class ShuffleFlushManager {
             try {
               ShuffleServerMetrics.gaugeEventQueueSize.set(flushQueue.size());
               ShuffleServerMetrics.gaugeWriteHandler.inc();
-              flushToFileImpl(event);
+              flushToFile(event);
               ShuffleServerMetrics.gaugeWriteHandler.dec();
             } catch (Exception e) {
               LOG.error("Exception happened when flush data for " + event, e);
@@ -142,11 +142,11 @@ public class ShuffleFlushManager {
     }
   }
 
-  private void flushToFileImpl(ShuffleDataFlushEvent event) {
+  private void flushToFile(ShuffleDataFlushEvent event) {
     long start = System.currentTimeMillis();
     boolean writeSuccess = false;
 
-    while (true) {
+    while (event.getRetryTimes() <= retryMax) {
       try {
         if (!event.isValid()) {
           writeSuccess = true;
@@ -154,15 +154,9 @@ public class ShuffleFlushManager {
           break;
         }
 
-        if (event.getRetryTimes() > retryMax) {
-          LOG.error("Failed to write data for " + event + " in " + retryMax + " times, shuffle data will be lost");
-          ShuffleServerMetrics.incStorageFailedCounter(event.getUnderStorage().getStorageHost());
-          break;
-        }
-
         List<ShufflePartitionedBlock> blocks = event.getShuffleBlocks();
         if (blocks == null || blocks.isEmpty()) {
-          LOG.info("There is no block to be flushed: " + event);
+          LOG.info("There is no block to be flushed: {}", event);
           break;
         }
 
@@ -178,7 +172,6 @@ public class ShuffleFlushManager {
             continue;
           } else {
             if (event.isPended()) {
-              // add metrics
               break;
             }
             event.increaseRetryTimes();
@@ -215,19 +208,23 @@ public class ShuffleFlushManager {
         }
       } catch (Exception e) {
         // just log the error, don't throw the exception and stop the flush thread
-        LOG.error("Exception happened when process flush shuffle data for " + event, e);
+        LOG.error("Exception happened when process flush shuffle data for {}", event, e);
         event.increaseRetryTimes();
       }
+    }
+
+    if (event.getRetryTimes() > retryMax) {
+      LOG.error("Failed to write data for {} in {} times, shuffle data will be lost", event, retryMax);
+      ShuffleServerMetrics.incStorageFailedCounter(event.getUnderStorage().getStorageHost());
     }
 
     cleanupFlushEventData(event);
     if (shuffleServer != null) {
       long duration = System.currentTimeMillis() - start;
       if (writeSuccess) {
-        LOG.debug("Flush to file success in " + duration + " ms and release " + event.getSize() + " bytes");
+        LOG.debug("Flush to file success in {} ms and release {} bytes", duration, event.getSize());
       } else {
-        LOG.error("Flush to file for " + event + " failed in "
-            + duration + " ms and release " + event.getSize() + " bytes");
+        LOG.error("Flush to file for {} failed in {} ms and release {} bytes", event, duration, event.getSize());
       }
     }
   }
