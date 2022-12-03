@@ -104,6 +104,7 @@ public class ShuffleBuffer {
         spBlocks,
         isValid,
         this);
+    event.addCleanupCallback(dataFlushEvent -> this.clearInFlushBuffer(dataFlushEvent.getEventId()));
     inFlushBlockMap.put(eventId, inFlushedQueueBlocks);
     blocks.clear();
     size = 0;

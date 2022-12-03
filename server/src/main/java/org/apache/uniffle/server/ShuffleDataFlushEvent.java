@@ -17,16 +17,21 @@
 
 package org.apache.uniffle.server;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
-import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.storage.common.Storage;
 
 public class ShuffleDataFlushEvent {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ShuffleDataFlushEvent.class);
 
   private final long eventId;
   private final String appId;
@@ -38,8 +43,10 @@ public class ShuffleDataFlushEvent {
   private final Supplier<Boolean> valid;
   private final ShuffleBuffer shuffleBuffer;
   private final AtomicInteger retryTimes = new AtomicInteger();
+
   private boolean isPended = false;
   private Storage underStorage;
+  private final List<Consumer<ShuffleDataFlushEvent>> cleanupCallbackChains;
 
   public ShuffleDataFlushEvent(
       long eventId,
@@ -60,6 +67,7 @@ public class ShuffleDataFlushEvent {
     this.shuffleBlocks = shuffleBlocks;
     this.valid = valid;
     this.shuffleBuffer = shuffleBuffer;
+    this.cleanupCallbackChains = new ArrayList<>();
   }
 
   public List<ShufflePartitionedBlock> getShuffleBlocks() {
@@ -123,6 +131,26 @@ public class ShuffleDataFlushEvent {
 
   public void setUnderStorage(Storage underStorage) {
     this.underStorage = underStorage;
+  }
+
+  public boolean doCleanup() {
+    boolean ret = true;
+    for (Consumer<ShuffleDataFlushEvent> cleanupCallback : cleanupCallbackChains) {
+      try {
+        cleanupCallback.accept(this);
+      } catch (Exception e) {
+        ret = false;
+        LOGGER.error("Errors doing cleanup callback. event: {}", this, e);
+      }
+    }
+    return ret;
+  }
+
+  public void addCleanupCallback(
+      Consumer<ShuffleDataFlushEvent> cleanupCallback) {
+    if (cleanupCallback != null) {
+      cleanupCallbackChains.add(cleanupCallback);
+    }
   }
 
   @Override

@@ -40,7 +40,6 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.ThreadUtils;
-import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.storage.MultiStorageManager;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.storage.common.Storage;
@@ -319,10 +318,7 @@ public class ShuffleFlushManager {
   }
 
   private void cleanupFlushEventData(ShuffleDataFlushEvent event) {
-    ShuffleBuffer shuffleBuffer = event.getShuffleBuffer();
-    if (shuffleBuffer != null) {
-      shuffleBuffer.clearInFlushBuffer(event.getEventId());
-    }
+    event.doCleanup();
     if (shuffleServer != null) {
       shuffleServer.getShuffleBufferManager().releaseMemory(
           event.getSize(), true, false);
