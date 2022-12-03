@@ -71,7 +71,7 @@ public abstract class MultiStorageFaultToleranceBase extends ShuffleReadWriteBas
     registerShuffle(appId, map);
     Roaring64NavigableMap blockBitmap = Roaring64NavigableMap.bitmapOf();
     final List<ShuffleBlockInfo> blocks = createShuffleBlockList(
-        0, 0, 0, 40, 10 * 1024 * 1024, blockBitmap, expectedData);
+        0, 0, 0, 40, 2 * 1024 * 1024, blockBitmap, expectedData);
     makeChaos();
     sendSinglePartitionToShuffleServer(appId, 0, 0, 0, blocks);
     validateResult(appId, 0, 0, blockBitmap, Roaring64NavigableMap.bitmapOf(0), expectedData);
