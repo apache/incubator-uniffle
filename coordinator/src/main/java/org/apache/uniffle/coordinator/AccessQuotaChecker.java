@@ -18,10 +18,8 @@
 package org.apache.uniffle.coordinator;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
 
-import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,23 +50,14 @@ public class AccessQuotaChecker extends AbstractAccessChecker {
     final String uuid = hostIp.hashCode() + "-" + COUNTER.sum();
     final String user = accessInfo.getUser();
     // low version client user attribute is an empty string
-    if (!"".equals(user)) {
-      Map<String, Map<String, Long>> currentUserApps = quotaManager.getCurrentUserAndApp();
-      Map<String, Long> appAndTimes = currentUserApps.computeIfAbsent(user, x -> Maps.newConcurrentMap());
-      Integer defaultAppNum = quotaManager.getDefaultUserApps().getOrDefault(user,
-          conf.getInteger(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_APP_NUM));
-      synchronized (ApplicationManager.class) {
-        int currentAppNum = appAndTimes.size();
-        if (currentAppNum >= defaultAppNum) {
-          String msg = "Denied by AccessQuotaChecker => "
-              + "User: " + user + ", current app num is: " + currentAppNum
-              + ", default app num is: " + defaultAppNum + ". We will reject this app[uuid=" + uuid + "].";
-          LOG.error(msg);
-          CoordinatorMetrics.counterTotalQuotaDeniedRequest.inc();
-          return new AccessCheckResult(false, msg);
-        }
-        appAndTimes.put(uuid, System.currentTimeMillis());
-      }
+    if (!"".equals(user) && quotaManager.checkQuota(user, uuid)) {
+      String msg = "Denied by AccessQuotaChecker => "
+          + "User: " + user + ", current app num is: " + quotaManager.getCurrentUserAndApp().get(user).size()
+          + ", default app num is: " + quotaManager.getDefaultUserApps().get(user)
+          + ". We will reject this app[uuid=" + uuid + "].";
+      LOG.error(msg);
+      CoordinatorMetrics.counterTotalQuotaDeniedRequest.inc();
+      return new AccessCheckResult(false, msg);
     }
     return new AccessCheckResult(true, Constants.COMMON_SUCCESS_MESSAGE, uuid);
   }

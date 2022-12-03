@@ -106,13 +106,10 @@ public class ApplicationManager {
       CoordinatorMetrics.counterTotalAppNum.inc();
       LOG.info("New application is registered: {}", appId);
     }
-    long currentTimeMillis = System.currentTimeMillis();
-    String[] appIdAndUuid = appId.split("_");
-    String uuidFromApp = appIdAndUuid[appIdAndUuid.length - 1];
-    // if appId created successfully, we need to remove the uuid
-    synchronized (ApplicationManager.class) {
-      appAndTime.remove(uuidFromApp);
-      appAndTime.put(appId, currentTimeMillis);
+    if (quotaManager != null) {
+      quotaManager.registerApplicationInfo(appId, appAndTime);
+    } else {
+      appAndTime.put(appId, System.currentTimeMillis());
     }
   }
 

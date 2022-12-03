@@ -49,12 +49,14 @@ public class QuotaManager {
   private final Map<String, Map<String, Long>> currentUserAndApp = Maps.newConcurrentMap();
   private final Map<String, String> appIdToUser = Maps.newConcurrentMap();
   private final String quotaFilePath;
+  private final Integer quotaAppNum;
   private FileSystem hadoopFileSystem;
   private final AtomicLong quotaFileLastModify = new AtomicLong(0L);
   private final Map<String, Integer> defaultUserApps = Maps.newConcurrentMap();
 
   public QuotaManager(CoordinatorConf conf) {
     this.quotaFilePath = conf.get(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH);
+    this.quotaAppNum = conf.getInteger(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_APP_NUM);
     if (quotaFilePath == null) {
       LOG.warn("{} is not configured, each user will use the default quota : {}",
           CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH.key(),
@@ -107,6 +109,31 @@ public class QuotaManager {
       }
     } catch (Exception e) {
       LOG.error("Error occur when parsing file {}", quotaFilePath, e);
+    }
+  }
+
+  public boolean checkQuota(String user, String uuid) {
+    Map<String, Long> appAndTimes = currentUserAndApp.computeIfAbsent(user, x -> Maps.newConcurrentMap());
+    Integer defaultAppNum = defaultUserApps.getOrDefault(user, quotaAppNum);
+    synchronized (this) {
+      int currentAppNum = appAndTimes.size();
+      if (currentAppNum >= defaultAppNum) {
+        return true;
+      } else {
+        appAndTimes.put(uuid, System.currentTimeMillis());
+        return false;
+      }
+    }
+  }
+
+  public void registerApplicationInfo(String appId, Map<String, Long> appAndTime) {
+    long currentTimeMillis = System.currentTimeMillis();
+    String[] appIdAndUuid = appId.split("_");
+    String uuidFromApp = appIdAndUuid[appIdAndUuid.length - 1];
+    // if appId created successfully, we need to remove the uuid
+    synchronized (this) {
+      appAndTime.remove(uuidFromApp);
+      appAndTime.put(appId, currentTimeMillis);
     }
   }
 
