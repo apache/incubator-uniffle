@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.KerberizedHdfsBase;
-import org.apache.uniffle.coordinator.CoordinatorMetrics;
+import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
 public class AccessCandidatesCheckerKerberizedHdfsTest extends KerberizedHdfsBase {
 

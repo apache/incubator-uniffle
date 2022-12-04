@@ -29,12 +29,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.coordinator.AccessCandidatesChecker;
-import org.apache.uniffle.coordinator.AccessInfo;
+import org.apache.uniffle.coordinator.checker.AccessCandidatesChecker;
+import org.apache.uniffle.coordinator.access.AccessInfo;
 import org.apache.uniffle.coordinator.AccessManager;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.coordinator.CoordinatorMetrics;
+import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.storage.HdfsTestBase;
 
 import static java.lang.Thread.sleep;
@@ -70,7 +70,7 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC, 1);
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, clusterPrefix);
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
-        "org.apache.uniffle.coordinator.AccessCandidatesChecker");
+        "org.apache.uniffle.coordinator.checker.AccessCandidatesChecker");
     ApplicationManager applicationManager = new ApplicationManager(conf);
     // file load checking at startup
     Exception expectedException = null;
@@ -81,7 +81,7 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
     }
     assertNotNull(expectedException);
     assertTrue(expectedException.getMessage().contains(
-        "NoSuchMethodException: org.apache.uniffle.coordinator.AccessCandidatesChecker.<init>()"));
+        "NoSuchMethodException: org.apache.uniffle.coordinator.checker.AccessCandidatesChecker.<init>()"));
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, candidatesFile);
     expectedException = null;
     try {
@@ -91,7 +91,7 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
     }
     assertNotNull(expectedException);
     assertTrue(expectedException.getMessage().contains(
-        "NoSuchMethodException: org.apache.uniffle.coordinator.AccessCandidatesChecker.<init>()"));
+        "NoSuchMethodException: org.apache.uniffle.coordinator.checker.AccessCandidatesChecker.<init>()"));
 
     Path path = new Path(candidatesFile);
     FSDataOutputStream out = fs.create(path);

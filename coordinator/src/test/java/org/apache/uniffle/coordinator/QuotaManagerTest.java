@@ -98,7 +98,7 @@ public class QuotaManagerTest {
     conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH,
         quotaFile);
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
-        Lists.newArrayList("org.apache.uniffle.coordinator.AccessClusterLoadChecker"));
+        Lists.newArrayList("org.apache.uniffle.coordinator.checker.AccessClusterLoadChecker"));
     ApplicationManager applicationManager = new ApplicationManager(conf);
     Thread.sleep(500);
     // it didn't detectUserResource because `org.apache.unifle.coordinator.AccessQuotaChecker` is not configured

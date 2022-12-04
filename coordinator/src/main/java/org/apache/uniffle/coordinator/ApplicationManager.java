@@ -38,6 +38,13 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.coordinator.checker.AccessQuotaChecker;
+import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
+import org.apache.uniffle.coordinator.strategy.storage.AppBalanceSelectStorageStrategy;
+import org.apache.uniffle.coordinator.strategy.storage.LowestIOSampleCostSelectStorageStrategy;
+import org.apache.uniffle.coordinator.strategy.storage.RankValue;
+import org.apache.uniffle.coordinator.strategy.storage.SelectStorageStrategy;
+import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 
 public class ApplicationManager {
 
@@ -224,7 +231,7 @@ public class ApplicationManager {
   }
 
   @VisibleForTesting
-  protected Map<String, RankValue> getRemoteStoragePathRankValue() {
+  public Map<String, RankValue> getRemoteStoragePathRankValue() {
     return remoteStoragePathRankValue;
   }
 
@@ -244,7 +251,7 @@ public class ApplicationManager {
   }
 
   @VisibleForTesting
-  protected boolean hasErrorInStatusCheck() {
+  public boolean hasErrorInStatusCheck() {
     return hasErrorInStatusCheck;
   }
 

@@ -39,9 +39,9 @@ import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.util.Constants;
-import org.apache.uniffle.coordinator.AccessCheckResult;
-import org.apache.uniffle.coordinator.AccessChecker;
-import org.apache.uniffle.coordinator.AccessInfo;
+import org.apache.uniffle.coordinator.access.AccessCheckResult;
+import org.apache.uniffle.coordinator.access.AccessChecker;
+import org.apache.uniffle.coordinator.access.AccessInfo;
 import org.apache.uniffle.coordinator.AccessManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServer;
@@ -126,8 +126,8 @@ public class AccessClusterTest extends CoordinatorTestBase {
     coordinatorConf.setString("rss.coordinator.access.candidates.path", cfgFile.getAbsolutePath());
     coordinatorConf.setString(
             "rss.coordinator.access.checkers",
-            "org.apache.uniffle.coordinator.AccessCandidatesChecker,"
-                + "org.apache.uniffle.coordinator.AccessClusterLoadChecker");
+            "org.apache.uniffle.coordinator.checker.AccessCandidatesChecker,"
+                + "org.apache.uniffle.coordinator.checker.AccessClusterLoadChecker");
     createCoordinatorServer(coordinatorConf);
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
