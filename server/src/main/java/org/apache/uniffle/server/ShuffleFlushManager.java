@@ -166,11 +166,15 @@ public class ShuffleFlushManager {
         }
 
         if (!storage.canWrite()) {
+          // todo: Could we add an interface supportPending for storageManager
+          //       to unify following logic of multiple different storage managers
           if (storageManager instanceof MultiStorageManager) {
             event.increaseRetryTimes();
             ShuffleServerMetrics.incStorageRetryCounter(storage.getStorageHost());
             continue;
           } else {
+            // To avoid being re-pushed to pending queue and make the server too much pressure,
+            // it's better to drop directly.
             if (event.isPended()) {
               break;
             }
@@ -224,6 +228,7 @@ public class ShuffleFlushManager {
       if (writeSuccess) {
         LOG.debug("Flush to file success in {} ms and release {} bytes", duration, event.getSize());
       } else {
+        ShuffleServerMetrics.counterTotalFailedWrittenEventNum.inc();
         LOG.error("Flush to file for {} failed in {} ms and release {} bytes", event, duration, event.getSize());
       }
     }
