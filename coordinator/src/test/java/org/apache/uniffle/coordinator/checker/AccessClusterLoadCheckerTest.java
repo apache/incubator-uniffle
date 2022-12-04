@@ -92,7 +92,8 @@ public class AccessClusterLoadCheckerTest {
     when(clusterManager.getServerList(any())).thenReturn(nodes);
 
     CoordinatorConf conf = new CoordinatorConf();
-    conf.set(COORDINATOR_ACCESS_CHECKERS, Arrays.asList("org.apache.uniffle.coordinator.checker.AccessClusterLoadChecker"));
+    conf.set(COORDINATOR_ACCESS_CHECKERS,
+        Arrays.asList("org.apache.uniffle.coordinator.checker.AccessClusterLoadChecker"));
     conf.set(COORDINATOR_SHUFFLE_NODES_MAX, 3);
     conf.set(COORDINATOR_ACCESS_LOADCHECKER_MEMORY_PERCENTAGE, 20.0);
     ApplicationManager applicationManager = new ApplicationManager(conf);
