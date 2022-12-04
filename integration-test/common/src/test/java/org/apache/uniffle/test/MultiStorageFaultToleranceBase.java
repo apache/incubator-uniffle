@@ -30,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
@@ -52,6 +53,7 @@ public abstract class MultiStorageFaultToleranceBase extends ShuffleReadWriteBas
 
   @BeforeEach
   public void createClient() {
+    ShuffleServerClientFactory.getInstance().cleanupCache();
     shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
   }
 
@@ -64,7 +66,7 @@ public abstract class MultiStorageFaultToleranceBase extends ShuffleReadWriteBas
 
   @Test
   public void fallbackTest() throws Exception {
-    String appId = "fallback_test";
+    String appId = "fallback_test_" + this.getClass().getSimpleName();
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Map<Integer, List<Integer>> map = Maps.newHashMap();
     map.put(0, Lists.newArrayList(0));
