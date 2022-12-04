@@ -51,7 +51,7 @@ public class CoordinatorMetrics {
   public static Counter counterTotalCandidatesDeniedRequest;
   public static Counter counterTotalQuotaDeniedRequest;
   public static Counter counterTotalLoadDeniedRequest;
-  public static Map<String, Gauge> gaugeInUsedRemoteStorage = Maps.newConcurrentMap();
+  public static final Map<String, Gauge> GAUGE_USED_REMOTE_STORAGE = Maps.newConcurrentMap();
 
   private static MetricsManager metricsManager;
   private static boolean isRegister = false;
@@ -72,7 +72,7 @@ public class CoordinatorMetrics {
   @VisibleForTesting
   public static void clear() {
     isRegister = false;
-    gaugeInUsedRemoteStorage.clear();
+    GAUGE_USED_REMOTE_STORAGE.clear();
     CollectorRegistry.defaultRegistry.clear();
   }
 
@@ -82,17 +82,17 @@ public class CoordinatorMetrics {
 
   public static void addDynamicGaugeForRemoteStorage(String storageHost) {
     if (!StringUtils.isEmpty(storageHost)) {
-      if (!gaugeInUsedRemoteStorage.containsKey(storageHost)) {
+      if (!GAUGE_USED_REMOTE_STORAGE.containsKey(storageHost)) {
         String metricName = REMOTE_STORAGE_IN_USED_PREFIX + RssUtils.getMetricNameForHostName(storageHost);
-        gaugeInUsedRemoteStorage.putIfAbsent(storageHost,
+        GAUGE_USED_REMOTE_STORAGE.putIfAbsent(storageHost,
             metricsManager.addGauge(metricName));
       }
     }
   }
 
   public static void updateDynamicGaugeForRemoteStorage(String storageHost, double value) {
-    if (gaugeInUsedRemoteStorage.containsKey(storageHost)) {
-      gaugeInUsedRemoteStorage.get(storageHost).set(value);
+    if (GAUGE_USED_REMOTE_STORAGE.containsKey(storageHost)) {
+      GAUGE_USED_REMOTE_STORAGE.get(storageHost).set(value);
     }
   }
 

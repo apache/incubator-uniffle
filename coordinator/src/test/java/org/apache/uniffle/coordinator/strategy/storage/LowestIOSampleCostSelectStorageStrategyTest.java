@@ -100,9 +100,9 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     assertEquals(0,
         applicationManager.getRemoteStoragePathRankValue().get(remoteStorage2).getCostTime().get());
     String storageHost1 = "p1";
-    assertEquals(0.0, CoordinatorMetrics.gaugeInUsedRemoteStorage.get(storageHost1).get(), 0.5);
+    assertEquals(0.0, CoordinatorMetrics.GAUGE_USED_REMOTE_STORAGE.get(storageHost1).get(), 0.5);
     String storageHost2 = "p2";
-    assertEquals(0.0, CoordinatorMetrics.gaugeInUsedRemoteStorage.get(storageHost2).get(), 0.5);
+    assertEquals(0.0, CoordinatorMetrics.GAUGE_USED_REMOTE_STORAGE.get(storageHost2).get(), 0.5);
 
     // compare with two remote path
     applicationManager.incRemoteStorageCounter(remoteStorage1);
