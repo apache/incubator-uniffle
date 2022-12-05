@@ -42,8 +42,8 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.AccessManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.access.AccessCheckResult;
-import org.apache.uniffle.coordinator.access.checker.AccessChecker;
 import org.apache.uniffle.coordinator.access.AccessInfo;
+import org.apache.uniffle.coordinator.access.checker.AccessChecker;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 
