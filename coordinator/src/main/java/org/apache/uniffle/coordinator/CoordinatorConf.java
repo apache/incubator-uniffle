@@ -79,8 +79,8 @@ public class CoordinatorConf extends RssBaseConf {
       .key("rss.coordinator.access.checkers")
       .stringType()
       .asList()
-      .defaultValues("org.apache.uniffle.coordinator.checker.AccessClusterLoadChecker",
-          "org.apache.uniffle.coordinator.checker.AccessQuotaChecker")
+      .defaultValues("org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker",
+          "org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker")
       .withDescription("Access checkers");
   public static final ConfigOption<Integer> COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC = ConfigOptions
       .key("rss.coordinator.access.candidates.updateIntervalSec")

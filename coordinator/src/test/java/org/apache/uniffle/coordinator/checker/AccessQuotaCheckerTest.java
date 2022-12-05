@@ -37,6 +37,8 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.coordinator.SimpleClusterManager;
 import org.apache.uniffle.coordinator.access.AccessInfo;
+import org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker;
+import org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
 import static org.apache.uniffle.common.util.Constants.ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM;
@@ -130,8 +132,8 @@ public class AccessQuotaCheckerTest {
      */
     conf.set(COORDINATOR_QUOTA_DEFAULT_APP_NUM, 10);
     conf.set(COORDINATOR_ACCESS_CHECKERS,
-        Arrays.asList("org.apache.uniffle.coordinator.checker.AccessQuotaChecker",
-            "org.apache.uniffle.coordinator.checker.AccessClusterLoadChecker"));
+        Arrays.asList("org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker",
+            "org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker"));
     applicationManager = new ApplicationManager(conf);
     accessManager = new AccessManager(conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
     accessQuotaChecker = (AccessQuotaChecker) accessManager.getAccessCheckers().get(0);

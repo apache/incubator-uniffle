@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.checker;
+package org.apache.uniffle.coordinator.access.checker;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.LongAdder;

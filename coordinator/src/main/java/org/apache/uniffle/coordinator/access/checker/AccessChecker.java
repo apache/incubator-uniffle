@@ -15,17 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.checker;
+package org.apache.uniffle.coordinator.access.checker;
 
-import org.apache.uniffle.coordinator.AccessManager;
-import org.apache.uniffle.coordinator.access.AccessChecker;
+import java.io.Closeable;
+
+import org.apache.uniffle.coordinator.access.AccessCheckResult;
+import org.apache.uniffle.coordinator.access.AccessInfo;
 
 /**
- *  Abstract class for checking the access info from the client-side.
+ * Interface for checking the access info from the client-side.
  */
-public abstract class AbstractAccessChecker implements AccessChecker {
+public interface AccessChecker extends Closeable {
 
-  protected AbstractAccessChecker(AccessManager accessManager) throws Exception {
-    
-  }
+  /**
+   * Called when the AccessManager handle the access request.
+   *
+   * @param accessInfo access info of the client
+   * @return  access check result
+   */
+  AccessCheckResult check(AccessInfo accessInfo);
 }

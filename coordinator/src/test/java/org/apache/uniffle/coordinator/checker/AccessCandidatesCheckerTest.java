@@ -34,6 +34,7 @@ import org.apache.uniffle.coordinator.AccessManager;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.access.AccessInfo;
+import org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
 import static java.lang.Thread.sleep;

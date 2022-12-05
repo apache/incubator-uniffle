@@ -43,8 +43,8 @@ public class SparkSQLWithDelegationShuffleManager extends SparkSQLTest {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setString(
         CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
-        "org.apache.uniffle.coordinator.checker.AccessCandidatesChecker,"
-            + "org.apache.uniffle.coordinator.checker.AccessClusterLoadChecker");
+        "org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker,"
+            + "org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker");
     coordinatorConf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, candidates);
     coordinatorConf.set(CoordinatorConf.COORDINATOR_APP_EXPIRED, 5000L);
     coordinatorConf.set(CoordinatorConf.COORDINATOR_ACCESS_LOADCHECKER_SERVER_NUM_THRESHOLD, 1);

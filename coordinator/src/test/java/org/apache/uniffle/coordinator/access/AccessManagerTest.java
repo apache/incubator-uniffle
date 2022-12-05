@@ -30,7 +30,7 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.AccessManager;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.coordinator.checker.AbstractAccessChecker;
+import org.apache.uniffle.coordinator.access.checker.AbstractAccessChecker;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

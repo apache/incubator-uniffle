@@ -100,7 +100,7 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
     uris = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
     if (remoteStoragePathRankValue.size() > 1) {
       for (Map.Entry<String, RankValue> uri : uris) {
-        if (uri.getKey().startsWith(ApplicationManager.REMOTE_PATH_SCHEMA.get(0))) {
+        if (uri.getKey().startsWith(ApplicationManager.getPathSchema().get(0))) {
           Path remotePath = new Path(uri.getKey());
           String rssTest = uri.getKey() + "/rssTest";
           Path testPath = new Path(rssTest);

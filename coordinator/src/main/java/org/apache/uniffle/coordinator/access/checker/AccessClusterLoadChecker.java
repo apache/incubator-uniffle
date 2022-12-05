@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.checker;
+package org.apache.uniffle.coordinator.access.checker;
 
 import java.util.List;
 import java.util.Set;

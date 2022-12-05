@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ThreadUtils;
-import org.apache.uniffle.coordinator.checker.AccessQuotaChecker;
+import org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.strategy.storage.AppBalanceSelectStorageStrategy;
 import org.apache.uniffle.coordinator.strategy.storage.LowestIOSampleCostSelectStorageStrategy;
@@ -50,7 +50,7 @@ public class ApplicationManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ApplicationManager.class);
   // TODO: Add anomaly detection for other storage
-  public static final List<String> REMOTE_PATH_SCHEMA = Arrays.asList("hdfs");
+  private static final List<String> REMOTE_PATH_SCHEMA = Arrays.asList("hdfs");
   private final long expired;
   private final StrategyName storageStrategy;
   private final SelectStorageStrategy selectStorageStrategy;
@@ -334,6 +334,10 @@ public class ApplicationManager {
 
   public QuotaManager getQuotaManager() {
     return quotaManager;
+  }
+
+  public static List<String> getPathSchema() {
+    return REMOTE_PATH_SCHEMA;
   }
 
   public enum StrategyName {
