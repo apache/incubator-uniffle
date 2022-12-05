@@ -64,7 +64,7 @@ public class AccessCandidatesCheckerTest {
     CoordinatorConf conf = new CoordinatorConf(filePath);
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, tempDir.toURI().toString());
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
-        "org.apache.uniffle.coordinator.checker.AccessCandidatesChecker");
+        "org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker");
     final ApplicationManager applicationManager = new ApplicationManager(conf);
     // file load checking at startup
     Exception expectedException = null;
@@ -75,7 +75,7 @@ public class AccessCandidatesCheckerTest {
     }
     assertNotNull(expectedException);
     assertTrue(expectedException.getMessage().contains(
-        "NoSuchMethodException: org.apache.uniffle.coordinator.checker.AccessCandidatesChecker.<init>()"));
+        "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, cfgFile.toURI().toString());
     expectedException = null;
     try {
@@ -85,7 +85,7 @@ public class AccessCandidatesCheckerTest {
     }
     assertNotNull(expectedException);
     assertTrue(expectedException.getMessage().contains(
-        "NoSuchMethodException: org.apache.uniffle.coordinator.checker.AccessCandidatesChecker.<init>()"));
+        "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
 
     // load the config at the beginning
     FileWriter fileWriter = new FileWriter(cfgFile);

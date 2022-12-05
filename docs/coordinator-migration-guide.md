@@ -1,8 +1,8 @@
 ---
 layout: page
-displayTitle: Uniffle Coordinator Migration Guide
-title: Uniffle Coordinator Migration Guide
-description: Uniffle Coordinator Migration Guide
+displayTitle: Uniffle Migration Guide
+title: Uniffle Migration Guide
+description: Uniffle Migration Guide
 license: |
 Licensed to the Apache Software Foundation (ASF) under one or more
 contributor license agreements.  See the NOTICE file distributed with

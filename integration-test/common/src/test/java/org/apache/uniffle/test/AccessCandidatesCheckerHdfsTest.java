@@ -70,7 +70,7 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC, 1);
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, clusterPrefix);
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
-        "org.apache.uniffle.coordinator.checker.AccessCandidatesChecker");
+        "org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker");
     ApplicationManager applicationManager = new ApplicationManager(conf);
     // file load checking at startup
     Exception expectedException = null;
@@ -81,7 +81,7 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
     }
     assertNotNull(expectedException);
     assertTrue(expectedException.getMessage().contains(
-        "NoSuchMethodException: org.apache.uniffle.coordinator.checker.AccessCandidatesChecker.<init>()"));
+        "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, candidatesFile);
     expectedException = null;
     try {
@@ -91,7 +91,7 @@ public class AccessCandidatesCheckerHdfsTest extends HdfsTestBase {
     }
     assertNotNull(expectedException);
     assertTrue(expectedException.getMessage().contains(
-        "NoSuchMethodException: org.apache.uniffle.coordinator.checker.AccessCandidatesChecker.<init>()"));
+        "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
 
     Path path = new Path(candidatesFile);
     FSDataOutputStream out = fs.create(path);

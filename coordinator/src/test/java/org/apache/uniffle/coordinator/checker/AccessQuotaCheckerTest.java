@@ -92,7 +92,7 @@ public class AccessQuotaCheckerTest {
 
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(COORDINATOR_ACCESS_CHECKERS,
-        Collections.singletonList("org.apache.uniffle.coordinator.checker.AccessQuotaChecker"));
+        Collections.singletonList("org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker"));
     conf.set(COORDINATOR_QUOTA_DEFAULT_APP_NUM, 3);
     ApplicationManager applicationManager = new ApplicationManager(conf);
     AccessManager accessManager = new AccessManager(conf, clusterManager,
