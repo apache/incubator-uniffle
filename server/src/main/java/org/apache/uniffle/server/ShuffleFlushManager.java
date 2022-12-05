@@ -176,6 +176,7 @@ public class ShuffleFlushManager {
             // To avoid being re-pushed to pending queue and make the server too much pressure,
             // it's better to drop directly.
             if (event.isPended()) {
+              LOG.error("Drop this event directly due to already having entered pending queue. event: {}", event);
               break;
             }
             event.increaseRetryTimes();
@@ -210,9 +211,9 @@ public class ShuffleFlushManager {
           event.increaseRetryTimes();
           ShuffleServerMetrics.incStorageRetryCounter(storage.getStorageHost());
         }
-      } catch (Exception e) {
+      } catch (Throwable throwable) {
         // just log the error, don't throw the exception and stop the flush thread
-        LOG.error("Exception happened when process flush shuffle data for {}", event, e);
+        LOG.error("Exception happened when process flush shuffle data for {}", event, throwable);
         event.increaseRetryTimes();
       }
     }
