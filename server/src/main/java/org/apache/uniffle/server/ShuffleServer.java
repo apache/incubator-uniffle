@@ -161,7 +161,6 @@ public class ShuffleServer {
     id = ip + "-" + port;
     LOG.info("Start to initialize server {}", id);
     jettyServer = new JettyServer(shuffleServerConf);
-    registerMetrics();
 
     SecurityConfig securityConfig = null;
     if (shuffleServerConf.getBoolean(RSS_SECURITY_HADOOP_KERBEROS_ENABLE)) {
@@ -191,6 +190,8 @@ public class ShuffleServer {
     shuffleTaskManager = new ShuffleTaskManager(shuffleServerConf, shuffleFlushManager,
         shuffleBufferManager, storageManager);
 
+    registerMetrics();
+
     setServer();
 
     initServerTags();
@@ -218,6 +219,9 @@ public class ShuffleServer {
     JvmMetrics.register(jvmCollectorRegistry, verbose);
 
     LOG.info("Add metrics servlet");
+    jettyServer.addServlet(
+      new CommonMetricsServlet(shuffleTaskManager.metricsManager.getCollectorRegistry(), true),
+      "/metrics/app");
     jettyServer.addServlet(
         new CommonMetricsServlet(ShuffleServerMetrics.getCollectorRegistry()),
         "/metrics/server");

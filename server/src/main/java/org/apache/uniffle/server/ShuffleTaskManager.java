@@ -20,11 +20,13 @@ package org.apache.uniffle.server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -37,7 +39,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
+import io.prometheus.client.CollectorRegistry;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.uniffle.common.metrics.MetricsManager;
 import org.roaringbitmap.longlong.LongIterator;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -90,6 +94,8 @@ public class ShuffleTaskManager {
   private Runnable clearResourceThread;
   private BlockingQueue<PurgeEvent> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
   // appId -> shuffleId -> serverReadHandler
+
+  public MetricsManager metricsManager = new MetricsManager(null);
 
   public ShuffleTaskManager(
       ShuffleServerConf conf,
@@ -287,6 +293,33 @@ public class ShuffleTaskManager {
         bitmap.addLong(spb.getBlockId());
       }
     }
+
+    // compute top 10 used shuffle bytes apps and add as metrics. This metrics does not pursue
+    // strong consistency.
+    Map<String, ShuffleTaskInfo> snapshot = new TreeMap<>(
+      new Comparator<Map.Entry<String, ShuffleTaskInfo>>() {
+      public int compare(Map.Entry<String, ShuffleTaskInfo> o1, Map.Entry<String, ShuffleTaskInfo> o2)
+      {
+        long leftBytes =
+          o1.getValue()
+            .getCachedBlockIds()
+          .values().stream()
+          .reduce((a, b) -> a.getLongCardinality() + b.getLongCardinality())
+
+        long rightBytes =
+          o2.getValue()
+            .getCachedBlockIds()
+            .values().stream()
+            .reduce((a, b) -> a.getLongCardinality() + b.getLongCardinality())
+        return rightBytes - leftBytes
+      }
+    });
+
+    snapshot.putAll(shuffleTaskInfos);
+    // get 10 from the snapshot
+    // snapshot.get(10)...
+    // build the histogram,
+    // metricsManager.addHistogram("top_10_app_shuffle_bytes_usage", )
   }
 
   public Roaring64NavigableMap getCachedBlockIds(String appId, int shuffleId) {
