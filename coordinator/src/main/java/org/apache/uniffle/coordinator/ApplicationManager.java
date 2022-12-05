@@ -50,7 +50,7 @@ public class ApplicationManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ApplicationManager.class);
   // TODO: Add anomaly detection for other storage
-  public static List<String> remotePathSchema = Arrays.asList("hdfs");
+  public static final List<String> REMOTE_PATH_SCHEMA = Arrays.asList("hdfs");
   private final long expired;
   private final StrategyName storageStrategy;
   private final SelectStorageStrategy selectStorageStrategy;

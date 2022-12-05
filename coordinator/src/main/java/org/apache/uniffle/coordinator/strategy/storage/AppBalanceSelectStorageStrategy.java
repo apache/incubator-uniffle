@@ -85,7 +85,7 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
     uris = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
     if (remoteStoragePathRankValue.size() > 1) {
       for (Map.Entry<String, RankValue> uri : uris) {
-        if (uri.getKey().startsWith(ApplicationManager.remotePathSchema.get(0))) {
+        if (uri.getKey().startsWith(ApplicationManager.REMOTE_PATH_SCHEMA.get(0))) {
           RankValue rankValue = remoteStoragePathRankValue.get(uri.getKey());
           rankValue.setHealthy(new AtomicBoolean(true));
           Path remotePath = new Path(uri.getKey());
