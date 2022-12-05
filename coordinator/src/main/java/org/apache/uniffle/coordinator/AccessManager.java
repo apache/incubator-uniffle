@@ -29,8 +29,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.access.AccessCheckResult;
-import org.apache.uniffle.coordinator.access.checker.AccessChecker;
 import org.apache.uniffle.coordinator.access.AccessInfo;
+import org.apache.uniffle.coordinator.access.checker.AccessChecker;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
 public class AccessManager {
