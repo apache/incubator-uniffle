@@ -99,7 +99,7 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
   public ShuffleDataResult readShuffleData() {
     if (BlockSkipStrategy.MINMAX.equals(blockSkipStrategy) && lastBlockId == Constants.INVALID_BLOCK_ID) {
       Roaring64NavigableMap bitmap = RssUtils.cloneBitMap(expectBlockIds);
-      bitmap.or(processBlockIds);
+      bitmap.xor(processBlockIds);
       expectedBlockIdRange = RssUtils.generateRangeSegments(bitmap, maxBlockIdRangeSegments);
     }
     ShuffleDataResult result = null;
