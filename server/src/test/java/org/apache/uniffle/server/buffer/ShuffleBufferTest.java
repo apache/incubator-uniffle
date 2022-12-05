@@ -92,7 +92,7 @@ public class ShuffleBufferTest extends BufferTestBase {
         exceptBlockIds.add(shufflePartitionedBlock.getBlockId());
       }
     }
-    return shuffleBuffer.getShuffleData(lastBlockId, readBufferSize, processedBlockIds, exceptBlockIds);
+    return shuffleBuffer.getShuffleData(lastBlockId, readBufferSize, exceptBlockIds);
   }
 
   @Test

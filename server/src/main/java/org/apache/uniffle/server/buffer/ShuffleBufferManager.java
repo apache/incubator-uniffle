@@ -158,13 +158,15 @@ public class ShuffleBufferManager {
         partitionId,
         blockId,
         readBufferSize,
+        null,
         null
     );
   }
 
   public ShuffleDataResult getShuffleData(
       String appId, int shuffleId, int partitionId, long blockId,
-      int readBufferSize, Roaring64NavigableMap expectedTaskIds) {
+      int readBufferSize, Roaring64NavigableMap expectedTaskIds,
+      List<Long> expectedBlockIdRange) {
     Map.Entry<Range<Integer>, ShuffleBuffer> entry = getShuffleBufferEntry(
         appId, shuffleId, partitionId);
     if (entry == null) {

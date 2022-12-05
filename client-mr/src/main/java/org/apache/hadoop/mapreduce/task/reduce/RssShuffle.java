@@ -42,6 +42,7 @@ import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
+import org.apache.uniffle.common.BlockSkipStrategy;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.UnitConverter;
@@ -82,6 +83,8 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
   private int readBufferSize;
   private RemoteStorageInfo remoteStorageInfo;
   private int appAttemptId;
+  private BlockSkipStrategy blockSkipStrategy;
+  private int maxBlockIdRangeSegments;
 
   @Override
   public void init(ShuffleConsumerPlugin.Context context) {
@@ -109,6 +112,12 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
         RssMRConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE);
     this.replica = RssMRUtils.getInt(rssJobConf, mrJobConf, RssMRConfig.RSS_DATA_REPLICA,
         RssMRConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
+    blockSkipStrategy = BlockSkipStrategy.valueOf(RssMRUtils.getString(rssJobConf, mrJobConf,
+            RssMRConfig.RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY,
+        RssMRConfig.RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY_DEFAULT_VALUE));
+    maxBlockIdRangeSegments = RssMRUtils.getInt(rssJobConf, mrJobConf,
+        RssMRConfig.RSS_CLIENT_READ_FILTER_MINMAX_MAX_SEGMENTS,
+        RssMRConfig.RSS_CLIENT_READ_FILTER_MINMAX_MAX_SEGMENTS_DEFAULT_VALUE);
 
     this.partitionNum = mrJobConf.getNumReduceTasks();
     this.partitionNumPerRange = RssMRUtils.getInt(rssJobConf, mrJobConf, RssMRConfig.RSS_PARTITION_NUM_PER_RANGE,
@@ -194,7 +203,7 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
       CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
           appId, 0, reduceId.getTaskID().getId(), storageType, basePath, indexReadLimit, readBufferSize,
           partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, serverInfoList,
-          readerJobConf, new MRIdHelper());
+          readerJobConf, new MRIdHelper(), blockSkipStrategy, maxBlockIdRangeSegments);
       ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
       RssFetcher fetcher = new RssFetcher(mrJobConf, reduceId, taskStatus, merger, copyPhase, reporter, metrics,
           shuffleReadClient, blockIdBitmap.getLongCardinality(), RssMRConfig.toRssConf(rssJobConf));

@@ -124,7 +124,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
         0,
         Constants.INVALID_BLOCK_ID,
         60,
-        Roaring64NavigableMap.bitmapOf(1)
+        Roaring64NavigableMap.bitmapOf(1),
+        null
     );
     assertEquals(1, result.getBufferSegments().size());
     assertEquals(0, result.getBufferSegments().get(0).getOffset());
@@ -138,7 +139,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
         0,
         lastBlockId,
         60,
-        Roaring64NavigableMap.bitmapOf(1)
+        Roaring64NavigableMap.bitmapOf(1),
+        null
     );
     assertEquals(1, result.getBufferSegments().size());
     assertEquals(0, result.getBufferSegments().get(0).getOffset());
@@ -176,12 +178,12 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
 
     // validate get shuffle data
     ShuffleDataResult sdr = shuffleBufferManager.getShuffleData(
-        appId, 2, 0, Constants.INVALID_BLOCK_ID, 60, processedBlockIds, exceptBlockIds);
+        appId, 2, 0, Constants.INVALID_BLOCK_ID, 60, exceptBlockIds, null);
     assertArrayEquals(spd2.getBlockList()[0].getData(), sdr.getData());
     long lastBlockId = spd2.getBlockList()[0].getBlockId();
     processedBlockIds = Roaring64NavigableMap.bitmapOf();
     sdr = shuffleBufferManager.getShuffleData(
-        appId, 2, 0, lastBlockId, 100, processedBlockIds, exceptBlockIds);
+        appId, 2, 0, lastBlockId, 100, exceptBlockIds, null);
     assertArrayEquals(spd3.getBlockList()[0].getData(), sdr.getData());
     // flush happen
     ShufflePartitionedData spd5 = createData(0, 10);
@@ -198,12 +200,12 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     // data in flush buffer now, it also can be got before flush finish
     processedBlockIds = Roaring64NavigableMap.bitmapOf();
     sdr = shuffleBufferManager.getShuffleData(
-        appId, 2, 0, Constants.INVALID_BLOCK_ID, 60, processedBlockIds, exceptBlockIds);
+        appId, 2, 0, Constants.INVALID_BLOCK_ID, 60, exceptBlockIds, null);
     assertArrayEquals(spd2.getBlockList()[0].getData(), sdr.getData());
     lastBlockId = spd2.getBlockList()[0].getBlockId();
     processedBlockIds = Roaring64NavigableMap.bitmapOf();
     sdr = shuffleBufferManager.getShuffleData(
-        appId, 2, 0, lastBlockId, 100, processedBlockIds, exceptBlockIds);
+        appId, 2, 0, lastBlockId, 100, exceptBlockIds, null);
     assertArrayEquals(spd3.getBlockList()[0].getData(), sdr.getData());
     // cache data again, it should cause flush
     spd1 = createData(0, 10);
@@ -216,12 +218,12 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     // empty data return
     processedBlockIds = Roaring64NavigableMap.bitmapOf();
     sdr = shuffleBufferManager.getShuffleData(
-        appId, 2, 0, Constants.INVALID_BLOCK_ID, 60, processedBlockIds, exceptBlockIds);
+        appId, 2, 0, Constants.INVALID_BLOCK_ID, 60, exceptBlockIds, null);
     assertEquals(0, sdr.getData().length);
     lastBlockId = spd2.getBlockList()[0].getBlockId();
     processedBlockIds = Roaring64NavigableMap.bitmapOf();
     sdr = shuffleBufferManager.getShuffleData(
-        appId, 2, 0, lastBlockId, 100, processedBlockIds, exceptBlockIds);
+        appId, 2, 0, lastBlockId, 100, exceptBlockIds, null);
     assertEquals(0, sdr.getData().length);
   }
 

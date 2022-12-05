@@ -87,7 +87,9 @@ public class ShuffleClientFactory {
         request.getHadoopConf(),
         request.getIdHelper(),
         request.getShuffleDataDistributionType(),
-        request.isExpectedTaskIdsBitmapFilterEnable()
+        request.isExpectedTaskIdsBitmapFilterEnable(),
+        request.getBlockSkipStrategy(),
+        request.getMaxBlockIdRangeSegments()
     );
   }
 }

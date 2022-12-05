@@ -61,7 +61,7 @@ public class RssClientConfig {
   // The tags specified by rss client to determine server assignment.
   public static final String RSS_CLIENT_ASSIGNMENT_TAGS = "rss.client.assignment.tags";
   public static final String RSS_TEST_MODE_ENABLE = "rss.test.mode.enable";
-  
+
   public static final String RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL = "rss.client.assignment.retry.interval";
   public static final long RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE = 65000;
   public static final String RSS_CLIENT_ASSIGNMENT_RETRY_TIMES = "rss.client.assignment.retry.times";
@@ -86,4 +86,11 @@ public class RssClientConfig {
   public static final String RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER = "rss.estimate.task.concurrency.per.server";
   public static final int RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE = 80;
 
+  public static final String RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY = "rss.client.read.block.skip.strategy";
+
+  public static final String RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY_DEFAULT_VALUE = "BITMAP";
+
+  public static final String RSS_CLIENT_READ_FILTER_MINMAX_MAX_SEGMENTS =
+      "rss.client.read.block.skip.minmax.segments.max";
+  public static final int RSS_CLIENT_READ_FILTER_MINMAX_MAX_SEGMENTS_DEFAULT_VALUE = 10;
 }
