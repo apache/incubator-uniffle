@@ -85,14 +85,13 @@ public class ShuffleBufferTest extends BufferTestBase {
 
   private ShuffleDataResult getShuffleData(ShuffleBuffer shuffleBuffer, long lastBlockId,
                                            int readBufferSize, ShufflePartitionedData... spds) {
-    Roaring64NavigableMap processedBlockIds = Roaring64NavigableMap.bitmapOf();
-    Roaring64NavigableMap exceptBlockIds = Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap exceptTaskIds = Roaring64NavigableMap.bitmapOf();
     for (ShufflePartitionedData spd : spds) {
       for (ShufflePartitionedBlock shufflePartitionedBlock : spd.getBlockList()) {
-        exceptBlockIds.add(shufflePartitionedBlock.getBlockId());
+        exceptTaskIds.add(shufflePartitionedBlock.getTaskAttemptId());
       }
     }
-    return shuffleBuffer.getShuffleData(lastBlockId, readBufferSize, exceptBlockIds);
+    return shuffleBuffer.getShuffleData(lastBlockId, readBufferSize, exceptTaskIds);
   }
 
   @Test
@@ -266,7 +265,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     ShufflePartitionedData spd2 = createData(20);
     shuffleBuffer.append(spd1);
     shuffleBuffer.append(spd2);
-    byte[] expectedData = getExpectedData(spd1, spd2);;
+    byte[] expectedData = getExpectedData(spd1, spd2);
     ShuffleDataResult sdr = getShuffleData(shuffleBuffer, Constants.INVALID_BLOCK_ID, 40, spd1, spd2);
     compareBufferSegment(shuffleBuffer.getBlocks(), sdr.getBufferSegments(), 0, 2);
     assertArrayEquals(expectedData, sdr.getData());
