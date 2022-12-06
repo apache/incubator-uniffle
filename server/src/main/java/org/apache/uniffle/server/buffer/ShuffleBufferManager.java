@@ -218,6 +218,7 @@ public class ShuffleBufferManager {
             shuffleFlushManager.getDataDistributionType(appId)
         );
     if (event != null) {
+      event.addCleanupCallback(dataFlushEvent -> releaseMemory(dataFlushEvent.getSize(), true, false));
       updateShuffleSize(appId, shuffleId, -event.getSize());
       inFlushSize.addAndGet(event.getSize());
       ShuffleServerMetrics.gaugeInFlushBufferSize.set(inFlushSize.get());

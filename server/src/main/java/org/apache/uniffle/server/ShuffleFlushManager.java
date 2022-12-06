@@ -223,7 +223,7 @@ public class ShuffleFlushManager {
       ShuffleServerMetrics.incStorageFailedCounter(event.getUnderStorage().getStorageHost());
     }
 
-    cleanupFlushEventData(event);
+    event.doCleanup();
     if (shuffleServer != null) {
       long duration = System.currentTimeMillis() - start;
       if (writeSuccess) {
@@ -322,15 +322,11 @@ public class ShuffleFlushManager {
 
   private void cleanupFlushEventData(ShuffleDataFlushEvent event) {
     event.doCleanup();
-    if (shuffleServer != null) {
-      shuffleServer.getShuffleBufferManager().releaseMemory(
-          event.getSize(), true, false);
-    }
   }
 
   private void dropPendingEvent(PendingShuffleFlushEvent event) {
     ShuffleServerMetrics.counterTotalDroppedEventNum.inc();
-    cleanupFlushEventData(event.getEvent());
+    event.getEvent().doCleanup();
   }
 
   @VisibleForTesting
