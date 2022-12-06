@@ -59,4 +59,10 @@ public class ShuffleServerClientFactory {
     }
     return serverToClients.get(shuffleServerInfo);
   }
+
+  // Only for tests
+  public synchronized void cleanupCache() {
+    clients.values().stream().flatMap(x -> x.values().stream()).forEach(ShuffleServerClient::close);
+    this.clients = Maps.newConcurrentMap();
+  }
 }

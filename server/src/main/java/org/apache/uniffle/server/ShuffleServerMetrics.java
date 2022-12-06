@@ -71,6 +71,7 @@ public class ShuffleServerMetrics {
   private static final String USED_BUFFER_SIZE = "used_buffer_size";
   private static final String TOTAL_UPLOAD_SIZE = "total_upload_size";
   private static final String TOTAL_UPLOAD_TIME_S = "total_upload_time_s";
+  private static final String TOTAL_FAILED_WRITTEN_EVENT_NUM = "total_failed_written_event_num";
   private static final String TOTAL_DROPPED_EVENT_NUM = "total_dropped_event_num";
   private static final String TOTAL_HDFS_WRITE_DATA = "total_hdfs_write_data";
   private static final String TOTAL_LOCALFILE_WRITE_DATA = "total_localfile_write_data";
@@ -102,6 +103,7 @@ public class ShuffleServerMetrics {
   public static Counter counterTotalReadTime;
   public static Counter counterTotalUploadSize;
   public static Counter counterTotalUploadTimeS;
+  public static Counter counterTotalFailedWrittenEventNum;
   public static Counter counterTotalDroppedEventNum;
   public static Counter counterTotalHdfsWriteDataSize;
   public static Counter counterTotalLocalFileWriteDataSize;
@@ -251,6 +253,7 @@ public class ShuffleServerMetrics {
     counterTotalUploadSize = metricsManager.addCounter(TOTAL_UPLOAD_SIZE);
     counterTotalUploadTimeS = metricsManager.addCounter(TOTAL_UPLOAD_TIME_S);
     counterTotalDroppedEventNum = metricsManager.addCounter(TOTAL_DROPPED_EVENT_NUM);
+    counterTotalFailedWrittenEventNum = metricsManager.addCounter(TOTAL_FAILED_WRITTEN_EVENT_NUM);
     counterTotalHdfsWriteDataSize = metricsManager.addCounter(TOTAL_HDFS_WRITE_DATA);
     counterTotalLocalFileWriteDataSize = metricsManager.addCounter(TOTAL_LOCALFILE_WRITE_DATA);
     counterTotalRequireBufferFailed = metricsManager.addCounter(TOTAL_REQUIRE_BUFFER_FAILED);

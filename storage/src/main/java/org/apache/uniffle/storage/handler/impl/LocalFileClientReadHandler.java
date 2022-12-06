@@ -90,7 +90,7 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
       shuffleIndexResult = shuffleServerClient.getShuffleIndex(request).getShuffleIndexResult();
     } catch (Exception e) {
       throw new RssException("Failed to read shuffle index for appId[" + appId + "], shuffleId["
-        + shuffleId + "], partitionId[" + partitionId + "] due to " + e.getMessage());
+        + shuffleId + "], partitionId[" + partitionId + "]", e);
     }
     return shuffleIndexResult;
   }

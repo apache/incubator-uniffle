@@ -18,7 +18,6 @@
 package org.apache.uniffle.test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,11 +26,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
@@ -44,37 +43,17 @@ import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class MultiStorageFaultToleranceTest extends ShuffleReadWriteBase {
+public abstract class MultiStorageFaultToleranceBase extends ShuffleReadWriteBase {
   private ShuffleServerGrpcClient shuffleServerClient;
   private static String REMOTE_STORAGE = HDFS_URI + "rss/multi_storage_fault";
 
-  @BeforeAll
-  public static void setupServers() throws Exception {
-    final CoordinatorConf coordinatorConf = getCoordinatorConf();
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    String basePath = generateBasePath();
-    shuffleServerConf.setDouble(ShuffleServerConf.CLEANUP_THRESHOLD, 0.0);
-    shuffleServerConf.setDouble(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE, 100.0);
-    shuffleServerConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 100);
-    shuffleServerConf.setLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 30L);
-    shuffleServerConf.setLong(ShuffleServerConf.SHUFFLE_EXPIRED_TIMEOUT_MS, 5000L);
-    shuffleServerConf.setLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60L * 1000L * 60L);
-    shuffleServerConf.setLong(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 20L * 1000L);
-    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS.name());
-    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
-    shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 400L * 1024L * 1024L);
-    createAndStartServers(shuffleServerConf, coordinatorConf);
-  }
-
   @BeforeEach
   public void createClient() {
+    ShuffleServerClientFactory.getInstance().cleanupCache();
     shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
   }
 
@@ -83,19 +62,19 @@ public class MultiStorageFaultToleranceTest extends ShuffleReadWriteBase {
     shuffleServerClient.close();
   }
 
+  abstract void makeChaos();
+
   @Test
-  public void hdfsFallbackTest() throws Exception {
-    String appId = "fallback_test";
+  public void fallbackTest() throws Exception {
+    String appId = "fallback_test_" + this.getClass().getSimpleName();
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Map<Integer, List<Integer>> map = Maps.newHashMap();
     map.put(0, Lists.newArrayList(0));
     registerShuffle(appId, map);
     Roaring64NavigableMap blockBitmap = Roaring64NavigableMap.bitmapOf();
     final List<ShuffleBlockInfo> blocks = createShuffleBlockList(
-        0, 0, 0, 40, 10 * 1024 * 1024, blockBitmap, expectedData);
-    assertEquals(1, cluster.getDataNodes().size());
-    cluster.stopDataNode(0);
-    assertEquals(0, cluster.getDataNodes().size());
+        0, 0, 0, 40, 2 * 1024 * 1024, blockBitmap, expectedData);
+    makeChaos();
     sendSinglePartitionToShuffleServer(appId, 0, 0, 0, blocks);
     validateResult(appId, 0, 0, blockBitmap, Roaring64NavigableMap.bitmapOf(0), expectedData);
   }
