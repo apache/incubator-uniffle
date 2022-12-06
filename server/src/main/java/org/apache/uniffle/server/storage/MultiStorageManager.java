@@ -110,7 +110,7 @@ public class MultiStorageManager implements StorageManager {
           storageManager, event, warmStorageManager, coldStorageManager);
     }
     eventOfUnderStorageManagers.put(event, storageManager);
-    event.addCleanupCallback(dataFlushEvent -> eventOfUnderStorageManagers.invalidate(dataFlushEvent));
+    event.addCleanupCallback(() -> eventOfUnderStorageManagers.invalidate(event));
     return storageManager;
   }
 

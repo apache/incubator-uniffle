@@ -20,7 +20,6 @@ package org.apache.uniffle.server;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -46,7 +45,7 @@ public class ShuffleDataFlushEvent {
 
   private boolean isPended = false;
   private Storage underStorage;
-  private final List<Consumer<ShuffleDataFlushEvent>> cleanupCallbackChains;
+  private final List<Runnable> cleanupCallbackChains;
 
   public ShuffleDataFlushEvent(
       long eventId,
@@ -135,9 +134,9 @@ public class ShuffleDataFlushEvent {
 
   public boolean doCleanup() {
     boolean ret = true;
-    for (Consumer<ShuffleDataFlushEvent> cleanupCallback : cleanupCallbackChains) {
+    for (Runnable cleanupCallback : cleanupCallbackChains) {
       try {
-        cleanupCallback.accept(this);
+        cleanupCallback.run();
       } catch (Exception e) {
         ret = false;
         LOGGER.error("Errors doing cleanup callback. event: {}", this, e);
@@ -147,7 +146,7 @@ public class ShuffleDataFlushEvent {
   }
 
   public void addCleanupCallback(
-      Consumer<ShuffleDataFlushEvent> cleanupCallback) {
+      Runnable cleanupCallback) {
     if (cleanupCallback != null) {
       cleanupCallbackChains.add(cleanupCallback);
     }
