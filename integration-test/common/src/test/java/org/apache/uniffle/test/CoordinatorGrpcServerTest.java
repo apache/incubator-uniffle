@@ -26,7 +26,7 @@ import org.apache.uniffle.client.request.RssApplicationInfoRequest;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.rpc.GrpcServer;
-import org.apache.uniffle.coordinator.CoordinatorGrpcMetrics;
+import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
 import org.apache.uniffle.proto.CoordinatorServerGrpc;
 import org.apache.uniffle.proto.RssProtos;
 

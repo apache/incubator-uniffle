@@ -25,9 +25,11 @@ import org.apache.uniffle.common.config.ConfigOptions;
 import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.coordinator.strategy.assignment.AbstractAssignmentStrategy;
+import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategyFactory;
 
 import static org.apache.uniffle.coordinator.ApplicationManager.StrategyName.APP_BALANCE;
-import static org.apache.uniffle.coordinator.AssignmentStrategyFactory.StrategyName.PARTITION_BALANCE;
+import static org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategyFactory.StrategyName.PARTITION_BALANCE;
 
 /**
  * Configuration for Coordinator Service and rss-cluster, including service port,
@@ -77,8 +79,8 @@ public class CoordinatorConf extends RssBaseConf {
       .key("rss.coordinator.access.checkers")
       .stringType()
       .asList()
-      .defaultValues("org.apache.uniffle.coordinator.AccessClusterLoadChecker",
-          "org.apache.uniffle.coordinator.AccessQuotaChecker")
+      .defaultValues("org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker",
+          "org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker")
       .withDescription("Access checkers");
   public static final ConfigOption<Integer> COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC = ConfigOptions
       .key("rss.coordinator.access.candidates.updateIntervalSec")

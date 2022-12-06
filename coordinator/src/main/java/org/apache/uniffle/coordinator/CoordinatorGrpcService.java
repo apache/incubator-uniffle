@@ -33,6 +33,10 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.coordinator.access.AccessCheckResult;
+import org.apache.uniffle.coordinator.access.AccessInfo;
+import org.apache.uniffle.coordinator.strategy.assignment.PartitionRangeAssignment;
+import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 import org.apache.uniffle.proto.CoordinatorServerGrpc;
 import org.apache.uniffle.proto.RssProtos.AccessClusterRequest;
 import org.apache.uniffle.proto.RssProtos.AccessClusterResponse;
@@ -67,7 +71,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
 
   private final CoordinatorServer coordinatorServer;
 
-  CoordinatorGrpcService(CoordinatorServer coordinatorServer) {
+  public CoordinatorGrpcService(CoordinatorServer coordinatorServer) {
     this.coordinatorServer = coordinatorServer;
   }
 

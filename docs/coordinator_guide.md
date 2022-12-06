@@ -87,7 +87,7 @@ This document will introduce how to deploy Uniffle coordinators.
 |rss.coordinator.dynamicClientConf.path|-|The path of configuration file which have default conf for rss client|
 |rss.coordinator.exclude.nodes.file.path|-|The path of configuration file which have exclude nodes|
 |rss.coordinator.exclude.nodes.check.interval.ms|60000|Update interval (ms) for exclude nodes|
-|rss.coordinator.access.checkers|org.apache.uniffle.coordinator.AccessClusterLoadChecker|The access checkers will be used when the spark client use the DelegationShuffleManager, which will decide whether to use rss according to the result of the specified access checkers|
+|rss.coordinator.access.checkers|org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker|The access checkers will be used when the spark client use the DelegationShuffleManager, which will decide whether to use rss according to the result of the specified access checkers|
 |rss.coordinator.access.loadChecker.memory.percentage|15.0|The minimal percentage of available memory percentage of a server|
 |rss.coordinator.dynamicClientConf.enabled|false|whether to enable dynamic client conf, which will be fetched by spark client|
 |rss.coordinator.dynamicClientConf.path|-|The dynamic client conf of this cluster and can be stored in HDFS or local|
@@ -102,6 +102,9 @@ This document will introduce how to deploy Uniffle coordinators.
 |rss.coordinator.startup-silent-period.enabled|false|Enable the startup-silent-period to reject the assignment requests for avoiding partial assignments. To avoid service interruption, this mechanism is disabled by default. Especially it's recommended to use in coordinator HA mode when restarting single coordinator.|
 |rss.coordinator.startup-silent-period.duration|20000|The waiting duration(ms) when conf of rss.coordinator.startup-silent-period.enabled is enabled.|
 |rss.coordinator.select.partition.strategy|ROUND|There are two strategies for selecting partitions: ROUND and CONTINUOUS. ROUND will poll to allocate partitions to ShuffleServer, and CONTINUOUS will try to allocate consecutive partitions to ShuffleServer, this feature can improve performance in AQE scenarios.|
+|rss.coordinator.quota.update.interval|60000|Update interval for the default number of submitted apps per user.|
+|rss.coordinator.quota.default.path|-|A configuration file for the number of apps for a user-defined user.|
+|rss.coordinator.quota.default.app.num|5|Default number of apps at user level.|
 
 ### AccessClusterLoadChecker settings
 |Property Name|Default|	Description|

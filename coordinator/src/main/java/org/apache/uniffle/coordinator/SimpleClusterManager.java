@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
 public class SimpleClusterManager implements ClusterManager {
 
@@ -226,7 +227,7 @@ public class SimpleClusterManager implements ClusterManager {
   }
 
   @VisibleForTesting
-  void clear() {
+  public void clear() {
     servers.clear();
   }
 
