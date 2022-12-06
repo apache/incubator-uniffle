@@ -177,7 +177,7 @@ public class ShuffleBufferManager {
     if (buffer == null) {
       return null;
     }
-    return buffer.getShuffleData(blockId, readBufferSize, expectedTaskIds);
+    return buffer.getShuffleData(blockId, readBufferSize, expectedTaskIds, expectedBlockIdRange);
   }
 
   void flushSingleBufferIfNecessary(ShuffleBuffer buffer, String appId,

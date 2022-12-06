@@ -79,7 +79,6 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       Configuration hadoopConf,
       IdHelper idHelper,
       ShuffleDataDistributionType dataDistributionType,
-      boolean expectedTaskIdsBitmapFilterEnable,
       BlockSkipStrategy blockSkipStrategy,
       int maxBlockIdRangeSegments) {
     this.shuffleId = shuffleId;
@@ -105,11 +104,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setProcessBlockIds(processedBlockIds);
     request.setDistributionType(dataDistributionType);
     request.setExpectTaskIds(taskIdBitmap);
-    if (BlockSkipStrategy.BITMAP.equals(blockSkipStrategy)) {
-      if (expectedTaskIdsBitmapFilterEnable) {
-        request.useExpectedTaskIdsBitmapFilter();
-      }
-    } else if (BlockSkipStrategy.MINMAX.equals(blockSkipStrategy)) {
+    if (BlockSkipStrategy.MINMAX.equals(blockSkipStrategy)) {
       request.setMaxBlockIdRangeSegments(maxBlockIdRangeSegments);
     }
     request.setBlockSkipStrategy(blockSkipStrategy);
@@ -149,7 +144,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     this(storageType, appId, shuffleId, partitionId, indexReadLimit,
         partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
         blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf,
-        idHelper, ShuffleDataDistributionType.NORMAL, false, BlockSkipStrategy.BITMAP, 0);
+        idHelper, ShuffleDataDistributionType.NORMAL, BlockSkipStrategy.BITMAP, 0);
   }
 
   @Override

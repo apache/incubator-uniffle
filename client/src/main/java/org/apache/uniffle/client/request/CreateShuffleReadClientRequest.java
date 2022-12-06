@@ -45,7 +45,6 @@ public class CreateShuffleReadClientRequest {
   private Configuration hadoopConf;
   private IdHelper idHelper;
   private ShuffleDataDistributionType shuffleDataDistributionType = ShuffleDataDistributionType.NORMAL;
-  private boolean expectedTaskIdsBitmapFilterEnable = false;
   private BlockSkipStrategy blockSkipStrategy;
   private int maxBlockIdRangeSegments;
 
@@ -64,14 +63,12 @@ public class CreateShuffleReadClientRequest {
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
       ShuffleDataDistributionType dataDistributionType,
-      boolean expectedTaskIdsBitmapFilterEnable,
       BlockSkipStrategy blockSkipStrategy,
       int maxBlockIdRangeSegments) {
     this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
         hadoopConf, new DefaultIdHelper(), blockSkipStrategy, maxBlockIdRangeSegments);
     this.shuffleDataDistributionType = dataDistributionType;
-    this.expectedTaskIdsBitmapFilterEnable = expectedTaskIdsBitmapFilterEnable;
   }
 
   public CreateShuffleReadClientRequest(
@@ -188,10 +185,6 @@ public class CreateShuffleReadClientRequest {
 
   public ShuffleDataDistributionType getShuffleDataDistributionType() {
     return shuffleDataDistributionType;
-  }
-
-  public boolean isExpectedTaskIdsBitmapFilterEnable() {
-    return expectedTaskIdsBitmapFilterEnable;
   }
 
   public int getMaxBlockIdRangeSegments() {

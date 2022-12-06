@@ -63,7 +63,6 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
         readBufferSize,
         shuffleServerClient,
         null,
-        false,
         null,
         null,
         BlockSkipStrategy.BITMAP,
@@ -77,7 +76,6 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
       int readBufferSize,
       ShuffleServerClient shuffleServerClient,
       Roaring64NavigableMap expectTaskIds,
-      boolean expectedTaskIdsBitmapFilterEnable,
       Roaring64NavigableMap expectBlockIds,
       Roaring64NavigableMap processBlockIds,
       BlockSkipStrategy blockSkipStrategy,
@@ -88,7 +86,6 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
     this.readBufferSize = readBufferSize;
     this.shuffleServerClient = shuffleServerClient;
     this.expectTaskIds = expectTaskIds;
-    this.expectedTaskIdsBitmapFilterEnable = expectedTaskIdsBitmapFilterEnable;
     this.expectBlockIds = expectBlockIds;
     this.processBlockIds = processBlockIds;
     this.blockSkipStrategy = blockSkipStrategy;
@@ -101,6 +98,9 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
       Roaring64NavigableMap bitmap = RssUtils.cloneBitMap(expectBlockIds);
       bitmap.xor(processBlockIds);
       expectedBlockIdRange = RssUtils.generateRangeSegments(bitmap, maxBlockIdRangeSegments);
+      if (expectedBlockIdRange.size() == 0) {
+        return null;
+      }
     }
     ShuffleDataResult result = null;
 

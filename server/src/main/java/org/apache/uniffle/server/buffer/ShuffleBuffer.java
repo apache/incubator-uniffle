@@ -290,7 +290,7 @@ public class ShuffleBuffer {
       }
 
       if (CollectionUtils.isNotEmpty(expectedBlockIdRange)
-          && RssUtils.checkIfBlockInRange(expectedBlockIdRange, block.getBlockId())) {
+          && !RssUtils.checkIfBlockInRange(expectedBlockIdRange, block.getBlockId())) {
         continue;
       }
       // add bufferSegment with block
@@ -330,7 +330,7 @@ public class ShuffleBuffer {
         continue;
       }
       if (CollectionUtils.isNotEmpty(expectedBlockIdRange)
-          && RssUtils.checkIfBlockInRange(expectedBlockIdRange, block.getBlockId())) {
+          && !RssUtils.checkIfBlockInRange(expectedBlockIdRange, block.getBlockId())) {
         continue;
       }
       // add bufferSegment with block
