@@ -164,7 +164,8 @@ public class LocalStorageChecker extends Checker {
       if (storage.isCorrupted()) {
         return false;
       }
-      File checkDir = new File(storageDir, "check");
+      // Use the hidden file to avoid being cleanup
+      File checkDir = new File(storageDir, ".check");
       try {
         if (!checkDir.mkdirs()) {
           return false;
@@ -196,13 +197,13 @@ public class LocalStorageChecker extends Checker {
           } while (readBytes != -1);
         }
       } catch (Exception e) {
-        LOG.error("Storage read and write error ", e);
+        LOG.error("Storage read and write error. Storage dir: {}", storageDir, e);
         return false;
       } finally {
         try {
           FileUtils.deleteDirectory(checkDir);
         } catch (IOException ioe) {
-          LOG.error("delete directory fail", ioe);
+          LOG.error("delete directory fail. Storage dir: {}", storageDir, ioe);
           return false;
         }
       }

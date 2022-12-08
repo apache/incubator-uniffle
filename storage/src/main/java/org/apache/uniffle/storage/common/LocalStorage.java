@@ -323,7 +323,7 @@ public class LocalStorage extends AbstractStorage {
     File[] files = baseFolder.listFiles();
     if (files != null) {
       for (File file : files) {
-        if (file.isDirectory()) {
+        if (file.isDirectory() && !file.isHidden()) {
           appIds.add(file.getName());
         }
       }
