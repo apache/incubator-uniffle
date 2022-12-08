@@ -705,8 +705,14 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     // make sure heartbeat timeout and resources are removed
     Thread.sleep(5000);
 
+    // Create the hidden dir to simulate LocalStorageChecker's check
+    String storageDir = tempDir.getAbsolutePath();
+    File hiddenFile = new File(storageDir + "/" + LocalStorageChecker.CHECKER_DIR_NAME);
+    hiddenFile.mkdir();
+
     appIdsOnDisk = getAppIdsOnDisk(localStorageManager);
     assertFalse(appIdsOnDisk.contains(appId));
+    assertFalse(appIdsOnDisk.contains(LocalStorageChecker.CHECKER_DIR_NAME));
 
     // mock leak shuffle data
     File file = new File(tempDir, appId);
@@ -717,6 +723,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     // execute checkLeakShuffleData
     shuffleTaskManager.checkLeakShuffleData();
     assertFalse(file.exists());
+    assertTrue(hiddenFile.exists());
   }
 
   private Set<String> getAppIdsOnDisk(LocalStorageManager localStorageManager) {

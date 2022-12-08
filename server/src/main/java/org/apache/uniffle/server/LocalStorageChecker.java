@@ -37,6 +37,7 @@ import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 public class LocalStorageChecker extends Checker {
 
   private static final Logger LOG = LoggerFactory.getLogger(LocalStorageChecker.class);
+  public static final String CHECKER_DIR_NAME = ".check";
 
   private final double diskMaxUsagePercentage;
   private final double diskRecoveryUsagePercentage;
@@ -164,7 +165,8 @@ public class LocalStorageChecker extends Checker {
       if (storage.isCorrupted()) {
         return false;
       }
-      File checkDir = new File(storageDir, "check");
+      // Use the hidden file to avoid being cleanup
+      File checkDir = new File(storageDir, CHECKER_DIR_NAME);
       try {
         if (!checkDir.mkdirs()) {
           return false;
@@ -196,13 +198,13 @@ public class LocalStorageChecker extends Checker {
           } while (readBytes != -1);
         }
       } catch (Exception e) {
-        LOG.error("Storage read and write error ", e);
+        LOG.error("Storage read and write error. Storage dir: {}", storageDir, e);
         return false;
       } finally {
         try {
           FileUtils.deleteDirectory(checkDir);
         } catch (IOException ioe) {
-          LOG.error("delete directory fail", ioe);
+          LOG.error("delete directory fail. Storage dir: {}", storageDir, ioe);
           return false;
         }
       }
