@@ -37,6 +37,7 @@ import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 public class LocalStorageChecker extends Checker {
 
   private static final Logger LOG = LoggerFactory.getLogger(LocalStorageChecker.class);
+  public static final String CHECKER_DIR_NAME = ".check";
 
   private final double diskMaxUsagePercentage;
   private final double diskRecoveryUsagePercentage;
@@ -165,7 +166,7 @@ public class LocalStorageChecker extends Checker {
         return false;
       }
       // Use the hidden file to avoid being cleanup
-      File checkDir = new File(storageDir, ".check");
+      File checkDir = new File(storageDir, CHECKER_DIR_NAME);
       try {
         if (!checkDir.mkdirs()) {
           return false;
