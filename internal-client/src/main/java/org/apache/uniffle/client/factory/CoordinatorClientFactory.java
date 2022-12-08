@@ -50,7 +50,7 @@ public class CoordinatorClientFactory {
     LOG.info("Start to create coordinator clients from {}", coordinators);
     List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
     String[] coordinatorList = coordinators.trim().split(",");
-    if (coordinatorList.length <= 0) {
+    if (coordinatorList.length == 0) {
       String msg = "Invalid " + coordinators;
       LOG.error(msg);
       throw new RuntimeException(msg);

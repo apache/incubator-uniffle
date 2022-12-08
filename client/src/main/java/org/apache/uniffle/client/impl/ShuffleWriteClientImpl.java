@@ -115,7 +115,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int replicaWrite,
       int replicaRead,
       boolean replicaSkipEnabled,
-      int dataTranferPoolSize,
+      int dataTransferPoolSize,
       int dataCommitPoolSize,
       int unregisterThreadPoolSize,
       int unregisterRequestTimeSec) {
@@ -129,7 +129,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     this.replicaWrite = replicaWrite;
     this.replicaRead = replicaRead;
     this.replicaSkipEnabled = replicaSkipEnabled;
-    this.dataTransferPool = Executors.newFixedThreadPool(dataTranferPoolSize);
+    this.dataTransferPool = Executors.newFixedThreadPool(dataTransferPoolSize);
     this.dataCommitPoolSize = dataCommitPoolSize;
     this.unregisterThreadPoolSize = unregisterThreadPoolSize;
     this.unregisterRequestTimeSec = unregisterRequestTimeSec;
@@ -661,6 +661,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     });
     try {
       List<Future<Void>> futures = heartBeatExecutorService.invokeAll(callableList, timeoutMs, TimeUnit.MILLISECONDS);
+      // comment for discuss: due to the documentation of invokeAll, Feature.isDone is true for all the returned features.
       for (Future<Void> future : futures) {
         if (!future.isDone()) {
           future.cancel(true);

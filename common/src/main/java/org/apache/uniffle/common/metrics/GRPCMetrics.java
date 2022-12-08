@@ -33,10 +33,10 @@ public abstract class GRPCMetrics {
   private static final String GRPC_SERVER_EXECUTOR_ACTIVE_THREADS = "grpc_server_executor_active_threads";
   public static final String GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY = "grpcServerExecutorBlockingQueueSize";
   private static final String GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE = "grpc_server_executor_blocking_queue_size";
-  public static final String GRCP_SERVER_CONNECTION_NUMBER_KEY = "grpcServerConnectionNumber";
-  private static final String GRCP_SERVER_CONNECTION_NUMBER = "grpc_server_connection_number";
+  public static final String GRPC_SERVER_CONNECTION_NUMBER_KEY = "grpcServerConnectionNumber";
+  private static final String GRPC_SERVER_CONNECTION_NUMBER = "grpc_server_connection_number";
 
-  private boolean isRegister = false;
+  private boolean isRegistered = false;
   protected Map<String, Counter> counterMap = Maps.newConcurrentMap();
   protected Map<String, Gauge> gaugeMap = Maps.newConcurrentMap();
   protected Map<String, Summary> transportTimeSummaryMap = Maps.newConcurrentMap();
@@ -48,11 +48,11 @@ public abstract class GRPCMetrics {
   public abstract void registerMetrics();
 
   public void register(CollectorRegistry collectorRegistry) {
-    if (!isRegister) {
+    if (!isRegistered) {
       metricsManager = new MetricsManager(collectorRegistry);
       registerGeneralMetrics();
       registerMetrics();
-      isRegister = true;
+      isRegistered = true;
     }
   }
 
@@ -66,13 +66,13 @@ public abstract class GRPCMetrics {
         metricsManager.addGauge(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE)
     );
     gaugeMap.putIfAbsent(
-        GRCP_SERVER_CONNECTION_NUMBER_KEY,
-        metricsManager.addGauge(GRCP_SERVER_CONNECTION_NUMBER)
+            GRPC_SERVER_CONNECTION_NUMBER_KEY,
+        metricsManager.addGauge(GRPC_SERVER_CONNECTION_NUMBER)
     );
   }
 
   public void setGauge(String tag, double value) {
-    if (isRegister) {
+    if (isRegistered) {
       Gauge gauge = gaugeMap.get(tag);
       if (gauge != null) {
         gauge.set(value);
@@ -81,7 +81,7 @@ public abstract class GRPCMetrics {
   }
 
   public void incCounter(String methodName) {
-    if (isRegister) {
+    if (isRegistered) {
       Gauge gauge = gaugeMap.get(methodName);
       if (gauge != null) {
         gauge.inc();
@@ -96,7 +96,7 @@ public abstract class GRPCMetrics {
   }
 
   public void decCounter(String methodName) {
-    if (isRegister) {
+    if (isRegistered) {
       Gauge gauge = gaugeMap.get(methodName);
       if (gauge != null) {
         gauge.dec();

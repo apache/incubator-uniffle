@@ -156,7 +156,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       return null;
     }
 
-    // if need request new data from shuffle server
+    // if client need request new data from shuffle server
     if (bufferSegmentQueue.isEmpty()) {
       if (read() <= 0) {
         return null;
@@ -183,8 +183,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
         long actualCrc = -1;
         try {
           long start = System.currentTimeMillis();
-          copyTime.addAndGet(System.currentTimeMillis() - start);
-          start = System.currentTimeMillis();
+          // copyTime seems make no sense?
           expectedCrc = bs.getCrc();
           actualCrc = ChecksumUtils.getCrc32(readBuffer, bs.getOffset(), bs.getLength());
           crcCheckTime.addAndGet(System.currentTimeMillis() - start);

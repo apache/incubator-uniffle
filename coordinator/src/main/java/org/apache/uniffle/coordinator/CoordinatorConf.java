@@ -31,7 +31,7 @@ import static org.apache.uniffle.coordinator.AssignmentStrategyFactory.StrategyN
 
 /**
  * Configuration for Coordinator Service and rss-cluster, including service port,
- * heartbeat interval and etc.
+ * heartbeat interval, etc.
  */
 public class CoordinatorConf extends RssBaseConf {
 

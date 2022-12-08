@@ -54,7 +54,6 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
   private long readTime = 0;
   private long serializeTime = 0;
   private long decompressTime = 0;
-  private Input deserializationInput = null;
   private DeserializationStream deserializationStream = null;
   private ByteBufInputStream byteBufInputStream = null;
   private long compressedBytesLength = 0;
@@ -95,13 +94,9 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
         LOG.warn("Can't close ByteBufInputStream, memory may be leaked.");
       }
     }
-    if (deserializationInput != null) {
-      deserializationInput.close();
-    }
     if (deserializationStream != null) {
       deserializationStream.close();
     }
-    deserializationInput = null;
     deserializationStream = null;
     byteBufInputStream = null;
   }
