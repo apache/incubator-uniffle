@@ -221,7 +221,7 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
         + " hot:" + hostHandlerMetric.getReadUncompressLength()
         + " warm:" + warmHandlerMetric.getReadUncompressLength()
         + " cold:" + coldHandlerMetric.getReadUncompressLength()
-        + " frozen:" + hostHandlerMetric.getReadUncompressLength() + " ], Skipped["
+        + " frozen:" + frozenHandlerMetric.getReadUncompressLength() + " ], Skipped["
         + " hot:" + hostHandlerMetric.getSkippedReadUncompressLength()
         + " warm:" + warmHandlerMetric.getSkippedReadUncompressLength()
         + " cold:" + coldHandlerMetric.getSkippedReadUncompressLength()

@@ -200,12 +200,15 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     sdr  = composedClientReadHandler.readShuffleData();
     assertNull(sdr);
 
-    assert (composedClientReadHandler.getReadBlokNumInfo()
-        .contains("Client read 8 blocks [ hot:3 warm:3 cold:2 frozen:0 ]"));
-    assert (composedClientReadHandler.getReadLengthInfo()
-        .contains("Client read 625 bytes [ hot:75 warm:150 cold:400 frozen:0 ]"));
-    assert (composedClientReadHandler.getReadUncompressLengthInfo()
-        .contains("Client read 625 uncompressed bytes [ hot:75 warm:150 cold:400 frozen:0 ]"));
+    String readBlokNumInfo = composedClientReadHandler.getReadBlokNumInfo();
+    assert (readBlokNumInfo.contains("8 blocks")
+        && readBlokNumInfo.contains("Consumed[ hot:3 warm:3 cold:2 frozen:0 ]"));
+    String readLengthInfo = composedClientReadHandler.getReadLengthInfo();
+    assert (readLengthInfo.contains("625 bytes")
+    && readLengthInfo.contains("Consumed[ hot:75 warm:150 cold:400 frozen:0 ]"));
+    String readUncompressLengthInfo = composedClientReadHandler.getReadUncompressLengthInfo();
+    assert (readUncompressLengthInfo.contains("625 uncompressed bytes")
+    && readUncompressLengthInfo.contains("Consumed[ hot:75 warm:150 cold:400 frozen:0 ]"));
   }
 
   protected void waitFlush(String appId, int shuffleId) throws InterruptedException {
