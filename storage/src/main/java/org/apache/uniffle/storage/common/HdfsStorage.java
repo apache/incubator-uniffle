@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
-import org.apache.uniffle.storage.handler.impl.HdfsShuffleWriteHandler;
+import org.apache.uniffle.storage.handler.impl.PooledHdfsShuffleWriteHandler;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 
@@ -99,7 +99,7 @@ public class HdfsStorage extends AbstractStorage {
   ShuffleWriteHandler newWriteHandler(CreateShuffleWriteHandlerRequest request) {
     try {
       String user = request.getUser();
-      return new HdfsShuffleWriteHandler(
+      return new PooledHdfsShuffleWriteHandler(
           request.getAppId(),
           request.getShuffleId(),
           request.getStartPartition(),
@@ -107,7 +107,8 @@ public class HdfsStorage extends AbstractStorage {
           storagePath,
           request.getFileNamePrefix(),
           conf,
-          user
+          user,
+          request.getMaxFileNumber()
       );
     } catch (Exception e) {
       throw new RuntimeException(e);

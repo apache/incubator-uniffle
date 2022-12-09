@@ -314,6 +314,12 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(3600 * 1000L)
           .withDescription("the interval of leak shuffle data check");
 
+  public static final ConfigOption<Integer> SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION = ConfigOptions
+      .key("rss.server.max.concurrency.of.single-one-partition")
+      .intType()
+      .defaultValue(1)
+      .withDescription("The max concurrency of single one partition, the data partition size is equals to this value.");
+
   public ShuffleServerConf() {
   }
 

@@ -31,6 +31,7 @@ public class CreateShuffleWriteHandlerRequest {
   private Configuration conf;
   private int storageDataReplica;
   private String user;
+  private int maxFileNumber;
 
   public CreateShuffleWriteHandlerRequest(
       String storageType,
@@ -43,6 +44,33 @@ public class CreateShuffleWriteHandlerRequest {
       Configuration conf,
       int storageDataReplica,
       String user) {
+    this(
+      storageType,
+      appId,
+      shuffleId,
+        startPartition,
+        endPartition,
+        storageBasePaths,
+        fileNamePrefix,
+        conf,
+        storageDataReplica,
+        user,
+        1
+    );
+  }
+
+  public CreateShuffleWriteHandlerRequest(
+      String storageType,
+      String appId,
+      int shuffleId,
+      int startPartition,
+      int endPartition,
+      String[] storageBasePaths,
+      String fileNamePrefix,
+      Configuration conf,
+      int storageDataReplica,
+      String user,
+      int maxFileNumber) {
     this.storageType = storageType;
     this.appId = appId;
     this.shuffleId = shuffleId;
@@ -53,6 +81,7 @@ public class CreateShuffleWriteHandlerRequest {
     this.conf = conf;
     this.storageDataReplica = storageDataReplica;
     this.user = user;
+    this.maxFileNumber = maxFileNumber;
   }
 
   public String getStorageType() {
@@ -97,5 +126,9 @@ public class CreateShuffleWriteHandlerRequest {
 
   public void setUser(String user) {
     this.user = user;
+  }
+
+  public int getMaxFileNumber() {
+    return maxFileNumber;
   }
 }
