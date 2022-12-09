@@ -17,16 +17,21 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.storage.handler.ClientReadHandlerMetric;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
 
 public abstract class AbstractClientReadHandler implements ClientReadHandler {
-
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractClientReadHandler.class);
   protected String appId;
   protected int shuffleId;
   protected int partitionId;
   protected int readBufferSize;
+  protected ClientReadHandlerMetric readHandlerMetric = new ClientReadHandlerMetric();
 
   @Override
   public ShuffleDataResult readShuffleData() {
@@ -38,10 +43,32 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
   }
 
   @Override
-  public void updateConsumedBlockInfo(BufferSegment bs) {
+  public void updateConsumedBlockInfo(BufferSegment bs, boolean skipped) {
+    if (bs == null) {
+      return;
+    }
+    updateBlockMetric(readHandlerMetric, bs, skipped);
   }
 
   @Override
   public void logConsumedBlockInfo() {
+    LOG.info("Client read [" + readHandlerMetric.getReadBlockNum() + " blocks,"
+        + " bytes:" +  readHandlerMetric.getReadLength() + " uncompressed bytes:"
+        + readHandlerMetric.getReadUncompressLength()
+        + "], skipped[" + readHandlerMetric.getSkippedReadBlockNum() + " blocks,"
+        + " bytes:" +  readHandlerMetric.getSkippedReadLength() + " uncompressed bytes:"
+        + readHandlerMetric.getSkippedReadUncompressLength() + "]");
+  }
+
+  protected void updateBlockMetric(ClientReadHandlerMetric metric, BufferSegment bs, boolean skipped) {
+    if (skipped) {
+      metric.incSkippedReadBlockNum();
+      metric.incSkippedReadLength(bs.getLength());
+      metric.incSkippedReadUncompressLength(bs.getUncompressLength());
+    } else {
+      metric.incReadBlockNum();
+      metric.incReadLength(bs.getLength());
+      metric.incReadUncompressLength(bs.getUncompressLength());
+    }
   }
 }

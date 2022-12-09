@@ -199,6 +199,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
           //so exception should not be thrown here if blocks have multiple replicas
           if (shuffleServerInfoList.size() > 1) {
             LOG.warn(errMsg);
+            clientReadHandler.updateConsumedBlockInfo(bs, true);
             continue;
           } else {
             throw new RssException(errMsg);
@@ -209,9 +210,10 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
         processedBlockIds.addLong(bs.getBlockId());
         pendingBlockIds.removeLong(bs.getBlockId());
         // only update the statistics of necessary blocks
-        clientReadHandler.updateConsumedBlockInfo(bs);
+        clientReadHandler.updateConsumedBlockInfo(bs, false);
         break;
       }
+      clientReadHandler.updateConsumedBlockInfo(bs, true);
       // mark block as processed
       processedBlockIds.addLong(bs.getBlockId());
       pendingBlockIds.removeLong(bs.getBlockId());

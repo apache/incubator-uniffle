@@ -28,6 +28,7 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.storage.handler.ClientReadHandlerMetric;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
 
 public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
@@ -36,10 +37,7 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
 
   private final List<ClientReadHandler> handlers;
   private final List<ShuffleServerInfo> shuffleServerInfos;
-
-  private long readBlockNum = 0L;
-  private long readLength = 0L;
-  private long readUncompressLength = 0L;
+  private ClientReadHandlerMetric readHandlerMetric = new ClientReadHandlerMetric();
   private final Roaring64NavigableMap blockIdBitmap;
   private final Roaring64NavigableMap processedBlockIds;
 
@@ -87,18 +85,14 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
   }
 
   @Override
-  public void updateConsumedBlockInfo(BufferSegment bs) {
-    if (bs == null) {
-      return;
-    }
-    readBlockNum++;
-    readLength += bs.getLength();
-    readUncompressLength += bs.getUncompressLength();
+  public void updateConsumedBlockInfo(BufferSegment bs, boolean skipped) {
+    super.updateConsumedBlockInfo(bs, skipped);
+    handlers.get(Math.max(readHandlerIndex, handlers.size() - 1)).updateConsumedBlockInfo(bs, skipped);
   }
 
   @Override
   public void logConsumedBlockInfo() {
-    LOG.info("Client read " + readBlockNum + " blocks,"
-        + " bytes:" +  readLength + " uncompressed bytes:" + readUncompressLength);
+    super.logConsumedBlockInfo();
+    handlers.forEach(ClientReadHandler::logConsumedBlockInfo);
   }
 }

@@ -110,7 +110,7 @@ public class ShuffleHandlerFactory {
       throw new RssException("This should not happen due to the unknown storage type: " + storageType);
     }
 
-    return new ComposedClientReadHandler(handlers);
+    return new ComposedClientReadHandler(serverInfo, handlers);
   }
 
   private ClientReadHandler getMemoryClientReadHandler(CreateShuffleReadHandlerRequest request, ShuffleServerInfo ssi) {

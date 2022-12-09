@@ -29,7 +29,6 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
@@ -50,11 +49,6 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
   protected final Configuration hadoopConf;
   protected final List<HdfsShuffleReadHandler> readHandlers = Lists.newArrayList();
   private int readHandlerIndex;
-
-  private long readBlockNum = 0L;
-  private long readLength = 0L;
-  private long readUncompressLength = 0L;
-
   private ShuffleDataDistributionType distributionType;
   private Roaring64NavigableMap expectTaskIds;
 
@@ -195,21 +189,5 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
 
   protected int getReadHandlerIndex() {
     return readHandlerIndex;
-  }
-
-  @Override
-  public void updateConsumedBlockInfo(BufferSegment bs) {
-    if (bs == null) {
-      return;
-    }
-    readBlockNum++;
-    readLength += bs.getLength();
-    readUncompressLength += bs.getUncompressLength();
-  }
-
-  @Override
-  public void logConsumedBlockInfo() {
-    LOG.info("Client read " + readBlockNum + " blocks,"
-        + " bytes:" +  readLength + "  uncompressed bytes:" + readUncompressLength);
   }
 }

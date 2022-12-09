@@ -38,6 +38,7 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
@@ -126,7 +127,8 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     handlers[0] = memoryClientReadHandler;
     handlers[1] = localFileClientReadHandler;
     handlers[2] = hdfsClientReadHandler;
-    ComposedClientReadHandler composedClientReadHandler = new ComposedClientReadHandler(handlers);
+    ComposedClientReadHandler composedClientReadHandler = new ComposedClientReadHandler(
+        new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT), handlers);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     expectedData.clear();
     expectedData.put(blocks.get(0).getBlockId(), blocks.get(0).getData());
@@ -137,7 +139,7 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     processBlockIds.addLong(blocks.get(0).getBlockId());
     processBlockIds.addLong(blocks.get(1).getBlockId());
     processBlockIds.addLong(blocks.get(2).getBlockId());
-    sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs));
+    sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs, false));
 
     // send data to shuffle server, and wait until flush to LocalFile
     List<ShuffleBlockInfo> blocks2 = createShuffleBlockList(
@@ -161,7 +163,7 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks2.get(0).getBlockId());
     processBlockIds.addLong(blocks2.get(1).getBlockId());
-    sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs));
+    sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs, false));
 
     // read the 3-th segment from localFile
     sdr  = composedClientReadHandler.readShuffleData();
@@ -169,7 +171,7 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     expectedData.put(blocks2.get(2).getBlockId(), blocks2.get(2).getData());
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks2.get(2).getBlockId());
-    sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs));
+    sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs, false));
 
     // send data to shuffle server, and wait until flush to HDFS
     List<ShuffleBlockInfo> blocks3 = createShuffleBlockList(
@@ -192,7 +194,7 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks3.get(0).getBlockId());
     processBlockIds.addLong(blocks3.get(1).getBlockId());
-    sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs));
+    sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs, false));
 
     // all segments are processed
     sdr  = composedClientReadHandler.readShuffleData();
