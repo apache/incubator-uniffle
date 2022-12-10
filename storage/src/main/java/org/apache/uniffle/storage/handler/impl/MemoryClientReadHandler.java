@@ -65,7 +65,7 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
         null,
         null,
         null,
-        BlockSkipStrategy.BITMAP,
+        BlockSkipStrategy.TASK_BITMAP,
         0);
   }
 
@@ -94,7 +94,7 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
 
   @Override
   public ShuffleDataResult readShuffleData() {
-    if (BlockSkipStrategy.MINMAX.equals(blockSkipStrategy) && lastBlockId == Constants.INVALID_BLOCK_ID) {
+    if (BlockSkipStrategy.BLOCKID_RANGE.equals(blockSkipStrategy) && lastBlockId == Constants.INVALID_BLOCK_ID) {
       Roaring64NavigableMap bitmap = RssUtils.cloneBitMap(expectBlockIds);
       bitmap.xor(processBlockIds);
       expectedBlockIdRange = RssUtils.generateRangeSegments(bitmap, maxBlockIdRangeSegments);

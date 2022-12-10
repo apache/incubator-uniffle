@@ -116,8 +116,8 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
             RssMRConfig.RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY,
         RssMRConfig.RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY_DEFAULT_VALUE));
     maxBlockIdRangeSegments = RssMRUtils.getInt(rssJobConf, mrJobConf,
-        RssMRConfig.RSS_CLIENT_READ_FILTER_MINMAX_MAX_SEGMENTS,
-        RssMRConfig.RSS_CLIENT_READ_FILTER_MINMAX_MAX_SEGMENTS_DEFAULT_VALUE);
+        RssMRConfig.RSS_CLIENT_READ_FILTER_RANGE_MAX_SEGMENTS,
+        RssMRConfig.RSS_CLIENT_READ_FILTER_RANGE_MAX_SEGMENTS_DEFAULT_VALUE);
 
     this.partitionNum = mrJobConf.getNumReduceTasks();
     this.partitionNumPerRange = RssMRUtils.getInt(rssJobConf, mrJobConf, RssMRConfig.RSS_PARTITION_NUM_PER_RANGE,

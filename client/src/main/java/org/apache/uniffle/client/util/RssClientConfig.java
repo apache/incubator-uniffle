@@ -88,9 +88,9 @@ public class RssClientConfig {
 
   public static final String RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY = "rss.client.read.block.skip.strategy";
 
-  public static final String RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY_DEFAULT_VALUE = "BITMAP";
+  public static final String RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY_DEFAULT_VALUE = "TASK_BITMAP";
 
-  public static final String RSS_CLIENT_READ_FILTER_MINMAX_MAX_SEGMENTS =
-      "rss.client.read.block.skip.minmax.segments.max";
-  public static final int RSS_CLIENT_READ_FILTER_MINMAX_MAX_SEGMENTS_DEFAULT_VALUE = 10;
+  public static final String RSS_CLIENT_READ_FILTER_RANGE_MAX_SEGMENTS =
+      "rss.client.read.block.skip.range.segments.max";
+  public static final int RSS_CLIENT_READ_FILTER_RANGE_MAX_SEGMENTS_DEFAULT_VALUE = 10;
 }

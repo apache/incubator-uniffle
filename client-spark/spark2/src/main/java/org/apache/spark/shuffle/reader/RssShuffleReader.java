@@ -117,8 +117,8 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
             RssClientConfig.RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY_DEFAULT_VALUE));
     this.blockSkipStrategy = shuffleServerInfoList.size() <= 1 ? BlockSkipStrategy.NONE : blockSkipStrategy;
 
-    maxBlockIdRangeSegments = rssConf.getInteger(RssClientConfig.RSS_CLIENT_READ_FILTER_MINMAX_MAX_SEGMENTS,
-        RssClientConfig.RSS_CLIENT_READ_FILTER_MINMAX_MAX_SEGMENTS_DEFAULT_VALUE);
+    maxBlockIdRangeSegments = rssConf.getInteger(RssClientConfig.RSS_CLIENT_READ_FILTER_RANGE_MAX_SEGMENTS,
+        RssClientConfig.RSS_CLIENT_READ_FILTER_RANGE_MAX_SEGMENTS_DEFAULT_VALUE);
   }
 
   @Override

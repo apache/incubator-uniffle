@@ -306,8 +306,8 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
 
 
   @Test
-  public void memoryReadTestWithSkipByMinMax() throws Exception {
-    String testAppId = "memoryReadTestWithSkipByMinMax";
+  public void memoryReadTestWithSkipByBlockIdRange() throws Exception {
+    String testAppId = "memoryReadTestWithSkipByBlockIdRange";
     int shuffleId = 0;
     int partitionId = 0;
     RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest(testAppId, 0,
@@ -338,7 +338,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
 
     MemoryClientReadHandler memoryClientReadHandler = new MemoryClientReadHandler(
         testAppId, shuffleId, partitionId, 20, shuffleServerClient, null,
-        expectBlockIds, processBlockIds, BlockSkipStrategy.MINMAX, 3);
+        expectBlockIds, processBlockIds, BlockSkipStrategy.BLOCKID_RANGE, 3);
 
     ShuffleDataResult sdr  = memoryClientReadHandler.readShuffleData();
     Map<Long, byte[]> expectedData = Maps.newHashMap();
@@ -349,7 +349,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     processBlockIds.add(blocks.get(0).getBlockId());
     MemoryClientReadHandler memoryClientReadHandler2 = new MemoryClientReadHandler(
         testAppId, shuffleId, partitionId, 20, shuffleServerClient, null,
-        expectBlockIds, processBlockIds, BlockSkipStrategy.MINMAX, 3);
+        expectBlockIds, processBlockIds, BlockSkipStrategy.BLOCKID_RANGE, 3);
     sdr = memoryClientReadHandler2.readShuffleData();
     expectedData = Maps.newHashMap();
     expectedData.put(blocks.get(1).getBlockId(), blocks.get(1).getData());
@@ -359,7 +359,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     blocks.forEach((block) -> processBlockIds.add(block.getBlockId()));
     MemoryClientReadHandler memoryClientReadHandler3 = new MemoryClientReadHandler(
         testAppId, shuffleId, partitionId, 20, shuffleServerClient, null,
-        expectBlockIds, processBlockIds, BlockSkipStrategy.MINMAX, 3);
+        expectBlockIds, processBlockIds, BlockSkipStrategy.BLOCKID_RANGE, 3);
     sdr = memoryClientReadHandler3.readShuffleData();
     assertNull(sdr);
   }

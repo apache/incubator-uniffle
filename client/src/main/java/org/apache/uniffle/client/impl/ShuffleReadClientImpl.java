@@ -104,7 +104,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setProcessBlockIds(processedBlockIds);
     request.setDistributionType(dataDistributionType);
     request.setExpectTaskIds(taskIdBitmap);
-    if (BlockSkipStrategy.MINMAX.equals(blockSkipStrategy)) {
+    if (BlockSkipStrategy.BLOCKID_RANGE.equals(blockSkipStrategy)) {
       request.setMaxBlockIdRangeSegments(maxBlockIdRangeSegments);
     }
     request.setBlockSkipStrategy(blockSkipStrategy);
@@ -144,7 +144,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     this(storageType, appId, shuffleId, partitionId, indexReadLimit,
         partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
         blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf,
-        idHelper, ShuffleDataDistributionType.NORMAL, BlockSkipStrategy.BITMAP, 0);
+        idHelper, ShuffleDataDistributionType.NORMAL, BlockSkipStrategy.TASK_BITMAP, 0);
   }
 
   @Override

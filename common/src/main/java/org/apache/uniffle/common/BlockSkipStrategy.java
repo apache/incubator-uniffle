@@ -19,6 +19,6 @@ package org.apache.uniffle.common;
 
 public enum BlockSkipStrategy {
   NONE,
-  BITMAP,
-  MINMAX
+  TASK_BITMAP,
+  BLOCKID_RANGE
 }

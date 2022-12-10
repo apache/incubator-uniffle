@@ -22,11 +22,11 @@ import org.apache.spark.shuffle.RssSparkConfig;
 
 import org.apache.uniffle.common.BlockSkipStrategy;
 
-public class AQESkewedJoinWithMinMaxSkipStrategyTest extends AQESkewedJoinTest {
+public class AQESkewedJoinWithBlockIdRangeSkipStrategyTest extends AQESkewedJoinTest {
 
   @Override
   public void updateSparkConfCustomer(SparkConf sparkConf) {
     super.updateSparkConfCustomer(sparkConf);
-    sparkConf.set(RssSparkConfig.RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY.key(), BlockSkipStrategy.MINMAX.name());
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY.key(), BlockSkipStrategy.BLOCKID_RANGE.name());
   }
 }
