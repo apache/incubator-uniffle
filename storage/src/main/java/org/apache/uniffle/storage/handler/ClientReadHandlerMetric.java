@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.storage.handler;
 
+import java.util.Objects;
+
 public class ClientReadHandlerMetric {
   private long readBlockNum = 0L;
   private long readLength = 0L;
@@ -73,21 +75,23 @@ public class ClientReadHandlerMetric {
   public void incSkippedReadUncompressLength(long skippedReadUncompressLength) {
     this.skippedReadUncompressLength += skippedReadUncompressLength;
   }
+  
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    ClientReadHandlerMetric that = (ClientReadHandlerMetric) o;
+    return readBlockNum == that.getReadBlockNum() &&
+        readLength == that.getReadLength() &&
+        readUncompressLength == that.getReadUncompressLength() &&
+        skippedReadBlockNum == that.getSkippedReadBlockNum() &&
+        skippedReadLength == that.getSkippedReadLength() &&
+        skippedReadUncompressLength == that.getSkippedReadUncompressLength();
+  }
 
   @Override
-  public boolean equals(Object obj) {
-    if (obj == null || !(obj instanceof ClientReadHandlerMetric)) {
-      return false;
-    }
-    if (this == obj) {
-      return true;
-    }
-    ClientReadHandlerMetric other = (ClientReadHandlerMetric)obj;
-    return readBlockNum == other.getReadBlockNum()
-        && readLength == other.getReadLength()
-        && readUncompressLength == other.getReadUncompressLength()
-        && skippedReadBlockNum == other.getSkippedReadBlockNum()
-        && skippedReadLength == other.getSkippedReadLength()
-        && skippedReadUncompressLength == other.getSkippedReadUncompressLength();
+  public int hashCode() {
+    return Objects.hash(readBlockNum, readLength, readUncompressLength,
+        skippedReadBlockNum, skippedReadLength, skippedReadUncompressLength);
   }
 }
