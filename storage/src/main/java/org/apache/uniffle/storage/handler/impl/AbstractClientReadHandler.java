@@ -43,11 +43,11 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
   }
 
   @Override
-  public void updateConsumedBlockInfo(BufferSegment bs, boolean skipped) {
+  public void updateConsumedBlockInfo(BufferSegment bs, boolean isSkippedMetrics) {
     if (bs == null) {
       return;
     }
-    updateBlockMetric(readHandlerMetric, bs, skipped);
+    updateBlockMetric(readHandlerMetric, bs, isSkippedMetrics);
   }
 
   @Override
@@ -60,8 +60,8 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
         + readHandlerMetric.getSkippedReadUncompressLength() + "]");
   }
 
-  protected void updateBlockMetric(ClientReadHandlerMetric metric, BufferSegment bs, boolean skipped) {
-    if (skipped) {
+  protected void updateBlockMetric(ClientReadHandlerMetric metric, BufferSegment bs, boolean isSkippedMetrics) {
+    if (isSkippedMetrics) {
       metric.incSkippedReadBlockNum();
       metric.incSkippedReadLength(bs.getLength());
       metric.incSkippedReadUncompressLength(bs.getUncompressLength());
@@ -71,4 +71,9 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
       metric.incReadUncompressLength(bs.getUncompressLength());
     }
   }
+
+  public ClientReadHandlerMetric getReadHandlerMetric() {
+    return readHandlerMetric;
+  }
+
 }

@@ -156,23 +156,23 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   }
 
   @Override
-  public void updateConsumedBlockInfo(BufferSegment bs, boolean skipped) {
+  public void updateConsumedBlockInfo(BufferSegment bs, boolean isSkippedMetrics) {
     if (bs == null) {
       return;
     }
-    super.updateConsumedBlockInfo(bs, skipped);
+    super.updateConsumedBlockInfo(bs, isSkippedMetrics);
     switch (currentHandler) {
       case HOT:
-        updateBlockMetric(hostHandlerMetric, bs, skipped);
+        updateBlockMetric(hostHandlerMetric, bs, isSkippedMetrics);
         break;
       case WARM:
-        updateBlockMetric(warmHandlerMetric, bs, skipped);
+        updateBlockMetric(warmHandlerMetric, bs, isSkippedMetrics);
         break;
       case COLD:
-        updateBlockMetric(coldHandlerMetric, bs, skipped);
+        updateBlockMetric(coldHandlerMetric, bs, isSkippedMetrics);
         break;
       case FROZEN:
-        updateBlockMetric(frozenHandlerMetric, bs, skipped);
+        updateBlockMetric(frozenHandlerMetric, bs, isSkippedMetrics);
         break;
       default:
         break;
@@ -207,7 +207,7 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
         + " hot:" + hostHandlerMetric.getReadLength()
         + " warm:" + warmHandlerMetric.getReadLength()
         + " cold:" + coldHandlerMetric.getReadLength()
-        + " frozen:" + frozenHandlerMetric.getReadLength() + " ], Consumed["
+        + " frozen:" + frozenHandlerMetric.getReadLength() + " ], Skipped["
         + " hot:" + hostHandlerMetric.getSkippedReadLength()
         + " warm:" + warmHandlerMetric.getSkippedReadLength()
         + " cold:" + coldHandlerMetric.getSkippedReadLength()

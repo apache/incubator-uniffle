@@ -74,4 +74,20 @@ public class ClientReadHandlerMetric {
     this.skippedReadUncompressLength += skippedReadUncompressLength;
   }
 
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null || !(obj instanceof ClientReadHandlerMetric)) {
+      return false;
+    }
+    if (this == obj) {
+      return true;
+    }
+    ClientReadHandlerMetric other = (ClientReadHandlerMetric)obj;
+    return readBlockNum == other.getReadBlockNum()
+        && readLength == other.getReadLength()
+        && readUncompressLength == other.getReadUncompressLength()
+        && skippedReadBlockNum == other.getSkippedReadBlockNum()
+        && skippedReadLength == other.getSkippedReadLength()
+        && skippedReadUncompressLength == other.getSkippedReadUncompressLength();
+  }
 }

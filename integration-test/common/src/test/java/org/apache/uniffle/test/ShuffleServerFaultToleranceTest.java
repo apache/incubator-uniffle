@@ -37,6 +37,7 @@ import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
+import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
@@ -49,11 +50,15 @@ import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.storage.factory.ShuffleHandlerFactory;
-import org.apache.uniffle.storage.handler.api.ClientReadHandler;
+import org.apache.uniffle.storage.handler.ClientReadHandlerMetric;
+import org.apache.uniffle.storage.handler.impl.AbstractClientReadHandler;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
 
@@ -115,7 +120,8 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
 
     CreateShuffleReadHandlerRequest request = mockCreateShuffleReadHandlerRequest(
         testAppId, shuffleId, partitionId, shuffleServerInfoList, expectBlockIds, StorageType.MEMORY_LOCALFILE);
-    ClientReadHandler clientReadHandler = ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
+    AbstractClientReadHandler clientReadHandler = 
+        (AbstractClientReadHandler) ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     expectedData.clear();
     blocks.forEach((block) -> {
@@ -123,7 +129,15 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     });
     ShuffleDataResult sdr = clientReadHandler.readShuffleData();
     TestUtils.validateResult(expectedData, sdr);
-
+    for (BufferSegment bs : sdr.getBufferSegments()) {
+      clientReadHandler.updateConsumedBlockInfo(bs, false);
+    }
+    ClientReadHandlerMetric exceptMetric = mock(ClientReadHandlerMetric.class);
+    when(exceptMetric.getReadBlockNum()).thenReturn(3L);
+    when(exceptMetric.getReadLength()).thenReturn(75L);
+    when(exceptMetric.getReadUncompressLength()).thenReturn(75L);
+    ClientReadHandlerMetric readHandlerMetric = clientReadHandler.getReadHandlerMetric();
+    assertTrue(readHandlerMetric.equals(exceptMetric));
     // send data to shuffle server, and wait until flush to localfile
     List<ShuffleBlockInfo> blocks2 = createShuffleBlockList(
         shuffleId, partitionId, 0, 3, 25,
@@ -136,13 +150,22 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     waitFlush(testAppId, shuffleId);
     request = mockCreateShuffleReadHandlerRequest(
         testAppId, shuffleId, partitionId, shuffleServerInfoList, expectBlockIds, StorageType.LOCALFILE);
-    clientReadHandler = ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
+    clientReadHandler = (AbstractClientReadHandler)
+        ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
     sdr = clientReadHandler.readShuffleData();
     blocks2.forEach((block) -> {
       expectedData.put(block.getBlockId(), block.getData());
     });
     TestUtils.validateResult(expectedData, sdr);
-
+    for (BufferSegment bs : sdr.getBufferSegments()) {
+      clientReadHandler.updateConsumedBlockInfo(bs, false);
+    }
+    readHandlerMetric = clientReadHandler.getReadHandlerMetric();
+    exceptMetric = mock(ClientReadHandlerMetric.class);
+    when(exceptMetric.getReadBlockNum()).thenReturn(6L);
+    when(exceptMetric.getReadLength()).thenReturn(150L);
+    when(exceptMetric.getReadUncompressLength()).thenReturn(150L);
+    assertTrue(readHandlerMetric.equals(exceptMetric));
     // send data to shuffle server, and wait until flush to hdfs
     List<ShuffleBlockInfo> blocks3 = createShuffleBlockList(
         shuffleId, partitionId, 0, 3, 150,
@@ -157,9 +180,19 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     waitFlush(testAppId, shuffleId);
     request = mockCreateShuffleReadHandlerRequest(
         testAppId, shuffleId, partitionId, shuffleServerInfoList, expectBlockIds, StorageType.HDFS);
-    clientReadHandler = ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
+    clientReadHandler = (AbstractClientReadHandler)
+        ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
     sdr = clientReadHandler.readShuffleData();
     TestUtils.validateResult(expectedData, sdr);
+    for (BufferSegment bs : sdr.getBufferSegments()) {
+      clientReadHandler.updateConsumedBlockInfo(bs, false);
+    }
+    readHandlerMetric = clientReadHandler.getReadHandlerMetric();
+    exceptMetric = mock(ClientReadHandlerMetric.class);
+    when(exceptMetric.getReadBlockNum()).thenReturn(3L);
+    when(exceptMetric.getReadLength()).thenReturn(450L);
+    when(exceptMetric.getReadUncompressLength()).thenReturn(450L);
+    assertTrue(readHandlerMetric.equals(exceptMetric));
   }
 
   private CreateShuffleReadHandlerRequest mockCreateShuffleReadHandlerRequest(

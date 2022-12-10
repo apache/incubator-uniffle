@@ -90,8 +90,17 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
   }
 
   @Test
+  public void memoryLocalFileHDFSReadWithFilterAndSkipTest() throws Exception {
+    runTest(true);
+  }
+  
+  @Test
   public void memoryLocalFileHDFSReadWithFilterTest() throws Exception {
-    String testAppId = "memoryLocalFileHDFSReadWithFilterTest";
+    runTest(false);
+  }
+  
+  private void runTest(boolean checkSkippedMetrics) throws Exception {
+    String testAppId = "memoryLocalFileHDFSReadWithFilterTest_" + "ship_" + checkSkippedMetrics;
     int shuffleId = 0;
     int partitionId = 0;
     RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest(testAppId, 0,
@@ -127,8 +136,9 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     handlers[0] = memoryClientReadHandler;
     handlers[1] = localFileClientReadHandler;
     handlers[2] = hdfsClientReadHandler;
+    ShuffleServerInfo ssi = new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT);
     ComposedClientReadHandler composedClientReadHandler = new ComposedClientReadHandler(
-        new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT), handlers);
+        ssi, handlers);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     expectedData.clear();
     expectedData.put(blocks.get(0).getBlockId(), blocks.get(0).getData());
@@ -139,7 +149,7 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     processBlockIds.addLong(blocks.get(0).getBlockId());
     processBlockIds.addLong(blocks.get(1).getBlockId());
     processBlockIds.addLong(blocks.get(2).getBlockId());
-    sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs, false));
+    sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs, checkSkippedMetrics));
 
     // send data to shuffle server, and wait until flush to LocalFile
     List<ShuffleBlockInfo> blocks2 = createShuffleBlockList(
@@ -150,7 +160,7 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     shuffleToBlocks = Maps.newHashMap();
     shuffleToBlocks.put(shuffleId, partitionToBlocks);
     rssdr = new RssSendShuffleDataRequest(
-      testAppId, 3, 1000, shuffleToBlocks);
+        testAppId, 3, 1000, shuffleToBlocks);
     shuffleServerClient.sendShuffleData(rssdr);
     waitFlush(testAppId, shuffleId);
 
@@ -163,7 +173,7 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks2.get(0).getBlockId());
     processBlockIds.addLong(blocks2.get(1).getBlockId());
-    sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs, false));
+    sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs, checkSkippedMetrics));
 
     // read the 3-th segment from localFile
     sdr  = composedClientReadHandler.readShuffleData();
@@ -171,7 +181,7 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     expectedData.put(blocks2.get(2).getBlockId(), blocks2.get(2).getData());
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks2.get(2).getBlockId());
-    sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs, false));
+    sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs, checkSkippedMetrics));
 
     // send data to shuffle server, and wait until flush to HDFS
     List<ShuffleBlockInfo> blocks3 = createShuffleBlockList(
@@ -182,7 +192,7 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     shuffleToBlocks = Maps.newHashMap();
     shuffleToBlocks.put(shuffleId, partitionToBlocks);
     rssdr = new RssSendShuffleDataRequest(
-      testAppId, 3, 1000, shuffleToBlocks);
+        testAppId, 3, 1000, shuffleToBlocks);
     shuffleServerClient.sendShuffleData(rssdr);
     waitFlush(testAppId, shuffleId);
 
@@ -194,21 +204,40 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks3.get(0).getBlockId());
     processBlockIds.addLong(blocks3.get(1).getBlockId());
-    sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs, false));
+    sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs, checkSkippedMetrics));
 
     // all segments are processed
     sdr  = composedClientReadHandler.readShuffleData();
     assertNull(sdr);
 
-    String readBlokNumInfo = composedClientReadHandler.getReadBlokNumInfo();
-    assert (readBlokNumInfo.contains("8 blocks")
-        && readBlokNumInfo.contains("Consumed[ hot:3 warm:3 cold:2 frozen:0 ]"));
-    String readLengthInfo = composedClientReadHandler.getReadLengthInfo();
-    assert (readLengthInfo.contains("625 bytes")
-    && readLengthInfo.contains("Consumed[ hot:75 warm:150 cold:400 frozen:0 ]"));
-    String readUncompressLengthInfo = composedClientReadHandler.getReadUncompressLengthInfo();
-    assert (readUncompressLengthInfo.contains("625 uncompressed bytes")
-    && readUncompressLengthInfo.contains("Consumed[ hot:75 warm:150 cold:400 frozen:0 ]"));
+    if (checkSkippedMetrics) {
+      String readBlokNumInfo = composedClientReadHandler.getReadBlokNumInfo();
+      assert (readBlokNumInfo.contains("Client read 0 blocks from [" + ssi + "]")
+          && readBlokNumInfo.contains("Skipped[ hot:3 warm:3 cold:2 frozen:0 ]")
+          && readBlokNumInfo.contains("Consumed[ hot:0 warm:0 cold:0 frozen:0 ]"));
+      String readLengthInfo = composedClientReadHandler.getReadLengthInfo();
+      assert (readLengthInfo.contains("Client read 0 bytes from [" + ssi + "]")
+          && readLengthInfo.contains("Skipped[ hot:75 warm:150 cold:400 frozen:0 ]")
+          && readBlokNumInfo.contains("Consumed[ hot:0 warm:0 cold:0 frozen:0 ]"));
+      String readUncompressLengthInfo = composedClientReadHandler.getReadUncompressLengthInfo();
+      assert (readUncompressLengthInfo.contains("Client read 0 uncompressed bytes from [" + ssi + "]")
+          && readUncompressLengthInfo.contains("Skipped[ hot:75 warm:150 cold:400 frozen:0 ]")
+          && readBlokNumInfo.contains("Consumed[ hot:0 warm:0 cold:0 frozen:0 ]"));
+    } else {
+      String readBlokNumInfo = composedClientReadHandler.getReadBlokNumInfo();
+      assert (readBlokNumInfo.contains("Client read 8 blocks from [" + ssi + "]")
+          && readBlokNumInfo.contains("Consumed[ hot:3 warm:3 cold:2 frozen:0 ]")
+          && readBlokNumInfo.contains("Skipped[ hot:0 warm:0 cold:0 frozen:0 ]"));
+      String readLengthInfo = composedClientReadHandler.getReadLengthInfo();
+      assert (readLengthInfo.contains("Client read 625 bytes from [" + ssi + "]")
+          && readLengthInfo.contains("Consumed[ hot:75 warm:150 cold:400 frozen:0 ]")
+          && readBlokNumInfo.contains("Skipped[ hot:0 warm:0 cold:0 frozen:0 ]"));
+      String readUncompressLengthInfo = composedClientReadHandler.getReadUncompressLengthInfo();
+      assert (readUncompressLengthInfo.contains("Client read 625 uncompressed bytes from [" + ssi + "]")
+          && readUncompressLengthInfo.contains("Consumed[ hot:75 warm:150 cold:400 frozen:0 ]")
+          && readBlokNumInfo.contains("Skipped[ hot:0 warm:0 cold:0 frozen:0 ]"));
+    }
+    
   }
 
   protected void waitFlush(String appId, int shuffleId) throws InterruptedException {
