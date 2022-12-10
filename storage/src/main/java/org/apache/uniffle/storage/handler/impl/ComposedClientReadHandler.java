@@ -26,7 +26,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.storage.handler.ClientReadHandlerMetric;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
 
 /**
@@ -34,10 +36,11 @@ import org.apache.uniffle.storage.handler.api.ClientReadHandler;
  * The storage types reading order is as follows: HOT -> WARM -> COLD -> FROZEN
  * @see <a href="https://github.com/apache/incubator-uniffle/pull/276">PR-276</a>
  */
-public class ComposedClientReadHandler implements ClientReadHandler {
+public class ComposedClientReadHandler extends AbstractClientReadHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(ComposedClientReadHandler.class);
 
+  private final ShuffleServerInfo serverInfo;
   private ClientReadHandler hotDataReadHandler;
   private ClientReadHandler warmDataReadHandler;
   private ClientReadHandler coldDataReadHandler;
@@ -49,26 +52,17 @@ public class ComposedClientReadHandler implements ClientReadHandler {
   private int currentHandler = HOT;
   private final int topLevelOfHandler;
 
-  private long hotReadBlockNum = 0L;
-  private long warmReadBlockNum = 0L;
-  private long coldReadBlockNum = 0L;
-  private long frozenReadBlockNum = 0L;
+  private ClientReadHandlerMetric hostHandlerMetric = new ClientReadHandlerMetric();
+  private ClientReadHandlerMetric warmHandlerMetric = new ClientReadHandlerMetric();
+  private ClientReadHandlerMetric coldHandlerMetric = new ClientReadHandlerMetric();
+  private ClientReadHandlerMetric frozenHandlerMetric = new ClientReadHandlerMetric();
 
-  private long hotReadLength = 0L;
-  private long warmReadLength = 0L;
-  private long coldReadLength = 0L;
-  private long frozenReadLength = 0L;
-
-  private long hotReadUncompressLength = 0L;
-  private long warmReadUncompressLength = 0L;
-  private long coldReadUncompressLength = 0L;
-  private long frozenReadUncompressLength = 0L;
-
-  public ComposedClientReadHandler(ClientReadHandler... handlers) {
-    this(Lists.newArrayList(handlers));
+  public ComposedClientReadHandler(ShuffleServerInfo serverInfo, ClientReadHandler... handlers) {
+    this(serverInfo, Lists.newArrayList(handlers));
   }
 
-  public ComposedClientReadHandler(List<ClientReadHandler> handlers) {
+  public ComposedClientReadHandler(ShuffleServerInfo serverInfo, List<ClientReadHandler> handlers) {
+    this.serverInfo = serverInfo;
     topLevelOfHandler = handlers.size();
     if (topLevelOfHandler > 0) {
       this.hotDataReadHandler = handlers.get(0);
@@ -162,30 +156,23 @@ public class ComposedClientReadHandler implements ClientReadHandler {
   }
 
   @Override
-  public void updateConsumedBlockInfo(BufferSegment bs) {
+  public void updateConsumedBlockInfo(BufferSegment bs, boolean isSkippedMetrics) {
     if (bs == null) {
       return;
     }
+    super.updateConsumedBlockInfo(bs, isSkippedMetrics);
     switch (currentHandler) {
       case HOT:
-        hotReadBlockNum++;
-        hotReadLength += bs.getLength();
-        hotReadUncompressLength += bs.getUncompressLength();
+        updateBlockMetric(hostHandlerMetric, bs, isSkippedMetrics);
         break;
       case WARM:
-        warmReadBlockNum++;
-        warmReadLength += bs.getLength();
-        warmReadUncompressLength += bs.getUncompressLength();
+        updateBlockMetric(warmHandlerMetric, bs, isSkippedMetrics);
         break;
       case COLD:
-        coldReadBlockNum++;
-        coldReadLength += bs.getLength();
-        coldReadUncompressLength += bs.getUncompressLength();
+        updateBlockMetric(coldHandlerMetric, bs, isSkippedMetrics);
         break;
       case FROZEN:
-        frozenReadBlockNum++;
-        frozenReadLength += bs.getLength();
-        frozenReadUncompressLength += bs.getUncompressLength();
+        updateBlockMetric(frozenHandlerMetric, bs, isSkippedMetrics);
         break;
       default:
         break;
@@ -201,31 +188,44 @@ public class ComposedClientReadHandler implements ClientReadHandler {
 
   @VisibleForTesting
   public String getReadBlokNumInfo() {
-    long totalBlockNum = hotReadBlockNum + warmReadBlockNum
-        + coldReadBlockNum + frozenReadBlockNum;
-    return "Client read " + totalBlockNum + " blocks ["
-        + " hot:" + hotReadBlockNum + " warm:" + warmReadBlockNum
-        + " cold:" + coldReadBlockNum + " frozen:" + frozenReadBlockNum + " ]";
+    return "Client read " + readHandlerMetric.getReadBlockNum()
+        + " blocks from [" + serverInfo + "], Consumed["
+        + " hot:" + hostHandlerMetric.getReadBlockNum()
+        + " warm:" + warmHandlerMetric.getReadBlockNum()
+        + " cold:" + coldHandlerMetric.getReadBlockNum()
+        + " frozen:" + frozenHandlerMetric.getReadBlockNum()
+        + " ], Skipped[" + " hot:" + hostHandlerMetric.getSkippedReadBlockNum()
+        + " warm:" + warmHandlerMetric.getSkippedReadBlockNum()
+        + " cold:" + coldHandlerMetric.getSkippedReadBlockNum()
+        + " frozen:" + frozenHandlerMetric.getSkippedReadBlockNum() + " ]";
   }
 
   @VisibleForTesting
   public String getReadLengthInfo() {
-    long totalReadLength = hotReadLength + warmReadLength
-        + coldReadLength + frozenReadLength;
-    return "Client read " + totalReadLength + " bytes ["
-        + " hot:" + hotReadLength + " warm:" + warmReadLength
-        + " cold:" + coldReadLength + " frozen:" + frozenReadLength + " ]";
+    return "Client read " + readHandlerMetric.getReadLength()
+        + " bytes from [" + serverInfo + "], Consumed["
+        + " hot:" + hostHandlerMetric.getReadLength()
+        + " warm:" + warmHandlerMetric.getReadLength()
+        + " cold:" + coldHandlerMetric.getReadLength()
+        + " frozen:" + frozenHandlerMetric.getReadLength() + " ], Skipped["
+        + " hot:" + hostHandlerMetric.getSkippedReadLength()
+        + " warm:" + warmHandlerMetric.getSkippedReadLength()
+        + " cold:" + coldHandlerMetric.getSkippedReadLength()
+        + " frozen:" + frozenHandlerMetric.getSkippedReadLength() + " ]";
   }
 
   @VisibleForTesting
   public String getReadUncompressLengthInfo() {
-    long totalReadUncompressLength = hotReadUncompressLength + warmReadUncompressLength
-        + coldReadUncompressLength + frozenReadUncompressLength;
-    return "Client read " + totalReadUncompressLength + " uncompressed bytes ["
-        + " hot:" + hotReadUncompressLength
-        + " warm:" + warmReadUncompressLength
-        + " cold:" + coldReadUncompressLength
-        + " frozen:" + frozenReadUncompressLength + " ]";
+    return "Client read " + readHandlerMetric.getReadUncompressLength()
+        + " uncompressed bytes from [" + serverInfo + "], Consumed["
+        + " hot:" + hostHandlerMetric.getReadUncompressLength()
+        + " warm:" + warmHandlerMetric.getReadUncompressLength()
+        + " cold:" + coldHandlerMetric.getReadUncompressLength()
+        + " frozen:" + frozenHandlerMetric.getReadUncompressLength() + " ], Skipped["
+        + " hot:" + hostHandlerMetric.getSkippedReadUncompressLength()
+        + " warm:" + warmHandlerMetric.getSkippedReadUncompressLength()
+        + " cold:" + coldHandlerMetric.getSkippedReadUncompressLength()
+        + " frozen:" + frozenHandlerMetric.getSkippedReadUncompressLength() + " ]";
   }
 
 }

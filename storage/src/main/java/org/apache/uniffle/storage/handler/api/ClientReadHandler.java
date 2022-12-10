@@ -30,7 +30,7 @@ public interface ClientReadHandler {
   // but does not know the actually consumed blocks,
   // so the consumer should let the handler update statistics.
   // Each type of handler can design their rules.
-  void updateConsumedBlockInfo(BufferSegment bs);
+  void updateConsumedBlockInfo(BufferSegment bs, boolean isSkippedMetrics);
 
   // Display the statistics of consumed blocks
   void logConsumedBlockInfo();

@@ -38,6 +38,7 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
@@ -145,7 +146,8 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     ClientReadHandler[] handlers = new ClientReadHandler[2];
     handlers[0] = memoryClientReadHandler;
     handlers[1] = localFileQuorumClientReadHandler;
-    ComposedClientReadHandler composedClientReadHandler = new ComposedClientReadHandler(handlers);
+    ComposedClientReadHandler composedClientReadHandler = new ComposedClientReadHandler(
+        new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT), handlers);
     // read from memory with ComposedClientReadHandler
     sdr  = composedClientReadHandler.readShuffleData();
     expectedData.clear();
@@ -243,7 +245,8 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     ClientReadHandler[] handlers = new ClientReadHandler[2];
     handlers[0] = memoryClientReadHandler;
     handlers[1] = localFileClientReadHandler;
-    ComposedClientReadHandler composedClientReadHandler = new ComposedClientReadHandler(handlers);
+    ComposedClientReadHandler composedClientReadHandler = new ComposedClientReadHandler(
+        new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT), handlers);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     expectedData.clear();
     expectedData.put(blocks.get(0).getBlockId(), blocks.get(0).getData());
