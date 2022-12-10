@@ -222,7 +222,7 @@ public class LocalStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void checkAndClearLeakShuffleData(Collection<String> appIds) {
+  public void checkAndClearLeakedShuffleData(Collection<String> appIds) {
     Set<String> appIdsOnStorages = new HashSet<>();
     for (LocalStorage localStorage : localStorages) {
       if (!localStorage.isCorrupted()) {

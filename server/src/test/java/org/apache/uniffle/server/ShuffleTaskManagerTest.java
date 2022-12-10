@@ -68,7 +68,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleTaskManagerTest extends HdfsTestBase {
 
-  private static AtomicInteger ATOMIC_INT = new AtomicInteger(0);
+  private static final AtomicInteger ATOMIC_INT = new AtomicInteger(0);
 
   @AfterAll
   public static void tearDown() {

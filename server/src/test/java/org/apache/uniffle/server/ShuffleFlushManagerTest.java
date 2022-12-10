@@ -255,7 +255,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     size = storage.getHandlerSize();
     assertEquals(0, size);
     // fs create a remoteStorage for appId2 before remove resources,
-    // but thecache from appIdToStorages has removed, so we need to delete this path in hdfs
+    // but the cache from appIdToStorages has been removed, so we need to delete this path in hdfs
     Path path = new Path(remoteStorage.getPath() + "/" + appId2 + "/");
     assertTrue(fs.mkdirs(path));
     storageManager.removeResources(

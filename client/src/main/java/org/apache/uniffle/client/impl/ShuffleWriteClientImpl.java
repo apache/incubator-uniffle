@@ -661,7 +661,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     });
     try {
       List<Future<Void>> futures = heartBeatExecutorService.invokeAll(callableList, timeoutMs, TimeUnit.MILLISECONDS);
-      // comment for discuss: due to the documentation of invokeAll, Feature.isDone is true for all the returned features.
       for (Future<Void> future : futures) {
         if (!future.isDone()) {
           future.cancel(true);

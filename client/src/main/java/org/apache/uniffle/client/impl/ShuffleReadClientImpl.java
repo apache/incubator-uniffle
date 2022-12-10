@@ -183,7 +183,6 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
         long actualCrc = -1;
         try {
           long start = System.currentTimeMillis();
-          // copyTime seems make no sense?
           expectedCrc = bs.getCrc();
           actualCrc = ChecksumUtils.getCrc32(readBuffer, bs.getOffset(), bs.getLength());
           crcCheckTime.addAndGet(System.currentTimeMillis() - start);

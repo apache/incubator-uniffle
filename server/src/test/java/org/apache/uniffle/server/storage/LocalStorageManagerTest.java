@@ -162,7 +162,7 @@ public class LocalStorageManagerTest {
     localStorageManager = new LocalStorageManager(conf);
     assertEquals(2, localStorageManager.getStorages().size());
 
-    // case4: only have 1 candidates, but exceed the number of rss.server.localstorage.initialize.max.fail.number
+    // case4: only have 1 candidate, but exceed the number of rss.server.localstorage.initialize.max.fail.number
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/a/rss-data", "/tmp/rss-data-1"));
     conf.setLong(ShuffleServerConf.LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER, 0L);
     try {
