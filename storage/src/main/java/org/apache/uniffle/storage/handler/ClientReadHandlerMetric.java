@@ -78,15 +78,19 @@ public class ClientReadHandlerMetric {
   
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
     ClientReadHandlerMetric that = (ClientReadHandlerMetric) o;
-    return readBlockNum == that.getReadBlockNum() &&
-        readLength == that.getReadLength() &&
-        readUncompressLength == that.getReadUncompressLength() &&
-        skippedReadBlockNum == that.getSkippedReadBlockNum() &&
-        skippedReadLength == that.getSkippedReadLength() &&
-        skippedReadUncompressLength == that.getSkippedReadUncompressLength();
+    return readBlockNum == that.getReadBlockNum() 
+        && readLength == that.getReadLength() 
+        && readUncompressLength == that.getReadUncompressLength() 
+        && skippedReadBlockNum == that.getSkippedReadBlockNum() 
+        && skippedReadLength == that.getSkippedReadLength() 
+        && skippedReadUncompressLength == that.getSkippedReadUncompressLength();
   }
 
   @Override
