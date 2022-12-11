@@ -20,7 +20,6 @@ package org.apache.spark.shuffle.reader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import com.esotericsoftware.kryo.io.Input;
 import com.google.common.annotations.VisibleForTesting;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
