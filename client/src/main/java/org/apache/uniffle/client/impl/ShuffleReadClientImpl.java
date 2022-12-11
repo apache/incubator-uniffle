@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.client.util.IdHelper;
+import org.apache.uniffle.common.BlockSkipStrategy;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
@@ -78,7 +79,8 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       Configuration hadoopConf,
       IdHelper idHelper,
       ShuffleDataDistributionType dataDistributionType,
-      boolean expectedTaskIdsBitmapFilterEnable) {
+      BlockSkipStrategy blockSkipStrategy,
+      int maxBlockIdRangeSegments) {
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.blockIdBitmap = blockIdBitmap;
@@ -102,9 +104,10 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setProcessBlockIds(processedBlockIds);
     request.setDistributionType(dataDistributionType);
     request.setExpectTaskIds(taskIdBitmap);
-    if (expectedTaskIdsBitmapFilterEnable) {
-      request.useExpectedTaskIdsBitmapFilter();
+    if (BlockSkipStrategy.BLOCKID_RANGE.equals(blockSkipStrategy)) {
+      request.setMaxBlockIdRangeSegments(maxBlockIdRangeSegments);
     }
+    request.setBlockSkipStrategy(blockSkipStrategy);
 
     List<Long> removeBlockIds = Lists.newArrayList();
     blockIdBitmap.forEach(bid -> {
@@ -141,7 +144,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     this(storageType, appId, shuffleId, partitionId, indexReadLimit,
         partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
         blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf,
-        idHelper, ShuffleDataDistributionType.NORMAL, false);
+        idHelper, ShuffleDataDistributionType.NORMAL, BlockSkipStrategy.TASK_BITMAP, 0);
   }
 
   @Override

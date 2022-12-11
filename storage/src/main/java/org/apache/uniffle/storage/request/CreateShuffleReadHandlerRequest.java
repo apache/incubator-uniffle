@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.common.BlockSkipStrategy;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
@@ -44,7 +45,8 @@ public class CreateShuffleReadHandlerRequest {
   private Roaring64NavigableMap processBlockIds;
   private ShuffleDataDistributionType distributionType;
   private Roaring64NavigableMap expectTaskIds;
-  private boolean expectedTaskIdsBitmapFilterEnable;
+  private BlockSkipStrategy blockSkipStrategy;
+  private int maxBlockIdRangeSegments;
 
   public CreateShuffleReadHandlerRequest() {
   }
@@ -177,11 +179,19 @@ public class CreateShuffleReadHandlerRequest {
     this.expectTaskIds = expectTaskIds;
   }
 
-  public boolean isExpectedTaskIdsBitmapFilterEnable() {
-    return expectedTaskIdsBitmapFilterEnable;
+  public BlockSkipStrategy getBlockSkipStrategy() {
+    return blockSkipStrategy;
   }
 
-  public void useExpectedTaskIdsBitmapFilter() {
-    this.expectedTaskIdsBitmapFilterEnable = true;
+  public void setBlockSkipStrategy(BlockSkipStrategy blockSkipStrategy) {
+    this.blockSkipStrategy = blockSkipStrategy;
+  }
+
+  public int getMaxBlockIdRangeSegments() {
+    return maxBlockIdRangeSegments;
+  }
+
+  public void setMaxBlockIdRangeSegments(int maxBlockIdRangeSegments) {
+    this.maxBlockIdRangeSegments = maxBlockIdRangeSegments;
   }
 }
