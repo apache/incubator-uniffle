@@ -30,7 +30,7 @@ import org.apache.uniffle.storage.util.StorageType;
 
 public class ClientUtils {
 
-  // BlockId is long and composed by partitionId, executorId and AtomicInteger
+  // BlockId is long and composed of partitionId, executorId and AtomicInteger.
   // AtomicInteger is first 19 bit, max value is 2^19 - 1
   // partitionId is next 24 bit, max value is 2^24 - 1
   // taskAttemptId is rest of 20 bit, max value is 2^20 - 1
@@ -118,7 +118,7 @@ public class ClientUtils {
   public static void validateTestModeConf(boolean testMode, String storageType) {
     if (!testMode && (StorageType.LOCALFILE.name().equals(storageType)
             || (StorageType.HDFS.name()).equals(storageType))) {
-      throw new IllegalArgumentException("RSS storage type about LOCALFILE and HDFS should be used in test mode, "
+      throw new IllegalArgumentException("LOCALFILE or HDFS storage type should be used in test mode only, "
               + "because of the poor performance of these two types.");
     }
   }

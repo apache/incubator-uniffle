@@ -32,7 +32,7 @@ import org.apache.uniffle.common.security.SecurityContextFactory;
 
 /**
  * This HadoopFilesystemProvider will provide the only entrypoint to get the hadoop filesystem whether
- * the dfs cluster is kerberized or not.
+ * the dfs cluster is kerberos enabled or not.
  */
 public class HadoopFilesystemProvider {
   private static final Logger LOGGER = LoggerFactory.getLogger(HadoopFilesystemProvider.class);

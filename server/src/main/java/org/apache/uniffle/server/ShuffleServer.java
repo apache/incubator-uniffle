@@ -179,9 +179,9 @@ public class ShuffleServer {
 
     boolean healthCheckEnable = shuffleServerConf.getBoolean(ShuffleServerConf.HEALTH_CHECK_ENABLE);
     if (healthCheckEnable) {
-      List<Checker> buildInCheckers = Lists.newArrayList();
-      buildInCheckers.add(storageManager.getStorageChecker());
-      healthCheck = new HealthCheck(isHealthy, shuffleServerConf, buildInCheckers);
+      List<Checker> builtInCheckers = Lists.newArrayList();
+      builtInCheckers.add(storageManager.getStorageChecker());
+      healthCheck = new HealthCheck(isHealthy, shuffleServerConf, builtInCheckers);
       healthCheck.start();
     }
 

@@ -138,7 +138,7 @@ public class HdfsStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void checkAndClearLeakShuffleData(Collection<String> appIds) {
+  public void checkAndClearLeakedShuffleData(Collection<String> appIds) {
   }
 
   public HdfsStorage getStorageByAppId(String appId) {

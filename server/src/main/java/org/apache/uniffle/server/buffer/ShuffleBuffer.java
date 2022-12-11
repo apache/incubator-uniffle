@@ -255,7 +255,7 @@ public class ShuffleBuffer {
       try {
         System.arraycopy(block.getData(), 0, data, offset, block.getLength());
       } catch (Exception e) {
-        LOG.error("Unexpect exception for System.arraycopy, length["
+        LOG.error("Unexpected exception for System.arraycopy, length["
             + block.getLength() + "], offset["
             + offset + "], dataLength[" + data.length + "]", e);
         throw e;

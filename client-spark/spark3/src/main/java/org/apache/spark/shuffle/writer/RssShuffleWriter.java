@@ -168,6 +168,11 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private void writeImpl(Iterator<Product2<K,V>> records) {
     List<ShuffleBlockInfo> shuffleBlockInfos = null;
     Set<Long> blockIds = Sets.newConcurrentHashSet();
+    boolean isCombine = shuffleDependency.mapSideCombine();
+    Function1 createCombiner = null;
+    if (isCombine) {
+      createCombiner = shuffleDependency.aggregator().get().createCombiner();
+    }
     while (records.hasNext()) {
       // Task should fast fail when sending data failed
       checkIfBlocksFailed();
@@ -175,9 +180,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       Product2<K, V> record = records.next();
       K key = record._1();
       int partition = getPartition(key);
-      boolean isCombine = shuffleDependency.mapSideCombine();
       if (isCombine) {
-        Function1 createCombiner = shuffleDependency.aggregator().get().createCombiner();
         Object c = createCombiner.apply(record._2());
         shuffleBlockInfos = bufferManager.addRecord(partition, record._1(), c);
       } else {
@@ -216,7 +219,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     if (shuffleBlockInfoList != null && !shuffleBlockInfoList.isEmpty()) {
       shuffleBlockInfoList.forEach(sbi -> {
         long blockId = sbi.getBlockId();
-        // add blockId to set, check if it is send later
+        // add blockId to set, check if it is sent later
         blockIds.add(blockId);
         // update [partition, blockIds], it will be sent to shuffle server
         int partitionId = sbi.getPartitionId();

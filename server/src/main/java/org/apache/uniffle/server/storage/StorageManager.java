@@ -53,5 +53,5 @@ public interface StorageManager {
 
   // todo: add an interface that check storage isHealthy
 
-  void checkAndClearLeakShuffleData(Collection<String> appIds);
+  void checkAndClearLeakedShuffleData(Collection<String> appIds);
 }

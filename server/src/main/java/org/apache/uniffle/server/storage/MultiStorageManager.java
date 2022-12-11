@@ -140,8 +140,8 @@ public class MultiStorageManager implements StorageManager {
   }
 
   @Override
-  public void checkAndClearLeakShuffleData(Collection<String> appIds) {
-    warmStorageManager.checkAndClearLeakShuffleData(appIds);
+  public void checkAndClearLeakedShuffleData(Collection<String> appIds) {
+    warmStorageManager.checkAndClearLeakedShuffleData(appIds);
   }
 
   public void removeResources(PurgeEvent event) {

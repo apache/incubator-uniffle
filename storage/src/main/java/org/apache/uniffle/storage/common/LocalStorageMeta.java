@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *  Metadata has three dimensions from top to down including disk, shuffle, partition.
- *  And each dimensions contains two aspects, status data and indicator data.
+ *  And each dimension contains two aspects, status data and indicator data.
  *  Disk status data contains writable flag, Shuffle status data contains stable, uploading, deleting flag.
  *  Disk indicator data contains size, fileNum, shuffleNum, Shuffle indicator contains size, partition list,
  *  uploaded partition list and uploaded size.
@@ -48,7 +48,7 @@ public class LocalStorageMeta {
   // todo: add ut
   public List<String> getSortedShuffleKeys(boolean checkRead, int hint) {
     // Filter the unread shuffle is checkRead is true
-    // Filter the remain size is 0
+    // Filter the remaining size is 0
     List<Map.Entry<String, ShuffleMeta>> shuffleMetaList = shuffleMetaMap
         .entrySet()
         .stream()
