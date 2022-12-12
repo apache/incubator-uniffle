@@ -85,7 +85,7 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
   @Override
   public void updateConsumedBlockInfo(BufferSegment bs, boolean isSkippedMetrics) {
     super.updateConsumedBlockInfo(bs, isSkippedMetrics);
-    handlers.get(Math.max(readHandlerIndex, handlers.size() - 1)).updateConsumedBlockInfo(bs, isSkippedMetrics);
+    handlers.get(Math.min(readHandlerIndex, handlers.size() - 1)).updateConsumedBlockInfo(bs, isSkippedMetrics);
   }
 
   @Override
