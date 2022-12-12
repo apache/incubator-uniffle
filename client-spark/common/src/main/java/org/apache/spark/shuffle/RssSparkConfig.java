@@ -265,12 +265,6 @@ public class RssSparkConfig {
                    + " spark.rss.estimate.server.assignment.enabled"))
       .createWithDefault(RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE);
 
-  public static final ConfigEntry<String> RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY = createStringBuilder(
-      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX +  RssClientConfig.RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY)
-          .doc("The strategy for skip block when read from memory."))
-      .createWithDefault(RssClientConfig.RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY_DEFAULT_VALUE);
-
-
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
       ImmutableSet.of(RSS_STORAGE_TYPE.key(), RSS_REMOTE_STORAGE_PATH.key());
 

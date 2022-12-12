@@ -24,7 +24,6 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.client.util.IdHelper;
-import org.apache.uniffle.common.BlockSkipStrategy;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
@@ -45,8 +44,7 @@ public class CreateShuffleReadClientRequest {
   private Configuration hadoopConf;
   private IdHelper idHelper;
   private ShuffleDataDistributionType shuffleDataDistributionType = ShuffleDataDistributionType.NORMAL;
-  private BlockSkipStrategy blockSkipStrategy;
-  private int maxBlockIdRangeSegments;
+  private boolean expectedTaskIdsBitmapFilterEnable = false;
 
   public CreateShuffleReadClientRequest(
       String appId,
@@ -63,12 +61,12 @@ public class CreateShuffleReadClientRequest {
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
       ShuffleDataDistributionType dataDistributionType,
-      BlockSkipStrategy blockSkipStrategy,
-      int maxBlockIdRangeSegments) {
+      boolean expectedTaskIdsBitmapFilterEnable) {
     this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
-        hadoopConf, new DefaultIdHelper(), blockSkipStrategy, maxBlockIdRangeSegments);
+        hadoopConf, new DefaultIdHelper());
     this.shuffleDataDistributionType = dataDistributionType;
+    this.expectedTaskIdsBitmapFilterEnable = expectedTaskIdsBitmapFilterEnable;
   }
 
   public CreateShuffleReadClientRequest(
@@ -84,12 +82,10 @@ public class CreateShuffleReadClientRequest {
       Roaring64NavigableMap blockIdBitmap,
       Roaring64NavigableMap taskIdBitmap,
       List<ShuffleServerInfo> shuffleServerInfoList,
-      Configuration hadoopConf,
-      BlockSkipStrategy blockSkipStrategy,
-      int maxBlockIdRangeSegments) {
+      Configuration hadoopConf) {
     this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
-        hadoopConf, new DefaultIdHelper(), blockSkipStrategy, maxBlockIdRangeSegments);
+        hadoopConf, new DefaultIdHelper());
   }
 
   public CreateShuffleReadClientRequest(
@@ -106,9 +102,7 @@ public class CreateShuffleReadClientRequest {
       Roaring64NavigableMap taskIdBitmap,
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
-      IdHelper idHelper,
-      BlockSkipStrategy blockSkipStrategy,
-      int maxBlockIdRangeSegments) {
+      IdHelper idHelper) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -123,8 +117,6 @@ public class CreateShuffleReadClientRequest {
     this.shuffleServerInfoList = shuffleServerInfoList;
     this.hadoopConf = hadoopConf;
     this.idHelper = idHelper;
-    this.blockSkipStrategy = blockSkipStrategy;
-    this.maxBlockIdRangeSegments = maxBlockIdRangeSegments;
   }
 
   public String getAppId() {
@@ -187,19 +179,7 @@ public class CreateShuffleReadClientRequest {
     return shuffleDataDistributionType;
   }
 
-  public int getMaxBlockIdRangeSegments() {
-    return maxBlockIdRangeSegments;
-  }
-
-  public void setMaxBlockIdRangeSegments(int maxBlockIdRangeSegments) {
-    this.maxBlockIdRangeSegments = maxBlockIdRangeSegments;
-  }
-
-  public BlockSkipStrategy getBlockSkipStrategy() {
-    return blockSkipStrategy;
-  }
-
-  public void setBlockSkipStrategy(BlockSkipStrategy blockSkipStrategy) {
-    this.blockSkipStrategy = blockSkipStrategy;
+  public boolean isExpectedTaskIdsBitmapFilterEnable() {
+    return expectedTaskIdsBitmapFilterEnable;
   }
 }

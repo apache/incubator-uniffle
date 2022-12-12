@@ -31,8 +31,6 @@ import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -40,13 +38,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.net.InetAddresses;
-import org.apache.commons.lang3.tuple.Pair;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -286,93 +282,5 @@ public class RssUtils {
       throw new RssException("Blocks read inconsistent: expected " + blockIdBitmap.getLongCardinality()
           + " blocks, actual " + cloneBitmap.getLongCardinality() + " blocks");
     }
-  }
-
-  /**
-   * Generate range segments for blockId bitmap
-   * @param blockIdBitmap blockId bitmap
-   * @param maxSegments Maximum number of segments to return
-   * @return Range segments.like [start1, end1, start2, end2]
-   */
-  public static List<Long> generateRangeSegments(Roaring64NavigableMap blockIdBitmap, int maxSegments) {
-    Iterator<Long> iterator = blockIdBitmap.iterator();
-    if (!iterator.hasNext()) {
-      return Collections.EMPTY_LIST;
-    }
-    List<Long> endPoints = Lists.newArrayList();
-    long lastId = iterator.next();
-    endPoints.add(lastId);
-    while (iterator.hasNext()) {
-      long blockId = iterator.next();
-      try {
-        if (blockId - lastId <= 1) {
-          continue;
-        }
-        endPoints.add(lastId);
-        endPoints.add(blockId);
-      } finally {
-        lastId = blockId;
-      }
-    }
-    if (endPoints.size() % 2 != 0) {
-      endPoints.add(lastId);
-    }
-    return mergeRangeSegments(endPoints, maxSegments);
-  }
-
-  /**
-   * Merge range segments
-   * @param endPoints EndPoints of all segments.
-   * @param maxSegments Maximum number of segments to return
-   * @return Merged segments
-   */
-  public static List<Long> mergeRangeSegments(List<Long> endPoints, int maxSegments) {
-    int maxPoints = maxSegments * 2;
-    if (endPoints.size() < 2 || endPoints.size() <= maxPoints) {
-      return endPoints;
-    }
-    // distance of two segments -> the offset of the second segment
-    List<Pair<Long, Integer>> distinces = Lists.newArrayList();
-    for (int i = 2; i < endPoints.size(); i += 2) {
-      long distance = endPoints.get(i) - endPoints.get(i - 1);
-      distinces.add(Pair.of(distance, i));
-    }
-    distinces.sort(Comparator.comparingLong(Pair::getLeft));
-
-    int mergeSegmentNum = endPoints.size() / 2 - maxSegments;
-    // Find the nearest segments top N(mergeSegmentNum)
-    List<Integer> indexsToMerge = distinces.stream().limit(mergeSegmentNum)
-        .map(e -> e.getValue()).sorted(Comparator.reverseOrder()).collect(Collectors.toList());
-    // Merge segments
-    for (Integer index : indexsToMerge) {
-      // Don't remove (int), or remove(Object o) will be invoked;
-      endPoints.remove((int)index);
-      endPoints.remove(index - 1);
-    }
-    return endPoints;
-  }
-
-  /**
-   * Check if the gived blockId inside the range segments. Use binary search
-   * @param rangeSegments Range segments.like [start1, end1, start2, end2]
-   * @param blockId BlockId to check
-   * @return true if blockId inside the range segments
-   */
-  public static boolean checkIfBlockInRange(List<Long> rangeSegments, Long blockId) {
-    int lower = 0;
-    int upper = rangeSegments.size() - 1;
-    Comparator<Long> comparator = Comparator.naturalOrder();
-    while (lower <= upper) {
-      int middle = (lower + upper) >>> 1;
-      int c = comparator.compare(blockId, rangeSegments.get(middle));
-      if (c < 0) {
-        upper = middle - 1;
-      } else if (c > 0) {
-        lower = middle + 1;
-      } else {
-        return true;
-      }
-    }
-    return lower % 2 != 0;
   }
 }

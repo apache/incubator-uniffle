@@ -21,7 +21,6 @@ import java.lang.reflect.Field;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +38,6 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -176,98 +174,6 @@ public class RssUtilsTest {
     assertEquals(serverToPartitions.get(server2), Sets.newHashSet(1, 3));
     assertEquals(serverToPartitions.get(server3), Sets.newHashSet(2, 4));
     assertEquals(serverToPartitions.get(server4), Sets.newHashSet(2, 4));
-  }
-
-  @Test
-  public void testMergeRangeSegments() {
-    List<Long> endPoints = Lists.newArrayList(1L, 2L, 5L, 6L);
-    List<Long> results = RssUtils.mergeRangeSegments(endPoints, 1);
-    ArrayList<Long> expectResults = Lists.newArrayList(1L, 6L);
-    assertIterableEquals(results, expectResults);
-
-    endPoints = Lists.newArrayList(1L, 2L, 5L, 6L, 8L, 10L);
-    results = RssUtils.mergeRangeSegments(endPoints, 2);
-    expectResults = Lists.newArrayList(1L, 2L, 5L, 10L);
-    assertIterableEquals(results, expectResults);
-
-    endPoints = Lists.newArrayList(1L, 2L, 5L, 6L, 10L, 12L);
-    results = RssUtils.mergeRangeSegments(endPoints, 2);
-    expectResults = Lists.newArrayList(1L, 6L, 10L, 12L);
-    assertIterableEquals(results, expectResults);
-
-    endPoints = Lists.newArrayList(1L, 1L, 3L, 3L, 5L, 5L);
-    results = RssUtils.mergeRangeSegments(endPoints, 2);
-    expectResults = Lists.newArrayList(1L, 3L, 5L, 5L);
-    assertIterableEquals(results, expectResults);
-  }
-
-  @Test
-  public void testGenerateRangeSegments() {
-    Random random = new Random();
-    Roaring64NavigableMap bitmap = Roaring64NavigableMap.bitmapOf();
-    for (int i = 0; i < 1000; i++) {
-      if (random.nextInt(10) < 3) {
-        continue;
-      }
-      bitmap.add(i);
-    }
-    int maxSegments = 3;
-    List<Long> segments = RssUtils.generateRangeSegments(bitmap, 3);
-    assertEquals(maxSegments * 2, segments.size());
-
-    List<Long> endPoints = Lists.newArrayList(1L, 2L, 5L, 6L);
-    bitmap = Roaring64NavigableMap.bitmapOf();
-    for (Long endPoint : endPoints) {
-      bitmap.add(endPoint);
-    }
-    List<Long> results = RssUtils.generateRangeSegments(bitmap, 100);
-    List<Long> expectResults = Lists.newArrayList(1L, 2L, 5L, 6L);
-    assertIterableEquals(results, expectResults);
-
-    bitmap = Roaring64NavigableMap.bitmapOf();
-    endPoints = Lists.newArrayList(1L, 2L, 5L, 6L, 8L, 9L, 10L);
-    for (Long endPoint : endPoints) {
-      bitmap.add(endPoint);
-    }
-    results = RssUtils.generateRangeSegments(bitmap, 100);
-    expectResults = Lists.newArrayList(1L, 2L, 5L, 6L, 8L, 10L);
-    assertIterableEquals(results, expectResults);
-
-    bitmap = Roaring64NavigableMap.bitmapOf();
-    endPoints = Lists.newArrayList(1L, 2L, 5L, 6L, 10L, 11L, 12L);
-    for (Long endPoint : endPoints) {
-      bitmap.add(endPoint);
-    }
-    results = RssUtils.generateRangeSegments(bitmap, 100);
-    expectResults = Lists.newArrayList(1L, 2L, 5L, 6L, 10L, 12L);
-    assertIterableEquals(results, expectResults);
-
-    bitmap = Roaring64NavigableMap.bitmapOf();
-    endPoints = Lists.newArrayList(1L, 1L, 3L, 3L, 5L, 5L);
-    for (Long endPoint : endPoints) {
-      bitmap.add(endPoint);
-    }
-    results = RssUtils.generateRangeSegments(bitmap, 100);
-    expectResults = Lists.newArrayList(1L, 1L, 3L, 3L, 5L, 5L);
-    assertIterableEquals(results, expectResults);
-  }
-
-  @Test
-  public void testCheckIfBlockInRange() {
-    List<Long> rangeSegments = Lists.newArrayList(1L, 2L, 5L, 6L, 10L, 12L);
-    Roaring64NavigableMap bitmap = Roaring64NavigableMap.bitmapOf();
-    for (Long element : rangeSegments) {
-      bitmap.add(element);
-    }
-    assertFalse(RssUtils.checkIfBlockInRange(rangeSegments, 13L));
-    assertTrue(RssUtils.checkIfBlockInRange(rangeSegments, 10L));
-    assertFalse(RssUtils.checkIfBlockInRange(rangeSegments, 9L));
-    assertTrue(RssUtils.checkIfBlockInRange(rangeSegments, 5L));
-    assertFalse(RssUtils.checkIfBlockInRange(rangeSegments, 4L));
-    assertFalse(RssUtils.checkIfBlockInRange(rangeSegments, 3L));
-    assertTrue(RssUtils.checkIfBlockInRange(rangeSegments, 2L));
-    assertTrue(RssUtils.checkIfBlockInRange(rangeSegments, 1L));
-    assertFalse(RssUtils.checkIfBlockInRange(rangeSegments, 0L));
   }
 
   // Copy from ClientUtils
