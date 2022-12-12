@@ -40,6 +40,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.DefaultIdHelper;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
@@ -57,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
 
   private ShuffleServerGrpcClient shuffleServerClient;
+  private DefaultIdHelper idHelper;
 
   @BeforeAll
   public static void setupServers() throws Exception {
@@ -114,9 +116,12 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // data is cached
     assertEquals(3, shuffleServers.get(0).getShuffleBufferManager()
         .getShuffleBuffer(testAppId, shuffleId, 0).getBlocks().size());
+
+    Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     // create memory handler to read data,
     MemoryClientReadHandler memoryClientReadHandler = new MemoryClientReadHandler(
-        testAppId, shuffleId, partitionId, 20, shuffleServerClient);
+        testAppId, shuffleId, partitionId, 20, shuffleServerClient,
+        expectBlockIds, processBlockIds);
     // start to read data, one block data for every call
     ShuffleDataResult sdr  = memoryClientReadHandler.readShuffleData();
     Map<Long, byte[]> expectedData = Maps.newHashMap();
@@ -138,9 +143,9 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     assertEquals(0, sdr.getBufferSegments().size());
 
     // case: read with ComposedClientReadHandler
-    Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     memoryClientReadHandler = new MemoryClientReadHandler(
-        testAppId, shuffleId, partitionId, 50, shuffleServerClient);
+        testAppId, shuffleId, partitionId, 50, shuffleServerClient,
+        expectBlockIds, processBlockIds);
     LocalFileClientReadHandler localFileQuorumClientReadHandler = new LocalFileClientReadHandler(
         testAppId, shuffleId, partitionId, 0, 1, 3,
         50, expectBlockIds, processBlockIds, shuffleServerClient);
@@ -239,7 +244,8 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // read the 1-th segment from memory
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     MemoryClientReadHandler memoryClientReadHandler = new MemoryClientReadHandler(
-        testAppId, shuffleId, partitionId, 150, shuffleServerClient);
+        testAppId, shuffleId, partitionId, 150, shuffleServerClient,
+        expectBlockIds, processBlockIds);
     LocalFileClientReadHandler localFileClientReadHandler = new LocalFileClientReadHandler(
         testAppId, shuffleId, partitionId, 0, 1, 3,
         75, expectBlockIds, processBlockIds, shuffleServerClient);
@@ -339,9 +345,10 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
 
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
 
+    idHelper = new DefaultIdHelper();
     MemoryClientReadHandler memoryClientReadHandler = new MemoryClientReadHandler(
-        testAppId, shuffleId, partitionId, 20, shuffleServerClient, null,
-        expectBlockIds, processBlockIds, BlockSkipStrategy.BLOCKID_RANGE, 3);
+        testAppId, shuffleId, partitionId, 20, shuffleServerClient,
+        expectBlockIds, processBlockIds, BlockSkipStrategy.BLOCKID_RANGE, 3, idHelper);
 
     ShuffleDataResult sdr  = memoryClientReadHandler.readShuffleData();
     Map<Long, byte[]> expectedData = Maps.newHashMap();
@@ -351,8 +358,8 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // skip the first block
     processBlockIds.add(blocks.get(0).getBlockId());
     MemoryClientReadHandler memoryClientReadHandler2 = new MemoryClientReadHandler(
-        testAppId, shuffleId, partitionId, 20, shuffleServerClient, null,
-        expectBlockIds, processBlockIds, BlockSkipStrategy.BLOCKID_RANGE, 3);
+        testAppId, shuffleId, partitionId, 20, shuffleServerClient,
+        expectBlockIds, processBlockIds, BlockSkipStrategy.BLOCKID_RANGE, 3, idHelper);
     sdr = memoryClientReadHandler2.readShuffleData();
     expectedData = Maps.newHashMap();
     expectedData.put(blocks.get(1).getBlockId(), blocks.get(1).getData());
@@ -361,8 +368,8 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // skip all blocks
     blocks.forEach((block) -> processBlockIds.add(block.getBlockId()));
     MemoryClientReadHandler memoryClientReadHandler3 = new MemoryClientReadHandler(
-        testAppId, shuffleId, partitionId, 20, shuffleServerClient, null,
-        expectBlockIds, processBlockIds, BlockSkipStrategy.BLOCKID_RANGE, 3);
+        testAppId, shuffleId, partitionId, 20, shuffleServerClient,
+        expectBlockIds, processBlockIds, BlockSkipStrategy.BLOCKID_RANGE, 3, idHelper);
     sdr = memoryClientReadHandler3.readShuffleData();
     assertNull(sdr);
   }

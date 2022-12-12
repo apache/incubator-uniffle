@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client.util;
-
-import org.apache.uniffle.common.util.Constants;
+package org.apache.uniffle.common.util;
 
 public class DefaultIdHelper implements IdHelper {
   @Override

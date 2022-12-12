@@ -122,11 +122,11 @@ public class ShuffleHandlerFactory {
         request.getPartitionId(),
         request.getReadBufferSize(),
         shuffleServerClient,
-        request.getExpectTaskIds(),
         request.getExpectBlockIds(),
         request.getProcessBlockIds(),
         request.getBlockSkipStrategy(),
-        request.getMaxBlockIdRangeSegments()
+        request.getMaxBlockIdRangeSegments(),
+        request.getIdHelper()
     );
     return memoryClientReadHandler;
   }

@@ -26,6 +26,7 @@ import org.apache.uniffle.common.BlockSkipStrategy;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.util.IdHelper;
 
 public class CreateShuffleReadHandlerRequest {
 
@@ -47,6 +48,8 @@ public class CreateShuffleReadHandlerRequest {
   private Roaring64NavigableMap expectTaskIds;
   private BlockSkipStrategy blockSkipStrategy;
   private int maxBlockIdRangeSegments;
+
+  private IdHelper idHelper;
 
   public CreateShuffleReadHandlerRequest() {
   }
@@ -193,5 +196,13 @@ public class CreateShuffleReadHandlerRequest {
 
   public void setMaxBlockIdRangeSegments(int maxBlockIdRangeSegments) {
     this.maxBlockIdRangeSegments = maxBlockIdRangeSegments;
+  }
+
+  public IdHelper getIdHelper() {
+    return idHelper;
+  }
+
+  public void setIdHelper(IdHelper idHelper) {
+    this.idHelper = idHelper;
   }
 }

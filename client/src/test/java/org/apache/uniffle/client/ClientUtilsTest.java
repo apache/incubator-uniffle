@@ -26,10 +26,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.roaringbitmap.longlong.LongIterator;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.util.DefaultIdHelper;
+import org.apache.uniffle.common.util.RssUtils;
 
 import static org.apache.uniffle.client.util.ClientUtils.waitUntilDoneOrFail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,6 +66,28 @@ public class ClientUtilsTest {
 
     final Throwable e3 = assertThrows(IllegalArgumentException.class, () -> ClientUtils.getBlockId(0, 0, 262144));
     assertTrue(e3.getMessage().contains("Can't support sequence[262144], the max value should be 262143"));
+  }
+
+  @Test
+  public void testGenerateTaskIdBitMap() {
+    int partitionId = 1;
+    Roaring64NavigableMap blockIdMap = Roaring64NavigableMap.bitmapOf();
+    int taskSize = 10;
+    long[] except = new long[taskSize];
+    for (int i = 0; i < taskSize; i++) {
+      except[i] = i;
+      for (int j = 0; j < 100; j++) {
+        Long blockId = ClientUtils.getBlockId(partitionId, i, j);
+        blockIdMap.addLong(blockId);
+      }
+
+    }
+    Roaring64NavigableMap taskIdBitMap = RssUtils.generateTaskIdBitMap(blockIdMap, new DefaultIdHelper());
+    assertEquals(taskSize, taskIdBitMap.getLongCardinality());
+    LongIterator longIterator = taskIdBitMap.getLongIterator();
+    for (int i = 0; i < taskSize; i++) {
+      assertEquals(except[i], longIterator.next());
+    }
   }
 
   private List<CompletableFuture<Boolean>> getFutures(boolean fail) {

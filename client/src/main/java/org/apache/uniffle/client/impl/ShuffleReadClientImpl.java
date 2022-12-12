@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
-import org.apache.uniffle.client.util.IdHelper;
 import org.apache.uniffle.common.BlockSkipStrategy;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
@@ -40,6 +39,7 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ChecksumUtils;
+import org.apache.uniffle.common.util.IdHelper;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.factory.ShuffleHandlerFactory;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
@@ -103,6 +103,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setExpectBlockIds(blockIdBitmap);
     request.setProcessBlockIds(processedBlockIds);
     request.setDistributionType(dataDistributionType);
+    request.setIdHelper(idHelper);
     request.setExpectTaskIds(taskIdBitmap);
     if (BlockSkipStrategy.BLOCKID_RANGE.equals(blockSkipStrategy)) {
       request.setMaxBlockIdRangeSegments(maxBlockIdRangeSegments);
