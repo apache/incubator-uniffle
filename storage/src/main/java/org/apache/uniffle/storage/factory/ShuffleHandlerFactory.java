@@ -123,10 +123,7 @@ public class ShuffleHandlerFactory {
         request.getReadBufferSize(),
         shuffleServerClient,
         request.getExpectTaskIds(),
-        request.getExpectBlockIds(),
-        request.getProcessBlockIds(),
-        request.getBlockSkipStrategy(),
-        request.getMaxBlockIdRangeSegments()
+        request.isExpectedTaskIdsBitmapFilterEnable()
     );
     return memoryClientReadHandler;
   }

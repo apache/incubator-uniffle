@@ -17,8 +17,6 @@
 
 package org.apache.uniffle.client.request;
 
-import java.util.List;
-
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 public class RssGetInMemoryShuffleDataRequest {
@@ -29,18 +27,15 @@ public class RssGetInMemoryShuffleDataRequest {
   private final int readBufferSize;
   private final Roaring64NavigableMap expectedTaskIds;
 
-  private List<Long> expectedBlockIdRange;
-
   public RssGetInMemoryShuffleDataRequest(
       String appId, int shuffleId, int partitionId, long lastBlockId, int readBufferSize,
-      Roaring64NavigableMap expectedTaskIds, List<Long> expectedBlockIdRange) {
+      Roaring64NavigableMap expectedTaskIds) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.lastBlockId = lastBlockId;
     this.readBufferSize = readBufferSize;
     this.expectedTaskIds = expectedTaskIds;
-    this.expectedBlockIdRange = expectedBlockIdRange;
   }
 
   public String getAppId() {
@@ -65,9 +60,5 @@ public class RssGetInMemoryShuffleDataRequest {
 
   public Roaring64NavigableMap getExpectedTaskIds() {
     return expectedTaskIds;
-  }
-
-  public List<Long> getExpectedBlockIdRange() {
-    return expectedBlockIdRange;
   }
 }
