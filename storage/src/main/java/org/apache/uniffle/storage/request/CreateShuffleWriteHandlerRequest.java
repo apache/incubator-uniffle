@@ -45,9 +45,9 @@ public class CreateShuffleWriteHandlerRequest {
       int storageDataReplica,
       String user) {
     this(
-      storageType,
-      appId,
-      shuffleId,
+        storageType,
+        appId,
+        shuffleId,
         startPartition,
         endPartition,
         storageBasePaths,

@@ -102,7 +102,7 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
 
   @Override
   public void write(
-      List<ShufflePartitionedBlock> shuffleBlocks) throws IOException, IllegalStateException {
+      List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
     final long start = System.currentTimeMillis();
     writeLock.lock();
     try {

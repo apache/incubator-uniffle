@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -47,6 +46,7 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
       Configuration hadoopConf,
       String user,
       int concurrency) {
+    // todo: support max concurrency specified by client side
     this.maxConcurrency = concurrency;
     this.queue = new LinkedBlockingQueue<>(maxConcurrency);
     this.basePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
@@ -55,7 +55,7 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
     // todo: support init lazily
     try {
       for (int i = 0; i < maxConcurrency; i++) {
-        queue.add(
+        queue.offer(
             new HdfsShuffleWriteHandler(
                 appId,
                 shuffleId,
@@ -74,12 +74,15 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
   }
 
   @Override
-  public void write(List<ShufflePartitionedBlock> shuffleBlocks) throws IOException, IllegalStateException {
+  public void write(List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
     if (queue.isEmpty()) {
       LOGGER.warn("No free hdfs writer handler, it will wait. storage path: {}", basePath);
     }
-    HdfsShuffleWriteHandler writeHandler = queue.poll();
-    writeHandler.write(shuffleBlocks);
-    queue.add(writeHandler);
+    HdfsShuffleWriteHandler writeHandler = queue.take();
+    try {
+      writeHandler.write(shuffleBlocks);
+    } finally {
+      queue.offer(writeHandler);
+    }
   }
 }

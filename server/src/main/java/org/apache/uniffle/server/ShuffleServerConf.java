@@ -318,7 +318,8 @@ public class ShuffleServerConf extends RssBaseConf {
       .key("rss.server.max.concurrency.of.single-one-partition")
       .intType()
       .defaultValue(1)
-      .withDescription("The max concurrency of single one partition, the data partition size is equals to this value.");
+      .withDescription("The max concurrency of single one partition, the data partition file number is "
+          + "equals to this value.");
 
   public ShuffleServerConf() {
   }
