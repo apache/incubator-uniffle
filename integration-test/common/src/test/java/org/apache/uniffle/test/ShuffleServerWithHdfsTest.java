@@ -51,10 +51,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShuffleServerWithHdfsTest extends ShuffleReadWriteBase {
 
-  private ShuffleServerGrpcClient shuffleServerClient;
+  protected ShuffleServerGrpcClient shuffleServerClient;
 
   @BeforeAll
-  public static void setupServers() throws Exception {
+  private static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
