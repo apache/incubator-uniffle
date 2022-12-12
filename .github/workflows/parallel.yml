@@ -70,12 +70,12 @@ jobs:
     - name: Set /etc/hosts mapping
       run: sudo hostname "action-host" | sudo echo "127.0.0.1 action-host" | sudo tee -a /etc/hosts
     - name: Cache local Maven repository
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        estore-keys: |
+          ${{ runner.os }}-maven-
     - name: Checkout project
       uses: actions/checkout@v3
     - name: Set up JDK ${{ inputs.java-version }}

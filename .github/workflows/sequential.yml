@@ -71,7 +71,7 @@ jobs:
       with:
         path: ~/.m2/repository
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: |
+        estore-keys: |
           ${{ runner.os }}-maven-
     - name: Execute maven with ${{ env.PROFILE }}
       if: ${{ !inputs.experimental }}
