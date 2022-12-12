@@ -120,14 +120,13 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
 
   @Test
   public void concurrentWrite2HdfsWriteOfSinglePartition() throws Exception {
-    String appId = "concurrentWrite2HdfsWriteOfSinglePartition_appId";
-
-    int maxConcurrency = 3;
     ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.emptyList());
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
-    shuffleServerConf.setInteger(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, 3);
+    int maxConcurrency = 3;
+    shuffleServerConf.setInteger(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, maxConcurrency);
 
+    String appId = "concurrentWrite2HdfsWriteOfSinglePartition_appId";
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     storageManager.registerRemoteStorage(appId, remoteStorage);
@@ -142,6 +141,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
 
     FileStatus[] fileStatuses = fs.listStatus(new Path(HDFS_URI + "/rss/test/" + appId + "/1/1-1"));
     long actual = Arrays.stream(fileStatuses).filter(x -> x.getPath().getName().endsWith("data")).count();
+
     assertEquals(maxConcurrency, actual);
     actual = Arrays.stream(fileStatuses).filter(x -> x.getPath().getName().endsWith("index")).count();
     assertEquals(maxConcurrency, actual);
