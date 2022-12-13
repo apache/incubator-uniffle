@@ -100,12 +100,13 @@ public class ShuffleFlushManager {
           ShuffleDataFlushEvent event = flushQueue.take();
           threadPoolExecutor.execute(() -> {
             try {
-              ShuffleServerMetrics.gaugeEventQueueSize.set(flushQueue.size());
               ShuffleServerMetrics.gaugeWriteHandler.inc();
               flushToFile(event);
-              ShuffleServerMetrics.gaugeWriteHandler.dec();
             } catch (Exception e) {
               LOG.error("Exception happened when flush data for " + event, e);
+            } finally {
+              ShuffleServerMetrics.gaugeWriteHandler.dec();
+              ShuffleServerMetrics.gaugeEventQueueSize.dec();
             }
           });
         } catch (Exception e) {
@@ -142,6 +143,8 @@ public class ShuffleFlushManager {
   public void addToFlushQueue(ShuffleDataFlushEvent event) {
     if (!flushQueue.offer(event)) {
       LOG.warn("Flush queue is full, discard event: " + event);
+    } else {
+      ShuffleServerMetrics.gaugeEventQueueSize.inc();
     }
   }
 
