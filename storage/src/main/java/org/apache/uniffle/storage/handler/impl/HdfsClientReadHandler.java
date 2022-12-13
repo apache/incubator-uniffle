@@ -119,8 +119,8 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
             file -> file.getName().endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX)
                 && (shuffleServerId == null || file.getName().startsWith(shuffleServerId)));
       } else {
-        LOG.info("Directory[" + baseFolder +
-            "] not found. The data may not be flushed to this directory. Nothing will be read.");
+        LOG.info("Directory[" + baseFolder
+            + "] not found. The data may not be flushed to this directory. Nothing will be read.");
         return;
       }
     } catch (Exception e) {
