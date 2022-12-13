@@ -80,6 +80,32 @@ public abstract class GRPCMetrics {
     }
   }
 
+  public void incGauge(String tag) {
+    incGauge(tag, 1);
+  }
+
+  public void incGauge(String tag, double value) {
+    if (isRegistered) {
+      Gauge gauge = gaugeMap.get(tag);
+      if (gauge != null) {
+        gauge.inc(value);
+      }
+    }
+  }
+
+  public void decGauge(String tag) {
+    decGauge(tag, 1);
+  }
+
+  public void decGauge(String tag, double value) {
+    if (isRegistered) {
+      Gauge gauge = gaugeMap.get(tag);
+      if (gauge != null) {
+        gauge.dec(value);
+      }
+    }
+  }
+
   public void incCounter(String methodName) {
     if (isRegistered) {
       Gauge gauge = gaugeMap.get(methodName);
