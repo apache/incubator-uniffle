@@ -35,12 +35,12 @@ public class MonitoringServerTransportFilter extends ServerTransportFilter {
   }
 
   public Attributes transportReady(Attributes transportAttrs) {
-    grpcMetrics.setGauge(GRPC_SERVER_CONNECTION_NUMBER_KEY, connectionSize.incrementAndGet());
+    grpcMetrics.incGauge(GRPC_SERVER_CONNECTION_NUMBER_KEY);
     return super.transportReady(transportAttrs);
   }
 
   public void transportTerminated(Attributes transportAttrs) {
-    grpcMetrics.setGauge(GRPC_SERVER_CONNECTION_NUMBER_KEY, connectionSize.decrementAndGet());
+    grpcMetrics.decGauge(GRPC_SERVER_CONNECTION_NUMBER_KEY);
     super.transportTerminated(transportAttrs);
   }
 }
