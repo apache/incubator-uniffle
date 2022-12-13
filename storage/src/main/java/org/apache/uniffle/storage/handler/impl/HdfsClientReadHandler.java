@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import java.io.FileNotFoundException;
 import java.util.Comparator;
 import java.util.List;
 
@@ -111,21 +112,19 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
     }
 
     FileStatus[] indexFiles = null;
-
     try {
       // get all index files
-      if (fs.exists(baseFolder)) {
-        indexFiles = fs.listStatus(baseFolder,
-            file -> file.getName().endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX)
-                && (shuffleServerId == null || file.getName().startsWith(shuffleServerId)));
-      } else {
+      indexFiles = fs.listStatus(baseFolder,
+          file -> file.getName().endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX)
+              && (shuffleServerId == null || file.getName().startsWith(shuffleServerId)));
+    } catch (Exception e) {
+      if (e instanceof FileNotFoundException) {
         LOG.info("Directory[" + baseFolder
             + "] not found. The data may not be flushed to this directory. Nothing will be read.");
-        return;
+      } else {
+        String failedGetIndexFileMsg = "Can't list index file in  " + baseFolder;
+        LOG.error(failedGetIndexFileMsg, e);
       }
-    } catch (Exception e) {
-      String failedGetIndexFileMsg = "Can't list index file in  " + baseFolder;
-      LOG.error(failedGetIndexFileMsg, e);
       return;
     }
 
