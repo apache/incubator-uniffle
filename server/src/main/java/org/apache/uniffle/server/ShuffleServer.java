@@ -41,6 +41,8 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.web.CommonMetricsServlet;
 import org.apache.uniffle.common.web.JettyServer;
+import org.apache.uniffle.metrics.MetricReporter;
+import org.apache.uniffle.metrics.MetricReporterFactory;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
@@ -72,6 +74,7 @@ public class ShuffleServer {
   private Set<String> tags = Sets.newHashSet();
   private AtomicBoolean isHealthy = new AtomicBoolean(true);
   private GRPCMetrics grpcMetrics;
+  private MetricReporter metricReporter;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -137,6 +140,10 @@ public class ShuffleServer {
       healthCheck.stop();
       LOG.info("HealthCheck stopped!");
     }
+    if (metricReporter != null) {
+      metricReporter.stop();
+      LOG.info("Metric Reporter Stopped!");
+    }
     SecurityContextFactory.get().getSecurityContext().close();
     server.stop();
     LOG.info("RPC Server Stopped!");
@@ -197,7 +204,7 @@ public class ShuffleServer {
     LOG.info("Server tags: {}", tags);
   }
 
-  private void registerMetrics() {
+  private void registerMetrics() throws Exception {
     LOG.info("Register metrics");
     CollectorRegistry shuffleServerCollectorRegistry = new CollectorRegistry(true);
     ShuffleServerMetrics.register(shuffleServerCollectorRegistry);
@@ -226,6 +233,13 @@ public class ShuffleServer {
     jettyServer.addServlet(
         new CommonMetricsServlet(JvmMetrics.getCollectorRegistry(), true),
         "/prometheus/metrics/jvm");
+
+    metricReporter = MetricReporterFactory.getMetricReporter(shuffleServerConf);
+    if (metricReporter != null) {
+      metricReporter.addCollectorRegistry(ShuffleServerMetrics.getCollectorRegistry());
+      metricReporter.addCollectorRegistry(grpcMetrics.getCollectorRegistry());
+      metricReporter.addCollectorRegistry(JvmMetrics.getCollectorRegistry());
+    }
   }
 
   /**

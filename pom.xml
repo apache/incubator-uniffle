@@ -115,6 +115,9 @@
     <module>server</module>
     <module>client</module>
     <module>integration-test/common</module>
+    <module>metrics</module>
+    <module>metrics/metrics-core</module>
+    <module>metrics/metrics-prometheus</module>
   </modules>
 
   <dependencies>
