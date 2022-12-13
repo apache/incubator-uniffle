@@ -110,15 +110,21 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       throw new RuntimeException("Can't get FileSystem for " + baseFolder);
     }
 
-    FileStatus[] indexFiles;
-    String failedGetIndexFileMsg = "Can't list index file in  " + baseFolder;
+    FileStatus[] indexFiles = null;
 
     try {
       // get all index files
-      indexFiles = fs.listStatus(baseFolder,
-          file -> file.getName().endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX)
-              && (shuffleServerId == null || file.getName().startsWith(shuffleServerId)));
+      if (fs.exists(baseFolder)) {
+        indexFiles = fs.listStatus(baseFolder,
+            file -> file.getName().endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX)
+                && (shuffleServerId == null || file.getName().startsWith(shuffleServerId)));
+      } else {
+        LOG.info("Directory[" + baseFolder +
+            "] not found. The data may not be flushed to this directory. Nothing will be read.");
+        return;
+      }
     } catch (Exception e) {
+      String failedGetIndexFileMsg = "Can't list index file in  " + baseFolder;
       LOG.error(failedGetIndexFileMsg, e);
       return;
     }
