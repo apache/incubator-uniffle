@@ -87,7 +87,7 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
 
   @Override
   public synchronized void write(
-      List<ShufflePartitionedBlock> shuffleBlocks) throws IOException, IllegalStateException {
+      List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
 
     // Ignore this write, if the shuffle directory is deleted after being uploaded in multi mode
     // or after its app heartbeat times out.
