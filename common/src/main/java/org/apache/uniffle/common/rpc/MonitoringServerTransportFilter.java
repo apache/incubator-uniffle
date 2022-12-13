@@ -17,8 +17,6 @@
 
 package org.apache.uniffle.common.rpc;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import io.grpc.Attributes;
 import io.grpc.ServerTransportFilter;
 
@@ -27,7 +25,6 @@ import org.apache.uniffle.common.metrics.GRPCMetrics;
 import static org.apache.uniffle.common.metrics.GRPCMetrics.GRPC_SERVER_CONNECTION_NUMBER_KEY;
 
 public class MonitoringServerTransportFilter extends ServerTransportFilter {
-  private final AtomicLong connectionSize = new AtomicLong(0);
   private final GRPCMetrics grpcMetrics;
 
   public MonitoringServerTransportFilter(GRPCMetrics grpcMetrics) {
