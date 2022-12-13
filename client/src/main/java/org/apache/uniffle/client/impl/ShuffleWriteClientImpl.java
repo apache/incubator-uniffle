@@ -75,6 +75,7 @@ import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
@@ -114,21 +115,21 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int replicaWrite,
       int replicaRead,
       boolean replicaSkipEnabled,
-      int dataTranferPoolSize,
+      int dataTransferPoolSize,
       int dataCommitPoolSize,
       int unregisterThreadPoolSize,
       int unregisterRequestTimeSec) {
     this.clientType = clientType;
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
-    this.coordinatorClientFactory = new CoordinatorClientFactory(clientType);
+    this.coordinatorClientFactory = new CoordinatorClientFactory(ClientType.valueOf(clientType));
     this.heartBeatExecutorService = Executors.newFixedThreadPool(heartBeatThreadNum,
         ThreadUtils.getThreadFactory("client-heartbeat-%d"));
     this.replica = replica;
     this.replicaWrite = replicaWrite;
     this.replicaRead = replicaRead;
     this.replicaSkipEnabled = replicaSkipEnabled;
-    this.dataTransferPool = Executors.newFixedThreadPool(dataTranferPoolSize);
+    this.dataTransferPool = Executors.newFixedThreadPool(dataTransferPoolSize);
     this.dataCommitPoolSize = dataCommitPoolSize;
     this.unregisterThreadPoolSize = unregisterThreadPoolSize;
     this.unregisterRequestTimeSec = unregisterRequestTimeSec;

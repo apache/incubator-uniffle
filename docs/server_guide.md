@@ -83,3 +83,5 @@ This document will introduce how to deploy Uniffle shuffle servers.
 |rss.server.single.buffer.flush.threshold|64M|The threshold of single shuffle buffer flush|
 |rss.server.disk.capacity|-1|Disk capacity that shuffle server can use. If it's negative, it will use the default disk whole space|
 |rss.server.multistorage.fallback.strategy.class|-|The fallback strategy for `MEMORY_LOCALFILE_HDFS`. Support `org.apache.uniffle.server.storage.RotateStorageManagerFallbackStrategy`,`org.apache.uniffle.server.storage.LocalStorageManagerFallbackStrategy` and `org.apache.uniffle.server.storage.HdfsStorageManagerFallbackStrategy`. If not set, `org.apache.uniffle.server.storage.HdfsStorageManagerFallbackStrategy` will be used.|
+|rss.server.leak.shuffledata.check.interval|3600000|The interval of leak shuffle data check (ms)|
+|rss.server.max.concurrency.of.single.partition.writer|1|The max concurrency of single partition writer, the data partition file number is equal to this value. Default value is 1. This config could improve the writing speed, especially for huge partition.|

@@ -27,19 +27,19 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
-import org.apache.uniffle.client.util.ClientType;
+import org.apache.uniffle.common.ClientType;
 
 public class CoordinatorClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorClientFactory.class);
 
-  private String clientType;
+  private ClientType clientType;
 
-  public CoordinatorClientFactory(String clientType) {
+  public CoordinatorClientFactory(ClientType clientType) {
     this.clientType = clientType;
   }
 
   public CoordinatorClient createCoordinatorClient(String host, int port) {
-    if (clientType.equalsIgnoreCase(ClientType.GRPC.name())) {
+    if (clientType.equals(ClientType.GRPC)) {
       return new CoordinatorGrpcClient(host, port);
     } else {
       throw new UnsupportedOperationException("Unsupported client type " + clientType);
@@ -50,7 +50,7 @@ public class CoordinatorClientFactory {
     LOG.info("Start to create coordinator clients from {}", coordinators);
     List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
     String[] coordinatorList = coordinators.trim().split(",");
-    if (coordinatorList.length <= 0) {
+    if (coordinatorList.length == 0) {
       String msg = "Invalid " + coordinators;
       LOG.error(msg);
       throw new RuntimeException(msg);

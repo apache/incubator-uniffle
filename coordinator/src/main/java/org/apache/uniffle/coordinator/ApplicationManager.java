@@ -38,12 +38,19 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker;
+import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
+import org.apache.uniffle.coordinator.strategy.storage.AppBalanceSelectStorageStrategy;
+import org.apache.uniffle.coordinator.strategy.storage.LowestIOSampleCostSelectStorageStrategy;
+import org.apache.uniffle.coordinator.strategy.storage.RankValue;
+import org.apache.uniffle.coordinator.strategy.storage.SelectStorageStrategy;
+import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 
 public class ApplicationManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ApplicationManager.class);
   // TODO: Add anomaly detection for other storage
-  public static final List<String> REMOTE_PATH_SCHEMA = Arrays.asList("hdfs");
+  private static final List<String> REMOTE_PATH_SCHEMA = Arrays.asList("hdfs");
   private final long expired;
   private final StrategyName storageStrategy;
   private final SelectStorageStrategy selectStorageStrategy;
@@ -54,9 +61,9 @@ public class ApplicationManager {
   private final Map<String, RankValue> remoteStoragePathRankValue;
   private final Map<String, String> remoteStorageToHost = Maps.newConcurrentMap();
   private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
-  private final Map<String, Map<String, Long>> currentUserAndApp;
-  private final Map<String, String> appIdToUser;
-  private final Map<String, Integer> defaultUserApps;
+  private Map<String, Map<String, Long>> currentUserAndApp = Maps.newConcurrentMap();
+  private Map<String, String> appIdToUser = Maps.newConcurrentMap();
+  private QuotaManager quotaManager;
   // it's only for test case to check if status check has problem
   private boolean hasErrorInStatusCheck = false;
 
@@ -75,10 +82,15 @@ public class ApplicationManager {
       throw new UnsupportedOperationException("Unsupported selected storage strategy.");
     }
     expired = conf.getLong(CoordinatorConf.COORDINATOR_APP_EXPIRED);
-    QuotaManager quotaManager = new QuotaManager(conf);
-    this.currentUserAndApp = quotaManager.getCurrentUserAndApp();
-    this.appIdToUser = quotaManager.getAppIdToUser();
-    this.defaultUserApps = quotaManager.getDefaultUserApps();
+    String quotaCheckerClass = AccessQuotaChecker.class.getCanonicalName();
+    for (String checker : conf.get(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS)) {
+      if (quotaCheckerClass.equals(checker.trim())) {
+        this.quotaManager = new QuotaManager(conf);
+        this.currentUserAndApp = quotaManager.getCurrentUserAndApp();
+        this.appIdToUser = quotaManager.getAppIdToUser();
+        break;
+      }
+    }
     // the thread for checking application status
     ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("ApplicationManager-%d"));
@@ -101,12 +113,11 @@ public class ApplicationManager {
       CoordinatorMetrics.counterTotalAppNum.inc();
       LOG.info("New application is registered: {}", appId);
     }
-    long currentTimeMillis = System.currentTimeMillis();
-    String[] appIdAndUuid = appId.split("_");
-    String uuidFromApp = appIdAndUuid[appIdAndUuid.length - 1];
-    // if appId created successfully, we need to remove the uuid
-    appAndTime.remove(uuidFromApp);
-    appAndTime.put(appId, currentTimeMillis);
+    if (quotaManager != null) {
+      quotaManager.registerApplicationInfo(appId, appAndTime);
+    } else {
+      appAndTime.put(appId, System.currentTimeMillis());
+    }
   }
 
   public void refreshAppId(String appId) {
@@ -220,7 +231,7 @@ public class ApplicationManager {
   }
 
   @VisibleForTesting
-  protected Map<String, RankValue> getRemoteStoragePathRankValue() {
+  public Map<String, RankValue> getRemoteStoragePathRankValue() {
     return remoteStoragePathRankValue;
   }
 
@@ -240,7 +251,7 @@ public class ApplicationManager {
   }
 
   @VisibleForTesting
-  protected boolean hasErrorInStatusCheck() {
+  public boolean hasErrorInStatusCheck() {
     return hasErrorInStatusCheck;
   }
 
@@ -318,11 +329,15 @@ public class ApplicationManager {
   }
 
   public Map<String, Integer> getDefaultUserApps() {
-    return defaultUserApps;
+    return quotaManager.getDefaultUserApps();
   }
 
-  public Map<String, Map<String, Long>> getCurrentUserApps() {
-    return currentUserAndApp;
+  public QuotaManager getQuotaManager() {
+    return quotaManager;
+  }
+
+  public static List<String> getPathSchema() {
+    return REMOTE_PATH_SCHEMA;
   }
 
   public enum StrategyName {

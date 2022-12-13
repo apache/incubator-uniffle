@@ -28,6 +28,10 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.coordinator.access.AccessCheckResult;
+import org.apache.uniffle.coordinator.access.AccessInfo;
+import org.apache.uniffle.coordinator.access.checker.AccessChecker;
+import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
 public class AccessManager {
 
@@ -35,19 +39,19 @@ public class AccessManager {
 
   private final CoordinatorConf coordinatorConf;
   private final ClusterManager clusterManager;
-  private final ApplicationManager applicationManager;
+  private final QuotaManager quotaManager;
   private final Configuration hadoopConf;
   private List<AccessChecker> accessCheckers = Lists.newArrayList();
 
   public AccessManager(
       CoordinatorConf conf,
       ClusterManager clusterManager,
-      ApplicationManager applicationManager,
+      QuotaManager quotaManager,
       Configuration hadoopConf) throws Exception {
     this.coordinatorConf = conf;
     this.clusterManager = clusterManager;
     this.hadoopConf = hadoopConf;
-    this.applicationManager = applicationManager;
+    this.quotaManager = quotaManager;
     init();
   }
 
@@ -94,8 +98,8 @@ public class AccessManager {
     return hadoopConf;
   }
 
-  public ApplicationManager getApplicationManager() {
-    return applicationManager;
+  public QuotaManager getQuotaManager() {
+    return quotaManager;
   }
 
   public void close() throws IOException {

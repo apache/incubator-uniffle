@@ -37,12 +37,13 @@ import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.request.RssAccessClusterRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.util.Constants;
-import org.apache.uniffle.coordinator.AccessCheckResult;
-import org.apache.uniffle.coordinator.AccessChecker;
-import org.apache.uniffle.coordinator.AccessInfo;
 import org.apache.uniffle.coordinator.AccessManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.coordinator.access.AccessCheckResult;
+import org.apache.uniffle.coordinator.access.AccessInfo;
+import org.apache.uniffle.coordinator.access.checker.AccessChecker;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 
@@ -125,8 +126,8 @@ public class AccessClusterTest extends CoordinatorTestBase {
     coordinatorConf.setString("rss.coordinator.access.candidates.path", cfgFile.getAbsolutePath());
     coordinatorConf.setString(
             "rss.coordinator.access.checkers",
-            "org.apache.uniffle.coordinator.AccessCandidatesChecker,"
-                + "org.apache.uniffle.coordinator.AccessClusterLoadChecker");
+            "org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker,"
+                + "org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker");
     createCoordinatorServer(coordinatorConf);
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
@@ -153,7 +154,7 @@ public class AccessClusterTest extends CoordinatorTestBase {
     shuffleServer.start();
     Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
 
-    CoordinatorClient client = new CoordinatorClientFactory("GRPC")
+    CoordinatorClient client = new CoordinatorClientFactory(ClientType.GRPC)
         .createCoordinatorClient(LOCALHOST, COORDINATOR_PORT_1 + 13);
     request = new RssAccessClusterRequest(accessId,
         Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, "user");

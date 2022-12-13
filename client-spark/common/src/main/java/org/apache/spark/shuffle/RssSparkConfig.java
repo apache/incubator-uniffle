@@ -81,6 +81,11 @@ public class RssSparkConfig {
       new ConfigBuilder("spark.rss.test"))
       .createWithDefault(false);
 
+  public static final ConfigEntry<Boolean> RSS_TEST_MODE_ENABLE = createBooleanBuilder(
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_TEST_MODE_ENABLE)
+          .doc("Whether enable test mode for the Spark Client"))
+      .createWithDefault(false);
+
   public static final ConfigEntry<String> RSS_REMOTE_STORAGE_PATH = createStringBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_STORAGE_PATH))
       .createWithDefault("");

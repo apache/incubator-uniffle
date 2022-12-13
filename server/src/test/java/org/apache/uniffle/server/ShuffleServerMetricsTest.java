@@ -90,7 +90,6 @@ public class ShuffleServerMetricsTest {
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
     JsonNode metricsNode = actualObj.get("metrics");
-    assertEquals(49, metricsNode.size());
 
     List<String> expectedMetricNames = Lists.newArrayList(
         ShuffleServerMetrics.STORAGE_TOTAL_WRITE_REMOTE_PREFIX + STORAGE_HOST,

@@ -78,7 +78,7 @@ public class ShuffleStorageUtils {
       } else {
         Collections.sort(segments);
         long start = -1;
-        long lastestPosition = -1;
+        long latestPosition = -1;
         long skipThreshold = readBufferSize / 2;
         long lastPosition = Long.MAX_VALUE;
         List<BufferSegment> bufferSegments = Lists.newArrayList();
@@ -94,16 +94,16 @@ public class ShuffleStorageUtils {
             bufferSegments = Lists.newArrayList();
             start = segment.getOffset();
           }
-          lastestPosition = segment.getOffset() + segment.getLength();
+          latestPosition = segment.getOffset() + segment.getLength();
           bufferSegments.add(new BufferSegment(segment.getBlockId(),
               segment.getOffset() - start, segment.getLength(),
               segment.getUncompressLength(), segment.getCrc(), segment.getTaskAttemptId()));
-          if (lastestPosition - start >= readBufferSize) {
+          if (latestPosition - start >= readBufferSize) {
             dataFileSegments.add(new DataFileSegment(
-                path, start, (int) (lastestPosition - start), bufferSegments));
+                path, start, (int) (latestPosition - start), bufferSegments));
             start = -1;
           }
-          lastPosition = lastestPosition;
+          lastPosition = latestPosition;
         }
         if (start > -1) {
           dataFileSegments.add(new DataFileSegment(path, start, (int) (lastPosition - start), bufferSegments));

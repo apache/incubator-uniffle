@@ -35,7 +35,7 @@ public class ShuffleClientFactory {
   }
 
   /**
-   * Only for MR engine, which wont used to unregister to remote shuffle-servers
+   * Only for MR engine, which won't used to unregister to remote shuffle-servers
    */
   public ShuffleWriteClient createShuffleWriteClient(
       String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
@@ -49,6 +49,11 @@ public class ShuffleClientFactory {
       String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
       int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled, int dataTransferPoolSize,
       int dataCommitPoolSize, int unregisterThreadPoolSize, int unregisterRequestTimeoutSec) {
+    // If replica > replicaWrite, blocks maybe be sent for 2 rounds.
+    // We need retry less times in this case for let the first round fail fast.
+    if (replicaSkipEnabled && replica > replicaWrite) {
+      retryMax = retryMax / 2;
+    }
     return new ShuffleWriteClientImpl(
         clientType,
         retryMax,
@@ -66,10 +71,23 @@ public class ShuffleClientFactory {
   }
 
   public ShuffleReadClient createShuffleReadClient(CreateShuffleReadClientRequest request) {
-    return new ShuffleReadClientImpl(request.getStorageType(), request.getAppId(), request.getShuffleId(),
-        request.getPartitionId(), request.getIndexReadLimit(), request.getPartitionNumPerRange(),
-        request.getPartitionNum(), request.getReadBufferSize(), request.getBasePath(),
-        request.getBlockIdBitmap(), request.getTaskIdBitmap(), request.getShuffleServerInfoList(),
-        request.getHadoopConf(), request.getIdHelper(), request.getShuffleDataDistributionType());
+    return new ShuffleReadClientImpl(
+        request.getStorageType(),
+        request.getAppId(),
+        request.getShuffleId(),
+        request.getPartitionId(),
+        request.getIndexReadLimit(),
+        request.getPartitionNumPerRange(),
+        request.getPartitionNum(),
+        request.getReadBufferSize(),
+        request.getBasePath(),
+        request.getBlockIdBitmap(),
+        request.getTaskIdBitmap(),
+        request.getShuffleServerInfoList(),
+        request.getHadoopConf(),
+        request.getIdHelper(),
+        request.getShuffleDataDistributionType(),
+        request.isExpectedTaskIdsBitmapFilterEnable()
+    );
   }
 }

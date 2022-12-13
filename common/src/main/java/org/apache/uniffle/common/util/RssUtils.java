@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
 
 public class RssUtils {
 
@@ -270,5 +271,16 @@ public class RssUtils {
       }
     }
     return serverToPartitions;
+  }
+
+  public static void checkProcessedBlockIds(Roaring64NavigableMap blockIdBitmap,
+                                            Roaring64NavigableMap processedBlockIds) {
+    Roaring64NavigableMap cloneBitmap;
+    cloneBitmap = RssUtils.cloneBitMap(blockIdBitmap);
+    cloneBitmap.and(processedBlockIds);
+    if (!blockIdBitmap.equals(cloneBitmap)) {
+      throw new RssException("Blocks read inconsistent: expected " + blockIdBitmap.getLongCardinality()
+          + " blocks, actual " + cloneBitmap.getLongCardinality() + " blocks");
+    }
   }
 }

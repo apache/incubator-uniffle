@@ -59,7 +59,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
   private static File DATA_DIR2;
   private ShuffleServerGrpcClient shuffleServerClient;
   private List<ShuffleServerInfo> shuffleServerInfo =
-      Lists.newArrayList(new ShuffleServerInfo("127.0.0.1-20001", LOCALHOST, SHUFFLE_SERVER_PORT));
+      Lists.newArrayList(new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT));
 
   @BeforeAll
   public static void setupServers() throws Exception {

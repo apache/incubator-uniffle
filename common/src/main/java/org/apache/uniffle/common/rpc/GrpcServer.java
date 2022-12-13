@@ -99,8 +99,7 @@ public class GrpcServer implements ServerInterface {
 
     @Override
     protected void beforeExecute(Thread t, Runnable r) {
-      grpcMetrics.setGauge(GRPCMetrics.GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY,
-          activeThreadSize.incrementAndGet());
+      grpcMetrics.incGauge(GRPCMetrics.GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY);
       grpcMetrics.setGauge(GRPCMetrics.GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY,
           getQueue().size());
       super.beforeExecute(t, r);
@@ -108,8 +107,7 @@ public class GrpcServer implements ServerInterface {
 
     @Override
     protected void afterExecute(Runnable r, Throwable t) {
-      grpcMetrics.setGauge(GRPCMetrics.GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY,
-          activeThreadSize.decrementAndGet());
+      grpcMetrics.decGauge(GRPCMetrics.GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY);
       grpcMetrics.setGauge(GRPCMetrics.GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY,
           getQueue().size());
       super.afterExecute(r, t);

@@ -33,6 +33,7 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.TreeRangeMap;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +103,7 @@ public class ShuffleBufferManager {
   public StatusCode cacheShuffleData(String appId, int shuffleId,
       boolean isPreAllocated, ShufflePartitionedData spd) {
     if (!isPreAllocated && isFull()) {
-      LOG.warn("Got unexpect data, can't cache it because the space is full");
+      LOG.warn("Got unexpected data, can't cache it because the space is full");
       return StatusCode.NO_BUFFER;
     }
 
@@ -151,6 +152,19 @@ public class ShuffleBufferManager {
   public ShuffleDataResult getShuffleData(
       String appId, int shuffleId, int partitionId, long blockId,
       int readBufferSize) {
+    return getShuffleData(
+        appId,
+        shuffleId,
+        partitionId,
+        blockId,
+        readBufferSize,
+        null
+    );
+  }
+
+  public ShuffleDataResult getShuffleData(
+      String appId, int shuffleId, int partitionId, long blockId,
+      int readBufferSize, Roaring64NavigableMap expectedTaskIds) {
     Map.Entry<Range<Integer>, ShuffleBuffer> entry = getShuffleBufferEntry(
         appId, shuffleId, partitionId);
     if (entry == null) {
@@ -161,12 +175,12 @@ public class ShuffleBufferManager {
     if (buffer == null) {
       return null;
     }
-    return buffer.getShuffleData(blockId, readBufferSize);
+    return buffer.getShuffleData(blockId, readBufferSize, expectedTaskIds);
   }
 
   void flushSingleBufferIfNecessary(ShuffleBuffer buffer, String appId,
       int shuffleId, int startPartition, int endPartition) {
-    // When we use multistorage and trigger single buffer flush, the buffer size should be bigger
+    // When we use multi storage and trigger single buffer flush, the buffer size should be bigger
     // than rss.server.flush.cold.storage.threshold.size, otherwise cold storage will be useless.
     if (this.bufferFlushEnabled && buffer.getSize() > this.bufferFlushThreshold) {
       flushBuffer(buffer, appId, shuffleId, startPartition, endPartition);
@@ -204,6 +218,7 @@ public class ShuffleBufferManager {
             shuffleFlushManager.getDataDistributionType(appId)
         );
     if (event != null) {
+      event.addCleanupCallback(() -> releaseMemory(event.getSize(), true, false));
       updateShuffleSize(appId, shuffleId, -event.getSize());
       inFlushSize.addAndGet(event.getSize());
       ShuffleServerMetrics.gaugeInFlushBufferSize.set(inFlushSize.get());
@@ -411,7 +426,7 @@ public class ShuffleBufferManager {
 
     Map<String, Set<Integer>> pickedShuffle = Maps.newHashMap();
     // The algorithm here is to flush data size > highWaterMark - lowWaterMark
-    // the remain data in buffer maybe more than lowWaterMark
+    // the remaining data in buffer maybe more than lowWaterMark
     // because shuffle server is still receiving data, but it should be ok
     long expectedFlushSize = highWaterMark - lowWaterMark;
     long pickedFlushSize = 0L;

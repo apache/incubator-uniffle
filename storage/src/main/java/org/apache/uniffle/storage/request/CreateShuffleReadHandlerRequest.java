@@ -44,6 +44,7 @@ public class CreateShuffleReadHandlerRequest {
   private Roaring64NavigableMap processBlockIds;
   private ShuffleDataDistributionType distributionType;
   private Roaring64NavigableMap expectTaskIds;
+  private boolean expectedTaskIdsBitmapFilterEnable;
 
   public CreateShuffleReadHandlerRequest() {
   }
@@ -174,5 +175,13 @@ public class CreateShuffleReadHandlerRequest {
 
   public void setExpectTaskIds(Roaring64NavigableMap expectTaskIds) {
     this.expectTaskIds = expectTaskIds;
+  }
+
+  public boolean isExpectedTaskIdsBitmapFilterEnable() {
+    return expectedTaskIdsBitmapFilterEnable;
+  }
+
+  public void useExpectedTaskIdsBitmapFilter() {
+    this.expectedTaskIdsBitmapFilterEnable = true;
   }
 }

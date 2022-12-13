@@ -83,8 +83,8 @@ public class AutoAccessTest extends IntegrationTestBase {
     coordinatorConf.setString("rss.coordinator.access.candidates.path", candidatesFile);
     coordinatorConf.setString(
         "rss.coordinator.access.checkers",
-        "org.apache.uniffle.coordinator.AccessCandidatesChecker,"
-            + "org.apache.uniffle.coordinator.AccessClusterLoadChecker");
+        "org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker,"
+            + "org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker");
     createCoordinatorServer(coordinatorConf);
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();

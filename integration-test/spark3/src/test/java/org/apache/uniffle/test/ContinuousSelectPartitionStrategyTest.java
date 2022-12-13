@@ -38,8 +38,8 @@ import org.apache.spark.sql.internal.SQLConf;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.coordinator.AbstractAssignmentStrategy;
 import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.coordinator.strategy.assignment.AbstractAssignmentStrategy;
 import org.apache.uniffle.server.MockedGrpcServer;
 import org.apache.uniffle.server.MockedShuffleServerGrpcService;
 import org.apache.uniffle.server.ShuffleServer;

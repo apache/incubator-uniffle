@@ -38,7 +38,7 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
   private final int partitionNum;
   private ShuffleServerClient shuffleServerClient;
 
-  LocalFileClientReadHandler(
+  public LocalFileClientReadHandler(
       String appId,
       int shuffleId,
       int partitionId,
@@ -60,6 +60,27 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
     this.partitionNum = partitionNum;
   }
 
+  /**
+   * Only for test
+   */
+  public LocalFileClientReadHandler(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int indexReadLimit,
+      int partitionNumPerRange,
+      int partitionNum,
+      int readBufferSize,
+      Roaring64NavigableMap expectBlockIds,
+      Roaring64NavigableMap processBlockIds,
+      ShuffleServerClient shuffleServerClient) {
+    this(
+        appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange,
+        partitionNum, readBufferSize, expectBlockIds, processBlockIds,
+        shuffleServerClient, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf()
+    );
+  }
+
   @Override
   public ShuffleIndexResult readShuffleIndex() {
     ShuffleIndexResult shuffleIndexResult = null;
@@ -69,7 +90,7 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
       shuffleIndexResult = shuffleServerClient.getShuffleIndex(request).getShuffleIndexResult();
     } catch (Exception e) {
       throw new RssException("Failed to read shuffle index for appId[" + appId + "], shuffleId["
-        + shuffleId + "], partitionId[" + partitionId + "] due to " + e.getMessage());
+        + shuffleId + "], partitionId[" + partitionId + "]", e);
     }
     return shuffleIndexResult;
   }

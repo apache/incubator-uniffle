@@ -31,6 +31,10 @@ import org.apache.uniffle.common.security.SecurityConfig;
 import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.web.CommonMetricsServlet;
 import org.apache.uniffle.common.web.JettyServer;
+import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
+import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
+import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategy;
+import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategyFactory;
 import org.apache.uniffle.metrics.MetricReporter;
 import org.apache.uniffle.metrics.MetricReporterFactory;
 
@@ -150,8 +154,8 @@ public class CoordinatorServer {
     AssignmentStrategyFactory assignmentStrategyFactory =
         new AssignmentStrategyFactory(coordinatorConf, clusterManager);
     this.assignmentStrategy = assignmentStrategyFactory.getAssignmentStrategy();
-    this.accessManager = new AccessManager(coordinatorConf, clusterManager, applicationManager, hadoopConf);
-
+    this.accessManager = new AccessManager(coordinatorConf, clusterManager,
+        applicationManager.getQuotaManager(), hadoopConf);
     CoordinatorFactory coordinatorFactory = new CoordinatorFactory(this);
     server = coordinatorFactory.getServer();
   }

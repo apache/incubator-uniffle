@@ -30,6 +30,7 @@ import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.Context;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +44,7 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
@@ -635,6 +637,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     long blockId = request.getLastBlockId();
     int readBufferSize = request.getReadBufferSize();
     long timestamp = request.getTimestamp();
+
     if (timestamp > 0) {
       long transportTime = System.currentTimeMillis() - timestamp;
       if (transportTime > 0) {
@@ -652,8 +655,23 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     // todo: if can get the exact memory size?
     if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(readBufferSize)) {
       try {
-        ShuffleDataResult shuffleDataResult = shuffleServer.getShuffleTaskManager()
-            .getInMemoryShuffleData(appId, shuffleId, partitionId, blockId, readBufferSize);
+        Roaring64NavigableMap expectedTaskIds = null;
+        if (request.getSerializedExpectedTaskIdsBitmap() != null
+            && !request.getSerializedExpectedTaskIdsBitmap().isEmpty()) {
+          expectedTaskIds = RssUtils.deserializeBitMap(
+              request.getSerializedExpectedTaskIdsBitmap().toByteArray()
+          );
+        }
+        ShuffleDataResult shuffleDataResult = shuffleServer
+            .getShuffleTaskManager()
+            .getInMemoryShuffleData(
+                appId,
+                shuffleId,
+                partitionId,
+                blockId,
+                readBufferSize,
+                expectedTaskIds
+            );
         byte[] data = new byte[]{};
         List<BufferSegment> bufferSegments = Lists.newArrayList();
         if (shuffleDataResult != null) {

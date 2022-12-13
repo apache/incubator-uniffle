@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.util.Collection;
+
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
@@ -24,7 +26,6 @@ import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
-
 
 public interface StorageManager {
 
@@ -51,4 +52,6 @@ public interface StorageManager {
   boolean canWrite(ShuffleDataFlushEvent event);
 
   // todo: add an interface that check storage isHealthy
+
+  void checkAndClearLeakedShuffleData(Collection<String> appIds);
 }

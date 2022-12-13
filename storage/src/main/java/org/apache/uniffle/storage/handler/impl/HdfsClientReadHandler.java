@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import java.io.FileNotFoundException;
 import java.util.Comparator;
 import java.util.List;
 
@@ -29,7 +30,6 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
@@ -43,17 +43,13 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
   protected final int partitionNumPerRange;
   protected final int partitionNum;
   protected final int readBufferSize;
+  private final String shuffleServerId;
   protected Roaring64NavigableMap expectBlockIds;
   protected Roaring64NavigableMap processBlockIds;
   protected final String storageBasePath;
   protected final Configuration hadoopConf;
   protected final List<HdfsShuffleReadHandler> readHandlers = Lists.newArrayList();
   private int readHandlerIndex;
-
-  private long readBlockNum = 0L;
-  private long readLength = 0L;
-  private long readUncompressLength = 0L;
-
   private ShuffleDataDistributionType distributionType;
   private Roaring64NavigableMap expectTaskIds;
 
@@ -70,7 +66,8 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       String storageBasePath,
       Configuration hadoopConf,
       ShuffleDataDistributionType distributionType,
-      Roaring64NavigableMap expectTaskIds) {
+      Roaring64NavigableMap expectTaskIds,
+      String shuffleServerId) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -84,6 +81,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
     this.readHandlerIndex = 0;
     this.distributionType = distributionType;
     this.expectTaskIds = expectTaskIds;
+    this.shuffleServerId = shuffleServerId;
   }
 
   // Only for test
@@ -101,7 +99,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       Configuration hadoopConf) {
     this(appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange, partitionNum, readBufferSize,
         expectBlockIds, processBlockIds, storageBasePath, hadoopConf, ShuffleDataDistributionType.NORMAL,
-        Roaring64NavigableMap.bitmapOf());
+        Roaring64NavigableMap.bitmapOf(), null);
   }
 
   protected void init(String fullShufflePath) {
@@ -113,15 +111,20 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       throw new RuntimeException("Can't get FileSystem for " + baseFolder);
     }
 
-    FileStatus[] indexFiles;
-    String failedGetIndexFileMsg = "Can't list index file in  " + baseFolder;
-
+    FileStatus[] indexFiles = null;
     try {
       // get all index files
       indexFiles = fs.listStatus(baseFolder,
-          file -> file.getName().endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX));
+          file -> file.getName().endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX)
+              && (shuffleServerId == null || file.getName().startsWith(shuffleServerId)));
     } catch (Exception e) {
-      LOG.error(failedGetIndexFileMsg, e);
+      if (e instanceof FileNotFoundException) {
+        LOG.info("Directory[" + baseFolder
+            + "] not found. The data may not be flushed to this directory. Nothing will be read.");
+      } else {
+        String failedGetIndexFileMsg = "Can't list index file in  " + baseFolder;
+        LOG.error(failedGetIndexFileMsg, e);
+      }
       return;
     }
 
@@ -191,21 +194,5 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
 
   protected int getReadHandlerIndex() {
     return readHandlerIndex;
-  }
-
-  @Override
-  public void updateConsumedBlockInfo(BufferSegment bs) {
-    if (bs == null) {
-      return;
-    }
-    readBlockNum++;
-    readLength += bs.getLength();
-    readUncompressLength += bs.getUncompressLength();
-  }
-
-  @Override
-  public void logConsumedBlockInfo() {
-    LOG.info("Client read " + readBlockNum + " blocks,"
-        + " bytes:" +  readLength + "  uncompressed bytes:" + readUncompressLength);
   }
 }

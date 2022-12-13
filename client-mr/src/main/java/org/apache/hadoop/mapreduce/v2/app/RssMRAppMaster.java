@@ -131,9 +131,6 @@ public class RssMRAppMaster extends MRAppMaster {
       }
       assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
 
-      ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
-      String appId = applicationAttemptId.toString();
-
       final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
           new ThreadFactory() {
             @Override
@@ -161,6 +158,10 @@ public class RssMRAppMaster extends MRAppMaster {
       }
 
       String storageType = RssMRUtils.getString(extraConf, conf, RssMRConfig.RSS_STORAGE_TYPE);
+      boolean testMode = RssMRUtils.getBoolean(extraConf, conf, RssMRConfig.RSS_TEST_MODE_ENABLE, false);
+      ClientUtils.validateTestModeConf(testMode, storageType);
+      ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
+      String appId = applicationAttemptId.toString();
       RemoteStorageInfo defaultRemoteStorage =
           new RemoteStorageInfo(conf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH, ""));
       RemoteStorageInfo remoteStorage = ClientUtils.fetchRemoteStorage(
@@ -168,7 +169,7 @@ public class RssMRAppMaster extends MRAppMaster {
       // set the remote storage with actual value
       extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_PATH, remoteStorage.getPath());
       extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_CONF, remoteStorage.getConfString());
-
+      RssMRUtils.validateRssClientConf(extraConf, conf);
       // When containers have disk with very limited space, reduce is allowed to spill data to hdfs
       if (conf.getBoolean(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
           RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT)) {

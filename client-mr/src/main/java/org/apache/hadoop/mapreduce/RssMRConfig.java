@@ -184,6 +184,9 @@ public class RssMRConfig {
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
       ImmutableSet.of(RSS_STORAGE_TYPE, RSS_REMOTE_STORAGE_PATH);
 
+  //Whether enable test mode for the MR Client
+  public static final String RSS_TEST_MODE_ENABLE = MR_RSS_CONFIG_PREFIX + RssClientConfig.RSS_TEST_MODE_ENABLE;
+
   public static RssConf toRssConf(JobConf jobConf) {
     RssConf rssConf = new RssConf();
     for (Map.Entry<String, String> entry : jobConf) {
