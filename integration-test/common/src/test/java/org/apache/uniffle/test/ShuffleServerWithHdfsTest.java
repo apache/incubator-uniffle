@@ -54,7 +54,7 @@ public class ShuffleServerWithHdfsTest extends ShuffleReadWriteBase {
   protected ShuffleServerGrpcClient shuffleServerClient;
 
   @BeforeAll
-  private static void setupServers() throws Exception {
+  public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();

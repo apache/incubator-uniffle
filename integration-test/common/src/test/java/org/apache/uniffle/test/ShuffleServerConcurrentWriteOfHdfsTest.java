@@ -47,20 +47,21 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.uniffle.common.util.Constants.SHUFFLE_DATA_FILE_SUFFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ShuffleServerConcurrentWriteOfHdfsTest extends ShuffleServerWithHdfsTest {
   private static final int MAX_CONCURRENCY = 3;
 
   @BeforeAll
-  private static void setupServers() throws Exception {
+  public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     shuffleServerConf.setInteger(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, MAX_CONCURRENCY);
     shuffleServerConf.setBoolean(shuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED, true);
-    shuffleServerConf.setString("rss.server.single.buffer.flush.threshold", "1m");
+    shuffleServerConf.setLong(shuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD, 1024 * 1024L);
     createShuffleServer(shuffleServerConf);
     startServers();
   }
@@ -78,7 +79,7 @@ public class ShuffleServerConcurrentWriteOfHdfsTest extends ShuffleServerWithHdf
     shuffleServerClient.registerShuffle(rrsr);
 
     List<Roaring64NavigableMap> bitmaps = new ArrayList<>();
-    Map<Long, byte[]> expectedDatas = new HashMap<>();
+    Map<Long, byte[]> expectedDataList = new HashMap<>();
     IntStream.range(0, 20).forEach(x -> {
       Roaring64NavigableMap bitmap = Roaring64NavigableMap.bitmapOf();
       bitmaps.add(bitmap);
@@ -95,7 +96,7 @@ public class ShuffleServerConcurrentWriteOfHdfsTest extends ShuffleServerWithHdf
           expectedData,
           mockSSI
       );
-      expectedDatas.putAll(expectedData);
+      expectedDataList.putAll(expectedData);
 
       Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
       partitionToBlocks.put(0, blocks);
@@ -113,7 +114,10 @@ public class ShuffleServerConcurrentWriteOfHdfsTest extends ShuffleServerWithHdf
 
     // Check the concurrent hdfs file creation
     FileStatus[] fileStatuses = fs.listStatus(new Path(dataBasePath + "/" + appId + "/0/0-1"));
-    long actual = Arrays.stream(fileStatuses).filter(x -> x.getPath().getName().endsWith(".data")).count();
+    long actual = Arrays
+        .stream(fileStatuses)
+        .filter(x -> x.getPath().getName().endsWith(SHUFFLE_DATA_FILE_SUFFIX))
+        .count();
     assertEquals(MAX_CONCURRENCY, actual);
 
     ShuffleServerInfo ssi = new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT);
@@ -142,7 +146,7 @@ public class ShuffleServerConcurrentWriteOfHdfsTest extends ShuffleServerWithHdf
         new DefaultIdHelper()
     );
 
-    validateResult(readClient, expectedDatas, blocksBitmap);
+    validateResult(readClient, expectedDataList, blocksBitmap);
   }
 }
 
