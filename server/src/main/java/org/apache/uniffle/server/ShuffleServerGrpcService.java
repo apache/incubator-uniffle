@@ -662,7 +662,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               request.getSerializedExpectedTaskIdsBitmap().toByteArray()
           );
         }
-        List<Long> expectedBlockIdRange = request.getExpectedBlockIdRangeList();
         ShuffleDataResult shuffleDataResult = shuffleServer
             .getShuffleTaskManager()
             .getInMemoryShuffleData(
@@ -671,8 +670,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 partitionId,
                 blockId,
                 readBufferSize,
-                expectedTaskIds,
-                expectedBlockIdRange
+                expectedTaskIds
             );
         byte[] data = new byte[]{};
         List<BufferSegment> bufferSegments = Lists.newArrayList();

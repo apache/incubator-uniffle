@@ -124,8 +124,7 @@ public class ShuffleHandlerFactory {
         shuffleServerClient,
         request.getExpectBlockIds(),
         request.getProcessBlockIds(),
-        request.getBlockSkipStrategy(),
-        request.getMaxBlockIdRangeSegments(),
+        request.isExpectedTaskIdsBitmapFilterEnable(),
         request.getIdHelper()
     );
     return memoryClientReadHandler;

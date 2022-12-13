@@ -619,7 +619,6 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setLastBlockId(request.getLastBlockId())
         .setReadBufferSize(request.getReadBufferSize())
         .setSerializedExpectedTaskIdsBitmap(serializedTaskIdsBytes)
-        .addAllExpectedBlockIdRange(request.getExpectedBlockIdRange())
         .setTimestamp(start)
         .build();
 

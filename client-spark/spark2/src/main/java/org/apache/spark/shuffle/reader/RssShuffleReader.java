@@ -45,8 +45,6 @@ import scala.runtime.BoxedUnit;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
-import org.apache.uniffle.client.util.RssClientConfig;
-import org.apache.uniffle.common.BlockSkipStrategy;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 
@@ -73,8 +71,6 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private List<ShuffleServerInfo> shuffleServerInfoList;
   private Configuration hadoopConf;
   private RssConf rssConf;
-  private final BlockSkipStrategy blockSkipStrategy;
-  private final int maxBlockIdRangeSegments;
 
   public RssShuffleReader(
       int startPartition,
@@ -111,14 +107,6 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.shuffleServerInfoList =
         (List<ShuffleServerInfo>) (rssShuffleHandle.getPartitionToServers().get(startPartition));
     this.rssConf = rssConf;
-
-    BlockSkipStrategy blockSkipStrategy = BlockSkipStrategy.valueOf(
-        rssConf.getString(RssClientConfig.RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY,
-            RssClientConfig.RSS_CLIENT_READ_BLOCK_SKIP_STRATEGY_DEFAULT_VALUE));
-    this.blockSkipStrategy = shuffleServerInfoList.size() <= 1 ? BlockSkipStrategy.NONE : blockSkipStrategy;
-
-    maxBlockIdRangeSegments = rssConf.getInteger(RssClientConfig.RSS_CLIENT_READ_FILTER_RANGE_MAX_SEGMENTS,
-        RssClientConfig.RSS_CLIENT_READ_FILTER_RANGE_MAX_SEGMENTS_DEFAULT_VALUE);
   }
 
   @Override
@@ -127,8 +115,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 
     CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
         appId, shuffleId, startPartition, storageType, basePath, indexReadLimit, readBufferSize,
-        partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf,
-        blockSkipStrategy, maxBlockIdRangeSegments);
+        partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf);
     ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
     RssShuffleDataIterator rssShuffleDataIterator = new RssShuffleDataIterator<K, C>(
         shuffleDependency.serializer(), shuffleReadClient,

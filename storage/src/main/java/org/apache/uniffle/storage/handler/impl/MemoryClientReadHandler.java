@@ -20,8 +20,6 @@ package org.apache.uniffle.storage.handler.impl;
 import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
-import org.apache.commons.lang.StringUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.request.RssGetInMemoryShuffleDataRequest;
 import org.apache.uniffle.client.response.RssGetInMemoryShuffleDataResponse;
-import org.apache.uniffle.common.BlockSkipStrategy;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.exception.RssException;
@@ -38,18 +35,17 @@ import org.apache.uniffle.common.util.DefaultIdHelper;
 import org.apache.uniffle.common.util.IdHelper;
 import org.apache.uniffle.common.util.RssUtils;
 
+
 public class MemoryClientReadHandler extends AbstractClientReadHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(MemoryClientReadHandler.class);
   private final Roaring64NavigableMap expectBlockIds;
   private final Roaring64NavigableMap processBlockIds;
-  private final BlockSkipStrategy blockSkipStrategy;
-  private final int maxBlockIdRangeSegments;
   private final IdHelper idHelper;
   private long lastBlockId = Constants.INVALID_BLOCK_ID;
   private ShuffleServerClient shuffleServerClient;
   private Roaring64NavigableMap expectTaskIds;
-  private List<Long> expectedBlockIdRange = Lists.newArrayList();
+  private boolean expectedTaskIdsBitmapFilterEnable;
 
   // Only for tests
   @VisibleForTesting
@@ -69,9 +65,9 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
         shuffleServerClient,
         expectBlockIds,
         processBlockIds,
-        BlockSkipStrategy.TASK_BITMAP,
-        0,
-        new DefaultIdHelper());
+        false,
+        new DefaultIdHelper()
+    );
   }
 
   public MemoryClientReadHandler(
@@ -82,8 +78,7 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
       ShuffleServerClient shuffleServerClient,
       Roaring64NavigableMap expectBlockIds,
       Roaring64NavigableMap processBlockIds,
-      BlockSkipStrategy blockSkipStrategy,
-      int maxBlockIdRangeSegments,
+      boolean expectedTaskIdsBitmapFilterEnable,
       IdHelper idHelper) {
     this.appId = appId;
     this.shuffleId = shuffleId;
@@ -92,27 +87,17 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
     this.shuffleServerClient = shuffleServerClient;
     this.expectBlockIds = expectBlockIds;
     this.processBlockIds = processBlockIds;
-    this.blockSkipStrategy = blockSkipStrategy;
-    this.maxBlockIdRangeSegments = maxBlockIdRangeSegments;
     this.idHelper = idHelper;
+    this.expectedTaskIdsBitmapFilterEnable = expectedTaskIdsBitmapFilterEnable;
+
   }
 
   @Override
   public ShuffleDataResult readShuffleData() {
-    if (lastBlockId == Constants.INVALID_BLOCK_ID) {
-      if (BlockSkipStrategy.BLOCKID_RANGE.equals(blockSkipStrategy)) {
-        Roaring64NavigableMap realExceptBlockIds = RssUtils.cloneBitMap(expectBlockIds);
-        realExceptBlockIds.xor(processBlockIds);
-        expectedBlockIdRange = RssUtils.generateRangeSegments(realExceptBlockIds, maxBlockIdRangeSegments);
-        if (expectedBlockIdRange.size() == 0) {
-          return null;
-        }
-        LOG.info("expectedBlockIdRange:" + StringUtils.join(expectedBlockIdRange, ","));
-      } else if (BlockSkipStrategy.TASK_BITMAP.equals(blockSkipStrategy)) {
-        Roaring64NavigableMap realExceptBlockIds = RssUtils.cloneBitMap(expectBlockIds);
-        realExceptBlockIds.xor(processBlockIds);
-        expectTaskIds = RssUtils.generateTaskIdBitMap(realExceptBlockIds, idHelper);
-      }
+    if (lastBlockId == Constants.INVALID_BLOCK_ID && expectedTaskIdsBitmapFilterEnable) {
+      Roaring64NavigableMap realExceptBlockIds = RssUtils.cloneBitMap(expectBlockIds);
+      realExceptBlockIds.xor(processBlockIds);
+      expectTaskIds = RssUtils.generateTaskIdBitMap(realExceptBlockIds, idHelper);
     }
 
     ShuffleDataResult result = null;
@@ -123,8 +108,7 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
         partitionId,
         lastBlockId,
         readBufferSize,
-        expectTaskIds,
-        expectedBlockIdRange
+        expectTaskIds
     );
 
     try {
