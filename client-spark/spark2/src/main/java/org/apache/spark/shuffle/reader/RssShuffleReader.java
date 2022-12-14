@@ -51,6 +51,7 @@ import org.apache.uniffle.common.config.RssConf;
 public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleReader.class);
+  private final boolean expectedTaskIdsBitmapFilterEnable;
 
   private String appId;
   private int shuffleId;
@@ -107,6 +108,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.shuffleServerInfoList =
         (List<ShuffleServerInfo>) (rssShuffleHandle.getPartitionToServers().get(startPartition));
     this.rssConf = rssConf;
+    expectedTaskIdsBitmapFilterEnable = shuffleServerInfoList.size() > 1;
   }
 
   @Override
@@ -115,7 +117,8 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 
     CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
         appId, shuffleId, startPartition, storageType, basePath, indexReadLimit, readBufferSize,
-        partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf);
+        partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap,
+        shuffleServerInfoList, hadoopConf, expectedTaskIdsBitmapFilterEnable);
     ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
     RssShuffleDataIterator rssShuffleDataIterator = new RssShuffleDataIterator<K, C>(
         shuffleDependency.serializer(), shuffleReadClient,

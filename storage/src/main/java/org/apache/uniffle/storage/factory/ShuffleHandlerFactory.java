@@ -120,7 +120,7 @@ public class ShuffleHandlerFactory {
     ShuffleServerClient shuffleServerClient = ShuffleServerClientFactory.getInstance().getShuffleServerClient(
         ClientType.GRPC.name(), ssi);
     Roaring64NavigableMap expectTaskIds = null;
-    if (request.isExpectedTaskIdsBitmapFilterEnable() || request.getShuffleServerInfoList().size() > 1) {
+    if (request.isExpectedTaskIdsBitmapFilterEnable()) {
       Roaring64NavigableMap realExceptBlockIds = RssUtils.cloneBitMap(request.getExpectBlockIds());
       realExceptBlockIds.xor(request.getProcessBlockIds());
       expectTaskIds = RssUtils.generateTaskIdBitMap(realExceptBlockIds, request.getIdHelper());
