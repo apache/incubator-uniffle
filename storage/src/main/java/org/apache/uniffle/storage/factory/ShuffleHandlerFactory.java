@@ -119,13 +119,11 @@ public class ShuffleHandlerFactory {
   private ClientReadHandler getMemoryClientReadHandler(CreateShuffleReadHandlerRequest request, ShuffleServerInfo ssi) {
     ShuffleServerClient shuffleServerClient = ShuffleServerClientFactory.getInstance().getShuffleServerClient(
         ClientType.GRPC.name(), ssi);
-    Roaring64NavigableMap expectTaskIds;
-    if (request.isExpectedTaskIdsBitmapFilterEnable()) {
+    Roaring64NavigableMap expectTaskIds = null;
+    if (request.isExpectedTaskIdsBitmapFilterEnable() || request.getShuffleServerInfoList().size() > 1) {
       Roaring64NavigableMap realExceptBlockIds = RssUtils.cloneBitMap(request.getExpectBlockIds());
       realExceptBlockIds.xor(request.getProcessBlockIds());
       expectTaskIds = RssUtils.generateTaskIdBitMap(realExceptBlockIds, request.getIdHelper());
-    } else {
-      expectTaskIds = request.getExpectTaskIds();
     }
     ClientReadHandler memoryClientReadHandler = new MemoryClientReadHandler(
         request.getAppId(),
