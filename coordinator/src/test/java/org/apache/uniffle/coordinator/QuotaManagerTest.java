@@ -37,6 +37,7 @@ import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * QuotaManager is a manager for resource restriction.
@@ -80,8 +81,18 @@ public class QuotaManagerTest {
     conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH,
         quotaFile);
     ApplicationManager applicationManager = new ApplicationManager(conf);
-    Thread.sleep(500);
-
+    int retry = 0;
+    while (true) {
+      if (applicationManager.getDefaultUserApps().size() == 0) {
+        break;
+      }
+      Thread.sleep(500);
+      retry++;
+      if (retry > 5) {
+        fail("Timeout to wait for finish parse quota file.");
+      }
+    }
+    
     Integer user1 = applicationManager.getDefaultUserApps().get("user1");
     Integer user2 = applicationManager.getDefaultUserApps().get("user2");
     Integer user3 = applicationManager.getDefaultUserApps().get("user3");
