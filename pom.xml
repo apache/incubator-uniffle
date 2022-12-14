@@ -115,9 +115,7 @@
     <module>server</module>
     <module>client</module>
     <module>integration-test/common</module>
-    <module>metrics</module>
-    <module>metrics/metrics-core</module>
-    <module>metrics/metrics-prometheus</module>
+    <module>metrics-prometheus</module>
   </modules>
 
   <dependencies>
@@ -1512,6 +1510,12 @@
       <id>kubernetes</id>
       <modules>
         <module>deploy/kubernetes</module>
+      </modules>
+    </profile>
+    <profile>
+      <id>metrics</id>
+      <modules>
+        <module>metrics-prometheus</module>
       </modules>
     </profile>
   </profiles>

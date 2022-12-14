@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.metrics;
+package org.apache.uniffle.common.metrics;
 
 import java.util.ArrayList;
 import java.util.List;

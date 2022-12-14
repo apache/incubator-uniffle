@@ -35,8 +35,8 @@ import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategy;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategyFactory;
-import org.apache.uniffle.metrics.MetricReporter;
-import org.apache.uniffle.metrics.MetricReporterFactory;
+import org.apache.uniffle.common.metrics.MetricReporter;
+import org.apache.uniffle.common.metrics.MetricReporterFactory;
 
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_ENABLE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE;

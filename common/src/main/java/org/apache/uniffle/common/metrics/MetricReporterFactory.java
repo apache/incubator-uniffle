@@ -15,15 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.metrics;
+package org.apache.uniffle.common.metrics;
 
-import io.prometheus.client.CollectorRegistry;
+import java.lang.reflect.Constructor;
 
-public interface MetricReporter {
+import org.apache.commons.lang3.StringUtils;
 
-  void start();
+import org.apache.uniffle.common.config.RssConf;
 
-  void stop();
+public class MetricReporterFactory {
+  public static final String REPORT_CLASS = "rss.metrics.reporter.class";
 
-  void addCollectorRegistry(CollectorRegistry registry);
+  public static MetricReporter getMetricReporter(RssConf conf) throws Exception {
+    String name = conf.getString(REPORT_CLASS, null);
+    if (StringUtils.isEmpty(name)) {
+      return null;
+    }
+    Class<?> klass = Class.forName(name);
+    Constructor<?> constructor;
+    constructor = klass.getConstructor(conf.getClass());
+    return (AbstractMetricReporter) constructor.newInstance(conf);
+  }
 }

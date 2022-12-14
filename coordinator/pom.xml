@@ -37,11 +37,6 @@
       <artifactId>rss-common</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.uniffle</groupId>
-      <artifactId>rss-metrics-core</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java-util</artifactId>
     </dependency>
