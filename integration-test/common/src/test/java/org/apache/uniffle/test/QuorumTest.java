@@ -74,7 +74,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
   public static MockedShuffleServer createServer(int id) throws Exception {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 4000);
+    shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 8000);
     shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000);
     File tmpDir = Files.createTempDir();
     tmpDir.deleteOnExit();
@@ -94,8 +94,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     createCoordinatorServer(coordinatorConf);
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 1000);
-    shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 1000);
+    shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 8000);
     File tmpDir = Files.createTempDir();
     tmpDir.deleteOnExit();
 
