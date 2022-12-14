@@ -36,6 +36,7 @@
       <groupId>org.apache.uniffle</groupId>
       <artifactId>rss-common</artifactId>
     </dependency>
+
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java-util</artifactId>
