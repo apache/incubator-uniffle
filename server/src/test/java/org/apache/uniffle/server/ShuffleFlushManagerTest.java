@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -115,6 +116,35 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
         new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", mockShuffleServer, storageManager);
     assertEquals("2", manager.getHadoopConf().get("dfs.replication"));
     assertEquals("value", manager.getHadoopConf().get("a.b"));
+  }
+
+  @Test
+  public void concurrentWrite2HdfsWriteOfSinglePartition() throws Exception {
+    ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.emptyList());
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    int maxConcurrency = 3;
+    shuffleServerConf.setInteger(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, maxConcurrency);
+
+    String appId = "concurrentWrite2HdfsWriteOfSinglePartition_appId";
+    StorageManager storageManager =
+        StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
+    storageManager.registerRemoteStorage(appId, remoteStorage);
+    ShuffleFlushManager manager =
+        new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", mockShuffleServer, storageManager);
+
+    IntStream.range(0, 20).forEach(x -> {
+      ShuffleDataFlushEvent event = createShuffleDataFlushEvent(appId, 1, 1, 1, null);
+      manager.addToFlushQueue(event);
+    });
+    waitForFlush(manager, appId, 1, 10 * 5);
+
+    FileStatus[] fileStatuses = fs.listStatus(new Path(HDFS_URI + "/rss/test/" + appId + "/1/1-1"));
+    long actual = Arrays.stream(fileStatuses).filter(x -> x.getPath().getName().endsWith("data")).count();
+
+    assertEquals(maxConcurrency, actual);
+    actual = Arrays.stream(fileStatuses).filter(x -> x.getPath().getName().endsWith("index")).count();
+    assertEquals(maxConcurrency, actual);
   }
 
   @Test

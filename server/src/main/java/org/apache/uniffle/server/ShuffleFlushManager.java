@@ -69,6 +69,7 @@ public class ShuffleFlushManager {
   private final BlockingQueue<PendingShuffleFlushEvent> pendingEvents = Queues.newLinkedBlockingQueue();
   private final long pendingEventTimeoutSec;
   private int processPendingEventIndex = 0;
+  private final int maxConcurrencyOfSingleOnePartition;
 
   public ShuffleFlushManager(ShuffleServerConf shuffleServerConf, String shuffleServerId, ShuffleServer shuffleServer,
                              StorageManager storageManager) {
@@ -80,6 +81,8 @@ public class ShuffleFlushManager {
     retryMax = shuffleServerConf.getInteger(ShuffleServerConf.SERVER_WRITE_RETRY_MAX);
     storageType = shuffleServerConf.get(RssBaseConf.RSS_STORAGE_TYPE);
     storageDataReplica = shuffleServerConf.get(RssBaseConf.RSS_STORAGE_DATA_REPLICA);
+    this.maxConcurrencyOfSingleOnePartition =
+        shuffleServerConf.get(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION);
 
     int waitQueueSize = shuffleServerConf.getInteger(
         ShuffleServerConf.SERVER_FLUSH_THREAD_POOL_QUEUE_SIZE);
@@ -97,12 +100,13 @@ public class ShuffleFlushManager {
           ShuffleDataFlushEvent event = flushQueue.take();
           threadPoolExecutor.execute(() -> {
             try {
-              ShuffleServerMetrics.gaugeEventQueueSize.set(flushQueue.size());
               ShuffleServerMetrics.gaugeWriteHandler.inc();
               flushToFile(event);
-              ShuffleServerMetrics.gaugeWriteHandler.dec();
             } catch (Exception e) {
               LOG.error("Exception happened when flush data for " + event, e);
+            } finally {
+              ShuffleServerMetrics.gaugeWriteHandler.dec();
+              ShuffleServerMetrics.gaugeEventQueueSize.dec();
             }
           });
         } catch (Exception e) {
@@ -139,6 +143,8 @@ public class ShuffleFlushManager {
   public void addToFlushQueue(ShuffleDataFlushEvent event) {
     if (!flushQueue.offer(event)) {
       LOG.warn("Flush queue is full, discard event: " + event);
+    } else {
+      ShuffleServerMetrics.gaugeEventQueueSize.inc();
     }
   }
 
@@ -200,7 +206,8 @@ public class ShuffleFlushManager {
             shuffleServerId,
             hadoopConf,
             storageDataReplica,
-            user);
+            user,
+            maxConcurrencyOfSingleOnePartition);
         ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
         writeSuccess = storageManager.write(storage, handler, event);
         if (writeSuccess) {

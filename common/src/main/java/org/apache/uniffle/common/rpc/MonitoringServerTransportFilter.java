@@ -17,8 +17,6 @@
 
 package org.apache.uniffle.common.rpc;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import io.grpc.Attributes;
 import io.grpc.ServerTransportFilter;
 
@@ -27,7 +25,6 @@ import org.apache.uniffle.common.metrics.GRPCMetrics;
 import static org.apache.uniffle.common.metrics.GRPCMetrics.GRPC_SERVER_CONNECTION_NUMBER_KEY;
 
 public class MonitoringServerTransportFilter extends ServerTransportFilter {
-  private final AtomicLong connectionSize = new AtomicLong(0);
   private final GRPCMetrics grpcMetrics;
 
   public MonitoringServerTransportFilter(GRPCMetrics grpcMetrics) {
@@ -35,12 +32,12 @@ public class MonitoringServerTransportFilter extends ServerTransportFilter {
   }
 
   public Attributes transportReady(Attributes transportAttrs) {
-    grpcMetrics.setGauge(GRPC_SERVER_CONNECTION_NUMBER_KEY, connectionSize.incrementAndGet());
+    grpcMetrics.incGauge(GRPC_SERVER_CONNECTION_NUMBER_KEY);
     return super.transportReady(transportAttrs);
   }
 
   public void transportTerminated(Attributes transportAttrs) {
-    grpcMetrics.setGauge(GRPC_SERVER_CONNECTION_NUMBER_KEY, connectionSize.decrementAndGet());
+    grpcMetrics.decGauge(GRPC_SERVER_CONNECTION_NUMBER_KEY);
     super.transportTerminated(transportAttrs);
   }
 }
