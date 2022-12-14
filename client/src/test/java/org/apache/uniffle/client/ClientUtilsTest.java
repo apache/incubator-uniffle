@@ -32,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.util.ClientUtils;
-import org.apache.uniffle.common.util.DefaultIdHelper;
+import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.util.RssUtils;
 
 import static org.apache.uniffle.client.util.ClientUtils.waitUntilDoneOrFail;

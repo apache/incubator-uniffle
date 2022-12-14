@@ -124,10 +124,10 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     shuffleServerClient.sendShuffleData(rssdr);
 
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap exceptTaskIds = Roaring64NavigableMap.bitmapOf(0);
     // read the 1-th segment from memory
     MemoryClientReadHandler memoryClientReadHandler = new MemoryClientReadHandler(
-        testAppId, shuffleId, partitionId, 150, shuffleServerClient,
-        expectBlockIds, processBlockIds);
+        testAppId, shuffleId, partitionId, 150, shuffleServerClient, exceptTaskIds);
     LocalFileClientReadHandler localFileClientReadHandler = new LocalFileClientReadHandler(
         testAppId, shuffleId, partitionId, 0, 1, 3,
         75, expectBlockIds, processBlockIds, shuffleServerClient);

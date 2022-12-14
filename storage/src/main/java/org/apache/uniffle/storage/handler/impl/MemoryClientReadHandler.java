@@ -19,7 +19,6 @@ package org.apache.uniffle.storage.handler.impl;
 
 import java.util.List;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +30,6 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
-import org.apache.uniffle.common.util.DefaultIdHelper;
-import org.apache.uniffle.common.util.IdHelper;
-import org.apache.uniffle.common.util.RssUtils;
 
 
 public class MemoryClientReadHandler extends AbstractClientReadHandler {
@@ -42,52 +38,20 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
   private long lastBlockId = Constants.INVALID_BLOCK_ID;
   private ShuffleServerClient shuffleServerClient;
   private Roaring64NavigableMap expectTaskIds;
-
-  // Only for tests
-  @VisibleForTesting
+  
   public MemoryClientReadHandler(
       String appId,
       int shuffleId,
       int partitionId,
       int readBufferSize,
       ShuffleServerClient shuffleServerClient,
-      Roaring64NavigableMap expectBlockIds,
-      Roaring64NavigableMap processBlockIds) {
-    this(
-        appId,
-        shuffleId,
-        partitionId,
-        readBufferSize,
-        shuffleServerClient,
-        expectBlockIds,
-        processBlockIds,
-        false,
-        new DefaultIdHelper()
-    );
-  }
-
-  public MemoryClientReadHandler(
-      String appId,
-      int shuffleId,
-      int partitionId,
-      int readBufferSize,
-      ShuffleServerClient shuffleServerClient,
-      Roaring64NavigableMap expectBlockIds,
-      Roaring64NavigableMap processBlockIds,
-      boolean expectedTaskIdsBitmapFilterEnable,
-      IdHelper idHelper) {
+      Roaring64NavigableMap expectTaskIds) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.readBufferSize = readBufferSize;
     this.shuffleServerClient = shuffleServerClient;
-    if (expectedTaskIdsBitmapFilterEnable) {
-      Roaring64NavigableMap realExceptBlockIds = RssUtils.cloneBitMap(expectBlockIds);
-      realExceptBlockIds.xor(processBlockIds);
-      expectTaskIds = RssUtils.generateTaskIdBitMap(realExceptBlockIds, idHelper);
-    }
-    
-
+    this.expectTaskIds = expectTaskIds;
   }
 
   @Override
