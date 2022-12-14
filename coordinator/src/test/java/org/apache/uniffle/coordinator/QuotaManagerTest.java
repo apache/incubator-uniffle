@@ -83,7 +83,7 @@ public class QuotaManagerTest {
     ApplicationManager applicationManager = new ApplicationManager(conf);
     int retry = 0;
     while (true) {
-      if (applicationManager.getDefaultUserApps().size() == 0) {
+      if (applicationManager.getDefaultUserApps().size() > 0) {
         break;
       }
       Thread.sleep(500);
