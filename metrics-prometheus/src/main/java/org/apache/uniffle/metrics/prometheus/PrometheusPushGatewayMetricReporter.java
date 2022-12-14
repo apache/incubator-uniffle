@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.ThreadUtils;
-import org.apache.uniffle.metrics.AbstractMetricReporter;
+import org.apache.uniffle.common.metrics.AbstractMetricReporter;
 
 public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter {
   private static final Logger LOG = LoggerFactory.getLogger(PrometheusPushGatewayMetricReporter.class);

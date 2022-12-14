@@ -29,8 +29,8 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.metrics.MetricsManager;
-import org.apache.uniffle.metrics.MetricReporter;
-import org.apache.uniffle.metrics.MetricReporterFactory;
+import org.apache.uniffle.common.metrics.MetricReporter;
+import org.apache.uniffle.common.metrics.MetricReporterFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
