@@ -24,6 +24,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.common.exception.RssException;
@@ -75,7 +76,8 @@ public class ShuffleServerWithLocalOfExceptionTest extends ShuffleReadWriteBase 
     int partitionId = 0;
 
     MemoryClientReadHandler memoryClientReadHandler = new MemoryClientReadHandler(
-        testAppId, shuffleId, partitionId, 150, shuffleServerClient);
+        testAppId, shuffleId, partitionId, 150, shuffleServerClient,
+        Roaring64NavigableMap.bitmapOf());
     shuffleServers.get(0).stopServer();
     try {
       memoryClientReadHandler.readShuffleData();

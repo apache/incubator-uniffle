@@ -25,6 +25,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.util.IdHelper;
 
 public class CreateShuffleReadHandlerRequest {
 
@@ -45,6 +46,8 @@ public class CreateShuffleReadHandlerRequest {
   private ShuffleDataDistributionType distributionType;
   private Roaring64NavigableMap expectTaskIds;
   private boolean expectedTaskIdsBitmapFilterEnable;
+
+  private IdHelper idHelper;
 
   public CreateShuffleReadHandlerRequest() {
   }
@@ -183,5 +186,13 @@ public class CreateShuffleReadHandlerRequest {
 
   public void useExpectedTaskIdsBitmapFilter() {
     this.expectedTaskIdsBitmapFilterEnable = true;
+  }
+
+  public IdHelper getIdHelper() {
+    return idHelper;
+  }
+
+  public void setIdHelper(IdHelper idHelper) {
+    this.idHelper = idHelper;
   }
 }

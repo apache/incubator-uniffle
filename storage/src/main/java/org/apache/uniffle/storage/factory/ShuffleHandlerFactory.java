@@ -19,15 +19,18 @@ package org.apache.uniffle.storage.factory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
 import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
 import org.apache.uniffle.storage.handler.impl.ComposedClientReadHandler;
@@ -90,20 +93,20 @@ public class ShuffleHandlerFactory {
       return getLocalfileClientReaderHandler(request, serverInfo);
     }
 
-    List<ClientReadHandler> handlers = new ArrayList<>();
+    List<Callable<ClientReadHandler>> handlers = new ArrayList<>();
     if (StorageType.withMemory(type)) {
       handlers.add(
-          getMemoryClientReadHandler(request, serverInfo)
+          () -> getMemoryClientReadHandler(request, serverInfo)
       );
     }
     if (StorageType.withLocalfile(type)) {
       handlers.add(
-          getLocalfileClientReaderHandler(request, serverInfo)
+          () -> getLocalfileClientReaderHandler(request, serverInfo)
       );
     }
     if (StorageType.withHDFS(type)) {
       handlers.add(
-          getHdfsClientReadHandler(request, serverInfo)
+          () -> getHdfsClientReadHandler(request, serverInfo)
       );
     }
     if (handlers.isEmpty()) {
@@ -116,14 +119,19 @@ public class ShuffleHandlerFactory {
   private ClientReadHandler getMemoryClientReadHandler(CreateShuffleReadHandlerRequest request, ShuffleServerInfo ssi) {
     ShuffleServerClient shuffleServerClient = ShuffleServerClientFactory.getInstance().getShuffleServerClient(
         ClientType.GRPC.name(), ssi);
+    Roaring64NavigableMap expectTaskIds = null;
+    if (request.isExpectedTaskIdsBitmapFilterEnable()) {
+      Roaring64NavigableMap realExceptBlockIds = RssUtils.cloneBitMap(request.getExpectBlockIds());
+      realExceptBlockIds.xor(request.getProcessBlockIds());
+      expectTaskIds = RssUtils.generateTaskIdBitMap(realExceptBlockIds, request.getIdHelper());
+    }
     ClientReadHandler memoryClientReadHandler = new MemoryClientReadHandler(
         request.getAppId(),
         request.getShuffleId(),
         request.getPartitionId(),
         request.getReadBufferSize(),
         shuffleServerClient,
-        request.getExpectTaskIds(),
-        request.isExpectedTaskIdsBitmapFilterEnable()
+        expectTaskIds
     );
     return memoryClientReadHandler;
   }

@@ -18,6 +18,7 @@
 package org.apache.uniffle.client.util;
 
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.IdHelper;
 
 public class DefaultIdHelper implements IdHelper {
   @Override

@@ -17,7 +17,7 @@
 
 package org.apache.hadoop.mapreduce;
 
-import org.apache.uniffle.client.util.IdHelper;
+import org.apache.uniffle.common.util.IdHelper;
 
 public class MRIdHelper implements IdHelper {
 

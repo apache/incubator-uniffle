@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client.util;
+package org.apache.uniffle.common.util;
 
 public interface IdHelper {
 
