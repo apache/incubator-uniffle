@@ -129,9 +129,9 @@ public class LocalStorageManagerTest {
 
     List<LocalStorage> storages = localStorageManager.getStorages();
     assertNotNull(storages);
-    assertTrue(storages.size() == storagePaths.length);
+    assertEquals(storages.size(), storagePaths.length);
     for (int i = 0; i < storagePaths.length; i++) {
-      assertTrue(storagePaths[i].equals(storages.get(i).getBasePath()));
+      assertEquals(storagePaths[i], storages.get(i).getBasePath());
     }
   }
 

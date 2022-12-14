@@ -183,7 +183,7 @@ public class ShuffleServerMetricsTest {
     }
 
     List<Future<Void>> results = executorService.invokeAll(calls);
-    for (Future f : results) {
+    for (Future<Void> f : results) {
       f.get();
     }
 

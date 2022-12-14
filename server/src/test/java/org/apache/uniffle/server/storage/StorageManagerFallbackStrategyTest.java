@@ -30,7 +30,7 @@ import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class StorageManagerFallbackStrategyTest {
   private ShuffleServerConf conf;
@@ -60,25 +60,25 @@ public class StorageManagerFallbackStrategyTest {
     event.increaseRetryTimes();
     StorageManager storageManager = fallbackStrategy.tryFallback(
         current, event, warmStorageManager, coldStorageManager);
-    assertTrue(storageManager == coldStorageManager);
+    assertSame(storageManager, coldStorageManager);
 
     conf.setLong(ShuffleServerConf.FALLBACK_MAX_FAIL_TIMES, 3);
     fallbackStrategy = new RotateStorageManagerFallbackStrategy(conf);
     storageManager = fallbackStrategy.tryFallback(current, event, warmStorageManager, coldStorageManager);
-    assertTrue(storageManager == warmStorageManager);
+    assertSame(storageManager, warmStorageManager);
     for (int i = 0; i < 2; i++) {
       event.increaseRetryTimes();
     }
     storageManager = fallbackStrategy.tryFallback(current, event, warmStorageManager, coldStorageManager);
-    assertTrue(storageManager == coldStorageManager);
+    assertSame(storageManager, coldStorageManager);
     event.increaseRetryTimes();
     storageManager = fallbackStrategy.tryFallback(current, event, warmStorageManager, coldStorageManager);
-    assertTrue(storageManager == warmStorageManager);
+    assertSame(storageManager, warmStorageManager);
     for (int i = 0; i < 2; i++) {
       event.increaseRetryTimes();
     }
     storageManager = fallbackStrategy.tryFallback(coldStorageManager, event, warmStorageManager, coldStorageManager);
-    assertTrue(storageManager == warmStorageManager);
+    assertSame(storageManager, warmStorageManager);
   }
 
   @Test
@@ -96,10 +96,10 @@ public class StorageManagerFallbackStrategyTest {
     event.increaseRetryTimes();
     StorageManager storageManager = fallbackStrategy.tryFallback(
         warmStorageManager, event, warmStorageManager, coldStorageManager);
-    assertTrue(storageManager == warmStorageManager);
+    assertSame(storageManager, warmStorageManager);
 
     storageManager = fallbackStrategy.tryFallback(coldStorageManager, event, warmStorageManager, coldStorageManager);
-    assertTrue(storageManager == warmStorageManager);
+    assertSame(storageManager, warmStorageManager);
   }
 
 
@@ -118,9 +118,9 @@ public class StorageManagerFallbackStrategyTest {
     event.increaseRetryTimes();
     StorageManager storageManager = fallbackStrategy.tryFallback(
         warmStorageManager, event, warmStorageManager, coldStorageManager);
-    assertTrue(storageManager == coldStorageManager);
+    assertSame(storageManager, coldStorageManager);
 
     storageManager = fallbackStrategy.tryFallback(coldStorageManager, event, warmStorageManager, coldStorageManager);
-    assertTrue(storageManager == coldStorageManager);
+    assertSame(storageManager, coldStorageManager);
   }
 }

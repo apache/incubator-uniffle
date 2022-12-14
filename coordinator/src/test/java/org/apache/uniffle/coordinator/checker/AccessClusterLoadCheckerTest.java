@@ -17,7 +17,7 @@
 
 package org.apache.uniffle.coordinator.checker;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -52,6 +52,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class AccessClusterLoadCheckerTest {
+  private static final String clusterLoaderCheckerName = AccessClusterLoadChecker.class.getName();
 
   @BeforeEach
   public void setUp() {
@@ -93,8 +94,7 @@ public class AccessClusterLoadCheckerTest {
     when(clusterManager.getServerList(any())).thenReturn(nodes);
 
     CoordinatorConf conf = new CoordinatorConf();
-    conf.set(COORDINATOR_ACCESS_CHECKERS,
-        Arrays.asList("org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker"));
+    conf.set(COORDINATOR_ACCESS_CHECKERS, Collections.singletonList(clusterLoaderCheckerName));
     conf.set(COORDINATOR_SHUFFLE_NODES_MAX, 3);
     conf.set(COORDINATOR_ACCESS_LOADCHECKER_MEMORY_PERCENTAGE, 20.0);
     ApplicationManager applicationManager = new ApplicationManager(conf);
@@ -160,8 +160,7 @@ public class AccessClusterLoadCheckerTest {
     final String filePath = Objects.requireNonNull(
         getClass().getClassLoader().getResource("coordinator.conf")).getFile();
     CoordinatorConf conf = new CoordinatorConf(filePath);
-    conf.setString(COORDINATOR_ACCESS_CHECKERS.key(),
-        "org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker");
+    conf.setString(COORDINATOR_ACCESS_CHECKERS.key(), clusterLoaderCheckerName);
     ApplicationManager applicationManager = new ApplicationManager(conf);
     AccessManager accessManager = new AccessManager(conf, clusterManager,
         applicationManager.getQuotaManager(), new Configuration());

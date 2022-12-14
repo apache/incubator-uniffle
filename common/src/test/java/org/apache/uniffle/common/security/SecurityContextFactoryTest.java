@@ -47,8 +47,8 @@ public class SecurityContextFactoryTest extends KerberizedHdfsBase {
     SecurityContext securityContext = SecurityContextFactory.get().getSecurityContext();
     assertEquals(NoOpSecurityContext.class, securityContext.getClass());
 
-    final SecurityConfig securityConfig = null;
-    SecurityContextFactory.get().init(securityConfig);
+    // init with null config, should return NoOpSecurityContext.
+    SecurityContextFactory.get().init(null);
     securityContext = SecurityContextFactory.get().getSecurityContext();
     assertEquals(NoOpSecurityContext.class, securityContext.getClass());
   }
@@ -68,13 +68,13 @@ public class SecurityContextFactoryTest extends KerberizedHdfsBase {
     }
 
     // case2: create the correct hadoop security context
-    final SecurityConfig correntConfig = SecurityConfig
+    final SecurityConfig correctConfig = SecurityConfig
         .newBuilder()
         .keytabFilePath(kerberizedHdfs.getHdfsKeytab())
         .principal(kerberizedHdfs.getHdfsPrincipal())
         .reloginIntervalSec(60)
         .build();
-    SecurityContextFactory.get().init(correntConfig);
+    SecurityContextFactory.get().init(correctConfig);
     SecurityContext securityContext = SecurityContextFactory.get().getSecurityContext();
     assertEquals(HadoopSecurityContext.class, securityContext.getClass());
     securityContext.close();

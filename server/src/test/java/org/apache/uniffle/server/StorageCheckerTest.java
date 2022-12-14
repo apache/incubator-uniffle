@@ -25,6 +25,7 @@ import com.google.common.collect.Lists;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.util.StorageType;
@@ -48,16 +49,19 @@ public class StorageCheckerTest {
   }
 
   @Test
-  public void checkTest() throws Exception {
+  public void checkTest(@TempDir File baseDir) throws Exception {
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.setBoolean(ShuffleServerConf.HEALTH_CHECK_ENABLE, true);
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
-    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("st1", "st2", "st3"));
+    String st1 = new File(baseDir, "st1").getPath();
+    String st2 = new File(baseDir, "st2").getPath();
+    String st3 = new File(baseDir, "st3").getPath();
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(st1, st2, st3));
     conf.set(ShuffleServerConf.HEALTH_MIN_STORAGE_PERCENTAGE, 55.0);
     List<LocalStorage> storages = Lists.newArrayList();
-    storages.add(LocalStorage.newBuilder().basePath("st1").build());
-    storages.add(LocalStorage.newBuilder().basePath("st2").build());
-    storages.add(LocalStorage.newBuilder().basePath("st3").build());
+    storages.add(LocalStorage.newBuilder().basePath(st1).build());
+    storages.add(LocalStorage.newBuilder().basePath(st2).build());
+    storages.add(LocalStorage.newBuilder().basePath(st3).build());
     LocalStorageChecker checker = new MockStorageChecker(conf, storages);
 
     assertTrue(checker.checkIsHealthy());
@@ -115,7 +119,7 @@ public class StorageCheckerTest {
     @Override
     long getUsedSpace(File file) {
       long result = 0;
-      switch (file.getPath()) {
+      switch (file.getName()) {
         case "st1":
           switch (callTimes) {
             case 0:

@@ -175,21 +175,19 @@ public class DelegationRssShuffleManagerTest {
     assertCreateSortShuffleManager(secondConf);
   }
 
-  private DelegationRssShuffleManager assertCreateSortShuffleManager(SparkConf conf) throws Exception {
+  private void assertCreateSortShuffleManager(SparkConf conf) throws Exception {
     DelegationRssShuffleManager delegationRssShuffleManager = new DelegationRssShuffleManager(conf, true);
     assertTrue(delegationRssShuffleManager.getDelegate() instanceof SortShuffleManager);
     assertFalse(delegationRssShuffleManager.getDelegate() instanceof RssShuffleManager);
     assertFalse(conf.getBoolean(RssSparkConfig.RSS_ENABLED.key(), false));
     assertEquals("sort", conf.get("spark.shuffle.manager"));
-    return delegationRssShuffleManager;
   }
 
-  private DelegationRssShuffleManager assertCreateRssShuffleManager(SparkConf conf) throws Exception {
+  private void assertCreateRssShuffleManager(SparkConf conf) throws Exception {
     DelegationRssShuffleManager delegationRssShuffleManager = new DelegationRssShuffleManager(conf, true);
     assertFalse(delegationRssShuffleManager.getDelegate() instanceof SortShuffleManager);
     assertTrue(delegationRssShuffleManager.getDelegate() instanceof RssShuffleManager);
     assertTrue(Boolean.parseBoolean(conf.get(RssSparkConfig.RSS_ENABLED.key())));
     assertEquals(RssShuffleManager.class.getCanonicalName(), conf.get("spark.shuffle.manager"));
-    return delegationRssShuffleManager;
   }
 }

@@ -38,6 +38,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -63,7 +64,7 @@ public class RssUtilsTest {
       InetAddress ia = InetAddress.getByName(realIp);
       assertTrue(ia instanceof Inet4Address);
       assertFalse(ia.isLinkLocalAddress() || ia.isAnyLocalAddress() || ia.isLoopbackAddress());
-      assertTrue(NetworkInterface.getByInetAddress(ia) != null);
+      assertNotNull(NetworkInterface.getByInetAddress(ia));
       assertTrue(ia.isReachable(5000));
       setEnv("RSS_IP", "8.8.8.8");
       assertEquals("8.8.8.8", RssUtils.getHostIp());

@@ -131,6 +131,7 @@ public class CoordinatorUtilsTest {
   }
 
   private void validate(int[] expect, List<List<PartitionRange>> rangesGroup) {
+    assertEquals(expect.length, rangesGroup.size());
     for (int i = 0; i < expect.length; i++) {
       assertEquals(expect[i], rangesGroup.get(i).size());
     }

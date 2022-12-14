@@ -76,7 +76,7 @@ public class BasicAssignmentStrategyTest {
     assertEquals(10, assignments.size());
 
     for (int i = 0; i < 100; i += 10) {
-      assignments.containsKey(new PartitionRange(i, i + 10));
+      assertTrue(assignments.containsKey(new PartitionRange(i, i + 10)));
     }
 
     int i = 0;
@@ -225,7 +225,7 @@ public class BasicAssignmentStrategyTest {
     );
 
     /**
-     * case5: user specify the legal shuffle node num, but cluster dont have enough servers,
+     * case5: user specify the legal shuffle node num, but cluster don't have enough servers,
      * it will return the remaining servers.
      */
     serverTags = Sets.newHashSet("tag-2");

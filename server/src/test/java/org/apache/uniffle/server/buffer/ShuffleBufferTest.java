@@ -40,12 +40,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShuffleBufferTest extends BufferTestBase {
 
-  private static AtomicLong atomBlockId = new AtomicLong(0);
-
   @Test
   public void appendTest() {
     ShuffleBuffer shuffleBuffer = new ShuffleBuffer(100);
     shuffleBuffer.append(createData(10));
+    // ShufflePartitionedBlock has constant 32 bytes overhead
     assertEquals(42, shuffleBuffer.getSize());
     assertFalse(shuffleBuffer.isFull());
 
@@ -129,7 +128,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     assertEquals(15, result.getBufferSegments().get(1).getOffset());
     assertEquals(55, result.getBufferSegments().get(1).getLength());
 
-    // 2th read
+    // 2nd read
     long lastBlockId = result.getBufferSegments().get(1).getBlockId();
     result = shuffleBuffer.getShuffleData(lastBlockId, 60, expectedTasks);
     assertEquals(1, result.getBufferSegments().size());
@@ -171,7 +170,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     assertEquals(15, result.getBufferSegments().get(1).getOffset());
     assertEquals(55, result.getBufferSegments().get(1).getLength());
 
-    // 2th read
+    // 2nd read
     lastBlockId = result.getBufferSegments().get(1).getBlockId();
     result = shuffleBuffer.getShuffleData(lastBlockId, 60, expectedTasks);
     assertEquals(1, result.getBufferSegments().size());
@@ -196,11 +195,11 @@ public class ShuffleBufferTest extends BufferTestBase {
     result = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 60, expectedTasks);
     assertEquals(2, result.getBufferSegments().size());
 
-    // 2th read
+    // 2nd read
     lastBlockId = result.getBufferSegments().get(1).getBlockId();
     result = shuffleBuffer.getShuffleData(lastBlockId, 60, expectedTasks);
     assertEquals(2, result.getBufferSegments().size());
-    // 3th read
+    // 3rd read
     lastBlockId = result.getBufferSegments().get(1).getBlockId();
     result = shuffleBuffer.getShuffleData(lastBlockId, 60, expectedTasks);
     assertEquals(3, result.getBufferSegments().size());
@@ -364,7 +363,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     assertEquals(3, shuffleBuffer.getBlocks().size());
     assertEquals(4, shuffleBuffer.getInFlushBlockMap().size());
 
-    // all data in shuffle buffer as following:
+    // all data in shuffle buffer are as following:
     // flush event1 -> spd1, spd2, spd3
     // flush event2 -> spd4, spd5, spd6
     // flush event3 -> spd7, spd8, spd9

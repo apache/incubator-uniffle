@@ -64,96 +64,97 @@ public class SimpleClusterManagerTest {
     CoordinatorConf coordinatorConf = new CoordinatorConf();
     coordinatorConf.set(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_ENABLED, true);
     coordinatorConf.set(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_DURATION, 20 * 1000L);
-    SimpleClusterManager manager = new SimpleClusterManager(coordinatorConf, new Configuration());
-    assertFalse(manager.isReadyForServe());
+    try (SimpleClusterManager manager = new SimpleClusterManager(coordinatorConf, new Configuration())) {
+      assertFalse(manager.isReadyForServe());
 
-    manager.setStartTime(System.currentTimeMillis() - 30 * 1000L);
-    assertTrue(manager.isReadyForServe());
+      manager.setStartTime(System.currentTimeMillis() - 30 * 1000L);
+      assertTrue(manager.isReadyForServe());
+    }
   }
 
   @Test
   public void getServerListTest() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
-    SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
-    ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-        10, testTags, true);
-    ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-        10, testTags, true);
-    ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-        11, testTags, true);
-    clusterManager.add(sn1);
-    clusterManager.add(sn2);
-    clusterManager.add(sn3);
-    List<ServerNode> serverNodes = clusterManager.getServerList(testTags);
-    assertEquals(3, serverNodes.size());
-    Set<String> expectedIds = Sets.newHashSet("sn1", "sn2", "sn3");
-    assertEquals(expectedIds, serverNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
+    try (SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration())) {
 
-    // tag changes
-    sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-        10, Sets.newHashSet("new_tag"), true);
-    sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-        10, Sets.newHashSet("test", "new_tag"), true);
-    ServerNode sn4 = new ServerNode("sn4", "ip", 0, 100L, 51L, 20,
-        10, testTags, true);
-    clusterManager.add(sn1);
-    clusterManager.add(sn2);
-    clusterManager.add(sn4);
-    serverNodes = clusterManager.getServerList(testTags);
-    assertEquals(3, serverNodes.size());
-    assertTrue(serverNodes.contains(sn2));
-    assertTrue(serverNodes.contains(sn3));
-    assertTrue(serverNodes.contains(sn4));
+      ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
+              10, testTags, true);
+      ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
+              10, testTags, true);
+      ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
+              11, testTags, true);
+      clusterManager.add(sn1);
+      clusterManager.add(sn2);
+      clusterManager.add(sn3);
+      List<ServerNode> serverNodes = clusterManager.getServerList(testTags);
+      assertEquals(3, serverNodes.size());
+      Set<String> expectedIds = Sets.newHashSet("sn1", "sn2", "sn3");
+      assertEquals(expectedIds, serverNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
 
-    Map<String, Set<ServerNode>> tagToNodes = clusterManager.getTagToNodes();
-    assertEquals(2, tagToNodes.size());
+      // tag changes
+      sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
+              10, Sets.newHashSet("new_tag"), true);
+      sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
+              10, Sets.newHashSet("test", "new_tag"), true);
+      ServerNode sn4 = new ServerNode("sn4", "ip", 0, 100L, 51L, 20,
+              10, testTags, true);
+      clusterManager.add(sn1);
+      clusterManager.add(sn2);
+      clusterManager.add(sn4);
+      serverNodes = clusterManager.getServerList(testTags);
+      assertEquals(3, serverNodes.size());
+      assertTrue(serverNodes.contains(sn2));
+      assertTrue(serverNodes.contains(sn3));
+      assertTrue(serverNodes.contains(sn4));
 
-    Set<ServerNode> newTagNodes = tagToNodes.get("new_tag");
-    assertEquals(2, newTagNodes.size());
-    assertTrue(newTagNodes.contains(sn1));
-    assertTrue(newTagNodes.contains(sn2));
+      Map<String, Set<ServerNode>> tagToNodes = clusterManager.getTagToNodes();
+      assertEquals(2, tagToNodes.size());
 
-    Set<ServerNode> testTagNodes = tagToNodes.get("test");
-    assertEquals(3, testTagNodes.size());
-    assertTrue(testTagNodes.contains(sn2));
-    assertTrue(testTagNodes.contains(sn3));
-    assertTrue(testTagNodes.contains(sn4));
+      Set<ServerNode> newTagNodes = tagToNodes.get("new_tag");
+      assertEquals(2, newTagNodes.size());
+      assertTrue(newTagNodes.contains(sn1));
+      assertTrue(newTagNodes.contains(sn2));
 
-    clusterManager.close();
+      Set<ServerNode> testTagNodes = tagToNodes.get("test");
+      assertEquals(3, testTagNodes.size());
+      assertTrue(testTagNodes.contains(sn2));
+      assertTrue(testTagNodes.contains(sn3));
+      assertTrue(testTagNodes.contains(sn4));
+    }
   }
 
   @Test
   public void testGetCorrectServerNodesWhenOneNodeRemovedAndUnhealthyNodeFound() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
-    SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
-    ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-        10, testTags, false);
-    ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-        10, testTags, true);
-    ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-        11, testTags, true);
-    clusterManager.add(sn1);
-    clusterManager.add(sn2);
-    clusterManager.add(sn3);
+    try (SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration())) {
+      ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
+              10, testTags, false);
+      ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
+              10, testTags, true);
+      ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
+              11, testTags, true);
+      clusterManager.add(sn1);
+      clusterManager.add(sn2);
+      clusterManager.add(sn3);
 
-    List<ServerNode> serverNodes = clusterManager.getServerList(testTags);
-    assertEquals(2, serverNodes.size());
-    assertEquals(0, CoordinatorMetrics.gaugeUnhealthyServerNum.get());
-    clusterManager.nodesCheck();
+      List<ServerNode> serverNodes = clusterManager.getServerList(testTags);
+      assertEquals(2, serverNodes.size());
+      assertEquals(0, CoordinatorMetrics.gaugeUnhealthyServerNum.get());
+      clusterManager.nodesCheck();
 
-    List<ServerNode> serverList = clusterManager.getServerList(testTags);
-    Assertions.assertEquals(2, serverList.size());
-    assertEquals(1, CoordinatorMetrics.gaugeUnhealthyServerNum.get());
+      List<ServerNode> serverList = clusterManager.getServerList(testTags);
+      Assertions.assertEquals(2, serverList.size());
+      assertEquals(1, CoordinatorMetrics.gaugeUnhealthyServerNum.get());
 
-    sn3.setTimestamp(System.currentTimeMillis() - 60 * 1000L);
-    clusterManager.nodesCheck();
+      sn3.setTimestamp(System.currentTimeMillis() - 60 * 1000L);
+      clusterManager.nodesCheck();
 
-    List<ServerNode> serverList2 = clusterManager.getServerList(testTags);
-    Assertions.assertEquals(1, serverList2.size());
-    assertEquals(1, CoordinatorMetrics.gaugeUnhealthyServerNum.get());
-    clusterManager.close();
+      List<ServerNode> serverList2 = clusterManager.getServerList(testTags);
+      Assertions.assertEquals(1, serverList2.size());
+      assertEquals(1, CoordinatorMetrics.gaugeUnhealthyServerNum.get());
+    }
   }
 
   private void addNode(String id, SimpleClusterManager clusterManager) {
@@ -166,52 +167,51 @@ public class SimpleClusterManagerTest {
   public void heartbeatTimeoutTest() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 300L);
-    SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
+    try(SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration())) {
+      addNode("sn0", clusterManager);
+      addNode("sn1", clusterManager);
+      List<ServerNode> serverNodes = clusterManager.getServerList(testTags);
+      assertEquals(2, serverNodes.size());
+      Set<String> expectedIds = Sets.newHashSet("sn0", "sn1");
+      assertEquals(expectedIds,
+              serverNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
+      await().atMost(1, TimeUnit.SECONDS).until(() -> clusterManager.getServerList(testTags).isEmpty());
 
-    addNode("sn0", clusterManager);
-    addNode("sn1", clusterManager);
-    List<ServerNode> serverNodes = clusterManager.getServerList(testTags);
-    assertEquals(2, serverNodes.size());
-    Set<String> expectedIds = Sets.newHashSet("sn0", "sn1");
-    assertEquals(expectedIds,
-        serverNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
-    await().atMost(1, TimeUnit.SECONDS).until(() -> clusterManager.getServerList(testTags).isEmpty());
+      addNode("sn2", clusterManager);
+      serverNodes = clusterManager.getServerList(testTags);
+      assertEquals(1, serverNodes.size());
+      assertEquals("sn2", serverNodes.get(0).getId());
+      await().atMost(1, TimeUnit.SECONDS).until(() -> clusterManager.getServerList(testTags).isEmpty());
 
-    addNode("sn2", clusterManager);
-    serverNodes = clusterManager.getServerList(testTags);
-    assertEquals(1, serverNodes.size());
-    assertEquals("sn2", serverNodes.get(0).getId());
-    await().atMost(1, TimeUnit.SECONDS).until(() -> clusterManager.getServerList(testTags).isEmpty());
-
-    clusterManager.close();
+    }
   }
 
   @Test
   public void testGetCorrectServerNodesWhenOneNodeRemoved() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
-    SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
-    ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-            10, testTags, true);
-    ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-            10, testTags, true);
-    ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-            11, testTags, true);
-    clusterManager.add(sn1);
-    clusterManager.add(sn2);
-    clusterManager.add(sn3);
-    List<ServerNode> serverNodes = clusterManager.getServerList(testTags);
-    assertEquals(3, serverNodes.size());
+    try (SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration())) {
+      ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
+              10, testTags, true);
+      ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
+              10, testTags, true);
+      ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
+              11, testTags, true);
+      clusterManager.add(sn1);
+      clusterManager.add(sn2);
+      clusterManager.add(sn3);
+      List<ServerNode> serverNodes = clusterManager.getServerList(testTags);
+      assertEquals(3, serverNodes.size());
 
-    sn3.setTimestamp(System.currentTimeMillis() - 60 * 1000L);
-    clusterManager.nodesCheck();
+      sn3.setTimestamp(System.currentTimeMillis() - 60 * 1000L);
+      clusterManager.nodesCheck();
 
-    Map<String, Set<ServerNode>> tagToNodes = clusterManager.getTagToNodes();
-    List<ServerNode> serverList = clusterManager.getServerList(testTags);
-    Assertions.assertEquals(2, tagToNodes.get(testTags.iterator().next()).size());
-    Assertions.assertEquals(2, serverList.size());
+      Map<String, Set<ServerNode>> tagToNodes = clusterManager.getTagToNodes();
+      List<ServerNode> serverList = clusterManager.getServerList(testTags);
+      Assertions.assertEquals(2, tagToNodes.get(testTags.iterator().next()).size());
+      Assertions.assertEquals(2, serverList.size());
 
-    clusterManager.close();
+    }
   }
 
   @Test
@@ -222,53 +222,52 @@ public class SimpleClusterManagerTest {
     ssc.setString(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH, URI.create(excludeNodesPath).toString());
     ssc.setLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL, 2000);
 
-    SimpleClusterManager scm = new SimpleClusterManager(ssc, new Configuration());
-    scm.add(new ServerNode("node1-1999", "ip", 0, 100L, 50L, 20,
-        10, testTags, true));
-    scm.add(new ServerNode("node2-1999", "ip", 0, 100L, 50L, 20,
-        10, testTags, true));
-    scm.add(new ServerNode("node3-1999", "ip", 0, 100L, 50L, 20,
-        10, testTags, true));
-    scm.add(new ServerNode("node4-1999", "ip", 0, 100L, 50L, 20,
-        10, testTags, true));
-    assertTrue(scm.getExcludeNodes().isEmpty());
+    try (SimpleClusterManager scm = new SimpleClusterManager(ssc, new Configuration())) {
+      scm.add(new ServerNode("node1-1999", "ip", 0, 100L, 50L, 20,
+              10, testTags, true));
+      scm.add(new ServerNode("node2-1999", "ip", 0, 100L, 50L, 20,
+              10, testTags, true));
+      scm.add(new ServerNode("node3-1999", "ip", 0, 100L, 50L, 20,
+              10, testTags, true));
+      scm.add(new ServerNode("node4-1999", "ip", 0, 100L, 50L, 20,
+              10, testTags, true));
+      assertTrue(scm.getExcludeNodes().isEmpty());
 
-    final Set<String> nodes = Sets.newHashSet("node1-1999", "node2-1999");
-    writeExcludeHosts(excludeNodesPath, nodes);
-    await().atMost(3, TimeUnit.SECONDS).until(() -> scm.getExcludeNodes().equals(nodes));
-    List<ServerNode> availableNodes = scm.getServerList(testTags);
-    assertEquals(2, availableNodes.size());
-    Set<String> remainNodes = Sets.newHashSet("node3-1999", "node4-1999");
-    assertEquals(remainNodes, availableNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
+      final Set<String> nodes = Sets.newHashSet("node1-1999", "node2-1999");
+      writeExcludeHosts(excludeNodesPath, nodes);
+      await().atMost(3, TimeUnit.SECONDS).until(() -> scm.getExcludeNodes().equals(nodes));
+      List<ServerNode> availableNodes = scm.getServerList(testTags);
+      assertEquals(2, availableNodes.size());
+      Set<String> remainNodes = Sets.newHashSet("node3-1999", "node4-1999");
+      assertEquals(remainNodes, availableNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
 
-    final Set<String> nodes2 = Sets.newHashSet("node3-1999", "node4-1999");
-    writeExcludeHosts(excludeNodesPath, nodes2);
-    await().atMost(3, TimeUnit.SECONDS).until(() -> scm.getExcludeNodes().equals(nodes2));
-    assertEquals(nodes2, scm.getExcludeNodes());
+      final Set<String> nodes2 = Sets.newHashSet("node3-1999", "node4-1999");
+      writeExcludeHosts(excludeNodesPath, nodes2);
+      await().atMost(3, TimeUnit.SECONDS).until(() -> scm.getExcludeNodes().equals(nodes2));
+      assertEquals(nodes2, scm.getExcludeNodes());
 
-    Set<String> excludeNodes = scm.getExcludeNodes();
-    Thread.sleep(3000);
-    // excludeNodes shouldn't be updated if file has no change
-    assertEquals(excludeNodes, scm.getExcludeNodes());
+      Set<String> excludeNodes = scm.getExcludeNodes();
+      Thread.sleep(3000);
+      // excludeNodes shouldn't be updated if file has no change
+      assertEquals(excludeNodes, scm.getExcludeNodes());
 
-    writeExcludeHosts(excludeNodesPath, Sets.newHashSet());
-    // excludeNodes is an empty file, set should be empty
-    await().atMost(3, TimeUnit.SECONDS).until(() -> scm.getExcludeNodes().isEmpty());
+      writeExcludeHosts(excludeNodesPath, Sets.newHashSet());
+      // excludeNodes is an empty file, set should be empty
+      await().atMost(3, TimeUnit.SECONDS).until(() -> scm.getExcludeNodes().isEmpty());
 
-    final Set<String> nodes3 = Sets.newHashSet("node1-1999");
-    writeExcludeHosts(excludeNodesPath, nodes3);
-    await().atMost(3, TimeUnit.SECONDS).until(() -> scm.getExcludeNodes().equals(nodes3));
+      final Set<String> nodes3 = Sets.newHashSet("node1-1999");
+      writeExcludeHosts(excludeNodesPath, nodes3);
+      await().atMost(3, TimeUnit.SECONDS).until(() -> scm.getExcludeNodes().equals(nodes3));
 
-    File blacklistFile = new File(excludeNodesPath);
-    assertTrue(blacklistFile.delete());
-    // excludeNodes is deleted, set should be empty
-    await().atMost(3, TimeUnit.SECONDS).until(() -> scm.getExcludeNodes().isEmpty());
+      File blacklistFile = new File(excludeNodesPath);
+      assertTrue(blacklistFile.delete());
+      // excludeNodes is deleted, set should be empty
+      await().atMost(3, TimeUnit.SECONDS).until(() -> scm.getExcludeNodes().isEmpty());
 
-    remainNodes = Sets.newHashSet("node1-1999", "node2-1999", "node3-1999", "node4-1999");
-    availableNodes = scm.getServerList(testTags);
-    assertEquals(remainNodes, availableNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
-
-    scm.close();
+      remainNodes = Sets.newHashSet("node1-1999", "node2-1999", "node3-1999", "node4-1999");
+      availableNodes = scm.getServerList(testTags);
+      assertEquals(remainNodes, availableNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
+    }
   }
 
   private void writeExcludeHosts(String path, Set<String> values) throws Exception {

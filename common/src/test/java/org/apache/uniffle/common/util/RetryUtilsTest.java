@@ -58,15 +58,16 @@ public class RetryUtilsTest {
     assertEquals(tryTimes.get(), maxTryTime);
 
     tryTimes.set(0);
+    int ret = 0;
     try {
-      int ret = RetryUtils.retry(() -> {
+      ret = RetryUtils.retry(() -> {
         tryTimes.incrementAndGet();
         return 1;
       }, 10, maxTryTime);
-      assertEquals(ret, 1);
     } catch (Throwable throwable) {
       // ignore
     }
+    assertEquals(ret, 1);
     assertEquals(tryTimes.get(), 1);
 
     tryTimes.set(0);
