@@ -18,9 +18,9 @@
 package org.apache.uniffle.storage.handler.impl;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +41,10 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   private static final Logger LOG = LoggerFactory.getLogger(ComposedClientReadHandler.class);
 
   private final ShuffleServerInfo serverInfo;
+  private Callable<ClientReadHandler> hotHandlerCreator;
+  private Callable<ClientReadHandler> warmHandlerCreator;
+  private Callable<ClientReadHandler> coldHandlerCreator;
+  private Callable<ClientReadHandler> frozenHandlerCreator;
   private ClientReadHandler hotDataReadHandler;
   private ClientReadHandler warmDataReadHandler;
   private ClientReadHandler coldDataReadHandler;
@@ -58,23 +62,36 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   private ClientReadHandlerMetric frozenHandlerMetric = new ClientReadHandlerMetric();
 
   public ComposedClientReadHandler(ShuffleServerInfo serverInfo, ClientReadHandler... handlers) {
-    this(serverInfo, Lists.newArrayList(handlers));
-  }
-
-  public ComposedClientReadHandler(ShuffleServerInfo serverInfo, List<ClientReadHandler> handlers) {
     this.serverInfo = serverInfo;
-    topLevelOfHandler = handlers.size();
+    topLevelOfHandler = handlers.length;
     if (topLevelOfHandler > 0) {
-      this.hotDataReadHandler = handlers.get(0);
+      this.hotDataReadHandler = handlers[0];
     }
     if (topLevelOfHandler > 1) {
-      this.warmDataReadHandler = handlers.get(1);
+      this.warmDataReadHandler = handlers[1];
     }
     if (topLevelOfHandler > 2) {
-      this.coldDataReadHandler = handlers.get(2);
+      this.coldDataReadHandler = handlers[2];
     }
     if (topLevelOfHandler > 3) {
-      this.frozenDataReadHandler = handlers.get(3);
+      this.frozenDataReadHandler = handlers[3];
+    }
+  }
+
+  public ComposedClientReadHandler(ShuffleServerInfo serverInfo, List<Callable<ClientReadHandler>> callables) {
+    this.serverInfo = serverInfo;
+    topLevelOfHandler = callables.size();
+    if (topLevelOfHandler > 0) {
+      this.hotHandlerCreator = callables.get(0);
+    }
+    if (topLevelOfHandler > 1) {
+      this.warmHandlerCreator = callables.get(1);
+    }
+    if (topLevelOfHandler > 2) {
+      this.coldHandlerCreator = callables.get(2);
+    }
+    if (topLevelOfHandler > 3) {
+      this.frozenHandlerCreator = callables.get(3);
     }
   }
 
@@ -84,15 +101,27 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
     try {
       switch (currentHandler) {
         case HOT:
+          if (hotDataReadHandler == null) {
+            hotDataReadHandler = hotHandlerCreator.call();
+          }
           shuffleDataResult = hotDataReadHandler.readShuffleData();
           break;
         case WARM:
+          if (warmDataReadHandler == null) {
+            warmDataReadHandler = warmHandlerCreator.call();
+          }
           shuffleDataResult = warmDataReadHandler.readShuffleData();
           break;
         case COLD:
+          if (coldDataReadHandler == null) {
+            coldDataReadHandler = coldHandlerCreator.call();
+          }
           shuffleDataResult = coldDataReadHandler.readShuffleData();
           break;
         case FROZEN:
+          if (frozenDataReadHandler == null) {
+            frozenDataReadHandler = frozenHandlerCreator.call();
+          }
           shuffleDataResult = frozenDataReadHandler.readShuffleData();
           break;
         default:

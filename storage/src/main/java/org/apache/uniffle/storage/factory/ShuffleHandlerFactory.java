@@ -19,6 +19,7 @@ package org.apache.uniffle.storage.factory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
@@ -90,20 +91,20 @@ public class ShuffleHandlerFactory {
       return getLocalfileClientReaderHandler(request, serverInfo);
     }
 
-    List<ClientReadHandler> handlers = new ArrayList<>();
+    List<Callable<ClientReadHandler>> handlers = new ArrayList<>();
     if (StorageType.withMemory(type)) {
       handlers.add(
-          getMemoryClientReadHandler(request, serverInfo)
+          () -> getMemoryClientReadHandler(request, serverInfo)
       );
     }
     if (StorageType.withLocalfile(type)) {
       handlers.add(
-          getLocalfileClientReaderHandler(request, serverInfo)
+          () -> getLocalfileClientReaderHandler(request, serverInfo)
       );
     }
     if (StorageType.withHDFS(type)) {
       handlers.add(
-          getHdfsClientReadHandler(request, serverInfo)
+          () -> getHdfsClientReadHandler(request, serverInfo)
       );
     }
     if (handlers.isEmpty()) {
