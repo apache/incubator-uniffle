@@ -17,7 +17,7 @@
 
 # Apache Uniffle (Incubating)
 
-Uniffle is a unified remote shuffle service for compute engines.
+Uniffle is a unified remote shuffle service for distributed compute engines.
 It provides the ability to aggregate and store shuffle data on remote servers,
 thus improving the performance and reliability of large jobs.
 Currently it supports [Apache Spark](https://spark.apache.org) and [Apache Hadoop MapReduce](https://hadoop.apache.org).
