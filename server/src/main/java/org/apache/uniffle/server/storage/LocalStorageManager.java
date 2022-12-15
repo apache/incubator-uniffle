@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -31,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -70,8 +72,7 @@ public class LocalStorageManager extends SingleStorageManager {
   private final List<String> storageBasePaths;
   private final LocalStorageChecker checker;
 
-  // AppId -> ShuffleId -> PartitionId -> LocalStorage
-  private final Map<String, Map<Integer, Map<Integer, LocalStorage>>> partitionsOfStorage = Maps.newConcurrentMap();
+  private final Map<PartitionUnionKey, LocalStorage> partitionsOfStorage;
 
   @VisibleForTesting
   LocalStorageManager(ShuffleServerConf conf) {
@@ -80,6 +81,7 @@ public class LocalStorageManager extends SingleStorageManager {
     if (CollectionUtils.isEmpty(storageBasePaths)) {
       throw new IllegalArgumentException("Base path dirs must not be empty");
     }
+    this.partitionsOfStorage = Maps.newConcurrentMap();
     long shuffleExpiredTimeoutMs = conf.get(ShuffleServerConf.SHUFFLE_EXPIRED_TIMEOUT_MS);
     long capacity = conf.getSizeAsBytes(ShuffleServerConf.DISK_CAPACITY);
     double highWaterMarkOfWrite = conf.get(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE);
@@ -145,13 +147,10 @@ public class LocalStorageManager extends SingleStorageManager {
     int partitionId = event.getStartPartition();
 
     try {
-      LocalStorage storage = partitionsOfStorage.get(appId).get(shuffleId).get(partitionId);
+      LocalStorage storage = partitionsOfStorage.get(PartitionUnionKey.of(appId, shuffleId, partitionId));
       if (storage.isCorrupted()) {
         if (storage.containsWriteHandler(appId, shuffleId, partitionId)) {
           throw new RuntimeException("LocalStorage: " + storage.getBasePath() + " is corrupted.");
-        } else {
-          // clear the last selection due to non written.
-          partitionsOfStorage.get(appId).get(shuffleId).remove(partitionId);
         }
       } else {
         return storage;
@@ -176,9 +175,7 @@ public class LocalStorageManager extends SingleStorageManager {
     event.setUnderStorage(storage);
 
     // store it to cache.
-    partitionsOfStorage.computeIfAbsent(appId, key -> Maps.newConcurrentMap());
-    partitionsOfStorage.get(appId).computeIfAbsent(shuffleId, key -> Maps.newConcurrentMap());
-    partitionsOfStorage.get(appId).get(shuffleId).put(partitionId, storage);
+    partitionsOfStorage.put(PartitionUnionKey.of(appId, shuffleId, partitionId), storage);
     return storage;
   }
 
@@ -190,7 +187,7 @@ public class LocalStorageManager extends SingleStorageManager {
 
     LocalStorage storage = null;
     try {
-      storage = partitionsOfStorage.get(appId).get(shuffleId).get(partitionId);
+      storage = partitionsOfStorage.get(PartitionUnionKey.of(appId, shuffleId, partitionId));
     } catch (NullPointerException npe) {
       LOG.warn("There is no local storage cache for event: ({}:{}:{}). "
           + "Maybe it has been flushed to other under storages.",  appId, shuffleId, partitionId);
@@ -250,12 +247,29 @@ public class LocalStorageManager extends SingleStorageManager {
   }
 
   private void cleanupStorageSelectionCache(PurgeEvent event) {
+    Function<PartitionUnionKey, Boolean> deleteConditionFunc = null;
     if (event instanceof AppPurgeEvent) {
-      partitionsOfStorage.remove(event.getAppId());
+      deleteConditionFunc = partitionUnionKey -> PartitionUnionKey.carryWithAppId(partitionUnionKey, event.getAppId());
     } else if (event instanceof ShufflePurgeEvent) {
-      Map<Integer, Map<Integer, LocalStorage>> mappingWithShuffleId = partitionsOfStorage.get(event.getAppId());
-      if (mappingWithShuffleId != null) {
-        event.getShuffleIds().stream().forEach(shuffleId -> mappingWithShuffleId.remove(shuffleId));
+      deleteConditionFunc =
+          partitionUnionKey -> PartitionUnionKey.carryWithAppIdAndShuffleIds(
+              partitionUnionKey,
+              event.getAppId(),
+              new HashSet<>(event.getShuffleIds())
+          );
+    }
+    deleteElement(
+        partitionsOfStorage,
+        deleteConditionFunc
+    );
+  }
+
+  private <K, V> void deleteElement(Map<K, V> map, Function<K, Boolean> deleteConditionFunc) {
+    Iterator<Map.Entry<K, V>> iterator = map.entrySet().iterator();
+    while (iterator.hasNext()) {
+      Map.Entry<K, V> entry = iterator.next();
+      if (deleteConditionFunc.apply(entry.getKey())) {
+        iterator.remove();
       }
     }
   }
@@ -291,5 +305,60 @@ public class LocalStorageManager extends SingleStorageManager {
 
   public List<LocalStorage> getStorages() {
     return localStorages;
+  }
+
+  static class PartitionUnionKey {
+    private String appId;
+    private int shuffleId;
+    private int partitionId;
+
+    public PartitionUnionKey(String appId, int shuffleId, int partitionId) {
+      this.appId = appId;
+      this.shuffleId = shuffleId;
+      this.partitionId = partitionId;
+    }
+
+    public static PartitionUnionKey of(String appId, int shuffleId, int partitionId) {
+      return new PartitionUnionKey(appId, shuffleId, partitionId);
+    }
+
+    public static boolean carryWithAppId(PartitionUnionKey partitionUnionKey, String appId) {
+      return partitionUnionKey.appId.equals(appId);
+    }
+
+    public static boolean carryWithAppIdAndShuffleIds(
+        PartitionUnionKey partitionUnionKey,
+        String appId,
+        Set<Integer> shuffleId) {
+      return partitionUnionKey.appId.equals(appId) && shuffleId.contains(shuffleId);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      PartitionUnionKey unionKey = (PartitionUnionKey) o;
+
+      if (shuffleId != unionKey.shuffleId) {
+        return false;
+      }
+      if (partitionId != unionKey.partitionId) {
+        return false;
+      }
+      return appId.equals(unionKey.appId);
+    }
+
+    @Override
+    public int hashCode() {
+      int result = appId.hashCode();
+      result = 31 * result + shuffleId;
+      result = 31 * result + partitionId;
+      return result;
+    }
   }
 }

@@ -79,6 +79,7 @@ import org.apache.uniffle.proto.RssProtos.ShuffleRegisterResponse;
 import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerImplBase;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
+import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
@@ -512,6 +513,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String requestInfo = "appId[" + appId + "], shuffleId[" + shuffleId + "], partitionId["
         + partitionId + "]" + "offset[" + offset + "]" + "length[" + length + "]";
 
+    ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
     Storage storage = shuffleServer.getStorageManager()
         .selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId));
     if (storage != null) {
