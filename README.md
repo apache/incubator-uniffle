@@ -31,11 +31,11 @@ Currently it supports [Apache Spark](https://spark.apache.org) and [Apache Hadoo
 ![Rss Architecture](docs/asset/rss_architecture.png)
 Uniffle contains coordinator cluster, shuffle server cluster and remote storage(eg, HDFS) if necessary.
 
-Coordinator will collect status of shuffle server and do the assignment for the job.
+Coordinator will collect the status of the shuffle server and do the assignment for the job.
 
 Shuffle server will receive the shuffle data, merge them and write to storage.
 
-Depend on different situation, Uniffle supports Memory & Local, Memory & Remote Storage(eg, HDFS), Memory & Local & Remote Storage(recommendation for production environment).
+Depending on different situations, Uniffle supports Memory & Local, Memory & Remote Storage(eg, HDFS), Memory & Local & Remote Storage(recommendation for production environment).
 
 ## Shuffle Process with Uniffle
 
@@ -52,20 +52,20 @@ Depend on different situation, Uniffle supports Memory & Local, Memory & Remote 
    8. After write data, task report all blockId to shuffle server, this step is used for data validation later
    9. Store taskAttemptId in MapStatus to support Spark speculation
 
-* Depend on different storage type, spark task read shuffle data from shuffle server or remote storage or both of them.
+* Depending on different storage types, the spark task reads shuffle data from shuffle server or remote storage or both of them.
 
 ## Shuffle file format
-The shuffle data is stored with index file and data file. Data file has all blocks for specific partition and index file has metadata for every block.
+The shuffle data is stored with index file and data file. Data file has all blocks for a specific partition and the index file has metadata for every block.
 
 ![Rss Shuffle_Write](docs/asset/rss_data_format.png)
 
 ## Supported Spark Version
-Current support Spark 2.3.x, Spark 2.4.x, Spark3.0.x, Spark 3.1.x, Spark 3.2.x
+Currently supports Spark 2.3.x, Spark 2.4.x, Spark 3.0.x, Spark 3.1.x, Spark 3.2.x
 
 Note: To support dynamic allocation, the patch(which is included in client-spark/patch folder) should be applied to Spark
 
 ## Supported MapReduce Version
-Current support Hadoop 2.8.5's MapReduce framework.
+Currently supports Hadoop 2.8.5's MapReduce framework.
 
 ## Building Uniffle
 > note: currently Uniffle requires JDK 1.8 to build, adding later JDK support is on our roadmap.
@@ -75,11 +75,11 @@ To build it, run:
 
     mvn -DskipTests clean package
 
-Build against profile Spark2(2.4.6)
+Build against profile Spark 2 (2.4.6)
 
     mvn -DskipTests clean package -Pspark2
 
-Build against profile Spark3(3.1.2)
+Build against profile Spark 3 (3.1.2)
 
     mvn -DskipTests clean package -Pspark3
 
@@ -132,7 +132,7 @@ rss-xxx.tgz will be generated for deployment
    ```
 4. update <RSS_HOME>/conf/dynamic_client.conf, rss client will get default conf from coordinator eg,
    ```
-    # MEMORY_LOCALFILE_HDFS is recommandation for production environment
+    # MEMORY_LOCALFILE_HDFS is recommended for production environment
     rss.storage.type MEMORY_LOCALFILE_HDFS
     # multiple remote storages are supported, and client will get assignment from coordinator
     rss.coordinator.remote.storage.path hdfs://cluster1/path,hdfs://cluster2/path
@@ -160,7 +160,7 @@ rss-xxx.tgz will be generated for deployment
      rss.rpc.server.port 19999
      rss.jetty.http.port 19998
      rss.rpc.executor.size 2000
-     # it should be configed the same as in coordinator
+     # it should be configured the same as in coordinator
      rss.storage.type MEMORY_LOCALFILE_HDFS
      rss.coordinator.quorum <coordinatorIp1>:19999,<coordinatorIp2>:19999
      # local storage path for shuffle server
@@ -178,7 +178,7 @@ rss-xxx.tgz will be generated for deployment
      rss.server.app.expired.withoutHeartbeat 120000
      # note: the default value of rss.server.flush.cold.storage.threshold.size is 64m
      # there will be no data written to DFS if set it as 100g even rss.storage.type=MEMORY_LOCALFILE_HDFS
-     # please set proper value if DFS is used, eg, 64m, 128m.
+     # please set a proper value if DFS is used, eg, 64m, 128m.
      rss.server.flush.cold.storage.threshold.size 100g
    ```
 4. start Shuffle Server
@@ -231,7 +231,7 @@ and job recovery (i.e., `yarn.app.mapreduce.am.job.recovery.enable=false`)
 
 ### Deploy In Kubernetes
 
-We have provided operator of uniffle used for deploying it in kubernetes environments.
+We have provided an operator for deploying uniffle in kubernetes environments.
 
 For details, see the following document:
 
@@ -239,7 +239,7 @@ For details, see the following document:
 
 ## Configuration
 
-The important configuration is listed as following.
+The important configuration is listed as follows.
 
 |Role|Link|
 |---|---|
