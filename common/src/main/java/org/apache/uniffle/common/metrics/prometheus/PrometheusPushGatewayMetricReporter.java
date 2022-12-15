@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.common.metrics.prometheus;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -44,8 +43,8 @@ public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter 
   private ScheduledExecutorService scheduledExecutorService;
   private PushGateway pushGateway;
 
-  public PrometheusPushGatewayMetricReporter(RssConf conf)  {
-    super(conf);
+  public PrometheusPushGatewayMetricReporter(RssConf conf, String instanceId)  {
+    super(conf, instanceId);
   }
 
   @Override
@@ -62,6 +61,7 @@ public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter 
       throw new RuntimeException(JOB_NAME + " should not be empty!");
     }
     Map<String, String> groupingKey = parseGroupingKey(conf.getString(GROUPING_KEY, ""));
+    groupingKey.put("instance", instanceId);
     int reportInterval = conf.getInteger(REPORT_INTEVAL, 10);
     scheduledExecutorService = Executors.newScheduledThreadPool(1,
         ThreadUtils.getThreadFactory("PrometheusPushGatewayMetricReporter-%d"));
@@ -89,8 +89,8 @@ public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter 
   }
 
   static Map<String, String> parseGroupingKey(final String groupingKeyConfig) {
+    Map<String, String> groupingKey = new HashMap<>();
     if (!groupingKeyConfig.isEmpty()) {
-      Map<String, String> groupingKey = new HashMap<>();
       String[] kvs = groupingKeyConfig.split(";");
       for (String kv : kvs) {
         int idx = kv.indexOf("=");
@@ -115,6 +115,6 @@ public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter 
       return groupingKey;
     }
 
-    return Collections.emptyMap();
+    return groupingKey;
   }
 }

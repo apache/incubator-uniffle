@@ -26,10 +26,12 @@ import org.apache.uniffle.common.config.RssConf;
 
 public abstract class AbstractMetricReporter implements MetricReporter {
   protected final RssConf conf;
+  protected final String instanceId;
   protected List<CollectorRegistry> registryList = new ArrayList<>();
 
-  public AbstractMetricReporter(RssConf conf) {
+  public AbstractMetricReporter(RssConf conf, String instanceId) {
     this.conf = conf;
+    this.instanceId = instanceId;
   }
 
   @Override

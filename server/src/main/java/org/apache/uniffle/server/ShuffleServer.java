@@ -244,7 +244,7 @@ public class ShuffleServer {
         new CommonMetricsServlet(JvmMetrics.getCollectorRegistry(), true),
         "/prometheus/metrics/jvm");
 
-    metricReporter = MetricReporterFactory.getMetricReporter(shuffleServerConf);
+    metricReporter = MetricReporterFactory.getMetricReporter(shuffleServerConf, id);
     if (metricReporter != null) {
       metricReporter.addCollectorRegistry(ShuffleServerMetrics.getCollectorRegistry());
       metricReporter.addCollectorRegistry(grpcMetrics.getCollectorRegistry());

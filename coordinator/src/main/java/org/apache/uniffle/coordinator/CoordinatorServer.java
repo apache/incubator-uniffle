@@ -31,6 +31,7 @@ import org.apache.uniffle.common.metrics.MetricReporterFactory;
 import org.apache.uniffle.common.rpc.ServerInterface;
 import org.apache.uniffle.common.security.SecurityConfig;
 import org.apache.uniffle.common.security.SecurityContextFactory;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.web.CommonMetricsServlet;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
@@ -190,7 +191,9 @@ public class CoordinatorServer {
         new CommonMetricsServlet(JvmMetrics.getCollectorRegistry(), true),
         "/prometheus/metrics/jvm");
 
-    metricReporter = MetricReporterFactory.getMetricReporter(coordinatorConf);
+    String ip = RssUtils.getHostIp();
+    int port = coordinatorConf.getInteger(CoordinatorConf.RPC_SERVER_PORT);
+    metricReporter = MetricReporterFactory.getMetricReporter(coordinatorConf,  ip + "-" + port);
     if (metricReporter != null) {
       metricReporter.addCollectorRegistry(CoordinatorMetrics.getCollectorRegistry());
       metricReporter.addCollectorRegistry(grpcMetrics.getCollectorRegistry());

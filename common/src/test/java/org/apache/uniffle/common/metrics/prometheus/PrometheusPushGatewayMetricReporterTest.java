@@ -68,7 +68,8 @@ public class PrometheusPushGatewayMetricReporterTest {
     conf.setString(PrometheusPushGatewayMetricReporter.GROUPING_KEY, "a=1;b=2");
     String jobName = "jobname";
     conf.setString(PrometheusPushGatewayMetricReporter.JOB_NAME, jobName);
-    MetricReporter metricReporter = MetricReporterFactory.getMetricReporter(conf);
+    String instanceId = "127.0.0.1-19999";
+    MetricReporter metricReporter = MetricReporterFactory.getMetricReporter(conf, instanceId);
     assertTrue(metricReporter instanceof PrometheusPushGatewayMetricReporter);
     MetricsManager metricsManager = new MetricsManager();
     CollectorRegistry collectorRegistry = metricsManager.getCollectorRegistry();
@@ -79,7 +80,8 @@ public class PrometheusPushGatewayMetricReporterTest {
     PushGateway pushGateway = new CustomPushGateway((registry, job, groupingKey) -> {
       countDownLatch.countDown();
       assertEquals(jobName, job);
-      assertEquals(2, groupingKey.size());
+      assertEquals(3, groupingKey.size());
+      assertEquals(instanceId, groupingKey.get("instance"));
       assertEquals(1, counter1.get());
     });
     ((PrometheusPushGatewayMetricReporter) metricReporter).setPushGateway(pushGateway);
