@@ -315,7 +315,9 @@ public class ShuffleTaskManager {
     for (int partitionId : partitions) {
       Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId));
       // update shuffle's timestamp that was recently read.
-      storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
+      if (storage != null) {
+        storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
+      }
     }
     Map<Integer, Roaring64NavigableMap[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
     if (shuffleIdToPartitions == null) {
@@ -383,6 +385,9 @@ public class ShuffleTaskManager {
     request.setStorageType(storageType);
     request.setRssBaseConf(conf);
     Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId));
+    if (storage == null) {
+      throw new RuntimeException("No such data stored in current storage manager.");
+    }
 
     return storage.getOrCreateReadHandler(request).getShuffleData(offset, length);
   }
@@ -405,6 +410,9 @@ public class ShuffleTaskManager {
     request.setRssBaseConf(conf);
 
     Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId));
+    if (storage == null) {
+      throw new RuntimeException("No such data in current storage manager.");
+    }
     return storage.getOrCreateReadHandler(request).getShuffleIndex();
   }
 

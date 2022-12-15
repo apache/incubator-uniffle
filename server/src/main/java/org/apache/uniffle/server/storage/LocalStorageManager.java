@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -33,8 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -69,8 +69,9 @@ public class LocalStorageManager extends SingleStorageManager {
   private final List<LocalStorage> localStorages;
   private final List<String> storageBasePaths;
   private final LocalStorageChecker checker;
-  private List<LocalStorage> unCorruptedStorages = Lists.newArrayList();
-  private final Set<String> corruptedStorages = Sets.newConcurrentHashSet();
+
+  // AppId -> ShuffleId -> PartitionId -> LocalStorage
+  private final Map<String, Map<Integer, Map<Integer, LocalStorage>>> partitionsOfStorage = Maps.newConcurrentMap();
 
   @VisibleForTesting
   LocalStorageManager(ShuffleServerConf conf) {
@@ -139,32 +140,55 @@ public class LocalStorageManager extends SingleStorageManager {
 
   @Override
   public Storage selectStorage(ShuffleDataFlushEvent event) {
-    LocalStorage storage = localStorages.get(ShuffleStorageUtils.getStorageIndex(
-        localStorages.size(),
-        event.getAppId(),
-        event.getShuffleId(),
-        event.getStartPartition()));
-    if (storage.containsWriteHandler(event.getAppId(), event.getShuffleId(), event.getStartPartition())
-        && storage.isCorrupted()) {
-      LOG.error("storage " + storage.getBasePath() + " is corrupted");
+    String appId = event.getAppId();
+    int shuffleId = event.getShuffleId();
+    int partitionId = event.getStartPartition();
+
+    try {
+      LocalStorage storage = partitionsOfStorage.get(appId).get(shuffleId).get(partitionId);
+      if (storage.isCorrupted()) {
+        throw new RuntimeException("LocalStorage: " + storage.getBasePath() + " is corrupted.");
+      }
+      return storage;
+    } catch (NullPointerException npe) {
+      // Ignore
     }
-    if (storage.isCorrupted()) {
-      storage = getRepairedStorage(event.getAppId(), event.getShuffleId(), event.getStartPartition());
-    }
+
+    // Firstly getting the storage based on its (appId, shuffleId, partitionId) hash value
+    LocalStorage storage =
+        localStorages
+            .stream()
+            .filter(x -> x.canWrite() && !x.isCorrupted())
+            .collect(Collectors.toList())
+            .get(
+                ShuffleStorageUtils.getStorageIndex(
+                    localStorages.size(),
+                    appId,
+                    shuffleId,
+                    partitionId
+                )
+            );
     event.setUnderStorage(storage);
+
+    // store it to cache.
+    partitionsOfStorage.putIfAbsent(appId, Maps.newConcurrentMap());
+    partitionsOfStorage.get(appId).putIfAbsent(shuffleId, Maps.newConcurrentMap());
+    partitionsOfStorage.get(appId).get(shuffleId).put(partitionId, storage);
     return storage;
   }
 
   @Override
   public Storage selectStorage(ShuffleDataReadEvent event) {
+    String appId = event.getAppId();
+    int shuffleId = event.getShuffleId();
+    int partitionId = event.getStartPartition();
 
-    LocalStorage storage = localStorages.get(ShuffleStorageUtils.getStorageIndex(
-        localStorages.size(),
-        event.getAppId(),
-        event.getShuffleId(),
-        event.getStartPartition()));
-    if (storage.isCorrupted()) {
-      storage = getRepairedStorage(event.getAppId(), event.getShuffleId(), event.getStartPartition());
+    LocalStorage storage = null;
+    try {
+      storage = partitionsOfStorage.get(appId).get(shuffleId).get(partitionId);
+    } catch (NullPointerException npe) {
+      LOG.warn("There is no local storage cache for event: ({}:{}:{}). "
+          + "Maybe it has been flushed to other under storages.",  appId, shuffleId, partitionId);
     }
     return storage;
   }
@@ -185,6 +209,9 @@ public class LocalStorageManager extends SingleStorageManager {
     String appId = event.getAppId();
     String user = event.getUser();
     List<Integer> shuffleSet = Optional.ofNullable(event.getShuffleIds()).orElse(Collections.emptyList());
+
+    // Remove partitions to storage mapping cache
+    cleanupStorageSelectionCache(event);
 
     for (LocalStorage storage : localStorages) {
       if (event instanceof AppPurgeEvent) {
@@ -217,6 +244,17 @@ public class LocalStorageManager extends SingleStorageManager {
     deleteHandler.delete(deletePaths.toArray(new String[deletePaths.size()]), appId, user);
   }
 
+  private void cleanupStorageSelectionCache(PurgeEvent event) {
+    if (event instanceof AppPurgeEvent) {
+      partitionsOfStorage.remove(event.getAppId());
+    } else if (event instanceof ShufflePurgeEvent) {
+      Map<Integer, Map<Integer, LocalStorage>> mappingWithShuffleId = partitionsOfStorage.get(event.getAppId());
+      if (mappingWithShuffleId != null) {
+        event.getShuffleIds().stream().forEach(shuffleId -> mappingWithShuffleId.remove(shuffleId));
+      }
+    }
+  }
+
   @Override
   public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo) {
     // ignore
@@ -244,37 +282,6 @@ public class LocalStorageManager extends SingleStorageManager {
         deleteHandler.delete(deletePaths, appId, UNKNOWN_USER_NAME);
       }
     }
-  }
-
-  void repair() {
-    boolean hasNewCorruptedStorage = false;
-    for (LocalStorage storage : localStorages) {
-      if (storage.isCorrupted() && !corruptedStorages.contains(storage.getBasePath())) {
-        hasNewCorruptedStorage = true;
-        corruptedStorages.add(storage.getBasePath());
-      }
-    }
-    if (hasNewCorruptedStorage) {
-      List<LocalStorage> healthyStorages = Lists.newArrayList();
-      for (LocalStorage storage : localStorages) {
-        if (!storage.isCorrupted()) {
-          healthyStorages.add(storage);
-        }
-      }
-      unCorruptedStorages = healthyStorages;
-    }
-  }
-
-  private synchronized LocalStorage getRepairedStorage(String appId, int shuffleId, int partitionId) {
-    repair();
-    if (unCorruptedStorages.isEmpty()) {
-      throw new RuntimeException("No enough storages");
-    }
-    return unCorruptedStorages.get(ShuffleStorageUtils.getStorageIndex(
-        unCorruptedStorages.size(),
-        appId,
-        shuffleId,
-        partitionId));
   }
 
   public List<LocalStorage> getStorages() {
