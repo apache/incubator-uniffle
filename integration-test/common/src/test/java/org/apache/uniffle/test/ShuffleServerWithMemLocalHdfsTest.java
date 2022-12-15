@@ -75,6 +75,7 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     shuffleServerConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 40.0);
     shuffleServerConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 500L);
+    shuffleServerConf.set(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL, 500L);
     createShuffleServer(shuffleServerConf);
     startServers();
   }

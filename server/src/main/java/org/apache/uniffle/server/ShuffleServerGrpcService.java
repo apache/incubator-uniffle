@@ -77,6 +77,7 @@ import org.apache.uniffle.proto.RssProtos.ShufflePartitionRange;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterRequest;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterResponse;
 import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerImplBase;
+import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -212,7 +213,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String responseMessage = "OK";
     if (req.getShuffleDataCount() > 0) {
       ShuffleServerMetrics.counterTotalReceivedDataSize.inc(requireSize);
-      boolean isPreAllocated = shuffleServer.getShuffleTaskManager().isPreAllocated(requireBufferId);
+      ShuffleTaskManager manager = shuffleServer.getShuffleTaskManager();
+      PreAllocatedBufferInfo info = manager.getAndRemovePreAllocatedBuffer(requireBufferId);
+      boolean isPreAllocated = info != null;
       if (!isPreAllocated) {
         String errorMsg = "Can't find requireBufferId[" + requireBufferId + "] for appId[" + appId
             + "], shuffleId[" + shuffleId + "]";
@@ -233,9 +236,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         String shuffleDataInfo = "appId[" + appId + "], shuffleId[" + shuffleId
             + "], partitionId[" + spd.getPartitionId() + "]";
         try {
-          ret = shuffleServer
-              .getShuffleTaskManager()
-              .cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
+          ret = manager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
           if (ret != StatusCode.SUCCESS) {
             String errorMsg = "Error happened when shuffleEngine.write for "
                 + shuffleDataInfo + ", statusCode=" + ret;
@@ -243,11 +244,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             responseMessage = errorMsg;
             break;
           } else {
-            // remove require bufferId, the memory should be updated already
-            shuffleServer
-                .getShuffleTaskManager().removeRequireBufferId(requireBufferId);
-            shuffleServer.getShuffleTaskManager().updateCachedBlockIds(
-                appId, shuffleId, spd.getBlockList());
+            manager.updateCachedBlockIds(appId, shuffleId, spd.getBlockList());
           }
         } catch (Exception e) {
           String errorMsg = "Error happened when shuffleEngine.write for "
@@ -258,6 +255,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           break;
         }
       }
+      // since the required buffer id is only used once, the shuffle client would try to require another buffer whether
+      // current connection succeeded or not. Therefore, the preAllocatedBuffer is first get and removed, then after
+      // cacheShuffleData finishes, the preAllocatedSize should be updated accordingly.
+      manager.releasePreAllocatedSize(info.getRequireSize());
       reply = SendShuffleDataResponse.newBuilder().setStatus(valueOf(ret)).setRetMsg(responseMessage).build();
       long costTime = System.currentTimeMillis() - start;
       shuffleServer.getGrpcMetrics().recordProcessTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, costTime);

@@ -336,9 +336,9 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     // receive data with preAllocation
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, true, createData(0, 16));
     assertEquals(48, shuffleBufferManager.getUsedMemory());
-    assertEquals(0, shuffleBufferManager.getPreAllocatedSize());
+    assertEquals(48, shuffleBufferManager.getPreAllocatedSize());
     // release memory
-    shuffleBufferManager.releaseMemory(48, false, false);
+    shuffleBufferManager.releaseMemory(48, false, true);
     assertEquals(0, shuffleBufferManager.getUsedMemory());
     assertEquals(0, shuffleBufferManager.getPreAllocatedSize());
     // receive data without preAllocation
@@ -367,12 +367,16 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
 
     // actual data size < spillThreshold, won't flush
     sc = shuffleBufferManager.cacheShuffleData(appId, shuffleId, true, createData(1, 16));
+    shuffleBufferManager.releasePreAllocatedSize(48);
     assertEquals(StatusCode.SUCCESS, sc);
     assertEquals(500, shuffleBufferManager.getUsedMemory());
     assertEquals(452, shuffleBufferManager.getPreAllocatedSize());
 
     // actual data size > highWaterMark, flush
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, true, createData(0, 400));
+    shuffleBufferManager.releasePreAllocatedSize(432);
+    // trigger flush manually
+    shuffleBufferManager.flushIfNecessary();
     assertEquals(StatusCode.SUCCESS, sc);
     assertEquals(500, shuffleBufferManager.getUsedMemory());
     assertEquals(20, shuffleBufferManager.getPreAllocatedSize());

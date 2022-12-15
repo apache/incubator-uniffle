@@ -175,9 +175,9 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     // won't flush for partition 1-1
     ShufflePartitionedData partitionedData0 = createPartitionedData(1, 1, 35);
     expectedBlocks1.addAll(Lists.newArrayList(partitionedData0.getBlockList()));
-    long requireId = shuffleTaskManager.requireBuffer(35);
+    long bufferId = shuffleTaskManager.requireBuffer(35);
     assertEquals(1, bufferIds.size());
-    PreAllocatedBufferInfo pabi = bufferIds.get(requireId);
+    PreAllocatedBufferInfo pabi = bufferIds.get(bufferId);
     assertEquals(35, pabi.getRequireSize());
     StatusCode sc = shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData0);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, partitionedData0.getBlockList());
@@ -185,6 +185,8 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     assertEquals(1, bufferIds.size());
     assertEquals(StatusCode.SUCCESS, sc);
     shuffleTaskManager.commitShuffle(appId, shuffleId);
+    // manually release the pre allocate buffer
+    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(bufferId);
 
     ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
     assertEquals(1, shuffleFlushManager.getCommittedBlockIds(appId, shuffleId).getLongCardinality());
@@ -192,10 +194,11 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     // flush for partition 1-1
     ShufflePartitionedData partitionedData1 = createPartitionedData(1, 2, 35);
     expectedBlocks1.addAll(Lists.newArrayList(partitionedData1.getBlockList()));
-    shuffleTaskManager.requireBuffer(70);
+    bufferId = shuffleTaskManager.requireBuffer(70);
     sc = shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData1);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, partitionedData1.getBlockList());
     assertEquals(StatusCode.SUCCESS, sc);
+    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(bufferId);
     waitForFlush(shuffleFlushManager, appId, shuffleId, 2 + 1);
 
     // won't flush for partition 1-1
@@ -209,17 +212,19 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     // won't flush for partition 2-2
     ShufflePartitionedData partitionedData3 = createPartitionedData(2, 1, 30);
     expectedBlocks2.addAll(Lists.newArrayList(partitionedData3.getBlockList()));
-    shuffleTaskManager.requireBuffer(30);
+    bufferId = shuffleTaskManager.requireBuffer(30);
     sc = shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData3);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, partitionedData3.getBlockList());
+    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(bufferId);
     assertEquals(StatusCode.SUCCESS, sc);
 
     // flush for partition 2-2
     ShufflePartitionedData partitionedData4 = createPartitionedData(2, 1, 35);
     expectedBlocks2.addAll(Lists.newArrayList(partitionedData4.getBlockList()));
-    shuffleTaskManager.requireBuffer(35);
+    bufferId = shuffleTaskManager.requireBuffer(35);
     sc = shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData4);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, partitionedData4.getBlockList());
+    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(bufferId);
     assertEquals(StatusCode.SUCCESS, sc);
 
     shuffleTaskManager.commitShuffle(appId, shuffleId);
@@ -230,9 +235,10 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     ShufflePartitionedData partitionedData5 = createPartitionedData(1, 2, 35);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, partitionedData5.getBlockList());
     expectedBlocks1.addAll(Lists.newArrayList(partitionedData5.getBlockList()));
-    shuffleTaskManager.requireBuffer(70);
+    bufferId = shuffleTaskManager.requireBuffer(70);
     sc = shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData5);
     assertEquals(StatusCode.SUCCESS, sc);
+    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(bufferId);
 
     // 2 new blocks should be committed
     waitForFlush(shuffleFlushManager, appId, shuffleId, 2 + 1 + 3 + 2);
@@ -245,9 +251,10 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     // flush for partition 0-1
     ShufflePartitionedData partitionedData7 = createPartitionedData(1, 2, 35);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, partitionedData7.getBlockList());
-    shuffleTaskManager.requireBuffer(70);
+    bufferId = shuffleTaskManager.requireBuffer(70);
     sc = shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData7);
     assertEquals(StatusCode.SUCCESS, sc);
+    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(bufferId);
 
     // 2 new blocks should be committed
     waitForFlush(shuffleFlushManager, appId, shuffleId, 2 + 1 + 3 + 2 + 2);
