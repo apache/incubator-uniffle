@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.metrics.prometheus;
+package org.apache.uniffle.common.metrics.prometheus;
 
 import java.io.IOException;
 import java.util.Map;
@@ -78,7 +78,7 @@ public class PrometheusPushGatewayMetricReporterTest {
     counter1.inc();
     PushGateway pushGateway = new CustomPushGateway((registry, job, groupingKey) -> {
       countDownLatch.countDown();
-      assertEquals(job, jobName);
+      assertEquals(jobName, job);
       assertEquals(2, groupingKey.size());
       assertEquals(1, counter1.get());
     });

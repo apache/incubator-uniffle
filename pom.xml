@@ -115,7 +115,6 @@
     <module>server</module>
     <module>client</module>
     <module>integration-test/common</module>
-    <module>metrics-prometheus</module>
   </modules>
 
   <dependencies>
@@ -502,7 +501,11 @@
         <artifactId>simpleclient_servlet</artifactId>
         <version>${prometheus.simpleclient.version}</version>
       </dependency>
-
+      <dependency>
+        <groupId>io.prometheus</groupId>
+        <artifactId>simpleclient_pushgateway</artifactId>
+        <version>${prometheus.simpleclient.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.awaitility</groupId>
         <artifactId>awaitility</artifactId>
@@ -1510,12 +1513,6 @@
       <id>kubernetes</id>
       <modules>
         <module>deploy/kubernetes</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>metrics</id>
-      <modules>
-        <module>metrics-prometheus</module>
       </modules>
     </profile>
   </profiles>

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.metrics.prometheus;
+package org.apache.uniffle.common.metrics.prometheus;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,18 +53,22 @@ public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter 
     if (pushGateway == null) {
       String address = conf.getString(PUSHGATEWAY_ADDR, null);
       if (StringUtils.isEmpty(address)) {
-        throw new RuntimeException(PUSHGATEWAY_ADDR + " should be set!");
+        throw new RuntimeException(PUSHGATEWAY_ADDR + " should not be empty!");
       }
       pushGateway = new PushGateway(address);
+    }
+    String jobName = conf.getString(JOB_NAME, null);
+    if (StringUtils.isEmpty(jobName)) {
+      throw new RuntimeException(JOB_NAME + " should not be empty!");
     }
     Map<String, String> groupingKey = parseGroupingKey(conf.getString(GROUPING_KEY, ""));
     int reportInterval = conf.getInteger(REPORT_INTEVAL, 10);
     scheduledExecutorService = Executors.newScheduledThreadPool(1,
         ThreadUtils.getThreadFactory("PrometheusPushGatewayMetricReporter-%d"));
-    scheduledExecutorService.scheduleAtFixedRate(() -> {
+    scheduledExecutorService.scheduleWithFixedDelay(() -> {
       for (CollectorRegistry registry : registryList) {
         try {
-          pushGateway.push(registry, JOB_NAME, groupingKey);
+          pushGateway.push(registry, jobName, groupingKey);
         } catch (Throwable e) {
           LOG.error("Failed to send metrics to push gateway.", e);
         }
