@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
@@ -29,9 +30,11 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,7 +62,8 @@ public class QuotaManagerTest {
   public static void clear() {
     cluster.close();
   }
-
+  
+  @Timeout(value = 10)
   @Test
   public void testDetectUserResource() throws Exception {
     final String quotaFile =
@@ -80,8 +84,9 @@ public class QuotaManagerTest {
     conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH,
         quotaFile);
     ApplicationManager applicationManager = new ApplicationManager(conf);
-    Thread.sleep(500);
-
+    Awaitility.await().timeout(5, TimeUnit.SECONDS).until(
+        () -> applicationManager.getDefaultUserApps().size() > 0);
+    
     Integer user1 = applicationManager.getDefaultUserApps().get("user1");
     Integer user2 = applicationManager.getDefaultUserApps().get("user2");
     Integer user3 = applicationManager.getDefaultUserApps().get("user3");
