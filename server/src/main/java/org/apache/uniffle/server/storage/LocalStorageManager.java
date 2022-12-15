@@ -176,8 +176,8 @@ public class LocalStorageManager extends SingleStorageManager {
     event.setUnderStorage(storage);
 
     // store it to cache.
-    partitionsOfStorage.putIfAbsent(appId, Maps.newConcurrentMap());
-    partitionsOfStorage.get(appId).putIfAbsent(shuffleId, Maps.newConcurrentMap());
+    partitionsOfStorage.computeIfAbsent(appId, key -> Maps.newConcurrentMap());
+    partitionsOfStorage.get(appId).computeIfAbsent(shuffleId, key -> Maps.newConcurrentMap());
     partitionsOfStorage.get(appId).get(shuffleId).put(partitionId, storage);
     return storage;
   }
