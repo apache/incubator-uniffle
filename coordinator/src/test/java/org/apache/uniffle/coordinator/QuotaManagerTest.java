@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
@@ -29,15 +30,16 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * QuotaManager is a manager for resource restriction.
@@ -60,7 +62,8 @@ public class QuotaManagerTest {
   public static void clear() {
     cluster.close();
   }
-
+  
+  @Timeout(value = 10)
   @Test
   public void testDetectUserResource() throws Exception {
     final String quotaFile =
@@ -81,17 +84,8 @@ public class QuotaManagerTest {
     conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH,
         quotaFile);
     ApplicationManager applicationManager = new ApplicationManager(conf);
-    int retry = 0;
-    while (true) {
-      if (applicationManager.getDefaultUserApps().size() > 0) {
-        break;
-      }
-      Thread.sleep(500);
-      retry++;
-      if (retry > 5) {
-        fail("Timeout to wait for finish parse quota file.");
-      }
-    }
+    Awaitility.await().timeout(5, TimeUnit.SECONDS).until(
+        () -> applicationManager.getDefaultUserApps().size() > 0);
     
     Integer user1 = applicationManager.getDefaultUserApps().get("user1");
     Integer user2 = applicationManager.getDefaultUserApps().get("user2");
