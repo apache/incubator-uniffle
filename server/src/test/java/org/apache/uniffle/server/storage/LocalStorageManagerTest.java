@@ -73,8 +73,34 @@ public class LocalStorageManagerTest {
   }
 
   @Test
+  public void testStorageSelectionWhenReachingHighWatermark() {
+    String[] storagePaths = {
+        "/tmp/rss-data1",
+        "/tmp/rss-data2",
+        "/tmp/rss-data3"
+    };
+
+    ShuffleServerConf conf = new ShuffleServerConf();
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
+    conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+
+    LocalStorageManager localStorageManager = new LocalStorageManager(conf);
+
+    String appId = "testStorageSelectionWhenReachingHighWatermark";
+    ShuffleDataFlushEvent dataFlushEvent = toDataFlushEvent(appId, 1, 1);
+    Storage storage1 = localStorageManager.selectStorage(dataFlushEvent);
+
+    ((LocalStorage) storage1).getMetaData().setSize(999);
+    localStorageManager = new LocalStorageManager(conf);
+    Storage storage2 = localStorageManager.selectStorage(dataFlushEvent);
+
+    assertNotEquals(storage1, storage2);
+  }
+
+  @Test
   public void testStorageSelection() {
-    String[] storagePaths = {"/tmp/rss-data1", "/tmp/rss-data2"};
+    String[] storagePaths = {"/tmp/rss-data1", "/tmp/rss-data2", "/tmp/rss-data3"};
 
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
@@ -109,12 +135,21 @@ public class LocalStorageManagerTest {
 
     // case3: one storage is corrupted when it happened after the original event has been written,
     // so it will switch to another storage for write and read event.
-    LocalStorage mockedStorage = spy((LocalStorage)storage1);
+    LocalStorage mockedStorage = spy((LocalStorage)storage4);
     when(mockedStorage.containsWriteHandler(appId, 1, 1)).thenReturn(true);
     Storage storage5 = localStorageManager.selectStorage(dataFlushEvent1);
     Storage storage6 = localStorageManager.selectStorage(dataReadEvent);
     assertNotEquals(storage1, storage5);
+    assertEquals(storage4, storage5);
     assertEquals(storage5, storage6);
+
+    // case4: one storage is corrupted when it happened after the original event has been written,
+    // but before reading this partition, another storage corrupted, it still could read the original data.
+    Storage storage7 = localStorageManager.selectStorage(dataFlushEvent1);
+    Storage restStorage = storages.stream().filter(x -> !x.isCorrupted() && x != storage7).findFirst().get();
+    ((LocalStorage)restStorage).markCorrupted();
+    Storage storage8 = localStorageManager.selectStorage(dataReadEvent);
+    assertEquals(storage7, storage8);
   }
 
   @Test

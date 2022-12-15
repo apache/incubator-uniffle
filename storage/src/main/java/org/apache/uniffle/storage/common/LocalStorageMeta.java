@@ -27,6 +27,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.roaringbitmap.RoaringBitmap;
 import org.slf4j.Logger;
@@ -160,6 +161,10 @@ public class LocalStorageMeta {
     return shuffleMetaMap.keySet();
   }
 
+  @VisibleForTesting
+  public void setSize(long diskSize) {
+    this.size.set(diskSize);
+  }
 
   /**
    *  If the method is implemented as below:

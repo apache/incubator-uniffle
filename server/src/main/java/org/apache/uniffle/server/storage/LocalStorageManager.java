@@ -147,27 +147,32 @@ public class LocalStorageManager extends SingleStorageManager {
     try {
       LocalStorage storage = partitionsOfStorage.get(appId).get(shuffleId).get(partitionId);
       if (storage.isCorrupted()) {
-        throw new RuntimeException("LocalStorage: " + storage.getBasePath() + " is corrupted.");
+        if (storage.containsWriteHandler(appId, shuffleId, partitionId)) {
+          throw new RuntimeException("LocalStorage: " + storage.getBasePath() + " is corrupted.");
+        } else {
+          // clear the last selection due to non written.
+          partitionsOfStorage.get(appId).get(shuffleId).remove(partitionId);
+        }
+      } else {
+        return storage;
       }
-      return storage;
     } catch (NullPointerException npe) {
       // Ignore
     }
 
     // Firstly getting the storage based on its (appId, shuffleId, partitionId) hash value
-    LocalStorage storage =
-        localStorages
-            .stream()
-            .filter(x -> x.canWrite() && !x.isCorrupted())
-            .collect(Collectors.toList())
-            .get(
-                ShuffleStorageUtils.getStorageIndex(
-                    localStorages.size(),
-                    appId,
-                    shuffleId,
-                    partitionId
-                )
-            );
+    List<LocalStorage> candidates = localStorages
+        .stream()
+        .filter(x -> x.canWrite() && !x.isCorrupted())
+        .collect(Collectors.toList());
+    LocalStorage storage = candidates.get(
+        ShuffleStorageUtils.getStorageIndex(
+            candidates.size(),
+            appId,
+            shuffleId,
+            partitionId
+        )
+    );
     event.setUnderStorage(storage);
 
     // store it to cache.

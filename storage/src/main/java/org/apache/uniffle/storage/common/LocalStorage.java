@@ -232,7 +232,7 @@ public class LocalStorage extends AbstractStorage {
   }
 
   @VisibleForTesting
-  LocalStorageMeta getMetaData() {
+  public LocalStorageMeta getMetaData() {
     return metaData;
   }
 
