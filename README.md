@@ -29,9 +29,9 @@ Currently it supports [Apache Spark](https://spark.apache.org) and [Apache Hadoo
 
 ## Architecture
 ![Rss Architecture](docs/asset/rss_architecture.png)
-Uniffle contains coordinator cluster, shuffle server cluster and remote storage(e.g., HDFS) if necessary.
+Uniffle cluster consists of three components, a coordinator cluster, a shuffle server cluster and an optional remote storage (e.g., HDFS).
 
-Coordinator will collect the status of the shuffle server and do the assignment for the job.
+Coordinator will collect the status of shuffle servers and assign jobs based on some strategy.
 
 Shuffle server will receive the shuffle data, merge them and write to storage.
 
