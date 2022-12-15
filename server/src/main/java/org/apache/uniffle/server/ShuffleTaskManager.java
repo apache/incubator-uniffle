@@ -51,6 +51,7 @@ import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
@@ -386,7 +387,7 @@ public class ShuffleTaskManager {
     request.setRssBaseConf(conf);
     Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId));
     if (storage == null) {
-      throw new RuntimeException("No such data stored in current storage manager.");
+      throw new FileNotFoundException("No such data stored in current storage manager.");
     }
 
     return storage.getOrCreateReadHandler(request).getShuffleData(offset, length);
@@ -411,7 +412,7 @@ public class ShuffleTaskManager {
 
     Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId));
     if (storage == null) {
-      throw new RuntimeException("No such data in current storage manager.");
+      throw new FileNotFoundException("No such data in current storage manager.");
     }
     return storage.getOrCreateReadHandler(request).getShuffleIndex();
   }
