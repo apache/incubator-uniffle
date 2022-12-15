@@ -52,7 +52,7 @@ Depending on different situations, Uniffle supports Memory & Local, Memory & Rem
    8. After write data, task report all blockId to shuffle server, this step is used for data validation later
    9. Store taskAttemptId in MapStatus to support Spark speculation
 
-* Depending on different storage types, the spark task reads shuffle data from shuffle server or remote storage or both of them.
+* Depending on different storage types, the spark task will read shuffle data from shuffle server or remote storage or both of them.
 
 ## Shuffle file format
 The shuffle data is stored with index file and data file. Data file has all blocks for a specific partition and the index file has metadata for every block.
@@ -65,7 +65,7 @@ Currently supports Spark 2.3.x, Spark 2.4.x, Spark 3.0.x, Spark 3.1.x, Spark 3.2
 Note: To support dynamic allocation, the patch(which is included in client-spark/patch folder) should be applied to Spark
 
 ## Supported MapReduce Version
-Currently supports Hadoop 2.8.5's MapReduce framework.
+Currently supports the MapReduce framework of Hadoop 2.8.5
 
 ## Building Uniffle
 > note: currently Uniffle requires JDK 1.8 to build, adding later JDK support is on our roadmap.
