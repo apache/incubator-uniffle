@@ -29,13 +29,13 @@ Currently it supports [Apache Spark](https://spark.apache.org) and [Apache Hadoo
 
 ## Architecture
 ![Rss Architecture](docs/asset/rss_architecture.png)
-Uniffle contains coordinator cluster, shuffle server cluster and remote storage(eg, HDFS) if necessary.
+Uniffle contains coordinator cluster, shuffle server cluster and remote storage(e.g., HDFS) if necessary.
 
 Coordinator will collect the status of the shuffle server and do the assignment for the job.
 
 Shuffle server will receive the shuffle data, merge them and write to storage.
 
-Depending on different situations, Uniffle supports Memory & Local, Memory & Remote Storage(eg, HDFS), Memory & Local & Remote Storage(recommendation for production environment).
+Depending on different situations, Uniffle supports Memory & Local, Memory & Remote Storage(e.g., HDFS), Memory & Local & Remote Storage(recommendation for production environment).
 
 ## Shuffle Process with Uniffle
 
@@ -110,13 +110,13 @@ rss-xxx.tgz will be generated for deployment
 ### Deploy Coordinator
 
 1. unzip package to RSS_HOME
-2. update RSS_HOME/bin/rss-env.sh, eg,
+2. update RSS_HOME/bin/rss-env.sh, e.g.,
    ```
      JAVA_HOME=<java_home>
      HADOOP_HOME=<hadoop home>
      XMX_SIZE="16g"
    ```
-3. update RSS_HOME/conf/coordinator.conf, eg,
+3. update RSS_HOME/conf/coordinator.conf, e.g.,
    ```
      rss.rpc.server.port 19999
      rss.jetty.http.port 19998
@@ -130,7 +130,7 @@ rss-xxx.tgz will be generated for deployment
      # config the path of excluded shuffle server
      rss.coordinator.exclude.nodes.file.path <RSS_HOME>/conf/exclude_nodes
    ```
-4. update <RSS_HOME>/conf/dynamic_client.conf, rss client will get default conf from coordinator eg,
+4. update <RSS_HOME>/conf/dynamic_client.conf, rss client will get default conf from coordinator e.g.,
    ```
     # MEMORY_LOCALFILE_HDFS is recommended for production environment
     rss.storage.type MEMORY_LOCALFILE_HDFS
@@ -149,13 +149,13 @@ rss-xxx.tgz will be generated for deployment
 ### Deploy Shuffle Server
 
 1. unzip package to RSS_HOME
-2. update RSS_HOME/bin/rss-env.sh, eg,
+2. update RSS_HOME/bin/rss-env.sh, e.g.,
    ```
      JAVA_HOME=<java_home>
      HADOOP_HOME=<hadoop home>
      XMX_SIZE="80g"
    ```
-3. update RSS_HOME/conf/server.conf, eg,
+3. update RSS_HOME/conf/server.conf, e.g.,
    ```
      rss.rpc.server.port 19999
      rss.jetty.http.port 19998
@@ -178,7 +178,7 @@ rss-xxx.tgz will be generated for deployment
      rss.server.app.expired.withoutHeartbeat 120000
      # note: the default value of rss.server.flush.cold.storage.threshold.size is 64m
      # there will be no data written to DFS if set it as 100g even rss.storage.type=MEMORY_LOCALFILE_HDFS
-     # please set a proper value if DFS is used, eg, 64m, 128m.
+     # please set a proper value if DFS is used, e.g., 64m, 128m.
      rss.server.flush.cold.storage.threshold.size 100g
    ```
 4. start Shuffle Server
@@ -187,13 +187,13 @@ rss-xxx.tgz will be generated for deployment
    ```
 
 ### Deploy Spark Client
-1. Add client jar to Spark classpath, eg, SPARK_HOME/jars/
+1. Add client jar to Spark classpath, e.g., SPARK_HOME/jars/
 
    The jar for Spark2 is located in <RSS_HOME>/jars/client/spark2/rss-client-XXXXX-shaded.jar
 
    The jar for Spark3 is located in <RSS_HOME>/jars/client/spark3/rss-client-XXXXX-shaded.jar
 
-2. Update Spark conf to enable Uniffle, eg,
+2. Update Spark conf to enable Uniffle, e.g.,
 
    ```
    spark.shuffle.manager org.apache.spark.shuffle.RssShuffleManager
@@ -218,7 +218,7 @@ After apply the patch and rebuild spark, add following configuration in spark co
 
 The jar for MapReduce is located in <RSS_HOME>/jars/client/mr/rss-client-mr-XXXXX-shaded.jar
 
-2. Update MapReduce conf to enable Uniffle, eg,
+2. Update MapReduce conf to enable Uniffle, e.g.,
 
    ```
    -Dmapreduce.rss.coordinator.quorum=<coordinatorIp1>:19999,<coordinatorIp2>:19999
