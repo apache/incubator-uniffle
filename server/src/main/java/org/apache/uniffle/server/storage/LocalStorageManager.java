@@ -146,8 +146,8 @@ public class LocalStorageManager extends SingleStorageManager {
     int shuffleId = event.getShuffleId();
     int partitionId = event.getStartPartition();
 
-    try {
-      LocalStorage storage = partitionsOfStorage.get(PartitionUnionKey.of(appId, shuffleId, partitionId));
+    LocalStorage storage = partitionsOfStorage.get(PartitionUnionKey.of(appId, shuffleId, partitionId));
+    if (storage != null) {
       if (storage.isCorrupted()) {
         if (storage.containsWriteHandler(appId, shuffleId, partitionId)) {
           throw new RuntimeException("LocalStorage: " + storage.getBasePath() + " is corrupted.");
@@ -155,8 +155,6 @@ public class LocalStorageManager extends SingleStorageManager {
       } else {
         return storage;
       }
-    } catch (NullPointerException npe) {
-      // Ignore
     }
 
     // Firstly getting the storage based on its (appId, shuffleId, partitionId) hash value
@@ -164,7 +162,7 @@ public class LocalStorageManager extends SingleStorageManager {
         .stream()
         .filter(x -> x.canWrite() && !x.isCorrupted())
         .collect(Collectors.toList());
-    LocalStorage storage = candidates.get(
+    storage = candidates.get(
         ShuffleStorageUtils.getStorageIndex(
             candidates.size(),
             appId,
