@@ -391,7 +391,7 @@ public class ShuffleTaskManager {
 
   public ShuffleDataResult getShuffleData(
       String appId, Integer shuffleId, Integer partitionId, int partitionNumPerRange,
-      int partitionNum, String storageType, long offset, int length) {
+      int partitionNum, String storageType, long offset, int length, int storageId) {
     refreshAppId(appId);
 
     CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
@@ -402,6 +402,7 @@ public class ShuffleTaskManager {
     request.setPartitionNum(partitionNum);
     request.setStorageType(storageType);
     request.setRssBaseConf(conf);
+    request.setStorageSeqIndex(storageId);
     int[] range = ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
     Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0]));
     if (storage == null) {
@@ -410,13 +411,14 @@ public class ShuffleTaskManager {
 
     return storage.getOrCreateReadHandler(request).getShuffleData(offset, length);
   }
-
+  
   public ShuffleIndexResult getShuffleIndex(
       String appId,
       Integer shuffleId,
       Integer partitionId,
       int partitionNumPerRange,
-      int partitionNum) {
+      int partitionNum,
+      int storageId) {
     refreshAppId(appId);
     String storageType = conf.getString(RssBaseConf.RSS_STORAGE_TYPE);
     CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
@@ -427,6 +429,7 @@ public class ShuffleTaskManager {
     request.setPartitionNum(partitionNum);
     request.setStorageType(storageType);
     request.setRssBaseConf(conf);
+    request.setStorageSeqIndex(storageId);
     int[] range = ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
     Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0]));
     if (storage == null) {

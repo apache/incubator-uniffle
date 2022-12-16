@@ -26,9 +26,10 @@ public class RssGetShuffleDataRequest {
   private final int partitionNum;
   private final long offset;
   private final int length;
+  private final int storageId;
 
   public RssGetShuffleDataRequest(String appId, int shuffleId, int partitionId, int partitionNumPerRange,
-      int partitionNum, long offset, int length) {
+      int partitionNum, long offset, int length, int storageId) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -36,6 +37,7 @@ public class RssGetShuffleDataRequest {
     this.partitionNum = partitionNum;
     this.offset = offset;
     this.length = length;
+    this.storageId = storageId;
   }
 
   public String getAppId() {
@@ -64,5 +66,9 @@ public class RssGetShuffleDataRequest {
 
   public int getLength() {
     return length;
+  }
+
+  public int getStorageId() {
+    return storageId;
   }
 }

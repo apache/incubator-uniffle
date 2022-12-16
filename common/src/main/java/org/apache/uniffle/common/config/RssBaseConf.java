@@ -147,6 +147,12 @@ public class RssBaseConf extends RssConf {
       .noDefaultValue()
       .withDescription("Common storage path for remote shuffle data");
 
+  public static final ConfigOption<Boolean> RSS_LOCAL_STORAGE_MULTIPLE_DISK_SELECTION_ENABLE = ConfigOptions
+      .key("rss.storage.multiple.disk.selection.enable")
+      .booleanType()
+      .defaultValue(false)
+      .withDescription("");
+
   public static final ConfigOption<Integer> RPC_EXECUTOR_SIZE = ConfigOptions
       .key("rss.rpc.executor.size")
       .intType()

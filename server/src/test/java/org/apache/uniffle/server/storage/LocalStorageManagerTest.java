@@ -31,6 +31,7 @@ import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
+import org.apache.uniffle.storage.common.ChainableLocalStorage;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.util.StorageType;
@@ -72,6 +73,55 @@ public class LocalStorageManagerTest {
   }
 
   @Test
+  public void testDynamicStorageSelection() {
+    String[] storagePaths = {
+        "/tmp/rss-data1",
+        "/tmp/rss-data2",
+        "/tmp/rss-data3"
+    };
+
+    ShuffleServerConf conf = new ShuffleServerConf();
+    conf.set(ShuffleServerConf.RSS_LOCAL_STORAGE_MULTIPLE_DISK_SELECTION_ENABLE, true);
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
+    conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+
+    LocalStorageManager localStorageManager = new LocalStorageManager(conf);
+
+    String appId = "testDynamicStorageSelection";
+    ShuffleDataFlushEvent dataFlushEvent = toDataFlushEvent(appId, 1, 1);
+
+    /**
+     * case1: normal selection
+      */
+    Storage storage1 = localStorageManager.selectStorage(dataFlushEvent);
+    assertEquals(((ChainableLocalStorage)storage1).getChainableStorages().size(), 1);
+    Storage storage2 = localStorageManager.selectStorage(dataFlushEvent);
+    assertEquals(((ChainableLocalStorage)storage2).getChainableStorages().size(), 1);
+    assertEquals(storage1, storage2);
+
+    /**
+     * case2: when one storage can't write, it will choose another storage
+      */
+    List<LocalStorage> localStorages = ((ChainableLocalStorage)storage1).getChainableStorages();
+    // mark its storage full
+    localStorages.get(localStorages.size() - 1).getMetaData().setSize(1024);
+    Storage storage3 = localStorageManager.selectStorage(dataFlushEvent);
+    assertEquals(storage1, storage3);
+    assertEquals(((ChainableLocalStorage)storage3).getChainableStorages().size(), 2);
+    localStorages.get(localStorages.size() - 1).getMetaData().setSize(1024);
+    Storage storage4 = localStorageManager.selectStorage(dataFlushEvent);
+    assertEquals(((ChainableLocalStorage)storage4).getChainableStorages().size(), 3);
+
+    /**
+     * case3: when all storages can't write, it will directly return the original tail storage
+     */
+    localStorages.get(localStorages.size() - 1).getMetaData().setSize(1024);
+    Storage storage5 = localStorageManager.selectStorage(dataFlushEvent);
+    assertEquals(((ChainableLocalStorage)storage5).getChainableStorages().size(), 3);
+  }
+
+  @Test
   public void testStorageSelectionWhenReachingHighWatermark() {
     String[] storagePaths = {
         "/tmp/rss-data1",
@@ -90,7 +140,8 @@ public class LocalStorageManagerTest {
     ShuffleDataFlushEvent dataFlushEvent = toDataFlushEvent(appId, 1, 1);
     Storage storage1 = localStorageManager.selectStorage(dataFlushEvent);
 
-    ((LocalStorage) storage1).getMetaData().setSize(999);
+    List<LocalStorage> localStorageList = ((ChainableLocalStorage)storage1).getChainableStorages();
+    localStorageList.get(localStorageList.size() - 1).getMetaData().setSize(999);
     localStorageManager = new LocalStorageManager(conf);
     Storage storage2 = localStorageManager.selectStorage(dataFlushEvent);
 
@@ -127,9 +178,13 @@ public class LocalStorageManagerTest {
 
     // case2: one storage is corrupted, and it will switch to other storage at the first time of writing
     // event of (appId, shuffleId, startPartition)
-    ((LocalStorage)storage1).markCorrupted();
+    LocalStorage localStorage1 = getLatestStorage(storage1);
+    markCorrupted(storage1);
     Storage storage4 = localStorageManager.selectStorage(dataFlushEvent1);
-    assertNotEquals(storage4.getStoragePath(), storage1.getStoragePath());
+    assertNotEquals(
+        getLatestStorage(storage4).getStoragePath(),
+        localStorage1.getStoragePath()
+    );
     assertEquals(localStorageManager.selectStorage(dataReadEvent), storage4);
 
     // case3: one storage is corrupted when it happened after the original event has been written,
@@ -149,6 +204,16 @@ public class LocalStorageManagerTest {
     ((LocalStorage)restStorage).markCorrupted();
     Storage storage8 = localStorageManager.selectStorage(dataReadEvent);
     assertEquals(storage7, storage8);
+  }
+
+  private LocalStorage getLatestStorage(Storage storage) {
+    List<LocalStorage> localStorageList = ((ChainableLocalStorage)storage).getChainableStorages();
+    return localStorageList.get(localStorageList.size() - 1);
+  }
+
+  private void markCorrupted(Storage storage) {
+    List<LocalStorage> localStorageList = ((ChainableLocalStorage)storage).getChainableStorages();
+    localStorageList.get(localStorageList.size() - 1).markCorrupted();
   }
 
   @Test

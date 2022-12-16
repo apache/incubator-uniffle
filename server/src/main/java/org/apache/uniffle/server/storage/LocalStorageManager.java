@@ -22,9 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -32,11 +30,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -44,7 +40,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.common.UnionKey;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.LocalStorageChecker;
@@ -55,6 +50,8 @@ import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.server.event.AppPurgeEvent;
 import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.server.event.ShufflePurgeEvent;
+import org.apache.uniffle.server.storage.local.AbstractCacheableStorageSelector;
+import org.apache.uniffle.server.storage.local.ChainableLocalStorageSelector;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.factory.ShuffleHandlerFactory;
@@ -73,7 +70,7 @@ public class LocalStorageManager extends SingleStorageManager {
   private final List<String> storageBasePaths;
   private final LocalStorageChecker checker;
 
-  private final Map<String, LocalStorage> partitionsOfStorage;
+  private final AbstractCacheableStorageSelector selector;
 
   @VisibleForTesting
   LocalStorageManager(ShuffleServerConf conf) {
@@ -82,7 +79,6 @@ public class LocalStorageManager extends SingleStorageManager {
     if (CollectionUtils.isEmpty(storageBasePaths)) {
       throw new IllegalArgumentException("Base path dirs must not be empty");
     }
-    this.partitionsOfStorage = Maps.newConcurrentMap();
     long shuffleExpiredTimeoutMs = conf.get(ShuffleServerConf.SHUFFLE_EXPIRED_TIMEOUT_MS);
     long capacity = conf.getSizeAsBytes(ShuffleServerConf.DISK_CAPACITY);
     double highWaterMarkOfWrite = conf.get(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE);
@@ -129,7 +125,7 @@ public class LocalStorageManager extends SingleStorageManager {
     if (failedCount > maxFailedNumber || successCount.get() == 0) {
       throw new RuntimeException(
           String.format("Initialize %s local storage(s) failed, "
-              + "specified local storage paths size: %s, the conf of %s size: %s",
+                  + "specified local storage paths size: %s, the conf of %s size: %s",
               failedCount, localStorageArray.length, LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER.key(), maxFailedNumber)
       );
     }
@@ -139,59 +135,17 @@ public class LocalStorageManager extends SingleStorageManager {
         StringUtils.join(localStorages.stream().map(LocalStorage::getBasePath).collect(Collectors.toList()))
     );
     this.checker = new LocalStorageChecker(conf, localStorages);
+    this.selector = new ChainableLocalStorageSelector(localStorages);
   }
 
   @Override
   public Storage selectStorage(ShuffleDataFlushEvent event) {
-    String appId = event.getAppId();
-    int shuffleId = event.getShuffleId();
-    int partitionId = event.getStartPartition();
-
-    LocalStorage storage = partitionsOfStorage.get(UnionKey.buildKey(appId, shuffleId, partitionId));
-    if (storage != null) {
-      if (storage.isCorrupted()) {
-        if (storage.containsWriteHandler(appId, shuffleId, partitionId)) {
-          LOG.error("LocalStorage: {} is corrupted. Switching another storage for event: {}, some data will be lost",
-              storage.getBasePath(), event);
-        }
-      } else {
-        return storage;
-      }
-    }
-
-    List<LocalStorage> candidates = localStorages
-        .stream()
-        .filter(x -> x.canWrite() && !x.isCorrupted())
-        .collect(Collectors.toList());
-    final LocalStorage selectedStorage = candidates.get(
-        ShuffleStorageUtils.getStorageIndex(
-            candidates.size(),
-            appId,
-            shuffleId,
-            partitionId
-        )
-    );
-    return partitionsOfStorage.compute(
-        UnionKey.buildKey(appId, shuffleId, partitionId),
-        (key, localStorage) -> {
-          // If this is the first time to select storage or existing storage is corrupted,
-          // we should refresh the cache.
-          if (localStorage == null || localStorage.isCorrupted()) {
-            event.setUnderStorage(selectedStorage);
-            return selectedStorage;
-          }
-          return localStorage;
-        });
+    return selector.selectForWriter(event);
   }
 
   @Override
   public Storage selectStorage(ShuffleDataReadEvent event) {
-    String appId = event.getAppId();
-    int shuffleId = event.getShuffleId();
-    int partitionId = event.getStartPartition();
-
-    LocalStorage storage = partitionsOfStorage.get(UnionKey.buildKey(appId, shuffleId, partitionId));
-    return storage;
+    return selector.getForReader(event);
   }
 
   @Override
@@ -212,7 +166,7 @@ public class LocalStorageManager extends SingleStorageManager {
     List<Integer> shuffleSet = Optional.ofNullable(event.getShuffleIds()).orElse(Collections.emptyList());
 
     // Remove partitions to storage mapping cache
-    cleanupStorageSelectionCache(event);
+    selector.removeCache(event);
 
     for (LocalStorage storage : localStorages) {
       if (event instanceof AppPurgeEvent) {
@@ -245,37 +199,6 @@ public class LocalStorageManager extends SingleStorageManager {
     deleteHandler.delete(deletePaths.toArray(new String[deletePaths.size()]), appId, user);
   }
 
-  private void cleanupStorageSelectionCache(PurgeEvent event) {
-    Function<String, Boolean> deleteConditionFunc = null;
-    if (event instanceof AppPurgeEvent) {
-      deleteConditionFunc = partitionUnionKey -> UnionKey.startsWith(partitionUnionKey, event.getAppId());
-    } else if (event instanceof ShufflePurgeEvent) {
-      deleteConditionFunc =
-          partitionUnionKey -> UnionKey.startsWith(
-              partitionUnionKey,
-              event.getAppId(),
-              event.getShuffleIds()
-          );
-    }
-    long startTime = System.currentTimeMillis();
-    deleteElement(
-        partitionsOfStorage,
-        deleteConditionFunc
-    );
-    LOG.info("Cleaning the storage selection cache costs: {}(ms) for event: {}",
-        System.currentTimeMillis() - startTime, event);
-  }
-
-  private <K, V> void deleteElement(Map<K, V> map, Function<K, Boolean> deleteConditionFunc) {
-    Iterator<Map.Entry<K, V>> iterator = map.entrySet().iterator();
-    while (iterator.hasNext()) {
-      Map.Entry<K, V> entry = iterator.next();
-      if (deleteConditionFunc.apply(entry.getKey())) {
-        iterator.remove();
-      }
-    }
-  }
-
   @Override
   public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo) {
     // ignore
@@ -295,7 +218,7 @@ public class LocalStorageManager extends SingleStorageManager {
       if (!appIds.contains(appId)) {
         ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
             .createShuffleDeleteHandler(
-               new CreateShuffleDeleteHandlerRequest(StorageType.LOCALFILE.name(), new Configuration()));
+                new CreateShuffleDeleteHandlerRequest(StorageType.LOCALFILE.name(), new Configuration()));
         String[] deletePaths = new String[storageBasePaths.size()];
         for (int i = 0; i < storageBasePaths.size(); i++) {
           deletePaths[i] = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePaths.get(i), appId);

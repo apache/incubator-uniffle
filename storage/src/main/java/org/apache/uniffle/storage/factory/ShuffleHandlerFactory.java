@@ -36,7 +36,7 @@ import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
 import org.apache.uniffle.storage.handler.impl.ComposedClientReadHandler;
 import org.apache.uniffle.storage.handler.impl.HdfsClientReadHandler;
 import org.apache.uniffle.storage.handler.impl.HdfsShuffleDeleteHandler;
-import org.apache.uniffle.storage.handler.impl.LocalFileClientReadHandler;
+import org.apache.uniffle.storage.handler.impl.LocalFileClientReadMultiFileHandler;
 import org.apache.uniffle.storage.handler.impl.LocalFileDeleteHandler;
 import org.apache.uniffle.storage.handler.impl.MemoryClientReadHandler;
 import org.apache.uniffle.storage.handler.impl.MultiReplicaClientReadHandler;
@@ -140,7 +140,7 @@ public class ShuffleHandlerFactory {
                                                             ShuffleServerInfo ssi) {
     ShuffleServerClient shuffleServerClient = ShuffleServerClientFactory.getInstance().getShuffleServerClient(
         ClientType.GRPC.name(), ssi);
-    return new LocalFileClientReadHandler(
+    return new LocalFileClientReadMultiFileHandler(
         request.getAppId(), request.getShuffleId(), request.getPartitionId(),
         request.getIndexReadLimit(), request.getPartitionNumPerRange(), request.getPartitionNum(),
         request.getReadBufferSize(), request.getExpectBlockIds(), request.getProcessBlockIds(),

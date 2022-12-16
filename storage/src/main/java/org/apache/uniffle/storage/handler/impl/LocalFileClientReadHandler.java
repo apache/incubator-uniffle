@@ -37,6 +37,31 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
   private final int partitionNumPerRange;
   private final int partitionNum;
   private ShuffleServerClient shuffleServerClient;
+  private int storageIndex = 0;
+
+  public LocalFileClientReadHandler(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int indexReadLimit,
+      int partitionNumPerRange,
+      int partitionNum,
+      int readBufferSize,
+      Roaring64NavigableMap expectBlockIds,
+      Roaring64NavigableMap processBlockIds,
+      ShuffleServerClient shuffleServerClient,
+      ShuffleDataDistributionType distributionType,
+      Roaring64NavigableMap expectTaskIds,
+      int storageIndex) {
+    super(
+        appId, shuffleId, partitionId, readBufferSize, expectBlockIds,
+        processBlockIds, distributionType, expectTaskIds
+    );
+    this.shuffleServerClient = shuffleServerClient;
+    this.partitionNumPerRange = partitionNumPerRange;
+    this.partitionNum = partitionNum;
+    this.storageIndex = storageIndex;
+  }
 
   public LocalFileClientReadHandler(
       String appId,
@@ -85,7 +110,7 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
   public ShuffleIndexResult readShuffleIndex() {
     ShuffleIndexResult shuffleIndexResult = null;
     RssGetShuffleIndexRequest request = new RssGetShuffleIndexRequest(
-        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
+        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, storageIndex);
     try {
       shuffleIndexResult = shuffleServerClient.getShuffleIndex(request).getShuffleIndexResult();
     } catch (Exception e) {
@@ -106,7 +131,7 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
     }
     RssGetShuffleDataRequest request = new RssGetShuffleDataRequest(
         appId, shuffleId, partitionId, partitionNumPerRange, partitionNum,
-        shuffleDataSegment.getOffset(), expectedLength);
+        shuffleDataSegment.getOffset(), expectedLength, storageIndex);
     try {
       RssGetShuffleDataResponse response = shuffleServerClient.getShuffleData(request);
       result = new ShuffleDataResult(response.getShuffleData(), shuffleDataSegment.getBufferSegments());

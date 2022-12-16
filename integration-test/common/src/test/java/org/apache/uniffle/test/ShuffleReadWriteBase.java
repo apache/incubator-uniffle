@@ -130,7 +130,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
       int readBufferSize) {
     // read index file
     RssGetShuffleIndexRequest rgsir = new RssGetShuffleIndexRequest(
-        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
+        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, 0);
     ShuffleIndexResult shuffleIndexResult = shuffleServerClient.getShuffleIndex(rgsir).getShuffleIndexResult();
     return new FixedSizeSegmentSplitter(readBufferSize).split(shuffleIndexResult);
   }
@@ -152,7 +152,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
     ShuffleDataSegment segment = sds.get(segmentIndex);
     RssGetShuffleDataRequest rgsdr = new RssGetShuffleDataRequest(
         appId, shuffleId, partitionId, partitionNumPerRange, partitionNum,
-        segment.getOffset(), segment.getLength());
+        segment.getOffset(), segment.getLength(), 0);
 
     return new ShuffleDataResult(
         shuffleServerClient.getShuffleData(rgsdr).getShuffleData(),
@@ -170,7 +170,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
       int segmentIndex,
       SegmentSplitter segmentSplitter) {
     RssGetShuffleIndexRequest rgsir = new RssGetShuffleIndexRequest(
-        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
+        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, 0);
     ShuffleIndexResult shuffleIndexResult = shuffleServerClient.getShuffleIndex(rgsir).getShuffleIndexResult();
     if (shuffleIndexResult == null) {
       return new ShuffleDataResult();
@@ -184,7 +184,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
     ShuffleDataSegment segment = sds.get(segmentIndex);
     RssGetShuffleDataRequest rgsdr = new RssGetShuffleDataRequest(
         appId, shuffleId, partitionId, partitionNumPerRange, partitionNum,
-        segment.getOffset(), segment.getLength());
+        segment.getOffset(), segment.getLength(), 0);
 
     // read shuffle data
     return new ShuffleDataResult(

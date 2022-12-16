@@ -537,6 +537,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setOffset(request.getOffset())
         .setLength(request.getLength())
         .setTimestamp(start)
+        .setStorageId(request.getStorageId())
         .build();
     GetLocalShuffleDataResponse rpcResponse = getBlockingStub().getLocalShuffleData(rpcRequest);
     String requestInfo = "appId[" + request.getAppId() + "], shuffleId["
@@ -571,6 +572,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setPartitionId(request.getPartitionId())
         .setPartitionNumPerRange(request.getPartitionNumPerRange())
         .setPartitionNum(request.getPartitionNum())
+        .setStorageId(request.getStorageId())
         .build();
     long start = System.currentTimeMillis();
     GetLocalShuffleIndexResponse rpcResponse = getBlockingStub().getLocalShuffleIndex(rpcRequest);

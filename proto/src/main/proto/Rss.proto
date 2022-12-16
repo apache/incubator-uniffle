@@ -77,6 +77,7 @@ message GetLocalShuffleDataRequest {
   int64 offset = 6;
   int32 length = 7;
   int64 timestamp = 8;
+  int32 storageId = 9;
 }
 
 message GetLocalShuffleDataResponse {
@@ -108,6 +109,7 @@ message GetLocalShuffleIndexRequest {
   int32 partitionId = 3;
   int32 partitionNumPerRange = 4;
   int32 partitionNum = 5;
+  int32 storageId = 6;
 }
 
 message GetLocalShuffleIndexResponse {

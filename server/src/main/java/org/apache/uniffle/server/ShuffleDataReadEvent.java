@@ -17,13 +17,25 @@
 
 package org.apache.uniffle.server;
 
+import com.google.common.annotations.VisibleForTesting;
+
 public class ShuffleDataReadEvent {
 
   private String appId;
   private int shuffleId;
   private int partitionId;
   private int startPartition;
+  private int storageIndex = 0;
 
+  public ShuffleDataReadEvent(String appId, int shuffleId, int partitionId, int startPartitionOfRange, int storageIndex) {
+    this.appId = appId;
+    this.shuffleId = shuffleId;
+    this.partitionId = partitionId;
+    this.startPartition = startPartitionOfRange;
+    this.storageIndex = storageIndex;
+  }
+
+  @VisibleForTesting
   public ShuffleDataReadEvent(String appId, int shuffleId, int partitionId, int startPartitionOfRange) {
     this.appId = appId;
     this.shuffleId = shuffleId;
@@ -45,5 +57,9 @@ public class ShuffleDataReadEvent {
 
   public int getStartPartition() {
     return startPartition;
+  }
+
+  public int getStorageIndex() {
+    return storageIndex;
   }
 }
