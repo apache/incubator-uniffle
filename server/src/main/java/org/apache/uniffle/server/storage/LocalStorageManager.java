@@ -185,6 +185,7 @@ public class LocalStorageManager extends SingleStorageManager {
     int shuffleId = event.getShuffleId();
     int partitionId = event.getStartPartition();
 
+    System.out.println("out: " + partitionsOfStorage);
     LocalStorage storage = null;
     try {
       storage = partitionsOfStorage.get(PartitionUnionKey.of(appId, shuffleId, partitionId));
@@ -249,11 +250,10 @@ public class LocalStorageManager extends SingleStorageManager {
   private void cleanupStorageSelectionCache(PurgeEvent event) {
     Function<PartitionUnionKey, Boolean> deleteConditionFunc = null;
     if (event instanceof AppPurgeEvent) {
-      deleteConditionFunc = partitionUnionKey -> PartitionUnionKey.carryWithAppId(partitionUnionKey, event.getAppId());
+      deleteConditionFunc = partitionUnionKey -> partitionUnionKey.carryWithAppId(event.getAppId());
     } else if (event instanceof ShufflePurgeEvent) {
       deleteConditionFunc =
-          partitionUnionKey -> PartitionUnionKey.carryWithAppIdAndShuffleIds(
-              partitionUnionKey,
+          partitionUnionKey -> partitionUnionKey.carryWithAppIdAndShuffleIds(
               event.getAppId(),
               new HashSet<>(event.getShuffleIds())
           );
@@ -312,7 +312,7 @@ public class LocalStorageManager extends SingleStorageManager {
     private int shuffleId;
     private int partitionId;
 
-    public PartitionUnionKey(String appId, int shuffleId, int partitionId) {
+    PartitionUnionKey(String appId, int shuffleId, int partitionId) {
       this.appId = appId;
       this.shuffleId = shuffleId;
       this.partitionId = partitionId;
@@ -322,15 +322,14 @@ public class LocalStorageManager extends SingleStorageManager {
       return new PartitionUnionKey(appId, shuffleId, partitionId);
     }
 
-    public static boolean carryWithAppId(PartitionUnionKey partitionUnionKey, String appId) {
-      return partitionUnionKey.appId.equals(appId);
+    public boolean carryWithAppId(String appId) {
+      return this.appId.equals(appId);
     }
 
-    public static boolean carryWithAppIdAndShuffleIds(
-        PartitionUnionKey partitionUnionKey,
+    public boolean carryWithAppIdAndShuffleIds(
         String appId,
-        Set<Integer> shuffleId) {
-      return partitionUnionKey.appId.equals(appId) && shuffleId.contains(shuffleId);
+        Set<Integer> shuffleIds) {
+      return this.appId.equals(appId) && shuffleIds.contains(this.shuffleId);
     }
 
     @Override
@@ -359,6 +358,15 @@ public class LocalStorageManager extends SingleStorageManager {
       result = 31 * result + shuffleId;
       result = 31 * result + partitionId;
       return result;
+    }
+
+    @Override
+    public String toString() {
+      return "PartitionUnionKey{"
+          + "appId='" + appId + '\''
+          + ", shuffleId=" + shuffleId
+          + ", partitionId=" + partitionId
+          + '}';
     }
   }
 }
