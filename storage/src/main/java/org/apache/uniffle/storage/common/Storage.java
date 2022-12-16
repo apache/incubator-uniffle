@@ -33,10 +33,6 @@ public interface Storage {
 
   boolean unlockShuffleShared(String shuffleKey);
 
-  boolean lockShuffleExcluded(String shuffleKey);
-
-  boolean unlockShuffleExcluded(String shuffleKey);
-
   void updateWriteMetrics(StorageWriteMetrics metrics);
 
   void updateReadMetrics(StorageReadMetrics metrics);
@@ -44,8 +40,6 @@ public interface Storage {
   ShuffleWriteHandler getOrCreateWriteHandler(CreateShuffleWriteHandlerRequest request) throws IOException;
 
   ServerReadHandler getOrCreateReadHandler(CreateShuffleReadHandlerRequest request);
-
-  CreateShuffleWriteHandlerRequest getCreateWriterHandlerRequest(String appId, int shuffleId, int partition);
 
   void removeHandlers(String appId);
 
