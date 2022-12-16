@@ -181,15 +181,9 @@ public class LocalStorageManager extends SingleStorageManager {
   public Storage selectStorage(ShuffleDataReadEvent event) {
     String appId = event.getAppId();
     int shuffleId = event.getShuffleId();
-    int partitionId = event.getPartitionRange().getStart();
+    int partitionId = event.getStartPartition();
 
-    LocalStorage storage = null;
-    try {
-      storage = partitionsOfStorage.get(PartitionUnionKey.of(appId, shuffleId, partitionId));
-    } catch (NullPointerException npe) {
-      LOG.warn("There is no local storage cache for event: ({}:{}:{}). "
-          + "Maybe it has been flushed to other under storages.",  appId, shuffleId, partitionId);
-    }
+    LocalStorage storage = partitionsOfStorage.get(PartitionUnionKey.of(appId, shuffleId, partitionId));
     return storage;
   }
 
@@ -252,7 +246,7 @@ public class LocalStorageManager extends SingleStorageManager {
       deleteConditionFunc =
           partitionUnionKey -> partitionUnionKey.carryWithAppIdAndShuffleIds(
               event.getAppId(),
-              new HashSet<>(event.getShuffleIds())
+              event.getShuffleIds()
           );
     }
     deleteElement(
@@ -325,7 +319,7 @@ public class LocalStorageManager extends SingleStorageManager {
 
     public boolean carryWithAppIdAndShuffleIds(
         String appId,
-        Set<Integer> shuffleIds) {
+        Collection<Integer> shuffleIds) {
       return this.appId.equals(appId) && shuffleIds.contains(this.shuffleId);
     }
 
