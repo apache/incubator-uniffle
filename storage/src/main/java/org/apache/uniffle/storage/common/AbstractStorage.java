@@ -82,18 +82,6 @@ public abstract class AbstractStorage implements Storage {
   }
 
   @Override
-  public CreateShuffleWriteHandlerRequest getCreateWriterHandlerRequest(
-      String appId,
-      int shuffleId,
-      int partition) {
-    Map<String, CreateShuffleWriteHandlerRequest> requestMap = requests.get(appId);
-    if (requestMap != null) {
-      return requestMap.get(RssUtils.generatePartitionKey(appId, shuffleId, partition));
-    }
-    return null;
-  }
-
-  @Override
   public void removeHandlers(String appId) {
     writerHandlers.remove(appId);
     readerHandlers.remove(appId);

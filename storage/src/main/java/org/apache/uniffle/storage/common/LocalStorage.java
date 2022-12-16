@@ -122,25 +122,6 @@ public class LocalStorage extends AbstractStorage {
   }
 
   @Override
-  public boolean lockShuffleExcluded(String shuffleKey) {
-    ReadWriteLock lock = getLock(shuffleKey);
-    if (lock == null) {
-      return false;
-    }
-    return lock.writeLock().tryLock();
-  }
-
-  @Override
-  public boolean unlockShuffleExcluded(String shuffleKey) {
-    ReadWriteLock lock = getLock(shuffleKey);
-    if (lock == null) {
-      return false;
-    }
-    lock.writeLock().unlock();
-    return true;
-  }
-
-  @Override
   public void updateWriteMetrics(StorageWriteMetrics metrics) {
     updateWrite(RssUtils.generateShuffleKey(metrics.getAppId(), metrics.getShuffleId()),
         metrics.getDataSize(),
