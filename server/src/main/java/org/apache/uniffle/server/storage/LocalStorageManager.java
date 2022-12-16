@@ -44,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.UnionKey;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.LocalStorageChecker;
@@ -72,7 +73,7 @@ public class LocalStorageManager extends SingleStorageManager {
   private final List<String> storageBasePaths;
   private final LocalStorageChecker checker;
 
-  private final Map<PartitionUnionKey, LocalStorage> partitionsOfStorage;
+  private final Map<String, LocalStorage> partitionsOfStorage;
 
   @VisibleForTesting
   LocalStorageManager(ShuffleServerConf conf) {
@@ -146,7 +147,7 @@ public class LocalStorageManager extends SingleStorageManager {
     int shuffleId = event.getShuffleId();
     int partitionId = event.getStartPartition();
 
-    LocalStorage storage = partitionsOfStorage.get(PartitionUnionKey.of(appId, shuffleId, partitionId));
+    LocalStorage storage = partitionsOfStorage.get(UnionKey.toKey(appId, shuffleId, partitionId));
     if (storage != null) {
       if (storage.isCorrupted()) {
         if (storage.containsWriteHandler(appId, shuffleId, partitionId)) {
@@ -173,7 +174,7 @@ public class LocalStorageManager extends SingleStorageManager {
     event.setUnderStorage(storage);
 
     // store it to cache.
-    partitionsOfStorage.put(PartitionUnionKey.of(appId, shuffleId, partitionId), storage);
+    partitionsOfStorage.put(UnionKey.toKey(appId, shuffleId, partitionId), storage);
     return storage;
   }
 
@@ -183,7 +184,7 @@ public class LocalStorageManager extends SingleStorageManager {
     int shuffleId = event.getShuffleId();
     int partitionId = event.getStartPartition();
 
-    LocalStorage storage = partitionsOfStorage.get(PartitionUnionKey.of(appId, shuffleId, partitionId));
+    LocalStorage storage = partitionsOfStorage.get(UnionKey.toKey(appId, shuffleId, partitionId));
     return storage;
   }
 
@@ -239,12 +240,13 @@ public class LocalStorageManager extends SingleStorageManager {
   }
 
   private void cleanupStorageSelectionCache(PurgeEvent event) {
-    Function<PartitionUnionKey, Boolean> deleteConditionFunc = null;
+    Function<String, Boolean> deleteConditionFunc = null;
     if (event instanceof AppPurgeEvent) {
-      deleteConditionFunc = partitionUnionKey -> partitionUnionKey.carryWithAppId(event.getAppId());
+      deleteConditionFunc = partitionUnionKey -> UnionKey.startsWith(partitionUnionKey, event.getAppId());
     } else if (event instanceof ShufflePurgeEvent) {
       deleteConditionFunc =
-          partitionUnionKey -> partitionUnionKey.carryWithAppIdAndShuffleIds(
+          partitionUnionKey -> UnionKey.startsWith(
+              partitionUnionKey,
               event.getAppId(),
               event.getShuffleIds()
           );
@@ -296,68 +298,5 @@ public class LocalStorageManager extends SingleStorageManager {
 
   public List<LocalStorage> getStorages() {
     return localStorages;
-  }
-
-  static class PartitionUnionKey {
-    private String appId;
-    private int shuffleId;
-    private int partitionId;
-
-    PartitionUnionKey(String appId, int shuffleId, int partitionId) {
-      this.appId = appId;
-      this.shuffleId = shuffleId;
-      this.partitionId = partitionId;
-    }
-
-    public static PartitionUnionKey of(String appId, int shuffleId, int partitionId) {
-      return new PartitionUnionKey(appId, shuffleId, partitionId);
-    }
-
-    public boolean carryWithAppId(String appId) {
-      return this.appId.equals(appId);
-    }
-
-    public boolean carryWithAppIdAndShuffleIds(
-        String appId,
-        Collection<Integer> shuffleIds) {
-      return this.appId.equals(appId) && shuffleIds.contains(this.shuffleId);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-
-      PartitionUnionKey unionKey = (PartitionUnionKey) o;
-
-      if (shuffleId != unionKey.shuffleId) {
-        return false;
-      }
-      if (partitionId != unionKey.partitionId) {
-        return false;
-      }
-      return appId.equals(unionKey.appId);
-    }
-
-    @Override
-    public int hashCode() {
-      int result = appId.hashCode();
-      result = 31 * result + shuffleId;
-      result = 31 * result + partitionId;
-      return result;
-    }
-
-    @Override
-    public String toString() {
-      return "PartitionUnionKey{"
-          + "appId='" + appId + '\''
-          + ", shuffleId=" + shuffleId
-          + ", partitionId=" + partitionId
-          + '}';
-    }
   }
 }
