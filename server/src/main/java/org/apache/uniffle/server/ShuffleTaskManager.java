@@ -36,6 +36,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
+import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
 import org.roaringbitmap.longlong.LongIterator;
@@ -56,6 +57,7 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
+import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.event.AppPurgeEvent;
 import org.apache.uniffle.server.event.PurgeEvent;
@@ -64,6 +66,7 @@ import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
+import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 public class ShuffleTaskManager {
 
@@ -314,7 +317,21 @@ public class ShuffleTaskManager {
   public byte[] getFinishedBlockIds(String appId, Integer shuffleId, Set<Integer> partitions) throws IOException {
     refreshAppId(appId);
     for (int partitionId : partitions) {
-      Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId));
+      Map.Entry<Range<Integer>, ShuffleBuffer> entry =
+          shuffleBufferManager.getShuffleBufferEntry(appId, shuffleId, partitionId);
+      if (entry == null) {
+        LOG.error("The empty shuffle buffer, this should not happen. appId: {}, shuffleId: {}, partition: {}",
+            appId, shuffleId, partitionId);
+        continue;
+      }
+      Storage storage = storageManager.selectStorage(
+          new ShuffleDataReadEvent(
+              appId,
+              shuffleId,
+              partitionId,
+              new int[]{entry.getKey().lowerEndpoint(), entry.getKey().upperEndpoint()}
+          )
+      );
       // update shuffle's timestamp that was recently read.
       if (storage != null) {
         storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
@@ -385,7 +402,8 @@ public class ShuffleTaskManager {
     request.setPartitionNum(partitionNum);
     request.setStorageType(storageType);
     request.setRssBaseConf(conf);
-    Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId));
+    int[] range = ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
+    Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range));
     if (storage == null) {
       throw new FileNotFoundException("No such data stored in current storage manager.");
     }
@@ -409,8 +427,8 @@ public class ShuffleTaskManager {
     request.setPartitionNum(partitionNum);
     request.setStorageType(storageType);
     request.setRssBaseConf(conf);
-
-    Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId));
+      int[] range = ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
+    Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range));
     if (storage == null) {
       throw new FileNotFoundException("No such data in current storage manager.");
     }

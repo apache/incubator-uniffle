@@ -17,16 +17,20 @@
 
 package org.apache.uniffle.server;
 
+import org.apache.uniffle.common.PartitionRange;
+
 public class ShuffleDataReadEvent {
 
   private String appId;
   private int shuffleId;
-  private int startPartition;
+  private int partitionId;
+  private PartitionRange partitionRange;
 
-  public ShuffleDataReadEvent(String appId, int shuffleId, int startPartition) {
+  public ShuffleDataReadEvent(String appId, int shuffleId, int partitionId, int[] range) {
     this.appId = appId;
     this.shuffleId = shuffleId;
-    this.startPartition = startPartition;
+    this.partitionId = partitionId;
+    this.partitionRange = new PartitionRange(range[0], range[1]);
   }
 
   public String getAppId() {
@@ -37,7 +41,11 @@ public class ShuffleDataReadEvent {
     return shuffleId;
   }
 
-  public int getStartPartition() {
-    return startPartition;
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  public PartitionRange getPartitionRange() {
+    return partitionRange;
   }
 }

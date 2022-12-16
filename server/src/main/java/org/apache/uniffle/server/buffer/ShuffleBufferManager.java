@@ -132,7 +132,7 @@ public class ShuffleBufferManager {
     shuffleIdToSize.get(shuffleId).addAndGet(size);
   }
 
-  protected Entry<Range<Integer>, ShuffleBuffer> getShuffleBufferEntry(
+  public Entry<Range<Integer>, ShuffleBuffer> getShuffleBufferEntry(
       String appId, int shuffleId, int partitionId) {
     Map<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers = bufferPool.get(appId);
     if (shuffleIdToBuffers == null) {

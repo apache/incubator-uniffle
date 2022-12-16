@@ -183,9 +183,8 @@ public class LocalStorageManager extends SingleStorageManager {
   public Storage selectStorage(ShuffleDataReadEvent event) {
     String appId = event.getAppId();
     int shuffleId = event.getShuffleId();
-    int partitionId = event.getStartPartition();
+    int partitionId = event.getPartitionRange().getStart();
 
-    System.out.println("out: " + partitionsOfStorage);
     LocalStorage storage = null;
     try {
       storage = partitionsOfStorage.get(PartitionUnionKey.of(appId, shuffleId, partitionId));

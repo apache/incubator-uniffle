@@ -513,9 +513,12 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String requestInfo = "appId[" + appId + "], shuffleId[" + shuffleId + "], partitionId["
         + partitionId + "]" + "offset[" + offset + "]" + "length[" + length + "]";
 
-    ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
-    Storage storage = shuffleServer.getStorageManager()
-        .selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId));
+    int[] range = ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
+    Storage storage = shuffleServer
+        .getStorageManager()
+        .selectStorage(
+            new ShuffleDataReadEvent(appId, shuffleId, partitionId, range)
+        );
     if (storage != null) {
       storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
     }
@@ -576,8 +579,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String requestInfo = "appId[" + appId + "], shuffleId[" + shuffleId + "], partitionId["
         + partitionId + "]";
 
+    int[] range = ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
     Storage storage = shuffleServer.getStorageManager()
-        .selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId));
+        .selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range));
     if (storage != null) {
       storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
     }
