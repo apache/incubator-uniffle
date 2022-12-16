@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
-import com.google.common.collect.RangeMap;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -59,8 +58,6 @@ public class ShuffleFlushManager {
   private final int storageDataReplica;
   private final ShuffleServerConf shuffleServerConf;
   private Configuration hadoopConf;
-  // appId -> shuffleId -> partitionId -> handlers
-  private Map<String, Map<Integer, RangeMap<Integer, ShuffleWriteHandler>>> handlers = Maps.newConcurrentMap();
   // appId -> shuffleId -> committed shuffle blockIds
   private Map<String, Map<Integer, Roaring64NavigableMap>> committedBlockIds = Maps.newConcurrentMap();
   private final int retryMax;
@@ -276,7 +273,6 @@ public class ShuffleFlushManager {
   }
 
   public void removeResources(String appId) {
-    handlers.remove(appId);
     committedBlockIds.remove(appId);
   }
 
@@ -301,11 +297,6 @@ public class ShuffleFlushManager {
   }
 
   @VisibleForTesting
-  protected Map<String, Map<Integer, RangeMap<Integer, ShuffleWriteHandler>>> getHandlers() {
-    return handlers;
-  }
-
-  @VisibleForTesting
   void processPendingEvents() throws Exception {
     PendingShuffleFlushEvent event = pendingEvents.take();
     Storage storage = storageManager.selectStorage(event.getEvent());
@@ -327,10 +318,6 @@ public class ShuffleFlushManager {
       return;
     }
     addPendingEventsInternal(event);
-  }
-
-  private void cleanupFlushEventData(ShuffleDataFlushEvent event) {
-    event.doCleanup();
   }
 
   private void dropPendingEvent(PendingShuffleFlushEvent event) {
@@ -358,7 +345,6 @@ public class ShuffleFlushManager {
   }
 
   public void removeResourcesOfShuffleId(String appId, int shuffleId) {
-    Optional.ofNullable(handlers.get(appId)).ifPresent(x -> x.remove(shuffleId));
     Optional.ofNullable(committedBlockIds.get(appId)).ifPresent(x -> x.remove(shuffleId));
   }
 
