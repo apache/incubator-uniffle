@@ -427,7 +427,7 @@ public class ShuffleTaskManager {
     request.setPartitionNum(partitionNum);
     request.setStorageType(storageType);
     request.setRssBaseConf(conf);
-      int[] range = ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
+    int[] range = ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
     Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range));
     if (storage == null) {
       throw new FileNotFoundException("No such data in current storage manager.");
