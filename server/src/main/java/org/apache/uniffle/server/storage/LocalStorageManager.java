@@ -163,7 +163,7 @@ public class LocalStorageManager extends SingleStorageManager {
         .stream()
         .filter(x -> x.canWrite() && !x.isCorrupted())
         .collect(Collectors.toList());
-    storage = candidates.get(
+    final LocalStorage selectedStorage = candidates.get(
         ShuffleStorageUtils.getStorageIndex(
             candidates.size(),
             appId,
@@ -171,9 +171,6 @@ public class LocalStorageManager extends SingleStorageManager {
             partitionId
         )
     );
-
-    // store it to cache.
-    final LocalStorage selectedStorage = storage;
     return partitionsOfStorage.compute(
         UnionKey.toKey(appId, shuffleId, partitionId),
         (key, localStorage) -> {
