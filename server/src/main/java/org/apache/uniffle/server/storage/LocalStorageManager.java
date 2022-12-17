@@ -182,7 +182,7 @@ public class LocalStorageManager extends SingleStorageManager {
             return selectedStorage;
           }
           return localStorage;
-    });
+        });
   }
 
   @Override
