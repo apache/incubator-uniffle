@@ -171,11 +171,18 @@ public class LocalStorageManager extends SingleStorageManager {
             partitionId
         )
     );
-    event.setUnderStorage(storage);
 
     // store it to cache.
-    partitionsOfStorage.put(UnionKey.toKey(appId, shuffleId, partitionId), storage);
-    return storage;
+    final LocalStorage selectedStorage = storage;
+    return partitionsOfStorage.compute(
+        UnionKey.toKey(appId, shuffleId, partitionId),
+        (key, localStorage) -> {
+          if (localStorage == null) {
+            event.setUnderStorage(selectedStorage);
+            return selectedStorage;
+          }
+          return localStorage;
+    });
   }
 
   @Override
