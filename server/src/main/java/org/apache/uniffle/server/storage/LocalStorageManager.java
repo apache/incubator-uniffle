@@ -158,7 +158,6 @@ public class LocalStorageManager extends SingleStorageManager {
       }
     }
 
-    // Firstly getting the storage based on its (appId, shuffleId, partitionId) hash value
     List<LocalStorage> candidates = localStorages
         .stream()
         .filter(x -> x.canWrite() && !x.isCorrupted())
@@ -174,7 +173,9 @@ public class LocalStorageManager extends SingleStorageManager {
     return partitionsOfStorage.compute(
         UnionKey.toKey(appId, shuffleId, partitionId),
         (key, localStorage) -> {
-          if (localStorage == null) {
+          // If this is the first time to select storage or existing storage is corrupted,
+          // we should refresh the cache.
+          if (localStorage == null || localStorage.isCorrupted()) {
             event.setUnderStorage(selectedStorage);
             return selectedStorage;
           }
