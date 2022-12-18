@@ -78,6 +78,9 @@ public class AppBalanceSelectStorageStrategyTest {
     String testApp1 = "application_test_" + 1;
     applicationManager.registerApplicationInfo(testApp1, "user");
     applicationManager.refreshAppId(testApp1);
+    // in this case, ensure that all the paths are read and written normally
+    applicationManager.getRemoteStoragePathRankValue().get(remotePath1).getCostTime().set(0);
+    applicationManager.getRemoteStoragePathRankValue().get(remotePath2).getCostTime().set(0);
     assertEquals(remotePath2, applicationManager.pickRemoteStorage(testApp1).getPath());
     assertEquals(remotePath2, applicationManager.getAppIdToRemoteStorageInfo().get(testApp1).getPath());
     assertEquals(1, applicationManager.getRemoteStoragePathRankValue().get(remotePath2).getAppNum().get());
