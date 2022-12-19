@@ -199,6 +199,12 @@ public class RssBaseConf extends RssConf {
       .defaultValue(false)
       .withDescription("Whether enable test mode for the shuffle server.");
 
+  public static final ConfigOption<String> RSS_METRICS_REPORTER_CLASS = ConfigOptions
+      .key("rss.metrics.reporter.class")
+      .stringType()
+      .noDefaultValue()
+      .withDescription("The class name of metrics reporter.");
+
   public boolean loadCommonConf(Map<String, String> properties) {
     if (properties == null) {
       return false;

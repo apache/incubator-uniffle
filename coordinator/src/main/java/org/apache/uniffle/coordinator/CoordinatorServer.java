@@ -62,6 +62,7 @@ public class CoordinatorServer {
   private ApplicationManager applicationManager;
   private GRPCMetrics grpcMetrics;
   private MetricReporter metricReporter;
+  private String id;
 
   public CoordinatorServer(CoordinatorConf coordinatorConf) throws Exception {
     this.coordinatorConf = coordinatorConf;
@@ -130,6 +131,13 @@ public class CoordinatorServer {
   }
 
   private void initialization() throws Exception {
+    String ip = RssUtils.getHostIp();
+    if (ip == null) {
+      throw new RuntimeException("Couldn't acquire host Ip");
+    }
+    int port = coordinatorConf.getInteger(CoordinatorConf.RPC_SERVER_PORT);
+    id = ip + "-" + port;
+    LOG.info("Start to initialize coordinator {}", id);
     jettyServer = new JettyServer(coordinatorConf);
     // register metrics first to avoid NPE problem when add dynamic metrics
     registerMetrics();
@@ -191,9 +199,7 @@ public class CoordinatorServer {
         new CommonMetricsServlet(JvmMetrics.getCollectorRegistry(), true),
         "/prometheus/metrics/jvm");
 
-    String ip = RssUtils.getHostIp();
-    int port = coordinatorConf.getInteger(CoordinatorConf.RPC_SERVER_PORT);
-    metricReporter = MetricReporterFactory.getMetricReporter(coordinatorConf,  ip + "-" + port);
+    metricReporter = MetricReporterFactory.getMetricReporter(coordinatorConf,  id);
     if (metricReporter != null) {
       metricReporter.addCollectorRegistry(CoordinatorMetrics.getCollectorRegistry());
       metricReporter.addCollectorRegistry(grpcMetrics.getCollectorRegistry());

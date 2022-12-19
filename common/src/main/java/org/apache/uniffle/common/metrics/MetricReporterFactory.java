@@ -21,13 +21,13 @@ import java.lang.reflect.Constructor;
 
 import org.apache.commons.lang3.StringUtils;
 
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
 
 public class MetricReporterFactory {
-  public static final String REPORT_CLASS = "rss.metrics.reporter.class";
 
   public static MetricReporter getMetricReporter(RssConf conf, String instanceId) throws Exception {
-    String name = conf.getString(REPORT_CLASS, null);
+    String name = conf.get(RssBaseConf.RSS_METRICS_REPORTER_CLASS);
     if (StringUtils.isEmpty(name)) {
       return null;
     }

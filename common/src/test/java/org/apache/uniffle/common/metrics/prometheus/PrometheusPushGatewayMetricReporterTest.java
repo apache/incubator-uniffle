@@ -27,6 +27,7 @@ import io.prometheus.client.Counter;
 import io.prometheus.client.exporter.PushGateway;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.metrics.MetricReporter;
 import org.apache.uniffle.common.metrics.MetricReporterFactory;
@@ -63,7 +64,8 @@ public class PrometheusPushGatewayMetricReporterTest {
   @Test
   public void test() throws Exception {
     RssConf conf = new RssConf();
-    conf.setString(MetricReporterFactory.REPORT_CLASS, PrometheusPushGatewayMetricReporter.class.getCanonicalName());
+    conf.setString(RssBaseConf.RSS_METRICS_REPORTER_CLASS,
+        PrometheusPushGatewayMetricReporter.class.getCanonicalName());
     conf.setString(PrometheusPushGatewayMetricReporter.PUSHGATEWAY_ADDR, "");
     conf.setString(PrometheusPushGatewayMetricReporter.GROUPING_KEY, "a=1;b=2");
     String jobName = "jobname";
