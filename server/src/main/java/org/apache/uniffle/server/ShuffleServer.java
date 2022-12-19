@@ -41,6 +41,7 @@ import org.apache.uniffle.common.security.SecurityConfig;
 import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
 import org.apache.uniffle.common.web.CommonMetricsServlet;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
@@ -250,6 +251,12 @@ public class ShuffleServer {
       metricReporter.addCollectorRegistry(grpcMetrics.getCollectorRegistry());
       metricReporter.addCollectorRegistry(JvmMetrics.getCollectorRegistry());
     }
+
+    CoalescedCollectorRegistry ccRegistry = new CoalescedCollectorRegistry();
+    ccRegistry.addCollectorRegistry(ShuffleServerMetrics.getCollectorRegistry());
+    ccRegistry.addCollectorRegistry(grpcMetrics.getCollectorRegistry());
+    ccRegistry.addCollectorRegistry(JvmMetrics.getCollectorRegistry());
+    jettyServer.addServlet(new CommonMetricsServlet(ccRegistry, true), "/metrics");
   }
 
   /**

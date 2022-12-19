@@ -32,6 +32,7 @@ import org.apache.uniffle.common.rpc.ServerInterface;
 import org.apache.uniffle.common.security.SecurityConfig;
 import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
 import org.apache.uniffle.common.web.CommonMetricsServlet;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
@@ -199,6 +200,12 @@ public class CoordinatorServer {
       metricReporter.addCollectorRegistry(grpcMetrics.getCollectorRegistry());
       metricReporter.addCollectorRegistry(JvmMetrics.getCollectorRegistry());
     }
+
+    CoalescedCollectorRegistry ccRegistry = new CoalescedCollectorRegistry();
+    ccRegistry.addCollectorRegistry(CoordinatorMetrics.getCollectorRegistry());
+    ccRegistry.addCollectorRegistry(grpcMetrics.getCollectorRegistry());
+    ccRegistry.addCollectorRegistry(JvmMetrics.getCollectorRegistry());
+    jettyServer.addServlet(new CommonMetricsServlet(ccRegistry, true), "/metrics");
   }
 
   public ClusterManager getClusterManager() {
