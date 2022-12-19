@@ -203,7 +203,7 @@ public class RssBaseConf extends RssConf {
       .key("rss.metrics.reporter.class")
       .stringType()
       .noDefaultValue()
-      .withDescription("The class name of metrics reporter.");
+      .withDescription("The class of metrics reporter.");
 
   public boolean loadCommonConf(Map<String, String> properties) {
     if (properties == null) {
