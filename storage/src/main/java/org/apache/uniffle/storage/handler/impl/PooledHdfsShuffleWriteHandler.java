@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -83,6 +85,14 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
       writeHandler.write(shuffleBlocks);
     } finally {
       queue.offer(writeHandler);
+    }
+  }
+
+  @Override
+  public void close() throws IOException {
+    Iterator<HdfsShuffleWriteHandler> iterator = queue.stream().iterator();
+    while (iterator.hasNext()) {
+      iterator.next().close();
     }
   }
 }

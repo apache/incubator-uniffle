@@ -80,7 +80,7 @@ public class HdfsClientReadHandlerTest extends HdfsTestBase {
        * This part is to check the fault tolerance of reading HDFS incomplete index file
        */
       String indexFileName = ShuffleStorageUtils.generateIndexFileName("test_0");
-      HdfsFileWriter indexWriter = writeHandler.createWriter(indexFileName);
+      HdfsFileWriter indexWriter = writeHandler.getOrCreateWriter(indexFileName);
       indexWriter.writeData(ByteBuffer.allocate(4).putInt(169560).array());
       indexWriter.writeData(ByteBuffer.allocate(4).putInt(999).array());
       indexWriter.close();

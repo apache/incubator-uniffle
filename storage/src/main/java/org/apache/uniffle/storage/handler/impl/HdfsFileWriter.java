@@ -148,4 +148,8 @@ public class HdfsFileWriter implements Closeable {
     IOUtils.copyBytes(inputStream, fsDataOutputStream, bufferSize);
     return fsDataOutputStream.getPos() - start;
   }
+
+  public Path getPath() {
+    return path;
+  }
 }

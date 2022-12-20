@@ -136,4 +136,8 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
     return basePath;
   }
 
+  @Override
+  public void close() throws IOException {
+
+  }
 }

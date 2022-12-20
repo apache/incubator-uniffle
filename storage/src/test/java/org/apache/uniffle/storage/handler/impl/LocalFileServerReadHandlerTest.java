@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.List;
@@ -37,10 +38,38 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
+import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LocalFileServerReadHandlerTest {
+
+  static class MockedShuffleWriteHandler implements ShuffleWriteHandler {
+    private ByteBuffer byteBuffer;
+
+    MockedShuffleWriteHandler(ByteBuffer byteBuffer) {
+      this.byteBuffer = byteBuffer;
+    }
+
+    @Override
+    public void close() throws IOException {
+
+    }
+
+    @Override
+    public void write(List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
+      int offset = 0;
+      for (ShufflePartitionedBlock block : shuffleBlocks) {
+        FileBasedShuffleSegment segment = new FileBasedShuffleSegment(
+            block.getBlockId(), offset, block.getLength(), block.getUncompressLength(),
+            block.getCrc(), block.getTaskAttemptId());
+        offset += block.getLength();
+        LocalFileHandlerTestBase.writeIndex(byteBuffer, segment);
+      }
+
+    }
+  }
+
   @Test
   public void testDataInconsistent() throws Exception {
     Map<Long, byte[]> expectedData = Maps.newHashMap();
@@ -51,17 +80,13 @@ public class LocalFileServerReadHandlerTest {
     Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
 
     // We simulate the generation of 4 block index files and 3 block data files to test LocalFileClientReadHandler
-    LocalFileHandlerTestBase.writeTestData(shuffleBlocks -> {
-      int offset = 0;
-      for (ShufflePartitionedBlock block : shuffleBlocks) {
-        FileBasedShuffleSegment segment = new FileBasedShuffleSegment(
-            block.getBlockId(), offset, block.getLength(), block.getUncompressLength(),
-            block.getCrc(), block.getTaskAttemptId());
-        offset += block.getLength();
-        LocalFileHandlerTestBase.writeIndex(byteBuffer, segment);
-      }
-    }, expectTotalBlockNum, blockSize,
-        expectedData, new HashSet<>());
+    LocalFileHandlerTestBase.writeTestData(
+        new MockedShuffleWriteHandler(byteBuffer),
+        expectTotalBlockNum,
+        blockSize,
+        expectedData,
+        new HashSet<>()
+    );
     expectedData.forEach((id, block) -> expectBlockIds.addLong(id));
 
     String appId = "app1";

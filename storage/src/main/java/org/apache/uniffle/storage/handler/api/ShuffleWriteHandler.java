@@ -17,11 +17,12 @@
 
 package org.apache.uniffle.storage.handler.api;
 
+import java.io.Closeable;
 import java.util.List;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 
-public interface ShuffleWriteHandler {
+public interface ShuffleWriteHandler extends Closeable {
 
   /**
    * Write the blocks to storage

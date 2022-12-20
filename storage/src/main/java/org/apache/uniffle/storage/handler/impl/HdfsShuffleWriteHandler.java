@@ -35,7 +35,7 @@ import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
-public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
+public class HdfsShuffleWriteHandler extends AbstractHdfsFileWriterCache implements ShuffleWriteHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(HdfsShuffleWriteHandler.class);
 
@@ -57,6 +57,7 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
       String storageBasePath,
       String fileNamePrefix,
       Configuration hadoopConf) throws Exception {
+    super(120);
     this.hadoopConf = hadoopConf;
     this.fileNamePrefix = fileNamePrefix;
     this.basePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
@@ -73,6 +74,7 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
       String fileNamePrefix,
       Configuration hadoopConf,
       String user) throws Exception {
+    super(120);
     this.hadoopConf = hadoopConf;
     this.fileNamePrefix = fileNamePrefix;
     this.basePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
@@ -111,8 +113,9 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
       // change the prefix of file name if write failed before
       String dataFileName = ShuffleStorageUtils.generateDataFileName(fileNamePrefix + "_" + failTimes);
       String indexFileName = ShuffleStorageUtils.generateIndexFileName(fileNamePrefix + "_" + failTimes);
-      try (HdfsFileWriter dataWriter = createWriter(dataFileName);
-           HdfsFileWriter indexWriter = createWriter(indexFileName)) {
+      HdfsFileWriter dataWriter = getOrCreateWriter(dataFileName);
+      HdfsFileWriter indexWriter = getOrCreateWriter(indexFileName);
+      try {
         for (ShufflePartitionedBlock block : shuffleBlocks) {
           long blockId = block.getBlockId();
           long crc = block.getCrc();
@@ -131,6 +134,15 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
         LOG.warn("Write failed with " + shuffleBlocks.size() + " blocks for " + fileNamePrefix + "_" + failTimes, e);
         failTimes++;
         throw new RuntimeException(e);
+      } finally {
+        try {
+          dataWriter.flush();
+          indexWriter.flush();
+        } finally {
+          // If any exception happened, we should remove the writer from cache.
+          deleteByKey(getCacheKey(dataFileName));
+          deleteByKey(getCacheKey(indexFileName));
+        }
       }
     } finally {
       writeLock.unlock();
@@ -143,14 +155,35 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
   }
 
   @VisibleForTesting
-  public HdfsFileWriter createWriter(String fileName) throws IOException, IllegalStateException {
+  public HdfsFileWriter getOrCreateWriter(String fileName) throws IOException, IllegalStateException {
     Path path = new Path(basePath, fileName);
-    HdfsFileWriter writer = new HdfsFileWriter(fileSystem, path, hadoopConf);
+    String keyOfCache = path.toString();
+    HdfsFileWriter writer = getFromCache(keyOfCache);
+    if (writer != null) {
+      return writer;
+    }
+
+    writer = new HdfsFileWriter(fileSystem, path, hadoopConf);
+    putToCache(keyOfCache, writer);
     return writer;
+  }
+
+  private String getCacheKey(String fileName) {
+    return new Path(basePath, fileName).toString();
   }
 
   @VisibleForTesting
   public void setFailTimes(int failTimes) {
     this.failTimes = failTimes;
+  }
+
+  @Override
+  public void close() throws IOException {
+    for (int i = 0; i <= failTimes; i++) {
+      String dataFileName = ShuffleStorageUtils.generateDataFileName(fileNamePrefix + "_" + i);
+      String indexFileName = ShuffleStorageUtils.generateIndexFileName(fileNamePrefix + "_" + i);
+      deleteByKey(getCacheKey(dataFileName));
+      deleteByKey(getCacheKey(indexFileName));
+    }
   }
 }

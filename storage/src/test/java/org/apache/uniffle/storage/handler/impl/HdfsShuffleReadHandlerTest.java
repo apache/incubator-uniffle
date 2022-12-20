@@ -215,7 +215,7 @@ public class HdfsShuffleReadHandlerTest extends HdfsTestBase {
       try {
         try {
           String indexFileName = ShuffleStorageUtils.generateIndexFileName(fileNamePrefix + "_" + failTimes);
-          indexWriter = createWriter(indexFileName);
+          indexWriter = getOrCreateWriter(indexFileName);
           for (ShufflePartitionedBlock block : shuffleBlocks) {
             long blockId = block.getBlockId();
             long crc = block.getCrc();

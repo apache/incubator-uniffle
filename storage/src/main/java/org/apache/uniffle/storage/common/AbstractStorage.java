@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.storage.common;
 
+import java.io.IOException;
 import java.util.Map;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -83,9 +84,23 @@ public abstract class AbstractStorage implements Storage {
 
   @Override
   public void removeHandlers(String appId) {
+    closeAllHandlers();
+    
     writerHandlers.remove(appId);
     readerHandlers.remove(appId);
     requests.remove(appId);
+  }
+
+  private void closeAllHandlers() {
+    writerHandlers.values().stream()
+        .flatMap(x -> x.values().stream())
+        .forEach(handler -> {
+          try {
+            handler.close();
+          } catch (IOException e) {
+            // ignore
+          }
+        });
   }
 
   @VisibleForTesting
