@@ -33,7 +33,7 @@ public class UnionKeyTest {
         1
     };
 
-    String key = UnionKey.toKey(elements);
+    String key = UnionKey.buildKey(elements);
     assertEquals(key, "appId_1_1");
 
     assertTrue(UnionKey.sameWith(key, elements));

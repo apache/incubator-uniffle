@@ -147,7 +147,7 @@ public class LocalStorageManager extends SingleStorageManager {
     int shuffleId = event.getShuffleId();
     int partitionId = event.getStartPartition();
 
-    LocalStorage storage = partitionsOfStorage.get(UnionKey.toKey(appId, shuffleId, partitionId));
+    LocalStorage storage = partitionsOfStorage.get(UnionKey.buildKey(appId, shuffleId, partitionId));
     if (storage != null) {
       if (storage.isCorrupted()) {
         if (storage.containsWriteHandler(appId, shuffleId, partitionId)) {
@@ -172,7 +172,7 @@ public class LocalStorageManager extends SingleStorageManager {
         )
     );
     return partitionsOfStorage.compute(
-        UnionKey.toKey(appId, shuffleId, partitionId),
+        UnionKey.buildKey(appId, shuffleId, partitionId),
         (key, localStorage) -> {
           // If this is the first time to select storage or existing storage is corrupted,
           // we should refresh the cache.
@@ -190,7 +190,7 @@ public class LocalStorageManager extends SingleStorageManager {
     int shuffleId = event.getShuffleId();
     int partitionId = event.getStartPartition();
 
-    LocalStorage storage = partitionsOfStorage.get(UnionKey.toKey(appId, shuffleId, partitionId));
+    LocalStorage storage = partitionsOfStorage.get(UnionKey.buildKey(appId, shuffleId, partitionId));
     return storage;
   }
 

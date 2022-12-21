@@ -25,7 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 public class UnionKey {
   private static final String SPLIT_KEY = "_";
 
-  public static String toKey(Object... factors) {
+  public static String buildKey(Object... factors) {
     return StringUtils.join(factors, SPLIT_KEY);
   }
 
@@ -33,13 +33,13 @@ public class UnionKey {
     if (key == null) {
       return false;
     }
-    return key.startsWith(toKey(factors));
+    return key.startsWith(buildKey(factors));
   }
 
   public static boolean sameWith(String key, Object... factors) {
     if (key == null) {
       return false;
     }
-    return key.equals(toKey(factors));
+    return key.equals(buildKey(factors));
   }
 }
