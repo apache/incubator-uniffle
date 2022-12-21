@@ -151,7 +151,8 @@ public class LocalStorageManager extends SingleStorageManager {
     if (storage != null) {
       if (storage.isCorrupted()) {
         if (storage.containsWriteHandler(appId, shuffleId, partitionId)) {
-          throw new RuntimeException("LocalStorage: " + storage.getBasePath() + " is corrupted.");
+          LOG.error("LocalStorage: {} is corrupted. Switching another storage for event: {}, some data will be lost",
+              storage.getBasePath(), event);
         }
       } else {
         return storage;

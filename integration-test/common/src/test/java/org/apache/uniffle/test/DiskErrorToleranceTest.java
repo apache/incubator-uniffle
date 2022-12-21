@@ -33,6 +33,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
@@ -87,6 +88,7 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     shuffleServerClient.close();
   }
 
+  @Test
   public void diskErrorTest() throws Exception {
 
     String appId = "ap_disk_error_data";
