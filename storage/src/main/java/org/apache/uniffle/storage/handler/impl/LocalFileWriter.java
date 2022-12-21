@@ -24,9 +24,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import org.apache.uniffle.storage.api.FileWriter;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
-public class LocalFileWriter implements Closeable {
+public class LocalFileWriter implements FileWriter, Closeable {
 
   private DataOutputStream dataOutputStream;
   private FileOutputStream fileOutputStream;
