@@ -167,7 +167,7 @@ public class SimpleClusterManagerTest {
   public void heartbeatTimeoutTest() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 300L);
-    try(SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration())) {
+    try (SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration())) {
       addNode("sn0", clusterManager);
       addNode("sn1", clusterManager);
       List<ServerNode> serverNodes = clusterManager.getServerList(testTags);

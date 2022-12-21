@@ -79,39 +79,33 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
   @Test
   public void testCreateIllegalContext() throws Exception {
     // case1: lack principal, should throw exception
-    try (
-      HadoopSecurityContext context = new HadoopSecurityContext(
-          null,
-          kerberizedHdfs.getHdfsKeytab(),
-          null,
-          1000
-      )) {
+    try (HadoopSecurityContext context = new HadoopSecurityContext(
+            null,
+            kerberizedHdfs.getHdfsKeytab(),
+            null,
+            1000)) {
       fail();
     } catch (Exception e) {
       assertTrue(e.getMessage().contains("principal must be not null or empty"));
     }
 
     // case2: lack keytab, should throw exception
-    try (
-      HadoopSecurityContext context = new HadoopSecurityContext(
-          null,
-          null,
-          kerberizedHdfs.getHdfsPrincipal(),
-          1000
-      )) {
+    try (HadoopSecurityContext context = new HadoopSecurityContext(
+            null,
+            null,
+            kerberizedHdfs.getHdfsPrincipal(),
+            1000)) {
       fail();
     } catch (Exception e) {
       assertTrue(e.getMessage().contains("KeytabFilePath must be not null or empty"));
     }
 
-    // case3: illegal relogin interval sec
-    try (
-      HadoopSecurityContext context = new HadoopSecurityContext(
-          null,
-          kerberizedHdfs.getHdfsKeytab(),
-          kerberizedHdfs.getHdfsPrincipal(),
-          0
-      )) {
+    // case3: illegal re-login interval sec
+    try (HadoopSecurityContext context = new HadoopSecurityContext(
+            null,
+            kerberizedHdfs.getHdfsKeytab(),
+            kerberizedHdfs.getHdfsPrincipal(),
+            0)) {
       fail();
     } catch (Exception e) {
       assertTrue(e.getMessage().contains("refreshIntervalSec must be not negative"));
@@ -120,13 +114,11 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
     // case4: lack krb5 conf, should throw exception
     String krbConfFilePath = System.getProperty("java.security.krb5.conf");
     System.clearProperty("java.security.krb5.conf");
-    try (
-      HadoopSecurityContext context = new HadoopSecurityContext(
-          null,
-          kerberizedHdfs.getHdfsKeytab(),
-          kerberizedHdfs.getHdfsPrincipal(),
-          100
-      )) {
+    try (HadoopSecurityContext context = new HadoopSecurityContext(
+              null,
+              kerberizedHdfs.getHdfsKeytab(),
+              kerberizedHdfs.getHdfsPrincipal(),
+              100)) {
       fail();
     } catch (Exception e) {
       assertTrue(e.getMessage().contains("Cannot locate KDC"));
@@ -134,10 +126,10 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
 
     // case5: After setting the krb5 conf, it should pass
     HadoopSecurityContext context = new HadoopSecurityContext(
-        krbConfFilePath,
-        kerberizedHdfs.getHdfsKeytab(),
-        kerberizedHdfs.getHdfsPrincipal(),
-        100
+            krbConfFilePath,
+            kerberizedHdfs.getHdfsKeytab(),
+            kerberizedHdfs.getHdfsPrincipal(),
+            100
     );
     context.close();
 

@@ -18,7 +18,6 @@
 package org.apache.uniffle.server.buffer;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.Test;
