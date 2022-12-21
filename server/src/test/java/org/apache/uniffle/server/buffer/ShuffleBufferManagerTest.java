@@ -63,6 +63,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   public void setUp() {
     conf = new ShuffleServerConf();
     File tmpDir = Files.createTempDir();
+    tmpDir.deleteOnExit();
     File dataDir = new File(tmpDir, "data");
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(dataDir.getAbsolutePath()));
@@ -128,7 +129,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     assertEquals(0, result.getBufferSegments().get(0).getOffset());
     assertEquals(68, result.getBufferSegments().get(0).getLength());
 
-    // 2th read
+    // 2nd read
     long lastBlockId = result.getBufferSegments().get(0).getBlockId();
     result = shuffleBufferManager.getShuffleData(
         appId,
@@ -182,7 +183,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     assertEquals(1, bufferPool.get(appId).get(2).get(0).getInFlushBlockMap().size());
     assertEquals(0, bufferPool.get(appId).get(3).get(0).getBlocks().size());
     assertEquals(1, bufferPool.get(appId).get(3).get(0).getInFlushBlockMap().size());
-    // keep buffer whose size < low water mark
+    // keep buffer whose size < low watermark
     assertEquals(1, bufferPool.get(appId).get(4).get(0).getBlocks().size());
     // data in flush buffer now, it also can be got before flush finish
     sdr = shuffleBufferManager.getShuffleData(
@@ -300,7 +301,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     sc = shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 1));
     assertEquals(StatusCode.NO_BUFFER, sc);
 
-    // size won't be reduce which should be processed by flushManager, reset buffer size to 0
+    // size won't be reduced which should be processed by flushManager, reset buffer size to 0
     shuffleBufferManager.resetSize();
     shuffleBufferManager.removeBuffer(appId);
     assertEquals(startPartitionNum, (int) ShuffleServerMetrics.gaugeTotalPartitionNum.get());
@@ -443,6 +444,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   public void flushSingleBufferTest() throws Exception {
     ShuffleServerConf shuffleConf = new ShuffleServerConf();
     File tmpDir = Files.createTempDir();
+    tmpDir.deleteOnExit();
     File dataDir = new File(tmpDir, "data");
     shuffleConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     shuffleConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(dataDir.getAbsolutePath()));

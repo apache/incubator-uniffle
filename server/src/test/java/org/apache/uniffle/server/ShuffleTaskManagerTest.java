@@ -166,7 +166,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     shuffleTaskManager.requireBuffer(10);
     shuffleTaskManager.requireBuffer(10);
     assertEquals(3, bufferIds.size());
-    // required buffer should be clear if doesn't receive data after timeout
+    // required buffer should be clear if it doesn't receive data after timeout
     Thread.sleep(6000);
     assertEquals(0, bufferIds.size());
 

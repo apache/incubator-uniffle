@@ -62,7 +62,7 @@ public class GrpcServerTest {
       final int index = i;
       executor.submit(() -> {
         try {
-          Thread.sleep(1000 * 2);
+          Thread.sleep(100 * 2);
         } catch (InterruptedException interruptedException) {
           interruptedException.printStackTrace();
         }
@@ -71,13 +71,15 @@ public class GrpcServerTest {
       });
     }
 
-    Thread.sleep(1000L);
+    Thread.sleep(100);
     double activeThreads = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY).get();
     assertEquals(2, activeThreads);
     double queueSize = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY).get();
     assertEquals(1, queueSize);
 
     countDownLatch.await();
+    // the metrics is updated afterExecute, which means it may take a while for the thread to decrease the metrics
+    Thread.sleep(100);
     activeThreads = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY).get();
     assertEquals(0, activeThreads);
     queueSize = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY).get();

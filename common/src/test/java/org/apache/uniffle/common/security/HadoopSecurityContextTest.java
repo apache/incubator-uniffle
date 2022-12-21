@@ -41,78 +41,71 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
 
   @Test
   public void testSecuredCallable() throws Exception {
-    HadoopSecurityContext context = new HadoopSecurityContext(
-        null,
-        kerberizedHdfs.getHdfsKeytab(),
-        kerberizedHdfs.getHdfsPrincipal(),
-        1000
-    );
+    try (HadoopSecurityContext context = new HadoopSecurityContext(
+              null,
+              kerberizedHdfs.getHdfsKeytab(),
+              kerberizedHdfs.getHdfsPrincipal(),
+              1000)) {
 
-    // case1: when user is empty or null, it should throw exception
-    try {
-      context.runSecured(StringUtils.EMPTY, (Callable<Void>) () -> null);
-      fail();
-    } catch (Exception e) {
-      return;
+      // case1: when user is empty or null, it should throw exception
+      try {
+        context.runSecured(StringUtils.EMPTY, (Callable<Void>) () -> null);
+        fail();
+      } catch (Exception e) {
+        return;
+      }
+
+      // case2: run by the login user, there is no need to wrap proxy action
+      Path pathWithHdfsUser = new Path("/hdfs/HadoopSecurityContextTest");
+      context.runSecured("hdfs", (Callable<Void>) () -> {
+        kerberizedHdfs.getFileSystem().mkdirs(pathWithHdfsUser);
+        return null;
+      });
+      FileStatus fileStatus = kerberizedHdfs.getFileSystem().getFileStatus(pathWithHdfsUser);
+      assertEquals("hdfs", fileStatus.getOwner());
+
+      // case3: run by the proxy user
+      Path pathWithAlexUser = new Path("/alex/HadoopSecurityContextTest");
+      context.runSecured("alex", (Callable<Void>) () -> {
+        kerberizedHdfs.getFileSystem().mkdirs(pathWithAlexUser);
+        return null;
+      });
+      fileStatus = kerberizedHdfs.getFileSystem().getFileStatus(pathWithAlexUser);
+      assertEquals("alex", fileStatus.getOwner());
+
     }
-
-    // case2: run by the login user, there is no need to wrap proxy action
-    Path pathWithHdfsUser = new Path("/hdfs/HadoopSecurityContextTest");
-    context.runSecured("hdfs", (Callable<Void>) () -> {
-      kerberizedHdfs.getFileSystem().mkdirs(pathWithHdfsUser);
-      return null;
-    });
-    FileStatus fileStatus = kerberizedHdfs.getFileSystem().getFileStatus(pathWithHdfsUser);
-    assertEquals("hdfs", fileStatus.getOwner());
-
-    // case3: run by the proxy user
-    Path pathWithAlexUser = new Path("/alex/HadoopSecurityContextTest");
-    context.runSecured("alex", (Callable<Void>) () -> {
-      kerberizedHdfs.getFileSystem().mkdirs(pathWithAlexUser);
-      return null;
-    });
-    fileStatus = kerberizedHdfs.getFileSystem().getFileStatus(pathWithAlexUser);
-    assertEquals("alex", fileStatus.getOwner());
-
-    context.close();
   }
 
   @Test
   public void testCreateIllegalContext() throws Exception {
     // case1: lack principal, should throw exception
-    try {
-      HadoopSecurityContext context = new HadoopSecurityContext(
-          null,
-          kerberizedHdfs.getHdfsKeytab(),
-          null,
-          1000
-      );
+    try (HadoopSecurityContext context = new HadoopSecurityContext(
+            null,
+            kerberizedHdfs.getHdfsKeytab(),
+            null,
+            1000)) {
       fail();
     } catch (Exception e) {
       assertTrue(e.getMessage().contains("principal must be not null or empty"));
     }
 
     // case2: lack keytab, should throw exception
-    try {
-      HadoopSecurityContext context = new HadoopSecurityContext(
-          null,
-          null,
-          kerberizedHdfs.getHdfsPrincipal(),
-          1000
-      );
+    try (HadoopSecurityContext context = new HadoopSecurityContext(
+            null,
+            null,
+            kerberizedHdfs.getHdfsPrincipal(),
+            1000)) {
       fail();
     } catch (Exception e) {
       assertTrue(e.getMessage().contains("KeytabFilePath must be not null or empty"));
     }
 
-    // case3: illegal relogin interval sec
-    try {
-      HadoopSecurityContext context = new HadoopSecurityContext(
-          null,
-          kerberizedHdfs.getHdfsKeytab(),
-          kerberizedHdfs.getHdfsPrincipal(),
-          0
-      );
+    // case3: illegal re-login interval sec
+    try (HadoopSecurityContext context = new HadoopSecurityContext(
+            null,
+            kerberizedHdfs.getHdfsKeytab(),
+            kerberizedHdfs.getHdfsPrincipal(),
+            0)) {
       fail();
     } catch (Exception e) {
       assertTrue(e.getMessage().contains("refreshIntervalSec must be not negative"));
@@ -121,13 +114,11 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
     // case4: lack krb5 conf, should throw exception
     String krbConfFilePath = System.getProperty("java.security.krb5.conf");
     System.clearProperty("java.security.krb5.conf");
-    try {
-      HadoopSecurityContext context = new HadoopSecurityContext(
-          null,
-          kerberizedHdfs.getHdfsKeytab(),
-          kerberizedHdfs.getHdfsPrincipal(),
-          100
-      );
+    try (HadoopSecurityContext context = new HadoopSecurityContext(
+              null,
+              kerberizedHdfs.getHdfsKeytab(),
+              kerberizedHdfs.getHdfsPrincipal(),
+              100)) {
       fail();
     } catch (Exception e) {
       assertTrue(e.getMessage().contains("Cannot locate KDC"));
@@ -135,11 +126,12 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
 
     // case5: After setting the krb5 conf, it should pass
     HadoopSecurityContext context = new HadoopSecurityContext(
-        krbConfFilePath,
-        kerberizedHdfs.getHdfsKeytab(),
-        kerberizedHdfs.getHdfsPrincipal(),
-        100
+            krbConfFilePath,
+            kerberizedHdfs.getHdfsKeytab(),
+            kerberizedHdfs.getHdfsPrincipal(),
+            100
     );
+    context.close();
 
     // recover System property of krb5 conf
     System.setProperty("java.security.krb5.conf", krbConfFilePath);

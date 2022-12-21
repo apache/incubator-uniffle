@@ -24,6 +24,7 @@ import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import java.net.BindException;
 import java.net.ServerSocket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.PrivilegedExceptionAction;
@@ -81,7 +82,7 @@ public class KerberizedHdfs implements Serializable {
 
   private Class testRunnerCls = KerberizedHdfs.class;
 
-  // The super user for accessing HDFS
+  // The superuser for accessing HDFS
   private String hdfsKeytab;
   private String hdfsPrincipal;
   // The normal user of alex for accessing HDFS
@@ -127,7 +128,7 @@ public class KerberizedHdfs implements Serializable {
     String oneFileContent = "test content";
     FSDataOutputStream fsDataOutputStream =
         writeFs.create(new org.apache.hadoop.fs.Path("/alex/basic.txt"));
-    BufferedWriter br = new BufferedWriter(new OutputStreamWriter(fsDataOutputStream, "UTF-8"));
+    BufferedWriter br = new BufferedWriter(new OutputStreamWriter(fsDataOutputStream, StandardCharsets.UTF_8));
     br.write(oneFileContent);
     br.close();
 
@@ -156,7 +157,7 @@ public class KerberizedHdfs implements Serializable {
 
     conf.set(
         CommonConfigurationKeysPublic.HADOOP_SECURITY_IMPERSONATION_PROVIDER_CLASS,
-        "org.apache.uniffle.common.KerberizedHdfs$TestDummyImpersonationProvider");
+        TestDummyImpersonationProvider.class.getName());
 
     String keystoresDir = kerberizedDfsBaseDir.toFile().getAbsolutePath();
     String sslConfDir = KeyStoreTestUtil.getClasspathDir(testRunnerCls);

@@ -78,16 +78,16 @@ public class AccessManagerTest {
         .isSuccess());
     accessManager.close();
     // test mock checkers
+    String alwaysTrueClassName = MockAccessCheckerAlwaysTrue.class.getName();
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
-        "org.apache.uniffle.coordinator.access.AccessManagerTest$MockAccessCheckerAlwaysTrue,");
+        alwaysTrueClassName + ",");
     accessManager = new AccessManager(conf, null,
         applicationManager.getQuotaManager(), new Configuration());
     assertEquals(1, accessManager.getAccessCheckers().size());
     assertTrue(accessManager.handleAccessRequest(new AccessInfo("mock1")).isSuccess());
     assertTrue(accessManager.handleAccessRequest(new AccessInfo("mock2")).isSuccess());
-    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
-        "org.apache.uniffle.coordinator.access.AccessManagerTest$MockAccessCheckerAlwaysTrue,"
-            + "org.apache.uniffle.coordinator.access.AccessManagerTest$MockAccessCheckerAlwaysFalse");
+    String alwaysFalseClassName = MockAccessCheckerAlwaysFalse.class.getName();
+    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(), alwaysTrueClassName + "," + alwaysFalseClassName);
     accessManager = new AccessManager(conf, null,
         applicationManager.getQuotaManager(), new Configuration());
     assertEquals(2, accessManager.getAccessCheckers().size());

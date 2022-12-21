@@ -270,7 +270,7 @@ public class PartitionBalanceAssignmentStrategyTest {
     );
 
     /**
-     * case5: user specify the legal shuffle node num, but cluster dont have enough servers,
+     * case5: user specify the legal shuffle node num, but cluster don't have enough servers,
      * it will return the remaining servers.
      */
     serverTags = Sets.newHashSet("tag-2");

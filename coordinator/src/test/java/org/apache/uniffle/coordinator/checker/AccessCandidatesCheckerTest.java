@@ -63,8 +63,8 @@ public class AccessCandidatesCheckerTest {
         getClass().getClassLoader().getResource("coordinator.conf")).getFile();
     CoordinatorConf conf = new CoordinatorConf(filePath);
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, tempDir.toURI().toString());
-    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
-        "org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker");
+    String checkerClassName = AccessCandidatesChecker.class.getName();
+    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(), checkerClassName);
     final ApplicationManager applicationManager = new ApplicationManager(conf);
     // file load checking at startup
     Exception expectedException = null;

@@ -26,6 +26,7 @@ import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -70,6 +71,7 @@ public class TestUtils {
       assertNotNull(bs);
       byte[] data = new byte[bs.getLength()];
       System.arraycopy(buffer, bs.getOffset(), data, 0, bs.getLength());
+      assertArrayEquals(entry.getValue(), data);
     }
   }
 

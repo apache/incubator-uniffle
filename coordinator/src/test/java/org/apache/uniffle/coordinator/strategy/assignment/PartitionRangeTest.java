@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.apache.uniffle.common.PartitionRange;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 public class PartitionRangeTest {
 
@@ -30,7 +30,7 @@ public class PartitionRangeTest {
   public void test() {
     PartitionRange range1 = new PartitionRange(0, 5);
     PartitionRange range2 = new PartitionRange(0, 5);
-    assertFalse(range1 == range2);
+    assertNotSame(range1, range2);
     assertEquals(range1, range2);
     assertEquals(0, range1.getStart());
     assertEquals(5, range1.getEnd());

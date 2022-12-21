@@ -17,7 +17,7 @@
 
 package org.apache.spark.shuffle;
 
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
@@ -44,22 +44,25 @@ public class RssSparkShuffleUtilsTest {
     SparkConf conf = new SparkConf();
 
     /**
-     * Case1: dont set the tag implicitly and will return the {@code Constants.SHUFFLE_SERVER_VERSION}
+     * Case 1: don't set the tag implicitly and will return the {@code Constants.SHUFFLE_SERVER_VERSION}
       */
     Set<String> tags = RssSparkShuffleUtils.getAssignmentTags(conf);
     assertEquals(Constants.SHUFFLE_SERVER_VERSION, tags.iterator().next());
 
     /**
-     * Case2: set the multiple tags implicitly and will return the {@code Constants.SHUFFLE_SERVER_VERSION}
+     * Case 2: set the multiple tags implicitly and will return the {@code Constants.SHUFFLE_SERVER_VERSION}
      * and configured tags.
      */
     conf.set(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_TAGS.key(), " a,b");
     tags = RssSparkShuffleUtils.getAssignmentTags(conf);
     assertEquals(3, tags.size());
-    Iterator<String> iterator = tags.iterator();
-    assertEquals("a", iterator.next());
-    assertEquals("b", iterator.next());
-    assertEquals(Constants.SHUFFLE_SERVER_VERSION, iterator.next());
+    assertTrue(tags.containsAll(Arrays.asList("a", "b", Constants.SHUFFLE_SERVER_VERSION)));
+
+    // Case 3: tags with extra space padding
+    conf.set(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_TAGS.key(), " a,b,c   ");
+    tags = RssSparkShuffleUtils.getAssignmentTags(conf);
+    assertEquals(4, tags.size());
+    assertTrue(tags.containsAll(Arrays.asList("a", "b", "c", Constants.SHUFFLE_SERVER_VERSION)));
   }
 
   @Test
