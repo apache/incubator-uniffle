@@ -26,9 +26,12 @@ import picocli.CommandLine;
 import org.apache.uniffle.common.Arguments;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
+import org.apache.uniffle.common.metrics.MetricReporter;
+import org.apache.uniffle.common.metrics.MetricReporterFactory;
 import org.apache.uniffle.common.rpc.ServerInterface;
 import org.apache.uniffle.common.security.SecurityConfig;
 import org.apache.uniffle.common.security.SecurityContextFactory;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.web.CommonMetricsServlet;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
@@ -58,6 +61,8 @@ public class CoordinatorServer {
   private AccessManager accessManager;
   private ApplicationManager applicationManager;
   private GRPCMetrics grpcMetrics;
+  private MetricReporter metricReporter;
+  private String id;
 
   public CoordinatorServer(CoordinatorConf coordinatorConf) throws Exception {
     this.coordinatorConf = coordinatorConf;
@@ -117,11 +122,22 @@ public class CoordinatorServer {
     if (clientConfManager != null) {
       clientConfManager.close();
     }
+    if (metricReporter != null) {
+      metricReporter.stop();
+      LOG.info("Metric Reporter Stopped!");
+    }
     SecurityContextFactory.get().getSecurityContext().close();
     server.stop();
   }
 
   private void initialization() throws Exception {
+    String ip = RssUtils.getHostIp();
+    if (ip == null) {
+      throw new RuntimeException("Couldn't acquire host Ip");
+    }
+    int port = coordinatorConf.getInteger(CoordinatorConf.RPC_SERVER_PORT);
+    id = ip + "-" + port;
+    LOG.info("Start to initialize coordinator {}", id);
     jettyServer = new JettyServer(coordinatorConf);
     // register metrics first to avoid NPE problem when add dynamic metrics
     registerMetrics();
@@ -153,7 +169,7 @@ public class CoordinatorServer {
     server = coordinatorFactory.getServer();
   }
 
-  private void registerMetrics() {
+  private void registerMetrics() throws Exception {
     LOG.info("Register metrics");
     CollectorRegistry coordinatorCollectorRegistry = new CollectorRegistry(true);
     CoordinatorMetrics.register(coordinatorCollectorRegistry);
@@ -182,6 +198,13 @@ public class CoordinatorServer {
     jettyServer.addServlet(
         new CommonMetricsServlet(JvmMetrics.getCollectorRegistry(), true),
         "/prometheus/metrics/jvm");
+
+    metricReporter = MetricReporterFactory.getMetricReporter(coordinatorConf,  id);
+    if (metricReporter != null) {
+      metricReporter.addCollectorRegistry(CoordinatorMetrics.getCollectorRegistry());
+      metricReporter.addCollectorRegistry(grpcMetrics.getCollectorRegistry());
+      metricReporter.addCollectorRegistry(JvmMetrics.getCollectorRegistry());
+    }
   }
 
   public ClusterManager getClusterManager() {

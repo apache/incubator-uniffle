@@ -501,7 +501,11 @@
         <artifactId>simpleclient_servlet</artifactId>
         <version>${prometheus.simpleclient.version}</version>
       </dependency>
-
+      <dependency>
+        <groupId>io.prometheus</groupId>
+        <artifactId>simpleclient_pushgateway</artifactId>
+        <version>${prometheus.simpleclient.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.awaitility</groupId>
         <artifactId>awaitility</artifactId>
