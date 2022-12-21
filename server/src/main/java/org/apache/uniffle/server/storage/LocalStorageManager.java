@@ -256,10 +256,13 @@ public class LocalStorageManager extends SingleStorageManager {
               event.getShuffleIds()
           );
     }
+    long startTime = System.currentTimeMillis();
     deleteElement(
         partitionsOfStorage,
         deleteConditionFunc
     );
+    LOG.info("Cleaning the storage selection cache costs: {}(ms) for event: {}",
+        System.currentTimeMillis() - startTime, event);
   }
 
   private <K, V> void deleteElement(Map<K, V> map, Function<K, Boolean> deleteConditionFunc) {
