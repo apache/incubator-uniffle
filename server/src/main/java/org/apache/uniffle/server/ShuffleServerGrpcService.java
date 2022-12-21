@@ -77,7 +77,9 @@ import org.apache.uniffle.proto.RssProtos.ShufflePartitionRange;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterRequest;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterResponse;
 import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerImplBase;
+import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
+import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
@@ -511,9 +513,15 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String requestInfo = "appId[" + appId + "], shuffleId[" + shuffleId + "], partitionId["
         + partitionId + "]" + "offset[" + offset + "]" + "length[" + length + "]";
 
-    shuffleServer.getStorageManager()
-        .selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId))
-        .updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
+    int[] range = ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
+    Storage storage = shuffleServer
+        .getStorageManager()
+        .selectStorage(
+            new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0])
+        );
+    if (storage != null) {
+      storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
+    }
 
     if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(length)) {
       try {
@@ -571,10 +579,12 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String requestInfo = "appId[" + appId + "], shuffleId[" + shuffleId + "], partitionId["
         + partitionId + "]";
 
-    shuffleServer.getStorageManager()
-        .selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId))
-        .updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
-
+    int[] range = ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
+    Storage storage = shuffleServer.getStorageManager()
+        .selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0]));
+    if (storage != null) {
+      storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
+    }
     // Index file is expected small size and won't cause oom problem with the assumed size. An index segment is 40B,
     // with the default size - 2MB, it can support 50k blocks for shuffle data.
     long assumedFileSize = shuffleServer

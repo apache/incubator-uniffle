@@ -87,9 +87,13 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
   public void localWriteReadTest() throws Exception {
     String testAppId = "localWriteReadTest";
     RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest(testAppId, 0,
-        Lists.newArrayList(new PartitionRange(0, 1)), "");
+        Lists.newArrayList(new PartitionRange(0, 0)), "");
     shuffleServerClient.registerShuffle(rrsr);
-    rrsr = new RssRegisterShuffleRequest(testAppId, 0, Lists.newArrayList(new PartitionRange(2, 3)), "");
+    rrsr = new RssRegisterShuffleRequest(testAppId, 0, Lists.newArrayList(new PartitionRange(1, 1)), "");
+    shuffleServerClient.registerShuffle(rrsr);
+    rrsr = new RssRegisterShuffleRequest(testAppId, 0, Lists.newArrayList(new PartitionRange(2, 2)), "");
+    shuffleServerClient.registerShuffle(rrsr);
+    rrsr = new RssRegisterShuffleRequest(testAppId, 0, Lists.newArrayList(new PartitionRange(3, 3)), "");
     shuffleServerClient.registerShuffle(rrsr);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
@@ -113,20 +117,20 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
     final Set<Long> expectedBlockIds3 = transBitmapToSet(bitmaps[2]);
     final Set<Long> expectedBlockIds4 = transBitmapToSet(bitmaps[3]);
     ShuffleDataResult sdr  = readShuffleData(
-        shuffleServerClient, testAppId, 0, 0, 2,
-        10, 1000, 0);
+        shuffleServerClient, testAppId, 0, 0, 1,
+        4, 1000, 0);
     validateResult(sdr, expectedBlockIds1, expectedData, 0);
     sdr  = readShuffleData(
-        shuffleServerClient, testAppId, 0, 1, 2,
-        10, 1000, 0);
+        shuffleServerClient, testAppId, 0, 1, 1,
+        4, 1000, 0);
     validateResult(sdr, expectedBlockIds2, expectedData, 1);
     sdr  = readShuffleData(
-        shuffleServerClient, testAppId, 0, 2, 2,
-        10, 1000, 0);
+        shuffleServerClient, testAppId, 0, 2, 1,
+        4, 1000, 0);
     validateResult(sdr, expectedBlockIds3, expectedData, 2);
     sdr  = readShuffleData(
-        shuffleServerClient, testAppId, 0, 3, 2,
-        10, 1000, 0);
+        shuffleServerClient, testAppId, 0, 3, 1,
+        4, 1000, 0);
     validateResult(sdr, expectedBlockIds4, expectedData, 3);
 
     assertNotNull(shuffleServers.get(0).getShuffleTaskManager()
