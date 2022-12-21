@@ -329,7 +329,7 @@ public class ShuffleTaskManager {
               appId,
               shuffleId,
               partitionId,
-              new int[]{entry.getKey().lowerEndpoint(), entry.getKey().upperEndpoint()}
+              entry.getKey().lowerEndpoint()
           )
       );
       // update shuffle's timestamp that was recently read.
@@ -403,7 +403,7 @@ public class ShuffleTaskManager {
     request.setStorageType(storageType);
     request.setRssBaseConf(conf);
     int[] range = ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
-    Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range));
+    Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0]));
     if (storage == null) {
       throw new FileNotFoundException("No such data stored in current storage manager.");
     }
@@ -428,7 +428,7 @@ public class ShuffleTaskManager {
     request.setStorageType(storageType);
     request.setRssBaseConf(conf);
     int[] range = ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
-    Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range));
+    Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0]));
     if (storage == null) {
       throw new FileNotFoundException("No such data in current storage manager.");
     }

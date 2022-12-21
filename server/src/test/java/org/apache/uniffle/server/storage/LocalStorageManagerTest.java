@@ -121,7 +121,7 @@ public class LocalStorageManagerTest {
     ShuffleDataFlushEvent dataFlushEvent2 = toDataFlushEvent(appId, 1, 1);
     Storage storage2 = localStorageManager.selectStorage(dataFlushEvent2);
 
-    ShuffleDataReadEvent dataReadEvent = new ShuffleDataReadEvent(appId, 1, 1, new int[]{1, 1});
+    ShuffleDataReadEvent dataReadEvent = new ShuffleDataReadEvent(appId, 1, 1, 1);
     Storage storage3 = localStorageManager.selectStorage(dataReadEvent);
     assertEquals(storage1, storage2);
     assertEquals(storage1, storage3);

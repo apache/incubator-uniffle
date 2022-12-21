@@ -24,11 +24,11 @@ public class ShuffleDataReadEvent {
   private int partitionId;
   private int startPartition;
 
-  public ShuffleDataReadEvent(String appId, int shuffleId, int partitionId, int[] range) {
+  public ShuffleDataReadEvent(String appId, int shuffleId, int partitionId, int startPartitionOfRange) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
-    this.startPartition = range[0];
+    this.startPartition = startPartitionOfRange;
   }
 
   public String getAppId() {
