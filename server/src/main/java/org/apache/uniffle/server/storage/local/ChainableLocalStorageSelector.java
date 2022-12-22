@@ -59,7 +59,12 @@ public class ChainableLocalStorageSelector extends AbstractCacheableStorageSelec
     int shuffleId = event.getShuffleId();
     int partitionId = event.getStartPartition();
 
-    LocalStorageView view = storageOfPartitions.get(getKey(event));
+    String cacheKey = UnionKey.buildKey(
+        event.getAppId(),
+        event.getShuffleId(),
+        event.getStartPartition()
+    );
+    LocalStorageView view = storageOfPartitions.get(cacheKey);
     LocalStorage lastStorage = null;
     if (view != null) {
       lastStorage = view.getLatest();
@@ -94,7 +99,7 @@ public class ChainableLocalStorageSelector extends AbstractCacheableStorageSelec
 
     final LocalStorage previousStorage = lastStorage;
     storageOfPartitions.compute(
-        getKey(event),
+        cacheKey,
         (key, storageView) -> {
           if (storageView == null) {
             return new LocalStorageView(selected);
@@ -114,18 +119,16 @@ public class ChainableLocalStorageSelector extends AbstractCacheableStorageSelec
     return selected;
   }
 
-  private String getKey(ShuffleDataFlushEvent event) {
-    return UnionKey.buildKey(
-        event.getAppId(),
-        event.getShuffleId(),
-        event.getStartPartition()
-    );
-  }
-
   @Override
   public Storage getForReader(ShuffleDataReadEvent event) {
     try {
-      LocalStorageView view = storageOfPartitions.get(getKey(event));
+      LocalStorageView view = storageOfPartitions.get(
+          UnionKey.buildKey(
+              event.getAppId(),
+              event.getShuffleId(),
+              event.getStartPartition()
+          )
+      );
       if (view == null) {
         return null;
       }
@@ -163,13 +166,5 @@ public class ChainableLocalStorageSelector extends AbstractCacheableStorageSelec
         iterator.remove();
       }
     }
-  }
-
-  private String getKey(ShuffleDataReadEvent event) {
-    return UnionKey.buildKey(
-        event.getAppId(),
-        event.getShuffleId(),
-        event.getStartPartition()
-    );
   }
 }
