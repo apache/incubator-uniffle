@@ -34,19 +34,19 @@ public class ChainableLocalStorageView {
     localStorages.add(localStorage);
   }
 
-  public synchronized void switchTo(LocalStorage localStorage) {
+  public void switchTo(LocalStorage localStorage) {
     localStorages.add(localStorage);
   }
 
-  public synchronized LocalStorage get() {
+  public LocalStorage get() {
     return localStorages.get(localStorages.size() - 1);
-  }
-
-  public synchronized void remove(LocalStorage localStorage) {
-    localStorages.remove(localStorage);
   }
 
   public LocalStorage get(int index) {
     return localStorages.get(index);
+  }
+
+  public void remove(LocalStorage localStorage) {
+    localStorages.remove(localStorage);
   }
 }
