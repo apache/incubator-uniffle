@@ -75,7 +75,7 @@ public class ShuffleTaskManager {
   private final ScheduledExecutorService scheduledExecutorService;
   private final ScheduledExecutorService expiredAppCleanupExecutorService;
   private final ScheduledExecutorService leakShuffleDataCheckExecutorService;
-  private final ScheduledExecutorService triggerFlushExecutorService;
+  private ScheduledExecutorService triggerFlushExecutorService;
   private final StorageManager storageManager;
   private AtomicLong requireBufferId = new AtomicLong(0);
   private ShuffleServerConf conf;
@@ -83,7 +83,7 @@ public class ShuffleTaskManager {
   private long preAllocationExpired;
   private long commitCheckIntervalMax;
   private long leakShuffleDataCheckInterval;
-  private long triggerFLushInterval;
+  private long triggerFlushInterval;
   // appId -> shuffleId -> blockIds to avoid too many appId
   // store taskAttemptId info to filter speculation task
   // Roaring64NavigableMap instance will cost much memory,
@@ -111,7 +111,7 @@ public class ShuffleTaskManager {
     this.commitCheckIntervalMax = conf.getLong(ShuffleServerConf.SERVER_COMMIT_CHECK_INTERVAL_MAX);
     this.preAllocationExpired = conf.getLong(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED);
     this.leakShuffleDataCheckInterval = conf.getLong(ShuffleServerConf.SERVER_LEAK_SHUFFLE_DATA_CHECK_INTERVAL);
-    this.triggerFLushInterval = conf.getLong(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL);
+    this.triggerFlushInterval = conf.getLong(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL);
     // the thread for checking application status
     this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("checkResource-%d"));
@@ -128,12 +128,12 @@ public class ShuffleTaskManager {
     leakShuffleDataCheckExecutorService.scheduleAtFixedRate(
         () -> checkLeakShuffleData(), leakShuffleDataCheckInterval,
             leakShuffleDataCheckInterval, TimeUnit.MILLISECONDS);
-    this.triggerFlushExecutorService = Executors.newSingleThreadScheduledExecutor(
-            ThreadUtils.getThreadFactory("triggerShuffleBufferManagerFlush"));
-    if (triggerFLushInterval > 0) {
-      triggerFlushExecutorService.scheduleAtFixedRate(
-              this::triggerFlush, triggerFLushInterval / 2,
-              triggerFLushInterval, TimeUnit.MILLISECONDS);
+    if (triggerFlushInterval > 0) {
+      triggerFlushExecutorService = Executors.newSingleThreadScheduledExecutor(
+          ThreadUtils.getThreadFactory("triggerShuffleBufferManagerFlush"));
+      triggerFlushExecutorService.scheduleWithFixedDelay(
+              this::triggerFlush, triggerFlushInterval / 2,
+          triggerFlushInterval, TimeUnit.MILLISECONDS);
     }
     // the thread for clear expired resources
     clearResourceThread = () -> {

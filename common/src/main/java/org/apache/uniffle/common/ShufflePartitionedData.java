@@ -49,4 +49,15 @@ public class ShufflePartitionedData {
     return blockList;
   }
 
+  public int getTotalBlockSize() {
+    if (blockList == null) {
+      return 0;
+    }
+    int size = 0;
+    for (ShufflePartitionedBlock block : blockList) {
+      size += block.getSize();
+    }
+    return size;
+  }
+
 }

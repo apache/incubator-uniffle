@@ -232,6 +232,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       }
       final long start = System.currentTimeMillis();
       List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);
+      int alreadyReleasedSize = 0;
       for (ShufflePartitionedData spd : shufflePartitionedData) {
         String shuffleDataInfo = "appId[" + appId + "], shuffleId[" + shuffleId
             + "], partitionId[" + spd.getPartitionId() + "]";
@@ -244,6 +245,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             responseMessage = errorMsg;
             break;
           } else {
+            int toReleasedSize = spd.getTotalBlockSize();
+            // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
+            manager.releasePreAllocatedSize(toReleasedSize);
+            alreadyReleasedSize += toReleasedSize;
             manager.updateCachedBlockIds(appId, shuffleId, spd.getBlockList());
           }
         } catch (Exception e) {
@@ -258,7 +263,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       // since the required buffer id is only used once, the shuffle client would try to require another buffer whether
       // current connection succeeded or not. Therefore, the preAllocatedBuffer is first get and removed, then after
       // cacheShuffleData finishes, the preAllocatedSize should be updated accordingly.
-      manager.releasePreAllocatedSize(info.getRequireSize());
+      if (info.getRequireSize() > alreadyReleasedSize) {
+        manager.releasePreAllocatedSize(info.getRequireSize() - alreadyReleasedSize);
+      }
       reply = SendShuffleDataResponse.newBuilder().setStatus(valueOf(ret)).setRetMsg(responseMessage).build();
       long costTime = System.currentTimeMillis() - start;
       shuffleServer.getGrpcMetrics().recordProcessTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, costTime);
