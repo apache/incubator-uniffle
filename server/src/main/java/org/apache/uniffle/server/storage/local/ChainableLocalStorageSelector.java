@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.UnionKey;
-import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -126,9 +125,14 @@ public class ChainableLocalStorageSelector extends AbstractCacheableStorageSelec
   @Override
   public Storage getForReader(ShuffleDataReadEvent event) {
     try {
-      return storageOfPartitions.get(getKey(event)).get(event.getStorageIndex());
+      LocalStorageView view = storageOfPartitions.get(getKey(event));
+      if (view == null) {
+        return null;
+      }
+      return view.get(event.getStorageIndex());
     } catch (IndexOutOfBoundsException exception) {
-      throw new FileNotFoundException("No such local storage for event: " + event);
+      LOGGER.error("No such local storage for event: " + event);
+      return null;
     }
   }
 

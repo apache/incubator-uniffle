@@ -517,7 +517,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     Storage storage = shuffleServer
         .getStorageManager()
         .selectStorage(
-            new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0])
+            new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0], request.getStorageId())
         );
     if (storage != null) {
       storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
@@ -584,7 +584,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
     int[] range = ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
     Storage storage = shuffleServer.getStorageManager()
-        .selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0]));
+        .selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0], request.getStorageId()));
     if (storage != null) {
       storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
     }
