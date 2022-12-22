@@ -27,7 +27,12 @@ public class ShuffleDataReadEvent {
   private int startPartition;
   private int storageIndex = 0;
 
-  public ShuffleDataReadEvent(String appId, int shuffleId, int partitionId, int startPartitionOfRange, int storageIndex) {
+  public ShuffleDataReadEvent(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int startPartitionOfRange,
+      int storageIndex) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
