@@ -27,7 +27,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
-import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -40,6 +39,7 @@ import static org.apache.uniffle.server.ShuffleServerConf.RSS_LOCAL_STORAGE_MULT
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -157,14 +157,9 @@ public class LocalStorageManagerTest {
     assertEquals(storage1, localStorageManager.selectStorage(dataReadEvent1));
     ShuffleDataReadEvent dataReadEvent2 = new ShuffleDataReadEvent(appId, 1, 1, 1, 1);
     assertEquals(storage3, localStorageManager.selectStorage(dataReadEvent2));
-    // if selecting storage for out-of-range storage id, it will throw FileNotFound exception.
+    // if selecting storage for out-of-range storage id, it will return null
     ShuffleDataReadEvent dataReadEvent3 = new ShuffleDataReadEvent(appId, 1, 1, 1, 2);
-    try {
-      localStorageManager.selectStorage(dataReadEvent3);
-      fail();
-    } catch (FileNotFoundException exception) {
-      // ignore
-    }
+    assertNull(localStorageManager.selectStorage(dataReadEvent3));
   }
 
   @Test
