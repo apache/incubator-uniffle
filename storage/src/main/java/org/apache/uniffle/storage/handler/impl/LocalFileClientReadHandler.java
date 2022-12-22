@@ -37,7 +37,7 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
   private final int partitionNumPerRange;
   private final int partitionNum;
   private ShuffleServerClient shuffleServerClient;
-  private int storageIndex = 0;
+  private int storageIndex;
 
   public LocalFileClientReadHandler(
       String appId,
@@ -83,6 +83,7 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
     this.shuffleServerClient = shuffleServerClient;
     this.partitionNumPerRange = partitionNumPerRange;
     this.partitionNum = partitionNum;
+    this.storageIndex = 0;
   }
 
   /**

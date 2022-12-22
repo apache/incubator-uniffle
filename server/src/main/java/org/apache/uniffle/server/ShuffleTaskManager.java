@@ -402,9 +402,10 @@ public class ShuffleTaskManager {
     request.setPartitionNum(partitionNum);
     request.setStorageType(storageType);
     request.setRssBaseConf(conf);
-    request.setStorageSeqIndex(storageId);
     int[] range = ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
-    Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0]));
+    Storage storage = storageManager.selectStorage(
+        new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0], storageId)
+    );
     if (storage == null) {
       throw new FileNotFoundException("No such data stored in current storage manager.");
     }
@@ -429,9 +430,10 @@ public class ShuffleTaskManager {
     request.setPartitionNum(partitionNum);
     request.setStorageType(storageType);
     request.setRssBaseConf(conf);
-    request.setStorageSeqIndex(storageId);
     int[] range = ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
-    Storage storage = storageManager.selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0]));
+    Storage storage = storageManager.selectStorage(
+        new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0], storageId)
+    );
     if (storage == null) {
       throw new FileNotFoundException("No such data in current storage manager.");
     }

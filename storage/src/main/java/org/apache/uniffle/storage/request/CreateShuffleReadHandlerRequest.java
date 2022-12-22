@@ -46,8 +46,6 @@ public class CreateShuffleReadHandlerRequest {
   private ShuffleDataDistributionType distributionType;
   private Roaring64NavigableMap expectTaskIds;
   private boolean expectedTaskIdsBitmapFilterEnable;
-  private int storageSeqIndex;
-
   private IdHelper idHelper;
 
   public CreateShuffleReadHandlerRequest() {
@@ -195,13 +193,5 @@ public class CreateShuffleReadHandlerRequest {
 
   public void setIdHelper(IdHelper idHelper) {
     this.idHelper = idHelper;
-  }
-
-  public int getStorageSeqIndex() {
-    return storageSeqIndex;
-  }
-
-  public void setStorageSeqIndex(int storageSeqIndex) {
-    this.storageSeqIndex = storageSeqIndex;
   }
 }
