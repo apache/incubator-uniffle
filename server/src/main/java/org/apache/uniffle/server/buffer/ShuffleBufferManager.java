@@ -59,6 +59,9 @@ public class ShuffleBufferManager {
   private long lowWaterMark;
   private boolean bufferFlushEnabled;
   private long bufferFlushThreshold;
+  // when shuffle buffer manager flushes data, shuffles with data size < shuffleFlushThreshold is kept in memory to
+  // reduce small I/Os to persistent storage, especially for local HDDs.
+  private long shuffleFlushThreshold;
 
   protected long bufferSize = 0;
   protected AtomicLong preAllocatedSize = new AtomicLong(0L);
@@ -82,6 +85,7 @@ public class ShuffleBufferManager {
         * conf.get(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE));
     this.bufferFlushEnabled = conf.getBoolean(ShuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED);
     this.bufferFlushThreshold = conf.getLong(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD);
+    this.shuffleFlushThreshold = conf.getLong(ShuffleServerConf.SERVER_SHUFFLE_FLUSH_THRESHOLD);
   }
 
   public StatusCode registerBuffer(String appId, int shuffleId, int startPartition, int endPartition) {
@@ -192,6 +196,7 @@ public class ShuffleBufferManager {
   public void flushIfNecessary() {
     // if data size in buffer > highWaterMark, do the flush
     if (usedMemory.get() - preAllocatedSize.get() - inFlushSize.get() > highWaterMark) {
+      // todo: add a metric here to track how many times flush occurs.
       LOG.info("Start to flush with usedMemory[{}], preAllocatedSize[{}], inFlushSize[{}]",
           usedMemory.get(), preAllocatedSize.get(), inFlushSize.get());
       Map<String, Set<Integer>> pickedShuffle = pickFlushedShuffle();
@@ -429,20 +434,28 @@ public class ShuffleBufferManager {
     long expectedFlushSize = highWaterMark - lowWaterMark;
     long pickedFlushSize = 0L;
     int printIndex = 0;
+    int printIgnoreIndex = 0;
     int printMax = 10;
     for (Map.Entry<String, AtomicLong> entry : sizeList) {
       long size = entry.getValue().get();
-      pickedFlushSize += size;
       String appIdShuffleIdKey = entry.getKey();
-      addPickedShuffle(appIdShuffleIdKey, pickedShuffle);
-      // print detail picked info
-      if (printIndex < printMax) {
-        LOG.info("Pick application_shuffleId[{}] with {} bytes", appIdShuffleIdKey, size);
-        printIndex++;
-      }
-      if (pickedFlushSize > expectedFlushSize) {
-        LOG.info("Finish flush pick with {} bytes", pickedFlushSize);
-        break;
+      if (size > this.shuffleFlushThreshold) {
+        pickedFlushSize += size;
+        addPickedShuffle(appIdShuffleIdKey, pickedShuffle);
+        // print detail picked info
+        if (printIndex < printMax) {
+          LOG.info("Pick application_shuffleId[{}] with {} bytes", appIdShuffleIdKey, size);
+          printIndex++;
+        }
+        if (pickedFlushSize > expectedFlushSize) {
+          LOG.info("Finish flush pick with {} bytes", pickedFlushSize);
+          break;
+        }
+      } else {
+        if (printIgnoreIndex < printMax) {
+          LOG.info("Ignore application_shuffleId[{}] with {} bytes", appIdShuffleIdKey, size);
+          printIgnoreIndex++;
+        }
       }
     }
     return pickedShuffle;

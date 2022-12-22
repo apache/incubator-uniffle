@@ -309,10 +309,10 @@ public class ShuffleServerConf extends RssBaseConf {
       .withDescription("The timeout of the cache which record the mapping information");
 
   public static final ConfigOption<Long> SERVER_LEAK_SHUFFLE_DATA_CHECK_INTERVAL = ConfigOptions
-          .key("rss.server.leak.shuffledata.check.interval")
-          .longType()
-          .defaultValue(3600 * 1000L)
-          .withDescription("the interval of leak shuffle data check");
+      .key("rss.server.leak.shuffledata.check.interval")
+      .longType()
+      .defaultValue(3600 * 1000L)
+      .withDescription("the interval of leak shuffle data check");
 
   public static final ConfigOption<Integer> SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION = ConfigOptions
       .key("rss.server.max.concurrency.of.single.partition.writer")
@@ -322,11 +322,18 @@ public class ShuffleServerConf extends RssBaseConf {
           + "equal to this value. Default value is 1.");
 
   public static final ConfigOption<Long> SERVER_TRIGGER_FLUSH_CHECK_INTERVAL = ConfigOptions
-          .key("rss.server.shuffleBufferManager.trigger.flush.interval")
-          .longType()
-          .defaultValue(0L)
-          .withDescription("The interval of trigger shuffle buffer manager to flush data to persistent storage. If <= 0"
+      .key("rss.server.shuffleBufferManager.trigger.flush.interval")
+      .longType()
+      .defaultValue(0L)
+      .withDescription("The interval of trigger shuffle buffer manager to flush data to persistent storage. If <= 0"
           + ", then this flush check would be disabled.");
+
+  public static final ConfigOption<Long> SERVER_SHUFFLE_FLUSH_THRESHOLD = ConfigOptions
+      .key("rss.server.shuffle.flush.threshold")
+      .longType()
+      .checkValue(ConfigUtils.NON_NEGATIVE_LONG_VALIDATOR, "flush threshold must be non negative")
+      .defaultValue(1024 * 1024L)
+      .withDescription("Threshold when flushing shuffle data to persistent storage.");
 
   public ShuffleServerConf() {
   }
