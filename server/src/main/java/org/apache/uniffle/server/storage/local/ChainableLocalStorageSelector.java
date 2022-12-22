@@ -11,8 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.UnionKey;
+import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
+import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.event.AppPurgeEvent;
 import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.server.event.ShufflePurgeEvent;
@@ -20,15 +22,19 @@ import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
+import static org.apache.uniffle.server.ShuffleServerConf.RSS_LOCAL_STORAGE_MULTIPLE_DISK_SELECTION_ENABLE;
+
 public class ChainableLocalStorageSelector extends AbstractCacheableStorageSelector {
   private static final Logger LOGGER = LoggerFactory.getLogger(ChainableLocalStorageSelector.class);
 
   private final List<LocalStorage> localStorages;
   private final Map<String, LocalStorageView> storageOfPartitions;
+  private final boolean multipleDiskSelectionEnable;
 
-  public ChainableLocalStorageSelector(List<LocalStorage> localStorages) {
+  public ChainableLocalStorageSelector(ShuffleServerConf shuffleServerConf, List<LocalStorage> localStorages) {
     this.localStorages = localStorages;
     this.storageOfPartitions = Maps.newConcurrentMap();
+    this.multipleDiskSelectionEnable = shuffleServerConf.get(RSS_LOCAL_STORAGE_MULTIPLE_DISK_SELECTION_ENABLE);
   }
 
   @Override
@@ -43,20 +49,25 @@ public class ChainableLocalStorageSelector extends AbstractCacheableStorageSelec
       lastStorage = view.getLatest();
       if (lastStorage.isCorrupted()) {
         if (lastStorage.containsWriteHandler(appId, shuffleId, partitionId)) {
-          LOGGER.error("LocalStorage: " + lastStorage.getBasePath() + " is corrupted.");
+          LOGGER.error("LocalStorage: {} is corrupted. Switching another storage for event: {}, "
+                  + "some data will be lost", lastStorage.getBasePath(), event);
         }
       } else {
-        if (lastStorage.canWrite()) {
+        if (!multipleDiskSelectionEnable || lastStorage.canWrite()) {
           return lastStorage;
         }
       }
     }
 
+    // todo: support pluggable selection policy, hash-based or free-space based
     List<LocalStorage> candidates = localStorages
         .stream()
         .filter(x -> x.canWrite() && !x.isCorrupted())
         .collect(Collectors.toList());
-    LocalStorage localStorage = candidates.get(
+    if (candidates.isEmpty()) {
+      throw new RuntimeException("No available local storages.");
+    }
+    final LocalStorage selected = candidates.get(
         ShuffleStorageUtils.getStorageIndex(
             candidates.size(),
             appId,
@@ -65,23 +76,26 @@ public class ChainableLocalStorageSelector extends AbstractCacheableStorageSelec
         )
     );
 
-    LocalStorage finalLastStorage = lastStorage;
+    final LocalStorage previousStorage = lastStorage;
     storageOfPartitions.compute(
         getKey(event),
         (key, storageView) -> {
           if (storageView == null) {
-            return new LocalStorageView(localStorage);
+            return new LocalStorageView(selected);
           }
-          if (finalLastStorage != null && finalLastStorage.isCorrupted()
-              && !finalLastStorage.containsWriteHandler(appId, shuffleId, partitionId)) {
-            storageView.removeTail();
+          // If the storage is corrupted, it should be removed from the stoarge view.
+          if (previousStorage != null && previousStorage.isCorrupted()) {
+            LocalStorage currentTailStorage = storageView.getLatest();
+            if (previousStorage == currentTailStorage) {
+              storageView.removeTail();
+            }
           }
-          storageView.add(localStorage);
+          storageView.add(selected);
           return storageView;
         }
     );
-    event.setUnderStorage(localStorage);
-    return localStorage;
+    event.setUnderStorage(selected);
+    return selected;
   }
 
   private String getKey(ShuffleDataFlushEvent event) {
@@ -94,7 +108,11 @@ public class ChainableLocalStorageSelector extends AbstractCacheableStorageSelec
 
   @Override
   public Storage getForReader(ShuffleDataReadEvent event) {
-    return storageOfPartitions.get(getKey(event)).get(event.getStorageIndex());
+    try {
+      return storageOfPartitions.get(getKey(event)).get(event.getStorageIndex());
+    } catch (IndexOutOfBoundsException exception) {
+      throw new FileNotFoundException("No such local storage for event: " + event);
+    }
   }
 
   @Override

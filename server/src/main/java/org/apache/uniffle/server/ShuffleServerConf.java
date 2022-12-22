@@ -321,6 +321,12 @@ public class ShuffleServerConf extends RssBaseConf {
       .withDescription("The max concurrency of single partition writer, the data partition file number is "
           + "equal to this value. Default value is 1.");
 
+  public static final ConfigOption<Boolean> RSS_LOCAL_STORAGE_MULTIPLE_DISK_SELECTION_ENABLE = ConfigOptions
+      .key("rss.server.localstorage.multiple.disk.selection.enable")
+      .booleanType()
+      .defaultValue(false)
+      .withDescription("");
+
   public ShuffleServerConf() {
   }
 

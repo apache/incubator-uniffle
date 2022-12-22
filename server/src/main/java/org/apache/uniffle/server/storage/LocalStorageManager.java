@@ -135,7 +135,7 @@ public class LocalStorageManager extends SingleStorageManager {
         StringUtils.join(localStorages.stream().map(LocalStorage::getBasePath).collect(Collectors.toList()))
     );
     this.checker = new LocalStorageChecker(conf, localStorages);
-    this.selector = new ChainableLocalStorageSelector(localStorages);
+    this.selector = new ChainableLocalStorageSelector(conf, localStorages);
   }
 
   @Override
