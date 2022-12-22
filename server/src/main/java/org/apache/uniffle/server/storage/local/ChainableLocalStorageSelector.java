@@ -44,12 +44,12 @@ public class ChainableLocalStorageSelector extends AbstractCacheableStorageSelec
   private static final Logger LOGGER = LoggerFactory.getLogger(ChainableLocalStorageSelector.class);
 
   private final List<LocalStorage> localStorages;
-  private final Map<String, LocalStorageView> storageOfPartitions;
+  private final Map<String, ChainableLocalStorageView> viewOfPartitions;
   private final boolean multipleDiskSelectionEnable;
 
   public ChainableLocalStorageSelector(ShuffleServerConf shuffleServerConf, List<LocalStorage> localStorages) {
     this.localStorages = localStorages;
-    this.storageOfPartitions = Maps.newConcurrentMap();
+    this.viewOfPartitions = Maps.newConcurrentMap();
     this.multipleDiskSelectionEnable = shuffleServerConf.get(RSS_LOCAL_STORAGE_MULTIPLE_DISK_SELECTION_ENABLE);
   }
 
@@ -64,10 +64,10 @@ public class ChainableLocalStorageSelector extends AbstractCacheableStorageSelec
         event.getShuffleId(),
         event.getStartPartition()
     );
-    LocalStorageView view = storageOfPartitions.get(cacheKey);
+    ChainableLocalStorageView view = viewOfPartitions.get(cacheKey);
     LocalStorage lastStorage = null;
     if (view != null) {
-      lastStorage = view.getLatest();
+      lastStorage = view.get();
       if (lastStorage.isCorrupted()) {
         if (lastStorage.containsWriteHandler(appId, shuffleId, partitionId)) {
           LOGGER.error("LocalStorage: {} is corrupted. Switching another storage for event: {}, "
@@ -98,20 +98,17 @@ public class ChainableLocalStorageSelector extends AbstractCacheableStorageSelec
     );
 
     final LocalStorage previousStorage = lastStorage;
-    storageOfPartitions.compute(
+    viewOfPartitions.compute(
         cacheKey,
         (key, storageView) -> {
           if (storageView == null) {
-            return new LocalStorageView(selected);
+            return new ChainableLocalStorageView(selected);
           }
-          // If the storage is corrupted, it should be removed from the stoarge view.
+          // If the storage is corrupted, it should be removed from the storage view.
           if (previousStorage != null && previousStorage.isCorrupted()) {
-            LocalStorage currentTailStorage = storageView.getLatest();
-            if (previousStorage == currentTailStorage) {
-              storageView.removeTail();
-            }
+            storageView.remove(previousStorage);
           }
-          storageView.add(selected);
+          storageView.switchTo(selected);
           return storageView;
         }
     );
@@ -122,7 +119,7 @@ public class ChainableLocalStorageSelector extends AbstractCacheableStorageSelec
   @Override
   public Storage getForReader(ShuffleDataReadEvent event) {
     try {
-      LocalStorageView view = storageOfPartitions.get(
+      ChainableLocalStorageView view = viewOfPartitions.get(
           UnionKey.buildKey(
               event.getAppId(),
               event.getShuffleId(),
@@ -153,7 +150,7 @@ public class ChainableLocalStorageSelector extends AbstractCacheableStorageSelec
           );
     }
     deleteElement(
-        storageOfPartitions,
+        viewOfPartitions,
         deleteConditionFunc
     );
   }

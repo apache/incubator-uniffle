@@ -22,25 +22,28 @@ import java.util.List;
 
 import org.apache.uniffle.storage.common.LocalStorage;
 
-public class LocalStorageView {
+/**
+ * This class is to wrap multiple local storages into single view.
+ */
+public class ChainableLocalStorageView {
 
   private final List<LocalStorage> localStorages;
 
-  public LocalStorageView(LocalStorage localStorage) {
+  public ChainableLocalStorageView(LocalStorage localStorage) {
     this.localStorages = new ArrayList<>();
     localStorages.add(localStorage);
   }
 
-  public void add(LocalStorage localStorage) {
+  public synchronized void switchTo(LocalStorage localStorage) {
     localStorages.add(localStorage);
   }
 
-  public LocalStorage getLatest() {
+  public synchronized LocalStorage get() {
     return localStorages.get(localStorages.size() - 1);
   }
 
-  public void removeTail() {
-    localStorages.remove(localStorages.size() - 1);
+  public synchronized void remove(LocalStorage localStorage) {
+    localStorages.remove(localStorage);
   }
 
   public LocalStorage get(int index) {
