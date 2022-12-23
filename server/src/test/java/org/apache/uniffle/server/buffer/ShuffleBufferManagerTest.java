@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.RangeMap;
-import com.google.common.io.Files;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -510,7 +509,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
 
     shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
     shuffleBufferManager.registerBuffer(appId, shuffleId, 2, 3);
-    shuffleBufferManager.registerBuffer(appId, smallShuffleId, 0 ,1);
+    shuffleBufferManager.registerBuffer(appId, smallShuffleId, 0,1);
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 64));
     assertEquals(96, shuffleBufferManager.getUsedMemory());
     shuffleBufferManager.cacheShuffleData(appId, smallShuffleId, false, createData(0, 31));
