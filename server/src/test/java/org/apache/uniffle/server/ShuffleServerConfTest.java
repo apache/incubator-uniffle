@@ -43,6 +43,7 @@ public class ShuffleServerConfTest {
     assertFalse(shuffleServerConf.loadConfFromFile(null));
     assertEquals("GRPC", shuffleServerConf.getString(ShuffleServerConf.RPC_SERVER_TYPE));
     assertEquals(256, shuffleServerConf.getInteger(ShuffleServerConf.JETTY_CORE_POOL_SIZE));
+    assertEquals(0, shuffleServerConf.getLong(ShuffleServerConf.SERVER_SHUFFLE_FLUSH_THRESHOLD));
   }
 
   @Test

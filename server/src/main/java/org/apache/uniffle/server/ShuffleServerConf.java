@@ -332,8 +332,9 @@ public class ShuffleServerConf extends RssBaseConf {
       .key("rss.server.shuffle.flush.threshold")
       .longType()
       .checkValue(ConfigUtils.NON_NEGATIVE_LONG_VALIDATOR, "flush threshold must be non negative")
-      .defaultValue(1024 * 1024L)
-      .withDescription("Threshold when flushing shuffle data to persistent storage.");
+      .defaultValue(0L)
+      .withDescription("Threshold when flushing shuffle data to persistent storage, recommend value would be 256K, " +
+          "512K, or even 1M");
 
   public ShuffleServerConf() {
   }

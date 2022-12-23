@@ -26,6 +26,7 @@ import com.google.common.collect.RangeMap;
 import com.google.common.io.Files;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.ShuffleDataResult;
@@ -60,10 +61,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   private ShuffleServerConf conf;
 
   @BeforeEach
-  public void setUp() {
+  public void setUp(@TempDir File tmpDir) {
     conf = new ShuffleServerConf();
-    File tmpDir = Files.createTempDir();
-    tmpDir.deleteOnExit();
     File dataDir = new File(tmpDir, "data");
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(dataDir.getAbsolutePath()));
@@ -445,10 +444,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   }
 
   @Test
-  public void flushSingleBufferTest() throws Exception {
+  public void flushSingleBufferTest(@TempDir File tmpDir) throws Exception {
     ShuffleServerConf shuffleConf = new ShuffleServerConf();
-    File tmpDir = Files.createTempDir();
-    tmpDir.deleteOnExit();
     File dataDir = new File(tmpDir, "data");
     shuffleConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     shuffleConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(dataDir.getAbsolutePath()));
@@ -493,6 +490,44 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     waitForFlush(shuffleFlushManager, appId, shuffleId, 4);
     assertEquals(0, shuffleBufferManager.getUsedMemory());
     assertEquals(0, shuffleBufferManager.getInFlushSize());
+  }
+
+  @Test
+  public void shuffleFlushThreshold() throws Exception {
+    ShuffleServerConf serverConf = new ShuffleServerConf();
+    serverConf.addAll(conf);
+    serverConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 180L);
+    serverConf.set(ShuffleServerConf.SERVER_SHUFFLE_FLUSH_THRESHOLD, 64L);
+
+    StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(conf);
+    ShuffleFlushManager shuffleFlushManager = new ShuffleFlushManager(conf,
+        "serverId", mockShuffleServer, storageManager);
+    shuffleBufferManager = new ShuffleBufferManager(serverConf, shuffleFlushManager);
+
+    String appId = "shuffleFlushTest";
+    int shuffleId = 0;
+    int smallShuffleId = 1;
+
+    shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
+    shuffleBufferManager.registerBuffer(appId, shuffleId, 2, 3);
+    shuffleBufferManager.registerBuffer(appId, smallShuffleId, 0 ,1);
+    shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 64));
+    assertEquals(96, shuffleBufferManager.getUsedMemory());
+    shuffleBufferManager.cacheShuffleData(appId, smallShuffleId, false, createData(0, 31));
+    assertEquals(96 + 63, shuffleBufferManager.getUsedMemory());
+    waitForFlush(shuffleFlushManager, appId, shuffleId, 1);
+    // small shuffle id is kept in memory
+    assertEquals(63, shuffleBufferManager.getUsedMemory());
+    assertEquals(0, shuffleBufferManager.getInFlushSize());
+
+    // more data will trigger the flush
+    shuffleBufferManager.cacheShuffleData(appId, smallShuffleId, false, createData(0, 31));
+    shuffleBufferManager.cacheShuffleData(appId, smallShuffleId, false, createData(0, 31));
+    assertEquals(63 * 3, shuffleBufferManager.getUsedMemory());
+    waitForFlush(shuffleFlushManager, appId, smallShuffleId, 3);
+    assertEquals(0, shuffleBufferManager.getUsedMemory());
+    assertEquals(0, shuffleBufferManager.getInFlushSize());
+
   }
 
   private void waitForFlush(ShuffleFlushManager shuffleFlushManager,
