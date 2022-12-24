@@ -266,5 +266,9 @@ public class ShuffleStorageUtilsTest {
     range = ShuffleStorageUtils.getPartitionRange(2, 3, 5);
     assertEquals(0, range[0]);
     assertEquals(2, range[1]);
+    range = ShuffleStorageUtils.getPartitionRange(-1, 3, 5);
+    assertEquals(null, range);
+    range = ShuffleStorageUtils.getPartitionRange(1, 3, 0);
+    assertEquals(null, range);
   }
 }
