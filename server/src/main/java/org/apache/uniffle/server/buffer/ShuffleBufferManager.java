@@ -432,6 +432,7 @@ public class ShuffleBufferManager {
     // the remaining data in buffer maybe more than lowWaterMark
     // because shuffle server is still receiving data, but it should be ok
     long expectedFlushSize = highWaterMark - lowWaterMark;
+    long atLeastFlushSizeIgnoreThreshold = expectedFlushSize >>> 1;
     long pickedFlushSize = 0L;
     int printIndex = 0;
     int printIgnoreIndex = 0;
@@ -439,7 +440,7 @@ public class ShuffleBufferManager {
     for (Map.Entry<String, AtomicLong> entry : sizeList) {
       long size = entry.getValue().get();
       String appIdShuffleIdKey = entry.getKey();
-      if (size > this.shuffleFlushThreshold) {
+      if (size > this.shuffleFlushThreshold || pickedFlushSize <= atLeastFlushSizeIgnoreThreshold) {
         pickedFlushSize += size;
         addPickedShuffle(appIdShuffleIdKey, pickedShuffle);
         // print detail picked info
@@ -452,9 +453,13 @@ public class ShuffleBufferManager {
           break;
         }
       } else {
+        // since shuffle size is ordered by size desc, we can skip process more shuffle data once some shuffle's size
+        // is less than threshold
         if (printIgnoreIndex < printMax) {
           LOG.info("Ignore application_shuffleId[{}] with {} bytes", appIdShuffleIdKey, size);
           printIgnoreIndex++;
+        } else {
+          break;
         }
       }
     }
