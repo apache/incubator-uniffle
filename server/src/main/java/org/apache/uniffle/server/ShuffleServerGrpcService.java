@@ -232,7 +232,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       }
       final long start = System.currentTimeMillis();
       List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);
-      int alreadyReleasedSize = 0;
+      long alreadyReleasedSize = 0;
       for (ShufflePartitionedData spd : shufflePartitionedData) {
         String shuffleDataInfo = "appId[" + appId + "], shuffleId[" + shuffleId
             + "], partitionId[" + spd.getPartitionId() + "]";
@@ -245,7 +245,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             responseMessage = errorMsg;
             break;
           } else {
-            int toReleasedSize = spd.getTotalBlockSize();
+            long toReleasedSize = spd.getTotalBlockSize();
             // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
             manager.releasePreAllocatedSize(toReleasedSize);
             alreadyReleasedSize += toReleasedSize;

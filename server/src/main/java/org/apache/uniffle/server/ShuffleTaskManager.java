@@ -207,7 +207,7 @@ public class ShuffleTaskManager {
     return requireBufferIds.remove(requireBufferId);
   }
 
-  public void releasePreAllocatedSize(int requireSize) {
+  public void releasePreAllocatedSize(long requireSize) {
     shuffleBufferManager.releasePreAllocatedSize(requireSize);
   }
 
