@@ -169,7 +169,7 @@ public class ShuffleStorageUtils {
     int[] range = null;
     int prNum = (partitionId < partitionNumPerRange || partitionId % partitionNumPerRange == 0)
             ? partitionId / partitionNumPerRange : partitionId / partitionNumPerRange;
-    if (partitionId < 0 || partitionId > partitionNum) {
+    if (partitionId < 0 || partitionId >= partitionNum) {
       LOG.warn("Invalid partitionId. partitionId:{} ,partitionNumPerRange: {}, partitionNum: {}",
               partitionId, partitionNumPerRange, partitionNum);
     } else {

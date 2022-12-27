@@ -252,8 +252,7 @@ public class ShuffleStorageUtilsTest {
     assertEquals(0, range[0]);
     assertEquals(0, range[1]);
     range = ShuffleStorageUtils.getPartitionRange(5, 1, 5);
-    assertEquals(5, range[0]);
-    assertEquals(5, range[1]);
+    assertEquals(null, range);
     range = ShuffleStorageUtils.getPartitionRange(0, 2, 5);
     assertEquals(0, range[0]);
     assertEquals(1, range[1]);
@@ -290,8 +289,7 @@ public class ShuffleStorageUtilsTest {
     assertEquals(3, range[0]);
     assertEquals(5, range[1]);
     range = ShuffleStorageUtils.getPartitionRange(5, 3, 5);
-    assertEquals(3, range[0]);
-    assertEquals(5, range[1]);
+    assertEquals(null, range);
     range = ShuffleStorageUtils.getPartitionRange(0, 3, 5);
     assertEquals(0, range[0]);
     assertEquals(2, range[1]);
@@ -314,7 +312,6 @@ public class ShuffleStorageUtilsTest {
     assertEquals(7, range[0]);
     assertEquals(13, range[1]);
     range = ShuffleStorageUtils.getPartitionRange(12, 7, 12);
-    assertEquals(7, range[0]);
-    assertEquals(13, range[1]);
+    assertEquals(null, range);
   }
 }
