@@ -321,6 +321,13 @@ public class ShuffleServerConf extends RssBaseConf {
       .withDescription("The max concurrency of single partition writer, the data partition file number is "
           + "equal to this value. Default value is 1.");
 
+  public static final ConfigOption<Long> SERVER_TRIGGER_FLUSH_CHECK_INTERVAL = ConfigOptions
+          .key("rss.server.shuffleBufferManager.trigger.flush.interval")
+          .longType()
+          .defaultValue(0L)
+          .withDescription("The interval of trigger shuffle buffer manager to flush data to persistent storage. If <= 0"
+          + ", then this flush check would be disabled.");
+
   public ShuffleServerConf() {
   }
 

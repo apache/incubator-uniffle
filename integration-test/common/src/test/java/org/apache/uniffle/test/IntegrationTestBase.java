@@ -121,6 +121,7 @@ public abstract class IntegrationTestBase extends HdfsTestBase {
     serverConf.setLong("rss.server.disk.capacity", 10L * 1024L * 1024L * 1024L);
     serverConf.setBoolean("rss.server.health.check.enable", false);
     serverConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
+    serverConf.set(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL, 500L);
     return serverConf;
   }
 

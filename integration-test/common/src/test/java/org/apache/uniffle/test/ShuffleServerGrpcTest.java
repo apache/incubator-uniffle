@@ -399,8 +399,6 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     RssSendShuffleDataRequest rssdr = new RssSendShuffleDataRequest(
         "sendDataWithoutRegisterTest", 3, 1000, shuffleToBlocks);
     shuffleServerClient.sendShuffleData(rssdr);
-    assertEquals(132, shuffleServers.get(0).getPreAllocatedMemory());
-    Thread.sleep(10000);
     assertEquals(0, shuffleServers.get(0).getPreAllocatedMemory());
   }
 

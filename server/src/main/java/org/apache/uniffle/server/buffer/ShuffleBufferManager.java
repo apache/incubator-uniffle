@@ -115,7 +115,9 @@ public class ShuffleBufferManager {
 
     ShuffleBuffer buffer = entry.getValue();
     long size = buffer.append(spd);
-    updateSize(size, isPreAllocated);
+    if (!isPreAllocated) {
+      updateUsedMemory(size);
+    }
     updateShuffleSize(appId, shuffleId, size);
     synchronized (this) {
       flushSingleBufferIfNecessary(buffer, appId, shuffleId,
@@ -187,7 +189,7 @@ public class ShuffleBufferManager {
     }
   }
 
-  void flushIfNecessary() {
+  public void flushIfNecessary() {
     // if data size in buffer > highWaterMark, do the flush
     if (usedMemory.get() - preAllocatedSize.get() - inFlushSize.get() > highWaterMark) {
       LOG.info("Start to flush with usedMemory[{}], preAllocatedSize[{}], inFlushSize[{}]",
@@ -340,14 +342,10 @@ public class ShuffleBufferManager {
     }
   }
 
-  void updateSize(long delta, boolean isPreAllocated) {
-    if (isPreAllocated) {
-      releasePreAllocatedSize(delta);
-    } else {
-      // add size if not allocated
-      usedMemory.addAndGet(delta);
-      ShuffleServerMetrics.gaugeUsedBufferSize.set(usedMemory.get());
-    }
+  public void updateUsedMemory(long delta) {
+    // add size if not allocated
+    usedMemory.addAndGet(delta);
+    ShuffleServerMetrics.gaugeUsedBufferSize.set(usedMemory.get());
   }
 
   void requirePreAllocatedSize(long delta) {
@@ -355,7 +353,7 @@ public class ShuffleBufferManager {
     ShuffleServerMetrics.gaugeAllocatedBufferSize.set(preAllocatedSize.get());
   }
 
-  void releasePreAllocatedSize(long delta) {
+  public void releasePreAllocatedSize(long delta) {
     preAllocatedSize.addAndGet(-delta);
     ShuffleServerMetrics.gaugeAllocatedBufferSize.set(preAllocatedSize.get());
   }

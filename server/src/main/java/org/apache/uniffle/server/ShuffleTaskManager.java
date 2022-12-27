@@ -75,6 +75,7 @@ public class ShuffleTaskManager {
   private final ScheduledExecutorService scheduledExecutorService;
   private final ScheduledExecutorService expiredAppCleanupExecutorService;
   private final ScheduledExecutorService leakShuffleDataCheckExecutorService;
+  private ScheduledExecutorService triggerFlushExecutorService;
   private final StorageManager storageManager;
   private AtomicLong requireBufferId = new AtomicLong(0);
   private ShuffleServerConf conf;
@@ -82,6 +83,7 @@ public class ShuffleTaskManager {
   private long preAllocationExpired;
   private long commitCheckIntervalMax;
   private long leakShuffleDataCheckInterval;
+  private long triggerFlushInterval;
   // appId -> shuffleId -> blockIds to avoid too many appId
   // store taskAttemptId info to filter speculation task
   // Roaring64NavigableMap instance will cost much memory,
@@ -109,6 +111,7 @@ public class ShuffleTaskManager {
     this.commitCheckIntervalMax = conf.getLong(ShuffleServerConf.SERVER_COMMIT_CHECK_INTERVAL_MAX);
     this.preAllocationExpired = conf.getLong(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED);
     this.leakShuffleDataCheckInterval = conf.getLong(ShuffleServerConf.SERVER_LEAK_SHUFFLE_DATA_CHECK_INTERVAL);
+    this.triggerFlushInterval = conf.getLong(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL);
     // the thread for checking application status
     this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("checkResource-%d"));
@@ -125,6 +128,13 @@ public class ShuffleTaskManager {
     leakShuffleDataCheckExecutorService.scheduleAtFixedRate(
         () -> checkLeakShuffleData(), leakShuffleDataCheckInterval,
             leakShuffleDataCheckInterval, TimeUnit.MILLISECONDS);
+    if (triggerFlushInterval > 0) {
+      triggerFlushExecutorService = Executors.newSingleThreadScheduledExecutor(
+          ThreadUtils.getThreadFactory("triggerShuffleBufferManagerFlush"));
+      triggerFlushExecutorService.scheduleWithFixedDelay(
+              this::triggerFlush, triggerFlushInterval / 2,
+          triggerFlushInterval, TimeUnit.MILLISECONDS);
+    }
     // the thread for clear expired resources
     clearResourceThread = () -> {
       while (true) {
@@ -193,12 +203,20 @@ public class ShuffleTaskManager {
     return shuffleBufferManager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
   }
 
-  public boolean isPreAllocated(long requireBufferId) {
-    return requireBufferIds.containsKey(requireBufferId);
+  public PreAllocatedBufferInfo getAndRemovePreAllocatedBuffer(long requireBufferId) {
+    return requireBufferIds.remove(requireBufferId);
   }
 
-  public void removeRequireBufferId(long requireId) {
-    requireBufferIds.remove(requireId);
+  public void releasePreAllocatedSize(long requireSize) {
+    shuffleBufferManager.releasePreAllocatedSize(requireSize);
+  }
+
+  @VisibleForTesting
+  void removeAndReleasePreAllocatedBuffer(long requireBufferId) {
+    PreAllocatedBufferInfo info = getAndRemovePreAllocatedBuffer(requireBufferId);
+    if (info != null) {
+      releasePreAllocatedSize(info.getRequireSize());
+    }
   }
 
   public StatusCode commitShuffle(String appId, int shuffleId) throws Exception {
@@ -528,12 +546,17 @@ public class ShuffleTaskManager {
       for (PreAllocatedBufferInfo info : requireBufferIds.values()) {
         if (current - info.getTimestamp() > preAllocationExpired) {
           removeIds.add(info.getRequireId());
-          shuffleBufferManager.releaseMemory(info.getRequireSize(), false, true);
         }
       }
       for (Long requireId : removeIds) {
-        requireBufferIds.remove(requireId);
-        LOG.info("Remove expired requireId " + requireId);
+        PreAllocatedBufferInfo info = requireBufferIds.remove(requireId);
+        if (info != null) {
+          // move release memory code down to here as the requiredBuffer could be consumed during removing processing.
+          shuffleBufferManager.releaseMemory(info.getRequireSize(), false, true);
+          LOG.info("Remove expired preAllocatedBuffer " + requireId);
+        } else {
+          LOG.info("PreAllocatedBuffer[id={}] has already been removed", requireId);
+        }
       }
     } catch (Exception e) {
       LOG.warn("Error happened in preAllocatedBufferCheck", e);
@@ -579,4 +602,11 @@ public class ShuffleTaskManager {
   public ShuffleDataDistributionType getDataDistributionType(String appId) {
     return shuffleTaskInfos.get(appId).getDataDistType();
   }
+
+  private void triggerFlush() {
+    synchronized (this.shuffleBufferManager) {
+      this.shuffleBufferManager.flushIfNecessary();
+    }
+  }
+
 }
