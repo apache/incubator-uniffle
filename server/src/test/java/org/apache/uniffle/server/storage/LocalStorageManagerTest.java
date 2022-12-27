@@ -17,16 +17,23 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.storage.StorageInfo;
+import org.apache.uniffle.common.storage.StorageStatus;
+import org.apache.uniffle.common.storage.StorageMedia;
+import org.apache.uniffle.common.util.RssUtilsTest;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -82,7 +89,7 @@ public class LocalStorageManagerTest {
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
 
     LocalStorageManager localStorageManager = new LocalStorageManager(conf);
 
@@ -104,7 +111,7 @@ public class LocalStorageManagerTest {
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
     LocalStorageManager localStorageManager = new LocalStorageManager(conf);
 
     List<LocalStorage> storages = localStorageManager.getStorages();
@@ -158,7 +165,7 @@ public class LocalStorageManagerTest {
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
     LocalStorageManager localStorageManager = new LocalStorageManager(conf);
 
     List<LocalStorage> storages = localStorageManager.getStorages();
@@ -214,6 +221,51 @@ public class LocalStorageManagerTest {
       fail();
     } catch (Exception e) {
       // ignore
+    }
+  }
+
+  @Test
+  public void testGetLocalStorageInfo() {
+    String[] storagePaths = {"/tmp/rss-data1", "/tmp/rss-data2", "/tmp/rss-data3"};
+
+    ShuffleServerConf conf = new ShuffleServerConf();
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
+    conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
+    LocalStorageManager localStorageManager = new LocalStorageManager(conf);
+    Map<String, StorageInfo> storageInfo = localStorageManager.getStorageInfo();
+    assertEquals(1, storageInfo.size());
+    try {
+      String mountPoint = Files.getFileStore(new File("/tmp").toPath()).name();
+      assertNotNull(storageInfo.get(mountPoint));
+      // by default, it should report HDD as local storage type
+      assertEquals(StorageMedia.HDD, storageInfo.get(mountPoint).getType());
+      assertEquals(StorageStatus.NORMAL, storageInfo.get(mountPoint).getStatus());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Test
+  public void testEnvStorageTypeProvider() {
+    String[] storagePaths = {"/tmp/rss-data1"};
+
+    ShuffleServerConf conf = new ShuffleServerConf();
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
+    conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
+    conf.set(ShuffleServerConf.STORAGE_MEDIA_PROVIDER_ENV_KEY, "env_key");
+    RssUtilsTest.setEnv("env_key", "{\"/tmp\": \"ssd\"}");
+    LocalStorageManager localStorageManager = new LocalStorageManager(conf);
+    Map<String, StorageInfo> storageInfo = localStorageManager.getStorageInfo();
+    assertEquals(1, storageInfo.size());
+    try {
+      String mountPoint = Files.getFileStore(new File("/tmp").toPath()).name();
+      assertNotNull(storageInfo.get(mountPoint));
+      // by default, it should report HDD as local storage type
+      assertEquals(StorageMedia.SSD, storageInfo.get(mountPoint).getType());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 }

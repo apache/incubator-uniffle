@@ -239,6 +239,7 @@ message ShuffleServerHeartBeatRequest {
   int32 eventNumInFlush = 5;
   repeated string tags = 6;
   google.protobuf.BoolValue isHealthy = 7;
+  map<string, StorageInfo> storageInfo = 21; // mount point to storage info mapping.
 }
 
 message ShuffleServerHeartBeatResponse {
@@ -269,6 +270,34 @@ enum StatusCode {
   TIMEOUT = 7;
   ACCESS_DENIED = 8;
   // add more status
+}
+
+message StorageInfo {
+  enum StorageMedia {
+    STORAGE_TYPE_UNKNOWN = 0;
+    HDD = 1;
+    SSD = 2;
+    HDFS = 3;
+    OBJECT_STORE = 4;
+    // possible other types, such as cloud-ssd.
+  }
+
+  enum StorageStatus {
+    STORAGE_STATUS_UNKNOWN = 0;
+    NORMAL = 1;
+    UNHEALTHY = 2;
+    OVERUSED = 3; // indicate current disk/storage is overused.
+  }
+
+  string mountPoint = 1;
+  StorageMedia storageMedia = 2;
+  int64 capacity = 3;
+  int64 usedBytes = 4;
+  int64 writingSpeed1M = 5; // writing speed of last minute
+  int64 writingSpeed5M = 6; // writing speed of last 5 minutes
+  int64 writingSpeed1H = 7; // writing speed of last hour
+  int64 numOfWritingFailures = 8; // number of writing failures since start up.
+  StorageStatus status = 9;
 }
 
 service CoordinatorServer {

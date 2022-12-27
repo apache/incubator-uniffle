@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -36,6 +37,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -45,6 +47,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.UnionKey;
+import org.apache.uniffle.common.storage.StorageInfo;
+import org.apache.uniffle.common.storage.StorageMedia;
+import org.apache.uniffle.common.storage.StorageStatus;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.LocalStorageChecker;
@@ -57,6 +62,7 @@ import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.server.event.ShufflePurgeEvent;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
+import org.apache.uniffle.storage.common.StorageMediaProvider;
 import org.apache.uniffle.storage.factory.ShuffleHandlerFactory;
 import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
 import org.apache.uniffle.storage.request.CreateShuffleDeleteHandlerRequest;
@@ -74,6 +80,7 @@ public class LocalStorageManager extends SingleStorageManager {
   private final LocalStorageChecker checker;
 
   private final Map<String, LocalStorage> partitionsOfStorage;
+  private final List<StorageMediaProvider> typeProviders = Lists.newArrayList();
 
   @VisibleForTesting
   LocalStorageManager(ShuffleServerConf conf) {
@@ -94,6 +101,11 @@ public class LocalStorageManager extends SingleStorageManager {
     // We must make sure the order of `storageBasePaths` and `localStorages` is same, or some unit test may be fail
     CountDownLatch countDownLatch = new CountDownLatch(storageBasePaths.size());
     AtomicInteger successCount = new AtomicInteger();
+    ServiceLoader<StorageMediaProvider> loader = ServiceLoader.load(StorageMediaProvider.class);
+    for (StorageMediaProvider provider : loader) {
+      provider.init(conf);
+      typeProviders.add(provider);
+    }
     ExecutorService executorService = Executors.newCachedThreadPool();
     LocalStorage[] localStorageArray = new LocalStorage[storageBasePaths.size()];
     for (int i = 0; i < storageBasePaths.size(); i++) {
@@ -101,12 +113,14 @@ public class LocalStorageManager extends SingleStorageManager {
       String storagePath = storageBasePaths.get(i);
       executorService.submit(() -> {
         try {
+          StorageMedia storageType = getStorageTypeForBasePath(storagePath);
           localStorageArray[idx] = LocalStorage.newBuilder()
               .basePath(storagePath)
               .capacity(capacity)
               .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
               .highWaterMarkOfWrite(highWaterMarkOfWrite)
               .shuffleExpiredTimeoutMs(shuffleExpiredTimeoutMs)
+              .localStorageMedia(storageType)
               .build();
           successCount.incrementAndGet();
         } catch (Exception e) {
@@ -139,6 +153,16 @@ public class LocalStorageManager extends SingleStorageManager {
         StringUtils.join(localStorages.stream().map(LocalStorage::getBasePath).collect(Collectors.toList()))
     );
     this.checker = new LocalStorageChecker(conf, localStorages);
+  }
+
+  private StorageMedia getStorageTypeForBasePath(String basePath) {
+    for (StorageMediaProvider provider : this.typeProviders) {
+      StorageMedia result = provider.getStorageMediaFor(basePath);
+      if (result != StorageMedia.UNKNOWN) {
+        return result;
+      }
+    }
+    return StorageMedia.UNKNOWN;
   }
 
   @Override
@@ -303,6 +327,34 @@ public class LocalStorageManager extends SingleStorageManager {
         deleteHandler.delete(deletePaths, appId, UNKNOWN_USER_NAME);
       }
     }
+  }
+
+  @Override
+  public Map<String, StorageInfo> getStorageInfo() {
+    Map<String, StorageInfo> result = Maps.newHashMap();
+    for (LocalStorage storage : localStorages) {
+      String mountPoint = storage.getMountPoint();
+      long capacity = storage.getCapacity();
+      long wroteBytes = storage.getDiskSize();
+      StorageStatus status = StorageStatus.NORMAL;
+      if (storage.isCorrupted()) {
+        status = StorageStatus.UNHEALTHY;
+      } else if (!storage.canWrite()) {
+        status = StorageStatus.OVERUSED;
+      }
+      StorageMedia media = storage.getStorageMedia();
+      if (media == null) {
+        media = StorageMedia.UNKNOWN;
+      }
+      StorageInfo info = new StorageInfo(
+          mountPoint,
+          media,
+          capacity,
+          wroteBytes,
+          status);
+      result.put(mountPoint, info);
+    }
+    return result;
   }
 
   public List<LocalStorage> getStorages() {

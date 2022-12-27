@@ -209,7 +209,11 @@ public class RssUtilsTest {
       Field field = cl.getDeclaredField("m");
       field.setAccessible(true);
       Map<String, String> writableEnv = (Map<String, String>) field.get(env);
-      writableEnv.put(key, value);
+      if (value != null) {
+        writableEnv.put(key, value);
+      } else {
+        writableEnv.remove(key);
+      }
     } catch (Exception e) {
       throw new IllegalStateException("Failed to set environment variable", e);
     }

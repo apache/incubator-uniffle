@@ -17,8 +17,14 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.Maps;
+
+import org.apache.uniffle.common.storage.StorageInfo;
+import org.apache.uniffle.common.storage.StorageInfoUtils;
+import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
 
 public class ServerNode implements Comparable<ServerNode> {
@@ -33,6 +39,7 @@ public class ServerNode implements Comparable<ServerNode> {
   private long timestamp;
   private Set<String> tags;
   private boolean isHealthy;
+  private Map<String, StorageInfo> storageInfo;
 
   public ServerNode(
       String id,
@@ -44,6 +51,21 @@ public class ServerNode implements Comparable<ServerNode> {
       int eventNumInFlush,
       Set<String> tags,
       boolean isHealthy) {
+    this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags, isHealthy,
+        Maps.newHashMap());
+  }
+
+  public ServerNode(
+      String id,
+      String ip,
+      int port,
+      long usedMemory,
+      long preAllocatedMemory,
+      long availableMemory,
+      int eventNumInFlush,
+      Set<String> tags,
+      boolean isHealthy,
+      Map<String, RssProtos.StorageInfo> storageInfoMap) {
     this.id = id;
     this.ip = ip;
     this.port = port;
@@ -54,6 +76,7 @@ public class ServerNode implements Comparable<ServerNode> {
     this.timestamp = System.currentTimeMillis();
     this.tags = tags;
     this.isHealthy = isHealthy;
+    this.storageInfo = StorageInfoUtils.fromProto(storageInfoMap);
   }
 
   public ShuffleServerId convertToGrpcProto() {
@@ -100,6 +123,10 @@ public class ServerNode implements Comparable<ServerNode> {
     return isHealthy;
   }
 
+  public Map<String, StorageInfo> getStorageInfo() {
+    return storageInfo;
+  }
+
   @Override
   public String toString() {
     return "ServerNode with id[" + id
@@ -111,7 +138,9 @@ public class ServerNode implements Comparable<ServerNode> {
         + "], eventNumInFlush[" + eventNumInFlush
         + "], timestamp[" + timestamp
         + "], tags" + tags.toString() + ""
-        + ", healthy[" + isHealthy + "]";
+        + ", healthy[" + isHealthy
+        + "], storages[num=" + storageInfo.size() + "]";
+
   }
 
   /**

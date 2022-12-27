@@ -374,6 +374,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         request.getAvailableMemory(),
         request.getEventNumInFlush(),
         Sets.newHashSet(request.getTagsList()),
-        isHealthy);
+        isHealthy,
+        request.getStorageInfoMap());
   }
 }

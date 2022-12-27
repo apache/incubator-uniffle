@@ -19,6 +19,7 @@ package org.apache.uniffle.storage.common;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -28,23 +29,31 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.RoaringBitmap;
 
+import org.apache.uniffle.common.storage.StorageMedia;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class LocalStorageTest {
 
   private static File testBaseDir;
+  private static String mountPoint;
 
   @BeforeAll
   public static void setUp(@TempDir File tempDir) throws IOException  {
     testBaseDir = new File(tempDir, "test");
     testBaseDir.mkdir();
+    try {
+      mountPoint = Files.getFileStore(testBaseDir.toPath()).name();
+    } catch (IOException ioe) {
+      // pass
+    }
   }
 
   @AfterAll
@@ -162,6 +171,31 @@ public class LocalStorageTest {
     assertEquals("key2", item.getSortedShuffleKeys(false, 1).get(0));
     assertEquals(2, item.getSortedShuffleKeys(false, 2).size());
     assertEquals(2, item.getSortedShuffleKeys(false, 3).size());
+  }
+
+  @Test
+  public void diskStorageInfoTest() {
+    LocalStorage item = LocalStorage.newBuilder()
+        .basePath(testBaseDir.getAbsolutePath())
+        .cleanupThreshold(50)
+        .highWaterMarkOfWrite(95)
+        .lowWaterMarkOfWrite(80)
+        .capacity(100)
+        .cleanIntervalMs(5000)
+        .build();
+    assertEquals(mountPoint, item.getMountPoint());
+    assertNull(item.getStorageMedia());
+
+    LocalStorage itemWithStorageType = LocalStorage.newBuilder()
+        .basePath(testBaseDir.getAbsolutePath())
+        .cleanupThreshold(50)
+        .highWaterMarkOfWrite(95)
+        .lowWaterMarkOfWrite(80)
+        .capacity(100)
+        .cleanIntervalMs(5000)
+        .localStorageMedia(StorageMedia.SSD)
+        .build();
+    assertEquals(StorageMedia.SSD, itemWithStorageType.getStorageMedia());
   }
 
   @Test
