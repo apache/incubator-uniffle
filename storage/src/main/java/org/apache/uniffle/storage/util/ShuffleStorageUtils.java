@@ -167,15 +167,12 @@ public class ShuffleStorageUtils {
 
   public static int[] getPartitionRange(int partitionId, int partitionNumPerRange, int partitionNum) {
     int[] range = null;
-    int prNum = partitionNum % partitionNumPerRange == 0
-        ? partitionNum / partitionNumPerRange : partitionNum / partitionNumPerRange + 1;
-    for (int i = 0; i < prNum; i++) {
-      int start = i * partitionNumPerRange;
-      int end = (i + 1) * partitionNumPerRange - 1;
-      if (partitionId >= start && partitionId <= end) {
-        range = new int[]{start, end};
-        break;
-      }
+    int prNum = partitionId / partitionNumPerRange;
+    if (partitionId < 0 || partitionId >= partitionNum) {
+      LOG.warn("Invalid partitionId. partitionId:{} ,partitionNumPerRange: {}, partitionNum: {}",
+              partitionId, partitionNumPerRange, partitionNum);
+    } else {
+      range = new int[]{partitionNumPerRange * prNum, partitionNumPerRange * (prNum + 1) - 1};
     }
     return range;
   }
