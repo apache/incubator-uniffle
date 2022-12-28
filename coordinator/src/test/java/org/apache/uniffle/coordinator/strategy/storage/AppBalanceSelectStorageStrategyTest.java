@@ -58,12 +58,15 @@ public class AppBalanceSelectStorageStrategyTest {
     conf.set(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY, APP_BALANCE);
     conf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 1000);
     applicationManager = new ApplicationManager(conf);
+    // to ensure that the reading and writing of hdfs can be controlled
+    applicationManager.closeDetectStorageScheduler();
   }
 
   @Test
   public void selectStorageTest() throws Exception {
     String remoteStoragePath = remotePath1 + Constants.COMMA_SPLIT_CHAR + remotePath2;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
+    applicationManager.getSelectStorageStrategy().detectStorage();
     assertEquals(0, applicationManager.getRemoteStoragePathRankValue().get(remotePath1).getAppNum().get());
     assertEquals(0, applicationManager.getRemoteStoragePathRankValue().get(remotePath2).getAppNum().get());
     String storageHost1 = "path1";
@@ -123,6 +126,7 @@ public class AppBalanceSelectStorageStrategyTest {
     String remoteStoragePath = remotePath1 + Constants.COMMA_SPLIT_CHAR + remotePath2
         + Constants.COMMA_SPLIT_CHAR + remotePath3;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
+    applicationManager.getSelectStorageStrategy().detectStorage();
     String testApp1 = "application_testAppId";
     // init detectStorageScheduler
     Thread.sleep(2000);
