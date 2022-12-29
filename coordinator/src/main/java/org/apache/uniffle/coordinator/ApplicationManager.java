@@ -61,6 +61,7 @@ public class ApplicationManager {
   private final Map<String, RankValue> remoteStoragePathRankValue;
   private final Map<String, String> remoteStorageToHost = Maps.newConcurrentMap();
   private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
+  private final ScheduledExecutorService detectStorageScheduler;
   private Map<String, Map<String, Long>> currentUserAndApp = Maps.newConcurrentMap();
   private Map<String, String> appIdToUser = Maps.newConcurrentMap();
   private QuotaManager quotaManager;
@@ -97,7 +98,7 @@ public class ApplicationManager {
     scheduledExecutorService.scheduleAtFixedRate(
         this::statusCheck, expired / 2, expired / 2, TimeUnit.MILLISECONDS);
     // the thread for checking if the storage is normal
-    ScheduledExecutorService detectStorageScheduler = Executors.newSingleThreadScheduledExecutor(
+    detectStorageScheduler = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("detectStoragesScheduler-%d"));
     // should init later than the refreshRemoteStorage init
     detectStorageScheduler.scheduleAtFixedRate(selectStorageStrategy::detectStorage, 1000,
@@ -253,6 +254,12 @@ public class ApplicationManager {
   @VisibleForTesting
   public boolean hasErrorInStatusCheck() {
     return hasErrorInStatusCheck;
+  }
+
+  @VisibleForTesting
+  public void closeDetectStorageScheduler() {
+    // this method can only be used during testing
+    detectStorageScheduler.shutdownNow();
   }
 
   private void statusCheck() {
