@@ -18,7 +18,7 @@
 package org.apache.uniffle.storage.handler.impl;
 
 import java.io.FileNotFoundException;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -143,7 +143,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
           LOG.warn("Can't create ShuffleReaderHandler for " + filePrefix, e);
         }
       }
-      readHandlers.sort(Comparator.comparing(HdfsShuffleReadHandler::getFilePrefix));
+      Collections.shuffle(readHandlers);
     }
   }
 
