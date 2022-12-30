@@ -17,25 +17,16 @@
 
 package org.apache.uniffle.coordinator;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -45,47 +36,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * QuotaManager is a manager for resource restriction.
  */
 public class QuotaManagerTest {
-  private static final Configuration hdfsConf = new Configuration();
-  private static MiniDFSCluster cluster;
-  @TempDir
-  private static File remotePath = new File("hdfs://rss");
 
-  @BeforeEach
-  public void setUp() throws IOException {
-    hdfsConf.set("fs.defaultFS", remotePath.getAbsolutePath());
-    hdfsConf.set("dfs.nameservices", "rss");
-    hdfsConf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, remotePath.getAbsolutePath());
-    cluster = (new MiniDFSCluster.Builder(hdfsConf)).build();
-  }
+  private final static String fileName = "quotaFile.properties";
+  private final String quotaFile =
+      Objects.requireNonNull(this.getClass().getClassLoader().getResource(fileName)).getFile();
 
-  @AfterAll
-  public static void clear() {
-    cluster.close();
-  }
-  
   @Timeout(value = 10)
   @Test
-  public void testDetectUserResource() throws Exception {
-    final String quotaFile =
-        new Path(remotePath.getAbsolutePath()).getFileSystem(hdfsConf).getName() + "/quotaFile.properties";
-    final FSDataOutputStream fsDataOutputStream =
-        new Path(remotePath.toString()).getFileSystem(hdfsConf).create(new Path(quotaFile));
-    String quota1 = "user1 =10";
-    String quota2 = "user2= 20";
-    String quota3 = "user3 = 30";
-    fsDataOutputStream.write(quota1.getBytes(StandardCharsets.UTF_8));
-    fsDataOutputStream.write("\n".getBytes(StandardCharsets.UTF_8));
-    fsDataOutputStream.write(quota2.getBytes(StandardCharsets.UTF_8));
-    fsDataOutputStream.write("\n".getBytes(StandardCharsets.UTF_8));
-    fsDataOutputStream.write(quota3.getBytes(StandardCharsets.UTF_8));
-    fsDataOutputStream.flush();
-    fsDataOutputStream.close();
+  public void testDetectUserResource() {
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH,
         quotaFile);
     ApplicationManager applicationManager = new ApplicationManager(conf);
     Awaitility.await().timeout(5, TimeUnit.SECONDS).until(
-        () -> applicationManager.getDefaultUserApps().size() > 0);
+        () -> applicationManager.getDefaultUserApps().size() > 2);
     
     Integer user1 = applicationManager.getDefaultUserApps().get("user1");
     Integer user2 = applicationManager.getDefaultUserApps().get("user2");
@@ -97,8 +61,6 @@ public class QuotaManagerTest {
 
   @Test
   public void testQuotaManagerWithoutAccessQuotaChecker() throws Exception {
-    final String quotaFile =
-        new Path(remotePath.getAbsolutePath()).getFileSystem(hdfsConf).getName() + "/quotaFile.properties";
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH,
         quotaFile);
@@ -112,8 +74,6 @@ public class QuotaManagerTest {
 
   @Test
   public void testCheckQuota() throws Exception {
-    final String quotaFile =
-        new Path(remotePath.getAbsolutePath()).getFileSystem(hdfsConf).getName() + "/quotaFile.properties";
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH,
         quotaFile);
