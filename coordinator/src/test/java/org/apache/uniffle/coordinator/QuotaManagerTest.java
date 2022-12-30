@@ -37,9 +37,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class QuotaManagerTest {
 
-  private final static String fileName = "quotaFile.properties";
   private final String quotaFile =
       Objects.requireNonNull(this.getClass().getClassLoader().getResource(fileName)).getFile();
+  private final static String fileName = "quotaFile.properties";
 
   @Timeout(value = 10)
   @Test
@@ -87,15 +87,15 @@ public class QuotaManagerTest {
     final int i1 = uuid.incrementAndGet();
     uuidAndTime.put(String.valueOf(i1), System.currentTimeMillis());
     Map<String, Long> appAndTime = applicationManager.getQuotaManager().getCurrentUserAndApp()
-        .computeIfAbsent("user1", x -> uuidAndTime);
+        .computeIfAbsent("user4", x -> uuidAndTime);
     // This thread may remove the uuid and put the appId in.
     final Thread registerThread = new Thread(() ->
         applicationManager.getQuotaManager().registerApplicationInfo("application_test_" + i1, appAndTime));
     registerThread.start();
     final boolean icCheck = applicationManager.getQuotaManager()
-        .checkQuota("user1", String.valueOf(i1));
+        .checkQuota("user4", String.valueOf(i1));
     registerThread.join();
     assertTrue(icCheck);
-    assertEquals(applicationManager.getQuotaManager().getCurrentUserAndApp().get("user1").size(), 5);
+    assertEquals(applicationManager.getQuotaManager().getCurrentUserAndApp().get("user4").size(), 5);
   }
 }
