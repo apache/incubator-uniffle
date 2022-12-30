@@ -103,9 +103,12 @@ public class QuotaManager {
     try (BufferedReader bufferedReader =
              new BufferedReader(new InputStreamReader(fsDataInputStream, StandardCharsets.UTF_8))) {
       while ((content = bufferedReader.readLine()) != null) {
-        String user = content.split(Constants.EQUAL_SPLIT_CHAR)[0].trim();
-        Integer appNum = Integer.valueOf(content.split(Constants.EQUAL_SPLIT_CHAR)[1].trim());
-        defaultUserApps.put(user, appNum);
+        // to avoid reading comments
+        if (!content.startsWith("#") && !content.isEmpty()) {
+          String user = content.split(Constants.EQUAL_SPLIT_CHAR)[0].trim();
+          Integer appNum = Integer.valueOf(content.split(Constants.EQUAL_SPLIT_CHAR)[1].trim());
+          defaultUserApps.put(user, appNum);
+        }
       }
     } catch (Exception e) {
       LOG.error("Error occur when parsing file {}", quotaFilePath, e);
