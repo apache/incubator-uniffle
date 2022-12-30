@@ -39,7 +39,7 @@ public class QuotaManagerTest {
 
   private final String quotaFile =
       Objects.requireNonNull(this.getClass().getClassLoader().getResource(fileName)).getFile();
-  private final static String fileName = "quotaFile.properties";
+  private static final String fileName = "quotaFile.properties";
 
   @Timeout(value = 10)
   @Test
