@@ -20,6 +20,7 @@ package org.apache.uniffle.storage.handler.impl;
 import java.io.FileNotFoundException;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
@@ -144,6 +145,9 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
         }
       }
       Collections.shuffle(readHandlers);
+      LOG.info("Reading order of HDFS files with name prefix: {}",
+          readHandlers.stream().map(x -> x.filePrefix).collect(Collectors.toList())
+      );
     }
   }
 
