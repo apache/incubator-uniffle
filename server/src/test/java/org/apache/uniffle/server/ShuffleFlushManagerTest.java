@@ -491,13 +491,13 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     ShuffleDataFlushEvent event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100);
     flushManager.addToFlushQueue(event);
     Thread.sleep(1000);
-    assertTrue(event.getUnderStorage() instanceof LocalStorage);
+    assertTrue(event.getUnderlyingStorage() instanceof LocalStorage);
 
     // case2: huge event is written to cold storage directly
     event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100000);
     flushManager.addToFlushQueue(event);
     Thread.sleep(1000);
-    assertTrue(event.getUnderStorage() instanceof HdfsStorage);
+    assertTrue(event.getUnderlyingStorage() instanceof HdfsStorage);
     assertEquals(0, event.getRetryTimes());
 
     // case3: local disk is full or corrupted, fallback to HDFS
@@ -505,13 +505,13 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
         new ShufflePartitionedBlock(100000, 1000, 1, 1, 1L, null)
     );
     ShuffleDataFlushEvent bigEvent = new ShuffleDataFlushEvent(1, "1", 1, 1, 1, 100, blocks, null, null);
-    bigEvent.setUnderStorage(((MultiStorageManager)storageManager).getWarmStorageManager().selectStorage(event));
+    bigEvent.setUnderlyingStorage(((MultiStorageManager)storageManager).getWarmStorageManager().selectStorage(event));
     ((MultiStorageManager)storageManager).getWarmStorageManager().updateWriteMetrics(bigEvent, 0);
 
     event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100);
     flushManager.addToFlushQueue(event);
     Thread.sleep(1000);
-    assertTrue(event.getUnderStorage() instanceof HdfsStorage);
+    assertTrue(event.getUnderlyingStorage() instanceof HdfsStorage);
     assertEquals(1, event.getRetryTimes());
   }
 
@@ -537,7 +537,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
 
       List<ShufflePartitionedBlock> blocks = Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, null));
       ShuffleDataFlushEvent bigEvent = new ShuffleDataFlushEvent(1, "1", 1, 1, 1, 100, blocks, null, null);
-      bigEvent.setUnderStorage(storageManager.selectStorage(event));
+      bigEvent.setUnderlyingStorage(storageManager.selectStorage(event));
       storageManager.updateWriteMetrics(bigEvent, 0);
 
       manager.addPendingEvents(event);

@@ -177,7 +177,7 @@ public class LocalStorageManager extends SingleStorageManager {
           // If this is the first time to select storage or existing storage is corrupted,
           // we should refresh the cache.
           if (localStorage == null || localStorage.isCorrupted()) {
-            event.setUnderStorage(selectedStorage);
+            event.setUnderlyingStorage(selectedStorage);
             return selectedStorage;
           }
           return localStorage;

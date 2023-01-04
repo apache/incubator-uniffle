@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
+import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.storage.common.Storage;
 
 public class ShuffleDataFlushEvent {
@@ -44,7 +45,8 @@ public class ShuffleDataFlushEvent {
   private final AtomicInteger retryTimes = new AtomicInteger();
 
   private boolean isPended = false;
-  private Storage underStorage;
+  private StorageManager underlyingStorageManager;
+  private Storage underlyingStorage;
   private final List<Runnable> cleanupCallbackChains;
 
   public ShuffleDataFlushEvent(
@@ -124,12 +126,20 @@ public class ShuffleDataFlushEvent {
     isPended = true;
   }
 
-  public Storage getUnderStorage() {
-    return underStorage;
+  public StorageManager getUnderlyingStorageManager() {
+    return underlyingStorageManager;
   }
 
-  public void setUnderStorage(Storage underStorage) {
-    this.underStorage = underStorage;
+  public void setUnderlyingStorageManager(StorageManager underlyingStorageManager) {
+    this.underlyingStorageManager = underlyingStorageManager;
+  }
+
+  public Storage getUnderlyingStorage() {
+    return underlyingStorage;
+  }
+
+  public void setUnderlyingStorage(Storage underlyingStorage) {
+    this.underlyingStorage = underlyingStorage;
   }
 
   public boolean doCleanup() {

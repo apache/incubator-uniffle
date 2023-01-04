@@ -19,10 +19,7 @@ package org.apache.uniffle.server.storage;
 
 import java.lang.reflect.Constructor;
 import java.util.Collection;
-import java.util.concurrent.TimeUnit;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +40,6 @@ public class MultiStorageManager implements StorageManager {
   private final StorageManager coldStorageManager;
   private final long flushColdStorageThresholdSize;
   private AbstractStorageManagerFallbackStrategy storageManagerFallbackStrategy;
-  private final Cache<ShuffleDataFlushEvent, StorageManager> eventOfUnderStorageManagers;
 
   MultiStorageManager(ShuffleServerConf conf) {
     warmStorageManager = new LocalStorageManager(conf);
@@ -55,9 +51,6 @@ public class MultiStorageManager implements StorageManager {
       throw new RuntimeException("Load fallback strategy failed.", e);
     }
     long cacheTimeout = conf.getLong(ShuffleServerConf.STORAGEMANAGER_CACHE_TIMEOUT);
-    eventOfUnderStorageManagers = CacheBuilder.newBuilder()
-        .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)
-        .build();
   }
 
   public static AbstractStorageManagerFallbackStrategy loadFallbackStrategy(
@@ -109,14 +102,13 @@ public class MultiStorageManager implements StorageManager {
       storageManager = storageManagerFallbackStrategy.tryFallback(
           storageManager, event, warmStorageManager, coldStorageManager);
     }
-    eventOfUnderStorageManagers.put(event, storageManager);
-    event.addCleanupCallback(() -> eventOfUnderStorageManagers.invalidate(event));
+    event.setUnderlyingStorageManager(storageManager);
     return storageManager;
   }
 
   @Override
   public boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event) {
-    StorageManager underStorageManager = eventOfUnderStorageManagers.getIfPresent(event);
+    StorageManager underStorageManager = event.getUnderlyingStorageManager();
     if (underStorageManager == null) {
       return false;
     }

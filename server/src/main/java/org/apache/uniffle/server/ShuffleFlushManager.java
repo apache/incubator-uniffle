@@ -224,8 +224,8 @@ public class ShuffleFlushManager {
 
     if (event.getRetryTimes() > retryMax) {
       LOG.error("Failed to write data for {} in {} times, shuffle data will be lost", event, retryMax);
-      if (event.getUnderStorage() != null) {
-        ShuffleServerMetrics.incStorageFailedCounter(event.getUnderStorage().getStorageHost());
+      if (event.getUnderlyingStorage() != null) {
+        ShuffleServerMetrics.incStorageFailedCounter(event.getUnderlyingStorage().getStorageHost());
       }
     }
 
