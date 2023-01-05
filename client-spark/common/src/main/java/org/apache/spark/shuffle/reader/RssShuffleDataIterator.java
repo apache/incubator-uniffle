@@ -45,6 +45,7 @@ import org.apache.uniffle.common.config.RssConf;
 public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C>> {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleDataIterator.class);
+  private final RssConf rssConf;
 
   private Iterator<Tuple2<Object, Object>> recordsIterator = null;
   private SerializerInstance serializerInstance;
@@ -69,13 +70,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
     this.shuffleReadClient = shuffleReadClient;
     this.shuffleReadMetrics = shuffleReadMetrics;
     this.codec = Codec.newInstance(rssConf);
-    // todo: support off-heap bytebuffer
-    this.uncompressedData = ByteBuffer.allocate(
-        (int) rssConf.getSizeAsBytes(
-            RssClientConfig.RSS_WRITER_BUFFER_SIZE,
-            RssSparkConfig.RSS_WRITER_BUFFER_SIZE.defaultValueString()
-        )
-    );
+    this.rssConf = rssConf;
   }
 
   public Iterator<Tuple2<Object, Object>> createKVIterator(ByteBuffer data, int size) {
@@ -120,10 +115,20 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
         shuffleReadMetrics.incRemoteBytesRead(compressedDataLength);
 
         int uncompressedLen = compressedBlock.getUncompressLength();
-        if (uncompressedData == null || uncompressedData.capacity() < uncompressedLen) {
+        if (uncompressedData == null) {
+          // todo: support off-heap bytebuffer
+          uncompressedData = ByteBuffer.allocate(
+              (int) rssConf.getSizeAsBytes(
+                  RssClientConfig.RSS_WRITER_BUFFER_SIZE,
+                  RssSparkConfig.RSS_WRITER_BUFFER_SIZE.defaultValueString()
+              )
+          );
+        } else if (uncompressedData.capacity() < uncompressedLen) {
           uncompressedData = ByteBuffer.allocate(uncompressedLen);
+        } else {
+          uncompressedData.clear();
         }
-        uncompressedData.clear();
+
         long startDecompress = System.currentTimeMillis();
         codec.decompress(compressedData, uncompressedLen, uncompressedData, 0);
         unCompressedBytesLength += compressedBlock.getUncompressLength();
