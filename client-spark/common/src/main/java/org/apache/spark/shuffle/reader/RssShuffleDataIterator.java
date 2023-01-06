@@ -112,6 +112,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
 
         int uncompressedLen = compressedBlock.getUncompressLength();
         if (uncompressedData == null || uncompressedData.capacity() < uncompressedLen) {
+          // todo: support off-heap bytebuffer
           uncompressedData = ByteBuffer.allocate(uncompressedLen);
         }
         uncompressedData.clear();
