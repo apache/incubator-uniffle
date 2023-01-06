@@ -19,6 +19,7 @@ package org.apache.uniffle.server;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.Maps;
@@ -46,6 +47,12 @@ public class ShuffleTaskInfo {
 
   private AtomicReference<ShuffleDataDistributionType> dataDistType;
 
+  private AtomicLong totalDataSize = new AtomicLong(0);
+  /**
+   * shuffleId -> partitionId -> partition shuffle data size
+   */
+  private Map<Integer, Map<Integer, Long>> partitionDataSizes;
+
   public ShuffleTaskInfo() {
     this.currentTimes = System.currentTimeMillis();
     this.commitCounts = Maps.newConcurrentMap();
@@ -53,6 +60,7 @@ public class ShuffleTaskInfo {
     this.cachedBlockIds = Maps.newConcurrentMap();
     this.user = new AtomicReference<>();
     this.dataDistType = new AtomicReference<>();
+    this.partitionDataSizes = Maps.newConcurrentMap();
   }
 
   public Long getCurrentTimes() {
@@ -91,4 +99,29 @@ public class ShuffleTaskInfo {
   public ShuffleDataDistributionType getDataDistType() {
     return dataDistType.get();
   }
+
+  public void addPartitionDataSize(int shuffleId, int partitionId, long delta) {
+    totalDataSize.addAndGet(delta);
+    partitionDataSizes.computeIfAbsent(shuffleId, key -> Maps.newConcurrentMap());
+    Map<Integer, Long> partitions = partitionDataSizes.get(shuffleId);
+    partitions.putIfAbsent(partitionId, 0L);
+    partitions.computeIfPresent(partitionId, (k, v) -> v + delta);
+  }
+
+  public long getTotalDataSize() {
+    return totalDataSize.get();
+  }
+
+  public long getPartitionDataSize(int shuffleId, int partitionId) {
+    Map<Integer, Long> partitions = partitionDataSizes.get(shuffleId);
+    if (partitions == null) {
+      return 0;
+    }
+    Long size = partitions.get(partitionId);
+    if (size == null) {
+      return 0L;
+    }
+    return size;
+  }
+
 }
