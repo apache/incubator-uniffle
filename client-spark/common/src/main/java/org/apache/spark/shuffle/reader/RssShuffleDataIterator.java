@@ -27,7 +27,6 @@ import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.serializer.DeserializationStream;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.serializer.SerializerInstance;
-import org.apache.spark.shuffle.RssSparkConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Product2;
@@ -38,7 +37,6 @@ import scala.runtime.BoxedUnit;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
-import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
 
@@ -69,13 +67,6 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
     this.shuffleReadClient = shuffleReadClient;
     this.shuffleReadMetrics = shuffleReadMetrics;
     this.codec = Codec.newInstance(rssConf);
-    // todo: support off-heap bytebuffer
-    this.uncompressedData = ByteBuffer.allocate(
-        (int) rssConf.getSizeAsBytes(
-            RssClientConfig.RSS_WRITER_BUFFER_SIZE,
-            RssSparkConfig.RSS_WRITER_BUFFER_SIZE.defaultValueString()
-        )
-    );
   }
 
   public Iterator<Tuple2<Object, Object>> createKVIterator(ByteBuffer data, int size) {
@@ -121,6 +112,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
 
         int uncompressedLen = compressedBlock.getUncompressLength();
         if (uncompressedData == null || uncompressedData.capacity() < uncompressedLen) {
+          // todo: support off-heap bytebuffer
           uncompressedData = ByteBuffer.allocate(uncompressedLen);
         }
         uncompressedData.clear();
