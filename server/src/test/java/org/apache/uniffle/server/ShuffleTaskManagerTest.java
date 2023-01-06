@@ -45,6 +45,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
@@ -73,6 +74,49 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
   @AfterAll
   public static void tearDown() {
     ShuffleServerMetrics.clear();
+  }
+
+  @Test
+  public void partitionDataSizeSummaryTest() throws Exception {
+    String confFile = ClassLoader.getSystemResource("server.conf").getFile();
+    ShuffleServerConf conf = new ShuffleServerConf(confFile);
+    conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE.name());
+    ShuffleServer shuffleServer = new ShuffleServer(conf);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
+
+    String appId = "partitionDataSizeSummaryTest";
+    int shuffleId = 1;
+
+    shuffleTaskManager.registerShuffle(
+        appId,
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(0, 1)),
+        RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+        StringUtils.EMPTY
+    );
+
+    // case1
+    ShufflePartitionedData partitionedData0 = createPartitionedData(1, 1, 35);
+    long size1 = partitionedData0.getTotalBlockSize();
+    shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 1, partitionedData0.getBlockList());
+
+    assertEquals(
+        size1,
+        shuffleTaskManager.getShuffleTaskInfo(appId).getTotalDataSize()
+    );
+
+    // case2
+    partitionedData0 = createPartitionedData(1, 1, 35);
+    long size2 = partitionedData0.getTotalBlockSize();
+    shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 1, partitionedData0.getBlockList());
+    assertEquals(
+        size1 + size2,
+        shuffleTaskManager.getShuffleTaskInfo(appId).getTotalDataSize()
+    );
+    assertEquals(
+        size1 + size2,
+        shuffleTaskManager.getShuffleTaskInfo(appId).getPartitionDataSize(1, 1)
+    );
   }
 
   @Test

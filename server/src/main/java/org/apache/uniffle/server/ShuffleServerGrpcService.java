@@ -249,7 +249,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
             manager.releasePreAllocatedSize(toReleasedSize);
             alreadyReleasedSize += toReleasedSize;
-            manager.updateCachedBlockIds(appId, shuffleId, spd.getBlockList());
+            manager.updateCachedBlockIds(appId, shuffleId, spd.getPartitionId(), spd.getBlockList());
           }
         } catch (Exception e) {
           String errorMsg = "Error happened when shuffleEngine.write for "

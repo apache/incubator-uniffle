@@ -297,18 +297,31 @@ public class ShuffleTaskManager {
     return commitNum.incrementAndGet();
   }
 
+  // Only for tests
   public void updateCachedBlockIds(String appId, int shuffleId, ShufflePartitionedBlock[] spbs) {
+    updateCachedBlockIds(appId, shuffleId, 0, spbs);
+  }
+
+  public void updateCachedBlockIds(String appId, int shuffleId, int partitionId, ShufflePartitionedBlock[] spbs) {
     if (spbs == null || spbs.length == 0) {
       return;
     }
     ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.computeIfAbsent(appId, x -> new ShuffleTaskInfo());
     Roaring64NavigableMap bitmap = shuffleTaskInfo.getCachedBlockIds()
         .computeIfAbsent(shuffleId, x -> Roaring64NavigableMap.bitmapOf());
+
+    long size = 0L;
     synchronized (bitmap) {
       for (ShufflePartitionedBlock spb : spbs) {
         bitmap.addLong(spb.getBlockId());
+        size += spb.getSize();
       }
     }
+    shuffleTaskInfo.addPartitionDataSize(
+        shuffleId,
+        partitionId,
+        size
+    );
   }
 
   public Roaring64NavigableMap getCachedBlockIds(String appId, int shuffleId) {
@@ -601,6 +614,11 @@ public class ShuffleTaskManager {
 
   public ShuffleDataDistributionType getDataDistributionType(String appId) {
     return shuffleTaskInfos.get(appId).getDataDistType();
+  }
+
+  @VisibleForTesting
+  public ShuffleTaskInfo getShuffleTaskInfo(String appId) {
+    return shuffleTaskInfos.get(appId);
   }
 
   private void triggerFlush() {
