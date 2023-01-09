@@ -265,7 +265,6 @@ public class GetReaderTest extends IntegrationTestBase {
       return null;
     }
 
-    @Override
     public int cpus() {
       return Runtime.getRuntime().availableProcessors();
     }
