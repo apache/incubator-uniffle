@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
@@ -35,6 +36,7 @@ import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -805,7 +807,8 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     assertTrue(appIdsOnDisk.contains(appId));
 
     // make sure heartbeat timeout and resources are removed
-    Thread.sleep(5000);
+    Awaitility.await().timeout(10, TimeUnit.SECONDS).until(
+        () -> shuffleTaskManager.getAppIds().size() == 0);
 
     // Create the hidden dir to simulate LocalStorageChecker's check
     String storageDir = tempDir.getAbsolutePath();
