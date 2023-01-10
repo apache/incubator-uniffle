@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.storage.StorageInfo;
-import org.apache.uniffle.common.storage.StorageStatus;
 import org.apache.uniffle.common.storage.StorageMedia;
+import org.apache.uniffle.common.storage.StorageStatus;
 import org.apache.uniffle.common.util.RssUtilsTest;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
