@@ -1328,7 +1328,7 @@
         <scala.binary.version>2.12</scala.binary.version>
         <spark.version>3.3.1</spark.version>
         <client.type>3</client.type>
-        <jackson.version>2.12.0</jackson.version>
+        <jackson.version>2.13.4</jackson.version>
       </properties>
       <modules>
         <module>client-spark/common</module>
