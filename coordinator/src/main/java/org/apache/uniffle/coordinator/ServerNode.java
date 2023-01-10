@@ -23,8 +23,6 @@ import java.util.Set;
 import com.google.common.collect.Maps;
 
 import org.apache.uniffle.common.storage.StorageInfo;
-import org.apache.uniffle.common.storage.StorageInfoUtils;
-import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
 
 public class ServerNode implements Comparable<ServerNode> {
@@ -65,7 +63,7 @@ public class ServerNode implements Comparable<ServerNode> {
       int eventNumInFlush,
       Set<String> tags,
       boolean isHealthy,
-      Map<String, RssProtos.StorageInfo> storageInfoMap) {
+      Map<String, StorageInfo> storageInfoMap) {
     this.id = id;
     this.ip = ip;
     this.port = port;
@@ -76,7 +74,7 @@ public class ServerNode implements Comparable<ServerNode> {
     this.timestamp = System.currentTimeMillis();
     this.tags = tags;
     this.isHealthy = isHealthy;
-    this.storageInfo = StorageInfoUtils.fromProto(storageInfoMap);
+    this.storageInfo = storageInfoMap;
   }
 
   public ShuffleServerId convertToGrpcProto() {
