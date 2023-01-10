@@ -265,6 +265,10 @@ public class GetReaderTest extends IntegrationTestBase {
       return null;
     }
 
+    public int cpus() {
+      return Runtime.getRuntime().availableProcessors();
+    }
+
     @Override
     public java.util.Map<String, ResourceInformation> resourcesJMap() {
       return null;
