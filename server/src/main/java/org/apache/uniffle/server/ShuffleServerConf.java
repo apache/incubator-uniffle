@@ -337,10 +337,10 @@ public class ShuffleServerConf extends RssBaseConf {
           + "512K, or even 1M");
 
   public static final ConfigOption<String> STORAGE_MEDIA_PROVIDER_ENV_KEY = ConfigOptions
-      .key("rss.server.localStorageProvider.from.env.key")
+      .key("rss.server.storageMediaProvider.from.env.key")
       .stringType()
       .noDefaultValue()
-      .withDescription("The env key to get json source of local storage provider");
+      .withDescription("The env key to get json source of local storage media provider");
 
   public ShuffleServerConf() {
   }
