@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageMedia;
 import org.apache.uniffle.common.storage.StorageStatus;
-import org.apache.uniffle.proto.RssProtos;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -58,15 +57,14 @@ public class ServerNodeTest {
     ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20, 10, tags, true);
     // default constructor creates ServerNode with zero size of LocalStorage
     assertEquals(0, sn1.getStorageInfo().size());
-    Map<String, RssProtos.StorageInfo> localStorageInfo = Maps.newHashMap();
+    Map<String, StorageInfo> localStorageInfo = Maps.newHashMap();
     StorageInfo info = new StorageInfo(
         "/mnt",
         StorageMedia.SSD,
         100L,
         60L,
         StorageStatus.NORMAL);
-    RssProtos.StorageInfo infoProto = info.toProto();
-    localStorageInfo.put("/mnt", infoProto);
+    localStorageInfo.put("/mnt", info);
     ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 20, 10, tags, true, localStorageInfo);
     assertEquals(1, sn2.getStorageInfo().size());
   }
