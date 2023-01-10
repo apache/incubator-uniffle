@@ -71,7 +71,7 @@
     <roaring.bitmap.version>0.9.15</roaring.bitmap.version>
     <rss.shade.packageName>org.apache.uniffle</rss.shade.packageName>
     <skipDeploy>false</skipDeploy>
-    <slf4j.version>1.7.25</slf4j.version>
+    <slf4j.version>1.7.36</slf4j.version>
     <spotbugs.version>4.7.0</spotbugs.version>
     <spotbugs-maven-plugin.version>4.7.0.0</spotbugs-maven-plugin.version>
     <system-rules.version>1.19.0</system-rules.version>
