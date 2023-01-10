@@ -142,6 +142,29 @@ type ShuffleServerConfig struct {
 
 	// UpgradeStrategy defines upgrade strategy of shuffle servers.
 	UpgradeStrategy *ShuffleServerUpgradeStrategy `json:"upgradeStrategy"`
+
+	// volumeClaimTemplates is a list of claims that pods are allowed to reference.
+	// The StatefulSet controller is responsible for mapping network identities to
+	// claims in a way that maintains the identity of a pod. Every claim in
+	// this list must have at least one matching (by name) volumeMount in one
+	// container in the template. A claim in this list takes precedence over
+	// any volumes in the template, with the same name.
+	// +optional
+	VolumeClaimTemplates []ShuffleServerPersistentVolumeClaimTemplate `json:"volumeClaimTemplates,omitempty" protobuf:"bytes,4,rep,name=volumeClaimTemplates"`
+}
+
+type ShuffleServerPersistentVolumeClaimTemplate struct {
+	// May contain labels and annotations that will be copied into the PVC
+	// when creating it. No other fields are allowed and will be rejected during
+	// validation.
+	//
+	VolumeNameTemplate *string `json:"volumeNameTemplate"`
+
+	// The specification for the PersistentVolumeClaim. The entire content is
+	// copied unchanged into the PVC that gets created from this
+	// template. The same fields as in a PersistentVolumeClaim
+	// are also valid here.
+	Spec corev1.PersistentVolumeClaimSpec `json:"spec" protobuf:"bytes,2,name=spec"`
 }
 
 // ShuffleServerUpgradeStrategy defines upgrade strategy of shuffle servers.
