@@ -112,7 +112,12 @@ public class StorageInfo {
     return Objects.equals(mountPoint, that.mountPoint) && type == that.type
         && capacity == that.capacity
         && usedBytes == that.usedBytes
+        && writingSpeed1M == that.writingSpeed1M
+        && writingSpeed5M == that.writingSpeed5M
+        && writingSpeed1H == that.writingSpeed1H
+        && numberOfWritingFailures == that.numberOfWritingFailures
         && status == that.status;
+
   }
 
   @Override
