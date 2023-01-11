@@ -62,6 +62,9 @@ public class ShuffleBufferManager {
   // when shuffle buffer manager flushes data, shuffles with data size < shuffleFlushThreshold is kept in memory to
   // reduce small I/Os to persistent storage, especially for local HDDs.
   private long shuffleFlushThreshold;
+  // Huge partition vars
+  private long hugePartitionSizeThreshold;
+  private long hugePartitionMemoryLimitSize;
 
   protected long bufferSize = 0;
   protected AtomicLong preAllocatedSize = new AtomicLong(0L);
@@ -86,6 +89,10 @@ public class ShuffleBufferManager {
     this.bufferFlushEnabled = conf.getBoolean(ShuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED);
     this.bufferFlushThreshold = conf.getLong(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD);
     this.shuffleFlushThreshold = conf.getLong(ShuffleServerConf.SERVER_SHUFFLE_FLUSH_THRESHOLD);
+    this.hugePartitionSizeThreshold = conf.getSizeAsBytes(ShuffleServerConf.HUGE_PARTITION_SIZE_THRESHOLD);
+    this.hugePartitionMemoryLimitSize = Math.round(
+        capacity * conf.get(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO)
+    );
   }
 
   public StatusCode registerBuffer(String appId, int shuffleId, int startPartition, int endPartition) {
@@ -190,6 +197,7 @@ public class ShuffleBufferManager {
     // than rss.server.flush.cold.storage.threshold.size, otherwise cold storage will be useless.
     if (this.bufferFlushEnabled && buffer.getSize() > this.bufferFlushThreshold) {
       flushBuffer(buffer, appId, shuffleId, startPartition, endPartition);
+      return;
     }
   }
 
@@ -514,5 +522,17 @@ public class ShuffleBufferManager {
       }
       shuffleIdToBuffers.remove(shuffleId);
     }
+  }
+
+  public boolean limitHugePartition(String appId, int shuffleId, int partitionId, long usedPartitionDataSize) {
+    if (usedPartitionDataSize > hugePartitionSizeThreshold) {
+      long memoryUsed = getShuffleBufferEntry(appId, shuffleId, partitionId).getValue().getSize();
+      if (memoryUsed > hugePartitionMemoryLimitSize) {
+        LOG.warn("AppId: {}, shuffleId: {}, partitionId: {}, memory used: {}, "
+            + "huge partition triggered memory limitation.", appId, shuffleId, partitionId, memoryUsed);
+        return true;
+      }
+    }
+    return false;
   }
 }

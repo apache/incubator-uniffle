@@ -353,7 +353,22 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void requireBuffer(RequireBufferRequest request,
       StreamObserver<RequireBufferResponse> responseObserver) {
-    long requireBufferId = shuffleServer.getShuffleTaskManager().requireBuffer(request.getRequireSize());
+    String appId = request.getAppId();
+    long requireBufferId;
+    if (appId == null) {
+      // To be compatible with older client version
+      requireBufferId = shuffleServer.getShuffleTaskManager().requireBuffer(
+          request.getRequireSize()
+      );
+    } else {
+      requireBufferId = shuffleServer.getShuffleTaskManager().requireBuffer(
+          appId,
+          request.getShuffleId(),
+          request.getPartitionIdsList(),
+          request.getRequireSize()
+      );
+    }
+
     StatusCode status = StatusCode.SUCCESS;
     if (requireBufferId == -1) {
       status = StatusCode.NO_BUFFER;
