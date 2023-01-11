@@ -19,6 +19,8 @@ package org.apache.uniffle.storage.common;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileStore;
+import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
@@ -32,6 +34,7 @@ import org.roaringbitmap.RoaringBitmap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.storage.StorageMedia;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
@@ -47,6 +50,7 @@ public class LocalStorage extends AbstractStorage {
 
   private long capacity;
   private final String basePath;
+  private final String mountPoint;
   private final double cleanupThreshold;
   private final long cleanIntervalMs;
   private final double highWaterMarkOfWrite;
@@ -55,6 +59,7 @@ public class LocalStorage extends AbstractStorage {
   private final Queue<String> expiredShuffleKeys = Queues.newLinkedBlockingQueue();
 
   private LocalStorageMeta metaData = new LocalStorageMeta();
+  private final StorageMedia media;
   private boolean isSpaceEnough = true;
   private volatile boolean isCorrupted = false;
 
@@ -67,6 +72,7 @@ public class LocalStorage extends AbstractStorage {
     this.lowWaterMarkOfWrite = builder.lowWaterMarkOfWrite;
     this.capacity = builder.capacity;
     this.shuffleExpiredTimeoutMs = builder.shuffleExpiredTimeoutMs;
+    this.media = builder.media;
 
     File baseFolder = new File(basePath);
     try {
@@ -74,6 +80,8 @@ public class LocalStorage extends AbstractStorage {
       if (!baseFolder.mkdirs()) {
         throw new IOException("Failed to create base folder: " + basePath);
       }
+      FileStore store = Files.getFileStore(baseFolder.toPath());
+      this.mountPoint =  store.name();
     } catch (IOException ioe) {
       LOG.warn("Init base directory " + basePath + " fail, the disk should be corrupted", ioe);
       throw new RuntimeException(ioe);
@@ -221,6 +229,14 @@ public class LocalStorage extends AbstractStorage {
     return capacity;
   }
 
+  public String getMountPoint() {
+    return mountPoint;
+  }
+
+  public StorageMedia getStorageMedia() {
+    return media;
+  }
+
   public double getHighWaterMarkOfWrite() {
     return highWaterMarkOfWrite;
   }
@@ -326,6 +342,7 @@ public class LocalStorage extends AbstractStorage {
     private String basePath;
     private long cleanIntervalMs;
     private long shuffleExpiredTimeoutMs;
+    private StorageMedia media;
 
     private Builder() {
     }
@@ -362,6 +379,11 @@ public class LocalStorage extends AbstractStorage {
 
     public Builder shuffleExpiredTimeoutMs(long shuffleExpiredTimeoutMs) {
       this.shuffleExpiredTimeoutMs = shuffleExpiredTimeoutMs;
+      return this;
+    }
+
+    public Builder localStorageMedia(StorageMedia media) {
+      this.media = media;
       return this;
     }
 

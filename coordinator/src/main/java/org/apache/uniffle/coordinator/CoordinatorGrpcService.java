@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.storage.StorageInfoUtils;
 import org.apache.uniffle.coordinator.access.AccessCheckResult;
 import org.apache.uniffle.coordinator.access.AccessInfo;
 import org.apache.uniffle.coordinator.strategy.assignment.PartitionRangeAssignment;
@@ -374,6 +375,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         request.getAvailableMemory(),
         request.getEventNumInFlush(),
         Sets.newHashSet(request.getTagsList()),
-        isHealthy);
+        isHealthy,
+        StorageInfoUtils.fromProto(request.getStorageInfoMap()));
   }
 }

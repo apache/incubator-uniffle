@@ -87,6 +87,11 @@ This document will introduce how to deploy Uniffle shuffle servers.
 |rss.server.max.concurrency.of.single.partition.writer|1|The max concurrency of single partition writer, the data partition file number is equal to this value. Default value is 1. This config could improve the writing speed, especially for huge partition.|
 |rss.metrics.reporter.class|-|The class of metrics reporter.|
 
+### Advanced Configurations
+|Property Name|Default| Description                                                                                                                                                                                 |
+|---|---|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|rss.server.storageMediaProvider.from.env.key|-| Sometimes, the local storage type/media info is provided by external system. RSS would read the env key defined by this configuration and get info about the storage media of its basePaths |
+
 
 ### PrometheusPushGatewayMetricReporter settings
 PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, which will allow user pushes metrics to a [Prometheus Pushgateway](https://github.com/prometheus/pushgateway), which can be scraped by Prometheus.

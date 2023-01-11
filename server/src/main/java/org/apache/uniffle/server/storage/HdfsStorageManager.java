@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
+import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
@@ -139,6 +140,12 @@ public class HdfsStorageManager extends SingleStorageManager {
 
   @Override
   public void checkAndClearLeakedShuffleData(Collection<String> appIds) {
+  }
+
+  @Override
+  public Map<String, StorageInfo> getStorageInfo() {
+    // todo: report remote storage info
+    return Maps.newHashMap();
   }
 
   public HdfsStorage getStorageByAppId(String appId) {

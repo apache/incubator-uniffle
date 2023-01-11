@@ -336,6 +336,12 @@ public class ShuffleServerConf extends RssBaseConf {
       .withDescription("Threshold when flushing shuffle data to persistent storage, recommend value would be 256K, "
           + "512K, or even 1M");
 
+  public static final ConfigOption<String> STORAGE_MEDIA_PROVIDER_ENV_KEY = ConfigOptions
+      .key("rss.server.storageMediaProvider.from.env.key")
+      .stringType()
+      .noDefaultValue()
+      .withDescription("The env key to get json source of local storage media provider");
+
   public ShuffleServerConf() {
   }
 

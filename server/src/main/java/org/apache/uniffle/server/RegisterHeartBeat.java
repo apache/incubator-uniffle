@@ -18,6 +18,7 @@
 package org.apache.uniffle.server;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,6 +36,7 @@ import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.request.RssSendHeartBeatRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssSendHeartBeatResponse;
+import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public class RegisterHeartBeat {
@@ -80,7 +82,8 @@ public class RegisterHeartBeat {
             shuffleServer.getAvailableMemory(),
             shuffleServer.getEventNumInFlush(),
             shuffleServer.getTags(),
-            shuffleServer.isHealthy());
+            shuffleServer.isHealthy(),
+            shuffleServer.getStorageManager().getStorageInfo());
       } catch (Exception e) {
         LOG.warn("Error happened when send heart beat to coordinator");
       }
@@ -98,7 +101,8 @@ public class RegisterHeartBeat {
       long availableMemory,
       int eventNumInFlush,
       Set<String> tags,
-      boolean isHealthy) {
+      boolean isHealthy,
+      Map<String, StorageInfo> localStorageInfo) {
     boolean sendSuccessfully = false;
     RssSendHeartBeatRequest request = new RssSendHeartBeatRequest(
         id,
@@ -110,7 +114,8 @@ public class RegisterHeartBeat {
         eventNumInFlush,
         heartBeatTimeout,
         tags,
-        isHealthy);
+        isHealthy,
+        localStorageInfo);
     List<Future<RssSendHeartBeatResponse>> respFutures = coordinatorClients
         .stream()
         .map(client -> heartBeatExecutorService.submit(() -> client.sendHeartBeat(request)))

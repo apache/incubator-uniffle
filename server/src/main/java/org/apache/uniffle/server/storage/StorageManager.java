@@ -18,8 +18,10 @@
 package org.apache.uniffle.server.storage;
 
 import java.util.Collection;
+import java.util.Map;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
@@ -54,4 +56,12 @@ public interface StorageManager {
   // todo: add an interface that check storage isHealthy
 
   void checkAndClearLeakedShuffleData(Collection<String> appIds);
+
+  /**
+   * Report a map of storage mount point -> storage info mapping. For local storages, the mount point will be the device
+   * name of the base dir belongs to. For remote storage, the mount point would be the base dir with protocol schema,
+   * such as hdfs://path/to/some/base/dir.
+   * @return a map of storage mount point -> storage info.
+   */
+  Map<String, StorageInfo> getStorageInfo();
 }

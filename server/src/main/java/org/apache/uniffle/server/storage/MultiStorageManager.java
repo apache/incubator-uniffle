@@ -19,6 +19,7 @@ package org.apache.uniffle.server.storage;
 
 import java.lang.reflect.Constructor;
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.cache.Cache;
@@ -27,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
@@ -142,6 +144,13 @@ public class MultiStorageManager implements StorageManager {
   @Override
   public void checkAndClearLeakedShuffleData(Collection<String> appIds) {
     warmStorageManager.checkAndClearLeakedShuffleData(appIds);
+  }
+
+  @Override
+  public Map<String, StorageInfo> getStorageInfo() {
+    Map<String, StorageInfo> localStorageInfo = warmStorageManager.getStorageInfo();
+    localStorageInfo.putAll(coldStorageManager.getStorageInfo());
+    return localStorageInfo;
   }
 
   public void removeResources(PurgeEvent event) {

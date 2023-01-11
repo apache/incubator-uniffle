@@ -36,7 +36,11 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleRegisterInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.storage.StorageInfo;
+import org.apache.uniffle.common.storage.StorageMedia;
+import org.apache.uniffle.common.storage.StorageStatus;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.RssUtilsTest;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.coordinator.SimpleClusterManager;
@@ -231,16 +235,31 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     List<ServerNode> nodes = scm.getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     assertEquals(1, nodes.size());
     ServerNode node = nodes.get(0);
+    assertEquals(1, node.getStorageInfo().size());
+    StorageInfo infoHead = node.getStorageInfo().values().iterator().next();
+    assertEquals(StorageMedia.HDD, infoHead.getType());
+    assertEquals(StorageStatus.NORMAL, infoHead.getStatus());
     assertTrue(node.getTags().contains(Constants.SHUFFLE_SERVER_VERSION));
     assertTrue(scm.getTagToNodes().get(Constants.SHUFFLE_SERVER_VERSION).contains(node));
     ShuffleServerConf shuffleServerConf = shuffleServers.get(0).getShuffleServerConf();
     shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 2);
     shuffleServerConf.setInteger("rss.jetty.http.port", 18082);
+    shuffleServerConf.set(ShuffleServerConf.STORAGE_MEDIA_PROVIDER_ENV_KEY, "RSS_ENV_KEY");
+    String baseDir = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0);
+    String storageTypeJsonSource = String.format("{\"%s\": \"ssd\"}", baseDir);
+    RssUtilsTest.setEnv("RSS_ENV_KEY", storageTypeJsonSource);
+    // set this server's tag to ssd
+    shuffleServerConf.set(ShuffleServerConf.TAGS, Lists.newArrayList("SSD"));
     ShuffleServer ss = new ShuffleServer(shuffleServerConf);
     ss.start();
     shuffleServers.set(0, ss);
     Thread.sleep(3000);
     assertEquals(2, coordinators.get(0).getClusterManager().getNodesNum());
+    nodes = scm.getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION, "SSD"));
+    assertEquals(1, nodes.size());
+    ServerNode ssdNode = nodes.get(0);
+    infoHead = ssdNode.getStorageInfo().values().iterator().next();
+    assertEquals(StorageMedia.SSD, infoHead.getType());
     scm.close();
   }
 

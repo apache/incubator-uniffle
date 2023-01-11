@@ -53,6 +53,8 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.storage.StorageInfo;
+import org.apache.uniffle.common.storage.StorageInfoUtils;
 import org.apache.uniffle.proto.CoordinatorServerGrpc;
 import org.apache.uniffle.proto.CoordinatorServerGrpc.CoordinatorServerBlockingStub;
 import org.apache.uniffle.proto.RssProtos;
@@ -115,7 +117,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       int eventNumInFlush,
       long timeout,
       Set<String> tags,
-      boolean isHealthy) {
+      boolean isHealthy,
+      Map<String, StorageInfo> storageInfo) {
     ShuffleServerId serverId =
         ShuffleServerId.newBuilder().setId(id).setIp(ip).setPort(port).build();
     ShuffleServerHeartBeatRequest request =
@@ -127,6 +130,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             .setEventNumInFlush(eventNumInFlush)
             .addAllTags(tags)
             .setIsHealthy(BoolValue.newBuilder().setValue(isHealthy).build())
+            .putAllStorageInfo(StorageInfoUtils.toProto(storageInfo))
             .build();
 
     StatusCode status;
@@ -190,7 +194,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         request.getEventNumInFlush(),
         request.getTimeout(),
         request.getTags(),
-        request.isHealthy());
+        request.isHealthy(),
+        request.getStorageInfo());
 
     RssSendHeartBeatResponse response;
     StatusCode statusCode = rpcResponse.getStatus();
