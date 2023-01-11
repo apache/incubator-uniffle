@@ -235,8 +235,8 @@ public class ShuffleBufferManager {
       return;
     }
 
-    if (getPartitionDataSizeFunc != null &&
-        getPartitionDataSizeFunc.accept(appId, shuffleId, partitionId) > hugePartitionSizeThreshold) {
+    if (getPartitionDataSizeFunc != null
+        && getPartitionDataSizeFunc.accept(appId, shuffleId, partitionId) > hugePartitionSizeThreshold) {
       flushBuffer(buffer, appId, shuffleId, startPartition, endPartition);
       return;
     }
