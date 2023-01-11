@@ -199,7 +199,13 @@ public class ShuffleTaskManager {
   public StatusCode cacheShuffleData(
       String appId, int shuffleId, boolean isPreAllocated, ShufflePartitionedData spd) {
     refreshAppId(appId);
-    return shuffleBufferManager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
+    return shuffleBufferManager.cacheShuffleData(
+        appId,
+        shuffleId,
+        isPreAllocated,
+        spd,
+        (appIdx, shuffleIdx, partitionIdx) -> getPartitionDataSize(appIdx, shuffleIdx, partitionIdx)
+    );
   }
 
   public PreAllocatedBufferInfo getAndRemovePreAllocatedBuffer(long requireBufferId) {
@@ -334,11 +340,19 @@ public class ShuffleTaskManager {
     return blockIds;
   }
 
+  public long getPartitionDataSize(String appId, int shuffleId, int partitionId) {
+    ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
+    if (shuffleTaskInfo == null) {
+      return 0L;
+    }
+    return shuffleTaskInfo.getPartitionDataSize(shuffleId, partitionId);
+  }
+
   public long requireBuffer(String appId, int shuffleId, List<Integer> partitionIds, int requireSize) {
     ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
     if (shuffleTaskInfo != null) {
       for (int partitionId : partitionIds) {
-        long partitionUsedDataSize = shuffleTaskInfo.getPartitionDataSize(shuffleId, partitionId);
+        long partitionUsedDataSize = getPartitionDataSize(appId, shuffleId, partitionId);
         if (shuffleBufferManager.limitHugePartition(appId, shuffleId, partitionId, partitionUsedDataSize)) {
           return -1;
         }
