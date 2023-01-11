@@ -260,11 +260,14 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     for (ShuffleBlockInfo sbi : shuffleBlockInfoList) {
       List<ShuffleServerInfo> allServers = sbi.getShuffleServerInfos();
       if (replica > 1 && !shuffleServerBlacklist.isEmpty()) {
-        for (int i = allServers.size() - 2; i >= 0; i--) {
-          ShuffleServerInfo serverInfo = allServers.get(i);
-          if (shuffleServerBlacklist.contains(serverInfo)) {
-            allServers.remove(i);
-            allServers.add(serverInfo);
+        // allServers is shared and is not thread safe
+        synchronized (this) {
+          for (int i = allServers.size() - 2; i >= 0; i--) {
+            ShuffleServerInfo serverInfo = allServers.get(i);
+            if (shuffleServerBlacklist.contains(serverInfo)) {
+              allServers.remove(i);
+              allServers.add(serverInfo);
+            }
           }
         }
       }
