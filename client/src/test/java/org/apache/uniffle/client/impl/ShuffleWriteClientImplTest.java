@@ -104,4 +104,54 @@ public class ShuffleWriteClientImplTest {
     shuffleWriteClient.unregisterShuffle(appId1, 1);
     assertEquals(1, shuffleWriteClient.getAllShuffleServers(appId1).size());
   }
+
+  @Test
+  public void testSendDataBlacklist() {
+    ShuffleWriteClientImpl shuffleWriteClient =
+        new ShuffleWriteClientImpl("GRPC", 3, 2000, 4, 3, 2, 2, true, 1, 1, 10, 10);
+    ShuffleServerClient mockShuffleServerClient = mock(ShuffleServerClient.class);
+    ShuffleWriteClientImpl spyClient = Mockito.spy(shuffleWriteClient);
+    doReturn(mockShuffleServerClient).when(spyClient).getShuffleServerClient(any());
+    when(mockShuffleServerClient.sendShuffleData(any())).thenReturn(
+        new RssSendShuffleDataResponse(ResponseStatusCode.NO_BUFFER),
+        new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS),
+        new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS));
+
+    String appId = "testSendDataBlacklist_appId";
+    ShuffleServerInfo ssi1 = new ShuffleServerInfo("127.0.0.1", 0);
+    ShuffleServerInfo ssi2 = new ShuffleServerInfo("127.0.0.1", 1);
+    ShuffleServerInfo ssi3 = new ShuffleServerInfo("127.0.0.1", 2);
+    List<ShuffleServerInfo> shuffleServerInfoList =
+        Lists.newArrayList(ssi1, ssi2, ssi3);
+    List<ShuffleBlockInfo> shuffleBlockInfoList = Lists.newArrayList(new ShuffleBlockInfo(
+        0, 0, 10, 10, 10, new byte[]{1}, shuffleServerInfoList, 10, 100, 0));
+    SendShuffleDataResult result = spyClient.sendShuffleData(appId, shuffleBlockInfoList, () -> false);
+    assertEquals(0, result.getFailedBlockIds().size());
+    assertEquals(ssi1, shuffleBlockInfoList.get(0).getShuffleServerInfos().get(0));
+
+    // Send data for the second time, the first shuffle server will be moved to the last.
+    when(mockShuffleServerClient.sendShuffleData(any())).thenReturn(
+        new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS),
+        new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS));
+    result = spyClient.sendShuffleData(appId, shuffleBlockInfoList, () -> false);
+    assertEquals(0, result.getFailedBlockIds().size());
+    assertEquals(ssi1, shuffleBlockInfoList.get(0).getShuffleServerInfos().get(2));
+
+    // Send data for the third time, the first server will be removed from the blacklist
+    // and the second server will be added to the blacklist.
+    when(mockShuffleServerClient.sendShuffleData(any())).thenReturn(
+        new RssSendShuffleDataResponse(ResponseStatusCode.NO_BUFFER),
+        new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS),
+        new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS));
+    List<ShuffleServerInfo> shuffleServerInfoList2 =
+        Lists.newArrayList(ssi2, ssi1, ssi3);
+    List<ShuffleBlockInfo> shuffleBlockInfoList2 = Lists.newArrayList(new ShuffleBlockInfo(
+        0, 0, 10, 10, 10, new byte[]{1}, shuffleServerInfoList2, 10, 100, 0));
+    result = spyClient.sendShuffleData(appId, shuffleBlockInfoList2, () -> false);
+    assertEquals(0, result.getFailedBlockIds().size());
+    assertEquals(1, spyClient.getShuffleServerBlacklist().size());
+    assertEquals(ssi1, shuffleBlockInfoList.get(0).getShuffleServerInfos().get(2));
+    assertEquals(ssi2, spyClient.getShuffleServerBlacklist().toArray()[0]);
+  }
+
 }
