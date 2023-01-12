@@ -43,6 +43,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class LocalFileServerReadHandlerTest {
   @Test
   public void testDataInconsistent() throws Exception {
+    LocalFileHandlerTestBase.reset();
+
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     int expectTotalBlockNum = 4;
     int blockSize = 7;
