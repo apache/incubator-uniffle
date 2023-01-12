@@ -156,7 +156,7 @@ public class ShuffleServerMetricsTest {
   public void testServerMetricsConcurrently() throws Exception {
     ExecutorService executorService = Executors.newFixedThreadPool(3);
     List<Callable<Void>> calls = new ArrayList<>();
-    ShuffleServerMetrics.gaugeBufferDataSize.set(0);
+    ShuffleServerMetrics.gaugeInFlushBufferSize.set(0);
 
     long expectedNum = 0;
     for (int i = 1; i < 5; ++i) {
@@ -165,7 +165,7 @@ public class ShuffleServerMetricsTest {
         calls.add(new Callable<Void>() {
           @Override
           public Void call() throws Exception {
-            ShuffleServerMetrics.gaugeBufferDataSize.inc(cur);
+            ShuffleServerMetrics.gaugeInFlushBufferSize.inc(cur);
             return null;
           }
         });
@@ -174,7 +174,7 @@ public class ShuffleServerMetricsTest {
         calls.add(new Callable<Void>() {
           @Override
           public Void call() throws Exception {
-            ShuffleServerMetrics.gaugeBufferDataSize.dec(cur);
+            ShuffleServerMetrics.gaugeInFlushBufferSize.dec(cur);
             return null;
           }
         });
