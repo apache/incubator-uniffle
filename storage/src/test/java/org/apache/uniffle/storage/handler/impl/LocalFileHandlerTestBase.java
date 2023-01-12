@@ -44,6 +44,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class LocalFileHandlerTestBase {
   private static AtomicLong ATOMIC_LONG = new AtomicLong(0L);
 
+  public static void reset() {
+    ATOMIC_LONG = new AtomicLong(0L);
+  }
+
   public static void writeTestData(
       ShuffleWriteHandler writeHandler,
       int num, int length,
