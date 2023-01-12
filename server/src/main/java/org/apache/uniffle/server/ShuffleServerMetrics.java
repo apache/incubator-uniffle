@@ -63,13 +63,9 @@ public class ShuffleServerMetrics {
   private static final String LOCAL_STORAGE_USED_SPACE_RATIO = "local_storage_used_space_ratio";
 
   private static final String IS_HEALTHY = "is_healthy";
-  private static final String REGISTERED_SHUFFLE = "registered_shuffle";
-  private static final String REGISTERED_SHUFFLE_ENGINE = "registered_shuffle_engine";
   private static final String ALLOCATED_BUFFER_SIZE = "allocated_buffer_size";
   private static final String IN_FLUSH_BUFFER_SIZE = "in_flush_buffer_size";
   private static final String USED_BUFFER_SIZE = "used_buffer_size";
-  private static final String TOTAL_UPLOAD_SIZE = "total_upload_size";
-  private static final String TOTAL_UPLOAD_TIME_S = "total_upload_time_s";
   private static final String TOTAL_FAILED_WRITTEN_EVENT_NUM = "total_failed_written_event_num";
   private static final String TOTAL_DROPPED_EVENT_NUM = "total_dropped_event_num";
   private static final String TOTAL_HDFS_WRITE_DATA = "total_hdfs_write_data";
