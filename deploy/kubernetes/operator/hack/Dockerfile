@@ -35,12 +35,9 @@ COPY pkg/ pkg/
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o ${MODULE} cmd/${MODULE}/main.go
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM alpine
-RUN apk add --update curl && \
-    rm -rf /var/cache/apk/*
+FROM debian:11.6-slim
+ARG MODULE
 WORKDIR /
 COPY --from=builder /workspace/${MODULE} .
-
-CMD ["${MODULE}"]
+ENV OPERATOR_BIN=/${MODULE}
+ENTRYPOINT "/${OPERATOR_BIN}"

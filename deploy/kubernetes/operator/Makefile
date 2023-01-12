@@ -16,12 +16,16 @@
 #
 
 # REGISTRY URL to use all building/pushing image targets
-REGISTRY ?= UNKNOWN_REGISTRY
+REGISTRY ?= ''
+
+ifneq ('', ${REGISTRY})
+REGISTRY := $(addsuffix /, ${REGISTRY})
+endif
 
 MODULES ?= webhook controller
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.22.1
+ENVTEST_K8S_VERSION = 1.24.1
 
 LOCAL_DIR=$(shell pwd)/local
 
@@ -77,7 +81,10 @@ build: test ## Build manager binary.
 # Build the docker image
 docker-build: build version
 	@for module in ${MODULES}; do \
-		image=${REGISTRY}/rss-$$module:$$(cat VERSION); \
+		echo registry is ${REGISTRY}; \
+		image_name=${REGISTRY}rss-$$module; \
+		echo image_name $$image_name; \
+		image=$$image_name:$$(cat VERSION); \
 		echo building $$image;\
 		docker build . -t $$image --build-arg MODULE=$$module -f hack/Dockerfile; \
 	done
@@ -85,7 +92,9 @@ docker-build: build version
 # Push the docker image
 docker-push: docker-build
 	@for module in ${MODULES}; do \
-		image=${REGISTRY}/rss-$$module:$$(cat VERSION); \
+		image_name=${REGISTRY}rss-$$module; \
+		echo image_name $$image_name; \
+		image=$$image_name:$$(cat VERSION); \
 		echo pushing $$image;\
 		docker push $$image; \
 	done
