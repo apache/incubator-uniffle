@@ -43,8 +43,10 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -440,6 +442,71 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleBufferManager.removeBuffer(appId);
     assertEquals(64, shuffleBufferManager.getUsedMemory());
     assertEquals(1, shuffleBufferManager.getBufferPool().keySet().size());
+  }
+
+  @Test
+  public void flushSingleBufferForHugePartitionTest(@TempDir File tmpDir) throws Exception {
+    ShuffleServerConf shuffleConf = new ShuffleServerConf();
+    File dataDir = new File(tmpDir, "data");
+    shuffleConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    shuffleConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(dataDir.getAbsolutePath()));
+    shuffleConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);
+    shuffleConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 80.0);
+    shuffleConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
+    shuffleConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 200L);
+    shuffleConf.set(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO, 0.1);
+    shuffleConf.set(ShuffleServerConf.HUGE_PARTITION_SIZE_THRESHOLD, 100L);
+    shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD, 64L);
+
+    ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
+    StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(shuffleConf);
+    ShuffleFlushManager shuffleFlushManager =
+        new ShuffleFlushManager(shuffleConf, "serverId", mockShuffleServer, storageManager);
+    shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager);
+    ShuffleTaskManager shuffleTaskManager =
+        new ShuffleTaskManager(shuffleConf, shuffleFlushManager, shuffleBufferManager, storageManager);
+
+    when(mockShuffleServer
+        .getShuffleFlushManager())
+        .thenReturn(shuffleFlushManager);
+    when(mockShuffleServer
+        .getShuffleBufferManager())
+        .thenReturn(shuffleBufferManager);
+    when(mockShuffleServer
+        .getShuffleTaskManager())
+        .thenReturn(shuffleTaskManager);
+
+    String appId = "flushSingleBufferForHugePartitionTest_appId";
+    int shuffleId = 1;
+
+    // case1: its partition is not huge partition
+    shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 0);
+    ShufflePartitionedData partitionedData = createData(0, 1);
+    shuffleTaskManager.cacheShuffleData(appId, shuffleId, false, partitionedData);
+    shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 0, partitionedData.getBlockList());
+    assertEquals(1 + 32, shuffleBufferManager.getUsedMemory());
+    long usedSize = shuffleTaskManager.getPartitionDataSize(appId, shuffleId, 0);
+    assertEquals(1 + 32, usedSize);
+    assertFalse(
+        shuffleBufferManager.limitHugePartition(appId, shuffleId, 0,
+            shuffleTaskManager.getPartitionDataSize(appId, shuffleId, 0)
+        )
+    );
+
+    // case2: its partition is huge partition, its buffer will be flushed to DISK directly
+    partitionedData = createData(0, 36);
+    shuffleTaskManager.cacheShuffleData(appId, shuffleId, false, partitionedData);
+    shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 0, partitionedData.getBlockList());
+    assertEquals(33 + 36 + 32, shuffleBufferManager.getUsedMemory());
+    assertTrue(
+        shuffleBufferManager.limitHugePartition(appId, shuffleId, 0,
+            shuffleTaskManager.getPartitionDataSize(appId, shuffleId, 0)
+        )
+    );
+    partitionedData = createData(0, 1);
+    shuffleTaskManager.cacheShuffleData(appId, shuffleId, false, partitionedData);
+    shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 0, partitionedData.getBlockList());
+    waitForFlush(shuffleFlushManager, appId, shuffleId, 3);
   }
 
   @Test
