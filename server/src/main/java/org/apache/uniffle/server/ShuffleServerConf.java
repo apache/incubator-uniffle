@@ -356,13 +356,6 @@ public class ShuffleServerConf extends RssBaseConf {
       .withDescription("The memory usage limit ratio for huge partition, it will only triggered when partition's "
           + "size exceeds the threshold of '" + HUGE_PARTITION_SIZE_THRESHOLD.key() + "'");
 
-  public static final ConfigOption<Long> HUGE_PARTITION_BUFFER_FLUSH_THRESHOLD = ConfigOptions
-      .key("rss.server.huge-partition.buffer.flush.threshold")
-      .longType()
-      .defaultValue(128 * 1024 * 1024L)
-      .withDescription("The single buffer flush threshold for huge partition, it will only triggered when partition's "
-          + "size exceeds the threshold of '" + HUGE_PARTITION_SIZE_THRESHOLD.key() + "'");
-
   public ShuffleServerConf() {
   }
 

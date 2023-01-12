@@ -66,7 +66,6 @@ public class ShuffleBufferManager {
   // Huge partition vars
   private long hugePartitionSizeThreshold;
   private long hugePartitionMemoryLimitSize;
-  private long hugePartitionBufferFlushThreshold;
 
   protected long bufferSize = 0;
   protected AtomicLong preAllocatedSize = new AtomicLong(0L);
@@ -95,7 +94,6 @@ public class ShuffleBufferManager {
     this.hugePartitionMemoryLimitSize = Math.round(
         capacity * conf.get(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO)
     );
-    this.hugePartitionBufferFlushThreshold = conf.get(ShuffleServerConf.HUGE_PARTITION_BUFFER_FLUSH_THRESHOLD);
   }
 
   public StatusCode registerBuffer(String appId, int shuffleId, int startPartition, int endPartition) {
@@ -236,7 +234,8 @@ public class ShuffleBufferManager {
     }
 
     if (getPartitionDataSizeFunc != null
-        && getPartitionDataSizeFunc.accept(appId, shuffleId, partitionId) > hugePartitionSizeThreshold) {
+        && getPartitionDataSizeFunc.accept(appId, shuffleId, partitionId) > hugePartitionSizeThreshold
+        && buffer.getSize() > this.bufferFlushThreshold) {
       flushBuffer(buffer, appId, shuffleId, startPartition, endPartition);
       return;
     }
