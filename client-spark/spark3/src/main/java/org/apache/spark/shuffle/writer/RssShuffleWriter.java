@@ -140,7 +140,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.sendSizeLimit = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT.key(),
         RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT.defaultValue().get());
     this.bitmapSplitNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM);
-    this.partitionToBlockIds = Maps.newConcurrentMap();
+    this.partitionToBlockIds = Maps.newHashMap();
     this.shuffleWriteClient = shuffleWriteClient;
     this.shuffleServersForData = rssHandle.getShuffleServersForData();
     this.partitionLengths = new long[partitioner.numPartitions()];
@@ -223,8 +223,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         blockIds.add(blockId);
         // update [partition, blockIds], it will be sent to shuffle server
         int partitionId = sbi.getPartitionId();
-        partitionToBlockIds.putIfAbsent(partitionId, Sets.newConcurrentHashSet());
-        partitionToBlockIds.get(partitionId).add(blockId);
+        partitionToBlockIds.computeIfAbsent(partitionId, k -> Sets.newHashSet()).add(blockId);
         partitionLengths[partitionId] += sbi.getLength();
       });
       postBlockEvent(shuffleBlockInfoList);
