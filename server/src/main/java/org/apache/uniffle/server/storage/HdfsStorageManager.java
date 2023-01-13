@@ -84,7 +84,6 @@ public class HdfsStorageManager extends SingleStorageManager {
   @Override
   public void removeResources(PurgeEvent event) {
     String appId = event.getAppId();
-    String user = event.getUser();
     HdfsStorage storage = getStorageByAppId(appId);
     if (storage == null) {
       LOG.warn("Storage gotten is null when removing resources for event: {}", event);
@@ -110,7 +109,7 @@ public class HdfsStorageManager extends SingleStorageManager {
         deletePaths.add(ShuffleStorageUtils.getFullShuffleDataFolder(basicPath, String.valueOf(shuffleId)));
       }
     }
-    deleteHandler.delete(deletePaths.toArray(new String[0]), appId, user);
+    deleteHandler.delete(deletePaths.toArray(new String[0]), appId, event.getUser());
   }
 
   @Override
