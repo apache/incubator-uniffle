@@ -51,7 +51,7 @@ public class LocalFileServerReadHandlerTest {
     Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
 
     // We simulate the generation of 4 block index files and 3 block data files to test LocalFileClientReadHandler
-    LocalFileHandlerTestBase.writeTestData(shuffleBlocks -> {
+    List<Long> blockIds = LocalFileHandlerTestBase.writeTestData(shuffleBlocks -> {
       int offset = 0;
       for (ShufflePartitionedBlock block : shuffleBlocks) {
         FileBasedShuffleSegment segment = new FileBasedShuffleSegment(
@@ -60,8 +60,8 @@ public class LocalFileServerReadHandlerTest {
         offset += block.getLength();
         LocalFileHandlerTestBase.writeIndex(byteBuffer, segment);
       }
-    }, expectTotalBlockNum, blockSize,
-        expectedData, new HashSet<>());
+    }, expectTotalBlockNum, blockSize, expectedData, new HashSet<>());
+
     expectedData.forEach((id, block) -> expectBlockIds.addLong(id));
 
     String appId = "app1";
@@ -78,7 +78,7 @@ public class LocalFileServerReadHandlerTest {
     int readBufferSize = 13;
     int bytesPerSegment = ((readBufferSize / blockSize) + 1) * blockSize;
     List<byte[]> segments = LocalFileHandlerTestBase.calcSegmentBytes(expectedData,
-        bytesPerSegment, actualWriteDataBlock);
+        bytesPerSegment, blockIds.subList(0, actualWriteDataBlock));
 
     // first segment include 2 blocks
     ArgumentMatcher<RssGetShuffleDataRequest> segment1Match =
