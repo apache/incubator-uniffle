@@ -175,15 +175,16 @@ func GenerateSts(rss *unifflev1alpha1.RemoteShuffleService) *appsv1.StatefulSet 
 		podSpec.DNSPolicy = corev1.DNSClusterFirstWithHostNet
 	}
 
+	defaultLabels := utils.GenerateShuffleServerLabels(rss)
 	sts := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: rss.Namespace,
-			Labels:    utils.GenerateShuffleServerLabels(rss),
+			Labels:    defaultLabels,
 		},
 		Spec: appsv1.StatefulSetSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: utils.GenerateShuffleServerLabels(rss),
+				MatchLabels: defaultLabels,
 			},
 			UpdateStrategy: appsv1.StatefulSetUpdateStrategy{
 				Type: appsv1.RollingUpdateStatefulSetStrategyType,
@@ -195,7 +196,7 @@ func GenerateSts(rss *unifflev1alpha1.RemoteShuffleService) *appsv1.StatefulSet 
 			Replicas:    replicas,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: utils.GenerateShuffleServerLabels(rss),
+					Labels: make(map[string]string),
 					Annotations: map[string]string{
 						constants.AnnotationRssName: rss.Name,
 						constants.AnnotationRssUID:  string(rss.UID),
@@ -208,6 +209,12 @@ func GenerateSts(rss *unifflev1alpha1.RemoteShuffleService) *appsv1.StatefulSet 
 				Spec: podSpec,
 			},
 		},
+	}
+	for k, v := range rss.Spec.ShuffleServer.Labels {
+		sts.Spec.Template.Labels[k] = v
+	}
+	for k, v := range defaultLabels {
+		sts.Spec.Template.Labels[k] = v
 	}
 
 	// add init containers, the main container and other containers.

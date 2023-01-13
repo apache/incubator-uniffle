@@ -240,6 +240,12 @@ spec:
                     description: InitContainerImage represents image of init container
                       used to change owner of host paths.
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: Labels represents labels to be added in coordinators
+                      or shuffle servers' pods.
+                    type: object
                   logHostPath:
                     description: LogHostPath represents host path used to save logs
                       of shuffle servers.
@@ -3429,6 +3435,12 @@ spec:
                     description: InitContainerImage represents image of init container
                       used to change owner of host paths.
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: Labels represents labels to be added in coordinators
+                      or shuffle servers' pods.
+                    type: object
                   logHostPath:
                     description: LogHostPath represents host path used to save logs
                       of shuffle servers.
