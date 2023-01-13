@@ -259,7 +259,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
 
     // maintain the count of blocks that have been sent to the server
-    Map<Long, AtomicInteger> blockIdsTracker = Maps.newConcurrentMap();
+    Map<Long, AtomicInteger> blockIdsTracker = Maps.newHashMap();
     primaryServerToBlockIds.values().forEach(
         blockList -> blockList.forEach(block -> blockIdsTracker.put(block, new AtomicInteger(0)))
     );
@@ -473,8 +473,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       long taskAttemptId,
       Map<Integer, List<Long>> partitionToBlockIds,
       int bitmapNum) {
-    Map<ShuffleServerInfo, List<Integer>> groupedPartitions = Maps.newConcurrentMap();
-    Map<Integer, Integer> partitionReportTracker = Maps.newConcurrentMap();
+    Map<ShuffleServerInfo, List<Integer>> groupedPartitions = Maps.newHashMap();
+    Map<Integer, Integer> partitionReportTracker = Maps.newHashMap();
     for (Map.Entry<Integer, List<ShuffleServerInfo>> entry : partitionToServers.entrySet()) {
       for (ShuffleServerInfo ssi : entry.getValue()) {
         if (!groupedPartitions.containsKey(ssi)) {
