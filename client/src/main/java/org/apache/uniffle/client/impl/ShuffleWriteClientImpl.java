@@ -260,16 +260,16 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     for (ShuffleBlockInfo sbi : shuffleBlockInfoList) {
       List<ShuffleServerInfo> allServers = sbi.getShuffleServerInfos();
       if (replica > 1 && !shuffleServerBlacklist.isEmpty()) {
-        // allServers is shared and is not thread safe
-        synchronized (this) {
-          for (int i = allServers.size() - 2; i >= 0; i--) {
-            ShuffleServerInfo serverInfo = allServers.get(i);
-            if (shuffleServerBlacklist.contains(serverInfo)) {
-              allServers.remove(i);
-              allServers.add(serverInfo);
-            }
+        // We can't modify allServers directly, because allServers is shared and is not thread safe
+        List<ShuffleServerInfo> newServerList = new ArrayList<>(allServers);
+        for (int i = newServerList.size() - 2; i >= 0; i--) {
+          ShuffleServerInfo serverInfo = newServerList.get(i);
+          if (shuffleServerBlacklist.contains(serverInfo)) {
+            newServerList.remove(i);
+            newServerList.add(serverInfo);
           }
         }
+        sbi.setShuffleServerInfos(newServerList);
       }
       if (replicaSkipEnabled) {
         genServerToBlocks(sbi, allServers.subList(0, replicaWrite),
