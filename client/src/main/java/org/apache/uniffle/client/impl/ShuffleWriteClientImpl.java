@@ -262,14 +262,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       if (replica > 1 && !shuffleServerBlacklist.isEmpty()) {
         // We can't modify allServers directly, because allServers is shared and is not thread safe
         List<ShuffleServerInfo> newServerList = new ArrayList<>(allServers);
-        for (int i = newServerList.size() - 2; i >= 0; i--) {
-          ShuffleServerInfo serverInfo = newServerList.get(i);
-          if (shuffleServerBlacklist.contains(serverInfo)) {
-            newServerList.remove(i);
-            newServerList.add(serverInfo);
-          }
-        }
-        sbi.setShuffleServerInfos(newServerList);
+        moveBlacklistServersToTheEnd(newServerList);
+        allServers = newServerList;
       }
       if (replicaSkipEnabled) {
         genServerToBlocks(sbi, allServers.subList(0, replicaWrite),
@@ -334,6 +328,17 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       }
     });
     return new SendShuffleDataResult(successBlockIds, failedBlockIds);
+  }
+
+  @VisibleForTesting
+  void moveBlacklistServersToTheEnd(List<ShuffleServerInfo> serverInfos) {
+    for (int i = serverInfos.size() - 2; i >= 0; i--) {
+      ShuffleServerInfo serverInfo = serverInfos.get(i);
+      if (shuffleServerBlacklist.contains(serverInfo)) {
+        serverInfos.remove(i);
+        serverInfos.add(serverInfo);
+      }
+    }
   }
 
   /**

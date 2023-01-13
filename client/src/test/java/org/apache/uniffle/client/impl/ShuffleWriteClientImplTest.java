@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.client.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -123,19 +124,21 @@ public class ShuffleWriteClientImplTest {
     ShuffleServerInfo ssi3 = new ShuffleServerInfo("127.0.0.1", 2);
     List<ShuffleServerInfo> shuffleServerInfoList =
         Lists.newArrayList(ssi1, ssi2, ssi3);
+    List<ShuffleServerInfo> newServerList = moveBlacklistServersToTheEnd(spyClient, shuffleServerInfoList);
+    assertEquals(ssi1, newServerList.get(0));
     List<ShuffleBlockInfo> shuffleBlockInfoList = Lists.newArrayList(new ShuffleBlockInfo(
         0, 0, 10, 10, 10, new byte[]{1}, shuffleServerInfoList, 10, 100, 0));
     SendShuffleDataResult result = spyClient.sendShuffleData(appId, shuffleBlockInfoList, () -> false);
     assertEquals(0, result.getFailedBlockIds().size());
-    assertEquals(ssi1, shuffleBlockInfoList.get(0).getShuffleServerInfos().get(0));
 
     // Send data for the second time, the first shuffle server will be moved to the last.
     when(mockShuffleServerClient.sendShuffleData(any())).thenReturn(
         new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS),
         new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS));
+    newServerList = moveBlacklistServersToTheEnd(spyClient, shuffleServerInfoList);
+    assertEquals(ssi1, newServerList.get(2));
     result = spyClient.sendShuffleData(appId, shuffleBlockInfoList, () -> false);
     assertEquals(0, result.getFailedBlockIds().size());
-    assertEquals(ssi1, shuffleBlockInfoList.get(0).getShuffleServerInfos().get(2));
 
     // Send data for the third time, the first server will be removed from the blacklist
     // and the second server will be added to the blacklist.
@@ -143,15 +146,22 @@ public class ShuffleWriteClientImplTest {
         new RssSendShuffleDataResponse(ResponseStatusCode.NO_BUFFER),
         new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS),
         new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS));
-    List<ShuffleServerInfo> shuffleServerInfoList2 =
-        Lists.newArrayList(ssi2, ssi1, ssi3);
-    List<ShuffleBlockInfo> shuffleBlockInfoList2 = Lists.newArrayList(new ShuffleBlockInfo(
-        0, 0, 10, 10, 10, new byte[]{1}, shuffleServerInfoList2, 10, 100, 0));
+    List<ShuffleServerInfo> shuffleServerInfoList2 = Lists.newArrayList(ssi2, ssi1, ssi3);
+    List<ShuffleBlockInfo> shuffleBlockInfoList2 = Lists.newArrayList(new ShuffleBlockInfo(0, 0, 10, 10, 10,
+        new byte[]{1}, shuffleServerInfoList2, 10, 100, 0));
+    newServerList = moveBlacklistServersToTheEnd(spyClient, shuffleServerInfoList2);
+    assertEquals(ssi1, newServerList.get(2));
     result = spyClient.sendShuffleData(appId, shuffleBlockInfoList2, () -> false);
     assertEquals(0, result.getFailedBlockIds().size());
     assertEquals(1, spyClient.getShuffleServerBlacklist().size());
-    assertEquals(ssi1, shuffleBlockInfoList.get(0).getShuffleServerInfos().get(2));
     assertEquals(ssi2, spyClient.getShuffleServerBlacklist().toArray()[0]);
+  }
+
+  private List<ShuffleServerInfo> moveBlacklistServersToTheEnd(ShuffleWriteClientImpl client,
+                                                               List<ShuffleServerInfo> serverInfos) {
+    ArrayList<ShuffleServerInfo> newServerList = new ArrayList<>(serverInfos);
+    client.moveBlacklistServersToTheEnd(newServerList);
+    return newServerList;
   }
 
 }

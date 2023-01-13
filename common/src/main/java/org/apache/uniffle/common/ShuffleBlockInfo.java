@@ -93,10 +93,6 @@ public class ShuffleBlockInfo {
     return taskAttemptId;
   }
 
-  public void setShuffleServerInfos(List<ShuffleServerInfo> shuffleServerInfos) {
-    this.shuffleServerInfos = shuffleServerInfos;
-  }
-
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
