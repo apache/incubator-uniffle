@@ -86,29 +86,31 @@ public class HdfsStorageManager extends SingleStorageManager {
     String appId = event.getAppId();
     String user = event.getUser();
     HdfsStorage storage = getStorageByAppId(appId);
-    if (storage != null) {
-      if (event instanceof AppPurgeEvent) {
-        storage.removeHandlers(appId);
-      }
-      appIdToStorages.remove(appId);
-      ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory
-          .getInstance()
-          .createShuffleDeleteHandler(
-              new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), storage.getConf())
-          );
-
-      String basicPath = ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);
-      List<String> deletePaths = new ArrayList<>();
-
-      if (event instanceof AppPurgeEvent) {
-        deletePaths.add(basicPath);
-      } else {
-        for (Integer shuffleId : event.getShuffleIds()) {
-          deletePaths.add(ShuffleStorageUtils.getFullShuffleDataFolder(basicPath, String.valueOf(shuffleId)));
-        }
-      }
-      deleteHandler.delete(deletePaths.toArray(new String[0]), appId, user);
+    if (storage == null) {
+      LOG.warn("Storage gotten is null when removing resources for event: {}", event);
+      return;
     }
+    if (event instanceof AppPurgeEvent) {
+      storage.removeHandlers(appId);
+      appIdToStorages.remove(appId);
+    }
+    ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory
+        .getInstance()
+        .createShuffleDeleteHandler(
+            new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), storage.getConf())
+        );
+
+    String basicPath = ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);
+    List<String> deletePaths = new ArrayList<>();
+
+    if (event instanceof AppPurgeEvent) {
+      deletePaths.add(basicPath);
+    } else {
+      for (Integer shuffleId : event.getShuffleIds()) {
+        deletePaths.add(ShuffleStorageUtils.getFullShuffleDataFolder(basicPath, String.valueOf(shuffleId)));
+      }
+    }
+    deleteHandler.delete(deletePaths.toArray(new String[0]), appId, user);
   }
 
   @Override
