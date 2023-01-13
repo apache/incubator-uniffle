@@ -165,6 +165,7 @@ public class ShuffleFlushManager {
 
         Storage storage = storageManager.selectStorage(event);
         if (storage == null) {
+          LOG.error("Storage selected is null and this should not happen. event: {}", event);
           break;
         }
 
