@@ -166,8 +166,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   }
 
   private void writeImpl(Iterator<Product2<K,V>> records) {
-    List<ShuffleBlockInfo> shuffleBlockInfos = null;
-    Set<Long> blockIds = Sets.newConcurrentHashSet();
+    List<ShuffleBlockInfo> shuffleBlockInfos;
+    Set<Long> blockIds = Sets.newHashSet();
     boolean isCombine = shuffleDependency.mapSideCombine();
     Function1 createCombiner = null;
     if (isCombine) {
