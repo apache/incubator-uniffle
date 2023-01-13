@@ -259,7 +259,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
 
     // maintain the count of blocks that have been sent to the server
-    Map<Long, AtomicInteger> blockIdsTracker = Maps.newHashMap();
+    Map<Long, AtomicInteger> blockIdsTracker = Maps.newConcurrentMap();
     primaryServerToBlockIds.values().forEach(
         blockList -> blockList.forEach(block -> blockIdsTracker.put(block, new AtomicInteger(0)))
     );
