@@ -26,7 +26,6 @@
     <version>0.7.0-snapshot</version>
   </parent>
 
-  <groupId>org.apache.uniffle</groupId>
   <artifactId>rss-client</artifactId>
   <version>0.7.0-snapshot</version>
   <packaging>jar</packaging>

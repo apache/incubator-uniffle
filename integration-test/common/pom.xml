@@ -27,7 +27,6 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <groupId>org.apache.uniffle</groupId>
     <artifactId>rss-integration-common-test</artifactId>
     <version>0.7.0-snapshot</version>
     <packaging>jar</packaging>

@@ -27,8 +27,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.apache.uniffle</groupId>
-  <artifactId>rss-integration-spark2-test</artifactId>
+    <artifactId>rss-integration-spark2-test</artifactId>
   <version>0.7.0-snapshot</version>
   <packaging>jar</packaging>
   <name>Apache Uniffle Integration Test (Spark 2)</name>

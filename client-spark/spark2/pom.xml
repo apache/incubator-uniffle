@@ -27,8 +27,7 @@
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
-  <groupId>org.apache.uniffle</groupId>
-  <artifactId>rss-client-spark2</artifactId>
+    <artifactId>rss-client-spark2</artifactId>
   <version>0.7.0-snapshot</version>
   <packaging>jar</packaging>
   <name>Apache Uniffle Client (Spark 2)</name>
