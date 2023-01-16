@@ -204,7 +204,7 @@ public class ShuffleTaskManager {
         shuffleId,
         isPreAllocated,
         spd,
-        (appIdx, shuffleIdx, partitionIdx) -> getPartitionDataSize(appIdx, shuffleIdx, partitionIdx)
+        this::getPartitionDataSize
     );
   }
 

@@ -30,6 +30,7 @@ import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.Context;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import org.apache.commons.lang3.StringUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -355,7 +356,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       StreamObserver<RequireBufferResponse> responseObserver) {
     String appId = request.getAppId();
     long requireBufferId;
-    if (appId == null) {
+    if (StringUtils.isEmpty(appId)) {
       // To be compatible with older client version
       requireBufferId = shuffleServer.getShuffleTaskManager().requireBuffer(
           request.getRequireSize()
