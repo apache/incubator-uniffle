@@ -27,6 +27,7 @@ import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.serializer.DeserializationStream;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.serializer.SerializerInstance;
+import org.apache.uniffle.client.util.RssClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Product2;
@@ -66,7 +67,8 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
     this.serializerInstance = serializer.newInstance();
     this.shuffleReadClient = shuffleReadClient;
     this.shuffleReadMetrics = shuffleReadMetrics;
-    this.codec = Codec.newInstance(rssConf);
+    boolean compress = rssConf.getBoolean(RssClientConfig.SPARK_SHUFFLE_COMPRESS, true);
+    this.codec = compress ? Codec.newInstance(rssConf) : null;
   }
 
   public Iterator<Tuple2<Object, Object>> createKVIterator(ByteBuffer data, int size) {
@@ -99,28 +101,11 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       CompressedShuffleBlock compressedBlock = shuffleReadClient.readShuffleBlockData();
       // If ShuffleServer delete
 
-      ByteBuffer compressedData = null;
-      if (compressedBlock != null) {
-        compressedData = compressedBlock.getByteBuffer();
-      }
+      ByteBuffer compressedData = compressedBlock != null ? compressedBlock.getByteBuffer() : null;
       long fetchDuration = System.currentTimeMillis() - startFetch;
       shuffleReadMetrics.incFetchWaitTime(fetchDuration);
       if (compressedData != null) {
-        long compressedDataLength = compressedData.limit() - compressedData.position();
-        compressedBytesLength += compressedDataLength;
-        shuffleReadMetrics.incRemoteBytesRead(compressedDataLength);
-
-        int uncompressedLen = compressedBlock.getUncompressLength();
-        if (uncompressedData == null || uncompressedData.capacity() < uncompressedLen) {
-          // todo: support off-heap bytebuffer
-          uncompressedData = ByteBuffer.allocate(uncompressedLen);
-        }
-        uncompressedData.clear();
-        long startDecompress = System.currentTimeMillis();
-        codec.decompress(compressedData, uncompressedLen, uncompressedData, 0);
-        unCompressedBytesLength += compressedBlock.getUncompressLength();
-        long decompressDuration = System.currentTimeMillis() - startDecompress;
-        decompressTime += decompressDuration;
+        int uncompressedLen = uncompress(compressedBlock, compressedData);
         // create new iterator for shuffle data
         long startSerialization = System.currentTimeMillis();
         recordsIterator = createKVIterator(uncompressedData, uncompressedLen);
@@ -138,6 +123,29 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       }
     }
     return recordsIterator.hasNext();
+  }
+
+  private int uncompress(CompressedShuffleBlock compressedBlock, ByteBuffer compressedData) {
+    long compressedDataLength = compressedData.limit() - compressedData.position();
+    compressedBytesLength += compressedDataLength;
+    shuffleReadMetrics.incRemoteBytesRead(compressedDataLength);
+
+    int uncompressedLen = compressedBlock.getUncompressLength();
+    if (codec != null) {
+      if (uncompressedData == null || uncompressedData.capacity() < uncompressedLen) {
+        // todo: support off-heap bytebuffer
+        uncompressedData = ByteBuffer.allocate(uncompressedLen);
+      }
+      uncompressedData.clear();
+      long startDecompress = System.currentTimeMillis();
+      codec.decompress(compressedData, uncompressedLen, uncompressedData, 0);
+      unCompressedBytesLength += uncompressedLen;
+      long decompressDuration = System.currentTimeMillis() - startDecompress;
+      decompressTime += decompressDuration;
+    } else {
+      uncompressedData = compressedData;
+    }
+    return uncompressedLen;
   }
 
   @Override
