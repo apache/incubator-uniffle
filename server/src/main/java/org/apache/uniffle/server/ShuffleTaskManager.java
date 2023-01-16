@@ -121,12 +121,12 @@ public class ShuffleTaskManager {
     this.expiredAppCleanupExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("expiredAppCleaner"));
     expiredAppCleanupExecutorService.scheduleAtFixedRate(
-            this::checkResourceStatus, appExpiredWithoutHB / 2,
+        this::checkResourceStatus, appExpiredWithoutHB / 2,
         appExpiredWithoutHB / 2, TimeUnit.MILLISECONDS);
     this.leakShuffleDataCheckExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("leakShuffleDataChecker"));
     leakShuffleDataCheckExecutorService.scheduleAtFixedRate(
-            this::checkLeakShuffleData, leakShuffleDataCheckInterval,
+        this::checkLeakShuffleData, leakShuffleDataCheckInterval,
             leakShuffleDataCheckInterval, TimeUnit.MILLISECONDS);
     if (triggerFlushInterval > 0) {
       triggerFlushExecutorService = Executors.newSingleThreadScheduledExecutor(
