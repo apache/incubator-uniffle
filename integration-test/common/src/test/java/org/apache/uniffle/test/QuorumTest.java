@@ -159,6 +159,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
       shuffleWriteClientImpl.close();
     }
     cleanCluster();
+    // we need recovery `rpcTime`, or some unit tests may fail
+    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
+            .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo0)).adjustTimeout(60000);
+    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
+            .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo1)).adjustTimeout(60000);
+    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
+            .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(60000);
   }
 
   @Test
