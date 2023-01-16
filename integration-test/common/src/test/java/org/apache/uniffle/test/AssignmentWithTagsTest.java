@@ -109,7 +109,7 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
   }
 
   @BeforeAll
-  public static void setupServers(@TempDir File dir1, @TempDir File dir2, @TempDir File dir3) throws Exception {
+  public static void setupServers(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
 
@@ -117,14 +117,17 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
       coordinator.start();
     }
 
+    File dir1 = new File(tmpDir, "server1");
     for (int i = 0; i < 2; i++) {
       createAndStartShuffleServerWithTags(Sets.newHashSet(), dir1);
     }
 
+    File dir2 = new File(tmpDir, "server2");
     for (int i = 0; i < 2; i++) {
       createAndStartShuffleServerWithTags(Sets.newHashSet("fixed"), dir2);
     }
 
+    File dir3 = new File(tmpDir, "server3");
     for (int i = 0; i < 2; i++) {
       createAndStartShuffleServerWithTags(Sets.newHashSet("elastic"), dir3);
     }
