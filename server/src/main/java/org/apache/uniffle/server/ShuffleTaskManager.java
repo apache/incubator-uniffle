@@ -116,17 +116,17 @@ public class ShuffleTaskManager {
     this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("checkResource-%d"));
     scheduledExecutorService.scheduleAtFixedRate(
-        () -> preAllocatedBufferCheck(), preAllocationExpired / 2,
+            this::preAllocatedBufferCheck, preAllocationExpired / 2,
         preAllocationExpired / 2, TimeUnit.MILLISECONDS);
     this.expiredAppCleanupExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("expiredAppCleaner"));
     expiredAppCleanupExecutorService.scheduleAtFixedRate(
-        () -> checkResourceStatus(), appExpiredWithoutHB / 2,
+            this::checkResourceStatus, appExpiredWithoutHB / 2,
         appExpiredWithoutHB / 2, TimeUnit.MILLISECONDS);
     this.leakShuffleDataCheckExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("leakShuffleDataChecker"));
     leakShuffleDataCheckExecutorService.scheduleAtFixedRate(
-        () -> checkLeakShuffleData(), leakShuffleDataCheckInterval,
+            this::checkLeakShuffleData, leakShuffleDataCheckInterval,
             leakShuffleDataCheckInterval, TimeUnit.MILLISECONDS);
     if (triggerFlushInterval > 0) {
       triggerFlushExecutorService = Executors.newSingleThreadScheduledExecutor(
