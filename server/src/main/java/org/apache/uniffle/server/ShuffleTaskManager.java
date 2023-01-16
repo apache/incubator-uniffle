@@ -116,7 +116,7 @@ public class ShuffleTaskManager {
     this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("checkResource-%d"));
     scheduledExecutorService.scheduleAtFixedRate(
-            this::preAllocatedBufferCheck, preAllocationExpired / 2,
+        this::preAllocatedBufferCheck, preAllocationExpired / 2,
         preAllocationExpired / 2, TimeUnit.MILLISECONDS);
     this.expiredAppCleanupExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("expiredAppCleaner"));
