@@ -24,11 +24,10 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.io.Files;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
@@ -71,13 +70,12 @@ public class QuorumTest extends ShuffleReadWriteBase {
   private static ShuffleServerInfo fakedShuffleServerInfo3;
   private static ShuffleServerInfo fakedShuffleServerInfo4;
   private MockedShuffleWriteClientImpl shuffleWriteClientImpl;
+  @TempDir private static File tmpDir;
 
   public static MockedShuffleServer createServer(int id) throws Exception {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 8000);
     shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000);
-    File tmpDir = Files.createTempDir();
-    tmpDir.deleteOnExit();
     File dataDir1 = new File(tmpDir, id + "_1");
     File dataDir2 = new File(tmpDir, id + "_2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
@@ -88,15 +86,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
     return new MockedShuffleServer(shuffleServerConf);
   }
 
-  @BeforeAll
-  public static void initCluster() throws Exception {
+  @BeforeEach
+  public void initCluster() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 8000);
-    File tmpDir = Files.createTempDir();
-    tmpDir.deleteOnExit();
 
     shuffleServers.add(createServer(0));
     shuffleServers.add(createServer(1));
@@ -132,6 +128,17 @@ public class QuorumTest extends ShuffleReadWriteBase {
         new ShuffleServerInfo("127.0.0.1-20004", shuffleServers.get(2).getIp(), SHUFFLE_SERVER_PORT + 400);
     fakedShuffleServerInfo4 =
         new ShuffleServerInfo("127.0.0.1-20005", shuffleServers.get(2).getIp(), SHUFFLE_SERVER_PORT + 500);
+
+    // spark.rss.data.replica=3
+    // spark.rss.data.replica.write=2
+    // spark.rss.data.replica.read=2
+    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
+        .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo0)).adjustTimeout(200);
+    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
+        .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo1)).adjustTimeout(200);
+    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
+        .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(200);
+
     Thread.sleep(2000);
   }
 
@@ -146,35 +153,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
     coordinators = Lists.newArrayList();
   }
 
-  @BeforeEach
-  public void initEnv() throws Exception {
-    // spark.rss.data.replica=3
-    // spark.rss.data.replica.write=2
-    // spark.rss.data.replica.read=2
-    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo0)).adjustTimeout(200);
-    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo1)).adjustTimeout(200);
-    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-      .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(200);
-  }
-
   @AfterEach
   public void cleanEnv() throws Exception {
     if (shuffleWriteClientImpl != null) {
       shuffleWriteClientImpl.close();
     }
     cleanCluster();
-    initCluster();
-    // we need recovery `rpcTime`, or some unit tests may fail
-    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-            .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo0)).adjustTimeout(60000);
-    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-            .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo1)).adjustTimeout(60000);
-    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-            .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(60000);
   }
-
 
   @Test
   public void quorumConfigTest() throws Exception {

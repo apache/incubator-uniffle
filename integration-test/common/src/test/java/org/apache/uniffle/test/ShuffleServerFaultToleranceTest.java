@@ -24,11 +24,11 @@ import java.util.Map;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.TestUtils;
@@ -62,6 +62,7 @@ import static org.mockito.Mockito.when;
 
 public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
 
+  @TempDir private static File tmpDir;
   private List<ShuffleServerClient> shuffleServerClients;
 
   private String remoteStoragePath = HDFS_URI + "rss/test";
@@ -245,8 +246,6 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 5000L);
     shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 1000000L);
     shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000);
-    File tmpDir = Files.createTempDir();
-    tmpDir.deleteOnExit();
     File dataDir1 = new File(tmpDir, id + "_1");
     File dataDir2 = new File(tmpDir, id + "_2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();

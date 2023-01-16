@@ -25,10 +25,10 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Sets;
-import com.google.common.io.Files;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.client.request.RssGetShuffleAssignmentsRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
 
-  private static File serverTmpDir = Files.createTempDir();
+  @TempDir private static File serverTmpDir;
   private static File tempDataFile = new File(serverTmpDir, "data");
   private static int writeDataSize;
 
