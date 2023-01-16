@@ -90,7 +90,7 @@ public class ShuffleTaskManager {
   // merge different blockId of partition to one bitmap can reduce memory cost,
   // but when get blockId, performance will degrade a little which can be optimized by client configuration
   private Map<String, Map<Integer, Roaring64NavigableMap[]>> partitionsToBlockIds;
-  private ShuffleBufferManager shuffleBufferManager;
+  private final ShuffleBufferManager shuffleBufferManager;
   private Map<String, ShuffleTaskInfo> shuffleTaskInfos = Maps.newConcurrentMap();
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = Maps.newConcurrentMap();
   private Runnable clearResourceThread;
@@ -144,7 +144,7 @@ public class ShuffleTaskManager {
             removeResources(event.getAppId());
           }
           if (event instanceof ShufflePurgeEvent) {
-            removeResourcesByShuffleIds(event.getAppId(), ((ShufflePurgeEvent) event).getShuffleIds());
+            removeResourcesByShuffleIds(event.getAppId(), event.getShuffleIds());
           }
         } catch (Exception e) {
           LOG.error("Exception happened when clear resource for expired application", e);

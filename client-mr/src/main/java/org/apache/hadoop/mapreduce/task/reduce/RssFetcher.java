@@ -131,8 +131,6 @@ public class RssFetcher<K,V> {
         // Do shuffle
         metrics.threadBusy();
         copyFromRssServer();
-      } catch (Exception e) {
-        throw e;
       } finally {
         metrics.threadFree();
       }
