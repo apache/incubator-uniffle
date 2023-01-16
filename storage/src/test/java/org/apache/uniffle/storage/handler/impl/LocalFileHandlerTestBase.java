@@ -44,25 +44,23 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class LocalFileHandlerTestBase {
   private static AtomicLong ATOMIC_LONG = new AtomicLong(0L);
 
-  public static List<Long> writeTestData(
-      ShuffleWriteHandler writeHandler,
-      int num, int length,
-      Map<Long, byte[]> expectedData,
-      Set<Long> expectedBlockIds) throws Exception {
+  public static List<ShufflePartitionedBlock> generateBlocks(int num, int length) {
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList();
-    List<Long> blockIds = Lists.newArrayList();
     for (int i = 0; i < num; i++) {
       byte[] buf = new byte[length];
       new Random().nextBytes(buf);
       long blockId = ATOMIC_LONG.incrementAndGet();
       blocks.add(new ShufflePartitionedBlock(length, length, ChecksumUtils.getCrc32(buf), blockId, 100,
           buf));
-      expectedData.put(blockId, buf);
-      expectedBlockIds.add(blockId);
-      blockIds.add(blockId);
     }
-    writeHandler.write(blocks);
-    return blockIds;
+    return blocks;
+  }
+
+  public static void writeTestData(List<ShufflePartitionedBlock> blocks, ShuffleWriteHandler handler,
+      Map<Long, byte[]> expectedData, Set<Long> expectedBlockIds) throws Exception {
+    handler.write(blocks);
+    blocks.forEach(block -> expectedBlockIds.add(block.getBlockId()));
+    blocks.forEach(block -> expectedData.put(block.getBlockId(), block.getData()));
   }
 
   public static void validateResult(ServerReadHandler readHandler, Set<Long> expectedBlockIds,

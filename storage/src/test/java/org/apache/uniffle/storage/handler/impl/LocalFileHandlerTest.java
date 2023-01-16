@@ -63,15 +63,23 @@ public class LocalFileHandlerTest {
     final Set<Long> expectedBlockIds1 = Sets.newHashSet();
     final Set<Long> expectedBlockIds2 = Sets.newHashSet();
 
-    LocalFileHandlerTestBase.writeTestData(writeHandler1, 1, 32, expectedData, expectedBlockIds1);
-    LocalFileHandlerTestBase.writeTestData(writeHandler1, 2, 32, expectedData, expectedBlockIds1);
-    LocalFileHandlerTestBase.writeTestData(writeHandler1, 3, 32, expectedData, expectedBlockIds1);
-    LocalFileHandlerTestBase.writeTestData(writeHandler1, 4, 32, expectedData, expectedBlockIds1);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(1, 32),
+        writeHandler1, expectedData, expectedBlockIds1);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(2, 32),
+        writeHandler1, expectedData, expectedBlockIds1);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(3, 32),
+        writeHandler1, expectedData, expectedBlockIds1);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(4, 32),
+        writeHandler1, expectedData, expectedBlockIds1);
 
-    LocalFileHandlerTestBase.writeTestData(writeHandler2, 3, 32, expectedData, expectedBlockIds2);
-    LocalFileHandlerTestBase.writeTestData(writeHandler2, 3, 32, expectedData, expectedBlockIds2);
-    LocalFileHandlerTestBase.writeTestData(writeHandler2, 2, 32, expectedData, expectedBlockIds2);
-    LocalFileHandlerTestBase.writeTestData(writeHandler2, 1, 32, expectedData, expectedBlockIds2);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(3, 32),
+        writeHandler2, expectedData, expectedBlockIds2);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(3, 32),
+        writeHandler2, expectedData, expectedBlockIds2);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(2, 32),
+        writeHandler2, expectedData, expectedBlockIds2);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(1, 32),
+        writeHandler2, expectedData, expectedBlockIds2);
 
     RssBaseConf conf = new RssBaseConf();
     conf.setString("rss.storage.basePath", dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath());
@@ -84,7 +92,8 @@ public class LocalFileHandlerTest {
     LocalFileHandlerTestBase.validateResult(readHandler2, expectedBlockIds2, expectedData);
 
     // after first read, write more data
-    LocalFileHandlerTestBase.writeTestData(writeHandler1, 1, 32, expectedData, expectedBlockIds1);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(1, 32),
+        writeHandler1, expectedData, expectedBlockIds1);
     // new data should be read
     LocalFileHandlerTestBase.validateResult(readHandler1, expectedBlockIds1, expectedData);
 
