@@ -231,7 +231,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         if (dataIterator != null) {
           dataIterator.completion();
         }
-        iterator.forEachRemaining(ci -> ci.completion());
+        iterator.forEachRemaining(CompletionIterator::completion);
       });
     }
 

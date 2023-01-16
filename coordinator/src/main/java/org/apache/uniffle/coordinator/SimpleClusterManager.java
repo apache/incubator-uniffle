@@ -83,7 +83,7 @@ public class SimpleClusterManager implements ClusterManager {
 
     periodicOutputIntervalTimes = conf.get(CoordinatorConf.COORDINATOR_NODES_PERIODIC_OUTPUT_INTERVAL_TIMES);
     scheduledExecutorService.scheduleAtFixedRate(
-        () -> nodesCheck(), heartbeatTimeout / 3,
+        this::nodesCheck, heartbeatTimeout / 3,
         heartbeatTimeout / 3, TimeUnit.MILLISECONDS);
 
     String excludeNodesPath = conf.getString(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH, "");

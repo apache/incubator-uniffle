@@ -360,7 +360,7 @@ public class RssShuffleManager implements ShuffleManager {
 
       return new RssShuffleWriter(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(), bufferManager,
           writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle,
-          (Function<String, Boolean>) tid -> markFailedTask(tid));
+          (Function<String, Boolean>) this::markFailedTask);
     } else {
       throw new RuntimeException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }

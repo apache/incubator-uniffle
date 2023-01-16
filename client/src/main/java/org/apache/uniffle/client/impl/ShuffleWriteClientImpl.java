@@ -745,9 +745,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       return Collections.EMPTY_SET;
     }
     Set<ShuffleServerInfo> serverInfos = Sets.newHashSet();
-    appServerMap.values().forEach((serverSet) -> {
-      serverInfos.addAll(serverSet);
-    });
+    appServerMap.values().forEach(serverInfos::addAll);
     return serverInfos;
   }
 
