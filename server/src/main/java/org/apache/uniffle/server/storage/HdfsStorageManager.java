@@ -95,23 +95,20 @@ public class HdfsStorageManager extends SingleStorageManager {
   @Override
   public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo) {
     String remoteStorage = remoteStorageInfo.getPath();
-    Map<String, String> remoteStorageConf = remoteStorageInfo.getConfItems();
-    if (!pathToStorages.containsKey(remoteStorage)) {
+    pathToStorages.computeIfAbsent(remoteStorage, key -> {
+      Map<String, String> remoteStorageConf = remoteStorageInfo.getConfItems();
       Configuration remoteStorageHadoopConf = new Configuration(hadoopConf);
       if (remoteStorageConf != null && remoteStorageConf.size() > 0) {
         for (Map.Entry<String, String> entry : remoteStorageConf.entrySet()) {
           remoteStorageHadoopConf.setStrings(entry.getKey(), entry.getValue());
         }
       }
-      pathToStorages.putIfAbsent(remoteStorage, new HdfsStorage(remoteStorage, remoteStorageHadoopConf));
-      // registerRemoteStorage may be called in different threads,
-      // make sure metrics won't be created duplicated
-      // there shouldn't have performance issue because
-      // it will be called only few times according to the number of remote storage
-      String storageHost = pathToStorages.get(remoteStorage).getStorageHost();
+      HdfsStorage hdfsStorage = new HdfsStorage(remoteStorage, remoteStorageHadoopConf);
+      String storageHost = hdfsStorage.getStorageHost();
       ShuffleServerMetrics.addDynamicCounterForRemoteStorage(storageHost);
-    }
-    appIdToStorages.putIfAbsent(appId, pathToStorages.get(remoteStorage));
+      return hdfsStorage;
+    });
+    appIdToStorages.computeIfAbsent(appId, key -> pathToStorages.get(remoteStorage));
   }
 
   public HdfsStorage getStorageByAppId(String appId) {
