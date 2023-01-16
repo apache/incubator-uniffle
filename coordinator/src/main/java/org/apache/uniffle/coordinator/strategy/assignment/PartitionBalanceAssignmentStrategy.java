@@ -96,7 +96,7 @@ public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrate
       }
       serverToPartitions = newPartitionInfos;
       int averagePartitions = totalPartitionNum * replica / clusterManager.getShuffleNodesMax();
-      int assignPartitions = averagePartitions < 1 ? 1 : averagePartitions;
+      int assignPartitions = Math.max(averagePartitions, 1);
       nodes.sort(new Comparator<ServerNode>() {
         @Override
         public int compare(ServerNode o1, ServerNode o2) {
