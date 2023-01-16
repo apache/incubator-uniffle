@@ -44,15 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class LocalFileHandlerTestBase {
   private static AtomicLong ATOMIC_LONG = new AtomicLong(0L);
 
-  public static void reset() {
-    ATOMIC_LONG = new AtomicLong(0L);
-  }
-
-  public static void writeTestData(
-      ShuffleWriteHandler writeHandler,
-      int num, int length,
-      Map<Long, byte[]> expectedData,
-      Set<Long> expectedBlockIds) throws Exception {
+  public static List<ShufflePartitionedBlock> generateBlocks(int num, int length) {
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList();
     for (int i = 0; i < num; i++) {
       byte[] buf = new byte[length];
@@ -60,10 +52,15 @@ public class LocalFileHandlerTestBase {
       long blockId = ATOMIC_LONG.incrementAndGet();
       blocks.add(new ShufflePartitionedBlock(length, length, ChecksumUtils.getCrc32(buf), blockId, 100,
           buf));
-      expectedData.put(blockId, buf);
-      expectedBlockIds.add(blockId);
     }
-    writeHandler.write(blocks);
+    return blocks;
+  }
+
+  public static void writeTestData(List<ShufflePartitionedBlock> blocks, ShuffleWriteHandler handler,
+      Map<Long, byte[]> expectedData, Set<Long> expectedBlockIds) throws Exception {
+    handler.write(blocks);
+    blocks.forEach(block -> expectedBlockIds.add(block.getBlockId()));
+    blocks.forEach(block -> expectedData.put(block.getBlockId(), block.getData()));
   }
 
   public static void validateResult(ServerReadHandler readHandler, Set<Long> expectedBlockIds,
@@ -134,11 +131,12 @@ public class LocalFileHandlerTestBase {
     byteBuffer.putLong(segment.getTaskAttemptId());
   }
 
-  public static List<byte[]> calcSegmentBytes(Map<Long, byte[]> blockIdToData, int bytesPerSegment, int blockNum) {
+  public static List<byte[]> calcSegmentBytes(Map<Long, byte[]> blockIdToData,
+      int bytesPerSegment, List<Long> blockIds) {
     List<byte[]> res = Lists.newArrayList();
     int curSize = 0;
     ByteBuffer byteBuffer = ByteBuffer.allocate(2 * bytesPerSegment);
-    for (long i = 1; i <= blockNum; i++) {
+    for (long i : blockIds) {
       byte[] data = blockIdToData.get(i);
       byteBuffer.put(data, 0, data.length);
       curSize += data.length;
