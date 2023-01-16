@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.TestUtils;
@@ -111,13 +110,10 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
     TestUtils.validateResult(readClient, expectedData);
   }
 
-  public static String generateBasePath() {
-    File tmpDir = Files.createTempDir();
+  public static String generateBasePath(File tmpDir) {
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
-    tmpDir.deleteOnExit();
-    String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
-    return basePath;
+    return dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
   }
 
   public static List<ShuffleDataSegment> readShuffleIndexSegments(

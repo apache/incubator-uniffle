@@ -17,9 +17,11 @@
 
 package org.apache.uniffle.test;
 
-import java.util.Arrays;
+import java.io.File;
+import java.util.Collections;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -27,16 +29,15 @@ import org.apache.uniffle.server.storage.LocalStorageManager;
 import org.apache.uniffle.server.storage.LocalStorageManagerFallbackStrategy;
 import org.apache.uniffle.server.storage.MultiStorageManager;
 import org.apache.uniffle.storage.common.LocalStorage;
-import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.util.StorageType;
 
-public class MultiStorageLocalfileFallbackTest extends MultiStorageFaultToleranceBase {
+public class MultiStorageLocalFileFallbackTest extends MultiStorageFaultToleranceBase {
 
   @BeforeAll
-  public static void setupServers() throws Exception {
+  public static void setupServers(@TempDir File tmpDir) throws Exception {
     final CoordinatorConf coordinatorConf = getCoordinatorConf();
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    String basePath = generateBasePath();
+    String basePath = generateBasePath(tmpDir);
     shuffleServerConf.setDouble(ShuffleServerConf.CLEANUP_THRESHOLD, 0.0);
     shuffleServerConf.setDouble(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE, 100.0);
     shuffleServerConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 100);
@@ -45,12 +46,10 @@ public class MultiStorageLocalfileFallbackTest extends MultiStorageFaultToleranc
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60L * 1000L * 60L);
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 20L * 1000L);
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS.name());
-    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.singletonList(basePath));
     shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 1000L * 1024L * 1024L);
-    shuffleServerConf.setString(
-        ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
-        LocalStorageManagerFallbackStrategy.class.getCanonicalName()
-    );
+    shuffleServerConf.setString(ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
+        LocalStorageManagerFallbackStrategy.class.getCanonicalName());
     createAndStartServers(shuffleServerConf, coordinatorConf);
   }
 
@@ -58,9 +57,8 @@ public class MultiStorageLocalfileFallbackTest extends MultiStorageFaultToleranc
   public void makeChaos() {
     LocalStorageManager warmStorageManager =
         (LocalStorageManager) ((MultiStorageManager)shuffleServers.get(0).getStorageManager()).getWarmStorageManager();
-    for (Storage storage : warmStorageManager.getStorages()) {
-      LocalStorage localStorage = (LocalStorage) storage;
-      localStorage.markSpaceFull();
+    for (LocalStorage storage : warmStorageManager.getStorages()) {
+      storage.markSpaceFull();
     }
   }
 }
