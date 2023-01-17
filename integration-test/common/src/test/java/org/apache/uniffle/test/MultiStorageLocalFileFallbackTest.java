@@ -29,6 +29,7 @@ import org.apache.uniffle.server.storage.LocalStorageManager;
 import org.apache.uniffle.server.storage.LocalStorageManagerFallbackStrategy;
 import org.apache.uniffle.server.storage.MultiStorageManager;
 import org.apache.uniffle.storage.common.LocalStorage;
+import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.util.StorageType;
 
 public class MultiStorageLocalFileFallbackTest extends MultiStorageFaultToleranceBase {
