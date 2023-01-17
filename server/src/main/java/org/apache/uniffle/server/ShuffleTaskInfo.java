@@ -137,7 +137,7 @@ public class ShuffleTaskInfo {
   }
 
   public boolean hasHugePartition() {
-    return !hugePartitionTags.isEmpty();
+    return existHugePartition;
   }
 
   public int getHugePartitionSize() {
