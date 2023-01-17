@@ -63,14 +63,9 @@ public class ShuffleServerMetrics {
   private static final String LOCAL_STORAGE_USED_SPACE_RATIO = "local_storage_used_space_ratio";
 
   private static final String IS_HEALTHY = "is_healthy";
-  private static final String REGISTERED_SHUFFLE = "registered_shuffle";
-  private static final String REGISTERED_SHUFFLE_ENGINE = "registered_shuffle_engine";
-  private static final String BUFFERED_DATA_SIZE = "buffered_data_size";
   private static final String ALLOCATED_BUFFER_SIZE = "allocated_buffer_size";
   private static final String IN_FLUSH_BUFFER_SIZE = "in_flush_buffer_size";
   private static final String USED_BUFFER_SIZE = "used_buffer_size";
-  private static final String TOTAL_UPLOAD_SIZE = "total_upload_size";
-  private static final String TOTAL_UPLOAD_TIME_S = "total_upload_time_s";
   private static final String TOTAL_FAILED_WRITTEN_EVENT_NUM = "total_failed_written_event_num";
   private static final String TOTAL_DROPPED_EVENT_NUM = "total_dropped_event_num";
   private static final String TOTAL_HDFS_WRITE_DATA = "total_hdfs_write_data";
@@ -101,8 +96,6 @@ public class ShuffleServerMetrics {
   public static Counter counterTotalReadLocalIndexFileSize;
   public static Counter counterTotalReadMemoryDataSize;
   public static Counter counterTotalReadTime;
-  public static Counter counterTotalUploadSize;
-  public static Counter counterTotalUploadTimeS;
   public static Counter counterTotalFailedWrittenEventNum;
   public static Counter counterTotalDroppedEventNum;
   public static Counter counterTotalHdfsWriteDataSize;
@@ -123,9 +116,6 @@ public class ShuffleServerMetrics {
   public static Gauge gaugeLocalStorageUsedSpaceRatio;
 
   public static Gauge gaugeIsHealthy;
-  public static Gauge gaugeRegisteredShuffle;
-  public static Gauge gaugeRegisteredShuffleEngine;
-  public static Gauge gaugeBufferDataSize;
   public static Gauge gaugeAllocatedBufferSize;
   public static Gauge gaugeInFlushBufferSize;
   public static Gauge gaugeUsedBufferSize;
@@ -250,8 +240,6 @@ public class ShuffleServerMetrics {
     counterTotalReadLocalIndexFileSize = metricsManager.addCounter(TOTAL_READ_LOCAL_INDEX_FILE);
     counterTotalReadMemoryDataSize = metricsManager.addCounter(TOTAL_READ_MEMORY_DATA);
     counterTotalReadTime = metricsManager.addCounter(TOTAL_READ_TIME);
-    counterTotalUploadSize = metricsManager.addCounter(TOTAL_UPLOAD_SIZE);
-    counterTotalUploadTimeS = metricsManager.addCounter(TOTAL_UPLOAD_TIME_S);
     counterTotalDroppedEventNum = metricsManager.addCounter(TOTAL_DROPPED_EVENT_NUM);
     counterTotalFailedWrittenEventNum = metricsManager.addCounter(TOTAL_FAILED_WRITTEN_EVENT_NUM);
     counterTotalHdfsWriteDataSize = metricsManager.addCounter(TOTAL_HDFS_WRITE_DATA);
@@ -272,9 +260,6 @@ public class ShuffleServerMetrics {
     gaugeLocalStorageUsedSpaceRatio = metricsManager.addGauge(LOCAL_STORAGE_USED_SPACE_RATIO);
 
     gaugeIsHealthy = metricsManager.addGauge(IS_HEALTHY);
-    gaugeRegisteredShuffle = metricsManager.addGauge(REGISTERED_SHUFFLE);
-    gaugeRegisteredShuffleEngine = metricsManager.addGauge(REGISTERED_SHUFFLE_ENGINE);
-    gaugeBufferDataSize = metricsManager.addGauge(BUFFERED_DATA_SIZE);
     gaugeAllocatedBufferSize = metricsManager.addGauge(ALLOCATED_BUFFER_SIZE);
     gaugeInFlushBufferSize = metricsManager.addGauge(IN_FLUSH_BUFFER_SIZE);
     gaugeUsedBufferSize = metricsManager.addGauge(USED_BUFFER_SIZE);

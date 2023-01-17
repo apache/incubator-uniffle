@@ -90,12 +90,11 @@ public class ShuffleTaskManager {
   // merge different blockId of partition to one bitmap can reduce memory cost,
   // but when get blockId, performance will degrade a little which can be optimized by client configuration
   private Map<String, Map<Integer, Roaring64NavigableMap[]>> partitionsToBlockIds;
-  private ShuffleBufferManager shuffleBufferManager;
+  private final ShuffleBufferManager shuffleBufferManager;
   private Map<String, ShuffleTaskInfo> shuffleTaskInfos = Maps.newConcurrentMap();
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = Maps.newConcurrentMap();
   private Runnable clearResourceThread;
   private BlockingQueue<PurgeEvent> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
-  // appId -> shuffleId -> serverReadHandler
 
   public ShuffleTaskManager(
       ShuffleServerConf conf,
@@ -116,17 +115,17 @@ public class ShuffleTaskManager {
     this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("checkResource-%d"));
     scheduledExecutorService.scheduleAtFixedRate(
-        () -> preAllocatedBufferCheck(), preAllocationExpired / 2,
+        this::preAllocatedBufferCheck, preAllocationExpired / 2,
         preAllocationExpired / 2, TimeUnit.MILLISECONDS);
     this.expiredAppCleanupExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("expiredAppCleaner"));
     expiredAppCleanupExecutorService.scheduleAtFixedRate(
-        () -> checkResourceStatus(), appExpiredWithoutHB / 2,
+        this::checkResourceStatus, appExpiredWithoutHB / 2,
         appExpiredWithoutHB / 2, TimeUnit.MILLISECONDS);
     this.leakShuffleDataCheckExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("leakShuffleDataChecker"));
     leakShuffleDataCheckExecutorService.scheduleAtFixedRate(
-        () -> checkLeakShuffleData(), leakShuffleDataCheckInterval,
+        this::checkLeakShuffleData, leakShuffleDataCheckInterval,
             leakShuffleDataCheckInterval, TimeUnit.MILLISECONDS);
     if (triggerFlushInterval > 0) {
       triggerFlushExecutorService = Executors.newSingleThreadScheduledExecutor(
@@ -144,7 +143,7 @@ public class ShuffleTaskManager {
             removeResources(event.getAppId());
           }
           if (event instanceof ShufflePurgeEvent) {
-            removeResourcesByShuffleIds(event.getAppId(), ((ShufflePurgeEvent) event).getShuffleIds());
+            removeResourcesByShuffleIds(event.getAppId(), event.getShuffleIds());
           }
         } catch (Exception e) {
           LOG.error("Exception happened when clear resource for expired application", e);
@@ -200,7 +199,13 @@ public class ShuffleTaskManager {
   public StatusCode cacheShuffleData(
       String appId, int shuffleId, boolean isPreAllocated, ShufflePartitionedData spd) {
     refreshAppId(appId);
-    return shuffleBufferManager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
+    return shuffleBufferManager.cacheShuffleData(
+        appId,
+        shuffleId,
+        isPreAllocated,
+        spd,
+        this::getPartitionDataSize
+    );
   }
 
   public PreAllocatedBufferInfo getAndRemovePreAllocatedBuffer(long requireBufferId) {
@@ -333,6 +338,27 @@ public class ShuffleTaskManager {
       return Roaring64NavigableMap.bitmapOf();
     }
     return blockIds;
+  }
+
+  public long getPartitionDataSize(String appId, int shuffleId, int partitionId) {
+    ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
+    if (shuffleTaskInfo == null) {
+      return 0L;
+    }
+    return shuffleTaskInfo.getPartitionDataSize(shuffleId, partitionId);
+  }
+
+  public long requireBuffer(String appId, int shuffleId, List<Integer> partitionIds, int requireSize) {
+    ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
+    if (shuffleTaskInfo != null) {
+      for (int partitionId : partitionIds) {
+        long partitionUsedDataSize = getPartitionDataSize(appId, shuffleId, partitionId);
+        if (shuffleBufferManager.limitHugePartition(appId, shuffleId, partitionId, partitionUsedDataSize)) {
+          return -1;
+        }
+      }
+    }
+    return requireBuffer(requireSize);
   }
 
   public long requireBuffer(int requireSize) {
@@ -630,5 +656,4 @@ public class ShuffleTaskManager {
       this.shuffleBufferManager.flushIfNecessary();
     }
   }
-
 }

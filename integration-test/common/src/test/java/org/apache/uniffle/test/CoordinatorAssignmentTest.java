@@ -23,9 +23,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import com.google.common.collect.Sets;
-import com.google.common.io.Files;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +50,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
       LOCALHOST + ":" + COORDINATOR_PORT_1 + "," + LOCALHOST + ":" + COORDINATOR_PORT_2;
 
   @BeforeAll
-  public static void setupServers() throws Exception {
+  public static void setupServers(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf1 = getCoordinatorConf();
     coordinatorConf1.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2000);
     coordinatorConf1.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, SHUFFLE_NODES_MAX);
@@ -65,7 +65,6 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
 
     for (int i = 0; i < SERVER_NUM; i++) {
       ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-      File tmpDir = Files.createTempDir();
       File dataDir1 = new File(tmpDir, "data1");
       String basePath = dataDir1.getAbsolutePath();
       shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());

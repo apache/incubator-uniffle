@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.client.impl.grpc;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -179,8 +181,33 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     return blockingStub.withDeadlineAfter(timeout, TimeUnit.MILLISECONDS).appHeartbeat(request);
   }
 
-  public long requirePreAllocation(int requireSize, int retryMax, long retryIntervalMax) {
-    RequireBufferRequest rpcRequest = RequireBufferRequest.newBuilder().setRequireSize(requireSize).build();
+  // Only for tests
+  @VisibleForTesting
+  public long requirePreAllocation(int requireSize, int retryMax, long retryIntervalMax) throws Exception {
+    return requirePreAllocation(
+        "EMPTY",
+        0,
+        Collections.emptyList(),
+        requireSize,
+        retryMax,
+        retryIntervalMax
+    );
+  }
+
+  public long requirePreAllocation(
+      String appId,
+      int shuffleId,
+      List<Integer> partitionIds,
+      int requireSize,
+      int retryMax,
+      long retryIntervalMax) {
+    RequireBufferRequest rpcRequest = RequireBufferRequest.newBuilder()
+        .setShuffleId(shuffleId)
+        .addAllPartitionIds(partitionIds)
+        .setAppId(appId)
+        .setRequireSize(requireSize)
+        .build();
+
     long start = System.currentTimeMillis();
     RequireBufferResponse rpcResponse = getBlockingStub().requireBuffer(rpcRequest);
     int retry = 0;
@@ -282,6 +309,9 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       List<ShuffleData> shuffleData = Lists.newArrayList();
       int size = 0;
       int blockNum = 0;
+      int shuffleId = stb.getKey();
+      List<Integer> partitionIds = new ArrayList<>();
+
       for (Map.Entry<Integer, List<ShuffleBlockInfo>> ptb : stb.getValue().entrySet()) {
         List<ShuffleBlock> shuffleBlocks = Lists.newArrayList();
         for (ShuffleBlockInfo sbi : ptb.getValue()) {
@@ -298,14 +328,21 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         shuffleData.add(ShuffleData.newBuilder().setPartitionId(ptb.getKey())
             .addAllBlock(shuffleBlocks)
             .build());
+        partitionIds.add(ptb.getKey());
       }
 
       final int allocateSize = size;
       final int finalBlockNum = blockNum;
       try {
         RetryUtils.retry(() -> {
-          long requireId = requirePreAllocation(allocateSize, request.getRetryMax() / maxRetryAttempts,
-              request.getRetryIntervalMax());
+          long requireId = requirePreAllocation(
+              appId,
+              shuffleId,
+              partitionIds,
+              allocateSize,
+              request.getRetryMax() / maxRetryAttempts,
+              request.getRetryIntervalMax()
+          );
           if (requireId == FAILED_REQUIRE_ID) {
             throw new RssException(String.format(
                 "requirePreAllocation failed! size[%s], host[%s], port[%s]", allocateSize, host, port));

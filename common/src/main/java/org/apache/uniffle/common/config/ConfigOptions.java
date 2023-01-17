@@ -254,7 +254,7 @@ public class ConfigOptions {
             return Collections.emptyList();
           }
           return Arrays.stream(trimmedVal.split(LIST_SPILTTER))
-                  .map(s -> atomicConverter.apply(s)).collect(Collectors.toList());
+                  .map(atomicConverter::apply).collect(Collectors.toList());
         }
       };
     }

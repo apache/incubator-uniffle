@@ -161,7 +161,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       Function1<TaskContext, Void> fn1 = new AbstractFunction1<TaskContext, Void>() {
         public Void apply(TaskContext context) {
           sorter.stop();
-          return (Void) null;
+          return null;
         }
       };
       context.addTaskCompletionListener(fn1);
@@ -231,7 +231,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         if (dataIterator != null) {
           dataIterator.completion();
         }
-        iterator.forEachRemaining(ci -> ci.completion());
+        iterator.forEachRemaining(CompletionIterator::completion);
       });
     }
 

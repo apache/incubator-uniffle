@@ -51,8 +51,7 @@ public class RetryUtils {
     int retry = 0;
     while (true) {
       try {
-        T ret = cmd.execute();
-        return ret;
+        return cmd.execute();
       } catch (Throwable t) {
         retry++;
         if ((exceptionClasses != null && !isInstanceOf(exceptionClasses, t)) || retry >= retryTimes

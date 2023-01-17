@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Maps;
 import org.junit.jupiter.api.Test;
@@ -51,7 +52,8 @@ public class LocalFileServerReadHandlerTest {
     Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
 
     // We simulate the generation of 4 block index files and 3 block data files to test LocalFileClientReadHandler
-    LocalFileHandlerTestBase.writeTestData(shuffleBlocks -> {
+    List<ShufflePartitionedBlock> blocks = LocalFileHandlerTestBase.generateBlocks(expectTotalBlockNum, blockSize);
+    LocalFileHandlerTestBase.writeTestData(blocks, shuffleBlocks -> {
       int offset = 0;
       for (ShufflePartitionedBlock block : shuffleBlocks) {
         FileBasedShuffleSegment segment = new FileBasedShuffleSegment(
@@ -60,9 +62,9 @@ public class LocalFileServerReadHandlerTest {
         offset += block.getLength();
         LocalFileHandlerTestBase.writeIndex(byteBuffer, segment);
       }
-    }, expectTotalBlockNum, blockSize,
-        expectedData, new HashSet<>());
-    expectedData.forEach((id, block) -> expectBlockIds.addLong(id));
+    }, expectedData, new HashSet<>());
+
+    blocks.forEach(block -> expectBlockIds.addLong(block.getBlockId()));
 
     String appId = "app1";
     int shuffleId = 1;
@@ -77,8 +79,10 @@ public class LocalFileServerReadHandlerTest {
 
     int readBufferSize = 13;
     int bytesPerSegment = ((readBufferSize / blockSize) + 1) * blockSize;
+    List<Long> actualWriteBlockIds = blocks.stream().map(ShufflePartitionedBlock::getBlockId)
+        .limit(actualWriteDataBlock).collect(Collectors.toList());
     List<byte[]> segments = LocalFileHandlerTestBase.calcSegmentBytes(expectedData,
-        bytesPerSegment, actualWriteDataBlock);
+        bytesPerSegment, actualWriteBlockIds);
 
     // first segment include 2 blocks
     ArgumentMatcher<RssGetShuffleDataRequest> segment1Match =

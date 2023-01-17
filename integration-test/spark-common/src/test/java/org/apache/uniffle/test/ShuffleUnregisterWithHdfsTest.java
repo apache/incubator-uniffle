@@ -90,6 +90,11 @@ public class ShuffleUnregisterWithHdfsTest extends SparkIntegrationTestBase {
       Thread.sleep(1000);
       assertFalse(fs.exists(new Path(shufflePath)));
       assertTrue(fs.exists(new Path(appPath)));
+
+      // After unregistering partial shuffle, newly shuffle could work
+      map = javaPairRDD.collectAsMap();
+      shufflePath = appPath + "/1";
+      assertTrue(fs.exists(new Path(shufflePath)));
     } else {
       runCounter++;
     }

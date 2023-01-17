@@ -203,10 +203,7 @@ public class SortWriteBufferManager<K, V> {
         return o2.getDataLength() - o1.getDataLength();
       }
     });
-    int sendSize = batch;
-    if (batch > waitSendBuffers.size()) {
-      sendSize = waitSendBuffers.size();
-    }
+    int sendSize = Math.min(batch, waitSendBuffers.size());
     Iterator<SortWriteBuffer<K, V>> iterator = waitSendBuffers.iterator();
     int index = 0;
     List<ShuffleBlockInfo> shuffleBlocks = Lists.newArrayList();
@@ -318,7 +315,7 @@ public class SortWriteBufferManager<K, V> {
     final byte[] compressed = codec.compress(data);
     final long crc32 = ChecksumUtils.getCrc32(compressed);
     compressTime += System.currentTimeMillis() - start;
-    final long blockId = RssMRUtils.getBlockId((long)partitionId, taskAttemptId, getNextSeqNo(partitionId));
+    final long blockId = RssMRUtils.getBlockId(partitionId, taskAttemptId, getNextSeqNo(partitionId));
     uncompressedDataLen += data.length;
     // add memory to indicate bytes which will be sent to shuffle server
     inSendListBytes.addAndGet(wb.getDataLength());

@@ -122,7 +122,7 @@ public class HdfsFileWriter implements FileWriter, Closeable {
     headerContentBuf.flip();
     fsDataOutputStream.writeLong(ChecksumUtils.getCrc32(headerContentBuf));
     long len = ShuffleStorageUtils.getIndexFileHeaderLen(partitionList.size());
-    if (fsDataOutputStream.getPos() != (long) len) {
+    if (fsDataOutputStream.getPos() != len) {
       throw new IOException("Fail to write index header");
     }
   }

@@ -25,8 +25,8 @@ import java.util.Set;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.io.Files;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
@@ -40,9 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class LocalFileHandlerTest {
 
   @Test
-  public void writeTest() throws Exception {
-    File tmpDir = Files.createTempDir();
-    tmpDir.deleteOnExit();
+  public void writeTest(@TempDir File tmpDir) throws Exception {
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
     String[] basePaths = new String[]{dataDir1.getAbsolutePath(),
@@ -63,15 +61,23 @@ public class LocalFileHandlerTest {
     final Set<Long> expectedBlockIds1 = Sets.newHashSet();
     final Set<Long> expectedBlockIds2 = Sets.newHashSet();
 
-    LocalFileHandlerTestBase.writeTestData(writeHandler1, 1, 32, expectedData, expectedBlockIds1);
-    LocalFileHandlerTestBase.writeTestData(writeHandler1, 2, 32, expectedData, expectedBlockIds1);
-    LocalFileHandlerTestBase.writeTestData(writeHandler1, 3, 32, expectedData, expectedBlockIds1);
-    LocalFileHandlerTestBase.writeTestData(writeHandler1, 4, 32, expectedData, expectedBlockIds1);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(1, 32),
+        writeHandler1, expectedData, expectedBlockIds1);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(2, 32),
+        writeHandler1, expectedData, expectedBlockIds1);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(3, 32),
+        writeHandler1, expectedData, expectedBlockIds1);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(4, 32),
+        writeHandler1, expectedData, expectedBlockIds1);
 
-    LocalFileHandlerTestBase.writeTestData(writeHandler2, 3, 32, expectedData, expectedBlockIds2);
-    LocalFileHandlerTestBase.writeTestData(writeHandler2, 3, 32, expectedData, expectedBlockIds2);
-    LocalFileHandlerTestBase.writeTestData(writeHandler2, 2, 32, expectedData, expectedBlockIds2);
-    LocalFileHandlerTestBase.writeTestData(writeHandler2, 1, 32, expectedData, expectedBlockIds2);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(3, 32),
+        writeHandler2, expectedData, expectedBlockIds2);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(3, 32),
+        writeHandler2, expectedData, expectedBlockIds2);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(2, 32),
+        writeHandler2, expectedData, expectedBlockIds2);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(1, 32),
+        writeHandler2, expectedData, expectedBlockIds2);
 
     RssBaseConf conf = new RssBaseConf();
     conf.setString("rss.storage.basePath", dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath());
@@ -84,7 +90,8 @@ public class LocalFileHandlerTest {
     LocalFileHandlerTestBase.validateResult(readHandler2, expectedBlockIds2, expectedData);
 
     // after first read, write more data
-    LocalFileHandlerTestBase.writeTestData(writeHandler1, 1, 32, expectedData, expectedBlockIds1);
+    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(1, 32),
+        writeHandler1, expectedData, expectedBlockIds1);
     // new data should be read
     LocalFileHandlerTestBase.validateResult(readHandler1, expectedBlockIds1, expectedData);
 
@@ -103,9 +110,7 @@ public class LocalFileHandlerTest {
   }
 
   @Test
-  public void writeBigDataTest() throws IOException  {
-    File tmpDir = Files.createTempDir();
-    tmpDir.deleteOnExit();
+  public void writeBigDataTest(@TempDir File tmpDir) throws IOException  {
     File writeFile = new File(tmpDir, "writetest");
     LocalFileWriter writer = new LocalFileWriter(writeFile);
     int  size = Integer.MAX_VALUE / 100;

@@ -84,13 +84,12 @@ public class HdfsStorageManager extends SingleStorageManager {
   @Override
   public void removeResources(PurgeEvent event) {
     String appId = event.getAppId();
-    String user = event.getUser();
     HdfsStorage storage = getStorageByAppId(appId);
     if (storage != null) {
       if (event instanceof AppPurgeEvent) {
         storage.removeHandlers(appId);
+        appIdToStorages.remove(appId);
       }
-      appIdToStorages.remove(appId);
       ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory
           .getInstance()
           .createShuffleDeleteHandler(
@@ -107,7 +106,9 @@ public class HdfsStorageManager extends SingleStorageManager {
           deletePaths.add(ShuffleStorageUtils.getFullShuffleDataFolder(basicPath, String.valueOf(shuffleId)));
         }
       }
-      deleteHandler.delete(deletePaths.toArray(new String[0]), appId, user);
+      deleteHandler.delete(deletePaths.toArray(new String[0]), appId, event.getUser());
+    } else {
+      LOG.warn("Storage gotten is null when removing resources for event: {}", event);
     }
   }
 
@@ -119,23 +120,20 @@ public class HdfsStorageManager extends SingleStorageManager {
   @Override
   public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo) {
     String remoteStorage = remoteStorageInfo.getPath();
-    Map<String, String> remoteStorageConf = remoteStorageInfo.getConfItems();
-    if (!pathToStorages.containsKey(remoteStorage)) {
+    pathToStorages.computeIfAbsent(remoteStorage, key -> {
+      Map<String, String> remoteStorageConf = remoteStorageInfo.getConfItems();
       Configuration remoteStorageHadoopConf = new Configuration(hadoopConf);
       if (remoteStorageConf != null && remoteStorageConf.size() > 0) {
         for (Map.Entry<String, String> entry : remoteStorageConf.entrySet()) {
           remoteStorageHadoopConf.setStrings(entry.getKey(), entry.getValue());
         }
       }
-      pathToStorages.putIfAbsent(remoteStorage, new HdfsStorage(remoteStorage, remoteStorageHadoopConf));
-      // registerRemoteStorage may be called in different threads,
-      // make sure metrics won't be created duplicated
-      // there shouldn't have performance issue because
-      // it will be called only few times according to the number of remote storage
-      String storageHost = pathToStorages.get(remoteStorage).getStorageHost();
+      HdfsStorage hdfsStorage = new HdfsStorage(remoteStorage, remoteStorageHadoopConf);
+      String storageHost = hdfsStorage.getStorageHost();
       ShuffleServerMetrics.addDynamicCounterForRemoteStorage(storageHost);
-    }
-    appIdToStorages.putIfAbsent(appId, pathToStorages.get(remoteStorage));
+      return hdfsStorage;
+    });
+    appIdToStorages.computeIfAbsent(appId, key -> pathToStorages.get(remoteStorage));
   }
 
   @Override

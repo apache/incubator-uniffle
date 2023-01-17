@@ -158,6 +158,9 @@ public class ShuffleDataFlushEvent {
         + ", appId=" + appId
         + ", shuffleId=" + shuffleId
         + ", startPartition=" + startPartition
-        + ", endPartition=" + endPartition;
+        + ", endPartition=" + endPartition
+        + ", retryTimes=" + retryTimes
+        + ", underStorage=" + underStorage.getClass().getSimpleName()
+        + ", isPended=" + isPended;
   }
 }

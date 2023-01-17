@@ -342,6 +342,20 @@ public class ShuffleServerConf extends RssBaseConf {
       .noDefaultValue()
       .withDescription("The env key to get json source of local storage media provider");
 
+  public static final ConfigOption<Long> HUGE_PARTITION_SIZE_THRESHOLD = ConfigOptions
+      .key("rss.server.huge-partition.size.threshold")
+      .longType()
+      .defaultValue(20 * 1024 * 1024 * 1024L)
+      .withDescription("Threshold of huge partition size, once exceeding threshold, memory usage limitation and "
+          + "huge partition buffer flushing will be triggered.");
+
+  public static final ConfigOption<Double> HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO = ConfigOptions
+      .key("rss.server.huge-partition.memory.limit.ratio")
+      .doubleType()
+      .defaultValue(0.2)
+      .withDescription("The memory usage limit ratio for huge partition, it will only triggered when partition's "
+          + "size exceeds the threshold of '" + HUGE_PARTITION_SIZE_THRESHOLD.key() + "'");
+
   public ShuffleServerConf() {
   }
 

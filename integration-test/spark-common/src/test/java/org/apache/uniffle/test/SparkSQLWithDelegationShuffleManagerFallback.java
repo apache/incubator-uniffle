@@ -24,11 +24,11 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -37,7 +37,7 @@ import org.apache.uniffle.storage.util.StorageType;
 public class SparkSQLWithDelegationShuffleManagerFallback extends SparkSQLTest {
 
   @BeforeAll
-  public static void setupServers() throws Exception {
+  public static void setupServers(@TempDir File tmpDir) throws Exception {
     final String candidates = Objects.requireNonNull(
         SparkSQLWithDelegationShuffleManager.class.getClassLoader().getResource("candidates")).getFile();
     CoordinatorConf coordinatorConf = getCoordinatorConf();
@@ -55,8 +55,6 @@ public class SparkSQLWithDelegationShuffleManagerFallback extends SparkSQLTest {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.set(ShuffleServerConf.SERVER_HEARTBEAT_INTERVAL, 1000L);
     shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 4000L);
-    File tmpDir = Files.createTempDir();
-    tmpDir.deleteOnExit();
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();

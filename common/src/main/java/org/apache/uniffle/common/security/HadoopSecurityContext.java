@@ -111,7 +111,7 @@ public class HadoopSecurityContext implements SecurityContext {
   }
 
   private <T> T executeWithUgiWrapper(UserGroupInformation ugi, Callable<T> callable) throws Exception {
-    return ugi.doAs((PrivilegedExceptionAction<T>) () -> callable.call());
+    return ugi.doAs((PrivilegedExceptionAction<T>) callable::call);
   }
 
   @Override
