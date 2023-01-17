@@ -18,7 +18,7 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
-import java.util.Collections;
+import java.util.Arrays;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,10 +46,12 @@ public class MultiStorageLocalFileFallbackTest extends MultiStorageFaultToleranc
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60L * 1000L * 60L);
     shuffleServerConf.setLong(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 20L * 1000L);
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS.name());
-    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.singletonList(basePath));
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
     shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 1000L * 1024L * 1024L);
-    shuffleServerConf.setString(ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
-        LocalStorageManagerFallbackStrategy.class.getCanonicalName());
+    shuffleServerConf.setString(
+        ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
+        LocalStorageManagerFallbackStrategy.class.getCanonicalName()
+    );
     createAndStartServers(shuffleServerConf, coordinatorConf);
   }
 
@@ -57,8 +59,9 @@ public class MultiStorageLocalFileFallbackTest extends MultiStorageFaultToleranc
   public void makeChaos() {
     LocalStorageManager warmStorageManager =
         (LocalStorageManager) ((MultiStorageManager)shuffleServers.get(0).getStorageManager()).getWarmStorageManager();
-    for (LocalStorage storage : warmStorageManager.getStorages()) {
-      storage.markSpaceFull();
+    for (Storage storage : warmStorageManager.getStorages()) {
+      LocalStorage localStorage = (LocalStorage) storage;
+      localStorage.markSpaceFull();
     }
   }
 }
