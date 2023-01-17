@@ -95,7 +95,6 @@ public class ShuffleTaskManager {
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = Maps.newConcurrentMap();
   private Runnable clearResourceThread;
   private BlockingQueue<PurgeEvent> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
-  // appId -> shuffleId -> serverReadHandler
 
   public ShuffleTaskManager(
       ShuffleServerConf conf,
@@ -200,7 +199,13 @@ public class ShuffleTaskManager {
   public StatusCode cacheShuffleData(
       String appId, int shuffleId, boolean isPreAllocated, ShufflePartitionedData spd) {
     refreshAppId(appId);
-    return shuffleBufferManager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
+    return shuffleBufferManager.cacheShuffleData(
+        appId,
+        shuffleId,
+        isPreAllocated,
+        spd,
+        this::getPartitionDataSize
+    );
   }
 
   public PreAllocatedBufferInfo getAndRemovePreAllocatedBuffer(long requireBufferId) {
@@ -333,6 +338,27 @@ public class ShuffleTaskManager {
       return Roaring64NavigableMap.bitmapOf();
     }
     return blockIds;
+  }
+
+  public long getPartitionDataSize(String appId, int shuffleId, int partitionId) {
+    ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
+    if (shuffleTaskInfo == null) {
+      return 0L;
+    }
+    return shuffleTaskInfo.getPartitionDataSize(shuffleId, partitionId);
+  }
+
+  public long requireBuffer(String appId, int shuffleId, List<Integer> partitionIds, int requireSize) {
+    ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
+    if (shuffleTaskInfo != null) {
+      for (int partitionId : partitionIds) {
+        long partitionUsedDataSize = getPartitionDataSize(appId, shuffleId, partitionId);
+        if (shuffleBufferManager.limitHugePartition(appId, shuffleId, partitionId, partitionUsedDataSize)) {
+          return -1;
+        }
+      }
+    }
+    return requireBuffer(requireSize);
   }
 
   public long requireBuffer(int requireSize) {
@@ -630,5 +656,4 @@ public class ShuffleTaskManager {
       this.shuffleBufferManager.flushIfNecessary();
     }
   }
-
 }

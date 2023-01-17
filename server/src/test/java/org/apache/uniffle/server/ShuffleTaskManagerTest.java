@@ -64,6 +64,7 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -76,6 +77,48 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
   @AfterAll
   public static void tearDown() {
     ShuffleServerMetrics.clear();
+  }
+
+  @Test
+  public void hugePartitionMemoryUsageLimitTest() throws Exception {
+    String confFile = ClassLoader.getSystemResource("server.conf").getFile();
+    ShuffleServerConf conf = new ShuffleServerConf(confFile);
+    conf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE.name());
+    conf.setString(ShuffleServerConf.HUGE_PARTITION_SIZE_THRESHOLD.key(), "1K");
+    conf.setString("rss.server.buffer.capacity", "10K");
+    conf.set(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO, 0.1);
+
+    ShuffleServer shuffleServer = new ShuffleServer(conf);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
+
+    String appId = "hugePartitionMemoryUsageLimitTest_appId";
+    int shuffleId = 1;
+
+    shuffleTaskManager.registerShuffle(
+        appId,
+        shuffleId,
+        Lists.newArrayList(new PartitionRange(1, 1)),
+        RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+        StringUtils.EMPTY
+    );
+
+    // case1
+    long requiredId = shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+    assertNotEquals(-1, requiredId);
+
+    // case2
+    ShufflePartitionedData partitionedData0 = createPartitionedData(1, 1, 500);
+    shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData0);
+    shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 1, partitionedData0.getBlockList());
+    requiredId = shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+    assertNotEquals(-1, requiredId);
+
+    // case3
+    partitionedData0 = createPartitionedData(1, 1, 500);
+    shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData0);
+    shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 1, partitionedData0.getBlockList());
+    requiredId = shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+    assertEquals(-1, requiredId);
   }
 
   @Test

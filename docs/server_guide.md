@@ -86,6 +86,8 @@ This document will introduce how to deploy Uniffle shuffle servers.
 |rss.server.leak.shuffledata.check.interval|3600000|The interval of leak shuffle data check (ms)|
 |rss.server.max.concurrency.of.single.partition.writer|1|The max concurrency of single partition writer, the data partition file number is equal to this value. Default value is 1. This config could improve the writing speed, especially for huge partition.|
 |rss.metrics.reporter.class|-|The class of metrics reporter.|
+|rss.server.huge-partition.size.threshold|20g|Threshold of huge partition size, once exceeding threshold, memory usage limitation and huge partition buffer flushing will be triggered.|
+|rss.server.huge-partition.memory.limit.ratio|0.2|The memory usage limit ratio for huge partition, it will only triggered when partition's size exceeds the threshold of 'rss.server.huge-partition.size.threshold'|
 
 ### Advanced Configurations
 |Property Name|Default| Description                                                                                                                                                                                 |
