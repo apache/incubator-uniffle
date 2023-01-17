@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
@@ -30,10 +29,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
+import org.junit.jupiter.api.io.TempDir;
 
 public class RepartitionWithHdfsMultiStorageRssTest extends RepartitionTest {
   @BeforeAll
-  public static void setupServers() throws Exception {
+  public static void setupServers(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
@@ -43,8 +43,6 @@ public class RepartitionWithHdfsMultiStorageRssTest extends RepartitionTest {
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     // local storage config
-    File tmpDir = Files.createTempDir();
-    tmpDir.deleteOnExit();
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();

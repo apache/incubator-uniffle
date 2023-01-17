@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Files;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -47,6 +46,7 @@ import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.util.Progress;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -62,13 +62,11 @@ public class RssRemoteMergeManagerTest {
       new TaskID(jobId, TaskType.REDUCE, 0), 0);
 
   @Test
-  public void mergerTest() throws Throwable {
+  public void mergerTest(@TempDir File tmpDir) throws Throwable {
     JobConf jobConf = new JobConf();
     final FileSystem fs = FileSystem.getLocal(jobConf);
     final LocalDirAllocator lda = new LocalDirAllocator(MRConfig.LOCAL_DIR);
 
-    File tmpDir = Files.createTempDir();
-    tmpDir.deleteOnExit();
     jobConf.set("mapreduce.reduce.memory.totalbytes", "1024");
     jobConf.set("mapreduce.reduce.shuffle.memory.limit.percent", "0.01");
     jobConf.set("mapreduce.reduce.shuffle.merge.percent", "0.1");
