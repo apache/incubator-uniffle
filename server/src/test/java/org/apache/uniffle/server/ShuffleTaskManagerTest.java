@@ -119,6 +119,18 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 1, partitionedData0.getBlockList());
     requiredId = shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
     assertEquals(-1, requiredId);
+    // metrics test
+    assertEquals(1, ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.get());
+    assertEquals(0, ShuffleServerMetrics.counterTotalRequireBufferFailedForRegularPartition.get());
+    assertEquals(1, ShuffleServerMetrics.counterTotalAppWithHugePartitionNum.get());
+    assertEquals(1, ShuffleServerMetrics.counterTotalHugePartitionNum.get());
+    assertEquals(1, ShuffleServerMetrics.gaugeHugePartitionNum.get());
+    assertEquals(1, ShuffleServerMetrics.gaugeAppWithHugePartitionNum.get());
+
+    // case4
+    shuffleTaskManager.removeResources(appId);
+    assertEquals(0, ShuffleServerMetrics.gaugeHugePartitionNum.get());
+    assertEquals(0, ShuffleServerMetrics.gaugeAppWithHugePartitionNum.get());
   }
 
   @Test

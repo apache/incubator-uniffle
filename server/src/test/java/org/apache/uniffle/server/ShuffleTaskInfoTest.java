@@ -17,15 +17,45 @@
 
 package org.apache.uniffle.server;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShuffleTaskInfoTest {
 
+  @BeforeAll
+  public static void setup() {
+    ShuffleServerMetrics.register();
+  }
+
+  @AfterAll
+  public static void tearDown() {
+    ShuffleServerMetrics.clear();
+  }
+
+  @Test
+  public void hugePartitionTest() {
+    ShuffleTaskInfo shuffleTaskInfo = new ShuffleTaskInfo("hugePartition_appId");
+
+    // case1
+    assertFalse(shuffleTaskInfo.hasHugePartition());
+    assertEquals(0, shuffleTaskInfo.getHugePartitionSize());
+
+    // case2
+    shuffleTaskInfo.markHugePartition(1, 1);
+    shuffleTaskInfo.markHugePartition(1, 2);
+    shuffleTaskInfo.markHugePartition(2, 2);
+    assertTrue(shuffleTaskInfo.hasHugePartition());
+    assertEquals(3, shuffleTaskInfo.getHugePartitionSize());
+  }
+
   @Test
   public void partitionSizeSummaryTest() {
-    ShuffleTaskInfo shuffleTaskInfo = new ShuffleTaskInfo();
+    ShuffleTaskInfo shuffleTaskInfo = new ShuffleTaskInfo("partitionSizeSummaryTest_appId");
     // case1
     long size = shuffleTaskInfo.getPartitionDataSize(0, 0);
     assertEquals(0, size);

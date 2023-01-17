@@ -71,6 +71,10 @@ public class ShuffleServerMetrics {
   private static final String TOTAL_HDFS_WRITE_DATA = "total_hdfs_write_data";
   private static final String TOTAL_LOCALFILE_WRITE_DATA = "total_localfile_write_data";
   private static final String TOTAL_REQUIRE_BUFFER_FAILED = "total_require_buffer_failed";
+  private static final String TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION =
+      "total_require_buffer_failed_for_huge_partition";
+  private static final String TOTAL_REQUIRE_BUFFER_FAILED_FOR_REGULAR_PARTITION =
+      "total_require_buffer_failed_for_regular_partition";
   private static final String STORAGE_TOTAL_WRITE_LOCAL = "storage_total_write_local";
   private static final String STORAGE_RETRY_WRITE_LOCAL = "storage_retry_write_local";
   private static final String STORAGE_FAILED_WRITE_LOCAL = "storage_failed_write_local";
@@ -79,6 +83,19 @@ public class ShuffleServerMetrics {
   public static final String STORAGE_RETRY_WRITE_REMOTE_PREFIX = "storage_retry_write_remote_";
   public static final String STORAGE_FAILED_WRITE_REMOTE_PREFIX = "storage_failed_write_remote_";
   public static final String STORAGE_SUCCESS_WRITE_REMOTE_PREFIX = "storage_success_write_remote_";
+
+  private static final String TOTAL_APP_NUM = "total_app_num";
+  private static final String TOTAL_APP_WITH_HUGE_PARTITION_NUM = "total_app_with_huge_partition_num";
+  private static final String TOTAL_PARTITION_NUM = "total_partition_num";
+  private static final String TOTAL_HUGE_PARTITION_NUM = "total_huge_partition_num";
+
+  private static final String HUGE_PARTITION_NUM = "huge_partition_num";
+  private static final String APP_WITH_HUGE_PARTITION_NUM = "app_with_huge_partition_num";
+
+  public static Counter counterTotalAppNum;
+  public static Counter counterTotalAppWithHugePartitionNum;
+  public static Counter counterTotalPartitionNum;
+  public static Counter counterTotalHugePartitionNum;
 
   public static Counter counterTotalReceivedDataSize;
   public static Counter counterTotalWriteDataSize;
@@ -101,6 +118,9 @@ public class ShuffleServerMetrics {
   public static Counter counterTotalHdfsWriteDataSize;
   public static Counter counterTotalLocalFileWriteDataSize;
   public static Counter counterTotalRequireBufferFailed;
+  public static Counter counterTotalRequireBufferFailedForHugePartition;
+  public static Counter counterTotalRequireBufferFailedForRegularPartition;
+
   public static Counter counterLocalStorageTotalWrite;
   public static Counter counterLocalStorageRetryWrite;
   public static Counter counterLocalStorageFailedWrite;
@@ -108,6 +128,9 @@ public class ShuffleServerMetrics {
   public static Counter counterTotalRequireReadMemoryNum;
   public static Counter counterTotalRequireReadMemoryRetryNum;
   public static Counter counterTotalRequireReadMemoryFailedNum;
+
+  public static Gauge gaugeHugePartitionNum;
+  public static Gauge gaugeAppWithHugePartitionNum;
 
   public static Gauge gaugeLocalStorageTotalDirsNum;
   public static Gauge gaugeLocalStorageCorruptedDirsNum;
@@ -245,6 +268,10 @@ public class ShuffleServerMetrics {
     counterTotalHdfsWriteDataSize = metricsManager.addCounter(TOTAL_HDFS_WRITE_DATA);
     counterTotalLocalFileWriteDataSize = metricsManager.addCounter(TOTAL_LOCALFILE_WRITE_DATA);
     counterTotalRequireBufferFailed = metricsManager.addCounter(TOTAL_REQUIRE_BUFFER_FAILED);
+    counterTotalRequireBufferFailedForRegularPartition =
+        metricsManager.addCounter(TOTAL_REQUIRE_BUFFER_FAILED_FOR_REGULAR_PARTITION);
+    counterTotalRequireBufferFailedForHugePartition =
+        metricsManager.addCounter(TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION);
     counterLocalStorageTotalWrite = metricsManager.addCounter(STORAGE_TOTAL_WRITE_LOCAL);
     counterLocalStorageRetryWrite = metricsManager.addCounter(STORAGE_RETRY_WRITE_LOCAL);
     counterLocalStorageFailedWrite = metricsManager.addCounter(STORAGE_FAILED_WRITE_LOCAL);
@@ -252,6 +279,11 @@ public class ShuffleServerMetrics {
     counterTotalRequireReadMemoryNum = metricsManager.addCounter(TOTAL_REQUIRE_READ_MEMORY);
     counterTotalRequireReadMemoryRetryNum = metricsManager.addCounter(TOTAL_REQUIRE_READ_MEMORY_RETRY);
     counterTotalRequireReadMemoryFailedNum = metricsManager.addCounter(TOTAL_REQUIRE_READ_MEMORY_FAILED);
+
+    counterTotalAppNum = metricsManager.addCounter(TOTAL_APP_NUM);
+    counterTotalAppWithHugePartitionNum = metricsManager.addCounter(TOTAL_APP_WITH_HUGE_PARTITION_NUM);
+    counterTotalPartitionNum = metricsManager.addCounter(TOTAL_PARTITION_NUM);
+    counterTotalHugePartitionNum = metricsManager.addCounter(TOTAL_HUGE_PARTITION_NUM);
 
     gaugeLocalStorageTotalDirsNum = metricsManager.addGauge(LOCAL_STORAGE_TOTAL_DIRS_NUM);
     gaugeLocalStorageCorruptedDirsNum = metricsManager.addGauge(LOCAL_STORAGE_CORRUPTED_DIRS_NUM);
@@ -267,6 +299,9 @@ public class ShuffleServerMetrics {
     gaugeEventQueueSize = metricsManager.addGauge(EVENT_QUEUE_SIZE);
     gaugeAppNum = metricsManager.addGauge(APP_NUM_WITH_NODE);
     gaugeTotalPartitionNum = metricsManager.addGauge(PARTITION_NUM_WITH_NODE);
+
+    gaugeHugePartitionNum = metricsManager.addGauge(HUGE_PARTITION_NUM);
+    gaugeAppWithHugePartitionNum = metricsManager.addGauge(APP_WITH_HUGE_PARTITION_NUM);
   }
 
 }
