@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Test;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
+import org.apache.uniffle.server.event.AppPurgeEvent;
+import org.apache.uniffle.server.event.ShufflePurgeEvent;
 import org.apache.uniffle.storage.common.HdfsStorage;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -47,6 +49,31 @@ public class HdfsStorageManagerTest {
   @AfterAll
   public static void clear() {
     ShuffleServerMetrics.clear();
+  }
+
+  @Test
+  public void testRemoveResources() {
+    ShuffleServerConf conf = new ShuffleServerConf();
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    HdfsStorageManager hdfsStorageManager = new HdfsStorageManager(conf);
+    final String remoteStoragePath1 = "hdfs://path1";
+    String appId = "testRemoveResources_appId";
+    hdfsStorageManager.registerRemoteStorage(
+        appId,
+        new RemoteStorageInfo(remoteStoragePath1, ImmutableMap.of("k1", "v1", "k2", "v2"))
+    );
+    Map<String, HdfsStorage> appStorageMap =  hdfsStorageManager.getAppIdToStorages();
+
+    // case1
+    assertEquals(1, appStorageMap.size());
+    ShufflePurgeEvent shufflePurgeEvent = new ShufflePurgeEvent(appId, "", Arrays.asList(1));
+    hdfsStorageManager.removeResources(shufflePurgeEvent);
+    assertEquals(1, appStorageMap.size());
+
+    // case2
+    AppPurgeEvent appPurgeEvent = new AppPurgeEvent(appId, "");
+    hdfsStorageManager.removeResources(appPurgeEvent);
+    assertEquals(0, appStorageMap.size());
   }
 
   @Test

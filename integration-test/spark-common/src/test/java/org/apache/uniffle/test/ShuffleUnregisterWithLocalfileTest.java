@@ -92,6 +92,11 @@ public class ShuffleUnregisterWithLocalfileTest extends SparkIntegrationTestBase
       Thread.sleep(1000);
       assertFalse(new File(shufflePath).exists());
       assertTrue(new File(appPath).exists());
+
+      // After unregistering partial shuffle, newly shuffle could work
+      map = javaPairRDD.collectAsMap();
+      shufflePath = appPath + "/1";
+      assertTrue(new File(shufflePath).exists());
     } else {
       runCounter++;
     }
