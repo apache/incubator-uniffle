@@ -51,8 +51,8 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 .PHONY: version
 version:
 	@version=$(VERSION); \
-	[[ "$$version" != "" ]] || version="$$(git describe --dirty --always --tags | sed 's/-/./g')"; \
-	if [[ $$version == *dirty ]]; then \
+	[ ! -z "$$version" ] || version="$$(git describe --dirty --always --tags | sed 's/-/./g')"; \
+	if [ $$version = *dirty ]; then \
 		echo image version $$version is dirty, dirty files:; \
 		git diff; \
 		exit 1; \
