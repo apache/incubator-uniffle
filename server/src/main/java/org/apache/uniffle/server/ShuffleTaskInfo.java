@@ -18,13 +18,11 @@
 package org.apache.uniffle.server;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +56,11 @@ public class ShuffleTaskInfo {
    * shuffleId -> partitionId -> partition shuffle data size
    */
   private Map<Integer, Map<Integer, Long>> partitionDataSizes;
-  private Map<Integer, Set<Integer>> hugePartitionTags;
+  /**
+   * shuffleId -> partitionIds -> hugePartitionTag (boolean, always true)
+   */
+  private Map<Integer, Map<Integer, Boolean>> hugePartitionTags;
+  private volatile boolean existHugePartition;
 
   public ShuffleTaskInfo(String appId) {
     this.appId = appId;
@@ -70,6 +72,7 @@ public class ShuffleTaskInfo {
     this.dataDistType = new AtomicReference<>();
     this.partitionDataSizes = Maps.newConcurrentMap();
     this.hugePartitionTags = Maps.newConcurrentMap();
+    this.existHugePartition = false;
   }
 
   public Long getCurrentTimes() {
@@ -134,29 +137,31 @@ public class ShuffleTaskInfo {
   }
 
   public boolean hasHugePartition() {
-    return !(hugePartitionTags.size() == 0);
+    return !hugePartitionTags.isEmpty();
   }
 
   public int getHugePartitionSize() {
-    if (hugePartitionTags == null) {
-      return 0;
-    }
     return hugePartitionTags.values().stream().map(x -> x.size()).reduce((x, y) -> x + y).orElse(0);
   }
 
   public void markHugePartition(int shuffleId, int partitionId) {
-    hugePartitionTags.computeIfAbsent(shuffleId, key -> {
-      ShuffleServerMetrics.gaugeAppWithHugePartitionNum.inc();
-      ShuffleServerMetrics.counterTotalAppWithHugePartitionNum.inc();
-      return Sets.newConcurrentHashSet();
-    });
-    Set<Integer> partitions = hugePartitionTags.get(shuffleId);
-    if (partitions.contains(partitionId)) {
-      return;
+    if (!existHugePartition) {
+      synchronized (this) {
+        if (!existHugePartition) {
+          ShuffleServerMetrics.gaugeAppWithHugePartitionNum.inc();
+          ShuffleServerMetrics.counterTotalAppWithHugePartitionNum.inc();
+          existHugePartition = true;
+        }
+      }
     }
-    partitions.add(partitionId);
-    ShuffleServerMetrics.counterTotalHugePartitionNum.inc();
-    ShuffleServerMetrics.gaugeHugePartitionNum.inc();
-    LOGGER.warn("Huge partition occurs, appId: {}, shuffleId: {}, partitionId: {}", appId, shuffleId, partitionId);
+
+    hugePartitionTags.computeIfAbsent(shuffleId, key -> Maps.newConcurrentMap());
+
+    hugePartitionTags.get(shuffleId).computeIfAbsent(partitionId, key -> {
+      ShuffleServerMetrics.counterTotalHugePartitionNum.inc();
+      ShuffleServerMetrics.gaugeHugePartitionNum.inc();
+      LOGGER.warn("Huge partition occurs, appId: {}, shuffleId: {}, partitionId: {}", appId, shuffleId, partitionId);
+      return true;
+    });
   }
 }

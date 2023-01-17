@@ -51,6 +51,8 @@ public class ShuffleTaskInfoTest {
     shuffleTaskInfo.markHugePartition(2, 2);
     assertTrue(shuffleTaskInfo.hasHugePartition());
     assertEquals(3, shuffleTaskInfo.getHugePartitionSize());
+    assertEquals(1, ShuffleServerMetrics.gaugeAppWithHugePartitionNum.get());
+    assertEquals(1, ShuffleServerMetrics.counterTotalAppWithHugePartitionNum.get());
   }
 
   @Test
