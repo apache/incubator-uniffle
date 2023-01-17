@@ -25,7 +25,6 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -62,23 +61,18 @@ import static org.mockito.Mockito.when;
 
 public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
 
-  @TempDir private static File tmpDir;
   private List<ShuffleServerClient> shuffleServerClients;
 
   private String remoteStoragePath = HDFS_URI + "rss/test";
 
-  @BeforeAll
-  public static void setupServers() throws Exception {
+  @BeforeEach
+  public void setupServers(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
-    shuffleServers.add(createServer(0));
-    shuffleServers.add(createServer(1));
-    shuffleServers.add(createServer(2));
+    shuffleServers.add(createServer(0, tmpDir));
+    shuffleServers.add(createServer(1, tmpDir));
+    shuffleServers.add(createServer(2, tmpDir));
     startServers();
-  }
-
-  @BeforeEach
-  public void createClient() {
     shuffleServerClients = new ArrayList<>();
     for (ShuffleServer shuffleServer : shuffleServers) {
       shuffleServerClients.add(new ShuffleServerGrpcClient(shuffleServer.getIp(), shuffleServer.getPort()));
@@ -91,7 +85,6 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
       client.close();
     });
     cleanCluster();
-    setupServers();
   }
 
   @Test
@@ -236,7 +229,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     });
   }
 
-  public static MockedShuffleServer createServer(int id) throws Exception {
+  public static MockedShuffleServer createServer(int id, File tmpDir) throws Exception {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 5000L);

@@ -70,9 +70,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
   private static ShuffleServerInfo fakedShuffleServerInfo3;
   private static ShuffleServerInfo fakedShuffleServerInfo4;
   private MockedShuffleWriteClientImpl shuffleWriteClientImpl;
-  @TempDir private static File tmpDir;
 
-  public static MockedShuffleServer createServer(int id) throws Exception {
+  public static MockedShuffleServer createServer(int id, File tmpDir) throws Exception {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 8000);
     shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000);
@@ -87,18 +86,18 @@ public class QuorumTest extends ShuffleReadWriteBase {
   }
 
   @BeforeEach
-  public void initCluster() throws Exception {
+  public void initCluster(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 8000);
 
-    shuffleServers.add(createServer(0));
-    shuffleServers.add(createServer(1));
-    shuffleServers.add(createServer(2));
-    shuffleServers.add(createServer(3));
-    shuffleServers.add(createServer(4));
+    shuffleServers.add(createServer(0, tmpDir));
+    shuffleServers.add(createServer(1, tmpDir));
+    shuffleServers.add(createServer(2, tmpDir));
+    shuffleServers.add(createServer(3, tmpDir));
+    shuffleServers.add(createServer(4, tmpDir));
 
     shuffleServerInfo0 =
         new ShuffleServerInfo("127.0.0.1-20001", shuffleServers.get(0).getIp(), SHUFFLE_SERVER_PORT + 0);
@@ -167,6 +166,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     ((ShuffleServerGrpcClient)ShuffleServerClientFactory
             .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(60000);
   }
+
 
   @Test
   public void quorumConfigTest() throws Exception {
@@ -463,7 +463,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
   }
 
   @Test
-  public void case5() throws Exception {
+  public void case5(@TempDir File tmpDir) throws Exception {
     // this case is to simulate server restarting.
     String testAppId = "case5";
     registerShuffleServer(testAppId, 3, 2, 2, true);
@@ -497,7 +497,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
     // when one server is restarted, getShuffleResult should success
     shuffleServers.get(1).stopServer();
-    shuffleServers.set(1, createServer(1));
+    shuffleServers.set(1, createServer(1, tmpDir));
     shuffleServers.get(1).start();
     report = shuffleWriteClientImpl.getShuffleResult("GRPC",
       Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
@@ -506,7 +506,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
     // when two servers are restarted, getShuffleResult should fail
     shuffleServers.get(2).stopServer();
-    shuffleServers.set(2, createServer(2));
+    shuffleServers.set(2, createServer(2, tmpDir));
     shuffleServers.get(2).start();
     try {
       report = shuffleWriteClientImpl.getShuffleResult("GRPC",
