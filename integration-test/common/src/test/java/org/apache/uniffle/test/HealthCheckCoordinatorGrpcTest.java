@@ -52,7 +52,6 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
 
   @BeforeAll
   public static void setupServers() throws Exception {
-    serverTmpDir.deleteOnExit();
     File data1 = new File(serverTmpDir, "data1");
     data1.mkdirs();
     File data2 = new File(serverTmpDir, "data2");

@@ -64,7 +64,6 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
 
   @BeforeAll
   public static void setupServers() throws Exception {
-    serverTmpDir.deleteOnExit();
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
