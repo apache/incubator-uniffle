@@ -28,11 +28,11 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
-import org.junit.jupiter.api.io.TempDir;
 
 public class SparkSQLWithDelegationShuffleManagerFallback extends SparkSQLTest {
 
