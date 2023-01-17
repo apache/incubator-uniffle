@@ -25,8 +25,8 @@ import java.util.Set;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.io.Files;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
@@ -40,9 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class LocalFileHandlerTest {
 
   @Test
-  public void writeTest() throws Exception {
-    File tmpDir = Files.createTempDir();
-    tmpDir.deleteOnExit();
+  public void writeTest(@TempDir File tmpDir) throws Exception {
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
     String[] basePaths = new String[]{dataDir1.getAbsolutePath(),
@@ -112,9 +110,7 @@ public class LocalFileHandlerTest {
   }
 
   @Test
-  public void writeBigDataTest() throws IOException  {
-    File tmpDir = Files.createTempDir();
-    tmpDir.deleteOnExit();
+  public void writeBigDataTest(@TempDir File tmpDir) throws IOException  {
     File writeFile = new File(tmpDir, "writetest");
     LocalFileWriter writer = new LocalFileWriter(writeFile);
     int  size = Integer.MAX_VALUE / 100;

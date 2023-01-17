@@ -28,10 +28,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
-import com.google.common.io.Files;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,12 +77,9 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
     return ports;
   }
 
-  private static void createAndStartShuffleServerWithTags(Set<String> tags) throws Exception {
+  private static void createAndStartShuffleServerWithTags(Set<String> tags, File tmpDir) throws Exception {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 4000);
-
-    File tmpDir = Files.createTempDir();
-    tmpDir.deleteOnExit();
 
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
@@ -112,7 +109,7 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
   }
 
   @BeforeAll
-  public static void setupServers() throws Exception {
+  public static void setupServers(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
 
@@ -120,16 +117,19 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
       coordinator.start();
     }
 
+    File dir1 = new File(tmpDir, "server1");
     for (int i = 0; i < 2; i++) {
-      createAndStartShuffleServerWithTags(Sets.newHashSet());
+      createAndStartShuffleServerWithTags(Sets.newHashSet(), dir1);
     }
 
+    File dir2 = new File(tmpDir, "server2");
     for (int i = 0; i < 2; i++) {
-      createAndStartShuffleServerWithTags(Sets.newHashSet("fixed"));
+      createAndStartShuffleServerWithTags(Sets.newHashSet("fixed"), dir2);
     }
 
+    File dir3 = new File(tmpDir, "server3");
     for (int i = 0; i < 2; i++) {
-      createAndStartShuffleServerWithTags(Sets.newHashSet("elastic"));
+      createAndStartShuffleServerWithTags(Sets.newHashSet("elastic"), dir3);
     }
 
     // Wait all shuffle servers registering to coordinator

@@ -23,12 +23,12 @@ import java.util.Map;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.LongIterator;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -62,11 +62,10 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
       Lists.newArrayList(new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT));
 
   @BeforeAll
-  public static void setupServers() throws Exception {
+  public static void setupServers(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    File tmpDir = Files.createTempDir();
     DATA_DIR1 = new File(tmpDir, "data1");
     DATA_DIR2 = new File(tmpDir, "data2");
     String basePath = DATA_DIR1.getAbsolutePath() + "," + DATA_DIR2.getAbsolutePath();

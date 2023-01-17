@@ -24,11 +24,10 @@ import java.util.Map;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.TestUtils;
@@ -66,18 +65,14 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
 
   private String remoteStoragePath = HDFS_URI + "rss/test";
 
-  @BeforeAll
-  public static void setupServers() throws Exception {
+  @BeforeEach
+  public void setupServers(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
-    shuffleServers.add(createServer(0));
-    shuffleServers.add(createServer(1));
-    shuffleServers.add(createServer(2));
+    shuffleServers.add(createServer(0, tmpDir));
+    shuffleServers.add(createServer(1, tmpDir));
+    shuffleServers.add(createServer(2, tmpDir));
     startServers();
-  }
-
-  @BeforeEach
-  public void createClient() {
     shuffleServerClients = new ArrayList<>();
     for (ShuffleServer shuffleServer : shuffleServers) {
       shuffleServerClients.add(new ShuffleServerGrpcClient(shuffleServer.getIp(), shuffleServer.getPort()));
@@ -90,7 +85,6 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
       client.close();
     });
     cleanCluster();
-    setupServers();
   }
 
   @Test
@@ -235,7 +229,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     });
   }
 
-  public static MockedShuffleServer createServer(int id) throws Exception {
+  public static MockedShuffleServer createServer(int id, File tmpDir) throws Exception {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 5000L);
@@ -245,8 +239,6 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 5000L);
     shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 1000000L);
     shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000);
-    File tmpDir = Files.createTempDir();
-    tmpDir.deleteOnExit();
     File dataDir1 = new File(tmpDir, id + "_1");
     File dataDir2 = new File(tmpDir, id + "_2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();

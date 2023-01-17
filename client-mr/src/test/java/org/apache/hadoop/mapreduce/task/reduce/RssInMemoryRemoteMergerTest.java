@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Files;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -47,6 +46,7 @@ import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.util.Progress;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -54,12 +54,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class RssInMemoryRemoteMergerTest {
 
   @Test
-  public void mergerTest() throws IOException {
+  public void mergerTest(@TempDir File tmpDir) throws IOException {
     JobConf jobConf = new JobConf();
     FileSystem fs = FileSystem.getLocal(jobConf);
     LocalDirAllocator lda = new LocalDirAllocator(MRConfig.LOCAL_DIR);
-    File tmpDir = Files.createTempDir();
-    tmpDir.deleteOnExit();
     JobID jobId = new JobID("a", 0);
     final TaskAttemptID mapId1 = new TaskAttemptID(
         new TaskID(jobId, TaskType.MAP, 1), 0);

@@ -27,13 +27,13 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.io.Files;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
   private ShuffleServerGrpcClient shuffleServerClient;
 
-  private static File serverTmpDir = Files.createTempDir();
+  @TempDir private static File serverTmpDir;
   private static File data1 = new File(serverTmpDir, "data1");
   private static File data2 = new File(serverTmpDir, "data2");
   private List<ShuffleServerInfo> shuffleServerInfo =
@@ -64,7 +64,6 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
 
   @BeforeAll
   public static void setupServers() throws Exception {
-    serverTmpDir.deleteOnExit();
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
