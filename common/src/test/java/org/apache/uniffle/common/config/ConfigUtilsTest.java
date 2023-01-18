@@ -55,40 +55,78 @@ public class ConfigUtilsTest {
 
   @Test
   public void testConvertValueWithUnsupportedType() {
-    assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertValue(0, Object.class));
+    assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertValue(null, Object.class));
   }
 
-  @Test
-  public void testConvertToString() {
-    assertEquals("foo", ConfigUtils.convertToString("foo"));
-    assertEquals("123", ConfigUtils.convertToString(123));
+  private static Stream<Arguments> toStringArgs() {
+    return Stream.of(
+        Arguments.arguments("foo", "foo"),
+        Arguments.arguments(123, "123"),
+        Arguments.arguments(Ternary.TRUE, "TRUE")
+    );
   }
 
-  @Test
-  public void testConvertToInt() {
-    final long minInt = Integer.MIN_VALUE;
+  @ParameterizedTest
+  @MethodSource("toStringArgs")
+  public void testConvertToString(Object value, String expected) {
+    assertEquals(expected, ConfigUtils.convertToString(value));
+  }
+
+  private static Stream<Arguments> toIntArgs() {
     final long maxInt = Integer.MAX_VALUE;
-    assertEquals(Integer.MIN_VALUE, ConfigUtils.convertToInt(Integer.MIN_VALUE));
-    assertEquals(Integer.MAX_VALUE, ConfigUtils.convertToInt(Integer.MAX_VALUE));
-    assertEquals(Integer.MIN_VALUE, ConfigUtils.convertToInt(minInt));
-    assertEquals(Integer.MAX_VALUE, ConfigUtils.convertToInt(maxInt));
-    assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToInt(maxInt + 1));
-    assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToInt(minInt - 1));
-    assertEquals(123, ConfigUtils.convertToInt("123"));
-    assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToInt("foo"));
+    final long minInt = Integer.MIN_VALUE;
+    return Stream.of(
+        Arguments.arguments(Integer.MAX_VALUE, Integer.MAX_VALUE),
+        Arguments.arguments(Integer.MIN_VALUE, Integer.MIN_VALUE),
+        Arguments.arguments(maxInt, Integer.MAX_VALUE),
+        Arguments.arguments(minInt, Integer.MIN_VALUE),
+        Arguments.arguments(maxInt + 1, null),
+        Arguments.arguments(minInt - 1, null),
+        Arguments.arguments("123", 123),
+        Arguments.arguments("2.0", null),
+        Arguments.arguments("foo", null)
+    );
   }
 
-  @Test
-  public void testConvertToLong() {
-    assertEquals(Integer.MIN_VALUE, ConfigUtils.convertToLong(Integer.MIN_VALUE));
-    assertEquals(Integer.MAX_VALUE, ConfigUtils.convertToLong(Integer.MAX_VALUE));
-    assertEquals(Long.MIN_VALUE, ConfigUtils.convertToLong(Long.MIN_VALUE));
-    assertEquals(Long.MAX_VALUE, ConfigUtils.convertToLong(Long.MAX_VALUE));
-    assertEquals(123, ConfigUtils.convertToLong("123"));
-    assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToLong("foo"));
+  @ParameterizedTest
+  @MethodSource("toIntArgs")
+  public void testConvertToInt(Object value, Integer expected) {
+    if (expected == null) {
+      assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToInt(value));
+    } else {
+      assertEquals(expected, ConfigUtils.convertToInt(value));
+    }
   }
 
-  private static Stream<Arguments> convertToSizeArgs() {
+  private static Stream<Arguments> toLongArgs() {
+    return Stream.of(
+        Arguments.arguments(Integer.MAX_VALUE, (long) Integer.MAX_VALUE),
+        Arguments.arguments(Integer.MIN_VALUE, (long) Integer.MIN_VALUE),
+        Arguments.arguments(Long.MAX_VALUE, Long.MAX_VALUE),
+        Arguments.arguments(Long.MIN_VALUE, Long.MIN_VALUE),
+        Arguments.arguments("123", 123L),
+        Arguments.arguments("7B", 7L),
+        Arguments.arguments("6KB", 6L << 10),
+        Arguments.arguments("5MB", 5L << 20),
+        Arguments.arguments("4GB", 4L << 30),
+        Arguments.arguments("3TB", 3L << 40),
+        Arguments.arguments("2PB", 2L << 50),
+        Arguments.arguments("2.0", null),
+        Arguments.arguments("foo", null)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("toLongArgs")
+  public void testConvertToLong(Object value, Long expected) {
+    if (expected == null) {
+      assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToLong(value));
+    } else {
+      assertEquals(expected, ConfigUtils.convertToLong(value));
+    }
+  }
+
+  private static Stream<Arguments> toSizeArgs() {
     return Stream.of(
         Arguments.arguments(0, 0),
         Arguments.arguments(12345L, 12345),
@@ -108,7 +146,7 @@ public class ConfigUtilsTest {
   }
 
   @ParameterizedTest
-  @MethodSource("convertToSizeArgs")
+  @MethodSource("toSizeArgs")
   public void testConvertToSizeInBytes(Object size, long expected) {
     assertEquals(expected, ConfigUtils.convertToSizeInBytes(size));
     if (size instanceof String) {
@@ -117,47 +155,94 @@ public class ConfigUtilsTest {
     }
   }
 
-  @Test
-  public void testConvertToBoolean() {
-    assertEquals(true, ConfigUtils.convertToBoolean(true));
-    assertEquals(false, ConfigUtils.convertToBoolean(false));
-    assertEquals(true, ConfigUtils.convertToBoolean("True"));
-    assertEquals(false, ConfigUtils.convertToBoolean("False"));
-    assertEquals(true, ConfigUtils.convertToBoolean("true"));
-    assertEquals(false, ConfigUtils.convertToBoolean("false"));
-    assertEquals(true, ConfigUtils.convertToBoolean("TRUE"));
-    assertEquals(false, ConfigUtils.convertToBoolean("FALSE"));
-    assertEquals(true, ConfigUtils.convertToBoolean("TRUe"));
-    assertEquals(false, ConfigUtils.convertToBoolean("fAlsE"));
-    assertEquals(true, ConfigUtils.convertToBoolean(Ternary.TRUE));
-    assertEquals(false, ConfigUtils.convertToBoolean(Ternary.FALSE));
-    assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToBoolean(Ternary.UNKNOWN));
+  private static Stream<Arguments> toBooleanArgs() {
+    return Stream.of(
+        Arguments.arguments(true, true),
+        Arguments.arguments("true", true),
+        Arguments.arguments("True", true),
+        Arguments.arguments("TRUE", true),
+        Arguments.arguments("tRuE", true),
+        Arguments.arguments(Ternary.TRUE, true),
+        Arguments.arguments(false, false),
+        Arguments.arguments("false", false),
+        Arguments.arguments("False", false),
+        Arguments.arguments("FALSE", false),
+        Arguments.arguments("fAlsE", false),
+        Arguments.arguments(Ternary.FALSE, false),
+        Arguments.arguments(Ternary.UNKNOWN, null)
+    );
   }
 
-  @Test
-  public void testConvertToFloat() {
-    final double minFloat = Float.MIN_VALUE;
+  @ParameterizedTest
+  @MethodSource("toBooleanArgs")
+  public void testConvertToBoolean(Object value, Boolean expected) {
+    if (expected == null) {
+      assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToBoolean(Ternary.UNKNOWN));
+    } else {
+      assertEquals(expected, ConfigUtils.convertToBoolean(value));
+    }
+  }
+
+  private static Stream<Arguments> toFloatArgs() {
     final double maxFloat = Float.MAX_VALUE;
-    assertEquals(Float.MIN_VALUE, ConfigUtils.convertToFloat(Float.MIN_VALUE));
-    assertEquals(Float.MAX_VALUE, ConfigUtils.convertToFloat(Float.MAX_VALUE));
-    assertEquals(Float.MIN_VALUE, ConfigUtils.convertToFloat(minFloat));
-    assertEquals(Float.MAX_VALUE, ConfigUtils.convertToFloat(maxFloat));
-    assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToFloat(maxFloat * 1.1));
-    assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToFloat(minFloat * 0.9));
-    assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToFloat(-maxFloat * 1.1));
-    assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToFloat(-minFloat * 0.9));
-    assertEquals(123.45f, ConfigUtils.convertToFloat("123.45"));
-    assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToFloat("foo"));
+    final double minFloat = Float.MIN_VALUE;
+    return Stream.of(
+        Arguments.arguments(0.0f, 0.0f),
+        Arguments.arguments(Float.MAX_VALUE, Float.MAX_VALUE),
+        Arguments.arguments(Float.MIN_VALUE, Float.MIN_VALUE),
+        Arguments.arguments(-Float.MAX_VALUE, -Float.MAX_VALUE),
+        Arguments.arguments(-Float.MIN_VALUE, -Float.MIN_VALUE),
+        Arguments.arguments(0.0d, 0.0f),
+        Arguments.arguments(maxFloat, Float.MAX_VALUE),
+        Arguments.arguments(minFloat, Float.MIN_VALUE),
+        Arguments.arguments(-maxFloat, -Float.MAX_VALUE),
+        Arguments.arguments(-minFloat, -Float.MIN_VALUE),
+        Arguments.arguments(maxFloat * 1.1, null),
+        Arguments.arguments(minFloat * 0.9, null),
+        Arguments.arguments(-maxFloat * 1.1, null),
+        Arguments.arguments(-minFloat * 0.9, null),
+        Arguments.arguments("123", 123.0f),
+        Arguments.arguments("123.45", 123.45f),
+        Arguments.arguments("foo", null)
+    );
   }
 
-  @Test
-  public void testConvertToDouble() {
-    assertEquals(Float.MIN_VALUE, ConfigUtils.convertToDouble(Float.MIN_VALUE));
-    assertEquals(Float.MAX_VALUE, ConfigUtils.convertToDouble(Float.MAX_VALUE));
-    assertEquals(Double.MIN_VALUE, ConfigUtils.convertToDouble(Double.MIN_VALUE));
-    assertEquals(Double.MAX_VALUE, ConfigUtils.convertToDouble(Double.MAX_VALUE));
-    assertEquals(123.45, ConfigUtils.convertToDouble("123.45"));
-    assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToDouble("foo"));
+  @ParameterizedTest
+  @MethodSource("toFloatArgs")
+  public void testConvertToFloat(Object value, Float expected) {
+    if (expected == null) {
+      assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToFloat(value));
+    } else {
+      assertEquals(expected, ConfigUtils.convertToFloat(value));
+    }
+  }
+
+  private static Stream<Arguments> toDoubleArgs() {
+    return Stream.of(
+        Arguments.arguments(0.0f, 0.0),
+        Arguments.arguments(Float.MAX_VALUE, (double) Float.MAX_VALUE),
+        Arguments.arguments(Float.MIN_VALUE, (double) Float.MIN_VALUE),
+        Arguments.arguments(-Float.MAX_VALUE, (double) -Float.MAX_VALUE),
+        Arguments.arguments(-Float.MIN_VALUE, (double) -Float.MIN_VALUE),
+        Arguments.arguments(0.0d, 0.0),
+        Arguments.arguments(Double.MAX_VALUE, Double.MAX_VALUE),
+        Arguments.arguments(Double.MIN_VALUE, Double.MIN_VALUE),
+        Arguments.arguments(-Double.MAX_VALUE, -Double.MAX_VALUE),
+        Arguments.arguments(-Double.MIN_VALUE, -Double.MIN_VALUE),
+        Arguments.arguments("123", 123.0),
+        Arguments.arguments("123.45", 123.45),
+        Arguments.arguments("foo", null)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("toDoubleArgs")
+  public void testConvertToDouble(Object value, Double expected) {
+    if (expected == null) {
+      assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToDouble(value));
+    } else {
+      assertEquals(expected, ConfigUtils.convertToDouble(value));
+    }
   }
 
   @Test
