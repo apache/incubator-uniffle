@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ConfigUtilsTest {
@@ -157,6 +158,11 @@ public class ConfigUtilsTest {
     assertEquals(Double.MAX_VALUE, ConfigUtils.convertToDouble(Double.MAX_VALUE));
     assertEquals(123.45, ConfigUtils.convertToDouble("123.45"));
     assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToDouble("foo"));
+  }
+
+  @Test
+  public void testGetAllConfigOptions() {
+    assertFalse(ConfigUtils.getAllConfigOptions(RssBaseConf.class).isEmpty());
   }
 
   @ParameterizedTest
