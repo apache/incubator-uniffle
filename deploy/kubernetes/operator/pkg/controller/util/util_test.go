@@ -21,7 +21,9 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/pointer"
 
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/api/uniffle/v1alpha1"
@@ -79,6 +81,65 @@ func TestGenerateMakeDataDirCommand(t *testing.T) {
 			if !isEqualStringSlice(commands, tt.expectedCommands) {
 				tc.Errorf("unexpected commands: %+v, expected: %+v", commands, tt.expectedCommands)
 				return
+			}
+		})
+	}
+}
+
+func TestGenerateInitContainers(t *testing.T) {
+	// first check resource request
+	for _, tt := range []struct {
+		name       string
+		rssPodSpec *v1alpha1.RSSPodSpec
+		resources  *corev1.ResourceRequirements
+	}{
+		{
+			name:       "without security context",
+			rssPodSpec: &v1alpha1.RSSPodSpec{},
+			resources:  nil,
+		},
+		{
+			name: "security context with host path mapping",
+			rssPodSpec: &v1alpha1.RSSPodSpec{
+				HostPathMounts: map[string]string{
+					"/data3": "/mnt/data3",
+				},
+				SecurityContext: &corev1.PodSecurityContext{
+					RunAsUser: pointer.Int64(2000),
+					FSGroup:   pointer.Int64(1000),
+				},
+				MainContainer: &v1alpha1.MainContainer{
+					Resources: corev1.ResourceRequirements{
+						Limits: map[corev1.ResourceName]resource.Quantity{
+							corev1.ResourceCPU:    resource.MustParse("1"),
+							corev1.ResourceMemory: resource.MustParse("1G"),
+						},
+						Requests: map[corev1.ResourceName]resource.Quantity{
+							corev1.ResourceCPU:    resource.MustParse("1"),
+							corev1.ResourceMemory: resource.MustParse("1G"),
+						},
+					},
+				},
+			},
+			resources: &corev1.ResourceRequirements{
+				Limits: map[corev1.ResourceName]resource.Quantity{
+					corev1.ResourceCPU:    resource.MustParse("1"),
+					corev1.ResourceMemory: resource.MustParse("1G"),
+				},
+				Requests: map[corev1.ResourceName]resource.Quantity{
+					corev1.ResourceCPU:    resource.MustParse("1"),
+					corev1.ResourceMemory: resource.MustParse("1G"),
+				},
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assertion := assert.New(t)
+			containers := GenerateInitContainers(tt.rssPodSpec)
+			if len(containers) == 0 {
+				assertion.Nil(tt.resources)
+			} else {
+				assertion.Equal(tt.resources, &containers[0].Resources)
 			}
 		})
 	}
