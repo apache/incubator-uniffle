@@ -47,6 +47,7 @@ public class ShuffleTaskInfoTest {
   public void hugePartitionConcurrentTest() throws InterruptedException {
     ShuffleTaskInfo shuffleTaskInfo = new ShuffleTaskInfo("hugePartitionConcurrentTest_appId");
 
+    // case1
     int n = 10;
     final CyclicBarrier barrier = new CyclicBarrier(n);
     final CountDownLatch countDownLatch = new CountDownLatch(n);
@@ -66,6 +67,28 @@ public class ShuffleTaskInfoTest {
     assertEquals(1, ShuffleServerMetrics.gaugeAppWithHugePartitionNum.get());
     assertEquals(n, ShuffleServerMetrics.counterTotalHugePartitionNum.get());
     assertEquals(n, ShuffleServerMetrics.gaugeHugePartitionNum.get());
+
+    // case2
+    ShuffleTaskInfo taskInfo = new ShuffleTaskInfo("hugePartitionConcurrentTest_appId");
+    ShuffleServerMetrics.clear();
+    ShuffleServerMetrics.register();
+    barrier.reset();
+    CountDownLatch latch = new CountDownLatch(n);
+    IntStream.range(0, n).forEach(i -> executorService.submit(() -> {
+      try {
+        barrier.await();
+        taskInfo.markHugePartition(1, 1);
+      } catch (Exception e) {
+        // ignore
+      } finally {
+        latch.countDown();
+      }
+    }));
+    latch.await();
+    assertEquals(1, ShuffleServerMetrics.counterTotalAppWithHugePartitionNum.get());
+    assertEquals(1, ShuffleServerMetrics.gaugeAppWithHugePartitionNum.get());
+    assertEquals(1, ShuffleServerMetrics.counterTotalHugePartitionNum.get());
+    assertEquals(1, ShuffleServerMetrics.gaugeHugePartitionNum.get());
 
     executorService.shutdownNow();
   }
