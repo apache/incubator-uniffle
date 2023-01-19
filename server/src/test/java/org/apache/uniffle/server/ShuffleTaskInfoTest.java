@@ -17,8 +17,14 @@
 
 package org.apache.uniffle.server;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.IntStream;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,14 +33,41 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShuffleTaskInfoTest {
 
-  @BeforeAll
-  public static void setup() {
+  @BeforeEach
+  public void setup() {
     ShuffleServerMetrics.register();
   }
 
-  @AfterAll
-  public static void tearDown() {
+  @AfterEach
+  public void tearDown() {
     ShuffleServerMetrics.clear();
+  }
+
+  @Test
+  public void hugePartitionConcurrentTest() throws InterruptedException {
+    ShuffleTaskInfo shuffleTaskInfo = new ShuffleTaskInfo("hugePartitionConcurrentTest_appId");
+
+    int n = 10;
+    final CyclicBarrier barrier = new CyclicBarrier(n);
+    final CountDownLatch countDownLatch = new CountDownLatch(n);
+    ExecutorService executorService = Executors.newFixedThreadPool(n);
+    IntStream.range(0, n).forEach(i -> executorService.submit(() -> {
+      try {
+        barrier.await();
+        shuffleTaskInfo.markHugePartition(i, i);
+      } catch (Exception e) {
+        // ignore
+      } finally {
+        countDownLatch.countDown();
+      }
+    }));
+    countDownLatch.await();
+    assertEquals(1, ShuffleServerMetrics.counterTotalAppWithHugePartitionNum.get());
+    assertEquals(1, ShuffleServerMetrics.gaugeAppWithHugePartitionNum.get());
+    assertEquals(n, ShuffleServerMetrics.counterTotalHugePartitionNum.get());
+    assertEquals(n, ShuffleServerMetrics.gaugeHugePartitionNum.get());
+
+    executorService.shutdownNow();
   }
 
   @Test
