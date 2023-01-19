@@ -19,6 +19,9 @@ package org.apache.uniffle.common.util;
 
 public final class Constants {
 
+  private Constants() {
+  }
+
   // the value is used for client/server compatible, eg, online upgrade
   public static final String SHUFFLE_SERVER_VERSION = "ss_v4";
   public static final String SHUFFLE_DATA_FILE_SUFFIX = ".data";
