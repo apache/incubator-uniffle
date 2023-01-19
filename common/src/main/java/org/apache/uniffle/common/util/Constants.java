@@ -17,7 +17,10 @@
 
 package org.apache.uniffle.common.util;
 
-public class Constants {
+public final class Constants {
+
+  private Constants() {
+  }
 
   // the value is used for client/server compatible, eg, online upgrade
   public static final String SHUFFLE_SERVER_VERSION = "ss_v4";
@@ -28,10 +31,10 @@ public class Constants {
   public static final int PARTITION_ID_MAX_LENGTH = 24;
   public static final int TASK_ATTEMPT_ID_MAX_LENGTH = 21;
   public static final int ATOMIC_INT_MAX_LENGTH = 18;
-  public static long MAX_SEQUENCE_NO = (1 << Constants.ATOMIC_INT_MAX_LENGTH) - 1;
-  public static long MAX_PARTITION_ID = (1 << Constants.PARTITION_ID_MAX_LENGTH) - 1;
-  public static long MAX_TASK_ATTEMPT_ID = (1 << Constants.TASK_ATTEMPT_ID_MAX_LENGTH) - 1;
-  public static long INVALID_BLOCK_ID = -1L;
+  public static final long MAX_SEQUENCE_NO = (1 << Constants.ATOMIC_INT_MAX_LENGTH) - 1;
+  public static final long MAX_PARTITION_ID = (1 << Constants.PARTITION_ID_MAX_LENGTH) - 1;
+  public static final long MAX_TASK_ATTEMPT_ID = (1 << Constants.TASK_ATTEMPT_ID_MAX_LENGTH) - 1;
+  public static final long INVALID_BLOCK_ID = -1L;
   public static final String KEY_SPLIT_CHAR = "/";
   public static final String COMMA_SPLIT_CHAR = ",";
   public static final String EQUAL_SPLIT_CHAR = "=";
@@ -61,10 +64,10 @@ public class Constants {
   public static final String MR_REDUCES = "mapreduce.job.reduces";
   public static final String MR_MAP_LIMIT = "mapreduce.job.running.map.limit";
   public static final String MR_REDUCE_LIMIT = "mapreduce.job.running.reduce.limit";
-  public static int MR_MAP_LIMIT_DEFAULT_VALUE = 0;
-  public static int MR_REDUCE_LIMIT_DEFAULT_VALUE = 0;
+  public static final int MR_MAP_LIMIT_DEFAULT_VALUE = 0;
+  public static final int MR_REDUCE_LIMIT_DEFAULT_VALUE = 0;
   public static final String MR_SLOW_START = "mapreduce.job.reduce.slowstart.completedmaps";
-  public static double MR_SLOW_START_DEFAULT_VALUE = 0.05;
+  public static final double MR_SLOW_START_DEFAULT_VALUE = 0.05;
   
   public static final double MILLION_SECONDS_PER_SECOND = 1E3D;
 }
