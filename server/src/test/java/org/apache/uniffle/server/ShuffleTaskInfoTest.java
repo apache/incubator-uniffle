@@ -69,11 +69,11 @@ public class ShuffleTaskInfoTest {
     assertEquals(n, ShuffleServerMetrics.gaugeHugePartitionNum.get());
 
     // case2
-    ShuffleTaskInfo taskInfo = new ShuffleTaskInfo("hugePartitionConcurrentTest_appId");
     ShuffleServerMetrics.clear();
     ShuffleServerMetrics.register();
     barrier.reset();
     CountDownLatch latch = new CountDownLatch(n);
+    ShuffleTaskInfo taskInfo = new ShuffleTaskInfo("hugePartitionConcurrentTest_appId");
     IntStream.range(0, n).forEach(i -> executorService.submit(() -> {
       try {
         barrier.await();
