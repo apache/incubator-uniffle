@@ -101,6 +101,10 @@ public class UnitConverterTest {
         Arguments.arguments(3 * HOUR, "3h", TimeUnit.MICROSECONDS),
         Arguments.arguments(3 * DAY, "3d", TimeUnit.MICROSECONDS),
 
+        Arguments.arguments(5L, "5", TimeUnit.MILLISECONDS),
+        Arguments.arguments(5L, "5", TimeUnit.SECONDS),
+        Arguments.arguments(5L, "5", TimeUnit.MINUTES),
+
         Arguments.arguments(null, "3ns", TimeUnit.MICROSECONDS),
         Arguments.arguments(null, "3sec", TimeUnit.MICROSECONDS),
         Arguments.arguments(null, "1.5h", TimeUnit.MICROSECONDS),
