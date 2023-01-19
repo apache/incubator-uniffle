@@ -17,9 +17,14 @@
 
 package org.apache.uniffle.common.util;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class UnitConverterTest {
 
@@ -29,37 +34,53 @@ public class UnitConverterTest {
   private static final long MB = (long)ByteUnit.MiB.toBytes(1L);
   private static final long KB = (long)ByteUnit.KiB.toBytes(1L);
 
-  @Test
-  public void testByteString() {
+  private static Stream<Arguments> byteStringArgs() {
+    return Stream.of(
+        Arguments.arguments(10 * PB, "10PB", ByteUnit.BYTE),
+        Arguments.arguments(10 * PB, "10pb", ByteUnit.BYTE),
+        Arguments.arguments(10 * PB, "10pB", ByteUnit.BYTE),
+        Arguments.arguments(10 * PB, "10p", ByteUnit.BYTE),
+        Arguments.arguments(10 * PB, "10P", ByteUnit.BYTE),
 
-    assertEquals(10 * PB, UnitConverter.byteStringAs("10PB", ByteUnit.BYTE));
-    assertEquals(10 * PB, UnitConverter.byteStringAs("10pb", ByteUnit.BYTE));
-    assertEquals(10 * PB, UnitConverter.byteStringAs("10pB", ByteUnit.BYTE));
-    assertEquals(10 * PB, UnitConverter.byteStringAs("10p", ByteUnit.BYTE));
-    assertEquals(10 * PB, UnitConverter.byteStringAs("10P", ByteUnit.BYTE));
+        Arguments.arguments(10 * TB, "10TB", ByteUnit.BYTE),
+        Arguments.arguments(10 * TB, "10tb", ByteUnit.BYTE),
+        Arguments.arguments(10 * TB, "10tB", ByteUnit.BYTE),
+        Arguments.arguments(10 * TB, "10T", ByteUnit.BYTE),
+        Arguments.arguments(10 * TB, "10t", ByteUnit.BYTE),
 
-    assertEquals(10 * TB, UnitConverter.byteStringAs("10TB", ByteUnit.BYTE));
-    assertEquals(10 * TB, UnitConverter.byteStringAs("10tb", ByteUnit.BYTE));
-    assertEquals(10 * TB, UnitConverter.byteStringAs("10tB", ByteUnit.BYTE));
-    assertEquals(10 * TB, UnitConverter.byteStringAs("10T", ByteUnit.BYTE));
-    assertEquals(10 * TB, UnitConverter.byteStringAs("10t", ByteUnit.BYTE));
+        Arguments.arguments(10 * GB, "10GB", ByteUnit.BYTE),
+        Arguments.arguments(10 * GB, "10gb", ByteUnit.BYTE),
+        Arguments.arguments(10 * GB, "10gB", ByteUnit.BYTE),
 
-    assertEquals(10 * GB, UnitConverter.byteStringAs("10GB", ByteUnit.BYTE));
-    assertEquals(10 * GB, UnitConverter.byteStringAs("10gb", ByteUnit.BYTE));
-    assertEquals(10 * GB, UnitConverter.byteStringAs("10gB", ByteUnit.BYTE));
+        Arguments.arguments(10 * MB, "10MB", ByteUnit.BYTE),
+        Arguments.arguments(10 * MB, "10mb", ByteUnit.BYTE),
+        Arguments.arguments(10 * MB, "10mB", ByteUnit.BYTE),
+        Arguments.arguments(10 * MB, "10M", ByteUnit.BYTE),
+        Arguments.arguments(10 * MB, "10m", ByteUnit.BYTE),
 
-    assertEquals(10 * MB, UnitConverter.byteStringAs("10MB", ByteUnit.BYTE));
-    assertEquals(10 * MB, UnitConverter.byteStringAs("10mb", ByteUnit.BYTE));
-    assertEquals(10 * MB, UnitConverter.byteStringAs("10mB", ByteUnit.BYTE));
-    assertEquals(10 * MB, UnitConverter.byteStringAs("10M", ByteUnit.BYTE));
-    assertEquals(10 * MB, UnitConverter.byteStringAs("10m", ByteUnit.BYTE));
+        Arguments.arguments(10 * KB, "10KB", ByteUnit.BYTE),
+        Arguments.arguments(10 * KB, "10kb", ByteUnit.BYTE),
+        Arguments.arguments(10 * KB, "10Kb", ByteUnit.BYTE),
+        Arguments.arguments(10 * KB, "10K", ByteUnit.BYTE),
+        Arguments.arguments(10 * KB, "10k", ByteUnit.BYTE),
 
-    assertEquals(10 * KB, UnitConverter.byteStringAs("10KB", ByteUnit.BYTE));
-    assertEquals(10 * KB, UnitConverter.byteStringAs("10kb", ByteUnit.BYTE));
-    assertEquals(10 * KB, UnitConverter.byteStringAs("10Kb", ByteUnit.BYTE));
-    assertEquals(10 * KB, UnitConverter.byteStringAs("10K", ByteUnit.BYTE));
-    assertEquals(10 * KB, UnitConverter.byteStringAs("10k", ByteUnit.BYTE));
+        Arguments.arguments(1111L, "1111", ByteUnit.BYTE),
 
-    assertEquals(1111, UnitConverter.byteStringAs("1111", ByteUnit.BYTE));
+        Arguments.arguments(null, "1/2", ByteUnit.BYTE),
+        Arguments.arguments(null, "10f", ByteUnit.BYTE),
+        Arguments.arguments(null, "f91", ByteUnit.BYTE),
+        Arguments.arguments(null, "1.0", ByteUnit.BYTE)
+    );
   }
+
+  @ParameterizedTest
+  @MethodSource("byteStringArgs")
+  public void testByteString(Long expected, String value, ByteUnit unit) {
+    if (expected == null) {
+      assertThrows(NumberFormatException.class, () -> UnitConverter.byteStringAs(value, unit));
+    } else {
+      assertEquals(expected, UnitConverter.byteStringAs(value, unit));
+    }
+  }
+
 }
