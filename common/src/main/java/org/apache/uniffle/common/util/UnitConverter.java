@@ -26,7 +26,10 @@ import java.util.regex.Pattern;
 import com.google.common.collect.ImmutableMap;
 
 // copy from org.apache.spark.network.util.JavaUtils
-public class UnitConverter {
+public final class UnitConverter {
+
+  private UnitConverter() {
+  }
 
   private static final Map<String, ByteUnit> byteSuffixes =
       ImmutableMap.<String, ByteUnit>builder()
