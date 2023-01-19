@@ -64,16 +64,6 @@ public class UnitConverter {
     return false;
   }
 
-  public static boolean isTimeString(String str) {
-    String strLower = str.toLowerCase();
-    for (String key: timeSuffixes.keySet()) {
-      if (strLower.contains(key)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   /**
    * Convert a passed byte string (e.g. 50b, 100kb, or 250mb) to the given. If no suffix is
    * provided, a direct conversion to the provided unit is attempted.
@@ -121,36 +111,6 @@ public class UnitConverter {
   }
 
   /**
-   * Convert a passed byte string (e.g. 50b, 100k, or 250m) to kibibytes for
-   * internal use.
-   *
-   * If no suffix is provided, the passed number is assumed to be in kibibytes.
-   */
-  public static long byteStringAsKb(String str) {
-    return byteStringAs(str, ByteUnit.KiB);
-  }
-
-  /**
-   * Convert a passed byte string (e.g. 50b, 100k, or 250m) to mebibytes for
-   * internal use.
-   *
-   * If no suffix is provided, the passed number is assumed to be in mebibytes.
-   */
-  public static long byteStringAsMb(String str) {
-    return byteStringAs(str, ByteUnit.MiB);
-  }
-
-  /**
-   * Convert a passed byte string (e.g. 50b, 100k, or 250m) to gibibytes for
-   * internal use.
-   *
-   * If no suffix is provided, the passed number is assumed to be in gibibytes.
-   */
-  public static long byteStringAsGb(String str) {
-    return byteStringAs(str, ByteUnit.GiB);
-  }
-
-  /**
    * Convert a passed time string (e.g. 50s, 100ms, or 250us) to a time count in the given unit.
    * The unit is also considered the default if the given string does not specify a unit.
    */
@@ -185,21 +145,4 @@ public class UnitConverter {
       throw new NumberFormatException(timeError + "\n" + e.getMessage());
     }
   }
-
-  /**
-   * Convert a time parameter such as (50s, 100ms, or 250us) to milliseconds for internal use. If
-   * no suffix is provided, the passed number is assumed to be in ms.
-   */
-  public static long timeStringAsMs(String str) {
-    return timeStringAs(str, TimeUnit.MILLISECONDS);
-  }
-
-  /**
-   * Convert a time parameter such as (50s, 100ms, or 250us) to seconds for internal use. If
-   * no suffix is provided, the passed number is assumed to be in seconds.
-   */
-  public static long timeStringAsSec(String str) {
-    return timeStringAs(str, TimeUnit.SECONDS);
-  }
-
 }
