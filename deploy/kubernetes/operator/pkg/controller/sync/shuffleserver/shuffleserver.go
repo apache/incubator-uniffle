@@ -26,7 +26,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/pointer"
 
@@ -52,18 +51,10 @@ func init() {
 }
 
 // GenerateShuffleServers generates objects related to shuffle servers.
-func GenerateShuffleServers(rss *unifflev1alpha1.RemoteShuffleService) (
-	*corev1.ServiceAccount, []*corev1.Service, *appsv1.StatefulSet) {
+func GenerateShuffleServers(rss *unifflev1alpha1.RemoteShuffleService) (*corev1.ServiceAccount, *appsv1.StatefulSet) {
 	sa := GenerateSA(rss)
-	var services []*corev1.Service
-	if needGenerateHeadlessSVC(rss) {
-		services = append(services, GenerateHeadlessSVC(rss))
-	}
-	if needGenerateNodePortSVC(rss) {
-		services = append(services, GenerateNodePortSVC(rss))
-	}
 	sts := GenerateSts(rss)
-	return sa, services, sts
+	return sa, sts
 }
 
 // GenerateSA generates service account of shuffle servers.
@@ -76,76 +67,6 @@ func GenerateSA(rss *unifflev1alpha1.RemoteShuffleService) *corev1.ServiceAccoun
 	}
 	util.AddOwnerReference(&sa.ObjectMeta, rss)
 	return sa
-}
-
-// GenerateHeadlessSVC generates headless service used by shuffle servers.
-func GenerateHeadlessSVC(rss *unifflev1alpha1.RemoteShuffleService) *corev1.Service {
-	name := generateHeadlessSVCName(rss)
-	svc := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: rss.Namespace,
-		},
-		Spec: corev1.ServiceSpec{
-			ClusterIP: corev1.ClusterIPNone,
-			Selector: map[string]string{
-				"app": GenerateName(rss),
-			},
-		},
-	}
-	if rss.Spec.ShuffleServer.RPCPort != nil {
-		svc.Spec.Ports = append(svc.Spec.Ports, corev1.ServicePort{
-			Name:       "rpc",
-			Protocol:   corev1.ProtocolTCP,
-			Port:       controllerconstants.ContainerShuffleServerRPCPort,
-			TargetPort: intstr.FromInt(int(*rss.Spec.ShuffleServer.RPCPort)),
-		})
-	}
-	if rss.Spec.ShuffleServer.HTTPPort != nil {
-		svc.Spec.Ports = append(svc.Spec.Ports, corev1.ServicePort{
-			Name:       "http",
-			Protocol:   corev1.ProtocolTCP,
-			Port:       controllerconstants.ContainerShuffleServerHTTPPort,
-			TargetPort: intstr.FromInt(int(*rss.Spec.ShuffleServer.HTTPPort)),
-		})
-	}
-	util.AddOwnerReference(&svc.ObjectMeta, rss)
-	return svc
-}
-
-// GenerateNodePortSVC generates nodePort service used by shuffle servers.
-func GenerateNodePortSVC(rss *unifflev1alpha1.RemoteShuffleService) *corev1.Service {
-	name := GenerateName(rss)
-	svc := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: rss.Namespace,
-		},
-		Spec: corev1.ServiceSpec{
-			Type: corev1.ServiceTypeNodePort,
-			Selector: map[string]string{
-				"app": name,
-			},
-		},
-	}
-	if needNodePortForRPC(rss) {
-		svc.Spec.Ports = append(svc.Spec.Ports, corev1.ServicePort{
-			Protocol:   corev1.ProtocolTCP,
-			Port:       controllerconstants.ContainerShuffleServerRPCPort,
-			TargetPort: intstr.FromInt(int(*rss.Spec.ShuffleServer.RPCPort)),
-			NodePort:   *rss.Spec.ShuffleServer.RPCNodePort,
-		})
-	}
-	if needNodePortForHTTP(rss) {
-		svc.Spec.Ports = append(svc.Spec.Ports, corev1.ServicePort{
-			Protocol:   corev1.ProtocolTCP,
-			Port:       controllerconstants.ContainerShuffleServerHTTPPort,
-			TargetPort: intstr.FromInt(int(*rss.Spec.ShuffleServer.HTTPPort)),
-			NodePort:   *rss.Spec.ShuffleServer.HTTPNodePort,
-		})
-	}
-	util.AddOwnerReference(&svc.ObjectMeta, rss)
-	return svc
 }
 
 // getReplicas returns replicas of shuffle servers.
@@ -356,24 +277,4 @@ func generateMainContainerENV(rss *unifflev1alpha1.RemoteShuffleService) []corev
 		}
 	}
 	return env
-}
-
-// needGenerateNodePortSVC returns whether we need node port service for shuffle servers.
-func needGenerateNodePortSVC(rss *unifflev1alpha1.RemoteShuffleService) bool {
-	return needNodePortForRPC(rss) || needNodePortForHTTP(rss)
-}
-
-// needGenerateHeadlessSVC returns whether we need headless service for shuffle servers.
-func needGenerateHeadlessSVC(rss *unifflev1alpha1.RemoteShuffleService) bool {
-	return rss.Spec.ShuffleServer.RPCPort != nil || rss.Spec.ShuffleServer.HTTPPort != nil
-}
-
-// needNodePortForRPC returns whether we need node port service for rpc service of shuffle servers.
-func needNodePortForRPC(rss *unifflev1alpha1.RemoteShuffleService) bool {
-	return rss.Spec.ShuffleServer.RPCPort != nil && rss.Spec.ShuffleServer.RPCNodePort != nil
-}
-
-// needNodePortForRPC returns whether we need node port service for http service of shuffle servers.
-func needNodePortForHTTP(rss *unifflev1alpha1.RemoteShuffleService) bool {
-	return rss.Spec.ShuffleServer.HTTPPort != nil && rss.Spec.ShuffleServer.HTTPNodePort != nil
 }

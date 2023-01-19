@@ -156,8 +156,10 @@ func generateRSSPatches(ar *admissionv1.AdmissionReview,
 
 // validateCoordinator validates configurations for coordinators.
 func validateCoordinator(coordinator *unifflev1alpha1.CoordinatorConfig) error {
-	if len(coordinator.RPCNodePort) != int(*coordinator.Count) ||
-		len(coordinator.HTTPNodePort) != int(*coordinator.Count) {
+	// number of RPCNodePort must equal with number of HTTPNodePort
+	if len(coordinator.RPCNodePort) != len(coordinator.HTTPNodePort) ||
+		// RPCNodePort/HTTPNodePort could be zero
+		(len(coordinator.HTTPNodePort) > 0 && len(coordinator.HTTPNodePort) != int(*coordinator.Count)) {
 		return fmt.Errorf("invalid number of http or rpc node ports (%v/%v) <> (%v)",
 			len(coordinator.RPCNodePort), len(coordinator.HTTPNodePort), *coordinator.Count)
 	}

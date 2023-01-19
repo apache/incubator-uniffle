@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -209,4 +210,50 @@ func TestGenerateDeploy(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenerateSvcForCoordinator(t *testing.T) {
+	for _, tt := range []struct {
+		name          string
+		rss           *uniffleapi.RemoteShuffleService
+		serviceCntMap map[corev1.ServiceType]int
+	}{
+		{
+			name: "with RPCNodePort",
+			rss:  buildRssWithLabels(),
+			serviceCntMap: map[corev1.ServiceType]int{
+				"":                         2, // defaults to headless service
+				corev1.ServiceTypeNodePort: 2,
+			},
+		},
+		{
+			name: "without rpcNodePort",
+			rss: func() *uniffleapi.RemoteShuffleService {
+				withoutRPCNodePortRss := buildRssWithLabels()
+				withoutRPCNodePortRss.Spec.Coordinator.RPCNodePort = make([]int32, 0)
+				withoutRPCNodePortRss.Spec.Coordinator.HTTPNodePort = make([]int32, 0)
+				return withoutRPCNodePortRss
+			}(),
+			serviceCntMap: map[corev1.ServiceType]int{
+				"": 2,
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assertion := assert.New(t)
+			_, _, services, _ := GenerateCoordinators(tt.rss)
+			result := make(map[corev1.ServiceType]int)
+			for _, service := range services {
+				result[service.Spec.Type]++
+			}
+			assertion.Equal(tt.serviceCntMap, result)
+		})
+	}
+}
+
+func TestGenerateAddresses(t *testing.T) {
+	assertion := assert.New(t)
+	rss := buildRssWithLabels()
+	quorum := GenerateAddresses(rss)
+	assertion.Contains(quorum, "headless")
 }
