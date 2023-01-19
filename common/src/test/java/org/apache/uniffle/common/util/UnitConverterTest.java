@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.common.util;
 
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -83,4 +84,41 @@ public class UnitConverterTest {
     }
   }
 
+  private static final long US = TimeUnit.MICROSECONDS.toMicros(1L);
+  private static final long MS = TimeUnit.MILLISECONDS.toMicros(1L);
+  private static final long SEC = TimeUnit.SECONDS.toMicros(1L);
+  private static final long MIN = TimeUnit.MINUTES.toMicros(1L);
+  private static final long HOUR = TimeUnit.HOURS.toMicros(1L);
+  private static final long DAY = TimeUnit.DAYS.toMicros(1L);
+
+  private static Stream<Arguments> timeStringArgs() {
+    return Stream.of(
+        Arguments.arguments(3 * US, "3us", TimeUnit.MICROSECONDS),
+        Arguments.arguments(3 * MS, "3ms", TimeUnit.MICROSECONDS),
+        Arguments.arguments(3 * SEC, "3s", TimeUnit.MICROSECONDS),
+        Arguments.arguments(3 * MIN, "3m", TimeUnit.MICROSECONDS),
+        Arguments.arguments(3 * MIN, "3min", TimeUnit.MICROSECONDS),
+        Arguments.arguments(3 * HOUR, "3h", TimeUnit.MICROSECONDS),
+        Arguments.arguments(3 * DAY, "3d", TimeUnit.MICROSECONDS),
+
+        Arguments.arguments(null, "3ns", TimeUnit.MICROSECONDS),
+        Arguments.arguments(null, "3sec", TimeUnit.MICROSECONDS),
+        Arguments.arguments(null, "1.5h", TimeUnit.MICROSECONDS),
+        Arguments.arguments(null, "3hours", TimeUnit.MICROSECONDS),
+        Arguments.arguments(null, "3days", TimeUnit.MICROSECONDS),
+        Arguments.arguments(null, "3w", TimeUnit.MICROSECONDS),
+        Arguments.arguments(null, "3weeks", TimeUnit.MICROSECONDS),
+        Arguments.arguments(null, "foo", TimeUnit.MICROSECONDS)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("timeStringArgs")
+  public void testTimeString(Long expected, String value, TimeUnit unit) {
+    if (expected == null) {
+      assertThrows(NumberFormatException.class, () -> UnitConverter.timeStringAs(value, unit));
+    } else {
+      assertEquals(expected, UnitConverter.timeStringAs(value, unit));
+    }
+  }
 }
