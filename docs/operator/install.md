@@ -31,7 +31,7 @@ Please make sure the kubectl is properly configured to interact with the Kuberne
 Run the following command:
 
 ```
-cd /deploy/kubernetes/docker && sh build.sh --registry ${our-registry}
+cd deploy/kubernetes/docker && sh build.sh --registry ${our-registry}
 ```
 
 ## Creating or Updating CRD
