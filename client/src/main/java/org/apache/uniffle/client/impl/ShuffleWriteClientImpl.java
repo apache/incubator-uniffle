@@ -36,6 +36,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -105,7 +106,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private final ExecutorService dataTransferPool;
   private final int unregisterThreadPoolSize;
   private final int unregisterRequestTimeSec;
-  private Set<ShuffleServerInfo> shuffleServerBlacklist;
+  private Set<ShuffleServerInfo> shuffleServerBlockList;
 
   public ShuffleWriteClientImpl(
       String clientType,
@@ -135,7 +136,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     this.unregisterThreadPoolSize = unregisterThreadPoolSize;
     this.unregisterRequestTimeSec = unregisterRequestTimeSec;
     if (replica > 1) {
-      shuffleServerBlacklist = Sets.newConcurrentHashSet();
+      shuffleServerBlockList = Sets.newConcurrentHashSet();
     }
   }
 
@@ -174,20 +175,20 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
             // mark a replica of block that has been sent
             serverToBlockIds.get(ssi).forEach(block -> blockIdsTracker.get(block).incrementAndGet());
-            if (shuffleServerBlacklist != null) {
-              shuffleServerBlacklist.remove(ssi);
+            if (shuffleServerBlockList != null) {
+              shuffleServerBlockList.remove(ssi);
             }
             LOG.info("{} successfully.", logMsg);
           } else {
-            if (shuffleServerBlacklist != null) {
-              shuffleServerBlacklist.add(ssi);
+            if (shuffleServerBlockList != null) {
+              shuffleServerBlockList.add(ssi);
             }
             LOG.warn("{}, it failed wth statusCode[{}]", logMsg, response.getStatusCode());
             return false;
           }
         } catch (Exception e) {
-          if (shuffleServerBlacklist != null) {
-            shuffleServerBlacklist.add(ssi);
+          if (shuffleServerBlockList != null) {
+            shuffleServerBlockList.add(ssi);
           }
           LOG.warn("Send: " + serverToBlockIds.get(ssi).size() + " blocks to [" + ssi.getId() + "] failed.", e);
           return false;
@@ -205,12 +206,28 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     return result;
   }
 
-  private void genServerToBlocks(ShuffleBlockInfo sbi, List<ShuffleServerInfo> serverList,
-      Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
-      Map<ShuffleServerInfo, List<Long>> serverToBlockIds) {
+  @VisibleForTesting
+  void genServerToBlocks(ShuffleBlockInfo sbi,
+                         List<ShuffleServerInfo> serverList,
+                         int replicaNum,
+                         List<ShuffleServerInfo> excludeServers,
+                         Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
+                         Map<ShuffleServerInfo, List<Long>> serverToBlockIds,
+                         boolean includeBlockList) {
+    if (replicaNum <= 0) {
+      return;
+    }
     int partitionId = sbi.getPartitionId();
     int shuffleId = sbi.getShuffleId();
+    int assignedNum = 0;
     for (ShuffleServerInfo ssi : serverList) {
+      if (!includeBlockList && replica > 1 && !shuffleServerBlockList.isEmpty()
+          && shuffleServerBlockList.contains(ssi)) {
+        continue;
+      }
+      if (CollectionUtils.isNotEmpty(excludeServers) && excludeServers.contains(ssi)) {
+        continue;
+      }
       if (!serverToBlockIds.containsKey(ssi)) {
         serverToBlockIds.put(ssi, Lists.newArrayList());
       }
@@ -229,6 +246,10 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         partitionToBlocks.put(partitionId, Lists.newArrayList());
       }
       partitionToBlocks.get(partitionId).add(sbi);
+      excludeServers.add(ssi);
+      if (++assignedNum >= replicaNum) {
+        break;
+      }
     }
   }
 
@@ -259,21 +280,16 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     // which is minimum number when there is at most *replicaWrite - replica* sending server failures.
     for (ShuffleBlockInfo sbi : shuffleBlockInfoList) {
       List<ShuffleServerInfo> allServers = sbi.getShuffleServerInfos();
-      if (replica > 1 && !shuffleServerBlacklist.isEmpty()) {
-        // We can't modify allServers directly, because allServers is shared and is not thread safe
-        List<ShuffleServerInfo> newServerList = new ArrayList<>(allServers);
-        moveBlacklistServersToTheEnd(newServerList);
-        allServers = newServerList;
-      }
       if (replicaSkipEnabled) {
-        genServerToBlocks(sbi, allServers.subList(0, replicaWrite),
-            primaryServerToBlocks, primaryServerToBlockIds);
-        genServerToBlocks(sbi, allServers.subList(replicaWrite, replica),
-            secondaryServerToBlocks, secondaryServerToBlockIds);
+        List<ShuffleServerInfo> excludeServers = new ArrayList<>();
+        genServerToBlocks(sbi, allServers, replicaWrite, excludeServers,
+            primaryServerToBlocks, primaryServerToBlockIds, false);
+        genServerToBlocks(sbi, allServers,replica - replicaWrite,
+            excludeServers, secondaryServerToBlocks, secondaryServerToBlockIds, true);
       } else {
         // When replicaSkip is disabled, we send data to all replicas within one round.
-        genServerToBlocks(sbi, allServers,
-            primaryServerToBlocks, primaryServerToBlockIds);
+        genServerToBlocks(sbi, allServers, allServers.size(),
+            null, primaryServerToBlocks, primaryServerToBlockIds, true);
       }
     }
 
@@ -328,17 +344,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       }
     });
     return new SendShuffleDataResult(successBlockIds, failedBlockIds);
-  }
-
-  @VisibleForTesting
-  void moveBlacklistServersToTheEnd(List<ShuffleServerInfo> serverInfos) {
-    for (int i = serverInfos.size() - 2; i >= 0; i--) {
-      ShuffleServerInfo serverInfo = serverInfos.get(i);
-      if (shuffleServerBlacklist.contains(serverInfo)) {
-        serverInfos.remove(i);
-        serverInfos.add(serverInfo);
-      }
-    }
   }
 
   /**
@@ -787,8 +792,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   @VisibleForTesting
-  Set<ShuffleServerInfo> getShuffleServerBlacklist() {
-    return shuffleServerBlacklist;
+  Set<ShuffleServerInfo> getShuffleServerBlockList() {
+    return shuffleServerBlockList;
   }
 
   void addShuffleServer(String appId, int shuffleId, ShuffleServerInfo serverInfo) {
