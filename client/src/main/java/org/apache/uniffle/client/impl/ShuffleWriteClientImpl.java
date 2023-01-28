@@ -206,7 +206,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     return result;
   }
 
-  @VisibleForTesting
   void genServerToBlocks(ShuffleBlockInfo sbi,
                          List<ShuffleServerInfo> serverList,
                          int replicaNum,
