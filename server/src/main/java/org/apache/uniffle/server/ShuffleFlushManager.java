@@ -67,7 +67,7 @@ public class ShuffleFlushManager {
   private final long pendingEventTimeoutSec;
   private int processPendingEventIndex = 0;
   private final int maxConcurrencyOfSingleOnePartition;
-  private boolean isSuspend;
+  private volatile boolean isSuspend;
 
   public ShuffleFlushManager(ShuffleServerConf shuffleServerConf, String shuffleServerId, ShuffleServer shuffleServer,
                              StorageManager storageManager) {
