@@ -261,7 +261,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   public void cacheShuffleDataTest() {
     String appId = "cacheShuffleDataTest";
     int shuffleId = 1;
-
+    ShuffleServerMetrics.gaugeTotalPartitionNum.set(0);
     int startPartitionNum = (int) ShuffleServerMetrics.gaugeTotalPartitionNum.get();
     StatusCode sc = shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 16));
     assertEquals(StatusCode.NO_REGISTER, sc);
