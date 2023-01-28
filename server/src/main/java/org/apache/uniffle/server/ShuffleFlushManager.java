@@ -67,6 +67,7 @@ public class ShuffleFlushManager {
   private final long pendingEventTimeoutSec;
   private int processPendingEventIndex = 0;
   private final int maxConcurrencyOfSingleOnePartition;
+  private boolean isSuspend;
 
   public ShuffleFlushManager(ShuffleServerConf shuffleServerConf, String shuffleServerId, ShuffleServer shuffleServer,
                              StorageManager storageManager) {
@@ -95,6 +96,10 @@ public class ShuffleFlushManager {
       while (true) {
         try {
           ShuffleDataFlushEvent event = flushQueue.take();
+          // Only for test
+          while (isSuspend) {
+            Thread.sleep(200);
+          }
           threadPoolExecutor.execute(() -> {
             try {
               ShuffleServerMetrics.gaugeWriteHandler.inc();
@@ -295,6 +300,11 @@ public class ShuffleFlushManager {
 
   public Configuration getHadoopConf() {
     return hadoopConf;
+  }
+
+  // Only for test
+  public void setSuspend(boolean suspend) {
+    isSuspend = suspend;
   }
 
   @VisibleForTesting
