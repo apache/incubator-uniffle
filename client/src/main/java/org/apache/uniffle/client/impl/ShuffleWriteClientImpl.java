@@ -245,7 +245,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         partitionToBlocks.put(partitionId, Lists.newArrayList());
       }
       partitionToBlocks.get(partitionId).add(sbi);
-      excludeServers.add(ssi);
+      if (excludeServers != null) {
+        excludeServers.add(ssi);
+      }
       if (++assignedNum >= replicaNum) {
         break;
       }
