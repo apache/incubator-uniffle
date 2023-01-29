@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -51,7 +52,7 @@ public class ShuffleFlushManager {
   public static final AtomicLong ATOMIC_EVENT_ID = new AtomicLong(0);
   private final ShuffleServer shuffleServer;
   protected final BlockingQueue<ShuffleDataFlushEvent> flushQueue = Queues.newLinkedBlockingQueue();
-  private final ThreadPoolExecutor threadPoolExecutor;
+  private final Executor threadPoolExecutor;
   private final List<String> storageBasePaths;
   private final String shuffleServerId;
   private final String storageType;
@@ -81,13 +82,7 @@ public class ShuffleFlushManager {
     this.maxConcurrencyOfSingleOnePartition =
         shuffleServerConf.get(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION);
 
-    int waitQueueSize = shuffleServerConf.getInteger(
-        ShuffleServerConf.SERVER_FLUSH_THREAD_POOL_QUEUE_SIZE);
-    BlockingQueue<Runnable> waitQueue = Queues.newLinkedBlockingQueue(waitQueueSize);
-    int poolSize = shuffleServerConf.getInteger(ShuffleServerConf.SERVER_FLUSH_THREAD_POOL_SIZE);
-    long keepAliveTime = shuffleServerConf.getLong(ShuffleServerConf.SERVER_FLUSH_THREAD_ALIVE);
-    threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize, keepAliveTime, TimeUnit.SECONDS, waitQueue,
-        ThreadUtils.getThreadFactory("FlushEventThreadPool"));
+    threadPoolExecutor = createFlushEventExecutor();
     storageBasePaths = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
     pendingEventTimeoutSec = shuffleServerConf.getLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC);
     startEventProcesser();
@@ -115,10 +110,20 @@ public class ShuffleFlushManager {
 
   protected void startEventProcesser() {
     // the thread for flush data
-    Thread processEventThread = new Thread(() -> processEvents());
+    Thread processEventThread = new Thread(() -> processEvents(true));
     processEventThread.setName("ProcessEventThread");
     processEventThread.setDaemon(true);
     processEventThread.start();
+  }
+
+  protected Executor createFlushEventExecutor() {
+    int waitQueueSize = shuffleServerConf.getInteger(
+        ShuffleServerConf.SERVER_FLUSH_THREAD_POOL_QUEUE_SIZE);
+    BlockingQueue<Runnable> waitQueue = Queues.newLinkedBlockingQueue(waitQueueSize);
+    int poolSize = shuffleServerConf.getInteger(ShuffleServerConf.SERVER_FLUSH_THREAD_POOL_SIZE);
+    long keepAliveTime = shuffleServerConf.getLong(ShuffleServerConf.SERVER_FLUSH_THREAD_ALIVE);
+    return new ThreadPoolExecutor(poolSize, poolSize, keepAliveTime, TimeUnit.SECONDS, waitQueue,
+        ThreadUtils.getThreadFactory("FlushEventThreadPool"));
   }
 
   public void addToFlushQueue(ShuffleDataFlushEvent event) {
@@ -129,8 +134,8 @@ public class ShuffleFlushManager {
     }
   }
 
-  public void processEvents() {
-    while (true) {
+  public void processEvents(boolean endless) {
+    while (endless || !flushQueue.isEmpty()) {
       try {
         ShuffleDataFlushEvent event = flushQueue.take();
         threadPoolExecutor.execute(() -> {
