@@ -160,7 +160,8 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
 
     // clearResourceTest1 will be removed because of rss.server.app.expired.withoutHeartbeat
     t.interrupt();
-    Awaitility.await().timeout(20, TimeUnit.SECONDS).until(() -> shuffleServers.get(0).getShuffleTaskManager().getAppIds().size() == 0);
+    Awaitility.await().timeout(20, TimeUnit.SECONDS).until(
+        () -> shuffleServers.get(0).getShuffleTaskManager().getAppIds().size() == 0);
     assertEquals(0, shuffleServers.get(0).getShuffleTaskManager().getAppIds().size());
 
   }
