@@ -51,7 +51,7 @@ public class ShuffleFlushManager {
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleFlushManager.class);
   public static final AtomicLong ATOMIC_EVENT_ID = new AtomicLong(0);
   private final ShuffleServer shuffleServer;
-  protected final BlockingQueue<ShuffleDataFlushEvent> flushQueue = Queues.newLinkedBlockingQueue();
+  private final BlockingQueue<ShuffleDataFlushEvent> flushQueue = Queues.newLinkedBlockingQueue();
   private final Executor threadPoolExecutor;
   private final List<String> storageBasePaths;
   private final String shuffleServerId;
@@ -147,7 +147,7 @@ public class ShuffleFlushManager {
     }
   }
 
-  public void processNextEvent() {
+  private void processNextEvent() {
     try {
       ShuffleDataFlushEvent event = flushQueue.take();
       threadPoolExecutor.execute(() -> processEvent(event));
