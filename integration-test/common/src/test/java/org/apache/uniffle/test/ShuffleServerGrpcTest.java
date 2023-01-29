@@ -22,12 +22,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.protobuf.ByteString;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -67,6 +69,7 @@ import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.server.storage.MultiStorageManager;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.uniffle.client.util.ClientUtils.waitUntilDoneOrFail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -158,7 +161,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
 
     // clearResourceTest1 will be removed because of rss.server.app.expired.withoutHeartbeat
     t.interrupt();
-    Thread.sleep(8000);
+    Awaitility.await().timeout(20, TimeUnit.SECONDS).until(() -> shuffleServers.get(0).getShuffleTaskManager().getAppIds().size() == 0);
     assertEquals(0, shuffleServers.get(0).getShuffleTaskManager().getAppIds().size());
 
   }
