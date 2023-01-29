@@ -55,7 +55,7 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
     // todo: support init lazily
     try {
       for (int i = 0; i < maxConcurrency; i++) {
-        queue.offer(
+        boolean success = queue.offer(
             new HdfsShuffleWriteHandler(
                 appId,
                 shuffleId,
@@ -67,6 +67,9 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
                 user
             )
         );
+        if (!success) {
+          LOGGER.warn("Queue is full, failed to create HdfsShuffleWriteHandler for {}_{}", fileNamePrefix, i);
+        }
       }
     } catch (Exception e) {
       throw new RuntimeException("Errors on initializing Hdfs writer handler.", e);
@@ -82,7 +85,10 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
     try {
       writeHandler.write(shuffleBlocks);
     } finally {
-      queue.offer(writeHandler);
+      boolean success = queue.offer(writeHandler);
+      if (!success) {
+        LOGGER.warn("Queue is full, failed to put HdfsShuffleWriteHandler {}", writeHandler);
+      }
     }
   }
 }
