@@ -248,7 +248,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       if (excludeServers != null) {
         excludeServers.add(ssi);
       }
-      if (++assignedNum >= replicaNum) {
+      assignedNum++;
+      if (assignedNum >= replicaNum) {
         break;
       }
     }
