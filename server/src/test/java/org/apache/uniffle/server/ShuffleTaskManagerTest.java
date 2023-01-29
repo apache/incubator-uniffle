@@ -436,6 +436,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
     assertTrue(fs.exists(new Path(appBasePath)));
     assertNull(shuffleBufferManager.getBufferPool().get(appId).get(0));
     assertNotNull(shuffleBufferManager.getBufferPool().get(appId).get(1));
+    shuffleTaskManager.removeResources(appId);
   }
 
   @Test
