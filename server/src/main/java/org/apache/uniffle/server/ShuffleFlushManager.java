@@ -82,10 +82,10 @@ public class ShuffleFlushManager {
     this.maxConcurrencyOfSingleOnePartition =
         shuffleServerConf.get(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION);
 
-    threadPoolExecutor = createFlushEventExecutor();
-    startEventProcessor();
     storageBasePaths = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
     pendingEventTimeoutSec = shuffleServerConf.getLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC);
+    threadPoolExecutor = createFlushEventExecutor();
+    startEventProcessor();
     // todo: extract a class named Service, and support stop method
     Thread thread = new Thread("PendingEventProcessThread") {
       @Override
