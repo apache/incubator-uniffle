@@ -108,9 +108,9 @@ public class ShuffleFlushManager {
     thread.start();
   }
 
-  protected void startEventProcessor() {
+  private void startEventProcessor() {
     // the thread for flush data
-    Thread processEventThread = new Thread(() -> processEvents(true));
+    Thread processEventThread = new Thread(this::eventLoop);
     processEventThread.setName("ProcessEventThread");
     processEventThread.setDaemon(true);
     processEventThread.start();
@@ -134,16 +134,25 @@ public class ShuffleFlushManager {
     }
   }
 
-  public void processEvents(boolean endless) {
-    while (endless || !flushQueue.isEmpty()) {
-      try {
-        ShuffleDataFlushEvent event = flushQueue.take();
-        threadPoolExecutor.execute(() -> {
-          processEvent(event);
-        });
-      } catch (Exception e) {
-        LOG.error("Exception happened when process event.", e);
-      }
+  protected void eventLoop() {
+    while (true) {
+      processNextEvent();
+    }
+  }
+
+  @VisibleForTesting
+  public void flush() {
+    while (!flushQueue.isEmpty()) {
+      processNextEvent();
+    }
+  }
+
+  public void processNextEvent() {
+    try {
+      ShuffleDataFlushEvent event = flushQueue.take();
+      threadPoolExecutor.execute(() -> processEvent(event));
+    } catch (Exception e) {
+      LOG.error("Exception happened when process event.", e);
     }
   }
 

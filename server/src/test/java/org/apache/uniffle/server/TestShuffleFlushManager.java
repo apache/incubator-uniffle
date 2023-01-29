@@ -28,7 +28,7 @@ public class TestShuffleFlushManager extends ShuffleFlushManager {
   }
 
   @Override
-  protected void startEventProcessor() {
+  protected void eventLoop() {
     // do nothing
   }
 
@@ -36,4 +36,5 @@ public class TestShuffleFlushManager extends ShuffleFlushManager {
   protected Executor createFlushEventExecutor() {
     return Runnable::run;
   }
+
 }
