@@ -212,7 +212,7 @@ func HasZeroApps(pod *corev1.Pod) bool {
 		klog.Errorf("heartbeat response failed: invalid status (%v->%v)", url, resp.Status)
 		return false
 	}
-	body, err := io.ReadAll(req.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		klog.Errorf("heartbeat response failed: read body with err:%+v", err)
 		return false
