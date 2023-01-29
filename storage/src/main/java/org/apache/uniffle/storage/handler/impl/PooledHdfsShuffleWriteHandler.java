@@ -67,9 +67,7 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
                 user
             )
         );
-        if (!success) {
-          LOGGER.warn("Queue is full, failed to create HdfsShuffleWriteHandler for {}_{}", fileNamePrefix, i);
-        }
+        assert success;
       }
     } catch (Exception e) {
       throw new RuntimeException("Errors on initializing Hdfs writer handler.", e);
@@ -86,9 +84,7 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
       writeHandler.write(shuffleBlocks);
     } finally {
       boolean success = queue.offer(writeHandler);
-      if (!success) {
-        LOGGER.warn("Queue is full, failed to put HdfsShuffleWriteHandler {}", writeHandler);
-      }
+      assert success;
     }
   }
 }
