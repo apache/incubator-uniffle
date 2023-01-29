@@ -36,6 +36,9 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+# set shell to bash
+SHELL := /bin/bash
+
 .PHONY: all
 all: build
 
