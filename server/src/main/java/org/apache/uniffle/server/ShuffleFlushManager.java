@@ -51,7 +51,7 @@ public class ShuffleFlushManager {
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleFlushManager.class);
   public static final AtomicLong ATOMIC_EVENT_ID = new AtomicLong(0);
   private final ShuffleServer shuffleServer;
-  private final BlockingQueue<ShuffleDataFlushEvent> flushQueue = Queues.newLinkedBlockingQueue();
+  protected final BlockingQueue<ShuffleDataFlushEvent> flushQueue = Queues.newLinkedBlockingQueue();
   private final Executor threadPoolExecutor;
   private final List<String> storageBasePaths;
   private final String shuffleServerId;
@@ -83,9 +83,9 @@ public class ShuffleFlushManager {
         shuffleServerConf.get(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION);
 
     threadPoolExecutor = createFlushEventExecutor();
+    startEventProcessor();
     storageBasePaths = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
     pendingEventTimeoutSec = shuffleServerConf.getLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC);
-    startEventProcessor();
     // todo: extract a class named Service, and support stop method
     Thread thread = new Thread("PendingEventProcessThread") {
       @Override
@@ -140,14 +140,7 @@ public class ShuffleFlushManager {
     }
   }
 
-  @VisibleForTesting
-  public void flush() {
-    while (!flushQueue.isEmpty()) {
-      processNextEvent();
-    }
-  }
-
-  private void processNextEvent() {
+  protected void processNextEvent() {
     try {
       ShuffleDataFlushEvent event = flushQueue.take();
       threadPoolExecutor.execute(() -> processEvent(event));

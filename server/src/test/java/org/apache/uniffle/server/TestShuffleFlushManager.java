@@ -37,4 +37,10 @@ public class TestShuffleFlushManager extends ShuffleFlushManager {
     return Runnable::run;
   }
 
+  public void flush() {
+    while (!flushQueue.isEmpty()) {
+      processNextEvent();
+    }
+  }
+
 }

@@ -567,7 +567,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     serverConf.set(ShuffleServerConf.SERVER_SHUFFLE_FLUSH_THRESHOLD, 64L);
 
     StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(conf);
-    ShuffleFlushManager shuffleFlushManager = new TestShuffleFlushManager(conf,
+    TestShuffleFlushManager shuffleFlushManager = new TestShuffleFlushManager(conf,
         "serverId", mockShuffleServer, storageManager);
     shuffleBufferManager = new ShuffleBufferManager(serverConf, shuffleFlushManager);
 
