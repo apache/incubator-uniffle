@@ -50,7 +50,7 @@ public class ShuffleFlushManager {
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleFlushManager.class);
   public static final AtomicLong ATOMIC_EVENT_ID = new AtomicLong(0);
   private final ShuffleServer shuffleServer;
-  private final BlockingQueue<ShuffleDataFlushEvent> flushQueue = Queues.newLinkedBlockingQueue();
+  protected final BlockingQueue<ShuffleDataFlushEvent> flushQueue = Queues.newLinkedBlockingQueue();
   private final ThreadPoolExecutor threadPoolExecutor;
   private final List<String> storageBasePaths;
   private final String shuffleServerId;
@@ -67,7 +67,6 @@ public class ShuffleFlushManager {
   private final long pendingEventTimeoutSec;
   private int processPendingEventIndex = 0;
   private final int maxConcurrencyOfSingleOnePartition;
-  private volatile boolean isSuspend;
 
   public ShuffleFlushManager(ShuffleServerConf shuffleServerConf, String shuffleServerId, ShuffleServer shuffleServer,
                              StorageManager storageManager) {
@@ -91,35 +90,7 @@ public class ShuffleFlushManager {
         ThreadUtils.getThreadFactory("FlushEventThreadPool"));
     storageBasePaths = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
     pendingEventTimeoutSec = shuffleServerConf.getLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC);
-    // the thread for flush data
-    Runnable processEventRunnable = () -> {
-      while (true) {
-        try {
-          ShuffleDataFlushEvent event = flushQueue.take();
-          // Only for test
-          while (isSuspend) {
-            Thread.sleep(200);
-          }
-          threadPoolExecutor.execute(() -> {
-            try {
-              ShuffleServerMetrics.gaugeWriteHandler.inc();
-              flushToFile(event);
-            } catch (Exception e) {
-              LOG.error("Exception happened when flush data for " + event, e);
-            } finally {
-              ShuffleServerMetrics.gaugeWriteHandler.dec();
-              ShuffleServerMetrics.gaugeEventQueueSize.dec();
-            }
-          });
-        } catch (Exception e) {
-          LOG.error("Exception happened when process event.", e);
-        }
-      }
-    };
-    Thread processEventThread = new Thread(processEventRunnable);
-    processEventThread.setName("ProcessEventThread");
-    processEventThread.setDaemon(true);
-    processEventThread.start();
+    startEventProcesser();
     // todo: extract a class named Service, and support stop method
     Thread thread = new Thread("PendingEventProcessThread") {
       @Override
@@ -142,11 +113,44 @@ public class ShuffleFlushManager {
     thread.start();
   }
 
+  protected void startEventProcesser() {
+    // the thread for flush data
+    Thread processEventThread = new Thread(() -> processEvents());
+    processEventThread.setName("ProcessEventThread");
+    processEventThread.setDaemon(true);
+    processEventThread.start();
+  }
+
   public void addToFlushQueue(ShuffleDataFlushEvent event) {
     if (!flushQueue.offer(event)) {
       LOG.warn("Flush queue is full, discard event: " + event);
     } else {
       ShuffleServerMetrics.gaugeEventQueueSize.inc();
+    }
+  }
+
+  public void processEvents() {
+    while (true) {
+      try {
+        ShuffleDataFlushEvent event = flushQueue.take();
+        threadPoolExecutor.execute(() -> {
+          processEvent(event);
+        });
+      } catch (Exception e) {
+        LOG.error("Exception happened when process event.", e);
+      }
+    }
+  }
+
+  protected void processEvent(ShuffleDataFlushEvent event) {
+    try {
+      ShuffleServerMetrics.gaugeWriteHandler.inc();
+      flushToFile(event);
+    } catch (Exception e) {
+      LOG.error("Exception happened when flush data for " + event, e);
+    } finally {
+      ShuffleServerMetrics.gaugeWriteHandler.dec();
+      ShuffleServerMetrics.gaugeEventQueueSize.dec();
     }
   }
 
@@ -300,11 +304,6 @@ public class ShuffleFlushManager {
 
   public Configuration getHadoopConf() {
     return hadoopConf;
-  }
-
-  // Only for test
-  public void setSuspend(boolean suspend) {
-    isSuspend = suspend;
   }
 
   @VisibleForTesting

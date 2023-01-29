@@ -31,6 +31,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleFlushManager;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -567,7 +568,25 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
 
     StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(conf);
     ShuffleFlushManager shuffleFlushManager = new ShuffleFlushManager(conf,
-        "serverId", mockShuffleServer, storageManager);
+        "serverId", mockShuffleServer, storageManager) {
+
+      @Override
+      protected void startEventProcesser() {
+        // do nothing
+      }
+
+      @Override
+      public void processEvents() {
+        while (!flushQueue.isEmpty()) {
+          try {
+            ShuffleDataFlushEvent event = flushQueue.take();
+            processEvent(event);
+          } catch (Exception e) {
+            fail("Exception happened when process event.", e);
+          }
+        }
+      }
+    };
     shuffleBufferManager = new ShuffleBufferManager(serverConf, shuffleFlushManager);
 
     String appId = "shuffleFlushTest";
@@ -579,34 +598,31 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleBufferManager.registerBuffer(appId, shuffleId, 2, 3);
     shuffleBufferManager.registerBuffer(appId, smallShuffleId, 0,1);
     shuffleBufferManager.registerBuffer(appId, smallShuffleIdTwo,0, 1);
-    shuffleFlushManager.setSuspend(true);
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 64));
     assertEquals(96, shuffleBufferManager.getUsedMemory());
     shuffleBufferManager.cacheShuffleData(appId, smallShuffleId, false, createData(0, 31));
     assertEquals(96 + 63, shuffleBufferManager.getUsedMemory());
-    shuffleFlushManager.setSuspend(false);
+    shuffleFlushManager.processEvents();
     waitForFlush(shuffleFlushManager, appId, shuffleId, 1);
     // small shuffle id is kept in memory
     assertEquals(63, shuffleBufferManager.getUsedMemory());
     assertEquals(0, shuffleBufferManager.getInFlushSize());
 
     // more data will trigger the flush
-    shuffleFlushManager.setSuspend(true);
     shuffleBufferManager.cacheShuffleData(appId, smallShuffleId, false, createData(0, 31));
     shuffleBufferManager.cacheShuffleData(appId, smallShuffleId, false, createData(0, 31));
     assertEquals(63 * 3, shuffleBufferManager.getUsedMemory());
-    shuffleFlushManager.setSuspend(false);
+    shuffleFlushManager.processEvents();
     waitForFlush(shuffleFlushManager, appId, smallShuffleId, 3);
     assertEquals(0, shuffleBufferManager.getUsedMemory());
     assertEquals(0, shuffleBufferManager.getInFlushSize());
 
     // all the small data in shuffle server, which could be extremely rare
-    shuffleFlushManager.setSuspend(true);
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 22));
     shuffleBufferManager.cacheShuffleData(appId, smallShuffleId, false, createData(0, 21));
     shuffleBufferManager.cacheShuffleData(appId, smallShuffleIdTwo, false, createData(0, 20));
     assertEquals(54 + 53 + 52, shuffleBufferManager.getUsedMemory());
-    shuffleFlushManager.setSuspend(false);
+    shuffleFlushManager.processEvents();
     waitForFlush(shuffleFlushManager, appId, shuffleId, 2);
     waitForFlush(shuffleFlushManager, appId, smallShuffleId, 4);
     assertEquals(52, shuffleBufferManager.getUsedMemory());
