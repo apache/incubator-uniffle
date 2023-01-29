@@ -69,7 +69,6 @@ import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.server.storage.MultiStorageManager;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.apache.uniffle.client.util.ClientUtils.waitUntilDoneOrFail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
