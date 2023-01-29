@@ -28,12 +28,12 @@ public class TestShuffleFlushManager extends ShuffleFlushManager {
   }
 
   @Override
-  protected void startEventProcesser() {
+  protected void startEventProcessor() {
     // do nothing
   }
 
   @Override
   protected Executor createFlushEventExecutor() {
-    return command -> command.run();
+    return Runnable::run;
   }
 }

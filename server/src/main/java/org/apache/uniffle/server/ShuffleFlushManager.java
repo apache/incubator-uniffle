@@ -85,7 +85,7 @@ public class ShuffleFlushManager {
     threadPoolExecutor = createFlushEventExecutor();
     storageBasePaths = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
     pendingEventTimeoutSec = shuffleServerConf.getLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC);
-    startEventProcesser();
+    startEventProcessor();
     // todo: extract a class named Service, and support stop method
     Thread thread = new Thread("PendingEventProcessThread") {
       @Override
@@ -108,7 +108,7 @@ public class ShuffleFlushManager {
     thread.start();
   }
 
-  protected void startEventProcesser() {
+  protected void startEventProcessor() {
     // the thread for flush data
     Thread processEventThread = new Thread(() -> processEvents(true));
     processEventThread.setName("ProcessEventThread");
@@ -147,7 +147,7 @@ public class ShuffleFlushManager {
     }
   }
 
-  protected void processEvent(ShuffleDataFlushEvent event) {
+  private void processEvent(ShuffleDataFlushEvent event) {
     try {
       ShuffleServerMetrics.gaugeWriteHandler.inc();
       flushToFile(event);
