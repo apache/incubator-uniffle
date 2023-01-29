@@ -546,7 +546,7 @@ public class ShuffleBufferManager {
     for (int shuffleId : shuffleIds) {
       long size = 0;
 
-      RangeMap<Integer, ShuffleBuffer> bufferRangeMap = shuffleIdToBuffers.remove(shuffleId);
+      RangeMap<Integer, ShuffleBuffer> bufferRangeMap = shuffleIdToBuffers.get(shuffleId);
       if (bufferRangeMap == null) {
         continue;
       }
@@ -561,6 +561,7 @@ public class ShuffleBufferManager {
       if (shuffleIdToSizeMap != null) {
         shuffleIdToSizeMap.remove(shuffleId);
       }
+      shuffleIdToBuffers.remove(shuffleId);
     }
   }
 
