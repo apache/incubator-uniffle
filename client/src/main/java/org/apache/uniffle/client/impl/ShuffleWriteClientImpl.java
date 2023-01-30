@@ -213,7 +213,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       List<ShuffleServerInfo> excludeServers,
       Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
       Map<ShuffleServerInfo, List<Long>> serverToBlockIds,
-      boolean withoutBlocklist) {
+      boolean withBlocklist) {
     if (replicaNum <= 0) {
       return;
     }
@@ -221,7 +221,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     int shuffleId = sbi.getShuffleId();
     int assignedNum = 0;
     for (ShuffleServerInfo ssi : serverList) {
-      if (withoutBlocklist && replica > 1
+      if (withBlocklist && replica > 1
           && shuffleServerBlocklist.contains(ssi)) {
         continue;
       }
@@ -255,7 +255,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       }
     }
 
-    if (assignedNum < replicaNum && withoutBlocklist) {
+    if (assignedNum < replicaNum && withBlocklist) {
       genServerToBlocks(sbi, serverList, replicaNum - assignedNum,
           excludeServers, serverToBlocks, serverToBlockIds, false);
     }
