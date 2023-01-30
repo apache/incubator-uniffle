@@ -17,8 +17,11 @@
 
 package org.apache.uniffle.server;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 public abstract class Checker {
 
+  @SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
   protected ShuffleServerConf conf;
 
   Checker(ShuffleServerConf conf) {
