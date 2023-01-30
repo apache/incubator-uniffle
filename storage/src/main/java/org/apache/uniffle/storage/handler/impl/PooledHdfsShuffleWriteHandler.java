@@ -55,6 +55,8 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
     // todo: support init lazily
     try {
       for (int i = 0; i < maxConcurrency; i++) {
+        // Use add() here because we are sure the capacity will not be exceeded.
+        // Note: add() throws IllegalStateException when queue is full.
         queue.add(
             new HdfsShuffleWriteHandler(
                 appId,
@@ -82,6 +84,8 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
     try {
       writeHandler.write(shuffleBlocks);
     } finally {
+      // Use add() here because we are sure the capacity will not be exceeded.
+      // Note: add() throws IllegalStateException when queue is full.
       queue.add(writeHandler);
     }
   }
