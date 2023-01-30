@@ -151,7 +151,7 @@ func validateCoordinator(coordinator *unifflev1alpha1.CoordinatorConfig) error {
 	if len(coordinator.RPCNodePort) != int(*coordinator.Count) ||
 		len(coordinator.HTTPNodePort) != int(*coordinator.Count) {
 		return fmt.Errorf("invalid number of http or rpc node ports (%v/%v) <> (%v)",
-			len(coordinator.RPCNodePort), len(coordinator.HTTPNodePort), coordinator.Count)
+			len(coordinator.RPCNodePort), len(coordinator.HTTPNodePort), *coordinator.Count)
 	}
 	if len(coordinator.ExcludeNodesFilePath) == 0 {
 		return fmt.Errorf("empty exclude nodes file path for coordinators")

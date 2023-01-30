@@ -45,10 +45,12 @@ func generateOwnerReference(rss *v1alpha1.RemoteShuffleService) []metav1.OwnerRe
 	return []metav1.OwnerReference{
 		{
 			APIVersion: v1alpha1.SchemeGroupVersion.String(),
-			Kind:       "RSS",
-			Name:       rss.Name,
-			UID:        rss.UID,
-			Controller: pointer.Bool(true),
+			// Use a const instead of rss.Kind as it maybe empty, this is odd.
+			Kind:               constants.RSSKind,
+			BlockOwnerDeletion: pointer.Bool(true),
+			Name:               rss.Name,
+			UID:                rss.UID,
+			Controller:         pointer.Bool(true),
 		},
 	}
 }
