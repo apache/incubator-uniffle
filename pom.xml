@@ -861,7 +861,7 @@
           </dependency>
         </dependencies>
         <configuration>
-          <threshold>high</threshold>
+          <threshold>middle</threshold>
           <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
         </configuration>
       </plugin>
