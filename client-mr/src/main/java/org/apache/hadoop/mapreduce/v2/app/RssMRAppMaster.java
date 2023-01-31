@@ -366,7 +366,10 @@ public class RssMRAppMaster extends MRAppMaster {
       long size = status.getLen();
       String sizes = conf.get(MRJobConfig.CACHE_FILES_SIZES);
       conf.set(MRJobConfig.CACHE_FILES_SIZES, sizes == null ? String.valueOf(size) : size + "," + sizes);
-    } catch (Exception e) {
+    } catch (InterruptedException e) {
+      LOG.error("Interrupted while trying to upload extra conf ", e);
+      Thread.currentThread().interrupt();
+    } catch (IOException e) {
       LOG.error("Upload extra conf exception", e);
       throw new RuntimeException("Upload extra conf exception ", e);
     }
