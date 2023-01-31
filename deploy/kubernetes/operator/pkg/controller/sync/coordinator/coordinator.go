@@ -186,6 +186,13 @@ func GenerateDeploy(rss *unifflev1alpha1.RemoteShuffleService, index int) *appsv
 		},
 	}
 
+	// add custom annotations
+	annotations := map[string]string{}
+	for key, value := range rss.Spec.ShuffleServer.Annotations {
+		annotations[key] = value
+	}
+	deploy.Spec.Template.Annotations = annotations
+
 	// add init containers, the main container and other containers.
 	deploy.Spec.Template.Spec.InitContainers = util.GenerateInitContainers(rss.Spec.Coordinator.RSSPodSpec)
 	containers := []corev1.Container{*generateMainContainer(rss)}

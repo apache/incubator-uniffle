@@ -196,19 +196,25 @@ func GenerateSts(rss *unifflev1alpha1.RemoteShuffleService) *appsv1.StatefulSet 
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: utils.GenerateShuffleServerLabels(rss),
-					Annotations: map[string]string{
-						constants.AnnotationRssName: rss.Name,
-						constants.AnnotationRssUID:  string(rss.UID),
-						constants.AnnotationMetricsServerPort: fmt.Sprintf("%v",
-							controllerconstants.ContainerShuffleServerHTTPPort),
-						constants.AnnotationShuffleServerPort: fmt.Sprintf("%v",
-							controllerconstants.ContainerShuffleServerRPCPort),
-					},
 				},
 				Spec: podSpec,
 			},
 		},
 	}
+
+	//add custom annotation, and default annotation used by rss
+	annotations := map[string]string{
+		constants.AnnotationRssName: rss.Name,
+		constants.AnnotationRssUID:  string(rss.UID),
+		constants.AnnotationMetricsServerPort: fmt.Sprintf("%v",
+			controllerconstants.ContainerShuffleServerHTTPPort),
+		constants.AnnotationShuffleServerPort: fmt.Sprintf("%v",
+			controllerconstants.ContainerShuffleServerRPCPort),
+	}
+	for key, value := range rss.Spec.ShuffleServer.Annotations {
+		annotations[key] = value
+	}
+	sts.Spec.Template.Annotations = annotations
 
 	// add init containers, the main container and other containers.
 	sts.Spec.Template.Spec.InitContainers = util.GenerateInitContainers(rss.Spec.ShuffleServer.RSSPodSpec)
