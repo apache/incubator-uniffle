@@ -52,17 +52,10 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
 
   private void createBasePath() {
     File baseFolder = new File(basePath);
-    // check if shuffle folder exist
-    if (!baseFolder.exists()) {
-      try {
-        // try to create folder, it may be created by other Shuffle Server
-        baseFolder.mkdirs();
-      } catch (Exception e) {
-        // if folder exist, ignore the exception
-        if (!baseFolder.exists()) {
-          LOG.error("Can't create shuffle folder:" + basePath, e);
-          throw e;
-        }
+    // try to create folder, it may already exist
+    if (!baseFolder.mkdirs()) {
+      if (!baseFolder.exists()) {
+        LOG.error("Can't create shuffle folder: {}", basePath);
       }
     }
   }
