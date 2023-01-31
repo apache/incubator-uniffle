@@ -17,7 +17,6 @@
 
 package org.apache.spark.shuffle;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -529,7 +528,7 @@ public class RssShuffleManager implements ShuffleManager {
                   endMapIndex,
                   startPartition,
                   endPartition);
-    } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException ignored1) {
+    } catch (Exception ignored) {
       // fallback and attempt to use Spark 3.0's API
       try {
         mapStatusIter = (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
@@ -541,7 +540,7 @@ public class RssShuffleManager implements ShuffleManager {
                     shuffleId,
                     startPartition,
                     endPartition);
-      } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException ignored2) {
+      } catch (Exception ignored1) {
         try {
           // attempt to use Spark 3.2.0's API
           // Each Spark release will be versioned: [MAJOR].[FEATURE].[MAINTENANCE].
@@ -557,7 +556,7 @@ public class RssShuffleManager implements ShuffleManager {
                       endMapIndex,
                       startPartition,
                       endPartition);
-        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+        } catch (Exception e) {
           throw new RuntimeException(e);
         }
       }
@@ -593,7 +592,7 @@ public class RssShuffleManager implements ShuffleManager {
                   endMapIndex,
                   startPartition,
                   endPartition);
-    } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
     while (mapStatusIter.hasNext()) {
