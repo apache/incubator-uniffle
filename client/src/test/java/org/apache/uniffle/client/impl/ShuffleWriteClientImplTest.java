@@ -108,7 +108,7 @@ public class ShuffleWriteClientImplTest {
   }
 
   @Test
-  public void testSendDataBlockList() {
+  public void testSendDataWithDefectiveServers() {
     ShuffleWriteClientImpl shuffleWriteClient =
         new ShuffleWriteClientImpl("GRPC", 3, 2000, 4, 3, 2, 2, true, 1, 1, 10, 10);
     ShuffleServerClient mockShuffleServerClient = mock(ShuffleServerClient.class);
@@ -119,7 +119,7 @@ public class ShuffleWriteClientImplTest {
         new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS),
         new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS));
 
-    String appId = "testSendDataBlocklist_appId";
+    String appId = "testSendDataWithDefectiveServers_appId";
     ShuffleServerInfo ssi1 = new ShuffleServerInfo("127.0.0.1", 0);
     ShuffleServerInfo ssi2 = new ShuffleServerInfo("127.0.0.1", 1);
     ShuffleServerInfo ssi3 = new ShuffleServerInfo("127.0.0.1", 2);
@@ -147,8 +147,8 @@ public class ShuffleWriteClientImplTest {
     result = spyClient.sendShuffleData(appId, shuffleBlockInfoList, () -> false);
     assertEquals(0, result.getFailedBlockIds().size());
 
-    // Send data for the third time, the first server will be removed from the blockList
-    // and the second server will be added to the blockList.
+    // Send data for the third time, the first server will be removed from the defectiveServers
+    // and the second server will be added to the defectiveServers.
     when(mockShuffleServerClient.sendShuffleData(any())).thenReturn(
         new RssSendShuffleDataResponse(ResponseStatusCode.NO_BUFFER),
         new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS),
@@ -158,8 +158,8 @@ public class ShuffleWriteClientImplTest {
         new byte[]{1}, shuffleServerInfoList2, 10, 100, 0));
     result = spyClient.sendShuffleData(appId, shuffleBlockInfoList2, () -> false);
     assertEquals(0, result.getFailedBlockIds().size());
-    assertEquals(1, spyClient.getShuffleServerBlocklist().size());
-    assertEquals(ssi2, spyClient.getShuffleServerBlocklist().toArray()[0]);
+    assertEquals(1, spyClient.getDefectiveServers().size());
+    assertEquals(ssi2, spyClient.getDefectiveServers().toArray()[0]);
     excludeServers = new ArrayList<>();
     spyClient.genServerToBlocks(shuffleBlockInfoList.get(0), shuffleServerInfoList,
         2, excludeServers, Maps.newHashMap(), Maps.newHashMap(), true);
@@ -171,9 +171,9 @@ public class ShuffleWriteClientImplTest {
     assertEquals(3, excludeServers.size());
     assertEquals(ssi2, excludeServers.get(2));
 
-    // Check whether it is normal when two shuffle servers in block list
-    spyClient.getShuffleServerBlocklist().add(ssi1);
-    assertEquals(2, spyClient.getShuffleServerBlocklist().size());
+    // Check whether it is normal when two shuffle servers in defectiveServers
+    spyClient.getDefectiveServers().add(ssi1);
+    assertEquals(2, spyClient.getDefectiveServers().size());
     excludeServers = new ArrayList<>();
     spyClient.genServerToBlocks(shuffleBlockInfoList.get(0), shuffleServerInfoList,
         2, excludeServers, Maps.newHashMap(), Maps.newHashMap(), true);
