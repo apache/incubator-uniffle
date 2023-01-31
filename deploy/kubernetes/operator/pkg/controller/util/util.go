@@ -175,6 +175,7 @@ func GenerateInitContainers(rssPodSpec *v1alpha1.RSSPodSpec) []corev1.Container 
 				Privileged: pointer.Bool(true),
 			},
 			VolumeMounts: GenerateHostPathVolumeMounts(rssPodSpec.HostPathMounts),
+			Resources:    rssPodSpec.Resources,
 		})
 		if len(rssPodSpec.LogHostPath) > 0 {
 			initContainers = append(initContainers, corev1.Container{
@@ -193,6 +194,7 @@ func GenerateInitContainers(rssPodSpec *v1alpha1.RSSPodSpec) []corev1.Container 
 				VolumeMounts: []corev1.VolumeMount{
 					*generateLogVolumeMount(rssPodSpec),
 				},
+				Resources: rssPodSpec.Resources,
 			})
 		}
 	}
