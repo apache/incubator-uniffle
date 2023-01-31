@@ -287,6 +287,24 @@ func generateMainContainerENV(rss *unifflev1alpha1.RemoteShuffleService) []corev
 			Name:  controllerconstants.ServiceNameEnv,
 			Value: controllerconstants.CoordinatorServiceName,
 		},
+		{
+			Name: controllerconstants.NodeNameEnv,
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "spec.nodeName",
+				},
+			},
+		},
+		{
+			Name: controllerconstants.RssIPEnv,
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "status.podIP",
+				},
+			},
+		},
 	}
 	for _, e := range rss.Spec.Coordinator.Env {
 		if !defaultENVs.Has(e.Name) {
