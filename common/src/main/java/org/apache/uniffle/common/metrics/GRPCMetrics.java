@@ -35,7 +35,7 @@ public abstract class GRPCMetrics {
   private static final String GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE = "grpc_server_executor_blocking_queue_size";
   public static final String GRPC_SERVER_CONNECTION_NUMBER_KEY = "grpcServerConnectionNumber";
   private static final String GRPC_SERVER_CONNECTION_NUMBER = "grpc_server_connection_number";
-   private static final String GRPC_OPEN = "grpc_open";
+  private static final String GRPC_OPEN = "grpc_open";
   private static final String GRPC_TOTAL = "grpc_total";
 
   private boolean isRegistered = false;
