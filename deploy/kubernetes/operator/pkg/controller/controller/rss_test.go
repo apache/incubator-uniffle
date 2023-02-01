@@ -250,8 +250,8 @@ var _ = Describe("RssController", func() {
 				}
 				return true, nil
 			})
-
 			Expect(err).ToNot(HaveOccurred())
+
 			By("Delete the upgrading rss object")
 			err = testRssClient.UniffleV1alpha1().RemoteShuffleServices(corev1.NamespaceDefault).
 				Delete(context.TODO(), testRssName, metav1.DeleteOptions{})
