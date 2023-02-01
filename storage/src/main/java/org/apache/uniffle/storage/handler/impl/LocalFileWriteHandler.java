@@ -57,7 +57,7 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
       try {
         // try to create folder, it may be created by other Shuffle Server
         baseFolder.mkdirs();
-      } catch (Exception e) {
+      } catch (SecurityException e) {
         // if folder exist, ignore the exception
         if (!baseFolder.exists()) {
           LOG.error("Can't create shuffle folder:" + basePath, e);

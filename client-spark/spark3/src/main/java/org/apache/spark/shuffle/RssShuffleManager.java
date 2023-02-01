@@ -34,6 +34,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.MapOutputTracker;
 import org.apache.spark.ShuffleDependency;
@@ -506,6 +507,7 @@ public class RssShuffleManager implements ShuffleManager {
     );
   }
 
+  @SuppressFBWarnings("REC_CATCH_EXCEPTION")
   private Roaring64NavigableMap getExpectedTasksByExecutorId(
       int shuffleId,
       int startPartition,
