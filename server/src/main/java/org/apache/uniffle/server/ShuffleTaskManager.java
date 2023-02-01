@@ -476,7 +476,12 @@ public class ShuffleTaskManager {
   public void removeResources(String appId) {
     LOG.info("Start remove resource for appId[" + appId + "]");
     final long start = System.currentTimeMillis();
-    final Map<Integer, Roaring64NavigableMap> shuffleToCachedBlockIds = shuffleTaskInfos.get(appId).getCachedBlockIds();
+    ShuffleTaskInfo shffleTaskInfo = shuffleTaskInfos.remove(appId);
+    if (shffleTaskInfo == null) {
+      LOG.info("Resource for appId[" + appId + "] had been removed before.");
+      return;
+    }
+    final Map<Integer, Roaring64NavigableMap> shuffleToCachedBlockIds = shffleTaskInfo.getCachedBlockIds();
     partitionsToBlockIds.remove(appId);
     shuffleBufferManager.removeBuffer(appId);
     shuffleFlushManager.removeResources(appId);
@@ -485,7 +490,6 @@ public class ShuffleTaskManager {
           new AppPurgeEvent(appId, getUserByAppId(appId), new ArrayList<>(shuffleToCachedBlockIds.keySet()))
       );
     }
-    shuffleTaskInfos.remove(appId);
     LOG.info("Finish remove resource for appId[" + appId + "] cost " + (System.currentTimeMillis() - start) + " ms");
   }
 
