@@ -45,8 +45,6 @@ public class ShuffleServerGrpcMetrics extends GRPCMetrics {
   private static final String GRPC_GET_MEMORY_SHUFFLE_DATA = "grpc_get_memory_shuffle_data";
   private static final String GRPC_GET_SHUFFLE_INDEX = "grpc_get_local_shuffle_index";
 
-  private static final String GRPC_OPEN = "grpc_open";
-  private static final String GRPC_TOTAL = "grpc_total";
   private static final String GRPC_REGISTERED_SHUFFLE_TOTAL = "grpc_registered_shuffle_total";
   private static final String GRPC_SEND_SHUFFLE_DATA_TOTAL = "grpc_send_shuffle_data_total";
   private static final String GRPC_COMMIT_SHUFFLE_TASK_TOTAL = "grpc_commit_shuffle_task_total";
@@ -74,8 +72,7 @@ public class ShuffleServerGrpcMetrics extends GRPCMetrics {
 
   @Override
   public void registerMetrics() {
-    setGaugeGrpcOpen(metricsManager.addGauge(GRPC_OPEN));
-    setCounterGrpcTotal(metricsManager.addCounter(GRPC_TOTAL));
+    super.registerMetrics();
 
     gaugeMap.putIfAbsent(REGISTER_SHUFFLE_METHOD,
         metricsManager.addGauge(GRPC_REGISTERED_SHUFFLE));
