@@ -43,8 +43,8 @@ public abstract class GRPCMetrics {
   protected Map<String, Gauge> gaugeMap = Maps.newConcurrentMap();
   protected Map<String, Summary> transportTimeSummaryMap = Maps.newConcurrentMap();
   protected Map<String, Summary> processTimeSummaryMap = Maps.newConcurrentMap();
-  private Gauge gaugeGrpcOpen;
-  private Counter counterGrpcTotal;
+  protected Gauge gaugeGrpcOpen;
+  protected Counter counterGrpcTotal;
   protected MetricsManager metricsManager;
 
   public void registerMetrics() {
