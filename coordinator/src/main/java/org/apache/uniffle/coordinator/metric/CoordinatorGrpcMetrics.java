@@ -35,8 +35,8 @@ public class CoordinatorGrpcMetrics extends GRPCMetrics {
 
   @Override
   public void registerMetrics() {
-    gaugeGrpcOpen = metricsManager.addGauge(GRPC_OPEN);
-    counterGrpcTotal = metricsManager.addCounter(GRPC_TOTAL);
+    setGaugeGrpcOpen(metricsManager.addGauge(GRPC_OPEN));
+    setCounterGrpcTotal(metricsManager.addCounter(GRPC_TOTAL));
     gaugeMap.putIfAbsent(HEARTBEAT_METHOD,
         metricsManager.addGauge(GRPC_HEARTBEAT));
     gaugeMap.putIfAbsent(GET_SHUFFLE_ASSIGNMENTS_METHOD,
