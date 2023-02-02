@@ -61,7 +61,11 @@ public class CoordinatorGrpcServerTest {
 
     GRPCMetrics grpcMetrics = new CoordinatorGrpcMetrics();
     grpcMetrics.register(new CollectorRegistry(true));
-    GrpcServer grpcServer = new GrpcServer(baseConf, new MockedCoordinatorGrpcService(), grpcMetrics);
+    GrpcServer grpcServer = GrpcServer.Builder.newBuilder()
+        .conf(baseConf)
+        .grpcMetrics(grpcMetrics)
+        .addService(new MockedCoordinatorGrpcService())
+        .build();
     grpcServer.start();
 
     // case1: test the single one connection metric

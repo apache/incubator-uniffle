@@ -242,7 +242,14 @@ message ShuffleServerHeartBeatRequest {
   int32 eventNumInFlush = 5;
   repeated string tags = 6;
   google.protobuf.BoolValue isHealthy = 7;
+  ServerStatus status = 8;
   map<string, StorageInfo> storageInfo = 21; // mount point to storage info mapping.
+
+  enum ServerStatus {
+    NORMAL = 0;
+    DECOMMISSIONING = 1;
+    // todo: more status, such as UPGRADING
+  }
 }
 
 message ShuffleServerHeartBeatResponse {
@@ -457,4 +464,18 @@ message RemoteStorage {
 message FetchRemoteStorageResponse {
   StatusCode status = 1;
   RemoteStorage remoteStorage = 2;
+}
+
+service ShuffleServerInternal {
+  rpc decommission(DecommissionRequest) returns (DecommissionResponse);
+}
+
+message DecommissionRequest {
+  google.protobuf.BoolValue on = 1;
+}
+
+message DecommissionResponse {
+  StatusCode status = 1;
+  google.protobuf.BoolValue on = 2;
+  string retMsg = 3;
 }

@@ -78,6 +78,8 @@ public class ShuffleServer {
   private AtomicBoolean isHealthy = new AtomicBoolean(true);
   private GRPCMetrics grpcMetrics;
   private MetricReporter metricReporter;
+  private boolean decommissioned;
+  private Thread decommissionedThread;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -332,4 +334,41 @@ public class ShuffleServer {
   public GRPCMetrics getGrpcMetrics() {
     return grpcMetrics;
   }
+
+  public boolean isDecommissioned() {
+    return decommissioned;
+  }
+
+  public synchronized void setDecommissioned(boolean decommissioned) {
+    if (this.decommissioned == decommissioned) {
+      return;
+    }
+    this.decommissioned = decommissioned;
+    LOG.info("set decommissioned state to " + decommissioned);
+    if (this.decommissioned) {
+      decommissionedThread = new Thread(() -> {
+        while (decommissioned) {
+          int remainApplicationNum = shuffleTaskManager.getAppIds().size();
+          if (shuffleTaskManager.getAppIds().isEmpty()) {
+            LOG.info("all applications finished, exit now");
+            System.exit(0);
+          }
+          LOG.info("shuffle server is in decommissioned state. remain {} applications not finished.", remainApplicationNum);
+          try {
+            Thread.sleep(60000);
+          } catch (InterruptedException e) {
+            LOG.warn("Ignore the InterruptedException which should be caused by internal killed");
+          }
+        }
+      });
+      decommissionedThread.setName("decommission");
+      decommissionedThread.start();
+    } else {
+      if (decommissionedThread != null) {
+        decommissionedThread.interrupt();
+        decommissionedThread = null;
+      }
+    }
+  }
+
 }
