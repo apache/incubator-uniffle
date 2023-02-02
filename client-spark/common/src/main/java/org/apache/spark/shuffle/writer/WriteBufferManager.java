@@ -32,7 +32,7 @@ import org.apache.spark.memory.TaskMemoryManager;
 import org.apache.spark.serializer.SerializationStream;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.serializer.SerializerInstance;
-import org.apache.uniffle.client.util.RssClientConfig;
+import org.apache.spark.shuffle.RssSparkConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.reflect.ClassTag$;
@@ -107,7 +107,9 @@ public class WriteBufferManager extends MemoryConsumer {
     this.requireMemoryRetryMax = bufferManagerOptions.getRequireMemoryRetryMax();
     this.arrayOutputStream = new WrappedByteArrayOutputStream(serializerBufferSize);
     this.serializeStream = instance.serializeStream(arrayOutputStream);
-    boolean compress = rssConf.getBoolean(RssClientConfig.SPARK_SHUFFLE_COMPRESS, true);
+    boolean compress = rssConf.getBoolean(RssSparkConfig.SPARK_SHUFFLE_COMPRESS.key()
+            .substring(RssSparkConfig.SPARK_RSS_CONFIG_PREFIX.length()),
+        RssSparkConfig.SPARK_SHUFFLE_COMPRESS.defaultValue().get());
     this.codec = compress ? Codec.newInstance(rssConf) : null;
   }
 

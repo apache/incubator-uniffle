@@ -30,6 +30,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.serializer.KryoSerializer;
 import org.apache.spark.serializer.Serializer;
+import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -98,36 +99,30 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
 
   private RssShuffleDataIterator getDataIterator(String basePath, Roaring64NavigableMap blockIdBitmap,
       Roaring64NavigableMap taskIdBitmap, List<ShuffleServerInfo> serverInfos) {
+    return getDataIterator(basePath, blockIdBitmap, taskIdBitmap, serverInfos, true);
+  }
+
+  private RssShuffleDataIterator getDataIterator(String basePath, Roaring64NavigableMap blockIdBitmap,
+       Roaring64NavigableMap taskIdBitmap, List<ShuffleServerInfo> serverInfos, boolean compress) {
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(
         StorageType.HDFS.name(), "appId", 0, 1, 100, 2,
         10, 10000, basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(serverInfos),
         new Configuration(), new DefaultIdHelper());
+    RssConf rc;
+    if (!compress) {
+      SparkConf sc = new SparkConf();
+      sc.set(RssSparkConfig.SPARK_SHUFFLE_COMPRESS, false);
+      rc = RssSparkConfig.toRssConf(sc);
+    } else {
+      rc = new RssConf();
+    }
     return new RssShuffleDataIterator(KRYO_SERIALIZER, readClient,
-        new ShuffleReadMetrics(), new RssConf());
+        new ShuffleReadMetrics(), rc);
   }
 
   @Test
   public void readTest2() throws Exception {
-    String basePath = HDFS_URI + "readTest2";
-    HdfsShuffleWriteHandler writeHandler1 =
-        new HdfsShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
-    HdfsShuffleWriteHandler writeHandler2 =
-        new HdfsShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi2.getId(), conf);
-
-    Map<String, String> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
-    Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
-    writeTestData(writeHandler1, 2, 5, expectedData,
-        blockIdBitmap, "key1", KRYO_SERIALIZER, 0);
-    writeTestData(writeHandler2, 2, 5, expectedData,
-        blockIdBitmap, "key2", KRYO_SERIALIZER, 0);
-
-    RssShuffleDataIterator rssShuffleDataIterator = getDataIterator(basePath, blockIdBitmap,
-        taskIdBitmap, Lists.newArrayList(ssi1, ssi2));
-
-    validateResult(rssShuffleDataIterator, expectedData, 20);
-    assertEquals(20, rssShuffleDataIterator.getShuffleReadMetrics().recordsRead());
-    assertTrue(rssShuffleDataIterator.getShuffleReadMetrics().fetchWaitTime() > 0);
+    readTestCompressOrNot("readTest2", true);
   }
 
   @Test
@@ -263,6 +258,34 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
         assertTrue(e.getMessage().startsWith("Blocks read inconsistent"));
       }
     }
+  }
+
+  @Test
+  public void readTestUncompressedShuffle() throws Exception {
+    readTestCompressOrNot("readTestUncompressedShuffle", false);
+  }
+
+  private void readTestCompressOrNot(String path, boolean compress) throws Exception {
+    String basePath = HDFS_URI + path;
+    HdfsShuffleWriteHandler writeHandler1 =
+        new HdfsShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
+    HdfsShuffleWriteHandler writeHandler2 =
+        new HdfsShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi2.getId(), conf);
+
+    Map<String, String> expectedData = Maps.newHashMap();
+    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
+    writeTestData(writeHandler1, 2, 5, expectedData,
+        blockIdBitmap, "key1", KRYO_SERIALIZER, 0, compress);
+    writeTestData(writeHandler2, 2, 5, expectedData,
+        blockIdBitmap, "key2", KRYO_SERIALIZER, 0, compress);
+
+    RssShuffleDataIterator rssShuffleDataIterator = getDataIterator(basePath, blockIdBitmap,
+        taskIdBitmap, Lists.newArrayList(ssi1, ssi2), compress);
+
+    validateResult(rssShuffleDataIterator, expectedData, 20);
+    assertEquals(20, rssShuffleDataIterator.getShuffleReadMetrics().recordsRead());
+    assertTrue(rssShuffleDataIterator.getShuffleReadMetrics().fetchWaitTime() > 0);
   }
 
   @Test

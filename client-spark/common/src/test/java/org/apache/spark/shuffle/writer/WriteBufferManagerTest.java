@@ -29,7 +29,6 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
-import org.apache.uniffle.common.config.RssConf;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,6 +40,12 @@ import static org.mockito.Mockito.when;
 
 public class WriteBufferManagerTest {
 
+  static {
+    // trigger spark config package initialization before RssSparkConfig to avoid key, spark.shuffle.compress,
+    // duplication in spark3
+    org.apache.spark.internal.config.package$.MODULE$.EXECUTOR_MEMORY();
+  }
+
   private WriteBufferManager createManager(SparkConf conf) {
     Serializer kryoSerializer = new KryoSerializer(conf);
     TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
@@ -48,7 +53,7 @@ public class WriteBufferManagerTest {
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
     WriteBufferManager wbm = new WriteBufferManager(
         0, 0, bufferOptions, kryoSerializer,
-        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(), new RssConf());
+        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(), RssSparkConfig.toRssConf(conf));
     WriteBufferManager spyManager = spy(wbm);
     doReturn(512L).when(spyManager).acquireMemory(anyLong());
     return spyManager;
@@ -65,8 +70,20 @@ public class WriteBufferManagerTest {
   }
 
   @Test
-  public void addRecordTest() {
+  public void addRecordCompressedTest() {
+    addRecord(true);
+  }
+
+  @Test
+  public void addRecordUnCompressedTest() {
+    addRecord(false);
+  }
+
+  private void addRecord(boolean compress) {
     SparkConf conf = getConf();
+    if (!compress) {
+      conf.set(RssSparkConfig.SPARK_SHUFFLE_COMPRESS, false);
+    }
     WriteBufferManager wbm = createManager(conf);
     wbm.setShuffleWriteMetrics(new ShuffleWriteMetrics());
     String testKey = "Key";

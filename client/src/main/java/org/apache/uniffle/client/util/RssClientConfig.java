@@ -86,6 +86,4 @@ public class RssClientConfig {
   public static final String RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER = "rss.estimate.task.concurrency.per.server";
   public static final int RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE = 80;
 
-  public static final String SPARK_SHUFFLE_COMPRESS = "shuffle.compress";
-
 }
