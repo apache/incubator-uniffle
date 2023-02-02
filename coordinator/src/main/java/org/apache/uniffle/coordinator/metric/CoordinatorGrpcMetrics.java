@@ -33,7 +33,6 @@ public class CoordinatorGrpcMetrics extends GRPCMetrics {
 
   @Override
   public void registerMetrics() {
-    super.registerMetrics();
     gaugeMap.putIfAbsent(HEARTBEAT_METHOD,
         metricsManager.addGauge(GRPC_HEARTBEAT));
     gaugeMap.putIfAbsent(GET_SHUFFLE_ASSIGNMENTS_METHOD,

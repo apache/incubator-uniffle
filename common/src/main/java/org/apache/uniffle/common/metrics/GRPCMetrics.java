@@ -27,7 +27,7 @@ import io.prometheus.client.Summary;
 
 import org.apache.uniffle.common.util.Constants;
 
-public class GRPCMetrics {
+public abstract class GRPCMetrics {
   // Grpc server internal executor metrics
   public static final String GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY = "grpcServerExecutorActiveThreads";
   private static final String GRPC_SERVER_EXECUTOR_ACTIVE_THREADS = "grpc_server_executor_active_threads";
@@ -43,14 +43,11 @@ public class GRPCMetrics {
   protected Map<String, Gauge> gaugeMap = Maps.newConcurrentMap();
   protected Map<String, Summary> transportTimeSummaryMap = Maps.newConcurrentMap();
   protected Map<String, Summary> processTimeSummaryMap = Maps.newConcurrentMap();
-  protected Gauge gaugeGrpcOpen;
-  protected Counter counterGrpcTotal;
+  private Gauge gaugeGrpcOpen;
+  private Counter counterGrpcTotal;
   protected MetricsManager metricsManager;
 
-  public void registerMetrics() {
-    gaugeGrpcOpen = metricsManager.addGauge(GRPC_OPEN);
-    counterGrpcTotal = metricsManager.addCounter(GRPC_TOTAL);
-  }
+  public abstract void registerMetrics();
 
   public void register(CollectorRegistry collectorRegistry) {
     if (!isRegistered) {
@@ -62,6 +59,8 @@ public class GRPCMetrics {
   }
 
   private void registerGeneralMetrics() {
+    gaugeGrpcOpen = metricsManager.addGauge(GRPC_OPEN);
+    counterGrpcTotal = metricsManager.addCounter(GRPC_TOTAL);
     gaugeMap.putIfAbsent(
         GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY,
         metricsManager.addGauge(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS)

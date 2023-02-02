@@ -72,8 +72,6 @@ public class ShuffleServerGrpcMetrics extends GRPCMetrics {
 
   @Override
   public void registerMetrics() {
-    super.registerMetrics();
-
     gaugeMap.putIfAbsent(REGISTER_SHUFFLE_METHOD,
         metricsManager.addGauge(GRPC_REGISTERED_SHUFFLE));
     gaugeMap.putIfAbsent(SEND_SHUFFLE_DATA_METHOD,
