@@ -54,7 +54,7 @@ public class ShuffleServerInfo implements Serializable {
 
   @Override
   public int hashCode() {
-    return host.hashCode();
+    return id.hashCode();
   }
 
   @Override
