@@ -200,6 +200,10 @@ type RSSPodSpec struct {
 	// LogHostPath represents host path used to save logs of shuffle servers.
 	// +optional
 	LogHostPath string `json:"logHostPath,omitempty"`
+
+	// Labels represents labels to be added in coordinators or shuffle servers' pods.
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
 }
 
 // MainContainer stores information of the main container of coordinators or shuffle servers,

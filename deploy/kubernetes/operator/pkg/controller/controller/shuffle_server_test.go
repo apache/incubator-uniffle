@@ -35,22 +35,12 @@ import (
 )
 
 func buildUpgradingRssObjWithTargetKeys(shuffleServerKey string) *unifflev1alpha1.RemoteShuffleService {
-	return &unifflev1alpha1.RemoteShuffleService{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            testRssName,
-			Namespace:       testNamespace,
-			ResourceVersion: "test",
-		},
-		Spec: unifflev1alpha1.RemoteShuffleServiceSpec{
-			Coordinator: &unifflev1alpha1.CoordinatorConfig{
-				ExcludeNodesFilePath: "/exclude_nodes",
-			},
-		},
-		Status: unifflev1alpha1.RemoteShuffleServiceStatus{
-			Phase:      unifflev1alpha1.RSSUpgrading,
-			TargetKeys: []string{shuffleServerKey},
-		},
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Status = unifflev1alpha1.RemoteShuffleServiceStatus{
+		Phase:      unifflev1alpha1.RSSUpgrading,
+		TargetKeys: []string{shuffleServerKey},
 	}
+	return rss
 }
 
 func buildTestShuffleServerPod() *corev1.Pod {

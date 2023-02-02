@@ -283,40 +283,10 @@ func initTestRss() (*corev1.ConfigMap, *unifflev1alpha1.RemoteShuffleService) {
 			constants.Log4jPropertiesKey:     "",
 		},
 	}
-	rss := &unifflev1alpha1.RemoteShuffleService{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      testRssName,
-			Namespace: testNamespace,
-		},
-		Spec: unifflev1alpha1.RemoteShuffleServiceSpec{
-			ConfigMapName: testRssName,
-			Coordinator: &unifflev1alpha1.CoordinatorConfig{
-				HTTPNodePort: []int32{30001, 30011},
-				RPCNodePort:  []int32{30002, 30012},
-				CommonConfig: &unifflev1alpha1.CommonConfig{
-					ConfigDir: "/app/config",
-					RSSPodSpec: &unifflev1alpha1.RSSPodSpec{
-						MainContainer: &unifflev1alpha1.MainContainer{
-							Image: testCoordinatorImage1,
-						},
-					},
-				},
-			},
-			ShuffleServer: &unifflev1alpha1.ShuffleServerConfig{
-				CommonConfig: &unifflev1alpha1.CommonConfig{
-					ConfigDir: "/app/config",
-					RSSPodSpec: &unifflev1alpha1.RSSPodSpec{
-						MainContainer: &unifflev1alpha1.MainContainer{
-							Image: "rss-shuffleserver:latest",
-						},
-					},
-					XmxSize: "10G",
-				},
-				UpgradeStrategy: &unifflev1alpha1.ShuffleServerUpgradeStrategy{
-					Type: unifflev1alpha1.FullUpgrade,
-				},
-			},
-		},
-	}
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.ConfigMapName = cm.Name
+	rss.Name = testRssName
+	rss.Namespace = testNamespace
+	rss.Spec.Coordinator.Image = testCoordinatorImage1
 	return cm, rss
 }
