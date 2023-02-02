@@ -217,6 +217,11 @@ func GenerateSts(rss *unifflev1alpha1.RemoteShuffleService) *appsv1.StatefulSet 
 		sts.Spec.Template.Labels[k] = v
 	}
 
+	// set runtimeClassName
+	if rss.Spec.ShuffleServer.RuntimeClassName != nil {
+		sts.Spec.Template.Spec.RuntimeClassName = rss.Spec.ShuffleServer.RuntimeClassName
+	}
+
 	// add init containers, the main container and other containers.
 	sts.Spec.Template.Spec.InitContainers = util.GenerateInitContainers(rss.Spec.ShuffleServer.RSSPodSpec)
 	containers := []corev1.Container{*generateMainContainer(rss)}

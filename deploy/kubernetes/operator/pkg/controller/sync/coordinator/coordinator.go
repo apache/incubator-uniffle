@@ -189,6 +189,11 @@ func GenerateDeploy(rss *unifflev1alpha1.RemoteShuffleService, index int) *appsv
 		deploy.Spec.Template.Labels[k] = v
 	}
 
+	// set runtimeClassName
+	if rss.Spec.Coordinator.RuntimeClassName != nil {
+		deploy.Spec.Template.Spec.RuntimeClassName = rss.Spec.Coordinator.RuntimeClassName
+	}
+
 	// add init containers, the main container and other containers.
 	deploy.Spec.Template.Spec.InitContainers = util.GenerateInitContainers(rss.Spec.Coordinator.RSSPodSpec)
 	containers := []corev1.Container{*generateMainContainer(rss)}
