@@ -20,7 +20,6 @@ package org.apache.uniffle.storage.handler.impl;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -54,11 +53,12 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
   }
 
   private void createBasePath() {
-    if (new File(basePath).isDirectory()) {
+    File baseFolder = new File(basePath);
+    if (baseFolder.isDirectory()) {
       return;
     }
     try {
-      Files.createDirectories(Paths.get(basePath));
+      Files.createDirectories(baseFolder.toPath());
     } catch (IOException e) {
       throw new RssException("Failed to create shuffle folder: " + basePath, e);
     }
