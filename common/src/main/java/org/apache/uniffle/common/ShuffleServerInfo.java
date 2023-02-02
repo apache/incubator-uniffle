@@ -54,7 +54,8 @@ public class ShuffleServerInfo implements Serializable {
 
   @Override
   public int hashCode() {
-    return host.hashCode();
+    // By default id = host + "-" + port, so it is enough to calculate hashCode with id.
+    return id.hashCode();
   }
 
   @Override
