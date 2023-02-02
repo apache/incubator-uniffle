@@ -27,6 +27,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
@@ -56,7 +57,7 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
     try {
       Files.createDirectories(Paths.get(basePath));
     } catch (IOException e) {
-      throw new RuntimeException("Failed to create shuffle folder: " + basePath, e);
+      throw new RssException("Failed to create shuffle folder: " + basePath, e);
     }
   }
 
