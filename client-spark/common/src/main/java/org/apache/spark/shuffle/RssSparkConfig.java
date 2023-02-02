@@ -280,9 +280,9 @@ public class RssSparkConfig {
     } else { // for spark2
       SPARK_SHUFFLE_COMPRESS = createBooleanBuilder(
           new ConfigBuilder(key)
-              .doc("Same as vanilla spark's definition to control whether compress shuffled data or not. Re-define here " +
-                  "since the referenced spark2 version doesn't have this config in" +
-                  " org/apache/spark/internal/config/package.scala"))
+              .doc("Same as vanilla spark's definition to control whether compress shuffled data or not."
+                  + " Re-define here since the referenced spark2 version doesn't have this config in"
+                  + " org/apache/spark/internal/config/package.scala"))
           .createWithDefault(true);
     }
   }
