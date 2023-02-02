@@ -19,6 +19,7 @@ package org.apache.uniffle.storage.handler.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -26,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -52,18 +54,13 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
 
   private void createBasePath() {
     File baseFolder = new File(basePath);
-    // check if shuffle folder exist
-    if (!baseFolder.exists()) {
-      try {
-        // try to create folder, it may be created by other Shuffle Server
-        baseFolder.mkdirs();
-      } catch (SecurityException e) {
-        // if folder exist, ignore the exception
-        if (!baseFolder.exists()) {
-          LOG.error("Can't create shuffle folder:" + basePath, e);
-          throw e;
-        }
-      }
+    if (baseFolder.isDirectory()) {
+      return;
+    }
+    try {
+      Files.createDirectories(baseFolder.toPath());
+    } catch (IOException e) {
+      throw new RssException("Failed to create shuffle folder: " + basePath, e);
     }
   }
 
