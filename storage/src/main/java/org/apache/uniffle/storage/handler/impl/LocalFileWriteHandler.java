@@ -54,6 +54,9 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
   }
 
   private void createBasePath() {
+    if (new File(basePath).isDirectory()) {
+      return;
+    }
     try {
       Files.createDirectories(Paths.get(basePath));
     } catch (IOException e) {
