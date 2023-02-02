@@ -755,7 +755,7 @@ func (r *rssController) enqueueShuffleServer(obj interface{}) {
 func (r *rssController) removeFinalizer(rss *unifflev1alpha1.RemoteShuffleService) error {
 	rssCopy := rss.DeepCopy()
 	var finalizers []string
-	for _, f := range finalizers {
+	for _, f := range rssCopy.Finalizers {
 		if f == constants.RSSFinalizerName {
 			continue
 		}
