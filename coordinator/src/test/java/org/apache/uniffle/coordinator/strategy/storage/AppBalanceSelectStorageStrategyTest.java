@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.coordinator.strategy.storage;
 
+import java.util.concurrent.CountDownLatch;
+
 import com.google.common.collect.Sets;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -127,6 +129,7 @@ public class AppBalanceSelectStorageStrategyTest {
         + Constants.COMMA_SPLIT_CHAR + remotePath3;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
     applicationManager.getSelectStorageStrategy().detectStorage();
+    CountDownLatch cdl = new CountDownLatch(3);
     String testApp1 = "application_testAppId";
     // init detectStorageScheduler
     Thread.sleep(2000);
@@ -137,6 +140,7 @@ public class AppBalanceSelectStorageStrategyTest {
         applicationManager.refreshAppId(appId);
         applicationManager.pickRemoteStorage(appId);
       }
+      cdl.countDown();
     });
 
     Thread pickThread2 = new Thread(() -> {
@@ -146,6 +150,7 @@ public class AppBalanceSelectStorageStrategyTest {
         applicationManager.refreshAppId(appId);
         applicationManager.pickRemoteStorage(appId);
       }
+      cdl.countDown();
     });
 
     Thread pickThread3 = new Thread(() -> {
@@ -155,13 +160,12 @@ public class AppBalanceSelectStorageStrategyTest {
         applicationManager.refreshAppId(appId);
         applicationManager.pickRemoteStorage(appId);
       }
+      cdl.countDown();
     });
     pickThread1.start();
     pickThread2.start();
     pickThread3.start();
-    pickThread1.join();
-    pickThread2.join();
-    pickThread3.join();
+    cdl.await();
     Thread.sleep(appExpiredTime + 2000);
 
     applicationManager.refreshRemoteStorage("", "");
