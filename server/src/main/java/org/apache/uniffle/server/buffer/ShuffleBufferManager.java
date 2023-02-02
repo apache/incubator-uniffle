@@ -102,6 +102,7 @@ public class ShuffleBufferManager {
     shuffleIdToBuffers.putIfAbsent(shuffleId, TreeRangeMap.create());
     RangeMap<Integer, ShuffleBuffer> bufferRangeMap = shuffleIdToBuffers.get(shuffleId);
     if (bufferRangeMap.get(startPartition) == null) {
+      ShuffleServerMetrics.counterTotalPartitionNum.inc();
       ShuffleServerMetrics.gaugeTotalPartitionNum.inc();
       bufferRangeMap.put(Range.closed(startPartition, endPartition), new ShuffleBuffer(bufferSize));
     } else {
@@ -562,6 +563,10 @@ public class ShuffleBufferManager {
       }
       shuffleIdToBuffers.remove(shuffleId);
     }
+  }
+
+  public boolean isHugePartition(long usedPartitionDataSize) {
+    return usedPartitionDataSize > hugePartitionSizeThreshold;
   }
 
   public boolean limitHugePartition(String appId, int shuffleId, int partitionId, long usedPartitionDataSize) {

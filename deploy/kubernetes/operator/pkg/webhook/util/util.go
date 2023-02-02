@@ -20,11 +20,11 @@ package util
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"time"
 
-	"github.com/parnurzeal/gorequest"
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,6 +43,10 @@ var (
 	codecs = serializer.NewCodecFactory(runtimeScheme)
 	// Deserializer attempts to load an object from data
 	deserializer = codecs.UniversalDeserializer()
+	httpClient   = http.Client{
+		Timeout: time.Second * 15,
+	}
+	jsonContentType = "application/json"
 )
 
 // AdmissionReviewHandler handles AdmissionReviews and set response in them.
@@ -192,14 +196,25 @@ func HasZeroApps(pod *corev1.Pod) bool {
 		return true
 	}
 	url := fmt.Sprintf("http://%v:%v/metrics/server", pod.Status.PodIP, port)
-	req := gorequest.New().Timeout(time.Second * 15).Get(url).Type("json")
-	resp, body, errs := req.EndBytes()
-	if len(errs) > 0 {
-		klog.Errorf("send metrics server request failed: %v->%+v", url, errs)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		klog.Errorf("new request failed with error: %v->%+v", url, err)
+		return true
+	}
+	// the request accept json response only
+	req.Header.Set("Accept", jsonContentType)
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		klog.Errorf("send metrics server request failed: %v->%+v", url, err)
 		return true
 	}
 	if resp.StatusCode != http.StatusOK {
 		klog.Errorf("heartbeat response failed: invalid status (%v->%v)", url, resp.Status)
+		return false
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		klog.Errorf("heartbeat response failed: read body with err:%+v", err)
 		return false
 	}
 	if num, err := getLastAppNum(body); err != nil {

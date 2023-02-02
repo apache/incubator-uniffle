@@ -127,7 +127,7 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
             "Write handler inside cost {} ms for {}",
             (System.currentTimeMillis() - ss),
             fileNamePrefix);
-      } catch (Exception e) {
+      } catch (IOException e) {
         LOG.warn("Write failed with " + shuffleBlocks.size() + " blocks for " + fileNamePrefix + "_" + failTimes, e);
         failTimes++;
         throw new RuntimeException(e);

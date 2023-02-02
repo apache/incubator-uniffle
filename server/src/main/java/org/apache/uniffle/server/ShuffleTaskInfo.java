@@ -18,12 +18,17 @@
 package org.apache.uniffle.server;
 
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 
@@ -32,7 +37,9 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
  * the information of the cache block, user and timestamp corresponding to the app
  */
 public class ShuffleTaskInfo {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ShuffleTaskInfo.class);
 
+  private final String appId;
   private Long currentTimes;
   /**
    * shuffleId -> commit count
@@ -52,8 +59,14 @@ public class ShuffleTaskInfo {
    * shuffleId -> partitionId -> partition shuffle data size
    */
   private Map<Integer, Map<Integer, Long>> partitionDataSizes;
+  /**
+   * shuffleId -> huge partitionIds set
+   */
+  private final Map<Integer, Set> hugePartitionTags;
+  private final AtomicBoolean existHugePartition;
 
-  public ShuffleTaskInfo() {
+  public ShuffleTaskInfo(String appId) {
+    this.appId = appId;
     this.currentTimes = System.currentTimeMillis();
     this.commitCounts = Maps.newConcurrentMap();
     this.commitLocks = Maps.newConcurrentMap();
@@ -61,6 +74,8 @@ public class ShuffleTaskInfo {
     this.user = new AtomicReference<>();
     this.dataDistType = new AtomicReference<>();
     this.partitionDataSizes = Maps.newConcurrentMap();
+    this.hugePartitionTags = Maps.newConcurrentMap();
+    this.existHugePartition = new AtomicBoolean(false);
   }
 
   public Long getCurrentTimes() {
@@ -100,12 +115,12 @@ public class ShuffleTaskInfo {
     return dataDistType.get();
   }
 
-  public void addPartitionDataSize(int shuffleId, int partitionId, long delta) {
+  public long addPartitionDataSize(int shuffleId, int partitionId, long delta) {
     totalDataSize.addAndGet(delta);
     partitionDataSizes.computeIfAbsent(shuffleId, key -> Maps.newConcurrentMap());
     Map<Integer, Long> partitions = partitionDataSizes.get(shuffleId);
     partitions.putIfAbsent(partitionId, 0L);
-    partitions.computeIfPresent(partitionId, (k, v) -> v + delta);
+    return partitions.computeIfPresent(partitionId, (k, v) -> v + delta);
   }
 
   public long getTotalDataSize() {
@@ -124,4 +139,28 @@ public class ShuffleTaskInfo {
     return size;
   }
 
+  public boolean hasHugePartition() {
+    return existHugePartition.get();
+  }
+
+  public int getHugePartitionSize() {
+    return hugePartitionTags.values().stream().map(x -> x.size()).reduce((x, y) -> x + y).orElse(0);
+  }
+
+  public void markHugePartition(int shuffleId, int partitionId) {
+    if (!existHugePartition.get()) {
+      boolean markedWithCAS = existHugePartition.compareAndSet(false, true);
+      if (markedWithCAS) {
+        ShuffleServerMetrics.gaugeAppWithHugePartitionNum.inc();
+        ShuffleServerMetrics.counterTotalAppWithHugePartitionNum.inc();
+      }
+    }
+
+    Set<Integer> partitions = hugePartitionTags.computeIfAbsent(shuffleId, key -> Sets.newConcurrentHashSet());
+    if (partitions.add(partitionId)) {
+      ShuffleServerMetrics.counterTotalHugePartitionNum.inc();
+      ShuffleServerMetrics.gaugeHugePartitionNum.inc();
+      LOGGER.warn("Huge partition occurs, appId: {}, shuffleId: {}, partitionId: {}", appId, shuffleId, partitionId);
+    }
+  }
 }

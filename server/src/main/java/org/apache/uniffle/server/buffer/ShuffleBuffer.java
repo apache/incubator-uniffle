@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server.buffer;
 
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +92,7 @@ public class ShuffleBuffer {
        * So we should create a reference copy to avoid this.
        */
       inFlushedQueueBlocks = new LinkedList<>(spBlocks);
-      spBlocks.sort((o1, o2) -> new Long(o1.getTaskAttemptId()).compareTo(o2.getTaskAttemptId()));
+      spBlocks.sort(Comparator.comparingLong(ShufflePartitionedBlock::getTaskAttemptId));
     }
     long eventId = ShuffleFlushManager.ATOMIC_EVENT_ID.getAndIncrement();
     final ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(

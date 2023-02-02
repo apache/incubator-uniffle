@@ -16,7 +16,7 @@
 #
 
 # Build the binary
-FROM golang:1.16 as builder
+FROM golang:1.17 as builder
 
 ARG MODULE
 WORKDIR /workspace
@@ -35,12 +35,12 @@ COPY pkg/ pkg/
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o ${MODULE} cmd/${MODULE}/main.go
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM alpine
-RUN apk add --update curl && \
-    rm -rf /var/cache/apk/*
+
+FROM debian:11.6-slim
+# docker's ARG scope doc: https://docs.docker.com/engine/reference/builder/#scope, it's required to declear an arg in
+# each stage.
+ARG MODULE
 WORKDIR /
 COPY --from=builder /workspace/${MODULE} .
-
-CMD ["${MODULE}"]
+ENV OPERATOR_BIN=${MODULE}
+ENTRYPOINT ["/${OPERATOR_BIN}"]

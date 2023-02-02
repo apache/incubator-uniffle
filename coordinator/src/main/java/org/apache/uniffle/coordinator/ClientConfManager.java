@@ -18,6 +18,7 @@
 package org.apache.uniffle.coordinator;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -137,7 +138,7 @@ public class ClientConfManager implements Closeable {
     String content = null;
     try (FSDataInputStream in = fileSystem.open(path)) {
       content = IOUtils.toString(in, StandardCharsets.UTF_8);
-    } catch (Exception e) {
+    } catch (IOException e) {
       LOG.error("Fail to load content from {}", path.toUri().toString());
     }
     return content;

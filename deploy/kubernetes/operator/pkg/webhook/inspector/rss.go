@@ -42,6 +42,8 @@ func (i *inspector) validateRSS(ar *admissionv1.AdmissionReview) *admissionv1.Ad
 			return util.AdmissionReviewFailed(ar, err)
 		}
 		// for security purposes, we forbid updating rss objects when they are in upgrading phase.
+		// generally speaking, we should also deny updating when rss is terminating. However, it would introduce more
+		// complexity and controller's current terminating logic can tolerate the rss object update.
 		if oldRSS.Status.Phase == unifflev1alpha1.RSSUpgrading {
 			message := "can not update upgrading rss object: " + utils.UniqueName(oldRSS)
 			return util.AdmissionReviewForbidden(ar, message)
