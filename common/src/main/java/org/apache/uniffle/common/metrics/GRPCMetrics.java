@@ -27,7 +27,7 @@ import io.prometheus.client.Summary;
 
 import org.apache.uniffle.common.util.Constants;
 
-public abstract class GRPCMetrics {
+public class GRPCMetrics {
   // Grpc server internal executor metrics
   public static final String GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY = "grpcServerExecutorActiveThreads";
   private static final String GRPC_SERVER_EXECUTOR_ACTIVE_THREADS = "grpc_server_executor_active_threads";
