@@ -551,7 +551,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
           LOG.info("Report shuffle result to " + ssi + " for appId[" + appId
               + "], shuffleId[" + shuffleId + "] successfully");
-          for (Integer partitionId : entry.getValue()) {
+          for (Integer partitionId : requestBlockIds.keySet()) {
             partitionReportTracker.put(partitionId, partitionReportTracker.get(partitionId) + 1);
           }
         } else {
