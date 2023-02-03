@@ -520,18 +520,28 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     Map<ShuffleServerInfo, List<Integer>> groupedPartitions = Maps.newHashMap();
     Map<Integer, Integer> partitionReportTracker = Maps.newHashMap();
     for (Map.Entry<Integer, List<ShuffleServerInfo>> entry : partitionToServers.entrySet()) {
+      int partitionIdx = entry.getKey();
       for (ShuffleServerInfo ssi : entry.getValue()) {
         if (!groupedPartitions.containsKey(ssi)) {
-          groupedPartitions.putIfAbsent(ssi, Lists.newArrayList());
+          groupedPartitions.put(ssi, Lists.newArrayList());
         }
-        groupedPartitions.get(ssi).add(entry.getKey());
+        groupedPartitions.get(ssi).add(partitionIdx);
       }
-      partitionReportTracker.putIfAbsent(entry.getKey(), 0);
+      if (CollectionUtils.isNotEmpty(partitionToBlockIds.get(partitionIdx))) {
+        partitionReportTracker.putIfAbsent(partitionIdx, 0);
+      }
     }
+
     for (Map.Entry<ShuffleServerInfo, List<Integer>> entry : groupedPartitions.entrySet()) {
       Map<Integer, List<Long>> requestBlockIds = Maps.newHashMap();
       for (Integer partitionId : entry.getValue()) {
-        requestBlockIds.put(partitionId, partitionToBlockIds.get(partitionId));
+        List<Long> blockIds = partitionToBlockIds.get(partitionId);
+        if (CollectionUtils.isNotEmpty(blockIds)) {
+          requestBlockIds.put(partitionId, blockIds);
+        }
+      }
+      if (requestBlockIds.isEmpty()) {
+        continue;
       }
       RssReportShuffleResultRequest request = new RssReportShuffleResultRequest(
           appId, shuffleId, taskAttemptId, requestBlockIds, bitmapNum);
@@ -541,7 +551,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
           LOG.info("Report shuffle result to " + ssi + " for appId[" + appId
               + "], shuffleId[" + shuffleId + "] successfully");
-          for (Integer partitionId : entry.getValue()) {
+          for (Integer partitionId : requestBlockIds.keySet()) {
             partitionReportTracker.put(partitionId, partitionReportTracker.get(partitionId) + 1);
           }
         } else {

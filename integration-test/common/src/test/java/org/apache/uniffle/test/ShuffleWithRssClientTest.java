@@ -151,6 +151,57 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
   }
 
   @Test
+  public void reportBlocksToShuffleServerIfNecessary() {
+    String testAppId = "reportBlocksToShuffleServerIfNecessary_appId";
+
+    shuffleWriteClientImpl.registerShuffle(
+        shuffleServerInfo1,
+        testAppId,
+        1,
+        Lists.newArrayList(new PartitionRange(1, 1)),
+        new RemoteStorageInfo(""),
+        ShuffleDataDistributionType.NORMAL
+    );
+
+    shuffleWriteClientImpl.registerShuffle(
+        shuffleServerInfo2,
+        testAppId,
+        1,
+        Lists.newArrayList(new PartitionRange(2, 2)),
+        new RemoteStorageInfo(""),
+        ShuffleDataDistributionType.NORMAL
+    );
+
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
+    partitionToServers.put(1, Lists.newArrayList(shuffleServerInfo1));
+    partitionToServers.put(2, Lists.newArrayList(shuffleServerInfo2));
+    Map<Integer, List<Long>> partitionToBlocks = Maps.newHashMap();
+    List<Long> blockIds = Lists.newArrayList();
+
+    int partitionIdx = 1;
+    for (int i = 0; i < 5; i++) {
+      blockIds.add(ClientUtils.getBlockId(partitionIdx, 0, i));
+    }
+    partitionToBlocks.put(partitionIdx, blockIds);
+
+    // case1
+    shuffleWriteClientImpl
+        .reportShuffleResult(partitionToServers, testAppId, 1, 0, partitionToBlocks, 1);
+    Roaring64NavigableMap bitmap = shuffleWriteClientImpl
+        .getShuffleResult("GRPC", Sets.newHashSet(shuffleServerInfo1), testAppId,
+            1, 0);
+    assertTrue(bitmap.isEmpty());
+
+    bitmap = shuffleWriteClientImpl
+        .getShuffleResult("GRPC", Sets.newHashSet(shuffleServerInfo1), testAppId,
+            1, partitionIdx);
+    assertEquals(5, bitmap.getLongCardinality());
+    for (int i = 0; i < 5; i++) {
+      assertTrue(bitmap.contains(partitionToBlocks.get(1).get(i)));
+    }
+  }
+
+  @Test
   public void reportMultipleServerTest() throws Exception {
     String testAppId = "reportMultipleServerTest";
 
