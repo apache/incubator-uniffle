@@ -17,8 +17,9 @@
 
 package org.apache.uniffle.client.response;
 
-public class RssDecommissionResponse extends ClientResponse{
+public class RssDecommissionResponse extends ClientResponse {
   private boolean on;
+
   public RssDecommissionResponse(ResponseStatusCode statusCode, boolean on) {
     super(statusCode);
     this.on = on;

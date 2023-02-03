@@ -17,7 +17,15 @@
 
 package org.apache.uniffle.test;
 
+import java.io.File;
+import java.util.Arrays;
+
 import com.google.common.collect.Lists;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerInternalGrpcClient;
 import org.apache.uniffle.client.request.RssDecommissionRequest;
@@ -27,13 +35,6 @@ import org.apache.uniffle.client.response.RssDecommissionResponse;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
-import java.io.File;
-import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;

@@ -14,9 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.uniffle.client.impl.grpc;
 
+import java.util.concurrent.TimeUnit;
+
 import com.google.protobuf.BoolValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.uniffle.client.api.ShuffleServerInternalClient;
 import org.apache.uniffle.client.request.RssDecommissionRequest;
 import org.apache.uniffle.client.response.ResponseStatusCode;
@@ -24,10 +30,6 @@ import org.apache.uniffle.client.response.RssDecommissionResponse;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.ShuffleServerInternalGrpc;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.TimeUnit;
 
 public class ShuffleServerInternalGrpcClient extends GrpcClient implements ShuffleServerInternalClient {
 
@@ -54,6 +56,7 @@ public class ShuffleServerInternalGrpcClient extends GrpcClient implements Shuff
   public ShuffleServerInternalGrpc.ShuffleServerInternalBlockingStub getBlockingStub() {
     return blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
   }
+
   @Override
   public RssDecommissionResponse decommission(RssDecommissionRequest request) {
     RssProtos.DecommissionRequest protoRequest =

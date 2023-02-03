@@ -28,6 +28,7 @@ import com.google.protobuf.Empty;
 import io.grpc.Context;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import org.apache.uniffle.common.ServerStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -376,6 +377,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         request.getEventNumInFlush(),
         Sets.newHashSet(request.getTagsList()),
         isHealthy,
+        ServerStatus.fromProto(request.getStatus()),
         StorageInfoUtils.fromProto(request.getStorageInfoMap()));
   }
 }

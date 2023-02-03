@@ -118,6 +118,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       long timeout,
       Set<String> tags,
       boolean isHealthy,
+      ShuffleServerHeartBeatRequest.ServerStatus serverStatus,
       Map<String, StorageInfo> storageInfo) {
     ShuffleServerId serverId =
         ShuffleServerId.newBuilder().setId(id).setIp(ip).setPort(port).build();
@@ -130,6 +131,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             .setEventNumInFlush(eventNumInFlush)
             .addAllTags(tags)
             .setIsHealthy(BoolValue.newBuilder().setValue(isHealthy).build())
+            .setStatusValue(serverStatus.getNumber())
             .putAllStorageInfo(StorageInfoUtils.toProto(storageInfo))
             .build();
 
@@ -195,6 +197,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         request.getTimeout(),
         request.getTags(),
         request.isHealthy(),
+        request.getServerStatus(),
         request.getStorageInfo());
 
     RssSendHeartBeatResponse response;

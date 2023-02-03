@@ -14,13 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.uniffle.client.request;
 
 public class RssDecommissionRequest {
   private boolean on;
+
   public boolean isOn() {
     return on;
   }
+
   public RssDecommissionRequest(boolean on) {
     this.on = on;
   }

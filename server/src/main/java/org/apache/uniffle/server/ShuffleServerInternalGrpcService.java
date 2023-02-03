@@ -19,6 +19,7 @@ package org.apache.uniffle.server;
 
 import com.google.protobuf.BoolValue;
 import io.grpc.stub.StreamObserver;
+
 import org.apache.uniffle.common.exception.RejectException;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.ShuffleServerInternalGrpc.ShuffleServerInternalImplBase;
@@ -29,8 +30,11 @@ public class ShuffleServerInternalGrpcService extends ShuffleServerInternalImplB
   public ShuffleServerInternalGrpcService(ShuffleServer shuffleServer) {
     this.shuffleServer = shuffleServer;
   }
+
   @Override
-  public void decommission(RssProtos.DecommissionRequest request, StreamObserver<RssProtos.DecommissionResponse> responseObserver) {
+  public void decommission(
+      RssProtos.DecommissionRequest request,
+      StreamObserver<RssProtos.DecommissionResponse> responseObserver) {
     boolean decommission = request.getOn().getValue();
     RssProtos.DecommissionResponse response;
     try {

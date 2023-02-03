@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.uniffle.common.ServerStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,6 +84,7 @@ public class RegisterHeartBeat {
             shuffleServer.getEventNumInFlush(),
             shuffleServer.getTags(),
             shuffleServer.isHealthy(),
+            shuffleServer.getServerStatus(),
             shuffleServer.getStorageManager().getStorageInfo());
       } catch (Exception e) {
         LOG.warn("Error happened when send heart beat to coordinator");
@@ -102,6 +104,7 @@ public class RegisterHeartBeat {
       int eventNumInFlush,
       Set<String> tags,
       boolean isHealthy,
+      ServerStatus serverStatus,
       Map<String, StorageInfo> localStorageInfo) {
     boolean sendSuccessfully = false;
     RssSendHeartBeatRequest request = new RssSendHeartBeatRequest(
@@ -115,6 +118,7 @@ public class RegisterHeartBeat {
         heartBeatTimeout,
         tags,
         isHealthy,
+        serverStatus,
         localStorageInfo);
     List<Future<RssSendHeartBeatResponse>> respFutures = coordinatorClients
         .stream()

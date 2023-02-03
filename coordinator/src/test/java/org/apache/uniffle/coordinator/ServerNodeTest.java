@@ -25,6 +25,7 @@ import java.util.Set;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.uniffle.common.ServerStatus;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.storage.StorageInfo;
@@ -65,7 +66,8 @@ public class ServerNodeTest {
         60L,
         StorageStatus.NORMAL);
     localStorageInfo.put("/mnt", info);
-    ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 20, 10, tags, true, localStorageInfo);
+    ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 20, 10, tags,
+        true, ServerStatus.NORMAL, localStorageInfo);
     assertEquals(1, sn2.getStorageInfo().size());
   }
 }
