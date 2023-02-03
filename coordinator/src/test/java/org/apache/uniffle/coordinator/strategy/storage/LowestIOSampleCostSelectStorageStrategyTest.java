@@ -17,18 +17,14 @@
 
 package org.apache.uniffle.coordinator.strategy.storage;
 
-import java.io.File;
+import java.util.concurrent.CountDownLatch;
 
 import com.google.common.collect.Sets;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.Timeout;
 
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.ApplicationManager;
@@ -45,16 +41,11 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
 
   private LowestIOSampleCostSelectStorageStrategy selectStorageStrategy;
   private ApplicationManager applicationManager;
-  private static final Configuration hdfsConf = new Configuration();
-  private static MiniDFSCluster cluster;
   private final long appExpiredTime = 2000L;
   private final String remoteStorage1 = "hdfs://p1";
   private final String remoteStorage2 = "hdfs://p2";
   private final String remoteStorage3 = "hdfs://p3";
-  private final String testFile = "test";
-
-  @TempDir
-  private static File remotePath = new File("hdfs://rss");
+  private final String testFile = "testFile";
 
   @BeforeAll
   public static void setup() {
@@ -64,33 +55,22 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
   @AfterAll
   public static void clear() {
     CoordinatorMetrics.clear();
-    cluster.close();
   }
 
   @BeforeEach
-  public void init() throws Exception {
-    setUpHdfs(remotePath.getAbsolutePath());
-  }
-
-  public void setUpHdfs(String hdfsPath) throws Exception {
-    hdfsConf.set("fs.defaultFS", remotePath.getAbsolutePath());
-    hdfsConf.set("dfs.nameservices", "rss");
-    hdfsConf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, hdfsPath);
-    cluster = (new MiniDFSCluster.Builder(hdfsConf)).build();
-    Thread.sleep(500L);
+  public void setUp() throws Exception {
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_APP_EXPIRED, appExpiredTime);
     conf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 1000);
     conf.set(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY, IO_SAMPLE);
     applicationManager = new ApplicationManager(conf);
     selectStorageStrategy = (LowestIOSampleCostSelectStorageStrategy) applicationManager.getSelectStorageStrategy();
-    Thread.sleep(1000);
+    // to ensure that the reading and writing of hdfs can be controlled
+    applicationManager.closeDetectStorageScheduler();
   }
 
   @Test
   public void selectStorageTest() throws Exception {
-    final Path path = new Path(testFile);
-    final FileSystem fs = path.getFileSystem(hdfsConf);
 
     String remoteStoragePath = remoteStorage1 + Constants.COMMA_SPLIT_CHAR + remoteStorage2;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
@@ -103,6 +83,9 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     assertEquals(0.0, CoordinatorMetrics.GAUGE_USED_REMOTE_STORAGE.get(storageHost1).get(), 0.5);
     String storageHost2 = "p2";
     assertEquals(0.0, CoordinatorMetrics.GAUGE_USED_REMOTE_STORAGE.get(storageHost2).get(), 0.5);
+    applicationManager.getSelectStorageStrategy().detectStorage();
+    assertEquals(0, applicationManager.getRemoteStoragePathRankValue().get(remoteStorage1).getAppNum().get());
+    assertEquals(0, applicationManager.getRemoteStoragePathRankValue().get(remoteStorage2).getAppNum().get());
 
     // compare with two remote path
     applicationManager.incRemoteStorageCounter(remoteStorage1);
@@ -110,12 +93,12 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     String testApp1 = "application_test_" + 1;
     applicationManager.registerApplicationInfo(testApp1, "user");
     applicationManager.refreshAppId(testApp1);
-    Thread.sleep(1000);
-    final long current = System.currentTimeMillis();
-    fs.create(path);
-    selectStorageStrategy.sortPathByRankValue(remoteStorage2, testFile, current);
-    fs.create(path);
-    selectStorageStrategy.sortPathByRankValue(remoteStorage1, testFile, current);
+    selectStorageStrategy.sortPathByRankValue(remoteStorage2, testFile, System.currentTimeMillis());
+    // Ensure that the `System.currentTimeMillis()` corresponding to remoteStorage1 is greater than that of
+    // remoteStorage2, because under the LowestIOSampleCostSelectStorageStrategy, this time is used to measure
+    // which remote path is selected, and the smaller the time, the better it will be selected.
+    Thread.sleep(10);
+    selectStorageStrategy.sortPathByRankValue(remoteStorage1, testFile, System.currentTimeMillis());
     assertEquals(remoteStorage2, applicationManager.pickRemoteStorage(testApp1).getPath());
     assertEquals(remoteStorage2, applicationManager.getAppIdToRemoteStorageInfo().get(testApp1).getPath());
     assertEquals(1,
@@ -159,10 +142,13 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
   }
 
   @Test
+  @Timeout(20)
   public void selectStorageMulThreadTest() throws Exception {
     String remoteStoragePath = remoteStorage1 + Constants.COMMA_SPLIT_CHAR + remoteStorage2
         + Constants.COMMA_SPLIT_CHAR + remoteStorage3;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
+    applicationManager.getSelectStorageStrategy().detectStorage();
+    CountDownLatch cdl = new CountDownLatch(3);
     String testApp1 = "application_testAppId";
     // init detectStorageScheduler
     Thread.sleep(2000);
@@ -173,6 +159,7 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
         applicationManager.refreshAppId(appId);
         applicationManager.pickRemoteStorage(appId);
       }
+      cdl.countDown();
     });
 
     Thread pickThread2 = new Thread(() -> {
@@ -182,6 +169,7 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
         applicationManager.refreshAppId(appId);
         applicationManager.pickRemoteStorage(appId);
       }
+      cdl.countDown();
     });
 
     Thread pickThread3 = new Thread(() -> {
@@ -191,13 +179,12 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
         applicationManager.refreshAppId(appId);
         applicationManager.pickRemoteStorage(appId);
       }
+      cdl.countDown();
     });
     pickThread1.start();
     pickThread2.start();
     pickThread3.start();
-    pickThread1.join();
-    pickThread2.join();
-    pickThread3.join();
+    cdl.await();
     Thread.sleep(appExpiredTime + 2000);
 
     applicationManager.refreshRemoteStorage("", "");
