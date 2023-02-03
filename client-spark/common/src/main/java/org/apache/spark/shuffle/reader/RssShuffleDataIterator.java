@@ -119,10 +119,11 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
         // finish reading records, check data consistent
         shuffleReadClient.checkProcessedBlockIds();
         shuffleReadClient.logStatics();
-        LOG.info("Fetch " + totalRawBytesLength + " bytes cost " + readTime + " ms and "
-            + serializeTime + " ms to serialize" + (codec == null ? "." : (", " + decompressTime
+        String decInfo = codec == null ? "." : (", " + decompressTime
             + " ms to decompress with unCompressionLength["
-            + unCompressedBytesLength + "]")));
+            + unCompressedBytesLength + "]");
+        LOG.info("Fetch {} bytes cost {} ms and {} ms to serialize{}",
+            totalRawBytesLength, readTime, serializeTime, decInfo);
         return false;
       }
     }
