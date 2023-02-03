@@ -31,12 +31,12 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
-import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssGetShuffleDataResponse;
 import org.apache.uniffle.client.response.RssGetShuffleIndexResponse;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -73,7 +73,7 @@ public class LocalFileServerReadHandlerTest {
 
     int actualWriteDataBlock = expectTotalBlockNum - 1;
     int actualFileLen = blockSize * actualWriteDataBlock;
-    RssGetShuffleIndexResponse response = new RssGetShuffleIndexResponse(ResponseStatusCode.SUCCESS,
+    RssGetShuffleIndexResponse response = new RssGetShuffleIndexResponse(StatusCode.SUCCESS,
         byteBuffer.array(), actualFileLen);
     Mockito.doReturn(response).when(mockShuffleServerClient).getShuffleIndex(Mockito.any());
 
@@ -91,9 +91,9 @@ public class LocalFileServerReadHandlerTest {
     ArgumentMatcher<RssGetShuffleDataRequest> segment2Match =
         (request) -> request.getOffset() == bytesPerSegment && request.getLength() == blockSize;
     RssGetShuffleDataResponse segment1Response =
-        new RssGetShuffleDataResponse(ResponseStatusCode.SUCCESS, segments.get(0));
+        new RssGetShuffleDataResponse(StatusCode.SUCCESS, segments.get(0));
     RssGetShuffleDataResponse segment2Response =
-        new RssGetShuffleDataResponse(ResponseStatusCode.SUCCESS, segments.get(1));
+        new RssGetShuffleDataResponse(StatusCode.SUCCESS, segments.get(1));
 
     Mockito.doReturn(segment1Response).when(mockShuffleServerClient).getShuffleData(Mockito.argThat(segment1Match));
     Mockito.doReturn(segment2Response).when(mockShuffleServerClient).getShuffleData(Mockito.argThat(segment2Match));

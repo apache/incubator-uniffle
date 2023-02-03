@@ -32,10 +32,10 @@ import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.client.request.RssFetchClientConfRequest;
 import org.apache.uniffle.client.request.RssFetchRemoteStorageRequest;
-import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssFetchClientConfResponse;
 import org.apache.uniffle.client.response.RssFetchRemoteStorageResponse;
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 
@@ -67,7 +67,7 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
     RssFetchClientConfRequest request = new RssFetchClientConfRequest(2000);
     RssFetchClientConfResponse response = coordinatorClient.fetchClientConf(request);
-    assertEquals(ResponseStatusCode.SUCCESS, response.getStatusCode());
+    assertEquals(StatusCode.SUCCESS, response.getStatusCode());
     assertEquals(2, response.getClientConf().size());
     assertEquals("1234", response.getClientConf().get("spark.mock.1"));
     assertEquals("true", response.getClientConf().get("spark.mock.2"));
@@ -83,7 +83,7 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
     request = new RssFetchClientConfRequest(2000);
     response = coordinatorClient.fetchClientConf(request);
-    assertEquals(ResponseStatusCode.SUCCESS, response.getStatusCode());
+    assertEquals(StatusCode.SUCCESS, response.getStatusCode());
     assertEquals(0, response.getClientConf().size());
     shutdownServers();
 
@@ -91,7 +91,7 @@ public class FetchClientConfTest extends CoordinatorTestBase {
     Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
     request = new RssFetchClientConfRequest(10);
     response = coordinatorClient.fetchClientConf(request);
-    assertEquals(ResponseStatusCode.INTERNAL_ERROR, response.getStatusCode());
+    assertEquals(StatusCode.INTERNAL_ERROR, response.getStatusCode());
     assertEquals(0, response.getClientConf().size());
     shutdownServers();
   }

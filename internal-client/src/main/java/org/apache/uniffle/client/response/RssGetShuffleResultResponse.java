@@ -21,13 +21,14 @@ import java.io.IOException;
 
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.RssUtils;
 
 public class RssGetShuffleResultResponse extends ClientResponse {
 
   private Roaring64NavigableMap blockIdBitmap;
 
-  public RssGetShuffleResultResponse(ResponseStatusCode statusCode, byte[] serializedBitmap) throws IOException {
+  public RssGetShuffleResultResponse(StatusCode statusCode, byte[] serializedBitmap) throws IOException {
     super(statusCode);
     blockIdBitmap = RssUtils.deserializeBitMap(serializedBitmap);
   }

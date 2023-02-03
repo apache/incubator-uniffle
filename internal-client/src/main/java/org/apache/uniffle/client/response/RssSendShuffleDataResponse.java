@@ -19,12 +19,14 @@ package org.apache.uniffle.client.response;
 
 import java.util.List;
 
+import org.apache.uniffle.common.rpc.StatusCode;
+
 public class RssSendShuffleDataResponse extends ClientResponse {
 
   private List<Long> successBlockIds;
   private List<Long> failedBlockIds;
 
-  public RssSendShuffleDataResponse(ResponseStatusCode statusCode) {
+  public RssSendShuffleDataResponse(StatusCode statusCode) {
     super(statusCode);
   }
 

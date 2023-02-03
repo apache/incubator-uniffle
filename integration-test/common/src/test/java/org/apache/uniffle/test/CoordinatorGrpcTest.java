@@ -29,13 +29,13 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.request.RssApplicationInfoRequest;
 import org.apache.uniffle.client.request.RssGetShuffleAssignmentsRequest;
-import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssApplicationInfoResponse;
 import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleRegisterInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageMedia;
 import org.apache.uniffle.common.storage.StorageStatus;
@@ -207,7 +207,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     RssApplicationInfoResponse response =
         coordinatorClient.registerApplicationInfo(
             new RssApplicationInfoRequest("application_appHeartbeatTest1", 1000, "user"));
-    assertEquals(ResponseStatusCode.SUCCESS, response.getStatusCode());
+    assertEquals(StatusCode.SUCCESS, response.getStatusCode());
     assertEquals(Sets.newHashSet("application_appHeartbeatTest1"),
         coordinators.get(0).getApplicationManager().getAppIds());
     coordinatorClient.registerApplicationInfo(
