@@ -15,34 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.server;
 
-import org.apache.uniffle.proto.RssProtos;
+package org.apache.uniffle.common.exception;
 
-public enum StatusCode {
-  SUCCESS(0),
-  DOUBLE_REGISTER(1),
-  NO_BUFFER(2),
-  INVALID_STORAGE(3),
-  NO_REGISTER(4),
-  NO_PARTITION(5),
-  INTERNAL_ERROR(6),
-  TIMEOUT(7),
-  ACCESS_DENIED(8),
-  REJECT(9);
+public class RejectException extends RuntimeException {
 
-  private final int statusCode;
-
-  StatusCode(int code) {
-    this.statusCode = code;
+  public RejectException(String message) {
+    super(message);
   }
 
-  public int statusCode() {
-    return statusCode;
-  }
-
-  public RssProtos.StatusCode toProto() {
-    RssProtos.StatusCode code = RssProtos.StatusCode.forNumber(this.statusCode());
-    return code == null ? RssProtos.StatusCode.INTERNAL_ERROR : code;
+  public RejectException(String message, Throwable e) {
+    super(message, e);
   }
 }

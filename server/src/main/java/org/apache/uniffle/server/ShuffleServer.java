@@ -27,6 +27,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.prometheus.client.CollectorRegistry;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.uniffle.common.exception.RejectException;
+import org.apache.uniffle.proto.RssProtos.ShuffleServerHeartBeatRequest.ServerStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -78,8 +80,9 @@ public class ShuffleServer {
   private AtomicBoolean isHealthy = new AtomicBoolean(true);
   private GRPCMetrics grpcMetrics;
   private MetricReporter metricReporter;
-  private boolean decommissioned;
   private Thread decommissionedThread;
+  private ServerStatus serverStatus = ServerStatus.NORMAL;
+  private Object statusLock = new Object();
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -335,25 +338,31 @@ public class ShuffleServer {
     return grpcMetrics;
   }
 
-  public boolean isDecommissioned() {
-    return decommissioned;
+  public boolean isDecommissioning() {
+    return ServerStatus.DECOMMISSIONING.equals(serverStatus);
   }
-
-  public synchronized void setDecommissioned(boolean decommissioned) {
-    if (this.decommissioned == decommissioned) {
-      return;
+  public void decommission() {
+    if (isDecommissioning()) {
+      throw new RejectException("Shuffle Server is decommissioning. Nothing need to do.");
     }
-    this.decommissioned = decommissioned;
-    LOG.info("set decommissioned state to " + decommissioned);
-    if (this.decommissioned) {
+    if (!ServerStatus.NORMAL.equals(serverStatus)) {
+      throw new RejectException("Shuffle Server is processing other procedures, current status:" + serverStatus);
+    }
+    synchronized (statusLock) {
       decommissionedThread = new Thread(() -> {
-        while (decommissioned) {
+        while (isDecommissioning()) {
           int remainApplicationNum = shuffleTaskManager.getAppIds().size();
-          if (shuffleTaskManager.getAppIds().isEmpty()) {
+          if (remainApplicationNum == 0) {
             LOG.info("all applications finished, exit now");
-            System.exit(0);
+            try {
+              stopServer();
+              break;
+            } catch (Exception e) {
+              LOG.error("Stop server failed!", e);
+              System.exit(0);
+            }
           }
-          LOG.info("shuffle server is in decommissioned state. remain {} applications not finished.", remainApplicationNum);
+          LOG.info("Shuffle server is decommissioning. remain {} applications not finished.", remainApplicationNum);
           try {
             Thread.sleep(60000);
           } catch (InterruptedException e) {
@@ -363,12 +372,19 @@ public class ShuffleServer {
       });
       decommissionedThread.setName("decommission");
       decommissionedThread.start();
-    } else {
+      serverStatus = ServerStatus.DECOMMISSIONING;
+    }
+  }
+  public void cancelDecommission() {
+    if (!isDecommissioning()) {
+      throw new RejectException("Shuffle server is not decommissioning. Nothing need to do.");
+    }
+    synchronized (statusLock) {
       if (decommissionedThread != null) {
         decommissionedThread.interrupt();
         decommissionedThread = null;
       }
+      serverStatus = ServerStatus.NORMAL;
     }
   }
-
 }

@@ -15,34 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.server;
+package org.apache.uniffle.client.api;
 
-import org.apache.uniffle.proto.RssProtos;
+import org.apache.uniffle.client.request.RssDecommissionRequest;
+import org.apache.uniffle.client.response.RssDecommissionResponse;
 
-public enum StatusCode {
-  SUCCESS(0),
-  DOUBLE_REGISTER(1),
-  NO_BUFFER(2),
-  INVALID_STORAGE(3),
-  NO_REGISTER(4),
-  NO_PARTITION(5),
-  INTERNAL_ERROR(6),
-  TIMEOUT(7),
-  ACCESS_DENIED(8),
-  REJECT(9);
+public interface ShuffleServerInternalClient {
 
-  private final int statusCode;
+  RssDecommissionResponse decommission(RssDecommissionRequest request);
 
-  StatusCode(int code) {
-    this.statusCode = code;
-  }
+  void close();
 
-  public int statusCode() {
-    return statusCode;
-  }
-
-  public RssProtos.StatusCode toProto() {
-    RssProtos.StatusCode code = RssProtos.StatusCode.forNumber(this.statusCode());
-    return code == null ? RssProtos.StatusCode.INTERNAL_ERROR : code;
-  }
 }

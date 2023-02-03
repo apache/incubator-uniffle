@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.uniffle.server;
 
 import com.google.protobuf.BoolValue;
 import io.grpc.stub.StreamObserver;
+import org.apache.uniffle.common.exception.RejectException;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.ShuffleServerInternalGrpc.ShuffleServerInternalImplBase;
 
@@ -29,12 +31,31 @@ public class ShuffleServerInternalGrpcService extends ShuffleServerInternalImplB
   }
   @Override
   public void decommission(RssProtos.DecommissionRequest request, StreamObserver<RssProtos.DecommissionResponse> responseObserver) {
-    shuffleServer.setDecommissioned(request.getOn().getValue());
-    RssProtos.DecommissionResponse response = RssProtos.DecommissionResponse
-        .newBuilder()
-        .setStatus(RssProtos.StatusCode.forNumber(StatusCode.SUCCESS.statusCode()))
-        .setOn(BoolValue.newBuilder().setValue(shuffleServer.isDecommissioned()).build())
-        .build();
+    boolean decommission = request.getOn().getValue();
+    RssProtos.DecommissionResponse response;
+    try {
+      if (decommission) {
+        shuffleServer.decommission();
+      } else {
+        shuffleServer.cancelDecommission();
+      }
+      response = RssProtos.DecommissionResponse
+          .newBuilder()
+          .setStatus(StatusCode.SUCCESS.toProto())
+          .setOn(BoolValue.newBuilder().setValue(shuffleServer.isDecommissioning()).build())
+          .build();
+    } catch (Exception e) {
+      StatusCode statusCode = StatusCode.INTERNAL_ERROR;
+      if (e instanceof RejectException) {
+        statusCode = StatusCode.REJECT;
+      }
+      response = RssProtos.DecommissionResponse
+          .newBuilder()
+          .setStatus(statusCode.toProto())
+          .setOn(BoolValue.newBuilder().setValue(shuffleServer.isDecommissioning()).build())
+          .setRetMsg(e.getMessage())
+          .build();
+    }
     responseObserver.onNext(response);
     responseObserver.onCompleted();
   }
