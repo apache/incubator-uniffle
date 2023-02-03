@@ -522,7 +522,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     for (Map.Entry<Integer, List<ShuffleServerInfo>> entry : partitionToServers.entrySet()) {
       int partitionIdx = entry.getKey();
       for (ShuffleServerInfo ssi : entry.getValue()) {
-        groupedPartitions.putIfAbsent(ssi, Lists.newArrayList());
+        if (!groupedPartitions.containsKey(ssi)) {
+          groupedPartitions.put(ssi, Lists.newArrayList());
+        }
         groupedPartitions.get(ssi).add(partitionIdx);
       }
       if (CollectionUtils.isNotEmpty(partitionToBlockIds.get(partitionIdx))) {
