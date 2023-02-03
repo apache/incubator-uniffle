@@ -522,9 +522,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     for (Map.Entry<Integer, List<ShuffleServerInfo>> entry : partitionToServers.entrySet()) {
       int partitionIdx = entry.getKey();
       for (ShuffleServerInfo ssi : entry.getValue()) {
-        if (!groupedPartitions.containsKey(ssi)) {
-          groupedPartitions.put(ssi, Lists.newArrayList());
-        }
+        groupedPartitions.putIfAbsent(ssi, Lists.newArrayList());
         groupedPartitions.get(ssi).add(partitionIdx);
       }
       if (CollectionUtils.isNotEmpty(partitionToBlockIds.get(partitionIdx))) {
@@ -535,9 +533,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     for (Map.Entry<ShuffleServerInfo, List<Integer>> entry : groupedPartitions.entrySet()) {
       Map<Integer, List<Long>> requestBlockIds = Maps.newHashMap();
       for (Integer partitionId : entry.getValue()) {
-        List<Long> partitions = partitionToBlockIds.get(partitionId);
-        if (CollectionUtils.isNotEmpty(partitions)) {
-          requestBlockIds.put(partitionId, partitions);
+        List<Long> blockIds = partitionToBlockIds.get(partitionId);
+        if (CollectionUtils.isNotEmpty(blockIds)) {
+          requestBlockIds.put(partitionId, blockIds);
         }
       }
       if (requestBlockIds.isEmpty()) {
