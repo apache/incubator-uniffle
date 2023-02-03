@@ -316,9 +316,9 @@ func generateMainContainerENV(rss *unifflev1alpha1.RemoteShuffleService) []corev
 			},
 		},
 	}
-	for i, e := range rss.Spec.Coordinator.Env {
+	for _, e := range rss.Spec.Coordinator.Env {
 		if !defaultENVs.Has(e.Name) {
-			env = append(env, rss.Spec.Coordinator.Env[i])
+			env = append(env, e)
 		}
 	}
 	return env
