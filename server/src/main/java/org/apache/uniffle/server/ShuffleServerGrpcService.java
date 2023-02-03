@@ -92,27 +92,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     this.shuffleServer = shuffleServer;
   }
 
-  public static RssProtos.StatusCode valueOf(StatusCode code) {
-    switch (code) {
-      case SUCCESS:
-        return RssProtos.StatusCode.SUCCESS;
-      case DOUBLE_REGISTER:
-        return RssProtos.StatusCode.DOUBLE_REGISTER;
-      case NO_BUFFER:
-        return RssProtos.StatusCode.NO_BUFFER;
-      case INVALID_STORAGE:
-        return RssProtos.StatusCode.INVALID_STORAGE;
-      case NO_REGISTER:
-        return RssProtos.StatusCode.NO_REGISTER;
-      case NO_PARTITION:
-        return RssProtos.StatusCode.NO_PARTITION;
-      case TIMEOUT:
-        return RssProtos.StatusCode.TIMEOUT;
-      default:
-        return RssProtos.StatusCode.INTERNAL_ERROR;
-    }
-  }
-
   @Override
   public void unregisterShuffle(RssProtos.ShuffleUnregisterRequest request,
       StreamObserver<RssProtos.ShuffleUnregisterResponse> responseStreamObserver) {
@@ -129,7 +108,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
     RssProtos.ShuffleUnregisterResponse reply = RssProtos.ShuffleUnregisterResponse
         .newBuilder()
-        .setStatus(valueOf(result))
+        .setStatus(result.toProto())
         .setRetMsg(responseMessage)
         .build();
     responseStreamObserver.onNext(reply);
@@ -178,7 +157,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
     reply = ShuffleRegisterResponse
         .newBuilder()
-        .setStatus(valueOf(result))
+        .setStatus(result.toProto())
         .build();
     responseObserver.onNext(reply);
     responseObserver.onCompleted();
@@ -224,7 +203,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         responseMessage = errorMsg;
         reply = SendShuffleDataResponse
             .newBuilder()
-            .setStatus(valueOf(StatusCode.INTERNAL_ERROR))
+            .setStatus(StatusCode.INTERNAL_ERROR.toProto())
             .setRetMsg(responseMessage)
             .build();
         responseObserver.onNext(reply);
@@ -267,7 +246,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       if (info.getRequireSize() > alreadyReleasedSize) {
         manager.releasePreAllocatedSize(info.getRequireSize() - alreadyReleasedSize);
       }
-      reply = SendShuffleDataResponse.newBuilder().setStatus(valueOf(ret)).setRetMsg(responseMessage).build();
+      reply = SendShuffleDataResponse.newBuilder().setStatus(ret.toProto()).setRetMsg(responseMessage).build();
       long costTime = System.currentTimeMillis() - start;
       shuffleServer.getGrpcMetrics().recordProcessTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, costTime);
       LOG.debug("Cache Shuffle Data for appId[" + appId + "], shuffleId[" + shuffleId
@@ -276,7 +255,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     } else {
       reply = SendShuffleDataResponse
           .newBuilder()
-          .setStatus(valueOf(StatusCode.INTERNAL_ERROR))
+          .setStatus(StatusCode.INTERNAL_ERROR.toProto())
           .setRetMsg("No data in request")
           .build();
     }
@@ -313,7 +292,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     reply = ShuffleCommitResponse
         .newBuilder()
         .setCommitCount(commitCount)
-        .setStatus(valueOf(status))
+        .setStatus(status.toProto())
         .setRetMsg(msg)
         .build();
     responseObserver.onNext(reply);
@@ -345,7 +324,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     FinishShuffleResponse response =
         FinishShuffleResponse
             .newBuilder()
-            .setStatus(valueOf(status))
+            .setStatus(status.toProto())
             .setRetMsg(msg).build();
     responseObserver.onNext(response);
     responseObserver.onCompleted();
@@ -378,7 +357,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     RequireBufferResponse response =
         RequireBufferResponse
             .newBuilder()
-            .setStatus(valueOf(status))
+            .setStatus(status.toProto())
             .setRequireBufferId(requireBufferId)
             .build();
     responseObserver.onNext(response);
@@ -393,7 +372,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     AppHeartBeatResponse response = AppHeartBeatResponse
         .newBuilder()
         .setRetMsg("")
-        .setStatus(valueOf(StatusCode.SUCCESS))
+        .setStatus(StatusCode.SUCCESS.toProto())
         .build();
 
     if (Context.current().isCancelled()) {
@@ -429,7 +408,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       LOG.error("Error happened when report shuffle result for " + requestInfo, e);
     }
 
-    reply = ReportShuffleResultResponse.newBuilder().setStatus(valueOf(status)).setRetMsg(msg).build();
+    reply = ReportShuffleResultResponse.newBuilder().setStatus(status.toProto()).setRetMsg(msg).build();
     responseObserver.onNext(reply);
     responseObserver.onCompleted();
   }
@@ -464,7 +443,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     }
 
     reply = GetShuffleResultResponse.newBuilder()
-        .setStatus(valueOf(status))
+        .setStatus(status.toProto())
         .setRetMsg(msg)
         .setSerializedBitmap(serializedBlockIdsBytes)
         .build();
@@ -503,7 +482,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     }
 
     reply = GetShuffleResultForMultiPartResponse.newBuilder()
-        .setStatus(valueOf(status))
+        .setStatus(status.toProto())
         .setRetMsg(msg)
         .setSerializedBitmap(serializedBlockIdsBytes)
         .build();
@@ -561,7 +540,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         LOG.info("Successfully getShuffleData cost {} ms for shuffle"
             + " data with {}", readTime, requestInfo);
         reply = GetLocalShuffleDataResponse.newBuilder()
-            .setStatus(valueOf(status))
+            .setStatus(status.toProto())
             .setRetMsg(msg)
             .setData(UnsafeByteOperations.unsafeWrap(sdr.getData()))
             .build();
@@ -570,7 +549,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         msg = "Error happened when get shuffle data for " + requestInfo + ", " + e.getMessage();
         LOG.error(msg, e);
         reply = GetLocalShuffleDataResponse.newBuilder()
-            .setStatus(valueOf(status))
+            .setStatus(status.toProto())
             .setRetMsg(msg)
             .build();
       } finally {
@@ -581,7 +560,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       msg = "Can't require memory to get shuffle data";
       LOG.error(msg + " for " + requestInfo);
       reply = GetLocalShuffleDataResponse.newBuilder()
-          .setStatus(valueOf(status))
+          .setStatus(status.toProto())
           .setRetMsg(msg)
           .build();
     }
@@ -624,7 +603,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         ShuffleServerMetrics.counterTotalReadDataSize.inc(data.length);
         ShuffleServerMetrics.counterTotalReadLocalIndexFileSize.inc(data.length);
         GetLocalShuffleIndexResponse.Builder builder = GetLocalShuffleIndexResponse.newBuilder()
-            .setStatus(valueOf(status))
+            .setStatus(status.toProto())
             .setRetMsg(msg);
         LOG.info("Successfully getShuffleIndex cost {} ms for {}"
             + " bytes with {}", readTime, data.length, requestInfo);
@@ -636,14 +615,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         LOG.warn("Index file for {} is not found, maybe the data has been flushed to cold storage.",
             requestInfo, indexFileNotFoundException);
         reply = GetLocalShuffleIndexResponse.newBuilder()
-            .setStatus(valueOf(status))
+            .setStatus(status.toProto())
             .build();
       } catch (Exception e) {
         status = StatusCode.INTERNAL_ERROR;
         msg = "Error happened when get shuffle index for " + requestInfo + ", " + e.getMessage();
         LOG.error(msg, e);
         reply = GetLocalShuffleIndexResponse.newBuilder()
-            .setStatus(valueOf(status))
+            .setStatus(status.toProto())
             .setRetMsg(msg)
             .build();
       } finally {
@@ -654,7 +633,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       msg = "Can't require memory to get shuffle index";
       LOG.error(msg + " for " + requestInfo);
       reply = GetLocalShuffleIndexResponse.newBuilder()
-          .setStatus(valueOf(status))
+          .setStatus(status.toProto())
           .setRetMsg(msg)
           .build();
     }
@@ -721,7 +700,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             + " data for {}", costTime, data.length, requestInfo);
 
         reply = GetMemoryShuffleDataResponse.newBuilder()
-            .setStatus(valueOf(status))
+            .setStatus(status.toProto())
             .setRetMsg(msg)
             .setData(UnsafeByteOperations.unsafeWrap(data))
             .addAllShuffleDataBlockSegments(toShuffleDataBlockSegments(bufferSegments))
@@ -734,7 +713,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         reply = GetMemoryShuffleDataResponse.newBuilder()
             .setData(UnsafeByteOperations.unsafeWrap(new byte[]{}))
             .addAllShuffleDataBlockSegments(Lists.newArrayList())
-            .setStatus(valueOf(status))
+            .setStatus(status.toProto())
             .setRetMsg(msg)
             .build();
       } finally {
@@ -747,7 +726,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       reply = GetMemoryShuffleDataResponse.newBuilder()
           .setData(UnsafeByteOperations.unsafeWrap(new byte[]{}))
           .addAllShuffleDataBlockSegments(Lists.newArrayList())
-          .setStatus(valueOf(status))
+          .setStatus(status.toProto())
           .setRetMsg(msg)
           .build();
     }

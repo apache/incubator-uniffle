@@ -35,14 +35,16 @@ public abstract class GRPCMetrics {
   private static final String GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE = "grpc_server_executor_blocking_queue_size";
   public static final String GRPC_SERVER_CONNECTION_NUMBER_KEY = "grpcServerConnectionNumber";
   private static final String GRPC_SERVER_CONNECTION_NUMBER = "grpc_server_connection_number";
+  private static final String GRPC_OPEN = "grpc_open";
+  private static final String GRPC_TOTAL = "grpc_total";
 
   private boolean isRegistered = false;
   protected Map<String, Counter> counterMap = Maps.newConcurrentMap();
   protected Map<String, Gauge> gaugeMap = Maps.newConcurrentMap();
   protected Map<String, Summary> transportTimeSummaryMap = Maps.newConcurrentMap();
   protected Map<String, Summary> processTimeSummaryMap = Maps.newConcurrentMap();
-  protected Gauge gaugeGrpcOpen;
-  protected Counter counterGrpcTotal;
+  private Gauge gaugeGrpcOpen;
+  private Counter counterGrpcTotal;
   protected MetricsManager metricsManager;
 
   public abstract void registerMetrics();
@@ -57,6 +59,8 @@ public abstract class GRPCMetrics {
   }
 
   private void registerGeneralMetrics() {
+    gaugeGrpcOpen = metricsManager.addGauge(GRPC_OPEN);
+    counterGrpcTotal = metricsManager.addCounter(GRPC_TOTAL);
     gaugeMap.putIfAbsent(
         GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY,
         metricsManager.addGauge(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS)

@@ -195,8 +195,8 @@ public class ConfigUtils {
           configOptionList.add((ConfigOption<Object>) field.get(null));
         }
       }
-    } catch (Exception e) {
-      throw new IllegalArgumentException("Load Configuration option exception");
+    } catch (IllegalArgumentException | IllegalAccessException e) {
+      throw new IllegalArgumentException("Exception when loading configuration option", e);
     }
     return configOptionList;
   }

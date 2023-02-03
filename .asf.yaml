@@ -35,6 +35,7 @@ github:
     - smallzhongfeng
     - xianjingfeng
     - leixm
+    - wangao1236
   enabled_merge_buttons:
     squash: true
     merge: false

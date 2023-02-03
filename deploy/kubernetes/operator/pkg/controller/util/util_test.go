@@ -24,20 +24,23 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
-	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/api/uniffle/v1alpha1"
+	uniffleapi "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/api/uniffle/v1alpha1"
+	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/constants"
+	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/utils"
 )
 
 func TestGenerateMakeDataDirCommand(t *testing.T) {
 	for _, tt := range []struct {
 		name             string
-		rssPodSpec       *v1alpha1.RSSPodSpec
+		rssPodSpec       *uniffleapi.RSSPodSpec
 		expectedCommands []string
 	}{
 		{
 			name: "empty security context",
-			rssPodSpec: &v1alpha1.RSSPodSpec{
+			rssPodSpec: &uniffleapi.RSSPodSpec{
 				HostPathMounts: map[string]string{
 					"/data1": "/mnt/data1",
 				},
@@ -48,7 +51,7 @@ func TestGenerateMakeDataDirCommand(t *testing.T) {
 		},
 		{
 			name: "empty runAsUser field in security context",
-			rssPodSpec: &v1alpha1.RSSPodSpec{
+			rssPodSpec: &uniffleapi.RSSPodSpec{
 				HostPathMounts: map[string]string{
 					"/data2": "/mnt/data2",
 				},
@@ -62,7 +65,7 @@ func TestGenerateMakeDataDirCommand(t *testing.T) {
 		},
 		{
 			name: "non empty field of runAsUser and fsGroup in security context",
-			rssPodSpec: &v1alpha1.RSSPodSpec{
+			rssPodSpec: &uniffleapi.RSSPodSpec{
 				HostPathMounts: map[string]string{
 					"/data3": "/mnt/data3",
 				},
@@ -90,17 +93,17 @@ func TestGenerateInitContainers(t *testing.T) {
 	// first check resource request
 	for _, tt := range []struct {
 		name       string
-		rssPodSpec *v1alpha1.RSSPodSpec
+		rssPodSpec *uniffleapi.RSSPodSpec
 		resources  *corev1.ResourceRequirements
 	}{
 		{
 			name:       "without security context",
-			rssPodSpec: &v1alpha1.RSSPodSpec{},
+			rssPodSpec: &uniffleapi.RSSPodSpec{},
 			resources:  nil,
 		},
 		{
 			name: "security context with host path mapping",
-			rssPodSpec: &v1alpha1.RSSPodSpec{
+			rssPodSpec: &uniffleapi.RSSPodSpec{
 				HostPathMounts: map[string]string{
 					"/data3": "/mnt/data3",
 				},
@@ -108,7 +111,7 @@ func TestGenerateInitContainers(t *testing.T) {
 					RunAsUser: pointer.Int64(2000),
 					FSGroup:   pointer.Int64(1000),
 				},
-				MainContainer: &v1alpha1.MainContainer{
+				MainContainer: &uniffleapi.MainContainer{
 					Resources: corev1.ResourceRequirements{
 						Limits: map[corev1.ResourceName]resource.Quantity{
 							corev1.ResourceCPU:    resource.MustParse("1"),
@@ -143,6 +146,43 @@ func TestGenerateInitContainers(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAddOwnerReference(t *testing.T) {
+	for _, tt := range []struct {
+		name                    string
+		dependent               *metav1.ObjectMeta
+		owner                   *uniffleapi.RemoteShuffleService
+		expectedOwnerReferences []metav1.OwnerReference
+	}{
+		{
+			name:                    "check ownerReferences",
+			dependent:               &metav1.ObjectMeta{},
+			owner:                   buildRssWithUID(),
+			expectedOwnerReferences: []metav1.OwnerReference{},
+		},
+	} {
+		t.Run(tt.name, func(tc *testing.T) {
+			assertion := assert.New(t)
+			AddOwnerReference(tt.dependent, tt.owner)
+			assertion.Equal(tt.dependent.OwnerReferences, []metav1.OwnerReference{
+				{
+					APIVersion:         uniffleapi.SchemeGroupVersion.String(),
+					Kind:               constants.RSSKind,
+					BlockOwnerDeletion: pointer.Bool(true),
+					Name:               tt.owner.Name,
+					UID:                tt.owner.UID,
+					Controller:         pointer.Bool(true),
+				},
+			})
+		})
+	}
+}
+
+func buildRssWithUID() *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.UID = "uid-test"
+	return rss
 }
 
 func isEqualStringSlice(a, b []string) bool {

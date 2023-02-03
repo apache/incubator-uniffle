@@ -21,6 +21,9 @@ const (
 	// LeaderIDSuffix is the suffix of leader id used for components' leader election
 	LeaderIDSuffix = "uniffle.apache.org"
 
+	// RSSKind is the object kind of rss.
+	RSSKind = "RemoteShuffleService"
+
 	// PodNamespaceEnv is the name of environment variable indicates pod's namespace.
 	PodNamespaceEnv = "POD_NAMESPACE"
 	// DefaultNamespace is used when environment variable of PodNamespaceEnv is not set.

@@ -27,6 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -235,6 +236,37 @@ var _ = Describe("RssController", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(sts).ToNot(BeNil())
 			Expect(*sts.Spec.Replicas).To(Equal(int32(3)))
+
+			// since we are in the env test, the rss object may never transmit upgrading to running.
+			By("Ensure rss object is still upgrading")
+			err = wait.Poll(time.Second, time.Second*5, func() (bool, error) {
+				curRss, getErr := testRssClient.UniffleV1alpha1().RemoteShuffleServices(testNamespace).
+					Get(context.TODO(), testRssName, metav1.GetOptions{})
+				if getErr != nil {
+					return false, getErr
+				}
+				if curRss.Status.Phase != unifflev1alpha1.RSSUpgrading {
+					return false, nil
+				}
+				return true, nil
+			})
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Delete the upgrading rss object")
+			err = testRssClient.UniffleV1alpha1().RemoteShuffleServices(corev1.NamespaceDefault).
+				Delete(context.TODO(), testRssName, metav1.DeleteOptions{})
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Waiting the rss object being delete")
+			err = wait.Poll(time.Second, time.Second*5, func() (done bool, err error) {
+				_, getErr := testRssClient.UniffleV1alpha1().RemoteShuffleServices(testNamespace).
+					Get(context.TODO(), testRssName, metav1.GetOptions{})
+				if getErr != nil && errors.IsNotFound(getErr) {
+					return true, nil
+				}
+				return false, nil
+			})
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 })
@@ -251,40 +283,10 @@ func initTestRss() (*corev1.ConfigMap, *unifflev1alpha1.RemoteShuffleService) {
 			constants.Log4jPropertiesKey:     "",
 		},
 	}
-	rss := &unifflev1alpha1.RemoteShuffleService{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      testRssName,
-			Namespace: testNamespace,
-		},
-		Spec: unifflev1alpha1.RemoteShuffleServiceSpec{
-			ConfigMapName: testRssName,
-			Coordinator: &unifflev1alpha1.CoordinatorConfig{
-				HTTPNodePort: []int32{30001, 30011},
-				RPCNodePort:  []int32{30002, 30012},
-				CommonConfig: &unifflev1alpha1.CommonConfig{
-					ConfigDir: "/app/config",
-					RSSPodSpec: &unifflev1alpha1.RSSPodSpec{
-						MainContainer: &unifflev1alpha1.MainContainer{
-							Image: testCoordinatorImage1,
-						},
-					},
-				},
-			},
-			ShuffleServer: &unifflev1alpha1.ShuffleServerConfig{
-				CommonConfig: &unifflev1alpha1.CommonConfig{
-					ConfigDir: "/app/config",
-					RSSPodSpec: &unifflev1alpha1.RSSPodSpec{
-						MainContainer: &unifflev1alpha1.MainContainer{
-							Image: "rss-shuffleserver:latest",
-						},
-					},
-					XmxSize: "10G",
-				},
-				UpgradeStrategy: &unifflev1alpha1.ShuffleServerUpgradeStrategy{
-					Type: unifflev1alpha1.FullUpgrade,
-				},
-			},
-		},
-	}
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.ConfigMapName = cm.Name
+	rss.Name = testRssName
+	rss.Namespace = testNamespace
+	rss.Spec.Coordinator.Image = testCoordinatorImage1
 	return cm, rss
 }

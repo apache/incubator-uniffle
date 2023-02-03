@@ -354,7 +354,8 @@ func (r *rssController) processRss(namespace, name string) (bool, error) {
 func (r *rssController) processDeleting(rss *unifflev1alpha1.RemoteShuffleService) (bool, error) {
 	klog.V(4).Infof("process rss (%v) to be deleted in %v phase",
 		utils.UniqueName(rss), rss.Status.Phase)
-	if rss.Status.Phase == unifflev1alpha1.RSSRunning || rss.Status.Phase == unifflev1alpha1.RSSPending {
+	if rss.Status.Phase == unifflev1alpha1.RSSRunning || rss.Status.Phase == unifflev1alpha1.RSSPending ||
+		rss.Status.Phase == unifflev1alpha1.RSSUpgrading {
 		return false, r.updateRssStatus(rss, &unifflev1alpha1.RemoteShuffleServiceStatus{
 			Phase: unifflev1alpha1.RSSTerminating,
 		})
@@ -754,7 +755,7 @@ func (r *rssController) enqueueShuffleServer(obj interface{}) {
 func (r *rssController) removeFinalizer(rss *unifflev1alpha1.RemoteShuffleService) error {
 	rssCopy := rss.DeepCopy()
 	var finalizers []string
-	for _, f := range finalizers {
+	for _, f := range rssCopy.Finalizers {
 		if f == constants.RSSFinalizerName {
 			continue
 		}

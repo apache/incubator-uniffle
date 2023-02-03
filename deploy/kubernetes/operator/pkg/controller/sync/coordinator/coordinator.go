@@ -160,30 +160,33 @@ func GenerateDeploy(rss *unifflev1alpha1.RemoteShuffleService, index int) *appsv
 		podSpec.DNSPolicy = corev1.DNSClusterFirstWithHostNet
 	}
 
+	defaultLabels := map[string]string{
+		"app": name,
+	}
 	deploy := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: rss.Namespace,
-			Labels: map[string]string{
-				"app": name,
-			},
+			Labels:    defaultLabels,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app": name,
-				},
+				MatchLabels: defaultLabels,
 			},
 			Replicas: rss.Spec.Coordinator.Replicas,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app": name,
-					},
+					Labels: make(map[string]string),
 				},
 				Spec: podSpec,
 			},
 		},
+	}
+	for k, v := range rss.Spec.Coordinator.Labels {
+		deploy.Spec.Template.Labels[k] = v
+	}
+	for k, v := range defaultLabels {
+		deploy.Spec.Template.Labels[k] = v
 	}
 
 	// add init containers, the main container and other containers.

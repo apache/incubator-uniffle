@@ -22,35 +22,24 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
-	unifflev1alpha1 "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/api/uniffle/v1alpha1"
+	uniffleapi "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/api/uniffle/v1alpha1"
+	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/constants"
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/controller/config"
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/generated/clientset/versioned/fake"
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/utils"
 )
 
-// buildEmptyPhaseRssObj builds a rss object with empty phase for testing.
-func buildEmptyPhaseRssObj() *unifflev1alpha1.RemoteShuffleService {
-	return &unifflev1alpha1.RemoteShuffleService{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            testRssName,
-			Namespace:       testNamespace,
-			ResourceVersion: "test",
-		},
-		Spec: unifflev1alpha1.RemoteShuffleServiceSpec{
-			Coordinator: &unifflev1alpha1.CoordinatorConfig{
-				ExcludeNodesFilePath: "/exclude_nodes",
-			},
-		},
-		Status: unifflev1alpha1.RemoteShuffleServiceStatus{},
-	}
-}
+const (
+	extraFinalizer = "extra-finalizer"
+)
 
 // TestProcessEmptyPhaseRss tests rss objects' process of rss-controller
 func TestProcessEmptyPhaseRss(t *testing.T) {
-	rss := buildEmptyPhaseRssObj()
+	rss := utils.BuildRSSWithDefaultValue()
 
 	rssClient := fake.NewSimpleClientset(rss)
 	kubeClient := kubefake.NewSimpleClientset()
@@ -64,14 +53,14 @@ func TestProcessEmptyPhaseRss(t *testing.T) {
 
 	for _, tt := range []struct {
 		name              string
-		expectedRssStatus unifflev1alpha1.RemoteShuffleServiceStatus
+		expectedRssStatus uniffleapi.RemoteShuffleServiceStatus
 		expectedNeedRetry bool
 		expectedError     error
 	}{
 		{
 			name: "process rss object which has just been created, and whose status phase is empty",
-			expectedRssStatus: unifflev1alpha1.RemoteShuffleServiceStatus{
-				Phase: unifflev1alpha1.RSSPending,
+			expectedRssStatus: uniffleapi.RemoteShuffleServiceStatus{
+				Phase: uniffleapi.RSSPending,
 			},
 			expectedNeedRetry: false,
 		},
@@ -98,6 +87,52 @@ func TestProcessEmptyPhaseRss(t *testing.T) {
 					updatedRss.Status, tt.expectedRssStatus)
 				return
 			}
+		})
+	}
+}
+
+// TestRemoveFinalizer tests removing finalizer of rss.
+func TestRemoveFinalizer(t *testing.T) {
+	for _, tt := range []struct {
+		name               string
+		oldFinalizers      []string
+		expectedFinalizers []string
+	}{
+		{
+			name:               "with extra finalizer",
+			oldFinalizers:      []string{constants.RSSFinalizerName, extraFinalizer},
+			expectedFinalizers: []string{extraFinalizer},
+		},
+		{
+			name:               "without extra finalizer",
+			oldFinalizers:      []string{constants.RSSFinalizerName},
+			expectedFinalizers: nil,
+		},
+	} {
+		t.Run(tt.name, func(tc *testing.T) {
+			assertion := assert.New(tc)
+
+			rss := utils.BuildRSSWithDefaultValue()
+			now := metav1.Now()
+			rss.DeletionTimestamp = &now
+			rss.Finalizers = tt.oldFinalizers
+
+			rssClient := fake.NewSimpleClientset(rss)
+			kubeClient := kubefake.NewSimpleClientset()
+
+			rc := newRSSController(&config.Config{
+				GenericConfig: utils.GenericConfig{
+					KubeClient: kubeClient,
+					RSSClient:  rssClient,
+				},
+			})
+			err := rc.removeFinalizer(rss)
+			assertion.Empty(err, nil)
+
+			rss, err = rssClient.UniffleV1alpha1().RemoteShuffleServices(rss.Namespace).Get(context.TODO(), rss.Name,
+				metav1.GetOptions{})
+			assertion.Empty(err, nil)
+			assertion.Equal(rss.Finalizers, tt.expectedFinalizers)
 		})
 	}
 }
