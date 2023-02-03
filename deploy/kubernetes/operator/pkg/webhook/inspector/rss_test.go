@@ -22,25 +22,34 @@ import (
 	"testing"
 
 	admissionv1 "k8s.io/api/admission/v1"
-	corev1 "k8s.io/api/core/v1"
+	nodev1 "k8s.io/api/node/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
+	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/pointer"
 
-	unifflev1alpha1 "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/api/uniffle/v1alpha1"
+	uniffleapi "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/api/uniffle/v1alpha1"
+	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/utils"
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/webhook/config"
 )
 
-func wrapTestRssObj(rss *unifflev1alpha1.RemoteShuffleService) *unifflev1alpha1.RemoteShuffleService {
-	rss.Name = "test"
-	rss.Namespace = corev1.NamespaceDefault
-	rss.UID = "uid-test"
+const (
+	testRuntimeClassName = "test-runtime"
+)
+
+type wrapper func(rss *uniffleapi.RemoteShuffleService)
+
+func wrapRssObj(wrapperFunc wrapper) *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	wrapperFunc(rss)
 	return rss
 }
 
 // convertRssToRawExtension converts a rss object to runtime.RawExtension for testing.
-func convertRssToRawExtension(rss *unifflev1alpha1.RemoteShuffleService) (runtime.RawExtension, error) {
+func convertRssToRawExtension(rss *uniffleapi.RemoteShuffleService) (runtime.RawExtension, error) {
 	if rss == nil {
-		return convertRssToRawExtension(&unifflev1alpha1.RemoteShuffleService{})
+		return convertRssToRawExtension(&uniffleapi.RemoteShuffleService{})
 	}
 	body, err := json.Marshal(rss)
 	if err != nil {
@@ -54,7 +63,7 @@ func convertRssToRawExtension(rss *unifflev1alpha1.RemoteShuffleService) (runtim
 
 // buildTestAdmissionReview builds an AdmissionReview object for testing.
 func buildTestAdmissionReview(op admissionv1.Operation,
-	oldRss, newRss *unifflev1alpha1.RemoteShuffleService) *admissionv1.AdmissionReview {
+	oldRss, newRss *uniffleapi.RemoteShuffleService) *admissionv1.AdmissionReview {
 	oldObject, err := convertRssToRawExtension(oldRss)
 	if err != nil {
 		panic(err)
@@ -77,20 +86,17 @@ func buildTestAdmissionReview(op admissionv1.Operation,
 func TestValidateRSS(t *testing.T) {
 	testInspector := newInspector(&config.Config{}, nil)
 
-	rssWithCooNodePort := &unifflev1alpha1.RemoteShuffleService{
-		Spec: unifflev1alpha1.RemoteShuffleServiceSpec{
-			Coordinator: &unifflev1alpha1.CoordinatorConfig{
-				Count:        pointer.Int32(2),
-				RPCNodePort:  []int32{30001, 30002},
-				HTTPNodePort: []int32{30011, 30012},
-			},
-		},
-	}
+	rssWithCooNodePort := wrapRssObj(func(rss *uniffleapi.RemoteShuffleService) {
+		rss.Spec.Coordinator.Count = pointer.Int32(2)
+		rss.Spec.Coordinator.RPCNodePort = []int32{30001, 30002}
+		rss.Spec.Coordinator.HTTPNodePort = []int32{30011, 30012}
+		rss.Spec.Coordinator.ExcludeNodesFilePath = ""
+	})
 
 	rssWithoutLogInCooMounts := rssWithCooNodePort.DeepCopy()
 	rssWithoutLogInCooMounts.Spec.Coordinator.ExcludeNodesFilePath = "/exclude_nodes"
-	rssWithoutLogInCooMounts.Spec.Coordinator.CommonConfig = &unifflev1alpha1.CommonConfig{
-		RSSPodSpec: &unifflev1alpha1.RSSPodSpec{
+	rssWithoutLogInCooMounts.Spec.Coordinator.CommonConfig = &uniffleapi.CommonConfig{
+		RSSPodSpec: &uniffleapi.RSSPodSpec{
 			LogHostPath:    "/data/logs",
 			HostPathMounts: map[string]string{},
 		},
@@ -98,9 +104,9 @@ func TestValidateRSS(t *testing.T) {
 
 	rssWithoutLogInServerMounts := rssWithoutLogInCooMounts.DeepCopy()
 	rssWithoutLogInServerMounts.Spec.Coordinator.CommonConfig.RSSPodSpec.HostPathMounts["/data/logs"] = "/data/logs"
-	rssWithoutLogInServerMounts.Spec.ShuffleServer = &unifflev1alpha1.ShuffleServerConfig{
-		CommonConfig: &unifflev1alpha1.CommonConfig{
-			RSSPodSpec: &unifflev1alpha1.RSSPodSpec{
+	rssWithoutLogInServerMounts.Spec.ShuffleServer = &uniffleapi.ShuffleServerConfig{
+		CommonConfig: &uniffleapi.CommonConfig{
+			RSSPodSpec: &uniffleapi.RSSPodSpec{
 				LogHostPath:    "/data/logs",
 				HostPathMounts: map[string]string{},
 			},
@@ -109,26 +115,26 @@ func TestValidateRSS(t *testing.T) {
 
 	rssWithoutPartition := rssWithoutLogInServerMounts.DeepCopy()
 	rssWithoutPartition.Spec.ShuffleServer.CommonConfig.RSSPodSpec.HostPathMounts["/data/logs"] = "/data/logs"
-	rssWithoutPartition.Spec.ShuffleServer.UpgradeStrategy = &unifflev1alpha1.ShuffleServerUpgradeStrategy{
-		Type: unifflev1alpha1.PartitionUpgrade,
+	rssWithoutPartition.Spec.ShuffleServer.UpgradeStrategy = &uniffleapi.ShuffleServerUpgradeStrategy{
+		Type: uniffleapi.PartitionUpgrade,
 	}
 
 	rssWithInvalidPartition := rssWithoutLogInServerMounts.DeepCopy()
 	rssWithInvalidPartition.Spec.ShuffleServer.CommonConfig.RSSPodSpec.HostPathMounts["/data/logs"] = "/data/logs"
-	rssWithInvalidPartition.Spec.ShuffleServer.UpgradeStrategy = &unifflev1alpha1.ShuffleServerUpgradeStrategy{
-		Type:      unifflev1alpha1.PartitionUpgrade,
+	rssWithInvalidPartition.Spec.ShuffleServer.UpgradeStrategy = &uniffleapi.ShuffleServerUpgradeStrategy{
+		Type:      uniffleapi.PartitionUpgrade,
 		Partition: pointer.Int32(-1),
 	}
 
 	rssWithoutSpecificNames := rssWithoutLogInServerMounts.DeepCopy()
 	rssWithoutSpecificNames.Spec.ShuffleServer.CommonConfig.RSSPodSpec.HostPathMounts["/data/logs"] = "/data/logs"
-	rssWithoutSpecificNames.Spec.ShuffleServer.UpgradeStrategy = &unifflev1alpha1.ShuffleServerUpgradeStrategy{
-		Type: unifflev1alpha1.SpecificUpgrade,
+	rssWithoutSpecificNames.Spec.ShuffleServer.UpgradeStrategy = &uniffleapi.ShuffleServerUpgradeStrategy{
+		Type: uniffleapi.SpecificUpgrade,
 	}
 
 	rssWithoutUpgradeStrategyType := rssWithoutLogInServerMounts.DeepCopy()
 	rssWithoutUpgradeStrategyType.Spec.ShuffleServer.CommonConfig.RSSPodSpec.HostPathMounts["/data/logs"] = "/data/logs"
-	rssWithoutUpgradeStrategyType.Spec.ShuffleServer.UpgradeStrategy = &unifflev1alpha1.ShuffleServerUpgradeStrategy{}
+	rssWithoutUpgradeStrategyType.Spec.ShuffleServer.UpgradeStrategy = &uniffleapi.ShuffleServerUpgradeStrategy{}
 
 	for _, tt := range []struct {
 		name    string
@@ -137,71 +143,66 @@ func TestValidateRSS(t *testing.T) {
 	}{
 		{
 			name: "try to modify a upgrading rss object",
-			ar: buildTestAdmissionReview(admissionv1.Update, wrapTestRssObj(&unifflev1alpha1.RemoteShuffleService{
-				Status: unifflev1alpha1.RemoteShuffleServiceStatus{
-					Phase: unifflev1alpha1.RSSUpgrading,
-				},
-			}), nil),
+			ar: buildTestAdmissionReview(admissionv1.Update, wrapRssObj(
+				func(rss *uniffleapi.RemoteShuffleService) {
+					rss.Status = uniffleapi.RemoteShuffleServiceStatus{
+						Phase: uniffleapi.RSSUpgrading,
+					}
+				}), nil),
 			allowed: false,
 		},
 		{
 			name: "invalid rpc node port number in a rss object",
-			ar: buildTestAdmissionReview(admissionv1.Update, nil, wrapTestRssObj(&unifflev1alpha1.RemoteShuffleService{
-				Spec: unifflev1alpha1.RemoteShuffleServiceSpec{
-					Coordinator: &unifflev1alpha1.CoordinatorConfig{
-						Count:       pointer.Int32(2),
-						RPCNodePort: []int32{30001},
-					},
-				},
-			})),
+			ar: buildTestAdmissionReview(admissionv1.Create, nil,
+				wrapRssObj(func(rss *uniffleapi.RemoteShuffleService) {
+					rss.Spec.Coordinator.Count = pointer.Int32(2)
+					rss.Spec.Coordinator.RPCNodePort = []int32{30001}
+				})),
 			allowed: false,
 		},
 		{
 			name: "invalid http node port number in a rss object",
-			ar: buildTestAdmissionReview(admissionv1.Update, nil, wrapTestRssObj(&unifflev1alpha1.RemoteShuffleService{
-				Spec: unifflev1alpha1.RemoteShuffleServiceSpec{
-					Coordinator: &unifflev1alpha1.CoordinatorConfig{
-						Count:        pointer.Int32(2),
-						RPCNodePort:  []int32{30001, 30002},
-						HTTPNodePort: []int32{30011},
-					},
-				},
-			})),
+			ar: buildTestAdmissionReview(admissionv1.Create, nil,
+				wrapRssObj(func(rss *uniffleapi.RemoteShuffleService) {
+					rss.Spec.Coordinator.Count = pointer.Int32(2)
+					rss.Spec.Coordinator.RPCNodePort = []int32{30001, 30002}
+					rss.Spec.Coordinator.HTTPNodePort = []int32{30011}
+				})),
 			allowed: false,
 		},
 		{
 			name:    "empty exclude nodes file path field in a rss object",
-			ar:      buildTestAdmissionReview(admissionv1.Update, nil, wrapTestRssObj(rssWithCooNodePort)),
+			ar:      buildTestAdmissionReview(admissionv1.Create, nil, rssWithCooNodePort),
 			allowed: false,
 		},
 		{
 			name:    "can not find log host path in coordinators' host path mounts field in a rss object",
-			ar:      buildTestAdmissionReview(admissionv1.Update, nil, wrapTestRssObj(rssWithoutLogInCooMounts)),
+			ar:      buildTestAdmissionReview(admissionv1.Create, nil, rssWithoutLogInCooMounts),
 			allowed: false,
 		},
 		{
 			name:    "can not find log host path in shuffle server' host path mounts field in a rss object",
-			ar:      buildTestAdmissionReview(admissionv1.Update, nil, wrapTestRssObj(rssWithoutLogInServerMounts)),
+			ar:      buildTestAdmissionReview(admissionv1.Create, nil, rssWithoutLogInServerMounts),
 			allowed: false,
 		},
 		{
 			name:    "empty partition field when shuffler server of a rss object need partition upgrade",
-			ar:      buildTestAdmissionReview(admissionv1.Update, nil, wrapTestRssObj(rssWithoutPartition)),
+			ar:      buildTestAdmissionReview(admissionv1.Create, nil, rssWithoutPartition),
 			allowed: false,
 		},
 		{
 			name:    "invalid partition field when shuffler server of a rss object need partition upgrade",
-			ar:      buildTestAdmissionReview(admissionv1.Update, nil, wrapTestRssObj(rssWithInvalidPartition)),
+			ar:      buildTestAdmissionReview(admissionv1.Create, nil, rssWithInvalidPartition),
 			allowed: false,
 		},
 		{
 			name:    "empty specific names field when shuffler server of a rss object need specific upgrade",
-			ar:      buildTestAdmissionReview(admissionv1.Update, nil, wrapTestRssObj(rssWithoutSpecificNames)),
+			ar:      buildTestAdmissionReview(admissionv1.Create, nil, rssWithoutSpecificNames),
 			allowed: false,
 		},
 		{
 			name:    "empty upgrade strategy type in shuffler server of a rss object",
-			ar:      buildTestAdmissionReview(admissionv1.Update, nil, wrapTestRssObj(rssWithoutUpgradeStrategyType)),
+			ar:      buildTestAdmissionReview(admissionv1.Create, nil, rssWithoutUpgradeStrategyType),
 			allowed: false,
 		},
 	} {
@@ -214,5 +215,82 @@ func TestValidateRSS(t *testing.T) {
 				tc.Errorf("invalid 'allowed' field in response: %v <> %v", updatedAR.Response.Allowed, tt.allowed)
 			}
 		})
+	}
+}
+
+func TestValidateRuntimeClassNames(t *testing.T) {
+	for _, tt := range []struct {
+		name         string
+		runtimeClass *nodev1.RuntimeClass
+		ar           *admissionv1.AdmissionReview
+		allowed      bool
+	}{
+		{
+			name:         "create rss object with existent runtime class names",
+			runtimeClass: buildTestRuntimeClass(),
+			ar: buildTestAdmissionReview(admissionv1.Create, nil,
+				wrapRssObj(func(rss *uniffleapi.RemoteShuffleService) {
+					rss.Spec.Coordinator.RuntimeClassName = pointer.String(testRuntimeClassName)
+					rss.Spec.ShuffleServer.RuntimeClassName = pointer.String(testRuntimeClassName)
+				})),
+			allowed: true,
+		},
+		{
+			name:         "create rss object with empty runtime class name used by shuffle server",
+			runtimeClass: buildTestRuntimeClass(),
+			ar: buildTestAdmissionReview(admissionv1.Create, nil,
+				wrapRssObj(func(rss *uniffleapi.RemoteShuffleService) {
+					rss.Spec.Coordinator.RuntimeClassName = pointer.String(testRuntimeClassName)
+				})),
+			allowed: true,
+		},
+		{
+			name: "create rss object with non existent runtime class name used by coordinator",
+			ar: buildTestAdmissionReview(admissionv1.Create, nil,
+				wrapRssObj(func(rss *uniffleapi.RemoteShuffleService) {
+					rss.Spec.Coordinator.RuntimeClassName = pointer.String(testRuntimeClassName)
+				})),
+			allowed: false,
+		},
+		{
+			name: "create rss object with non existent runtime class name used by shuffle server",
+			ar: buildTestAdmissionReview(admissionv1.Create, nil,
+				wrapRssObj(func(rss *uniffleapi.RemoteShuffleService) {
+					rss.Spec.ShuffleServer.RuntimeClassName = pointer.String(testRuntimeClassName)
+				})),
+			allowed: false,
+		},
+	} {
+		t.Run(tt.name, func(tc *testing.T) {
+			var kubeClient kubernetes.Interface
+			if tt.runtimeClass != nil {
+				kubeClient = kubefake.NewSimpleClientset(tt.runtimeClass)
+			} else {
+				kubeClient = kubefake.NewSimpleClientset()
+			}
+
+			testInspector := newInspector(&config.Config{
+				GenericConfig: utils.GenericConfig{
+					KubeClient: kubeClient,
+				},
+			}, nil)
+
+			updatedAR := testInspector.validateRSS(tt.ar)
+			if !updatedAR.Response.Allowed {
+				tc.Logf("==> message in result: %+v", updatedAR.Response.Result.Message)
+			}
+			if updatedAR.Response.Allowed != tt.allowed {
+				tc.Errorf("invalid 'allowed' field in response: %v <> %v", updatedAR.Response.Allowed, tt.allowed)
+			}
+		})
+	}
+}
+
+func buildTestRuntimeClass() *nodev1.RuntimeClass {
+	return &nodev1.RuntimeClass{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testRuntimeClassName,
+		},
+		Handler: "/etc/runtime/bin",
 	}
 }
