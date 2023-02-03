@@ -173,8 +173,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     );
 
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
-    partitionToServers.putIfAbsent(1, Lists.newArrayList(shuffleServerInfo1));
-    partitionToServers.putIfAbsent(2, Lists.newArrayList(shuffleServerInfo2));
+    partitionToServers.put(1, Lists.newArrayList(shuffleServerInfo1));
+    partitionToServers.put(2, Lists.newArrayList(shuffleServerInfo2));
     Map<Integer, List<Long>> partitionToBlocks = Maps.newHashMap();
     List<Long> blockIds = Lists.newArrayList();
 
