@@ -43,7 +43,9 @@ func init() {
 	defaultENVs.Insert(controllerconstants.CoordinatorRPCPortEnv,
 		controllerconstants.CoordinatorHTTPPortEnv,
 		controllerconstants.XmxSizeEnv,
-		controllerconstants.ServiceNameEnv)
+		controllerconstants.ServiceNameEnv,
+		controllerconstants.NodeNameEnv,
+		controllerconstants.RssIPEnv)
 }
 
 // GenerateCoordinators generates objects related to coordinators
@@ -314,9 +316,9 @@ func generateMainContainerENV(rss *unifflev1alpha1.RemoteShuffleService) []corev
 			},
 		},
 	}
-	for _, e := range rss.Spec.Coordinator.Env {
+	for i, e := range rss.Spec.Coordinator.Env {
 		if !defaultENVs.Has(e.Name) {
-			env = append(env, e)
+			env = append(env, rss.Spec.Coordinator.Env[i])
 		}
 	}
 	return env
