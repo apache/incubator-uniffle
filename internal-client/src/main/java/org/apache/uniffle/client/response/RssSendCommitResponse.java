@@ -17,11 +17,13 @@
 
 package org.apache.uniffle.client.response;
 
+import org.apache.uniffle.common.rpc.StatusCode;
+
 public class RssSendCommitResponse extends ClientResponse {
 
   private int commitCount;
 
-  public RssSendCommitResponse(ResponseStatusCode statusCode) {
+  public RssSendCommitResponse(StatusCode statusCode) {
     super(statusCode);
   }
 

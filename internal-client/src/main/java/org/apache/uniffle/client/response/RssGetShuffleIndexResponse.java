@@ -18,11 +18,12 @@
 package org.apache.uniffle.client.response;
 
 import org.apache.uniffle.common.ShuffleIndexResult;
+import org.apache.uniffle.common.rpc.StatusCode;
 
 public class RssGetShuffleIndexResponse extends ClientResponse  {
   private final ShuffleIndexResult shuffleIndexResult;
 
-  public RssGetShuffleIndexResponse(ResponseStatusCode statusCode, byte[] data, long dataFileLen) {
+  public RssGetShuffleIndexResponse(StatusCode statusCode, byte[] data, long dataFileLen) {
     super(statusCode);
     this.shuffleIndexResult = new ShuffleIndexResult(data, dataFileLen);
   }

@@ -61,7 +61,6 @@ import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
 import org.apache.uniffle.client.response.ClientResponse;
-import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
 import org.apache.uniffle.client.response.RssApplicationInfoResponse;
 import org.apache.uniffle.client.response.RssFetchClientConfResponse;
@@ -84,6 +83,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public class ShuffleWriteClientImpl implements ShuffleWriteClient {
@@ -172,7 +172,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           String logMsg = String.format("ShuffleWriteClientImpl sendShuffleData with %s blocks to %s cost: %s(ms)",
               serverToBlockIds.get(ssi).size(), ssi.getId(), System.currentTimeMillis() - s);
 
-          if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+          if (response.getStatusCode() == StatusCode.SUCCESS) {
             // mark a replica of block that has been sent
             serverToBlockIds.get(ssi).forEach(block -> blockIdsTracker.get(block).incrementAndGet());
             if (defectiveServers != null) {
@@ -378,7 +378,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           long startTime = System.currentTimeMillis();
           try {
             RssSendCommitResponse response = getShuffleServerClient(ssi).sendCommit(request);
-            if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+            if (response.getStatusCode() == StatusCode.SUCCESS) {
               int commitCount = response.getCommitCount();
               LOG.info("Successfully sendCommit for appId[" + appId + "], shuffleId[" + shuffleId
                   + "] to ShuffleServer[" + ssi.getId() + "], cost "
@@ -387,7 +387,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               if (commitCount >= numMaps) {
                 RssFinishShuffleResponse rfsResponse =
                     getShuffleServerClient(ssi).finishShuffle(new RssFinishShuffleRequest(appId, shuffleId));
-                if (rfsResponse.getStatusCode() != ResponseStatusCode.SUCCESS) {
+                if (rfsResponse.getStatusCode() != StatusCode.SUCCESS) {
                   String msg = "Failed to finish shuffle to " + ssi + " for shuffleId[" + shuffleId
                       + "] with statusCode " + rfsResponse.getStatusCode();
                   LOG.error(msg);
@@ -450,10 +450,10 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   @Override
   public Map<String, String> fetchClientConf(int timeoutMs) {
     RssFetchClientConfResponse response =
-        new RssFetchClientConfResponse(ResponseStatusCode.INTERNAL_ERROR, "Empty coordinator clients");
+        new RssFetchClientConfResponse(StatusCode.INTERNAL_ERROR, "Empty coordinator clients");
     for (CoordinatorClient coordinatorClient : coordinatorClients) {
       response = coordinatorClient.fetchClientConf(new RssFetchClientConfRequest(timeoutMs));
-      if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+      if (response.getStatusCode() == StatusCode.SUCCESS) {
         LOG.info("Success to get conf from {}", coordinatorClient.getDesc());
         break;
       } else {
@@ -469,7 +469,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     for (CoordinatorClient coordinatorClient : coordinatorClients) {
       RssFetchRemoteStorageResponse response =
           coordinatorClient.fetchRemoteStorage(new RssFetchRemoteStorageRequest(appId));
-      if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+      if (response.getStatusCode() == StatusCode.SUCCESS) {
         remoteStorage = response.getRemoteStorageInfo();
         LOG.info("Success to get storage {} from {}", remoteStorage, coordinatorClient.getDesc());
         break;
@@ -488,7 +488,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         appId, shuffleId, partitionNum, partitionNumPerRange, replica, requiredTags,
         assignmentShuffleServerNumber, estimateTaskConcurrency);
 
-    RssGetShuffleAssignmentsResponse response = new RssGetShuffleAssignmentsResponse(ResponseStatusCode.INTERNAL_ERROR);
+    RssGetShuffleAssignmentsResponse response = new RssGetShuffleAssignmentsResponse(StatusCode.INTERNAL_ERROR);
     for (CoordinatorClient coordinatorClient : coordinatorClients) {
       try {
         response = coordinatorClient.getShuffleAssignments(request);
@@ -496,7 +496,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         LOG.error(e.getMessage());
       }
 
-      if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+      if (response.getStatusCode() == StatusCode.SUCCESS) {
         LOG.info("Success to get shuffle server assignment from {}", coordinatorClient.getDesc());
         break;
       }
@@ -538,7 +538,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       ShuffleServerInfo ssi = entry.getKey();
       try {
         RssReportShuffleResultResponse response = getShuffleServerClient(ssi).reportShuffleResult(request);
-        if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+        if (response.getStatusCode() == StatusCode.SUCCESS) {
           LOG.info("Report shuffle result to " + ssi + " for appId[" + appId
               + "], shuffleId[" + shuffleId + "] successfully");
           for (Integer partitionId : entry.getValue()) {
@@ -573,7 +573,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     for (ShuffleServerInfo ssi : shuffleServerInfoSet) {
       try {
         RssGetShuffleResultResponse response = getShuffleServerClient(ssi).getShuffleResult(request);
-        if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+        if (response.getStatusCode() == StatusCode.SUCCESS) {
           // merge into blockIds from multiple servers.
           Roaring64NavigableMap blockIdBitmapOfServer = response.getBlockIdBitmap();
           blockIdBitmap.or(blockIdBitmapOfServer);
@@ -614,7 +614,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       try {
         RssGetShuffleResultResponse response =
             getShuffleServerClient(shuffleServerInfo).getShuffleResultForMultiPart(request);
-        if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+        if (response.getStatusCode() == StatusCode.SUCCESS) {
           // merge into blockIds from multiple servers.
           Roaring64NavigableMap blockIdBitmapOfServer = response.getBlockIdBitmap();
           blockIdBitmap.or(blockIdBitmapOfServer);
@@ -643,7 +643,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       callableList.add(() -> {
         try {
           RssApplicationInfoResponse response = coordinatorClient.registerApplicationInfo(request);
-          if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
+          if (response.getStatusCode() != StatusCode.SUCCESS) {
             LOG.error("Failed to send applicationInfo to " + coordinatorClient.getDesc());
           } else {
             LOG.info("Successfully send applicationInfo to " + coordinatorClient.getDesc());
@@ -677,7 +677,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               ShuffleServerClient client =
                   ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
               RssAppHeartBeatResponse response = client.sendHeartBeat(request);
-              if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
+              if (response.getStatusCode() != StatusCode.SUCCESS) {
                 LOG.warn("Failed to send heartbeat to " + shuffleServerInfo);
               }
             } catch (Exception e) {
@@ -692,7 +692,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       callableList.add(() -> {
         try {
           RssAppHeartBeatResponse response = coordinatorClient.sendAppHeartBeat(request);
-          if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
+          if (response.getStatusCode() != StatusCode.SUCCESS) {
             LOG.warn("Failed to send heartbeat to " + coordinatorClient.getDesc());
           } else {
             LOG.info("Successfully send heartbeat to " + coordinatorClient.getDesc());
@@ -742,7 +742,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               ShuffleServerClient client =
                   ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
               RssUnregisterShuffleResponse response = client.unregisterShuffle(request);
-              if (response.getStatusCode() != ResponseStatusCode.SUCCESS) {
+              if (response.getStatusCode() != StatusCode.SUCCESS) {
                 LOG.warn("Failed to unregister shuffle to " + shuffleServerInfo);
               }
             } catch (Exception e) {
@@ -777,7 +777,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   private void throwExceptionIfNecessary(ClientResponse response, String errorMsg) {
-    if (response != null && response.getStatusCode() != ResponseStatusCode.SUCCESS) {
+    if (response != null && response.getStatusCode() != StatusCode.SUCCESS) {
       LOG.error(errorMsg);
       throw new RssException(errorMsg);
     }

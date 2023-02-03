@@ -21,15 +21,17 @@ import java.util.Map;
 
 import com.google.common.collect.Maps;
 
+import org.apache.uniffle.common.rpc.StatusCode;
+
 public class RssFetchClientConfResponse extends ClientResponse {
   private final Map<String, String> clientConf;
 
-  public RssFetchClientConfResponse(ResponseStatusCode statusCode, String message) {
+  public RssFetchClientConfResponse(StatusCode statusCode, String message) {
     this(statusCode, message, Maps.newHashMap());
   }
 
   public RssFetchClientConfResponse(
-      ResponseStatusCode statusCode,
+      StatusCode statusCode,
       String message,
       Map<String, String> clientConf) {
     super(statusCode, message);

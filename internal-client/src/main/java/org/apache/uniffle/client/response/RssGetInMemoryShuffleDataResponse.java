@@ -20,6 +20,7 @@ package org.apache.uniffle.client.response;
 import java.util.List;
 
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.rpc.StatusCode;
 
 public class RssGetInMemoryShuffleDataResponse extends ClientResponse {
 
@@ -27,7 +28,7 @@ public class RssGetInMemoryShuffleDataResponse extends ClientResponse {
   private final List<BufferSegment> bufferSegments;
 
   public RssGetInMemoryShuffleDataResponse(
-      ResponseStatusCode statusCode, byte[] data, List<BufferSegment> bufferSegments) {
+      StatusCode statusCode, byte[] data, List<BufferSegment> bufferSegments) {
     super(statusCode);
     this.bufferSegments = bufferSegments;
     this.data = data;

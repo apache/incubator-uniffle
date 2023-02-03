@@ -33,9 +33,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.request.RssAccessClusterRequest;
-import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RetryUtils;
 
@@ -127,11 +127,11 @@ public class DelegationRssShuffleManager implements ShuffleManager {
         canAccess = RetryUtils.retry(() -> {
           RssAccessClusterResponse response = coordinatorClient.accessCluster(new RssAccessClusterRequest(
               accessId, assignmentTags, accessTimeoutMs, extraProperties, user));
-          if (response.getStatusCode() == ResponseStatusCode.SUCCESS) {
+          if (response.getStatusCode() == StatusCode.SUCCESS) {
             LOG.warn("Success to access cluster {} using {}", coordinatorClient.getDesc(), accessId);
             uuid = response.getUuid();
             return true;
-          } else if (response.getStatusCode() == ResponseStatusCode.ACCESS_DENIED) {
+          } else if (response.getStatusCode() == StatusCode.ACCESS_DENIED) {
             throw new RssException("Request to access cluster " + coordinatorClient.getDesc() + " is denied using "
                 + accessId + " for " + response.getMessage());
           } else {

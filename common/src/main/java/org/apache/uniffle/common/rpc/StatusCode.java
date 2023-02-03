@@ -15,16 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client.response;
+package org.apache.uniffle.common.rpc;
 
-public enum ResponseStatusCode {
-  SUCCESS,
-  DOUBLE_REGISTER,
-  NO_BUFFER,
-  INVALID_STORAGE,
-  NO_REGISTER,
-  NO_PARTITION,
-  INTERNAL_ERROR,
-  TIMEOUT,
-  ACCESS_DENIED
+import org.apache.uniffle.proto.RssProtos;
+
+public enum StatusCode {
+  SUCCESS(0),
+  DOUBLE_REGISTER(1),
+  NO_BUFFER(2),
+  INVALID_STORAGE(3),
+  NO_REGISTER(4),
+  NO_PARTITION(5),
+  INTERNAL_ERROR(6),
+  TIMEOUT(7),
+  ACCESS_DENIED(8);
+
+  private final int statusCode;
+
+  StatusCode(int code) {
+    this.statusCode = code;
+  }
+
+  public int statusCode() {
+    return statusCode;
+  }
+
+  public RssProtos.StatusCode toProto() {
+    RssProtos.StatusCode code = RssProtos.StatusCode.forNumber(this.statusCode());
+    return code == null ? RssProtos.StatusCode.INTERNAL_ERROR : code;
+  }
 }

@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.client.request.RssGetShuffleAssignmentsRequest;
-import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.ServerNode;
@@ -130,7 +130,7 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
     nodes = coordinators.get(0).getClusterManager().getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     assertEquals(0, nodes.size());
     response = coordinatorClient.getShuffleAssignments(request);
-    assertEquals(ResponseStatusCode.INTERNAL_ERROR, response.getStatusCode());
+    assertEquals(StatusCode.INTERNAL_ERROR, response.getStatusCode());
 
     tempDataFile.delete();
     int i = 0;
