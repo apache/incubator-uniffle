@@ -265,27 +265,15 @@ public class RssSparkConfig {
                    + " spark.rss.estimate.server.assignment.enabled"))
       .createWithDefault(RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE);
 
-  public static final ConfigEntry<Boolean> SPARK_SHUFFLE_COMPRESS;
+  // spark2 doesn't have this key defined
+  public static final String SPARK_SHUFFLE_COMPRESS_KEY = "spark.shuffle.compress";
+
+  public static final boolean SPARK_SHUFFLE_COMPRESS_DEFAULT = true;
 
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
       ImmutableSet.of(RSS_STORAGE_TYPE.key(), RSS_REMOTE_STORAGE_PATH.key());
 
   public static final boolean RSS_USE_RSS_SHUFFLE_MANAGER_DEFAULT_VALUE = false;
-
-  static {
-    String key = "spark.shuffle.compress";
-    ConfigEntry<Boolean> entry = (ConfigEntry<Boolean>)ConfigEntry.findEntry(key);
-    if (entry != null) {
-      SPARK_SHUFFLE_COMPRESS = entry;
-    } else { // for spark2
-      SPARK_SHUFFLE_COMPRESS = createBooleanBuilder(
-          new ConfigBuilder(key)
-              .doc("Same as vanilla spark's definition to control whether compress shuffled data or not."
-                  + " Re-define here since the referenced spark2 version doesn't have this config in"
-                  + " org/apache/spark/internal/config/package.scala"))
-          .createWithDefault(true);
-    }
-  }
 
   public static TypedConfigBuilder<Integer> createIntegerBuilder(ConfigBuilder builder) {
     scala.Function1<String, Integer> f = new AbstractFunction1<String, Integer>() {

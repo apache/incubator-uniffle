@@ -20,12 +20,14 @@ package org.apache.spark.shuffle.writer;
 import java.util.List;
 
 import com.google.common.collect.Maps;
+import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.memory.TaskMemoryManager;
 import org.apache.spark.serializer.KryoSerializer;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.shuffle.RssSparkConfig;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
@@ -39,12 +41,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 public class WriteBufferManagerTest {
-
-  static {
-    // trigger spark config package initialization before RssSparkConfig to avoid key, spark.shuffle.compress,
-    // duplication in spark3
-    org.apache.spark.internal.config.package$.MODULE$.EXECUTOR_MEMORY();
-  }
 
   private WriteBufferManager createManager(SparkConf conf) {
     Serializer kryoSerializer = new KryoSerializer(conf);
@@ -70,21 +66,27 @@ public class WriteBufferManagerTest {
   }
 
   @Test
-  public void addRecordCompressedTest() {
+  public void addRecordCompressedTest() throws Exception {
     addRecord(true);
   }
 
   @Test
-  public void addRecordUnCompressedTest() {
+  public void addRecordUnCompressedTest() throws Exception {
     addRecord(false);
   }
 
-  private void addRecord(boolean compress) {
+  private void addRecord(boolean compress) throws IllegalAccessException {
     SparkConf conf = getConf();
     if (!compress) {
-      conf.set(RssSparkConfig.SPARK_SHUFFLE_COMPRESS, false);
+      conf.set(RssSparkConfig.SPARK_SHUFFLE_COMPRESS_KEY, String.valueOf(false));
     }
     WriteBufferManager wbm = createManager(conf);
+    Object codec = FieldUtils.readField(wbm, "codec", true);
+    if (compress) {
+      Assertions.assertNotNull(codec);
+    } else {
+      Assertions.assertNull(codec);
+    }
     wbm.setShuffleWriteMetrics(new ShuffleWriteMetrics());
     String testKey = "Key";
     String testValue = "Value";

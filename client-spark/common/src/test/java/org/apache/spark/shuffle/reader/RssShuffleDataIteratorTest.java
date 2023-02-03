@@ -23,6 +23,7 @@ import java.util.Map;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
@@ -31,6 +32,7 @@ import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.serializer.KryoSerializer;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.shuffle.RssSparkConfig;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -111,7 +113,7 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
     RssConf rc;
     if (!compress) {
       SparkConf sc = new SparkConf();
-      sc.set(RssSparkConfig.SPARK_SHUFFLE_COMPRESS, false);
+      sc.set(RssSparkConfig.SPARK_SHUFFLE_COMPRESS_KEY, String.valueOf(false));
       rc = RssSparkConfig.toRssConf(sc);
     } else {
       rc = new RssConf();
@@ -282,6 +284,12 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
 
     RssShuffleDataIterator rssShuffleDataIterator = getDataIterator(basePath, blockIdBitmap,
         taskIdBitmap, Lists.newArrayList(ssi1, ssi2), compress);
+    Object codec = FieldUtils.readField(rssShuffleDataIterator, "codec", true);
+    if (compress) {
+      Assertions.assertNotNull(codec);
+    } else {
+      Assertions.assertNull(codec);
+    }
 
     validateResult(rssShuffleDataIterator, expectedData, 20);
     assertEquals(20, rssShuffleDataIterator.getShuffleReadMetrics().recordsRead());

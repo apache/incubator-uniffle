@@ -67,9 +67,9 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
     this.serializerInstance = serializer.newInstance();
     this.shuffleReadClient = shuffleReadClient;
     this.shuffleReadMetrics = shuffleReadMetrics;
-    boolean compress = rssConf.getBoolean(RssSparkConfig.SPARK_SHUFFLE_COMPRESS.key()
+    boolean compress = rssConf.getBoolean(RssSparkConfig.SPARK_SHUFFLE_COMPRESS_KEY
             .substring(RssSparkConfig.SPARK_RSS_CONFIG_PREFIX.length()),
-        RssSparkConfig.SPARK_SHUFFLE_COMPRESS.defaultValue().get());
+        RssSparkConfig.SPARK_SHUFFLE_COMPRESS_DEFAULT);
     this.codec = compress ? Codec.newInstance(rssConf) : null;
   }
 
