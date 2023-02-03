@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.server;
+package org.apache.uniffle.common.rpc;
 
 import org.junit.jupiter.api.Test;
 
