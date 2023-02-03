@@ -55,7 +55,7 @@ public class AccessManager {
     init();
   }
 
-  private void init() throws RuntimeException {
+  private void init() {
     List<String> checkers = coordinatorConf.get(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS);
     if (CollectionUtils.isEmpty(checkers)) {
       LOG.warn("Access checkers is empty, will not init any checkers.");

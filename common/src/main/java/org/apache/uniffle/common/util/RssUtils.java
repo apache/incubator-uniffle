@@ -188,7 +188,7 @@ public class RssUtils {
   }
 
   public static <T> List<T> loadExtensions(
-      Class<T> extClass, List<String> classes, Object obj) throws RuntimeException {
+      Class<T> extClass, List<String> classes, Object obj) {
     if (classes == null || classes.isEmpty()) {
       throw new RuntimeException("Empty classes");
     }
