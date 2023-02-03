@@ -527,7 +527,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         }
         groupedPartitions.get(ssi).add(partitionIdx);
       }
-      if (CollectionUtils.isNotEmpty(partitionToBlockIds.getOrDefault(partitionIdx, null))) {
+      if (CollectionUtils.isNotEmpty(partitionToBlockIds.get(partitionIdx))) {
         partitionReportTracker.putIfAbsent(partitionIdx, 0);
       }
     }
