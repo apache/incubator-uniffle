@@ -71,6 +71,20 @@ public abstract class AbstractRssReaderTest extends HdfsTestBase {
       String keyPrefix,
       Serializer serializer,
       int partitionID) throws Exception {
+    writeTestData(handler, blockNum, recordNum, expectedData, blockIdBitmap, keyPrefix, serializer,
+        partitionID, true);
+  }
+
+  protected void writeTestData(
+      ShuffleWriteHandler handler,
+      int blockNum,
+      int recordNum,
+      Map<String, String> expectedData,
+      Roaring64NavigableMap blockIdBitmap,
+      String keyPrefix,
+      Serializer serializer,
+      int partitionID,
+      boolean compress) throws Exception {
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList();
     SerializerInstance serializerInstance = serializer.newInstance();
     for (int i = 0; i < blockNum; i++) {
@@ -84,14 +98,21 @@ public abstract class AbstractRssReaderTest extends HdfsTestBase {
       }
       long blockId = ClientUtils.getBlockId(partitionID, 0, atomicInteger.getAndIncrement());
       blockIdBitmap.add(blockId);
-      blocks.add(createShuffleBlock(output.toBytes(), blockId));
+      blocks.add(createShuffleBlock(output.toBytes(), blockId, compress));
       serializeStream.close();
     }
     handler.write(blocks);
   }
 
   protected ShufflePartitionedBlock createShuffleBlock(byte[] data, long blockId) {
-    byte[] compressData = Codec.newInstance(new RssConf()).compress(data);
+    return createShuffleBlock(data, blockId, true);
+  }
+
+  protected ShufflePartitionedBlock createShuffleBlock(byte[] data, long blockId, boolean compress) {
+    byte[] compressData = data;
+    if (compress) {
+      compressData = Codec.newInstance(new RssConf()).compress(data);
+    }
     long crc = ChecksumUtils.getCrc32(compressData);
     return new ShufflePartitionedBlock(compressData.length, data.length, crc, blockId, 0,
         compressData);

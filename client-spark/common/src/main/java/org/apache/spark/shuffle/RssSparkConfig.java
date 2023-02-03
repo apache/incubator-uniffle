@@ -265,6 +265,11 @@ public class RssSparkConfig {
                    + " spark.rss.estimate.server.assignment.enabled"))
       .createWithDefault(RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE);
 
+  // spark2 doesn't have this key defined
+  public static final String SPARK_SHUFFLE_COMPRESS_KEY = "spark.shuffle.compress";
+
+  public static final boolean SPARK_SHUFFLE_COMPRESS_DEFAULT = true;
+
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
       ImmutableSet.of(RSS_STORAGE_TYPE.key(), RSS_REMOTE_STORAGE_PATH.key());
 

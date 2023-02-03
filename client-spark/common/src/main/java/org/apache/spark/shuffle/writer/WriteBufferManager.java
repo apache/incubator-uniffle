@@ -32,6 +32,7 @@ import org.apache.spark.memory.TaskMemoryManager;
 import org.apache.spark.serializer.SerializationStream;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.serializer.SerializerInstance;
+import org.apache.spark.shuffle.RssSparkConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.reflect.ClassTag$;
@@ -106,7 +107,10 @@ public class WriteBufferManager extends MemoryConsumer {
     this.requireMemoryRetryMax = bufferManagerOptions.getRequireMemoryRetryMax();
     this.arrayOutputStream = new WrappedByteArrayOutputStream(serializerBufferSize);
     this.serializeStream = instance.serializeStream(arrayOutputStream);
-    this.codec = Codec.newInstance(rssConf);
+    boolean compress = rssConf.getBoolean(RssSparkConfig.SPARK_SHUFFLE_COMPRESS_KEY
+            .substring(RssSparkConfig.SPARK_RSS_CONFIG_PREFIX.length()),
+        RssSparkConfig.SPARK_SHUFFLE_COMPRESS_DEFAULT);
+    this.codec = compress ? Codec.newInstance(rssConf) : null;
   }
 
   public List<ShuffleBlockInfo> addRecord(int partitionId, Object key, Object value) {
@@ -178,10 +182,13 @@ public class WriteBufferManager extends MemoryConsumer {
   protected ShuffleBlockInfo createShuffleBlock(int partitionId, WriterBuffer wb) {
     byte[] data = wb.getData();
     final int uncompressLength = data.length;
-    long start = System.currentTimeMillis();
-    final byte[] compressed = codec.compress(data);
+    byte[] compressed = data;
+    if (codec != null) {
+      long start = System.currentTimeMillis();
+      compressed = codec.compress(data);
+      compressTime += System.currentTimeMillis() - start;
+    }
     final long crc32 = ChecksumUtils.getCrc32(compressed);
-    compressTime += System.currentTimeMillis() - start;
     final long blockId = ClientUtils.getBlockId(partitionId, taskAttemptId, getNextSeqNo(partitionId));
     uncompressedDataLen += data.length;
     shuffleWriteMetrics.incBytesWritten(compressed.length);
