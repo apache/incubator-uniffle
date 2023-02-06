@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	admissionv1 "k8s.io/api/admission/v1"
 	nodev1 "k8s.io/api/node/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -292,5 +293,65 @@ func buildTestRuntimeClass() *nodev1.RuntimeClass {
 			Name: testRuntimeClassName,
 		},
 		Handler: "/etc/runtime/bin",
+	}
+}
+
+func TestValidateCoordinator(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		coordinator *uniffleapi.CoordinatorConfig
+		allowed     bool
+	}{
+		{
+			name: "empty RPCNodePort",
+			coordinator: &uniffleapi.CoordinatorConfig{
+				Count: pointer.Int32(2),
+			},
+			allowed: true,
+		},
+		{
+			name: "same number of RPCNodePort and HTTPNodePort",
+			coordinator: &uniffleapi.CoordinatorConfig{
+				Count:        pointer.Int32(2),
+				RPCNodePort:  []int32{19996, 19997},
+				HTTPNodePort: []int32{19996, 19997},
+			},
+			allowed: true,
+		},
+		{
+			name: "different number of RPCNodePort and HTTPNodePort",
+			coordinator: &uniffleapi.CoordinatorConfig{
+				Count:        pointer.Int32(2),
+				RPCNodePort:  []int32{19996, 19997, 19998},
+				HTTPNodePort: []int32{19991, 19992},
+			},
+			allowed: false,
+		},
+		{
+			name: "same number of RPCNodePort and HTTPNodePort but with different coordinator count",
+			coordinator: &uniffleapi.CoordinatorConfig{
+				Count:        pointer.Int32(1),
+				RPCNodePort:  []int32{19996, 19997},
+				HTTPNodePort: []int32{19991, 19992},
+			},
+			allowed: false,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assertion := assert.New(t)
+			tt.coordinator.ExcludeNodesFilePath = "/exclude_nodes"
+			tt.coordinator.CommonConfig = &uniffleapi.CommonConfig{
+				RSSPodSpec: &uniffleapi.RSSPodSpec{
+					LogHostPath:    "",
+					HostPathMounts: map[string]string{},
+				},
+			}
+			err := validateCoordinator(tt.coordinator)
+			if tt.allowed {
+				assertion.Nil(err, "expected allowed, but got error: %v", err)
+			} else {
+				assertion.Error(err, "expected denied, but got accepted")
+			}
+		})
 	}
 }

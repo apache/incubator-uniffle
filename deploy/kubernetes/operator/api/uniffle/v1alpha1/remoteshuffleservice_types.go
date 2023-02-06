@@ -96,9 +96,11 @@ type CoordinatorConfig struct {
 	ExcludeNodesFilePath string `json:"excludeNodesFilePath,omitempty"`
 
 	// RPCNodePort defines rpc port of node port service used for coordinators' external access.
+	// +optional
 	RPCNodePort []int32 `json:"rpcNodePort"`
 
 	// HTTPNodePort defines http port of node port service used for coordinators' external access.
+	// +optional
 	HTTPNodePort []int32 `json:"httpNodePort"`
 }
 

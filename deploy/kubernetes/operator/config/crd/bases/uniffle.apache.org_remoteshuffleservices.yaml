@@ -3279,9 +3279,7 @@ spec:
                     type: string
                 required:
                 - configDir
-                - httpNodePort
                 - image
-                - rpcNodePort
                 - xmxSize
                 type: object
               shuffleServer:

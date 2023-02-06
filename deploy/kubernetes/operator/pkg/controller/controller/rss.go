@@ -618,14 +618,15 @@ func (r *rssController) syncShuffleServer(rss *unifflev1alpha1.RemoteShuffleServ
 	if rss.Status.Phase == unifflev1alpha1.RSSRunning && !*rss.Spec.ShuffleServer.Sync {
 		return nil
 	}
-	serviceAccount, services, statefulSet := shuffleserver.GenerateShuffleServers(rss)
+	// we don't need to generate svc for shuffle servers:
+	// shuffle servers are access directly through coordinator's shuffler assignments. service for shuffle server is
+	// pointless. For spark apps running in the cluster, executor containers could access shuffler server via container
+	// network(overlay or host network). If shuffle servers should be exposed to external, host network should be used
+	// and external executor should access the host node ip:port directly.
+	serviceAccount, statefulSet := shuffleserver.GenerateShuffleServers(rss)
 	if err := kubeutil.SyncServiceAccount(r.kubeClient, serviceAccount); err != nil {
 		klog.Errorf("sync SA (%v) for rss (%v) failed: %v",
 			utils.UniqueName(serviceAccount), utils.UniqueName(rss), err)
-		return err
-	}
-	if err := kubeutil.SyncServices(r.kubeClient, services); err != nil {
-		klog.Errorf("sync SVCs for rss (%v) failed: %v", utils.UniqueName(rss), err)
 		return err
 	}
 	if _, _, err := kubeutil.SyncStatefulSet(r.kubeClient, statefulSet, true); err != nil {
