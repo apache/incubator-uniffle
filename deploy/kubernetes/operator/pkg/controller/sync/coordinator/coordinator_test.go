@@ -216,7 +216,7 @@ func TestGenerateDeploy(t *testing.T) {
 //   differently: the service type for headless is treated as an empty service.
 func generateServiceCountMap(services []*corev1.Service) map[corev1.ServiceType]int {
 	result := make(map[corev1.ServiceType]int)
-	var empty corev1.ServiceType = ""
+	var empty corev1.ServiceType
 	for _, service := range services {
 		sType := service.Spec.Type
 		if (sType == corev1.ServiceTypeClusterIP || sType == empty) && service.Spec.ClusterIP == corev1.ClusterIPNone {
