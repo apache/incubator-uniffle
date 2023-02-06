@@ -31,6 +31,7 @@ import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -48,11 +49,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 
 public class RssUtils {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RssUtils.class);
+  public static final String RSS_LOCAL_DIR_KEY = "RSS_LOCAL_DIRS";
 
   private RssUtils() {
   }
@@ -290,5 +294,13 @@ public class RssUtils {
       taskIdBitmap.addLong(idHelper.getTaskAttemptId(iterator.next()));
     }
     return taskIdBitmap;
+  }
+
+  public static List<String> getConfiguredLocalDirs(RssConf conf) {
+    if (conf.getEnv(RSS_LOCAL_DIR_KEY) != null) {
+      return Arrays.asList(conf.getEnv(RSS_LOCAL_DIR_KEY).split(","));
+    } else {
+      return conf.get(RssBaseConf.RSS_STORAGE_BASE_PATH);
+    }
   }
 }

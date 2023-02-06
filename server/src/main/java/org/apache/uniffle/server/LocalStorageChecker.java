@@ -31,6 +31,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
@@ -47,7 +48,7 @@ public class LocalStorageChecker extends Checker {
 
   public LocalStorageChecker(ShuffleServerConf conf, List<LocalStorage> storages) {
     super(conf);
-    List<String> basePaths = conf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
+    List<String> basePaths = RssUtils.getConfiguredLocalDirs(conf);
     if (CollectionUtils.isEmpty(basePaths)) {
       throw new IllegalArgumentException("The base path cannot be empty");
     }

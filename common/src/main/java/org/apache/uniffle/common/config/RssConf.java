@@ -640,4 +640,9 @@ public class RssConf implements Cloneable {
   public String toString() {
     return this.settings.toString();
   }
+
+  public String getEnv(String key) {
+    return System.getenv(key);
+  }
+
 }
