@@ -212,6 +212,22 @@ func TestGenerateDeploy(t *testing.T) {
 	}
 }
 
+// generateServiceCuntMap generates a map with service type and its corresponding count. The headless svc is treated
+//   differently: the service type for headless is treated as an empty service.
+func generateServiceCountMap(services []*corev1.Service) map[corev1.ServiceType]int {
+	result := make(map[corev1.ServiceType]int)
+	var empty corev1.ServiceType = ""
+	for _, service := range services {
+		sType := service.Spec.Type
+		if (sType == corev1.ServiceTypeClusterIP || sType == empty) && service.Spec.ClusterIP == corev1.ClusterIPNone {
+			result[empty]++
+		} else {
+			result[service.Spec.Type]++
+		}
+	}
+	return result
+}
+
 func TestGenerateSvcForCoordinator(t *testing.T) {
 	for _, tt := range []struct {
 		name          string
@@ -227,7 +243,7 @@ func TestGenerateSvcForCoordinator(t *testing.T) {
 			},
 		},
 		{
-			name: "without rpcNodePort",
+			name: "without RPCNodePort",
 			rss: func() *uniffleapi.RemoteShuffleService {
 				withoutRPCNodePortRss := buildRssWithLabels()
 				withoutRPCNodePortRss.Spec.Coordinator.RPCNodePort = make([]int32, 0)
@@ -242,10 +258,7 @@ func TestGenerateSvcForCoordinator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			assertion := assert.New(t)
 			_, _, services, _ := GenerateCoordinators(tt.rss)
-			result := make(map[corev1.ServiceType]int)
-			for _, service := range services {
-				result[service.Spec.Type]++
-			}
+			result := generateServiceCountMap(services)
 			assertion.Equal(tt.serviceCntMap, result)
 		})
 	}
