@@ -27,6 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/pointer"
 
 	unifflev1alpha1 "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/api/uniffle/v1alpha1"
@@ -36,6 +37,19 @@ import (
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/controller/util"
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/utils"
 )
+
+var defaultENVs sets.String
+
+func init() {
+	defaultENVs = sets.NewString()
+	defaultENVs.Insert(controllerconstants.ShuffleServerRPCPortEnv,
+		controllerconstants.ShuffleServerHTTPPortEnv,
+		controllerconstants.RSSCoordinatorQuorumEnv,
+		controllerconstants.XmxSizeEnv,
+		controllerconstants.ServiceNameEnv,
+		controllerconstants.NodeNameEnv,
+		controllerconstants.RssIPEnv)
+}
 
 // GenerateShuffleServers generates objects related to shuffle servers.
 func GenerateShuffleServers(rss *unifflev1alpha1.RemoteShuffleService) (
@@ -217,6 +231,11 @@ func GenerateSts(rss *unifflev1alpha1.RemoteShuffleService) *appsv1.StatefulSet 
 		sts.Spec.Template.Labels[k] = v
 	}
 
+	// set runtimeClassName
+	if rss.Spec.ShuffleServer.RuntimeClassName != nil {
+		sts.Spec.Template.Spec.RuntimeClassName = rss.Spec.ShuffleServer.RuntimeClassName
+	}
+
 	// add init containers, the main container and other containers.
 	sts.Spec.Template.Spec.InitContainers = util.GenerateInitContainers(rss.Spec.ShuffleServer.RSSPodSpec)
 	containers := []corev1.Container{*generateMainContainer(rss)}
@@ -291,7 +310,7 @@ func generateMainContainerPorts(rss *unifflev1alpha1.RemoteShuffleService) []cor
 
 // generateMainContainerENV generates environment variables of main container of shuffle servers.
 func generateMainContainerENV(rss *unifflev1alpha1.RemoteShuffleService) []corev1.EnvVar {
-	return []corev1.EnvVar{
+	env := []corev1.EnvVar{
 		{
 			Name:  controllerconstants.ShuffleServerRPCPortEnv,
 			Value: strconv.FormatInt(int64(controllerconstants.ContainerShuffleServerRPCPort), 10),
@@ -331,6 +350,12 @@ func generateMainContainerENV(rss *unifflev1alpha1.RemoteShuffleService) []corev
 			},
 		},
 	}
+	for _, e := range rss.Spec.ShuffleServer.Env {
+		if !defaultENVs.Has(e.Name) {
+			env = append(env, e)
+		}
+	}
+	return env
 }
 
 // needGenerateNodePortSVC returns whether we need node port service for shuffle servers.
