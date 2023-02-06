@@ -21,6 +21,7 @@ import com.google.protobuf.BoolValue;
 import io.grpc.stub.StreamObserver;
 
 import org.apache.uniffle.common.exception.RejectException;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.ShuffleServerInternalGrpc.ShuffleServerInternalImplBase;
 

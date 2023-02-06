@@ -14,15 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.uniffle.common;
 
-import org.apache.uniffle.proto.RssProtos;
+package org.apache.uniffle.common;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.uniffle.proto.RssProtos;
+
 public enum ServerStatus {
-  NORMAL(0),
+  NORMAL_STATUS(0),
   DECOMMISSIONING(1);
   private final int statusCode;
 
@@ -34,6 +35,7 @@ public enum ServerStatus {
       statusMap.put(status.serverStatus(), status);
     }
   }
+
   ServerStatus(int code) {
     this.statusCode = code;
   }
@@ -42,11 +44,11 @@ public enum ServerStatus {
     return statusCode;
   }
 
-  public RssProtos.ShuffleServerHeartBeatRequest.ServerStatus toProto() {
-    return RssProtos.ShuffleServerHeartBeatRequest.ServerStatus.forNumber(this.serverStatus());
+  public RssProtos.ServerStatus toProto() {
+    return RssProtos.ServerStatus.forNumber(this.serverStatus());
   }
 
-  public static ServerStatus fromProto(RssProtos.ShuffleServerHeartBeatRequest.ServerStatus status) {
+  public static ServerStatus fromProto(RssProtos.ServerStatus status) {
     return statusMap.get(status.getNumber());
   }
 

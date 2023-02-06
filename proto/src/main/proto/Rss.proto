@@ -234,6 +234,12 @@ message ShuffleCommitResponse {
   string retMsg = 3;
 }
 
+enum ServerStatus {
+  NORMAL_STATUS = 0;
+  DECOMMISSIONING = 1;
+  // todo: more status, such as UPGRADING
+}
+
 message ShuffleServerHeartBeatRequest {
   ShuffleServerId serverId = 1;
   int64 usedMemory = 2;
@@ -244,12 +250,6 @@ message ShuffleServerHeartBeatRequest {
   google.protobuf.BoolValue isHealthy = 7;
   ServerStatus status = 8;
   map<string, StorageInfo> storageInfo = 21; // mount point to storage info mapping.
-
-  enum ServerStatus {
-    NORMAL = 0;
-    DECOMMISSIONING = 1;
-    // todo: more status, such as UPGRADING
-  }
 }
 
 message ShuffleServerHeartBeatResponse {

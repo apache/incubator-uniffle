@@ -27,12 +27,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.prometheus.client.CollectorRegistry;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.uniffle.common.ServerStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
+import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.exception.RejectException;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
@@ -57,6 +57,7 @@ import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_K
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KRB5_CONF_FILE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_STORAGE_TYPE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_TEST_MODE_ENABLE;
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_CHECK_INTERVAL;
 
 /**
  * Server that manages startup/shutdown of a {@code Greeter} server.
@@ -81,8 +82,9 @@ public class ShuffleServer {
   private GRPCMetrics grpcMetrics;
   private MetricReporter metricReporter;
   private Thread decommissionedThread;
-  private ServerStatus serverStatus = ServerStatus.NORMAL;
+  private ServerStatus serverStatus = ServerStatus.NORMAL_STATUS;
   private Object statusLock = new Object();
+  private boolean running;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -128,6 +130,7 @@ public class ShuffleServer {
         LOG.info("*** server shut down");
       }
     });
+    running = true;
     LOG.info("Shuffle server start successfully!");
   }
 
@@ -154,6 +157,7 @@ public class ShuffleServer {
     }
     SecurityContextFactory.get().getSecurityContext().close();
     server.stop();
+    running = false;
     LOG.info("RPC Server Stopped!");
   }
 
@@ -267,14 +271,17 @@ public class ShuffleServer {
   public ServerStatus getServerStatus() {
     return serverStatus;
   }
+
   public void decommission() {
     if (isDecommissioning()) {
       throw new RejectException("Shuffle Server is decommissioning. Nothing need to do.");
     }
-    if (!ServerStatus.NORMAL.equals(serverStatus)) {
+    if (!ServerStatus.NORMAL_STATUS.equals(serverStatus)) {
       throw new RejectException("Shuffle Server is processing other procedures, current status:" + serverStatus);
     }
     synchronized (statusLock) {
+      serverStatus = ServerStatus.DECOMMISSIONING;
+      long checkInterval = shuffleServerConf.get(SERVER_DECOMMISSION_CHECK_INTERVAL);
       decommissionedThread = new Thread(() -> {
         while (isDecommissioning()) {
           int remainApplicationNum = shuffleTaskManager.getAppIds().size();
@@ -290,7 +297,7 @@ public class ShuffleServer {
           }
           LOG.info("Shuffle server is decommissioning. remain {} applications not finished.", remainApplicationNum);
           try {
-            Thread.sleep(60000);
+            Thread.sleep(checkInterval);
           } catch (InterruptedException e) {
             LOG.warn("Ignore the InterruptedException which should be caused by internal killed");
           }
@@ -298,7 +305,6 @@ public class ShuffleServer {
       });
       decommissionedThread.setName("decommission");
       decommissionedThread.start();
-      serverStatus = ServerStatus.DECOMMISSIONING;
     }
   }
 
@@ -307,11 +313,11 @@ public class ShuffleServer {
       throw new RejectException("Shuffle server is not decommissioning. Nothing need to do.");
     }
     synchronized (statusLock) {
+      serverStatus = ServerStatus.NORMAL_STATUS;
       if (decommissionedThread != null) {
         decommissionedThread.interrupt();
         decommissionedThread = null;
       }
-      serverStatus = ServerStatus.NORMAL;
     }
   }
 
@@ -391,6 +397,10 @@ public class ShuffleServer {
 
   public boolean isDecommissioning() {
     return ServerStatus.DECOMMISSIONING.equals(serverStatus);
+  }
+
+  public boolean isRunning() {
+    return running;
   }
 
 }

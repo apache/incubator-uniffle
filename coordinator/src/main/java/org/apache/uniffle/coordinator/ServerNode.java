@@ -53,7 +53,7 @@ public class ServerNode implements Comparable<ServerNode> {
       Set<String> tags,
       boolean isHealthy) {
     this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags, isHealthy,
-        ServerStatus.NORMAL, Maps.newHashMap());
+        ServerStatus.NORMAL_STATUS, Maps.newHashMap());
   }
 
   public ServerNode(
@@ -140,9 +140,11 @@ public class ServerNode implements Comparable<ServerNode> {
   public boolean isHealthy() {
     return isHealthy;
   }
+
   public ServerStatus getStatus() {
     return status;
   }
+
   public Map<String, StorageInfo> getStorageInfo() {
     return storageInfo;
   }

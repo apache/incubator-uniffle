@@ -15,19 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client.response;
+package org.apache.uniffle.common.web;
 
-import org.apache.uniffle.common.rpc.StatusCode;
+import java.io.IOException;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-public class RssDecommissionResponse extends ClientResponse {
-  private boolean on;
+public class DecommissionServlet extends RestAPIBaseServlet {
+  @Override
+  protected void handleGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
-  public RssDecommissionResponse(StatusCode statusCode, boolean on) {
-    super(statusCode);
-    this.on = on;
   }
 
-  public boolean isOn() {
-    return on;
+  @Override
+  protected void handlePost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+
   }
 }

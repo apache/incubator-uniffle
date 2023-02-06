@@ -41,10 +41,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.uniffle.common.ServerStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
@@ -200,7 +200,7 @@ public class SimpleClusterManager implements ClusterManager {
   public List<ServerNode> getServerList(Set<String> requiredTags) {
     List<ServerNode> availableNodes = Lists.newArrayList();
     for (ServerNode node : servers.values()) {
-      if (!ServerStatus.NORMAL.equals(node.getStatus())) {
+      if (!ServerStatus.NORMAL_STATUS.equals(node.getStatus())) {
         continue;
       }
       if (!excludeNodes.contains(node.getId())

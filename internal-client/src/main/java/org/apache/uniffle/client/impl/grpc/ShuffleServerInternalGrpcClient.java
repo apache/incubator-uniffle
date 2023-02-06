@@ -25,9 +25,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleServerInternalClient;
 import org.apache.uniffle.client.request.RssDecommissionRequest;
-import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssDecommissionResponse;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.ShuffleServerInternalGrpc;
 
@@ -70,7 +70,7 @@ public class ShuffleServerInternalGrpcClient extends GrpcClient implements Shuff
     switch (statusCode) {
       case SUCCESS:
         response = new RssDecommissionResponse(
-            ResponseStatusCode.SUCCESS, rpcResponse.getOn().getValue());
+            StatusCode.SUCCESS, rpcResponse.getOn().getValue());
         break;
       default:
         String msg = "Can't " + (request.isOn() ? "enable" : "disable") + " decommission to "

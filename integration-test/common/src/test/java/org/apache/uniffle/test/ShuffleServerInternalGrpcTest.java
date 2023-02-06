@@ -19,8 +19,10 @@ package org.apache.uniffle.test;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,9 +35,12 @@ import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
 import org.apache.uniffle.client.response.RssDecommissionResponse;
 import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -53,7 +58,8 @@ public class ShuffleServerInternalGrpcTest extends IntegrationTestBase {
     File dataDir1 = new File(tmpDir, "data1");
     String basePath = dataDir1.getAbsolutePath();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
-    shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
+    shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 5000L);
+    shuffleServerConf.set(ShuffleServerConf.SERVER_DECOMMISSION_CHECK_INTERVAL, 500L);
     createShuffleServer(shuffleServerConf);
     startServers();
   }
@@ -74,19 +80,23 @@ public class ShuffleServerInternalGrpcTest extends IntegrationTestBase {
     assertTrue(response.isOn());
     response = shuffleServerInternalClient.decommission(new RssDecommissionRequest(false));
     assertTrue(!response.isOn());
+    ShuffleServer shuffleServer = shuffleServers.get(0);
+    assertEquals(ServerStatus.NORMAL_STATUS, shuffleServer.getServerStatus());
 
     // Clean all apps, shuffle server will be shutdown right now.
     shuffleServerClient.unregisterShuffle(new RssUnregisterShuffleRequest(appId, shuffleId));
     response = shuffleServerInternalClient.decommission(new RssDecommissionRequest(true));
     assertTrue(response.isOn());
+    assertEquals(ServerStatus.DECOMMISSIONING, shuffleServer.getServerStatus());
     try {
-      // Server is already shutdown, so exception should be thrown here.
-      shuffleServerInternalClient.decommission(new RssDecommissionRequest(true));
+      Awaitility.await().timeout(10, TimeUnit.SECONDS).until(() ->
+          !shuffleServer.isRunning());
+      // Server is already shutdown, so io exception should be thrown here.
+      shuffleServerInternalClient.decommission(new RssDecommissionRequest(false));
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
-      //assertTrue(e.getMessage().contains("must be set by the client or fetched from coordinators"));
+      assertTrue(e.getMessage().contains("UNAVAILABLE: io exception"));
     }
-
   }
 
 }
