@@ -18,12 +18,13 @@
 package org.apache.uniffle.client.response;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.rpc.StatusCode;
 
 public class RssFetchRemoteStorageResponse extends ClientResponse {
   private RemoteStorageInfo remoteStorageInfo;
 
   public RssFetchRemoteStorageResponse(
-      ResponseStatusCode statusCode,
+      StatusCode statusCode,
       RemoteStorageInfo remoteStorageInfo) {
     super(statusCode);
     this.remoteStorageInfo = remoteStorageInfo;

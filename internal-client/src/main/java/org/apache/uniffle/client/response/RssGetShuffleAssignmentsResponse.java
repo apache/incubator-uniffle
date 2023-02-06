@@ -22,17 +22,18 @@ import java.util.Map;
 
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.rpc.StatusCode;
 
 public class RssGetShuffleAssignmentsResponse extends ClientResponse {
 
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
   private Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges;
 
-  public RssGetShuffleAssignmentsResponse(ResponseStatusCode statusCode) {
+  public RssGetShuffleAssignmentsResponse(StatusCode statusCode) {
     super(statusCode);
   }
 
-  public RssGetShuffleAssignmentsResponse(ResponseStatusCode statusCode, String message) {
+  public RssGetShuffleAssignmentsResponse(StatusCode statusCode, String message) {
     super(statusCode, message);
   }
 

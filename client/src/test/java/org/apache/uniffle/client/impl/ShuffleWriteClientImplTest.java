@@ -29,11 +29,11 @@ import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
-import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.rpc.StatusCode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -77,7 +77,7 @@ public class ShuffleWriteClientImplTest {
     ShuffleWriteClientImpl spyClient = Mockito.spy(shuffleWriteClient);
     doReturn(mockShuffleServerClient).when(spyClient).getShuffleServerClient(any());
     when(mockShuffleServerClient.sendShuffleData(any())).thenReturn(
-        new RssSendShuffleDataResponse(ResponseStatusCode.NO_BUFFER));
+        new RssSendShuffleDataResponse(StatusCode.NO_BUFFER));
 
     List<ShuffleServerInfo> shuffleServerInfoList =
         Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
@@ -115,9 +115,9 @@ public class ShuffleWriteClientImplTest {
     ShuffleWriteClientImpl spyClient = Mockito.spy(shuffleWriteClient);
     doReturn(mockShuffleServerClient).when(spyClient).getShuffleServerClient(any());
     when(mockShuffleServerClient.sendShuffleData(any())).thenReturn(
-        new RssSendShuffleDataResponse(ResponseStatusCode.NO_BUFFER),
-        new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS),
-        new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS));
+        new RssSendShuffleDataResponse(StatusCode.NO_BUFFER),
+        new RssSendShuffleDataResponse(StatusCode.SUCCESS),
+        new RssSendShuffleDataResponse(StatusCode.SUCCESS));
 
     String appId = "testSendDataWithDefectiveServers_appId";
     ShuffleServerInfo ssi1 = new ShuffleServerInfo("127.0.0.1", 0);
@@ -132,8 +132,8 @@ public class ShuffleWriteClientImplTest {
 
     // Send data for the second time, the first shuffle server will be moved to the last.
     when(mockShuffleServerClient.sendShuffleData(any())).thenReturn(
-        new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS),
-        new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS));
+        new RssSendShuffleDataResponse(StatusCode.SUCCESS),
+        new RssSendShuffleDataResponse(StatusCode.SUCCESS));
     List<ShuffleServerInfo> excludeServers = new ArrayList<>();
     spyClient.genServerToBlocks(shuffleBlockInfoList.get(0), shuffleServerInfoList,
         2, excludeServers, Maps.newHashMap(), Maps.newHashMap(), true);
@@ -150,9 +150,9 @@ public class ShuffleWriteClientImplTest {
     // Send data for the third time, the first server will be removed from the defectiveServers
     // and the second server will be added to the defectiveServers.
     when(mockShuffleServerClient.sendShuffleData(any())).thenReturn(
-        new RssSendShuffleDataResponse(ResponseStatusCode.NO_BUFFER),
-        new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS),
-        new RssSendShuffleDataResponse(ResponseStatusCode.SUCCESS));
+        new RssSendShuffleDataResponse(StatusCode.NO_BUFFER),
+        new RssSendShuffleDataResponse(StatusCode.SUCCESS),
+        new RssSendShuffleDataResponse(StatusCode.SUCCESS));
     List<ShuffleServerInfo> shuffleServerInfoList2 = Lists.newArrayList(ssi2, ssi1, ssi3);
     List<ShuffleBlockInfo> shuffleBlockInfoList2 = Lists.newArrayList(new ShuffleBlockInfo(0, 0, 10, 10, 10,
         new byte[]{1}, shuffleServerInfoList2, 10, 100, 0));

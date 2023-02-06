@@ -17,22 +17,24 @@
 
 package org.apache.uniffle.client.response;
 
+import org.apache.uniffle.common.rpc.StatusCode;
+
 public class ClientResponse {
 
-  private final ResponseStatusCode statusCode;
+  private final StatusCode statusCode;
   private final String message;
 
-  public ClientResponse(ResponseStatusCode statusCode) {
+  public ClientResponse(StatusCode statusCode) {
     this.statusCode = statusCode;
     this.message = "";
   }
 
-  public ClientResponse(ResponseStatusCode statusCode, String message) {
+  public ClientResponse(StatusCode statusCode, String message) {
     this.statusCode = statusCode;
     this.message = message;
   }
 
-  public ResponseStatusCode getStatusCode() {
+  public StatusCode getStatusCode() {
     return statusCode;
   }
 

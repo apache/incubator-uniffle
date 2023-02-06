@@ -17,9 +17,11 @@
 
 package org.apache.uniffle.client.response;
 
+import org.apache.uniffle.common.rpc.StatusCode;
+
 public class RssFinishShuffleResponse extends ClientResponse {
 
-  public RssFinishShuffleResponse(ResponseStatusCode statusCode) {
+  public RssFinishShuffleResponse(StatusCode statusCode) {
     super(statusCode);
   }
 }

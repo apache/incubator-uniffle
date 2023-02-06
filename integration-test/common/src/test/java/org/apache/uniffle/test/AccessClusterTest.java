@@ -35,9 +35,9 @@ import org.junit.jupiter.api.io.TempDir;
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.request.RssAccessClusterRequest;
-import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
 import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.AccessManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -89,7 +89,7 @@ public class AccessClusterTest extends CoordinatorTestBase {
     RssAccessClusterRequest request = new RssAccessClusterRequest(accessID,
         Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, "user");
     RssAccessClusterResponse response = coordinatorClient.accessCluster(request);
-    assertEquals(ResponseStatusCode.ACCESS_DENIED, response.getStatusCode());
+    assertEquals(StatusCode.ACCESS_DENIED, response.getStatusCode());
 
     // case2: illegal names
     Map<String, String> extraProperties = new HashMap<>();
@@ -97,7 +97,7 @@ public class AccessClusterTest extends CoordinatorTestBase {
     request = new RssAccessClusterRequest(accessID, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION),
         2000, extraProperties, "user");
     response = coordinatorClient.accessCluster(request);
-    assertEquals(ResponseStatusCode.ACCESS_DENIED, response.getStatusCode());
+    assertEquals(StatusCode.ACCESS_DENIED, response.getStatusCode());
 
     // case3: legal names
     extraProperties.clear();
@@ -105,7 +105,7 @@ public class AccessClusterTest extends CoordinatorTestBase {
     request = new RssAccessClusterRequest(accessID, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION),
         2000, extraProperties, "user");
     response = coordinatorClient.accessCluster(request);
-    assertEquals(ResponseStatusCode.SUCCESS, response.getStatusCode());
+    assertEquals(StatusCode.SUCCESS, response.getStatusCode());
 
     shutdownServers();
   }
@@ -138,14 +138,14 @@ public class AccessClusterTest extends CoordinatorTestBase {
     RssAccessClusterRequest request = new RssAccessClusterRequest(accessId,
         Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, "user");
     RssAccessClusterResponse response = coordinatorClient.accessCluster(request);
-    assertEquals(ResponseStatusCode.ACCESS_DENIED, response.getStatusCode());
+    assertEquals(StatusCode.ACCESS_DENIED, response.getStatusCode());
     assertTrue(response.getMessage().startsWith("Denied by AccessCandidatesChecker"));
 
     accessId = "135";
     request = new RssAccessClusterRequest(accessId,
         Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, "user");
     response = coordinatorClient.accessCluster(request);
-    assertEquals(ResponseStatusCode.ACCESS_DENIED, response.getStatusCode());
+    assertEquals(StatusCode.ACCESS_DENIED, response.getStatusCode());
     assertTrue(response.getMessage().startsWith("Denied by AccessClusterLoadChecker"));
 
     shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 2);
@@ -159,13 +159,13 @@ public class AccessClusterTest extends CoordinatorTestBase {
     request = new RssAccessClusterRequest(accessId,
         Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, "user");
     response = client.accessCluster(request);
-    assertEquals(ResponseStatusCode.INTERNAL_ERROR, response.getStatusCode());
+    assertEquals(StatusCode.INTERNAL_ERROR, response.getStatusCode());
     assertTrue(response.getMessage().startsWith("UNAVAILABLE: io exception"));
 
     request = new RssAccessClusterRequest(accessId,
         Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, "user");
     response = coordinatorClient.accessCluster(request);
-    assertEquals(ResponseStatusCode.SUCCESS, response.getStatusCode());
+    assertEquals(StatusCode.SUCCESS, response.getStatusCode());
     assertTrue(response.getMessage().startsWith("SUCCESS"));
     shuffleServer.stopServer();
     shutdownServers();

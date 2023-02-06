@@ -17,9 +17,11 @@
 
 package org.apache.uniffle.client.response;
 
+import org.apache.uniffle.common.rpc.StatusCode;
+
 public class RssApplicationInfoResponse extends ClientResponse {
 
-  public RssApplicationInfoResponse(ResponseStatusCode statusCode) {
+  public RssApplicationInfoResponse(StatusCode statusCode) {
     super(statusCode);
   }
 }

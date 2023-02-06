@@ -49,7 +49,6 @@ import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
-import org.apache.uniffle.client.response.ResponseStatusCode;
 import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.util.ClientUtils;
@@ -59,6 +58,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.proto.RssProtos;
@@ -205,7 +205,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     request =
         new RssReportShuffleResultRequest("shuffleResultTest", 0, 0L, partitionToBlockIds, 1);
     RssReportShuffleResultResponse response = shuffleServerClient.reportShuffleResult(request);
-    assertEquals(ResponseStatusCode.SUCCESS, response.getStatusCode());
+    assertEquals(StatusCode.SUCCESS, response.getStatusCode());
     req = new RssGetShuffleResultRequest("shuffleResultTest", 0, 1);
     result = shuffleServerClient.getShuffleResult(req);
     blockIdBitmap = result.getBlockIdBitmap();

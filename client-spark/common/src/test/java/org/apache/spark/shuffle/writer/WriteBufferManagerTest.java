@@ -20,16 +20,17 @@ package org.apache.spark.shuffle.writer;
 import java.util.List;
 
 import com.google.common.collect.Maps;
+import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.memory.TaskMemoryManager;
 import org.apache.spark.serializer.KryoSerializer;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.shuffle.RssSparkConfig;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
-import org.apache.uniffle.common.config.RssConf;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -48,7 +49,7 @@ public class WriteBufferManagerTest {
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
     WriteBufferManager wbm = new WriteBufferManager(
         0, 0, bufferOptions, kryoSerializer,
-        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(), new RssConf());
+        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(), RssSparkConfig.toRssConf(conf));
     WriteBufferManager spyManager = spy(wbm);
     doReturn(512L).when(spyManager).acquireMemory(anyLong());
     return spyManager;
@@ -65,9 +66,27 @@ public class WriteBufferManagerTest {
   }
 
   @Test
-  public void addRecordTest() {
+  public void addRecordCompressedTest() throws Exception {
+    addRecord(true);
+  }
+
+  @Test
+  public void addRecordUnCompressedTest() throws Exception {
+    addRecord(false);
+  }
+
+  private void addRecord(boolean compress) throws IllegalAccessException {
     SparkConf conf = getConf();
+    if (!compress) {
+      conf.set(RssSparkConfig.SPARK_SHUFFLE_COMPRESS_KEY, String.valueOf(false));
+    }
     WriteBufferManager wbm = createManager(conf);
+    Object codec = FieldUtils.readField(wbm, "codec", true);
+    if (compress) {
+      Assertions.assertNotNull(codec);
+    } else {
+      Assertions.assertNull(codec);
+    }
     wbm.setShuffleWriteMetrics(new ShuffleWriteMetrics());
     String testKey = "Key";
     String testValue = "Value";

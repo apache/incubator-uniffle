@@ -76,7 +76,7 @@ public class RssSparkShuffleUtils {
     return instance;
   }
 
-  public static List<CoordinatorClient> createCoordinatorClients(SparkConf sparkConf) throws RuntimeException {
+  public static List<CoordinatorClient> createCoordinatorClients(SparkConf sparkConf) {
     String clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
     String coordinators = sparkConf.get(RssSparkConfig.RSS_COORDINATOR_QUORUM);
     CoordinatorClientFactory coordinatorClientFactory = new CoordinatorClientFactory(ClientType.valueOf(clientType));

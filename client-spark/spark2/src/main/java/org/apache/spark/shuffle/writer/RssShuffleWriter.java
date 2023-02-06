@@ -285,7 +285,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   }
 
   @VisibleForTesting
-  protected void checkBlockSendResult(Set<Long> blockIds) throws RuntimeException {
+  protected void checkBlockSendResult(Set<Long> blockIds) {
     long start = System.currentTimeMillis();
     while (true) {
       Set<Long> failedBlockIds = shuffleManager.getFailedBlockIds(taskId);

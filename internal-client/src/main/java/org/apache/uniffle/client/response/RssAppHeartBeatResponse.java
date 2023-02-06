@@ -17,9 +17,11 @@
 
 package org.apache.uniffle.client.response;
 
+import org.apache.uniffle.common.rpc.StatusCode;
+
 public class RssAppHeartBeatResponse extends ClientResponse {
 
-  public RssAppHeartBeatResponse(ResponseStatusCode statusCode) {
+  public RssAppHeartBeatResponse(StatusCode statusCode) {
     super(statusCode);
   }
 }

@@ -17,15 +17,17 @@
 
 package org.apache.uniffle.client.response;
 
+import org.apache.uniffle.common.rpc.StatusCode;
+
 public class RssAccessClusterResponse extends ClientResponse {
 
   private String uuid;
 
-  public RssAccessClusterResponse(ResponseStatusCode statusCode, String messge) {
+  public RssAccessClusterResponse(StatusCode statusCode, String messge) {
     super(statusCode, messge);
   }
 
-  public RssAccessClusterResponse(ResponseStatusCode statusCode, String messge, String uuid) {
+  public RssAccessClusterResponse(StatusCode statusCode, String messge, String uuid) {
     super(statusCode, messge);
     this.uuid = uuid;
   }

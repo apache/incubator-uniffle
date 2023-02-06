@@ -33,8 +33,8 @@ import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.apache.uniffle.client.response.ResponseStatusCode.ACCESS_DENIED;
-import static org.apache.uniffle.client.response.ResponseStatusCode.SUCCESS;
+import static org.apache.uniffle.common.rpc.StatusCode.ACCESS_DENIED;
+import static org.apache.uniffle.common.rpc.StatusCode.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
