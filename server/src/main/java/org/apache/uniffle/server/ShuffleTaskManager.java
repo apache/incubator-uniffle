@@ -229,7 +229,6 @@ public class ShuffleTaskManager {
     long start = System.currentTimeMillis();
     refreshAppId(appId);
     Roaring64NavigableMap cachedBlockIds = getCachedBlockIds(appId, shuffleId);
-    Roaring64NavigableMap cloneBlockIds;
     ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.computeIfAbsent(appId, x -> new ShuffleTaskInfo(appId));
     Object lock = shuffleTaskInfo.getCommitLocks().computeIfAbsent(shuffleId, x -> new Object());
     synchronized (lock) {
@@ -237,15 +236,13 @@ public class ShuffleTaskManager {
       if (System.currentTimeMillis() - start > commitTimeout) {
         throw new RuntimeException("Shuffle data commit timeout for " + commitTimeout + " ms");
       }
-      cloneBlockIds = RssUtils.cloneBitMap(cachedBlockIds);
+      Roaring64NavigableMap cloneBlockIds = RssUtils.cloneBitMap(cachedBlockIds);
       long expectedCommitted = cloneBlockIds.getLongCardinality();
       shuffleBufferManager.commitShuffleTask(appId, shuffleId);
-      Roaring64NavigableMap committedBlockIds;
-      Roaring64NavigableMap cloneCommittedBlockIds;
       long checkInterval = 1000L;
       while (true) {
-        committedBlockIds = shuffleFlushManager.getCommittedBlockIds(appId, shuffleId);
-        cloneCommittedBlockIds = RssUtils.cloneBitMap(committedBlockIds);
+        Roaring64NavigableMap committedBlockIds = shuffleFlushManager.getCommittedBlockIds(appId, shuffleId);
+        Roaring64NavigableMap cloneCommittedBlockIds = RssUtils.cloneBitMap(committedBlockIds);
         cloneBlockIds.andNot(cloneCommittedBlockIds);
         if (cloneBlockIds.isEmpty()) {
           break;
