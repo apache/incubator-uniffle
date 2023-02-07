@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -361,8 +362,9 @@ public class ShuffleFlushManager {
     }
   }
 
-  public void removeResourcesOfShuffleId(String appId, int shuffleId) {
-    Optional.ofNullable(committedBlockIds.get(appId)).ifPresent(x -> x.remove(shuffleId));
+  public void removeResourcesOfShuffleId(String appId, Collection<Integer> shuffleIds) {
+    Optional.ofNullable(committedBlockIds.get(appId))
+        .ifPresent(shuffleIdToBlockIds -> shuffleIds.forEach(shuffleIdToBlockIds::remove));
   }
 
   private static class PendingShuffleFlushEvent {

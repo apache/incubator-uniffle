@@ -287,10 +287,7 @@ public class ShuffleBufferManager {
     if (shuffleIdToBuffers == null) {
       return;
     }
-    removeBufferByShuffleId(
-        appId,
-        shuffleIdToBuffers.keySet().stream().collect(Collectors.toList()).toArray(new Integer[0])
-    );
+    removeBufferByShuffleId(appId, shuffleIdToBuffers.keySet());
     shuffleSizeMap.remove(appId);
     bufferPool.remove(appId);
   }
@@ -536,7 +533,7 @@ public class ShuffleBufferManager {
     shuffleIdSet.add(shuffleId);
   }
 
-  public void removeBufferByShuffleId(String appId, Integer... shuffleIds) {
+  public void removeBufferByShuffleId(String appId, Collection<Integer> shuffleIds) {
     Map<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers = bufferPool.get(appId);
     if (shuffleIdToBuffers == null) {
       return;
