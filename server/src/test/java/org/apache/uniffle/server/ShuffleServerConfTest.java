@@ -20,22 +20,16 @@ package org.apache.uniffle.server;
 import java.io.File;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
-import uk.org.webcompere.systemstubs.jupiter.SystemStub;
-import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import org.apache.uniffle.common.util.ByteUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables;
 
-@ExtendWith(SystemStubsExtension.class)
 public class ShuffleServerConfTest {
 
   private static final String confFile = ClassLoader.getSystemResource("confTest.conf").getFile();
-  @SystemStub
-  private static EnvironmentVariables environmentVariables;
 
   @Test
   public void defaultConfTest() {
@@ -47,14 +41,15 @@ public class ShuffleServerConfTest {
   }
 
   @Test
-  public void envConfTest() {
-    environmentVariables.set("RSS_HOME", (new File(confFile)).getParent());
-    ShuffleServerConf shuffleServerConf = new ShuffleServerConf(null);
-    assertEquals(1234, shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
-    assertEquals("HDFS", shuffleServerConf.getString(ShuffleServerConf.RSS_STORAGE_TYPE));
-    assertEquals("/var/tmp/test", shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0));
-    environmentVariables.set("RSS_HOME", (new File(confFile)).getParent() + "/wrong_dir/");
-    assertFalse(shuffleServerConf.loadConfFromFile(null));
+  public void envConfTest() throws Exception {
+    withEnvironmentVariables("RSS_HOME", (new File(confFile)).getParent()).execute(() -> {
+      ShuffleServerConf shuffleServerConf = new ShuffleServerConf(null);
+      assertEquals(1234, shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
+      assertEquals("HDFS", shuffleServerConf.getString(ShuffleServerConf.RSS_STORAGE_TYPE));
+      assertEquals("/var/tmp/test", shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0));
+      withEnvironmentVariables("RSS_HOME", (new File(confFile)).getParent() + "/wrong_dir/")
+          .execute(() -> assertFalse(shuffleServerConf.loadConfFromFile(null)));
+    });
   }
 
   @Test
