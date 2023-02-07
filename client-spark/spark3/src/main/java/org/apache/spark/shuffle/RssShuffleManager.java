@@ -157,8 +157,8 @@ public class RssShuffleManager implements ShuffleManager {
         .map(env -> env.serializer().supportsRelocationOfSerializedObjects())
         .orElse(true);
     if (!supportsRelocation) {
-      LOG.warn("RSSShuffleManager requires a serializer which supports relocations of serialized object. Please set " +
-          "spark.serializer to org.apache.spark.serializer.KryoSerializer instead");
+      LOG.warn("RSSShuffleManager requires a serializer which supports relocations of serialized object. Please set "
+          + "spark.serializer to org.apache.spark.serializer.KryoSerializer instead");
     }
     this.user = sparkConf.get("spark.rss.quota.user", "user");
     this.uuid = sparkConf.get("spark.rss.quota.uuid",  Long.toString(System.currentTimeMillis()));
