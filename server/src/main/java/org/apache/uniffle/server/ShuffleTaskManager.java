@@ -237,9 +237,7 @@ public class ShuffleTaskManager {
       if (System.currentTimeMillis() - start > commitTimeout) {
         throw new RuntimeException("Shuffle data commit timeout for " + commitTimeout + " ms");
       }
-      synchronized (cachedBlockIds) {
-        cloneBlockIds = RssUtils.cloneBitMap(cachedBlockIds);
-      }
+      cloneBlockIds = RssUtils.cloneBitMap(cachedBlockIds);
       long expectedCommitted = cloneBlockIds.getLongCardinality();
       shuffleBufferManager.commitShuffleTask(appId, shuffleId);
       Roaring64NavigableMap committedBlockIds;
@@ -247,9 +245,7 @@ public class ShuffleTaskManager {
       long checkInterval = 1000L;
       while (true) {
         committedBlockIds = shuffleFlushManager.getCommittedBlockIds(appId, shuffleId);
-        synchronized (committedBlockIds) {
-          cloneCommittedBlockIds = RssUtils.cloneBitMap(committedBlockIds);
-        }
+        cloneCommittedBlockIds = RssUtils.cloneBitMap(committedBlockIds);
         cloneBlockIds.andNot(cloneCommittedBlockIds);
         if (cloneBlockIds.isEmpty()) {
           break;
@@ -288,10 +284,8 @@ public class ShuffleTaskManager {
     for (Map.Entry<Integer, long[]> entry : partitionToBlockIds.entrySet()) {
       Integer partitionId = entry.getKey();
       Roaring64NavigableMap bitmap = blockIds[partitionId % bitmapNum];
-      synchronized (bitmap) {
-        for (long blockId : entry.getValue()) {
-          bitmap.addLong(blockId);
-        }
+      for (long blockId : entry.getValue()) {
+        bitmap.addLong(blockId);
       }
     }
   }
@@ -317,11 +311,9 @@ public class ShuffleTaskManager {
         .computeIfAbsent(shuffleId, x -> Roaring64NavigableMap.bitmapOf());
 
     long size = 0L;
-    synchronized (bitmap) {
-      for (ShufflePartitionedBlock spb : spbs) {
-        bitmap.addLong(spb.getBlockId());
-        size += spb.getSize();
-      }
+    for (ShufflePartitionedBlock spb : spbs) {
+      bitmap.addLong(spb.getBlockId());
+      size += spb.getSize();
     }
     long partitionSize = shuffleTaskInfo.addPartitionDataSize(
         shuffleId,

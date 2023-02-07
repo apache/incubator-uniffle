@@ -268,10 +268,8 @@ public class ShuffleFlushManager {
     Map<Integer, Roaring64NavigableMap> shuffleToBlockIds = committedBlockIds.get(appId);
     shuffleToBlockIds.putIfAbsent(shuffleId, Roaring64NavigableMap.bitmapOf());
     Roaring64NavigableMap bitmap = shuffleToBlockIds.get(shuffleId);
-    synchronized (bitmap) {
-      for (ShufflePartitionedBlock spb : blocks) {
-        bitmap.addLong(spb.getBlockId());
-      }
+    for (ShufflePartitionedBlock spb : blocks) {
+      bitmap.addLong(spb.getBlockId());
     }
   }
 

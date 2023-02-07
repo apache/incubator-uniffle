@@ -111,9 +111,7 @@ public class LocalStorageMeta {
     ShuffleMeta shuffleMeta = getShuffleMeta(shuffleKey);
     if (shuffleMeta != null) {
       RoaringBitmap bitmap = shuffleMeta.partitionBitmap;
-      synchronized (bitmap) {
-        partitions.forEach(bitmap::add);
-      }
+      partitions.forEach(bitmap::add);
     }
   }
 
@@ -121,9 +119,7 @@ public class LocalStorageMeta {
     ShuffleMeta shuffleMeta = getShuffleMeta(shuffleKey);
     if (shuffleMeta != null) {
       RoaringBitmap bitmap = shuffleMeta.uploadedPartitionBitmap;
-      synchronized (bitmap) {
-        partitions.forEach(bitmap::add);
-      }
+      partitions.forEach(bitmap::add);
     }
   }
 
@@ -138,9 +134,7 @@ public class LocalStorageMeta {
     ShuffleMeta shuffleMeta = getShuffleMeta(shuffleKey);
     if (shuffleMeta != null) {
       RoaringBitmap bitmap = shuffleMeta.partitionBitmap;
-      synchronized (bitmap) {
-        partitions.forEach(bitmap::remove);
-      }
+      partitions.forEach(bitmap::remove);
     }
   }
 
