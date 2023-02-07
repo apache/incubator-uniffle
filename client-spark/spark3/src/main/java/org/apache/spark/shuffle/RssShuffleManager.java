@@ -20,6 +20,7 @@ package org.apache.spark.shuffle;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -152,6 +153,13 @@ public class RssShuffleManager implements ShuffleManager {
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
+    boolean supportsRelocation = Optional.ofNullable(SparkEnv.get())
+        .map(env -> env.serializer().supportsRelocationOfSerializedObjects())
+        .orElse(true);
+    if (!supportsRelocation) {
+      LOG.warn("RSSShuffleManager requires a serializer which supports relocations of serialized object. Please set " +
+          "spark.serializer to org.apache.spark.serializer.KryoSerializer instead");
+    }
     this.user = sparkConf.get("spark.rss.quota.user", "user");
     this.uuid = sparkConf.get("spark.rss.quota.uuid",  Long.toString(System.currentTimeMillis()));
     // set & check replica config
