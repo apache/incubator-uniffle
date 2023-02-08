@@ -20,6 +20,7 @@ package org.apache.uniffle.common.util;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -34,11 +35,14 @@ import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.config.RssConf;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
@@ -175,6 +179,24 @@ public class RssUtilsTest {
     assertEquals(serverToPartitions.get(server2), Sets.newHashSet(1, 3));
     assertEquals(serverToPartitions.get(server3), Sets.newHashSet(2, 4));
     assertEquals(serverToPartitions.get(server4), Sets.newHashSet(2, 4));
+  }
+
+  @Test
+  public void testGetConfiguredLocalDirs() throws Exception {
+    RssConf conf = new RssConf();
+    withEnvironmentVariable(RssUtils.RSS_LOCAL_DIR_KEY, "/path/a").execute(() -> {
+      assertEquals(Collections.singletonList("/path/a"), RssUtils.getConfiguredLocalDirs(conf));
+    });
+
+    withEnvironmentVariable(RssUtils.RSS_LOCAL_DIR_KEY, "/path/a,/path/b").execute(() -> {
+      assertEquals(Arrays.asList("/path/a", "/path/b"), RssUtils.getConfiguredLocalDirs(conf));
+    });
+
+    withEnvironmentVariable(RssUtils.RSS_LOCAL_DIR_KEY, null).execute(() -> {
+      assertNull(RssUtils.getConfiguredLocalDirs(conf));
+      conf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/path/a", "/path/b"));
+      assertEquals(Arrays.asList("/path/a", "/path/b"), RssUtils.getConfiguredLocalDirs(conf));
+    });
   }
 
   // Copy from ClientUtils
