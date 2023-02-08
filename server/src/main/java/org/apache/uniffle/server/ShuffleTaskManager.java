@@ -535,9 +535,9 @@ public class ShuffleTaskManager {
     final ShuffleTaskInfo taskInfo = shuffleTaskInfos.get(appId);
     if (taskInfo != null) {
       for (Integer shuffleId : shuffleIds) {
-        Optional.ofNullable(taskInfo).ifPresent(x -> x.getCachedBlockIds().remove(shuffleId));
-        Optional.ofNullable(taskInfo).ifPresent(x -> x.getCommitCounts().remove(shuffleId));
-        Optional.ofNullable(taskInfo).ifPresent(x -> x.getCommitLocks().remove(shuffleId));
+        taskInfo.getCachedBlockIds().remove(shuffleId);
+        taskInfo.getCommitCounts().remove(shuffleId);
+        taskInfo.getCommitLocks().remove(shuffleId);
       }
     }
     Optional.ofNullable(partitionsToBlockIds.get(appId)).ifPresent(x -> {
@@ -545,10 +545,8 @@ public class ShuffleTaskManager {
         x.remove(shuffleId);
       }
     });
-    shuffleBufferManager.removeBufferByShuffleId(appId, shuffleIds.toArray(new Integer[0]));
-    for (Integer shuffleId : shuffleIds) {
-      shuffleFlushManager.removeResourcesOfShuffleId(appId, shuffleId);
-    }
+    shuffleBufferManager.removeBufferByShuffleId(appId, shuffleIds);
+    shuffleFlushManager.removeResourcesOfShuffleId(appId, shuffleIds);
     storageManager.removeResources(
         new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds)
     );
