@@ -33,7 +33,6 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageMedia;
 import org.apache.uniffle.common.storage.StorageStatus;
-import org.apache.uniffle.common.util.RssUtilsTest;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -48,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables;
 
 /**
  * The class is to test the {@link LocalStorageManager}
@@ -177,7 +177,7 @@ public class LocalStorageManagerTest {
   }
 
   @Test
-  public void testInitializeLocalStorage() throws IOException {
+  public void testInitializeLocalStorage() {
 
     // case1: when no candidates, it should throw exception.
     ShuffleServerConf conf = new ShuffleServerConf();
@@ -247,7 +247,7 @@ public class LocalStorageManagerTest {
   }
 
   @Test
-  public void testEnvStorageTypeProvider() {
+  public void testEnvStorageTypeProvider() throws Exception {
     String[] storagePaths = {"/tmp/rss-data1"};
 
     ShuffleServerConf conf = new ShuffleServerConf();
@@ -255,17 +255,14 @@ public class LocalStorageManagerTest {
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
     conf.set(ShuffleServerConf.STORAGE_MEDIA_PROVIDER_ENV_KEY, "env_key");
-    RssUtilsTest.setEnv("env_key", "{\"/tmp\": \"ssd\"}");
-    LocalStorageManager localStorageManager = new LocalStorageManager(conf);
-    Map<String, StorageInfo> storageInfo = localStorageManager.getStorageInfo();
-    assertEquals(1, storageInfo.size());
-    try {
+    withEnvironmentVariables("env_key", "{\"/tmp\": \"ssd\"}").execute(() -> {
+      LocalStorageManager localStorageManager = new LocalStorageManager(conf);
+      Map<String, StorageInfo> storageInfo = localStorageManager.getStorageInfo();
+      assertEquals(1, storageInfo.size());
       String mountPoint = Files.getFileStore(new File("/tmp").toPath()).name();
       assertNotNull(storageInfo.get(mountPoint));
       // by default, it should report HDD as local storage type
       assertEquals(StorageMedia.SSD, storageInfo.get(mountPoint).getType());
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    });
   }
 }
