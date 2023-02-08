@@ -19,8 +19,11 @@ package org.apache.uniffle.coordinator.access.checker;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.uniffle.common.config.Reconfigurable;
+import org.apache.uniffle.common.config.RssConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +42,7 @@ import static org.apache.uniffle.common.util.Constants.ACCESS_INFO_REQUIRED_SHUF
  * AccessClusterLoadChecker use the cluster load metrics including memory and healthy to
  * filter and count available nodes numbers and reject if the number do not reach the threshold.
  */
-public class AccessClusterLoadChecker extends AbstractAccessChecker {
+public class AccessClusterLoadChecker extends AbstractAccessChecker implements Reconfigurable {
 
   private static final Logger LOG = LoggerFactory.getLogger(AccessClusterLoadChecker.class);
 
@@ -47,7 +50,7 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker {
   private final double memoryPercentThreshold;
   // The hard constraint number of available shuffle servers
   private final int availableServerNumThreshold;
-  private final int defaultRequiredShuffleServerNumber;
+  private final AtomicInteger defaultRequiredShuffleServerNumber;
 
   public AccessClusterLoadChecker(AccessManager accessManager) throws Exception {
     super(accessManager);
@@ -58,7 +61,7 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker {
         CoordinatorConf.COORDINATOR_ACCESS_LOADCHECKER_SERVER_NUM_THRESHOLD,
         -1
     );
-    this.defaultRequiredShuffleServerNumber = conf.get(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
+    this.defaultRequiredShuffleServerNumber = new AtomicInteger(conf.get(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX));
   }
 
   @Override
@@ -75,7 +78,7 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker {
     // If the hard constraint is missing, check the available servers number meet the job's required server size
     if (availableServerNumThreshold == -1) {
       String requiredNodesNumRaw = accessInfo.getExtraProperties().get(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM);
-      int requiredNodesNum = defaultRequiredShuffleServerNumber;
+      int requiredNodesNum = defaultRequiredShuffleServerNumber.get();
       if (StringUtils.isNotEmpty(requiredNodesNumRaw) && Integer.parseInt(requiredNodesNumRaw) > 0) {
         requiredNodesNum = Integer.parseInt(requiredNodesNumRaw);
       }
@@ -113,5 +116,18 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker {
   }
 
   public void close() {
+  }
+
+  @Override
+  public void reconfigure(RssConf conf) {
+    int nodeMax = conf.get(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
+    if (nodeMax != defaultRequiredShuffleServerNumber.get()) {
+      defaultRequiredShuffleServerNumber.set(nodeMax);
+    }
+  }
+
+  @Override
+  public boolean isPropertyReconfigurable(String property) {
+    return CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX.key().equals(property);
   }
 }

@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -41,6 +42,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.uniffle.common.config.Reconfigurable;
+import org.apache.uniffle.common.config.RssConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +51,7 @@ import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
-public class SimpleClusterManager implements ClusterManager {
+public class SimpleClusterManager implements ClusterManager, Reconfigurable {
 
   private static final Logger LOG = LoggerFactory.getLogger(SimpleClusterManager.class);
 
@@ -58,7 +61,7 @@ public class SimpleClusterManager implements ClusterManager {
   private Map<String, Set<ServerNode>> tagToNodes = Maps.newConcurrentMap();
   private AtomicLong excludeLastModify = new AtomicLong(0L);
   private long heartbeatTimeout;
-  private int shuffleNodesMax;
+  private AtomicInteger shuffleNodesMax;
   private ScheduledExecutorService scheduledExecutorService;
   private ScheduledExecutorService checkNodesExecutorService;
   private FileSystem hadoopFileSystem;
@@ -72,7 +75,7 @@ public class SimpleClusterManager implements ClusterManager {
   private boolean readyForServe = false;
 
   public SimpleClusterManager(CoordinatorConf conf, Configuration hadoopConf) throws Exception {
-    this.shuffleNodesMax = conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
+    this.shuffleNodesMax = new AtomicInteger(conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX));
     this.heartbeatTimeout = conf.getLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT);
     // the thread for checking if shuffle server report heartbeat in time
     scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
@@ -233,7 +236,7 @@ public class SimpleClusterManager implements ClusterManager {
 
   @Override
   public int getShuffleNodesMax() {
-    return shuffleNodesMax;
+    return shuffleNodesMax.get();
   }
 
   @Override
@@ -277,5 +280,18 @@ public class SimpleClusterManager implements ClusterManager {
   @VisibleForTesting
   public void setStartupSilentPeriodEnabled(boolean startupSilentPeriodEnabled) {
     this.startupSilentPeriodEnabled = startupSilentPeriodEnabled;
+  }
+
+  @Override
+  public void reconfigure(RssConf conf) {
+    int nodeMax = conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
+    if (nodeMax != shuffleNodesMax.get()) {
+      shuffleNodesMax.set(nodeMax);
+    }
+  }
+
+  @Override
+  public boolean isPropertyReconfigurable(String property) {
+    return CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX.key().equals(property);
   }
 }

@@ -18,11 +18,15 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.Uninterruptibles;
+import org.apache.uniffle.common.config.ReconfigurableBase;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -54,6 +58,8 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     CoordinatorConf coordinatorConf1 = getCoordinatorConf();
     coordinatorConf1.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2000);
     coordinatorConf1.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, SHUFFLE_NODES_MAX);
+    coordinatorConf1.setString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, new File(tmpDir, "coordinator.conf").getPath());
+    coordinatorConf1.setLong(RssBaseConf.RSS_RECONFIGURATE_INTERVAL, 1L);
     createCoordinatorServer(coordinatorConf1);
 
     CoordinatorConf coordinatorConf2 = getCoordinatorConf();
@@ -61,6 +67,8 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     coordinatorConf2.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, SHUFFLE_NODES_MAX);
     coordinatorConf2.setInteger(CoordinatorConf.RPC_SERVER_PORT, COORDINATOR_PORT_2);
     coordinatorConf2.setInteger(CoordinatorConf.JETTY_HTTP_PORT, JETTY_PORT_2);
+    coordinatorConf2.setString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, new File(tmpDir, "coordinator.conf").getPath());
+    coordinatorConf2.setLong(RssBaseConf.RSS_RECONFIGURATE_INTERVAL, 1L);
     createCoordinatorServer(coordinatorConf2);
 
     for (int i = 0; i < SERVER_NUM; i++) {
@@ -142,4 +150,22 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM - 1, -1);
     assertEquals(SHUFFLE_NODES_MAX - 1, info.getServerToPartitionRanges().keySet().size());
   }
+
+  @Test
+  public void testReconfigurateNodeMax() {
+    String fileName = coordinators.get(0).getCoordinatorConf().getString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME,"");
+    ShuffleWriteClientImpl shuffleWriteClient = new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1,
+        1, 1, 1, true, 1, 1, 10, 10);
+    shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
+    ShuffleAssignmentsInfo info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1);
+    assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
+    Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+    try (FileWriter fileWriter = new FileWriter(fileName)) {
+      fileWriter.append(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX + " " + 5);
+    }
+    Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+    ShuffleAssignmentsInfo info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1);
+    assertEquals(5, info.getServerToPartitionRanges().keySet().size());
+  }
+
 }
