@@ -89,13 +89,13 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
 
   @Override
   public ShuffleDataResult readShuffleData() {
-    ShuffleDataResult shuffleDataResult = null;
+    ClientReadHandler handler = handlerMap.computeIfAbsent(currentTier,
+        key -> supplierMap.getOrDefault(key, () -> null).get());
+    if (handler == null) {
+      throw new RssException("Unexpected null when getting " + currentTier.name() + " handler");
+    }
+    ShuffleDataResult shuffleDataResult;
     try {
-      ClientReadHandler handler = handlerMap.computeIfAbsent(currentTier,
-          key -> supplierMap.getOrDefault(key, () -> null).get());
-      if (handler == null) {
-        return null;
-      }
       shuffleDataResult = handler.readShuffleData();
     } catch (Exception e) {
       throw new RssException("Failed to read shuffle data from " + currentTier.name() + " handler", e);
