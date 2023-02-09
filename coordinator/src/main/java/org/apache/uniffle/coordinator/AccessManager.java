@@ -112,8 +112,8 @@ public class AccessManager {
 
   public boolean isPropertyReconfigurable(String property) {
     for (AccessChecker checker : accessCheckers) {
-      if (checker instanceof Reconfigurable &&
-          ((Reconfigurable) checker).isPropertyReconfigurable(property)) {
+      if (checker instanceof Reconfigurable
+          && ((Reconfigurable) checker).isPropertyReconfigurable(property)) {
         return true;
       }
     }
