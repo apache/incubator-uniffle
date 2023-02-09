@@ -34,7 +34,7 @@ jobs:
   license:
     uses: ./.github/workflows/sequential.yml
     with:
-      maven-args: org.apache.rat:apache-rat-plugin:check
+      maven-args: apache-rat:check
       summary: "grep -r '!?????' --include='rat.txt' | awk '{print $3}'"
 
   spotbugs:
