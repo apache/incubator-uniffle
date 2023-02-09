@@ -155,8 +155,8 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
 
   @Test
   public void testReconfigurateNodeMax() throws Exception {
-    String fileName = coordinators.get(0).getCoordinatorConf().
-        getString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME,"");
+    String fileName = coordinators.get(0).getCoordinatorConf()
+        .getString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME,"");
     ShuffleWriteClientImpl shuffleWriteClient = new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1,
         1, 1, 1, true, 1, 1, 10, 10);
     shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
