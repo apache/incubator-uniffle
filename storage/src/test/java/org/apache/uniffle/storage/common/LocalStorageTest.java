@@ -20,9 +20,12 @@ package org.apache.uniffle.storage.common;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -43,12 +46,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class LocalStorageTest {
 
   private static File testBaseDir;
+  private static File testBaseDirWithoutPermission;
   private static String mountPoint;
 
   @BeforeAll
   public static void setUp(@TempDir File tempDir) throws IOException  {
     testBaseDir = new File(tempDir, "test");
+    testBaseDirWithoutPermission = new File(tempDir, "test-no-permission");
     testBaseDir.mkdir();
+    testBaseDirWithoutPermission.mkdirs();
     try {
       mountPoint = Files.getFileStore(testBaseDir.toPath()).name();
     } catch (IOException ioe) {
@@ -81,6 +87,24 @@ public class LocalStorageTest {
     assertFalse(item.canWrite());
     item.getMetaData().updateDiskSize(-10);
     assertTrue(item.canWrite());
+  }
+
+  @Test
+  public void unRemovableEmptyDirShouldNotFail() throws IOException {
+    File newBaseDir = new File(testBaseDirWithoutPermission, "test-new");
+    assertTrue(newBaseDir.mkdirs());
+    // then remove write permission to parent dir.
+    Set<PosixFilePermission> perms = Sets.newHashSet();
+    perms.add(PosixFilePermission.OWNER_READ);
+    perms.add(PosixFilePermission.OWNER_EXECUTE);
+    Files.setPosixFilePermissions(testBaseDirWithoutPermission.toPath(), perms);
+    LocalStorage item = LocalStorage.newBuilder().basePath(newBaseDir.getAbsolutePath())
+        .cleanupThreshold(50)
+        .highWaterMarkOfWrite(95)
+        .lowWaterMarkOfWrite(80)
+        .capacity(100)
+        .cleanIntervalMs(5000)
+        .build();
   }
 
   @Test
