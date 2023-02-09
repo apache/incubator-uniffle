@@ -157,16 +157,19 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
 
   private String getMetricsInfo(String name, Function<ClientReadHandlerMetric, Long> consumed,
       Function<ClientReadHandlerMetric, Long> skipped) {
-    return "Client read " + consumed.apply(readHandlerMetric)
-        + " " + name + " from [" + serverInfo + "], Consumed["
-        + " hot:" + consumed.apply(metricsMap.get(Tier.HOT))
-        + " warm:" + consumed.apply(metricsMap.get(Tier.WARM))
-        + " cold:" + consumed.apply(metricsMap.get(Tier.COLD))
-        + " frozen:" + consumed.apply(metricsMap.get(Tier.FROZEN)) + " ], Skipped["
-        + " hot:" + skipped.apply(metricsMap.get(Tier.HOT))
-        + " warm:" + skipped.apply(metricsMap.get(Tier.WARM))
-        + " cold:" + skipped.apply(metricsMap.get(Tier.COLD))
-        + " frozen:" + skipped.apply(metricsMap.get(Tier.FROZEN)) + " ]";
+    StringBuilder sb = new StringBuilder("Client read ").append(consumed.apply(readHandlerMetric))
+        .append(" ").append(name).append(" from [").append(serverInfo).append("], Consumed[");
+    for (Tier tier : Tier.VALUES) {
+      sb.append(" ").append(tier.name().toLowerCase()).append(":")
+          .append(consumed.apply(metricsMap.get(tier)));
+    }
+    sb.append(" ], Skipped[");
+    for (Tier tier : Tier.VALUES) {
+      sb.append(" ").append(tier.name().toLowerCase()).append(":")
+          .append(skipped.apply(metricsMap.get(tier)));
+    }
+    sb.append(" ]");
+    return sb.toString();
   }
 
 }
