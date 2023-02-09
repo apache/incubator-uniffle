@@ -34,8 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -149,12 +148,9 @@ public class EventFetcherTest {
           1);
       expected.addLong(rssTaskId);
     }
-    try {
-      ef.fetchAllRssTaskIds();
-      fail();
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("TaskAttemptIDs are inconsistent with map tasks"));
-    }
+    IllegalStateException ex =
+        assertThrows(IllegalStateException.class, () -> ef.fetchAllRssTaskIds());
+    assertEquals("TaskAttemptIDs are inconsistent with map tasks", ex.getMessage());
   }
 
   @Test
@@ -178,12 +174,9 @@ public class EventFetcherTest {
           1);
       expected.addLong(rssTaskId);
     }
-    try {
-      ef.fetchAllRssTaskIds();
-      fail();
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("TaskAttemptIDs are inconsistent with map tasks"));
-    }
+    IllegalStateException ex =
+        assertThrows(IllegalStateException.class, () -> ef.fetchAllRssTaskIds());
+    assertEquals("TaskAttemptIDs are inconsistent with map tasks", ex.getMessage());
   }
 
   @Test
