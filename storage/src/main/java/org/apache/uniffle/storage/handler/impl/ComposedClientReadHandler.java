@@ -62,6 +62,12 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   private Tier currentTier = Tier.VALUES[0]; // == Tier.HOT
   private final int numTiers;
 
+  {
+    for (Tier tier : Tier.VALUES) {
+      metricsMap.put(tier, new ClientReadHandlerMetric());
+    }
+  }
+
   public ComposedClientReadHandler(ShuffleServerInfo serverInfo, ClientReadHandler... handlers) {
     Preconditions.checkArgument(handlers.length <= Tier.VALUES.length,
         "Too many handlers, got %d, max %d", handlers.length, Tier.VALUES.length);
@@ -69,9 +75,6 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
     numTiers = handlers.length;
     for (int i = 0; i < numTiers; i++) {
       handlerMap.put(Tier.VALUES[i], handlers[i]);
-    }
-    for (Tier tier : Tier.VALUES) {
-      metricsMap.put(tier, new ClientReadHandlerMetric());
     }
   }
 
@@ -82,9 +85,6 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
     numTiers = suppliers.size();
     for (int i = 0; i < numTiers; i++) {
       supplierMap.put(Tier.VALUES[i], suppliers.get(i));
-    }
-    for (Tier tier : Tier.VALUES) {
-      metricsMap.put(tier, new ClientReadHandlerMetric());
     }
   }
 
