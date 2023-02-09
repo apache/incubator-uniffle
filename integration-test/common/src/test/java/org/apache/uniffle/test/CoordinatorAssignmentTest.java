@@ -170,6 +170,10 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
     info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1);
     assertEquals(5, info.getServerToPartitionRanges().keySet().size());
+    try (FileWriter fileWriter = new FileWriter(fileName)) {
+      fileWriter.append(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX.key() + " " + 10);
+    }
+    Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
   }
 
 }
