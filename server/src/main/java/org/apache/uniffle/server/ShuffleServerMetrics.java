@@ -66,6 +66,7 @@ public class ShuffleServerMetrics {
   private static final String ALLOCATED_BUFFER_SIZE = "allocated_buffer_size";
   private static final String IN_FLUSH_BUFFER_SIZE = "in_flush_buffer_size";
   private static final String USED_BUFFER_SIZE = "used_buffer_size";
+  private static final String READ_USED_BUFFER_SIZE = "read_used_buffer_size";
   private static final String TOTAL_FAILED_WRITTEN_EVENT_NUM = "total_failed_written_event_num";
   private static final String TOTAL_DROPPED_EVENT_NUM = "total_dropped_event_num";
   private static final String TOTAL_HDFS_WRITE_DATA = "total_hdfs_write_data";
@@ -142,6 +143,7 @@ public class ShuffleServerMetrics {
   public static Gauge gaugeAllocatedBufferSize;
   public static Gauge gaugeInFlushBufferSize;
   public static Gauge gaugeUsedBufferSize;
+  public static Gauge gaugeReadBufferUsedSize;
   public static Gauge gaugeWriteHandler;
   public static Gauge gaugeEventQueueSize;
   public static Gauge gaugeAppNum;
@@ -295,6 +297,7 @@ public class ShuffleServerMetrics {
     gaugeAllocatedBufferSize = metricsManager.addGauge(ALLOCATED_BUFFER_SIZE);
     gaugeInFlushBufferSize = metricsManager.addGauge(IN_FLUSH_BUFFER_SIZE);
     gaugeUsedBufferSize = metricsManager.addGauge(USED_BUFFER_SIZE);
+    gaugeReadBufferUsedSize = metricsManager.addGauge(READ_USED_BUFFER_SIZE);
     gaugeWriteHandler = metricsManager.addGauge(TOTAL_WRITE_HANDLER);
     gaugeEventQueueSize = metricsManager.addGauge(EVENT_QUEUE_SIZE);
     gaugeAppNum = metricsManager.addGauge(APP_NUM_WITH_NODE);
