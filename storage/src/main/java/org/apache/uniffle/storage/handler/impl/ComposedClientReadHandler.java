@@ -20,6 +20,7 @@ package org.apache.uniffle.storage.handler.impl;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -131,44 +132,34 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
 
   @VisibleForTesting
   public String getReadBlockNumInfo() {
-    return "Client read " + readHandlerMetric.getReadBlockNum()
-        + " blocks from [" + serverInfo + "], Consumed["
-        + " hot:" + metricsMap.get(Tier.HOT).getReadBlockNum()
-        + " warm:" + metricsMap.get(Tier.WARM).getReadBlockNum()
-        + " cold:" + metricsMap.get(Tier.COLD).getReadBlockNum()
-        + " frozen:" + metricsMap.get(Tier.FROZEN).getReadBlockNum()
-        + " ], Skipped[" + " hot:" + metricsMap.get(Tier.HOT).getSkippedReadBlockNum()
-        + " warm:" + metricsMap.get(Tier.WARM).getSkippedReadBlockNum()
-        + " cold:" + metricsMap.get(Tier.COLD).getSkippedReadBlockNum()
-        + " frozen:" + metricsMap.get(Tier.FROZEN).getSkippedReadBlockNum() + " ]";
+    return getMetricsInfo("blocks", ClientReadHandlerMetric::getReadBlockNum,
+        ClientReadHandlerMetric::getSkippedReadBlockNum);
   }
 
   @VisibleForTesting
   public String getReadLengthInfo() {
-    return "Client read " + readHandlerMetric.getReadLength()
-        + " bytes from [" + serverInfo + "], Consumed["
-        + " hot:" + metricsMap.get(Tier.HOT).getReadLength()
-        + " warm:" + metricsMap.get(Tier.WARM).getReadLength()
-        + " cold:" + metricsMap.get(Tier.COLD).getReadLength()
-        + " frozen:" + metricsMap.get(Tier.FROZEN).getReadLength() + " ], Skipped["
-        + " hot:" + metricsMap.get(Tier.HOT).getSkippedReadLength()
-        + " warm:" + metricsMap.get(Tier.WARM).getSkippedReadLength()
-        + " cold:" + metricsMap.get(Tier.COLD).getSkippedReadLength()
-        + " frozen:" + metricsMap.get(Tier.FROZEN).getSkippedReadLength() + " ]";
+    return getMetricsInfo("bytes", ClientReadHandlerMetric::getReadLength,
+        ClientReadHandlerMetric::getSkippedReadLength);
   }
 
   @VisibleForTesting
   public String getReadUncompressLengthInfo() {
-    return "Client read " + readHandlerMetric.getReadUncompressLength()
-        + " uncompressed bytes from [" + serverInfo + "], Consumed["
-        + " hot:" + metricsMap.get(Tier.HOT).getReadUncompressLength()
-        + " warm:" + metricsMap.get(Tier.WARM).getReadUncompressLength()
-        + " cold:" + metricsMap.get(Tier.COLD).getReadUncompressLength()
-        + " frozen:" + metricsMap.get(Tier.FROZEN).getReadUncompressLength() + " ], Skipped["
-        + " hot:" + metricsMap.get(Tier.HOT).getSkippedReadUncompressLength()
-        + " warm:" + metricsMap.get(Tier.WARM).getSkippedReadUncompressLength()
-        + " cold:" + metricsMap.get(Tier.COLD).getSkippedReadUncompressLength()
-        + " frozen:" + metricsMap.get(Tier.FROZEN).getSkippedReadUncompressLength() + " ]";
+    return getMetricsInfo("uncompressed bytes", ClientReadHandlerMetric::getReadUncompressLength,
+        ClientReadHandlerMetric::getSkippedReadUncompressLength);
+  }
+
+  private String getMetricsInfo(String name, Function<ClientReadHandlerMetric, Long> consumed,
+      Function<ClientReadHandlerMetric, Long> skipped) {
+    return "Client read " + consumed.apply(readHandlerMetric)
+        + " " + name + " from [" + serverInfo + "], Consumed["
+        + " hot:" + consumed.apply(metricsMap.get(Tier.HOT))
+        + " warm:" + consumed.apply(metricsMap.get(Tier.WARM))
+        + " cold:" + consumed.apply(metricsMap.get(Tier.COLD))
+        + " frozen:" + consumed.apply(metricsMap.get(Tier.FROZEN)) + " ], Skipped["
+        + " hot:" + skipped.apply(metricsMap.get(Tier.HOT))
+        + " warm:" + skipped.apply(metricsMap.get(Tier.WARM))
+        + " cold:" + skipped.apply(metricsMap.get(Tier.COLD))
+        + " frozen:" + skipped.apply(metricsMap.get(Tier.FROZEN)) + " ]";
   }
 
 }
