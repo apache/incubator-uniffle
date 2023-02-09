@@ -343,6 +343,7 @@ public class ShuffleBufferManager {
       synchronized (this) {
         if (readDataMemory.get() + size < readCapacity) {
           readDataMemory.addAndGet(size);
+          ShuffleServerMetrics.gaugeReadBufferUsedSize.inc(size);
           return true;
         }
       }
@@ -362,10 +363,12 @@ public class ShuffleBufferManager {
   public void releaseReadMemory(long size) {
     if (readDataMemory.get() >= size) {
       readDataMemory.addAndGet(-size);
+      ShuffleServerMetrics.gaugeReadBufferUsedSize.dec(size);
     } else {
       LOG.warn("Current read memory[" + readDataMemory.get()
           + "] is less than released[" + size + "], set read memory to 0");
       readDataMemory.set(0L);
+      ShuffleServerMetrics.gaugeReadBufferUsedSize.set(0);
     }
   }
 
