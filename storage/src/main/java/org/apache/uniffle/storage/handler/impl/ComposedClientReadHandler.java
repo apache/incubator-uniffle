@@ -46,8 +46,10 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   private enum Tier {
     HOT, WARM, COLD, FROZEN;
 
-    public Tier next() {
-      return values()[this.ordinal() + 1];
+    static final Tier[] VALUES = Tier.values();
+
+    Tier next() {
+      return VALUES[this.ordinal() + 1];
     }
   }
 
@@ -55,27 +57,27 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   private final Map<Tier, Supplier<ClientReadHandler>> supplierMap = new EnumMap<>(Tier.class);
   private final Map<Tier, ClientReadHandler> handlerMap = new EnumMap<>(Tier.class);
   private final Map<Tier, ClientReadHandlerMetric> metricsMap = new EnumMap<>(Tier.class);
-  private Tier currentTier = Tier.values()[0];
+  private Tier currentTier = Tier.VALUES[0];
   private final int numTiers;
 
   public ComposedClientReadHandler(ShuffleServerInfo serverInfo, ClientReadHandler... handlers) {
     this.serverInfo = serverInfo;
-    numTiers = Math.min(Tier.values().length, handlers.length);
+    numTiers = Math.min(Tier.VALUES.length, handlers.length);
     for (int i = 0; i < numTiers; i++) {
-      handlerMap.put(Tier.values()[i], handlers[i]);
+      handlerMap.put(Tier.VALUES[i], handlers[i]);
     }
-    for (Tier tier : Tier.values()) {
+    for (Tier tier : Tier.VALUES) {
       metricsMap.put(tier, new ClientReadHandlerMetric());
     }
   }
 
   public ComposedClientReadHandler(ShuffleServerInfo serverInfo, List<Supplier<ClientReadHandler>> callables) {
     this.serverInfo = serverInfo;
-    numTiers = Math.min(Tier.values().length, callables.size());
+    numTiers = Math.min(Tier.VALUES.length, callables.size());
     for (int i = 0; i < numTiers; i++) {
-      supplierMap.put(Tier.values()[i], callables.get(i));
+      supplierMap.put(Tier.VALUES[i], callables.get(i));
     }
-    for (Tier tier : Tier.values()) {
+    for (Tier tier : Tier.VALUES) {
       metricsMap.put(tier, new ClientReadHandlerMetric());
     }
   }
