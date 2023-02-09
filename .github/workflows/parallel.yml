@@ -25,10 +25,6 @@ on:
       maven-args:
         required: true
         type: string
-      experimental:
-        default: false
-        required: false
-        type: boolean
       summary:
         default: "grep -e '^\\[ERROR\\]' /tmp/maven.log || true"
         required: false
@@ -83,17 +79,11 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version: 1.17
-    - name: Execute maven with -P${{ matrix.profile }}
-      if: ${{ !inputs.experimental }}
-      run: mvn -B -fae -P${{ matrix.profile }} ${{ inputs.maven-args }} | tee /tmp/maven.log
+    - name: Execute mvn ${{ inputs.maven-args }} -P${{ matrix.profile }}
+      run: mvn -B -fae ${{ inputs.maven-args }} -P${{ matrix.profile }} | tee /tmp/maven.log
       shell: bash
-    - name: Execute maven with -P${{ matrix.profile }} (experimental)
-      if: ${{ inputs.experimental }}
-      run: mvn -B -fae -P${{ matrix.profile }} ${{ inputs.maven-args }} | tee /tmp/maven.log
-      shell: bash
-      continue-on-error: true
     - name: Summary of failures
-      if: ${{ (failure() || inputs.experimental) && inputs.summary != '' }}
+      if: ${{ failure() && inputs.summary != '' }}
       run: ${{ inputs.summary }}
       continue-on-error: true
     - name: Upload test reports

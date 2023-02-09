@@ -25,10 +25,6 @@ on:
       maven-args:
         required: true
         type: string
-      experimental:
-        default: false
-        required: false
-        type: boolean
       summary:
         default: "grep -e '^\\[ERROR\\]' /tmp/maven.log || true"
         required: false
@@ -53,9 +49,6 @@ on:
 jobs:
   maven:
     runs-on: ubuntu-20.04
-    env:
-      # check main profiles only, just enough to cover all modules.
-      PROFILE: 'spark2 spark3 mr'
     name: java ${{ inputs.java-version }}
     steps:
     - name: Checkout project
@@ -66,23 +59,17 @@ jobs:
         java-version: ${{ inputs.java-version }}
         distribution: ${{ inputs.jdk-distro }}
         cache: maven
-    - name: Execute maven with ${{ env.PROFILE }}
-      if: ${{ !inputs.experimental }}
-      run: |
-        for profile in ${PROFILE}; do
-          mvn -B -fae -P${profile} ${{ inputs.maven-args }} | tee -a /tmp/maven.log;
-        done
+    - name: Execute mvn ${{ inputs.maven-args }} -Pspark3
+      run: mvn -B -fae ${{ inputs.maven-args }} -Pspark3 | tee -a /tmp/maven.log;
       shell: bash
-    - name: Execute maven with ${{ env.PROFILE }} (experimental)
-      if: ${{ inputs.experimental }}
-      run: |
-        for profile in ${PROFILE}; do
-          mvn -B -fae -P${profile} ${{ inputs.maven-args }} | tee -a /tmp/maven.log;
-        done
+    - name: Execute mvn ${{ inputs.maven-args }} -Pspark2
+      run: mvn -B -fae ${{ inputs.maven-args }} -Pspark2 | tee -a /tmp/maven.log;
       shell: bash
-      continue-on-error: true
+    - name: Execute mvn ${{ inputs.maven-args }} -Pmr
+      run: mvn -B -fae ${{ inputs.maven-args }} -Pmr | tee -a /tmp/maven.log;
+      shell: bash
     - name: Summary of failures
-      if: ${{ (failure() || inputs.experimental) && inputs.summary != '' }}
+      if: ${{ failure() && inputs.summary != '' }}
       run: ${{ inputs.summary }}
       continue-on-error: true
     - name: Upload test reports
