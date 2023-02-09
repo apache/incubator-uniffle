@@ -20,6 +20,7 @@ package org.apache.uniffle.storage.handler.impl;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -116,9 +117,7 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
 
   @Override
   public void close() {
-    for (ClientReadHandler handler : handlerMap.values()) {
-      handler.close();
-    }
+    handlerMap.values().stream().filter(Objects::nonNull).forEach(ClientReadHandler::close);
   }
 
   @Override
