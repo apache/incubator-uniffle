@@ -35,9 +35,9 @@ public abstract class ReconfigurableBase implements Reconfigurable {
 
   private final RssConf rssConf;
 
-  private ScheduledExecutorService scheduledExecutorService;
+  private final ScheduledExecutorService scheduledExecutorService;
   private long checkIntervalSec;
-  private AtomicLong lastModify = new AtomicLong(0L);
+  private final AtomicLong lastModify = new AtomicLong(0L);
 
   public ReconfigurableBase(RssConf rssConf) {
     this.rssConf = rssConf;
@@ -56,7 +56,17 @@ public abstract class ReconfigurableBase implements Reconfigurable {
   }
 
   private void checkConfiguration() {
-    long newLastModify = new File(rssConf.getString(RECONFIGURABLE_FILE_NAME, "")).lastModified();
+    String fileName = rssConf.getString(RECONFIGURABLE_FILE_NAME, "");
+    if (fileName.isEmpty()) {
+      LOG.warn("Config file name isn't set, we skip checking");
+      return;
+    }
+    File configFile = new File(fileName);
+    if (!configFile.exists()) {
+      LOG.warn("Config file doesn't exist, we skip checking");
+      return;
+    }
+    long newLastModify = configFile.lastModified();
     if (lastModify.get() == 0) {
       lastModify.set(newLastModify);
       return;

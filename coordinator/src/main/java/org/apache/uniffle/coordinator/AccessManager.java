@@ -35,7 +35,7 @@ import org.apache.uniffle.coordinator.access.AccessInfo;
 import org.apache.uniffle.coordinator.access.checker.AccessChecker;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
-public class AccessManager {
+public class AccessManager implements Reconfigurable {
 
   private static final Logger LOG = LoggerFactory.getLogger(AccessManager.class);
 
