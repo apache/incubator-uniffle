@@ -60,7 +60,7 @@ public class SimpleClusterManager implements ClusterManager {
   private Map<String, Set<ServerNode>> tagToNodes = Maps.newConcurrentMap();
   private AtomicLong excludeLastModify = new AtomicLong(0L);
   private long heartbeatTimeout;
-  private AtomicInteger shuffleNodesMax;
+  private volatile int shuffleNodesMax;
   private ScheduledExecutorService scheduledExecutorService;
   private ScheduledExecutorService checkNodesExecutorService;
   private FileSystem hadoopFileSystem;
@@ -74,7 +74,7 @@ public class SimpleClusterManager implements ClusterManager {
   private boolean readyForServe = false;
 
   public SimpleClusterManager(CoordinatorConf conf, Configuration hadoopConf) throws Exception {
-    this.shuffleNodesMax = new AtomicInteger(conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX));
+    this.shuffleNodesMax = conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
     this.heartbeatTimeout = conf.getLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT);
     // the thread for checking if shuffle server report heartbeat in time
     scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
@@ -235,7 +235,7 @@ public class SimpleClusterManager implements ClusterManager {
 
   @Override
   public int getShuffleNodesMax() {
-    return shuffleNodesMax.get();
+    return shuffleNodesMax;
   }
 
   @Override
@@ -284,9 +284,9 @@ public class SimpleClusterManager implements ClusterManager {
   @Override
   public void reconfigure(RssConf conf) {
     int nodeMax = conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
-    if (nodeMax != shuffleNodesMax.get()) {
+    if (nodeMax != shuffleNodesMax) {
       LOG.warn("Coordinator update new shuffleNodesMax " + nodeMax);
-      shuffleNodesMax.set(nodeMax);
+      shuffleNodesMax = nodeMax;
     }
   }
 

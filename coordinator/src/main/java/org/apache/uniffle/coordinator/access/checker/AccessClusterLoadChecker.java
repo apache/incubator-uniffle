@@ -50,7 +50,7 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker implements R
   private final double memoryPercentThreshold;
   // The hard constraint number of available shuffle servers
   private final int availableServerNumThreshold;
-  private final AtomicInteger defaultRequiredShuffleServerNumber;
+  private volatile int  defaultRequiredShuffleServerNumber;
 
   public AccessClusterLoadChecker(AccessManager accessManager) throws Exception {
     super(accessManager);
@@ -61,8 +61,7 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker implements R
         CoordinatorConf.COORDINATOR_ACCESS_LOADCHECKER_SERVER_NUM_THRESHOLD,
         -1
     );
-    this.defaultRequiredShuffleServerNumber =
-        new AtomicInteger(conf.get(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX));
+    this.defaultRequiredShuffleServerNumber = conf.get(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
   }
 
   @Override
@@ -79,7 +78,7 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker implements R
     // If the hard constraint is missing, check the available servers number meet the job's required server size
     if (availableServerNumThreshold == -1) {
       String requiredNodesNumRaw = accessInfo.getExtraProperties().get(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM);
-      int requiredNodesNum = defaultRequiredShuffleServerNumber.get();
+      int requiredNodesNum = defaultRequiredShuffleServerNumber;
       if (StringUtils.isNotEmpty(requiredNodesNumRaw) && Integer.parseInt(requiredNodesNumRaw) > 0) {
         requiredNodesNum = Integer.parseInt(requiredNodesNumRaw);
       }
@@ -122,9 +121,9 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker implements R
   @Override
   public void reconfigure(RssConf conf) {
     int nodeMax = conf.get(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
-    if (nodeMax != defaultRequiredShuffleServerNumber.get()) {
+    if (nodeMax != defaultRequiredShuffleServerNumber) {
       LOG.warn("Coordinator update new defaultRequiredShuffleServerNumber " + nodeMax);
-      defaultRequiredShuffleServerNumber.set(nodeMax);
+      defaultRequiredShuffleServerNumber = nodeMax;
     }
   }
 
