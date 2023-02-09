@@ -40,6 +40,27 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(ComposedClientReadHandler.class);
 
+  private enum Tier {
+    HOT(1),
+    WARM(2),
+    COLD(3),
+    FROZEN(4);
+
+    private final int value;
+
+    Tier(int value) {
+      this.value = value;
+    }
+
+    public int getValue() {
+      return value;
+    }
+
+    public Tier next() {
+      return values()[this.ordinal() + 1];
+    }
+  }
+
   private final ShuffleServerInfo serverInfo;
   private Callable<ClientReadHandler> hotHandlerCreator;
   private Callable<ClientReadHandler> warmHandlerCreator;
@@ -49,11 +70,7 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   private ClientReadHandler warmDataReadHandler;
   private ClientReadHandler coldDataReadHandler;
   private ClientReadHandler frozenDataReadHandler;
-  private static final int HOT = 1;
-  private static final int WARM = 2;
-  private static final int COLD = 3;
-  private static final int FROZEN = 4;
-  private int currentHandler = HOT;
+  private Tier currentHandler = Tier.HOT;
   private final int topLevelOfHandler;
 
   private ClientReadHandlerMetric hostHandlerMetric = new ClientReadHandlerMetric();
@@ -128,13 +145,13 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
           return null;
       }
     } catch (Exception e) {
-      throw new RssException("Failed to read shuffle data from " + getCurrentHandlerName() + " handler", e);
+      throw new RssException("Failed to read shuffle data from " + currentHandler.name() + " handler", e);
     }
     // when is no data for current handler, and the upmostLevel is not reached,
     // then try next one if there has
     if (shuffleDataResult == null || shuffleDataResult.isEmpty()) {
-      if (currentHandler < topLevelOfHandler) {
-        currentHandler++;
+      if (currentHandler.getValue() < topLevelOfHandler) {
+        currentHandler = currentHandler.next();
       } else {
         return null;
       }
@@ -142,27 +159,6 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
     }
 
     return shuffleDataResult;
-  }
-
-  private String getCurrentHandlerName() {
-    String name = "UNKNOWN";
-    switch (currentHandler) {
-      case HOT:
-        name = "HOT";
-        break;
-      case WARM:
-        name = "WARM";
-        break;
-      case COLD:
-        name = "COLD";
-        break;
-      case FROZEN:
-        name = "FROZEN";
-        break;
-      default:
-        break;
-    }
-    return name;
   }
 
   @Override
@@ -210,13 +206,13 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
 
   @Override
   public void logConsumedBlockInfo() {
-    LOG.info(getReadBlokNumInfo());
+    LOG.info(getReadBlockNumInfo());
     LOG.info(getReadLengthInfo());
     LOG.info(getReadUncompressLengthInfo());
   }
 
   @VisibleForTesting
-  public String getReadBlokNumInfo() {
+  public String getReadBlockNumInfo() {
     return "Client read " + readHandlerMetric.getReadBlockNum()
         + " blocks from [" + serverInfo + "], Consumed["
         + " hot:" + hostHandlerMetric.getReadBlockNum()

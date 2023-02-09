@@ -211,7 +211,7 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     assertNull(sdr);
 
     if (checkSkippedMetrics) {
-      String readBlokNumInfo = composedClientReadHandler.getReadBlokNumInfo();
+      String readBlokNumInfo = composedClientReadHandler.getReadBlockNumInfo();
       assert (readBlokNumInfo.contains("Client read 0 blocks from [" + ssi + "]")
           && readBlokNumInfo.contains("Skipped[ hot:3 warm:3 cold:2 frozen:0 ]")
           && readBlokNumInfo.contains("Consumed[ hot:0 warm:0 cold:0 frozen:0 ]"));
@@ -224,7 +224,7 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
           && readUncompressLengthInfo.contains("Skipped[ hot:75 warm:150 cold:400 frozen:0 ]")
           && readBlokNumInfo.contains("Consumed[ hot:0 warm:0 cold:0 frozen:0 ]"));
     } else {
-      String readBlokNumInfo = composedClientReadHandler.getReadBlokNumInfo();
+      String readBlokNumInfo = composedClientReadHandler.getReadBlockNumInfo();
       assert (readBlokNumInfo.contains("Client read 8 blocks from [" + ssi + "]")
           && readBlokNumInfo.contains("Consumed[ hot:3 warm:3 cold:2 frozen:0 ]")
           && readBlokNumInfo.contains("Skipped[ hot:0 warm:0 cold:0 frozen:0 ]"));
