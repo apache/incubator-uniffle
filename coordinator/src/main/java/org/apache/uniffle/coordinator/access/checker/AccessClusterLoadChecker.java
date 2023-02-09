@@ -61,7 +61,8 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker implements R
         CoordinatorConf.COORDINATOR_ACCESS_LOADCHECKER_SERVER_NUM_THRESHOLD,
         -1
     );
-    this.defaultRequiredShuffleServerNumber = new AtomicInteger(conf.get(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX));
+    this.defaultRequiredShuffleServerNumber =
+        new AtomicInteger(conf.get(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX));
   }
 
   @Override

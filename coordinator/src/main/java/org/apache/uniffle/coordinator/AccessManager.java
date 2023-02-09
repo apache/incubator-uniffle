@@ -23,11 +23,11 @@ import java.util.List;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.uniffle.common.config.Reconfigurable;
-import org.apache.uniffle.common.config.RssConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.config.Reconfigurable;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.access.AccessCheckResult;
