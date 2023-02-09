@@ -58,7 +58,8 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     CoordinatorConf coordinatorConf1 = getCoordinatorConf();
     coordinatorConf1.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2000);
     coordinatorConf1.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, SHUFFLE_NODES_MAX);
-    coordinatorConf1.setString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, new File(tmpDir, "coordinator.conf").getPath());
+    coordinatorConf1.setString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME,
+        new File(tmpDir, "coordinator.conf").getPath());
     coordinatorConf1.setLong(RssBaseConf.RSS_RECONFIGURATE_INTERVAL, 1L);
     createCoordinatorServer(coordinatorConf1);
 
@@ -67,7 +68,8 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     coordinatorConf2.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, SHUFFLE_NODES_MAX);
     coordinatorConf2.setInteger(CoordinatorConf.RPC_SERVER_PORT, COORDINATOR_PORT_2);
     coordinatorConf2.setInteger(CoordinatorConf.JETTY_HTTP_PORT, JETTY_PORT_2);
-    coordinatorConf2.setString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, new File(tmpDir, "coordinator.conf").getPath());
+    coordinatorConf2.setString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME,
+        new File(tmpDir, "coordinator.conf").getPath());
     coordinatorConf2.setLong(RssBaseConf.RSS_RECONFIGURATE_INTERVAL, 1L);
     createCoordinatorServer(coordinatorConf2);
 
@@ -153,7 +155,8 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
 
   @Test
   public void testReconfigurateNodeMax() throws Exception {
-    String fileName = coordinators.get(0).getCoordinatorConf().getString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME,"");
+    String fileName = coordinators.get(0).getCoordinatorConf().
+        getString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME,"");
     ShuffleWriteClientImpl shuffleWriteClient = new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1,
         1, 1, 1, true, 1, 1, 10, 10);
     shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
