@@ -123,6 +123,7 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker implements R
   public void reconfigure(RssConf conf) {
     int nodeMax = conf.get(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
     if (nodeMax != defaultRequiredShuffleServerNumber.get()) {
+      LOG.warn("Coordinator update new defaultRequiredShuffleServerNumber " + nodeMax);
       defaultRequiredShuffleServerNumber.set(nodeMax);
     }
   }

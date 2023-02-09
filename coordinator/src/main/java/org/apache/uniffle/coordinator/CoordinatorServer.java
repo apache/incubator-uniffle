@@ -97,6 +97,7 @@ public class CoordinatorServer extends ReconfigurableBase {
   }
 
   public void start() throws Exception {
+    startReconfigureThread();
     jettyServer.start();
     server.start();
 
@@ -266,7 +267,7 @@ public class CoordinatorServer extends ReconfigurableBase {
   }
 
   @Override
-  public RssConf loadConfiguration() {
+  public RssConf reloadConfiguration() {
     return new CoordinatorConf(coordinatorConf.getString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, ""));
   }
 }

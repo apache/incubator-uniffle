@@ -23,10 +23,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public abstract class ReconfigurableBase implements Reconfigurable {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ReconfigurableBase.class);
   public static final String RECONFIGURABLE_FILE_NAME = "reconfigurable.file.name";
 
   private final RssConf rssConf;
@@ -39,7 +43,7 @@ public abstract class ReconfigurableBase implements Reconfigurable {
     this.rssConf = rssConf;
     scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("ReconfigurableThread-%d"));
-    checkIntervalSec = rssConf.getLong(RssBaseConf.RSS_RECONFIGURATE_INTERVAL);
+    checkIntervalSec = rssConf.getLong(RssBaseConf.RSS_RECONFIGURE_INTERVAL);
   }
 
   public void startReconfigureThread() {
@@ -53,11 +57,16 @@ public abstract class ReconfigurableBase implements Reconfigurable {
 
   private void checkConfiguration() {
     long newLastModify = new File(rssConf.getString(RECONFIGURABLE_FILE_NAME, "")).lastModified();
-    if (lastModify.get() == 0 || newLastModify != lastModify.get()) {
+    if (lastModify.get() == 0) {
       lastModify.set(newLastModify);
-      reconfigure(loadConfiguration());
+      return;
+    }
+    if (newLastModify != lastModify.get()) {
+      LOG.warn("Server detect the modification of file, we start to reconfigure");
+      lastModify.set(newLastModify);
+      reconfigure(reloadConfiguration());
     }
   }
 
-  protected abstract RssConf loadConfiguration();
+  protected abstract RssConf reloadConfiguration();
 }

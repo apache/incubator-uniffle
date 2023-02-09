@@ -285,6 +285,7 @@ public class SimpleClusterManager implements ClusterManager {
   public void reconfigure(RssConf conf) {
     int nodeMax = conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
     if (nodeMax != shuffleNodesMax.get()) {
+      LOG.warn("Coordinator update new shuffleNodesMax " + nodeMax);
       shuffleNodesMax.set(nodeMax);
     }
   }
