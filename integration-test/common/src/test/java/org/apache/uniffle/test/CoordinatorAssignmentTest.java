@@ -60,7 +60,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     coordinatorConf1.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, SHUFFLE_NODES_MAX);
     coordinatorConf1.setString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME,
         new File(tmpDir, "coordinator.conf").getPath());
-    coordinatorConf1.setLong(RssBaseConf.RSS_RECONFIGURE_INTERVAL, 1L);
+    coordinatorConf1.setLong(RssBaseConf.RSS_RECONFIGURE_INTERVAL_SEC, 1L);
     createCoordinatorServer(coordinatorConf1);
 
     CoordinatorConf coordinatorConf2 = getCoordinatorConf();
@@ -70,7 +70,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     coordinatorConf2.setInteger(CoordinatorConf.JETTY_HTTP_PORT, JETTY_PORT_2);
     coordinatorConf2.setString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME,
         new File(tmpDir, "coordinator.conf").getPath());
-    coordinatorConf2.setLong(RssBaseConf.RSS_RECONFIGURE_INTERVAL, 1L);
+    coordinatorConf2.setLong(RssBaseConf.RSS_RECONFIGURE_INTERVAL_SEC, 1L);
     createCoordinatorServer(coordinatorConf2);
 
     for (int i = 0; i < SERVER_NUM; i++) {

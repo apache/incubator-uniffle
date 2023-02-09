@@ -43,7 +43,7 @@ public abstract class ReconfigurableBase implements Reconfigurable {
     this.rssConf = rssConf;
     scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("ReconfigurableThread-%d"));
-    checkIntervalSec = rssConf.getLong(RssBaseConf.RSS_RECONFIGURE_INTERVAL);
+    checkIntervalSec = rssConf.getLong(RssBaseConf.RSS_RECONFIGURE_INTERVAL_SEC);
   }
 
   public void startReconfigureThread() {
