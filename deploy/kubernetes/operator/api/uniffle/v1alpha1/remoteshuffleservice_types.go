@@ -97,11 +97,11 @@ type CoordinatorConfig struct {
 
 	// RPCNodePort defines rpc port of node port service used for coordinators' external access.
 	// +optional
-	RPCNodePort []int32 `json:"rpcNodePort"`
+	RPCNodePort []int32 `json:"rpcNodePort,omitempty"`
 
 	// HTTPNodePort defines http port of node port service used for coordinators' external access.
 	// +optional
-	HTTPNodePort []int32 `json:"httpNodePort"`
+	HTTPNodePort []int32 `json:"httpNodePort,omitempty"`
 }
 
 // ShuffleServerConfig records configuration used to generate workload of shuffle servers.
