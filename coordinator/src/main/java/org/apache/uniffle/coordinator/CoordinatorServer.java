@@ -19,12 +19,12 @@ package org.apache.uniffle.coordinator;
 
 import io.prometheus.client.CollectorRegistry;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.uniffle.common.config.RssConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.config.ReconfigurableBase;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.Arguments;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
