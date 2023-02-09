@@ -17,13 +17,13 @@
 
 package org.apache.uniffle.common.config;
 
-import org.apache.uniffle.common.util.ThreadUtils;
-
 import java.io.File;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.uniffle.common.util.ThreadUtils;
 
 public abstract class ReconfigurableBase implements Reconfigurable {
 
@@ -59,5 +59,5 @@ public abstract class ReconfigurableBase implements Reconfigurable {
     }
   }
 
-  abstract protected RssConf loadConfiguration();
+  protected abstract RssConf loadConfiguration();
 }

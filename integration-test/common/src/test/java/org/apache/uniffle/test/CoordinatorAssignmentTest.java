@@ -152,7 +152,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
   }
 
   @Test
-  public void testReconfigurateNodeMax() {
+  public void testReconfigurateNodeMax() throws Exception {
     String fileName = coordinators.get(0).getCoordinatorConf().getString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME,"");
     ShuffleWriteClientImpl shuffleWriteClient = new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1,
         1, 1, 1, true, 1, 1, 10, 10);
@@ -164,7 +164,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
       fileWriter.append(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX + " " + 5);
     }
     Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
-    ShuffleAssignmentsInfo info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1);
+    info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1);
     assertEquals(5, info.getServerToPartitionRanges().keySet().size());
   }
 
