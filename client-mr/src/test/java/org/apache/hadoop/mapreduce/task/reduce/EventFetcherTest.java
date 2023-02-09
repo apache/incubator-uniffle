@@ -153,8 +153,7 @@ public class EventFetcherTest {
       ef.fetchAllRssTaskIds();
       fail();
     } catch (Exception e) {
-      assertTrue(e.getMessage()
-        .contains("TaskAttemptIDs are inconsistent with map tasks"));
+      assertTrue(e.getMessage().contains("TaskAttemptIDs are inconsistent with map tasks"));
     }
   }
 
@@ -183,8 +182,7 @@ public class EventFetcherTest {
       ef.fetchAllRssTaskIds();
       fail();
     } catch (Exception e) {
-      assertTrue(e.getMessage()
-        .contains("TaskAttemptIDs are inconsistent with map tasks"));
+      assertTrue(e.getMessage().contains("TaskAttemptIDs are inconsistent with map tasks"));
     }
   }
 
