@@ -17,13 +17,13 @@
 
 package org.apache.uniffle.coordinator;
 
-import org.apache.uniffle.common.config.RssConf;
-
 import java.io.Closeable;
 import java.util.List;
 import java.util.Set;
 
-public interface ClusterManager extends Closeable {
+import org.apache.uniffle.common.config.Reconfigurable;
+
+public interface ClusterManager extends Closeable, Reconfigurable {
 
   /**
    * Add a server to the cluster.
@@ -56,8 +56,4 @@ public interface ClusterManager extends Closeable {
    * @return whether to be ready for serving
    */
   boolean isReadyForServe();
-
-  boolean isPropertyReconfigurable(String property);
-
-  void reconfigure(RssConf conf);
 }
