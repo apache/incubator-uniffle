@@ -41,20 +41,7 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   private static final Logger LOG = LoggerFactory.getLogger(ComposedClientReadHandler.class);
 
   private enum Tier {
-    HOT(1),
-    WARM(2),
-    COLD(3),
-    FROZEN(4);
-
-    private final int value;
-
-    Tier(int value) {
-      this.value = value;
-    }
-
-    public int getValue() {
-      return value;
-    }
+    HOT, WARM, COLD, FROZEN;
 
     public Tier next() {
       return values()[this.ordinal() + 1];
@@ -150,7 +137,7 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
     // when is no data for current handler, and the upmostLevel is not reached,
     // then try next one if there has
     if (shuffleDataResult == null || shuffleDataResult.isEmpty()) {
-      if (currentHandler.getValue() < topLevelOfHandler) {
+      if (currentHandler.ordinal() + 1 < topLevelOfHandler) {
         currentHandler = currentHandler.next();
       } else {
         return null;
