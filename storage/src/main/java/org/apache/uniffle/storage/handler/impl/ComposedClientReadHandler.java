@@ -58,7 +58,7 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   private final Map<Tier, Supplier<ClientReadHandler>> supplierMap = new EnumMap<>(Tier.class);
   private final Map<Tier, ClientReadHandler> handlerMap = new EnumMap<>(Tier.class);
   private final Map<Tier, ClientReadHandlerMetric> metricsMap = new EnumMap<>(Tier.class);
-  private Tier currentTier = Tier.VALUES[0];
+  private Tier currentTier = Tier.VALUES[0]; // == Tier.HOT
   private final int numTiers;
 
   public ComposedClientReadHandler(ShuffleServerInfo serverInfo, ClientReadHandler... handlers) {
