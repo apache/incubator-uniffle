@@ -24,6 +24,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,8 +62,10 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   private final int numTiers;
 
   public ComposedClientReadHandler(ShuffleServerInfo serverInfo, ClientReadHandler... handlers) {
+    Preconditions.checkArgument(handlers.length <= Tier.VALUES.length,
+        "Too many handlers, got %d, max %d", handlers.length, Tier.VALUES.length);
     this.serverInfo = serverInfo;
-    numTiers = Math.min(Tier.VALUES.length, handlers.length);
+    numTiers = handlers.length;
     for (int i = 0; i < numTiers; i++) {
       handlerMap.put(Tier.VALUES[i], handlers[i]);
     }
@@ -71,11 +74,13 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
     }
   }
 
-  public ComposedClientReadHandler(ShuffleServerInfo serverInfo, List<Supplier<ClientReadHandler>> callables) {
+  public ComposedClientReadHandler(ShuffleServerInfo serverInfo, List<Supplier<ClientReadHandler>> suppliers) {
+    Preconditions.checkArgument(suppliers.size() <= Tier.VALUES.length,
+        "Too many suppliers, got %d, max %d", suppliers.size(), Tier.VALUES.length);
     this.serverInfo = serverInfo;
-    numTiers = Math.min(Tier.VALUES.length, callables.size());
+    numTiers = suppliers.size();
     for (int i = 0; i < numTiers; i++) {
-      supplierMap.put(Tier.VALUES[i], callables.get(i));
+      supplierMap.put(Tier.VALUES[i], suppliers.get(i));
     }
     for (Tier tier : Tier.VALUES) {
       metricsMap.put(tier, new ClientReadHandlerMetric());
