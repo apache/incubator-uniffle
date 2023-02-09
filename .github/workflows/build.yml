@@ -46,14 +46,14 @@ jobs:
     name: 'compile'
     uses: ./.github/workflows/sequential.yml
     with:
-      maven-args: package -DskipTests
+      maven-args: package -Djava.version=11 -DskipTests
       java-version: '11'
 
   java-17:
     name: 'compile'
     uses: ./.github/workflows/sequential.yml
     with:
-      maven-args: package -DskipTests
+      maven-args: package -Djava.version=17 -DskipTests
       java-version: '17'
 
   package:
