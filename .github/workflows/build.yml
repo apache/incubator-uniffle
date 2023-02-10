@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
 
 name: build
 
@@ -24,30 +22,33 @@ on: [push, pull_request]
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-  
 
 jobs:
   checkstyle:
     uses: ./.github/workflows/sequential.yml
     with:
       maven-args: checkstyle:check
+      cache-key: checkstyle
 
   license:
     uses: ./.github/workflows/sequential.yml
     with:
-      maven-args: org.apache.rat:apache-rat-plugin:check
+      maven-args: apache-rat:check
+      cache-key: license
       summary: "grep -r '!?????' --include='rat.txt' | awk '{print $3}'"
 
   spotbugs:
     uses: ./.github/workflows/sequential.yml
     with:
       maven-args: test-compile spotbugs:check
+      cache-key: spotbugs
   
   java-11:
     name: 'compile'
     uses: ./.github/workflows/sequential.yml
     with:
       maven-args: package -DskipTests
+      cache-key: package
       java-version: '11'
 
   java-17:
@@ -55,6 +56,7 @@ jobs:
     uses: ./.github/workflows/sequential.yml
     with:
       maven-args: package -DskipTests
+      cache-key: package
       java-version: '17'
 
   package:
