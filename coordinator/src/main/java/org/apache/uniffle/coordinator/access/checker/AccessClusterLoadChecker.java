@@ -49,7 +49,7 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker implements R
   private final double memoryPercentThreshold;
   // The hard constraint number of available shuffle servers
   private final int availableServerNumThreshold;
-  private volatile int  defaultRequiredShuffleServerNumber;
+  private volatile int defaultRequiredShuffleServerNumber;
 
   public AccessClusterLoadChecker(AccessManager accessManager) throws Exception {
     super(accessManager);
