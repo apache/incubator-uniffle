@@ -7,7 +7,7 @@
        - "[MINOR] docs: fix typo in README"
        - "[#255] test: fix flaky test NameOfTheTest"
      Reference: https://gist.github.com/joshbuchea/6f47e86d2510bce28f8e7f42ae84c716
-  2. Contributor guideline:
+  2. Contributor guidelines:
      https://github.com/apache/incubator-uniffle/blob/master/CONTRIBUTING.md
   3. If the PR is unfinished, please mark this PR as draft.
 -->
