@@ -248,11 +248,21 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       List<ShuffleServerInfo> excludeServers,
       Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
       Map<ShuffleServerInfo, List<Long>> serverToBlockIds) {
+    Stream<ShuffleServerInfo> servers2 = servers
+        .filter(excludeServers != null ? x -> !excludeServers.contains(x) : x -> true)
+        .limit(replicaNum);
+    return genServerToBlocks4(sbi, servers2, excludeServers, serverToBlocks, serverToBlockIds);
+  }
+
+  int genServerToBlocks4(
+      ShuffleBlockInfo sbi,
+      Stream<ShuffleServerInfo> servers,
+      List<ShuffleServerInfo> excludeServers,
+      Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
+      Map<ShuffleServerInfo, List<Long>> serverToBlockIds) {
     int partitionId = sbi.getPartitionId();
     int shuffleId = sbi.getShuffleId();
     return (int) servers
-        .filter(excludeServers != null ? x -> !excludeServers.contains(x) : x -> true)
-        .limit(replicaNum)
         .peek(excludeServers != null ? excludeServers::add : x -> {})
         .peek(ssi -> serverToBlockIds.computeIfAbsent(ssi, id -> Lists.newArrayList()).add(sbi.getBlockId()))
         .peek(ssi -> serverToBlocks.computeIfAbsent(ssi, id -> Maps.newHashMap())
