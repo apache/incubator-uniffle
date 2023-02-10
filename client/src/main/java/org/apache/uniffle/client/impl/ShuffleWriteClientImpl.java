@@ -32,8 +32,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -213,7 +213,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       ShuffleBlockInfo sbi,
       List<ShuffleServerInfo> serverList,
       int replicaNum,
-      @Nonnull Collection<ShuffleServerInfo> excludeServers,
+      Collection<ShuffleServerInfo> excludeServers,
       Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
       Map<ShuffleServerInfo, List<Long>> serverToBlockIds,
       boolean excludeDefectiveServers) {
@@ -221,22 +221,29 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       return;
     }
 
-    final Stream<ShuffleServerInfo> servers;
+    Stream<ShuffleServerInfo> servers;
     if (replica > 1 && excludeDefectiveServers) {
       servers = Stream.concat(serverList.stream().filter(x -> !defectiveServers.contains(x)),
           serverList.stream().filter(defectiveServers::contains));
     } else {
       servers = serverList.stream();
     }
+    if (excludeServers != null) {
+      servers = servers.filter(x -> !excludeServers.contains(x));
+    }
 
-    servers.filter(x -> !excludeServers.contains(x)).limit(replicaNum)
-        .peek(excludeServers::add)
-        .peek(ssi -> serverToBlockIds.computeIfAbsent(ssi, id -> Lists.newArrayList())
-            .add(sbi.getBlockId()))
-        .forEach(ssi -> serverToBlocks.computeIfAbsent(ssi, id -> Maps.newHashMap())
-            .computeIfAbsent(sbi.getShuffleId(), id -> Maps.newHashMap())
-            .computeIfAbsent(sbi.getPartitionId(), id -> Lists.newArrayList())
-            .add(sbi));
+    List<ShuffleServerInfo> selected = servers.limit(replicaNum).collect(Collectors.toList());
+    for (ShuffleServerInfo ssi : selected) {
+      serverToBlockIds.computeIfAbsent(ssi, id -> Lists.newArrayList())
+          .add(sbi.getBlockId());
+      serverToBlocks.computeIfAbsent(ssi, id -> Maps.newHashMap())
+          .computeIfAbsent(sbi.getShuffleId(), id -> Maps.newHashMap())
+          .computeIfAbsent(sbi.getPartitionId(), id -> Lists.newArrayList())
+          .add(sbi);
+    }
+    if (excludeServers != null) {
+      excludeServers.addAll(selected);
+    }
   }
 
   /**
@@ -266,8 +273,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     // which is minimum number when there is at most *replicaWrite - replica* sending server failures.
     for (ShuffleBlockInfo sbi : shuffleBlockInfoList) {
       List<ShuffleServerInfo> allServers = sbi.getShuffleServerInfos();
-      Set<ShuffleServerInfo> excludeServers = Sets.newHashSet();
       if (replicaSkipEnabled) {
+        Set<ShuffleServerInfo> excludeServers = Sets.newHashSet();
         genServerToBlocks(sbi, allServers, replicaWrite, excludeServers,
             primaryServerToBlocks, primaryServerToBlockIds, true);
         genServerToBlocks(sbi, allServers,replica - replicaWrite,
@@ -275,7 +282,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       } else {
         // When replicaSkip is disabled, we send data to all replicas within one round.
         genServerToBlocks(sbi, allServers, allServers.size(),
-            excludeServers, primaryServerToBlocks, primaryServerToBlockIds, false);
+            null, primaryServerToBlocks, primaryServerToBlockIds, false);
       }
     }
 
