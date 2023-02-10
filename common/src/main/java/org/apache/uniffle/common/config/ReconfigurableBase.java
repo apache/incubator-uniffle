@@ -48,7 +48,7 @@ public abstract class ReconfigurableBase implements Reconfigurable {
 
   public void startReconfigureThread() {
     scheduledExecutorService.scheduleAtFixedRate(
-        () -> checkConfiguration(), checkIntervalSec, checkIntervalSec, TimeUnit.SECONDS);
+        this::checkConfiguration, checkIntervalSec, checkIntervalSec, TimeUnit.SECONDS);
   }
 
   public void stopReconfigureThread() {
