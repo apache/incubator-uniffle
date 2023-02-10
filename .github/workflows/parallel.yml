@@ -89,6 +89,7 @@ jobs:
       with:
         go-version: ${{ inputs.go-version }}
         cache: true
+        cache-dependency-path: deploy/kubernetes/operator/go.sum
     - name: Execute `mvn ${{ inputs.maven-args }} -P${{ matrix.profile }}`
       run: mvn -B -fae ${{ inputs.maven-args }} -P${{ matrix.profile }} | tee /tmp/maven.log
       shell: bash
