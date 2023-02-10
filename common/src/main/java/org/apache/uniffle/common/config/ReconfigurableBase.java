@@ -36,7 +36,7 @@ public abstract class ReconfigurableBase implements Reconfigurable {
   private final RssConf rssConf;
 
   private final ScheduledExecutorService scheduledExecutorService;
-  private long checkIntervalSec;
+  private final long checkIntervalSec;
   private final AtomicLong lastModify = new AtomicLong(0L);
 
   public ReconfigurableBase(RssConf rssConf) {
