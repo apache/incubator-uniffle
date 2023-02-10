@@ -217,19 +217,19 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     if (replicaNum <= 0) {
       return;
     }
-    Stream<ShuffleServerInfo> servers = serverList.stream()
-        .filter(replica > 1 ? x -> !defectiveServers.contains(x) : x -> true);
+    Stream<ShuffleServerInfo> servers;
+
+    if (replica > 1) {
+      servers = Stream.concat(serverList.stream().filter(x -> !defectiveServers.contains(x)),
+          serverList.stream().filter(defectiveServers::contains));
+    } else {
+      servers = serverList.stream();
+    }
+
     Stream<ShuffleServerInfo> servers2 = servers
         .filter(excludeServers != null ? x -> !excludeServers.contains(x) : x -> true)
         .limit(replicaNum);
-    int assignedNum = genServerToBlocks4(sbi, servers2, excludeServers, serverToBlocks, serverToBlockIds);
-
-    if (assignedNum < replicaNum) {
-      Stream<ShuffleServerInfo> servers3 = serverList.stream()
-          .filter(excludeServers != null ? x -> !excludeServers.contains(x) : x -> true)
-          .limit(replicaNum - assignedNum);
-      genServerToBlocks4(sbi, servers3, excludeServers, serverToBlocks, serverToBlockIds);
-    }
+    genServerToBlocks4(sbi, servers2, excludeServers, serverToBlocks, serverToBlockIds);
   }
 
   void genServerToBlocks2(
