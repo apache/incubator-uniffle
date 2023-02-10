@@ -227,24 +227,14 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       if (CollectionUtils.isNotEmpty(excludeServers) && excludeServers.contains(ssi)) {
         continue;
       }
-      if (!serverToBlockIds.containsKey(ssi)) {
-        serverToBlockIds.put(ssi, Lists.newArrayList());
-      }
-      serverToBlockIds.get(ssi).add(sbi.getBlockId());
+      serverToBlockIds.computeIfAbsent(ssi, id -> Lists.newArrayList())
+          .add(sbi.getBlockId());
 
-      if (!serverToBlocks.containsKey(ssi)) {
-        serverToBlocks.put(ssi, Maps.newHashMap());
-      }
-      Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks = serverToBlocks.get(ssi);
-      if (!shuffleIdToBlocks.containsKey(shuffleId)) {
-        shuffleIdToBlocks.put(shuffleId, Maps.newHashMap());
-      }
+      serverToBlocks.computeIfAbsent(ssi, id -> Maps.newHashMap())
+          .computeIfAbsent(shuffleId, id -> Maps.newHashMap())
+          .computeIfAbsent(partitionId, id -> Lists.newArrayList())
+          .add(sbi);
 
-      Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = shuffleIdToBlocks.get(shuffleId);
-      if (!partitionToBlocks.containsKey(partitionId)) {
-        partitionToBlocks.put(partitionId, Lists.newArrayList());
-      }
-      partitionToBlocks.get(partitionId).add(sbi);
       if (excludeServers != null) {
         excludeServers.add(ssi);
       }
