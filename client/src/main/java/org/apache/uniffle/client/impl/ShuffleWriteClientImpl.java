@@ -219,30 +219,17 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
     int partitionId = sbi.getPartitionId();
     int shuffleId = sbi.getShuffleId();
-    int assignedNum = 0;
-    for (ShuffleServerInfo ssi : serverList) {
-      if (excludeDefectiveServers && replica > 1 && defectiveServers.contains(ssi)) {
-        continue;
-      }
-      if (CollectionUtils.isNotEmpty(excludeServers) && excludeServers.contains(ssi)) {
-        continue;
-      }
-      serverToBlockIds.computeIfAbsent(ssi, id -> Lists.newArrayList())
-          .add(sbi.getBlockId());
-
-      serverToBlocks.computeIfAbsent(ssi, id -> Maps.newHashMap())
-          .computeIfAbsent(shuffleId, id -> Maps.newHashMap())
-          .computeIfAbsent(partitionId, id -> Lists.newArrayList())
-          .add(sbi);
-
-      if (excludeServers != null) {
-        excludeServers.add(ssi);
-      }
-      assignedNum++;
-      if (assignedNum >= replicaNum) {
-        break;
-      }
-    }
+    int assignedNum = (int) serverList.stream()
+        .filter(excludeDefectiveServers && replica > 1 ? x -> !defectiveServers.contains(x) : x -> true)
+        .filter(excludeServers != null ? x -> !excludeServers.contains(x) : x -> true)
+        .limit(replicaNum)
+        .peek(excludeServers != null ? excludeServers::add : x -> {})
+        .peek(ssi -> serverToBlockIds.computeIfAbsent(ssi, id -> Lists.newArrayList()).add(sbi.getBlockId()))
+        .peek(ssi -> serverToBlocks.computeIfAbsent(ssi, id -> Maps.newHashMap())
+            .computeIfAbsent(shuffleId, id -> Maps.newHashMap())
+            .computeIfAbsent(partitionId, id -> Lists.newArrayList())
+            .add(sbi))
+        .count();
 
     if (assignedNum < replicaNum && excludeDefectiveServers) {
       genServerToBlocks(sbi, serverList, replicaNum - assignedNum,
