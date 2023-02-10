@@ -219,12 +219,16 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
     Stream<ShuffleServerInfo> servers = serverList.stream()
         .filter(replica > 1 ? x -> !defectiveServers.contains(x) : x -> true);
-    int assignedNum = genServerToBlocks3(sbi, servers, replicaNum,
-        excludeServers, serverToBlocks, serverToBlockIds);
+    Stream<ShuffleServerInfo> servers2 = servers
+        .filter(excludeServers != null ? x -> !excludeServers.contains(x) : x -> true)
+        .limit(replicaNum);
+    int assignedNum = genServerToBlocks4(sbi, servers2, excludeServers, serverToBlocks, serverToBlockIds);
 
     if (assignedNum < replicaNum) {
-      genServerToBlocks3(sbi, serverList.stream(), replicaNum - assignedNum,
-          excludeServers, serverToBlocks, serverToBlockIds);
+      Stream<ShuffleServerInfo> servers3 = serverList.stream()
+          .filter(excludeServers != null ? x -> !excludeServers.contains(x) : x -> true)
+          .limit(replicaNum - assignedNum);
+      genServerToBlocks4(sbi, servers3, excludeServers, serverToBlocks, serverToBlockIds);
     }
   }
 
@@ -238,20 +242,10 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     if (replicaNum <= 0) {
       return;
     }
-    genServerToBlocks3(sbi, serverList.stream(), replicaNum, excludeServers, serverToBlocks, serverToBlockIds);
-  }
-
-  int genServerToBlocks3(
-      ShuffleBlockInfo sbi,
-      Stream<ShuffleServerInfo> servers,
-      int replicaNum,
-      List<ShuffleServerInfo> excludeServers,
-      Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
-      Map<ShuffleServerInfo, List<Long>> serverToBlockIds) {
-    Stream<ShuffleServerInfo> servers2 = servers
+    Stream<ShuffleServerInfo> servers = serverList.stream()
         .filter(excludeServers != null ? x -> !excludeServers.contains(x) : x -> true)
         .limit(replicaNum);
-    return genServerToBlocks4(sbi, servers2, excludeServers, serverToBlocks, serverToBlockIds);
+    genServerToBlocks4(sbi, servers, excludeServers, serverToBlocks, serverToBlockIds);
   }
 
   int genServerToBlocks4(
