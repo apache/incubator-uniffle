@@ -28,23 +28,27 @@ jobs:
     uses: ./.github/workflows/sequential.yml
     with:
       maven-args: checkstyle:check
+      cache-key: checkstyle
 
   license:
     uses: ./.github/workflows/sequential.yml
     with:
       maven-args: apache-rat:check
+      cache-key: license
       summary: "grep -r '!?????' --include='rat.txt' | awk '{print $3}'"
 
   spotbugs:
     uses: ./.github/workflows/sequential.yml
     with:
       maven-args: test-compile spotbugs:check
+      cache-key: spotbugs
   
   java-11:
     name: 'compile'
     uses: ./.github/workflows/sequential.yml
     with:
       maven-args: package -DskipTests
+      cache-key: compile
       java-version: '11'
 
   java-17:
@@ -52,6 +56,7 @@ jobs:
     uses: ./.github/workflows/sequential.yml
     with:
       maven-args: package -DskipTests
+      cache-key: compile
       java-version: '17'
 
   package:

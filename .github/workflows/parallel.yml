@@ -75,7 +75,14 @@ jobs:
       with:
         java-version: ${{ inputs.java-version }}
         distribution: ${{ inputs.jdk-distro }}
-        cache: maven
+    - name: Cache local Maven repository
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: mvn-${{ inputs.java-version }}-package-${{ matrix.profile }}-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          mvn-${{ inputs.java-version }}-package-${{ matrix.profile }}-
+          mvn-${{ inputs.java-version }}-package-
     - name: Set up Go ${{ inputs.go-version }}
       if: ${{ matrix.profile == 'kubernetes' }}
       uses: actions/setup-go@v3

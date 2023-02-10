@@ -23,6 +23,10 @@ on:
       maven-args:
         required: true
         type: string
+      cache-key:
+        default: ''
+        required: false
+        type: string
       summary:
         default: "grep -e '^\\[ERROR\\]' /tmp/maven.log || true"
         required: false
@@ -56,7 +60,14 @@ jobs:
       with:
         java-version: ${{ inputs.java-version }}
         distribution: ${{ inputs.jdk-distro }}
-        cache: maven
+    - name: Cache local Maven repository
+      if: ${{ inputs.cache-key != '' }}
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-
     - name: Execute \`mvn ${{ inputs.maven-args }} -Pspark3\`
       run: mvn -B -fae ${{ inputs.maven-args }} -Pspark3 | tee -a /tmp/maven.log;
       shell: bash
