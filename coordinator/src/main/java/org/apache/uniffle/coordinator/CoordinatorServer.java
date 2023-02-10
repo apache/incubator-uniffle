@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
+import org.apache.uniffle.common.config.ReconfigurableBase;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
 import org.apache.uniffle.common.metrics.MetricReporter;
@@ -48,7 +50,7 @@ import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_K
 /**
  * The main entrance of coordinator service
  */
-public class CoordinatorServer {
+public class CoordinatorServer extends ReconfigurableBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorServer.class);
 
@@ -65,6 +67,7 @@ public class CoordinatorServer {
   private String id;
 
   public CoordinatorServer(CoordinatorConf coordinatorConf) throws Exception {
+    super(coordinatorConf);
     this.coordinatorConf = coordinatorConf;
     try {
       initialization();
@@ -84,6 +87,8 @@ public class CoordinatorServer {
     // Load configuration from config files
     final CoordinatorConf coordinatorConf = new CoordinatorConf(configFile);
 
+    coordinatorConf.setString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, configFile);
+
     // Start the coordinator service
     final CoordinatorServer coordinatorServer = new CoordinatorServer(coordinatorConf);
 
@@ -92,6 +97,7 @@ public class CoordinatorServer {
   }
 
   public void start() throws Exception {
+    startReconfigureThread();
     jettyServer.start();
     server.start();
 
@@ -126,6 +132,7 @@ public class CoordinatorServer {
       metricReporter.stop();
       LOG.info("Metric Reporter Stopped!");
     }
+    stopReconfigureThread();
     SecurityContextFactory.get().getSecurityContext().close();
     server.stop();
   }
@@ -240,5 +247,27 @@ public class CoordinatorServer {
    */
   private void blockUntilShutdown() throws InterruptedException {
     server.blockUntilShutdown();
+  }
+
+  @Override
+  public void reconfigure(RssConf conf) {
+    clusterManager.reconfigure(conf);
+    accessManager.reconfigure(conf);
+  }
+
+  @Override
+  public boolean isPropertyReconfigurable(String property) {
+    if (clusterManager.isPropertyReconfigurable(property)) {
+      return true;
+    }
+    if (accessManager.isPropertyReconfigurable(property)) {
+      return true;
+    }
+    return false;
+  }
+
+  @Override
+  public RssConf reloadConfiguration() {
+    return new CoordinatorConf(coordinatorConf.getString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, ""));
   }
 }

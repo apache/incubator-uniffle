@@ -106,6 +106,7 @@ This document will introduce how to deploy Uniffle coordinators.
 |rss.coordinator.quota.default.path|-|A configuration file for the number of apps for a user-defined user.|
 |rss.coordinator.quota.default.app.num|5|Default number of apps at user level.|
 |rss.metrics.reporter.class|-|The class of metrics reporter.|
+|rss.reconfigure.interval.sec|5|Reconfigure check interval.|
 
 ### AccessClusterLoadChecker settings
 |Property Name|Default|	Description|

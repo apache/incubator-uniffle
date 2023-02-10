@@ -205,6 +205,13 @@ public class RssBaseConf extends RssConf {
       .noDefaultValue()
       .withDescription("The class of metrics reporter.");
 
+  public static final ConfigOption<Long> RSS_RECONFIGURE_INTERVAL_SEC = ConfigOptions
+      .key("rss.reconfigure.interval.sec")
+      .longType()
+      .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "The value must be posite long")
+      .defaultValue(5L)
+      .withDescription("Reconfigure check interval.");
+
   public boolean loadCommonConf(Map<String, String> properties) {
     if (properties == null) {
       return false;
