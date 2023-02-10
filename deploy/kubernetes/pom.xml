@@ -53,6 +53,7 @@
             </goals>
             <configuration>
               <executable>${basedir}/test-operator.sh</executable>
+              <skip>${skipTests}</skip>
             </configuration>
           </execution>
         </executions>
