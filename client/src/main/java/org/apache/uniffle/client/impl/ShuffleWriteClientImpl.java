@@ -226,10 +226,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       servers = serverList.stream();
     }
 
-    Stream<ShuffleServerInfo> servers2 = servers
-        .filter(excludeServers != null ? x -> !excludeServers.contains(x) : x -> true)
-        .limit(replicaNum);
-    genServerToBlocks4(sbi, servers2, excludeServers, serverToBlocks, serverToBlockIds);
+    genServerToBlocks4(sbi, servers, replicaNum, excludeServers, serverToBlocks, serverToBlockIds);
   }
 
   void genServerToBlocks2(
@@ -242,28 +239,27 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     if (replicaNum <= 0) {
       return;
     }
-    Stream<ShuffleServerInfo> servers = serverList.stream()
-        .filter(excludeServers != null ? x -> !excludeServers.contains(x) : x -> true)
-        .limit(replicaNum);
-    genServerToBlocks4(sbi, servers, excludeServers, serverToBlocks, serverToBlockIds);
+    Stream<ShuffleServerInfo> servers = serverList.stream();
+    genServerToBlocks4(sbi, servers, replicaNum, excludeServers, serverToBlocks, serverToBlockIds);
   }
 
-  int genServerToBlocks4(
+  void genServerToBlocks4(
       ShuffleBlockInfo sbi,
       Stream<ShuffleServerInfo> servers,
+      int replicaNum,
       List<ShuffleServerInfo> excludeServers,
       Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
       Map<ShuffleServerInfo, List<Long>> serverToBlockIds) {
     int partitionId = sbi.getPartitionId();
     int shuffleId = sbi.getShuffleId();
-    return (int) servers
+    servers.filter(excludeServers != null ? x -> !excludeServers.contains(x) : x -> true)
+        .limit(replicaNum)
         .peek(excludeServers != null ? excludeServers::add : x -> {})
         .peek(ssi -> serverToBlockIds.computeIfAbsent(ssi, id -> Lists.newArrayList()).add(sbi.getBlockId()))
-        .peek(ssi -> serverToBlocks.computeIfAbsent(ssi, id -> Maps.newHashMap())
+        .forEach(ssi -> serverToBlocks.computeIfAbsent(ssi, id -> Maps.newHashMap())
             .computeIfAbsent(shuffleId, id -> Maps.newHashMap())
             .computeIfAbsent(partitionId, id -> Lists.newArrayList())
-            .add(sbi))
-        .count();
+            .add(sbi));
   }
 
   /**
