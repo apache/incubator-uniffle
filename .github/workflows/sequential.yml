@@ -68,13 +68,13 @@ jobs:
         key: mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
           mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-
-    - name: Execute \`mvn ${{ inputs.maven-args }} -Pspark3\`
+    - name: Execute `mvn ${{ inputs.maven-args }} -Pspark3`
       run: mvn -B -fae ${{ inputs.maven-args }} -Pspark3 | tee -a /tmp/maven.log;
       shell: bash
-    - name: Execute \`mvn ${{ inputs.maven-args }} -Pspark2\`
+    - name: Execute `mvn ${{ inputs.maven-args }} -Pspark2`
       run: mvn -B -fae ${{ inputs.maven-args }} -Pspark2 | tee -a /tmp/maven.log;
       shell: bash
-    - name: Execute \`mvn ${{ inputs.maven-args }} -Pmr\`
+    - name: Execute `mvn ${{ inputs.maven-args }} -Pmr`
       run: mvn -B -fae ${{ inputs.maven-args }} -Pmr | tee -a /tmp/maven.log;
       shell: bash
     - name: Summary of failures

@@ -89,7 +89,7 @@ jobs:
       with:
         go-version: ${{ inputs.go-version }}
         cache: true
-    - name: Execute \`mvn ${{ inputs.maven-args }} -P${{ matrix.profile }}\`
+    - name: Execute `mvn ${{ inputs.maven-args }} -P${{ matrix.profile }}`
       run: mvn -B -fae ${{ inputs.maven-args }} -P${{ matrix.profile }} | tee /tmp/maven.log
       shell: bash
     - name: Summary of failures
