@@ -18,6 +18,7 @@
 package org.apache.uniffle.client.impl;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nonnull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -211,7 +213,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       ShuffleBlockInfo sbi,
       List<ShuffleServerInfo> serverList,
       int replicaNum,
-      List<ShuffleServerInfo> excludeServers,
+      @Nonnull Collection<ShuffleServerInfo> excludeServers,
       Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
       Map<ShuffleServerInfo, List<Long>> serverToBlockIds,
       boolean excludeDefectiveServers) {
@@ -229,9 +231,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
     int partitionId = sbi.getPartitionId();
     int shuffleId = sbi.getShuffleId();
-    servers.filter(excludeServers != null ? x -> !excludeServers.contains(x) : x -> true)
+    servers.filter(x -> !excludeServers.contains(x))
         .limit(replicaNum)
-        .peek(excludeServers != null ? excludeServers::add : x -> {})
+        .peek(excludeServers::add)
         .peek(ssi -> serverToBlockIds.computeIfAbsent(ssi, id -> Lists.newArrayList()).add(sbi.getBlockId()))
         .forEach(ssi -> serverToBlocks.computeIfAbsent(ssi, id -> Maps.newHashMap())
             .computeIfAbsent(shuffleId, id -> Maps.newHashMap())
@@ -266,8 +268,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     // which is minimum number when there is at most *replicaWrite - replica* sending server failures.
     for (ShuffleBlockInfo sbi : shuffleBlockInfoList) {
       List<ShuffleServerInfo> allServers = sbi.getShuffleServerInfos();
+      Set<ShuffleServerInfo> excludeServers = Sets.newHashSet();
       if (replicaSkipEnabled) {
-        List<ShuffleServerInfo> excludeServers = new ArrayList<>();
         genServerToBlocks(sbi, allServers, replicaWrite, excludeServers,
             primaryServerToBlocks, primaryServerToBlockIds, true);
         genServerToBlocks(sbi, allServers,replica - replicaWrite,
@@ -275,7 +277,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       } else {
         // When replicaSkip is disabled, we send data to all replicas within one round.
         genServerToBlocks(sbi, allServers, allServers.size(),
-            null, primaryServerToBlocks, primaryServerToBlockIds, false);
+            excludeServers, primaryServerToBlocks, primaryServerToBlockIds, false);
       }
     }
 
