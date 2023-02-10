@@ -34,6 +34,6 @@ No.
 
 ### How was this patch tested?
 
-(Please test your changes before submit a PR, and provide instructions:
+(Please test your changes, and provide instructions on how to test it:
   1. If you add a feature or fix a bug, add a test to cover your changes. 
   2. If you fix a flaky test, repeat it for many times to prove it works.)
