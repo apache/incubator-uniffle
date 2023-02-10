@@ -227,16 +227,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       servers = serverList.stream();
     }
 
-    genServerToBlocks4(sbi, servers, replicaNum, excludeServers, serverToBlocks, serverToBlockIds);
-  }
-
-  void genServerToBlocks4(
-      ShuffleBlockInfo sbi,
-      Stream<ShuffleServerInfo> servers,
-      int replicaNum,
-      List<ShuffleServerInfo> excludeServers,
-      Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
-      Map<ShuffleServerInfo, List<Long>> serverToBlockIds) {
     int partitionId = sbi.getPartitionId();
     int shuffleId = sbi.getShuffleId();
     servers.filter(excludeServers != null ? x -> !excludeServers.contains(x) : x -> true)
