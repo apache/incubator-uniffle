@@ -220,8 +220,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     if (replicaNum <= 0) {
       return;
     }
-    Stream<ShuffleServerInfo> servers;
 
+    final Stream<ShuffleServerInfo> servers;
     if (replica > 1 && excludeDefectiveServers) {
       servers = Stream.concat(serverList.stream().filter(x -> !defectiveServers.contains(x)),
           serverList.stream().filter(defectiveServers::contains));
@@ -229,15 +229,13 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       servers = serverList.stream();
     }
 
-    int partitionId = sbi.getPartitionId();
-    int shuffleId = sbi.getShuffleId();
-    servers.filter(x -> !excludeServers.contains(x))
-        .limit(replicaNum)
+    servers.filter(x -> !excludeServers.contains(x)).limit(replicaNum)
         .peek(excludeServers::add)
-        .peek(ssi -> serverToBlockIds.computeIfAbsent(ssi, id -> Lists.newArrayList()).add(sbi.getBlockId()))
+        .peek(ssi -> serverToBlockIds.computeIfAbsent(ssi, id -> Lists.newArrayList())
+            .add(sbi.getBlockId()))
         .forEach(ssi -> serverToBlocks.computeIfAbsent(ssi, id -> Maps.newHashMap())
-            .computeIfAbsent(shuffleId, id -> Maps.newHashMap())
-            .computeIfAbsent(partitionId, id -> Lists.newArrayList())
+            .computeIfAbsent(sbi.getShuffleId(), id -> Maps.newHashMap())
+            .computeIfAbsent(sbi.getPartitionId(), id -> Lists.newArrayList())
             .add(sbi));
   }
 
