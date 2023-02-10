@@ -15,13 +15,17 @@
 # limitations under the License.
 #
 
-name: All Profiles in Parallel
+name: All Deploy Profiles in Parallel
 
 on:
   workflow_call:
     inputs:
       maven-args:
         required: true
+        type: string
+      maven-options:
+        default: ''
+        required: false
         type: string
       summary:
         default: "grep -e '^\\[ERROR\\]' /tmp/maven.log || true"
@@ -43,26 +47,21 @@ on:
         default: 'temurin'
         required: false
         type: string
+      go-version:
+        default: '1.17'
+        required: false
+        type: string
 
 jobs:
-  maven:
+  package:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
         profile:
-          - spark2
-          - spark2.3
-          - spark3.0
-          - spark3
-          - spark3.2
-          - spark3.2.0
-          - spark3.3
-          - mr
+          - kubernetes
       fail-fast: false
-    name: -P${{ matrix.profile }}
+    name: ${{ matrix.profile }}
     steps:
-    - name: Set /etc/hosts mapping
-      run: sudo hostname "action-host" | sudo echo "127.0.0.1 action-host" | sudo tee -a /etc/hosts
     - name: Checkout project
       uses: actions/checkout@v3
     - name: Set up JDK ${{ inputs.java-version }}
@@ -78,8 +77,13 @@ jobs:
         restore-keys: |
           mvn-${{ inputs.java-version }}-package-${{ matrix.profile }}-
           mvn-${{ inputs.java-version }}-package-
+    - name: Set up Go ${{ inputs.go-version }}
+      if: ${{ inputs.go-version != '' }}
+      uses: actions/setup-go@v3
+      with:
+        go-version: ${{ inputs.go-version }}
     - name: Execute `mvn ${{ inputs.maven-args }} -P${{ matrix.profile }}`
-      run: mvn -B -fae ${{ inputs.maven-args }} -P${{ matrix.profile }} | tee /tmp/maven.log
+      run: mvn -B -fae ${{ inputs.maven-args }} -P${{ matrix.profile }} ${{ inputs.maven-options }} | tee /tmp/maven.log
       shell: bash
     - name: Summary of failures
       if: ${{ failure() && inputs.summary != '' }}

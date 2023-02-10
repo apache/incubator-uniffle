@@ -64,3 +64,9 @@ jobs:
     with:
       maven-args: package
       reports-path: "**/target/surefire-reports/*.txt"
+
+  deploy:
+    uses: ./.github/workflows/deploy.yml
+    with:
+      maven-args: package
+      maven-options: -DskipUTs -DskipITs
