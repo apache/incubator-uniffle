@@ -72,7 +72,7 @@ public abstract class ReconfigurableBase implements Reconfigurable {
       return;
     }
     if (newLastModify != lastModify.get()) {
-      LOG.warn("Server detect the modification of file " + fileName + ", we start to reconfigure");
+      LOG.warn("Server detect the modification of file {}, we start to reconfigure", fileName);
       lastModify.set(newLastModify);
       reconfigure(reloadConfiguration());
     }
