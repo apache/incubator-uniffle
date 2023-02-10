@@ -31,6 +31,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -216,22 +217,13 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     if (replicaNum <= 0) {
       return;
     }
-    int partitionId = sbi.getPartitionId();
-    int shuffleId = sbi.getShuffleId();
-    int assignedNum = (int) serverList.stream()
-        .filter(replica > 1 ? x -> !defectiveServers.contains(x) : x -> true)
-        .filter(excludeServers != null ? x -> !excludeServers.contains(x) : x -> true)
-        .limit(replicaNum)
-        .peek(excludeServers != null ? excludeServers::add : x -> {})
-        .peek(ssi -> serverToBlockIds.computeIfAbsent(ssi, id -> Lists.newArrayList()).add(sbi.getBlockId()))
-        .peek(ssi -> serverToBlocks.computeIfAbsent(ssi, id -> Maps.newHashMap())
-            .computeIfAbsent(shuffleId, id -> Maps.newHashMap())
-            .computeIfAbsent(partitionId, id -> Lists.newArrayList())
-            .add(sbi))
-        .count();
+    Stream<ShuffleServerInfo> servers = serverList.stream()
+        .filter(replica > 1 ? x -> !defectiveServers.contains(x) : x -> true);
+    int assignedNum = genServerToBlocks3(sbi, servers, replicaNum,
+        excludeServers, serverToBlocks, serverToBlockIds);
 
     if (assignedNum < replicaNum) {
-      genServerToBlocks2(sbi, serverList, replicaNum - assignedNum,
+      genServerToBlocks3(sbi, serverList.stream(), replicaNum - assignedNum,
           excludeServers, serverToBlocks, serverToBlockIds);
     }
   }
@@ -246,9 +238,19 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     if (replicaNum <= 0) {
       return;
     }
+    genServerToBlocks3(sbi, serverList.stream(), replicaNum, excludeServers, serverToBlocks, serverToBlockIds);
+  }
+
+  int genServerToBlocks3(
+      ShuffleBlockInfo sbi,
+      Stream<ShuffleServerInfo> servers,
+      int replicaNum,
+      List<ShuffleServerInfo> excludeServers,
+      Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
+      Map<ShuffleServerInfo, List<Long>> serverToBlockIds) {
     int partitionId = sbi.getPartitionId();
     int shuffleId = sbi.getShuffleId();
-    int assignedNum = (int) serverList.stream()
+    return (int) servers
         .filter(excludeServers != null ? x -> !excludeServers.contains(x) : x -> true)
         .limit(replicaNum)
         .peek(excludeServers != null ? excludeServers::add : x -> {})
