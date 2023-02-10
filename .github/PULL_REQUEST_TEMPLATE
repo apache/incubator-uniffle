@@ -36,4 +36,4 @@ No.
 
 (Please test your changes before submit a PR, and provide instructions:
   1. If you add a feature or fix a bug, add a test to cover your changes. 
-  2. If you fixed a flaky test, repeat it for many times to prove it works.)
+  2. If you fix a flaky test, repeat it for many times to prove it works.)
