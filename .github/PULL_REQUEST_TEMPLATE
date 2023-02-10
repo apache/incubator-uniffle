@@ -1,34 +1,39 @@
 <!--
-Thanks for sending a pull request! Here are some tips for you:
-  1. If this is your first time, please read our contributor guidelines:
+  1. PR title format: "[#ISSUE] type(scope): summary"
+     Examples:
+       - "[#123] feat(operator): support xxx"
+       - "[#233] fix: check null before access result in xxx"
+       - "[MINOR] refactor: fix typo in variable name"
+       - "[MINOR] docs: fix typo in README"
+       - "[#255] test: fix flaky test NameOfTheTest"
+     Reference: https://gist.github.com/joshbuchea/6f47e86d2510bce28f8e7f42ae84c716
+  2. Contributor guideline:
      https://github.com/apache/incubator-uniffle/blob/master/CONTRIBUTING.md
-  2. Please write your PR title to summarize what this PR proposes.
-     The preferred format is: "[#issue] type(scope): summary"
-     If there is no need to link to a issue: "[MINOR] type(scope): summary"
-     For reference: https://gist.github.com/joshbuchea/6f47e86d2510bce28f8e7f42ae84c716
   3. If the PR is unfinished, please mark this PR as draft.
 -->
 
 ### What changes were proposed in this pull request?
 
-Please outline the changes and how this PR fixes the issue.
+(Please outline the changes and how this PR fixes the issue.)
 
 ### Why are the changes needed?
 
-Please clarify why the changes are needed. For instance,
+(Please clarify why the changes are needed. For instance,
   1. If you propose a new API, clarify the use case for a new API.
-  2. If you fix a bug, describe the bug.
+  2. If you fix a bug, describe the bug.)
 
 Fix: #
 
 ### Does this PR introduce _any_ user-facing change?
 
-Please list the user-facing changes introduced by your change, including
-  1. change in user-facing APIs
-  2. addition or removal of property keys
+(Please list the user-facing changes introduced by your change, including
+  1. Change in user-facing APIs.
+  2. Addition or removal of property keys.)
+
+No.
 
 ### How was this patch tested?
 
-Please test your changes before submit a PR, and provide instructions:
+(Please test your changes before submit a PR, and provide instructions:
   1. If you add a feature or fix a bug, add a test to cover your changes. 
-  2. If you fixed a flaky test, repeat it for many times in CI or IDE.
+  2. If you fixed a flaky test, repeat it for many times to prove it works.)
