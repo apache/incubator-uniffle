@@ -213,33 +213,20 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int replicaNum,
       List<ShuffleServerInfo> excludeServers,
       Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
-      Map<ShuffleServerInfo, List<Long>> serverToBlockIds) {
+      Map<ShuffleServerInfo, List<Long>> serverToBlockIds,
+      boolean excludeDefectiveServers) {
     if (replicaNum <= 0) {
       return;
     }
     Stream<ShuffleServerInfo> servers;
 
-    if (replica > 1) {
+    if (replica > 1 && excludeDefectiveServers) {
       servers = Stream.concat(serverList.stream().filter(x -> !defectiveServers.contains(x)),
           serverList.stream().filter(defectiveServers::contains));
     } else {
       servers = serverList.stream();
     }
 
-    genServerToBlocks4(sbi, servers, replicaNum, excludeServers, serverToBlocks, serverToBlockIds);
-  }
-
-  void genServerToBlocks2(
-      ShuffleBlockInfo sbi,
-      List<ShuffleServerInfo> serverList,
-      int replicaNum,
-      List<ShuffleServerInfo> excludeServers,
-      Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
-      Map<ShuffleServerInfo, List<Long>> serverToBlockIds) {
-    if (replicaNum <= 0) {
-      return;
-    }
-    Stream<ShuffleServerInfo> servers = serverList.stream();
     genServerToBlocks4(sbi, servers, replicaNum, excludeServers, serverToBlocks, serverToBlockIds);
   }
 
@@ -292,13 +279,13 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       if (replicaSkipEnabled) {
         List<ShuffleServerInfo> excludeServers = new ArrayList<>();
         genServerToBlocks(sbi, allServers, replicaWrite, excludeServers,
-            primaryServerToBlocks, primaryServerToBlockIds);
-        genServerToBlocks2(sbi, allServers,replica - replicaWrite,
-            excludeServers, secondaryServerToBlocks, secondaryServerToBlockIds);
+            primaryServerToBlocks, primaryServerToBlockIds, true);
+        genServerToBlocks(sbi, allServers,replica - replicaWrite,
+            excludeServers, secondaryServerToBlocks, secondaryServerToBlockIds, false);
       } else {
         // When replicaSkip is disabled, we send data to all replicas within one round.
-        genServerToBlocks2(sbi, allServers, allServers.size(),
-            null, primaryServerToBlocks, primaryServerToBlockIds);
+        genServerToBlocks(sbi, allServers, allServers.size(),
+            null, primaryServerToBlocks, primaryServerToBlockIds, false);
       }
     }
 

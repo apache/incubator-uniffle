@@ -136,12 +136,12 @@ public class ShuffleWriteClientImplTest {
         new RssSendShuffleDataResponse(StatusCode.SUCCESS));
     List<ShuffleServerInfo> excludeServers = new ArrayList<>();
     spyClient.genServerToBlocks(shuffleBlockInfoList.get(0), shuffleServerInfoList,
-        2, excludeServers, Maps.newHashMap(), Maps.newHashMap());
+        2, excludeServers, Maps.newHashMap(), Maps.newHashMap(), true);
     assertEquals(2, excludeServers.size());
     assertEquals(ssi2, excludeServers.get(0));
     assertEquals(ssi3, excludeServers.get(1));
-    spyClient.genServerToBlocks2(shuffleBlockInfoList.get(0), shuffleServerInfoList,
-        1, excludeServers, Maps.newHashMap(), Maps.newHashMap());
+    spyClient.genServerToBlocks(shuffleBlockInfoList.get(0), shuffleServerInfoList,
+        1, excludeServers, Maps.newHashMap(), Maps.newHashMap(), false);
     assertEquals(3, excludeServers.size());
     assertEquals(ssi1, excludeServers.get(2));
     result = spyClient.sendShuffleData(appId, shuffleBlockInfoList, () -> false);
@@ -162,12 +162,12 @@ public class ShuffleWriteClientImplTest {
     assertEquals(ssi2, spyClient.getDefectiveServers().toArray()[0]);
     excludeServers = new ArrayList<>();
     spyClient.genServerToBlocks(shuffleBlockInfoList.get(0), shuffleServerInfoList,
-        2, excludeServers, Maps.newHashMap(), Maps.newHashMap());
+        2, excludeServers, Maps.newHashMap(), Maps.newHashMap(), true);
     assertEquals(2, excludeServers.size());
     assertEquals(ssi1, excludeServers.get(0));
     assertEquals(ssi3, excludeServers.get(1));
-    spyClient.genServerToBlocks2(shuffleBlockInfoList.get(0), shuffleServerInfoList,
-        1, excludeServers, Maps.newHashMap(), Maps.newHashMap());
+    spyClient.genServerToBlocks(shuffleBlockInfoList.get(0), shuffleServerInfoList,
+        1, excludeServers, Maps.newHashMap(), Maps.newHashMap(), false);
     assertEquals(3, excludeServers.size());
     assertEquals(ssi2, excludeServers.get(2));
 
@@ -176,7 +176,7 @@ public class ShuffleWriteClientImplTest {
     assertEquals(2, spyClient.getDefectiveServers().size());
     excludeServers = new ArrayList<>();
     spyClient.genServerToBlocks(shuffleBlockInfoList.get(0), shuffleServerInfoList,
-        2, excludeServers, Maps.newHashMap(), Maps.newHashMap());
+        2, excludeServers, Maps.newHashMap(), Maps.newHashMap(), true);
     assertEquals(2, excludeServers.size());
     assertEquals(ssi3, excludeServers.get(0));
     assertEquals(ssi1, excludeServers.get(1));
