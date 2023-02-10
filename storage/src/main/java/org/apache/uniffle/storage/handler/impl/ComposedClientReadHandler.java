@@ -17,10 +17,15 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import java.util.EnumMap;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,101 +45,67 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(ComposedClientReadHandler.class);
 
-  private final ShuffleServerInfo serverInfo;
-  private Callable<ClientReadHandler> hotHandlerCreator;
-  private Callable<ClientReadHandler> warmHandlerCreator;
-  private Callable<ClientReadHandler> coldHandlerCreator;
-  private Callable<ClientReadHandler> frozenHandlerCreator;
-  private ClientReadHandler hotDataReadHandler;
-  private ClientReadHandler warmDataReadHandler;
-  private ClientReadHandler coldDataReadHandler;
-  private ClientReadHandler frozenDataReadHandler;
-  private static final int HOT = 1;
-  private static final int WARM = 2;
-  private static final int COLD = 3;
-  private static final int FROZEN = 4;
-  private int currentHandler = HOT;
-  private final int topLevelOfHandler;
+  private enum Tier {
+    HOT, WARM, COLD, FROZEN;
 
-  private ClientReadHandlerMetric hostHandlerMetric = new ClientReadHandlerMetric();
-  private ClientReadHandlerMetric warmHandlerMetric = new ClientReadHandlerMetric();
-  private ClientReadHandlerMetric coldHandlerMetric = new ClientReadHandlerMetric();
-  private ClientReadHandlerMetric frozenHandlerMetric = new ClientReadHandlerMetric();
+    static final Tier[] VALUES = Tier.values();
 
-  public ComposedClientReadHandler(ShuffleServerInfo serverInfo, ClientReadHandler... handlers) {
-    this.serverInfo = serverInfo;
-    topLevelOfHandler = handlers.length;
-    if (topLevelOfHandler > 0) {
-      this.hotDataReadHandler = handlers[0];
-    }
-    if (topLevelOfHandler > 1) {
-      this.warmDataReadHandler = handlers[1];
-    }
-    if (topLevelOfHandler > 2) {
-      this.coldDataReadHandler = handlers[2];
-    }
-    if (topLevelOfHandler > 3) {
-      this.frozenDataReadHandler = handlers[3];
+    Tier next() {
+      return VALUES[this.ordinal() + 1];
     }
   }
 
-  public ComposedClientReadHandler(ShuffleServerInfo serverInfo, List<Callable<ClientReadHandler>> callables) {
+  private final ShuffleServerInfo serverInfo;
+  private final Map<Tier, Supplier<ClientReadHandler>> supplierMap = new EnumMap<>(Tier.class);
+  private final Map<Tier, ClientReadHandler> handlerMap = new EnumMap<>(Tier.class);
+  private final Map<Tier, ClientReadHandlerMetric> metricsMap = new EnumMap<>(Tier.class);
+  private Tier currentTier = Tier.VALUES[0]; // == Tier.HOT
+  private final int numTiers;
+
+  {
+    for (Tier tier : Tier.VALUES) {
+      metricsMap.put(tier, new ClientReadHandlerMetric());
+    }
+  }
+
+  public ComposedClientReadHandler(ShuffleServerInfo serverInfo, ClientReadHandler... handlers) {
+    Preconditions.checkArgument(handlers.length <= Tier.VALUES.length,
+        "Too many handlers, got %d, max %d", handlers.length, Tier.VALUES.length);
     this.serverInfo = serverInfo;
-    topLevelOfHandler = callables.size();
-    if (topLevelOfHandler > 0) {
-      this.hotHandlerCreator = callables.get(0);
+    numTiers = handlers.length;
+    for (int i = 0; i < numTiers; i++) {
+      handlerMap.put(Tier.VALUES[i], handlers[i]);
     }
-    if (topLevelOfHandler > 1) {
-      this.warmHandlerCreator = callables.get(1);
-    }
-    if (topLevelOfHandler > 2) {
-      this.coldHandlerCreator = callables.get(2);
-    }
-    if (topLevelOfHandler > 3) {
-      this.frozenHandlerCreator = callables.get(3);
+  }
+
+  public ComposedClientReadHandler(ShuffleServerInfo serverInfo, List<Supplier<ClientReadHandler>> suppliers) {
+    Preconditions.checkArgument(suppliers.size() <= Tier.VALUES.length,
+        "Too many suppliers, got %d, max %d", suppliers.size(), Tier.VALUES.length);
+    this.serverInfo = serverInfo;
+    numTiers = suppliers.size();
+    for (int i = 0; i < numTiers; i++) {
+      supplierMap.put(Tier.VALUES[i], suppliers.get(i));
     }
   }
 
   @Override
   public ShuffleDataResult readShuffleData() {
-    ShuffleDataResult shuffleDataResult = null;
+    ClientReadHandler handler = handlerMap.computeIfAbsent(currentTier,
+        key -> supplierMap.getOrDefault(key, () -> null).get());
+    if (handler == null) {
+      throw new RssException("Unexpected null when getting " + currentTier.name() + " handler");
+    }
+    ShuffleDataResult shuffleDataResult;
     try {
-      switch (currentHandler) {
-        case HOT:
-          if (hotDataReadHandler == null) {
-            hotDataReadHandler = hotHandlerCreator.call();
-          }
-          shuffleDataResult = hotDataReadHandler.readShuffleData();
-          break;
-        case WARM:
-          if (warmDataReadHandler == null) {
-            warmDataReadHandler = warmHandlerCreator.call();
-          }
-          shuffleDataResult = warmDataReadHandler.readShuffleData();
-          break;
-        case COLD:
-          if (coldDataReadHandler == null) {
-            coldDataReadHandler = coldHandlerCreator.call();
-          }
-          shuffleDataResult = coldDataReadHandler.readShuffleData();
-          break;
-        case FROZEN:
-          if (frozenDataReadHandler == null) {
-            frozenDataReadHandler = frozenHandlerCreator.call();
-          }
-          shuffleDataResult = frozenDataReadHandler.readShuffleData();
-          break;
-        default:
-          return null;
-      }
+      shuffleDataResult = handler.readShuffleData();
     } catch (Exception e) {
-      throw new RssException("Failed to read shuffle data from " + getCurrentHandlerName() + " handler", e);
+      throw new RssException("Failed to read shuffle data from " + currentTier.name() + " handler", e);
     }
     // when is no data for current handler, and the upmostLevel is not reached,
     // then try next one if there has
     if (shuffleDataResult == null || shuffleDataResult.isEmpty()) {
-      if (currentHandler < topLevelOfHandler) {
-        currentHandler++;
+      if (currentTier.ordinal() + 1 < numTiers) {
+        currentTier = currentTier.next();
       } else {
         return null;
       }
@@ -144,44 +115,9 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
     return shuffleDataResult;
   }
 
-  private String getCurrentHandlerName() {
-    String name = "UNKNOWN";
-    switch (currentHandler) {
-      case HOT:
-        name = "HOT";
-        break;
-      case WARM:
-        name = "WARM";
-        break;
-      case COLD:
-        name = "COLD";
-        break;
-      case FROZEN:
-        name = "FROZEN";
-        break;
-      default:
-        break;
-    }
-    return name;
-  }
-
   @Override
   public void close() {
-    if (hotDataReadHandler != null) {
-      hotDataReadHandler.close();
-    }
-
-    if (warmDataReadHandler != null) {
-      warmDataReadHandler.close();
-    }
-
-    if (coldDataReadHandler != null) {
-      coldDataReadHandler.close();
-    }
-
-    if (frozenDataReadHandler != null) {
-      frozenDataReadHandler.close();
-    }
+    handlerMap.values().stream().filter(Objects::nonNull).forEach(ClientReadHandler::close);
   }
 
   @Override
@@ -190,71 +126,49 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
       return;
     }
     super.updateConsumedBlockInfo(bs, isSkippedMetrics);
-    switch (currentHandler) {
-      case HOT:
-        updateBlockMetric(hostHandlerMetric, bs, isSkippedMetrics);
-        break;
-      case WARM:
-        updateBlockMetric(warmHandlerMetric, bs, isSkippedMetrics);
-        break;
-      case COLD:
-        updateBlockMetric(coldHandlerMetric, bs, isSkippedMetrics);
-        break;
-      case FROZEN:
-        updateBlockMetric(frozenHandlerMetric, bs, isSkippedMetrics);
-        break;
-      default:
-        break;
-    }
+    updateBlockMetric(metricsMap.get(currentTier), bs, isSkippedMetrics);
   }
 
   @Override
   public void logConsumedBlockInfo() {
-    LOG.info(getReadBlokNumInfo());
+    LOG.info(getReadBlockNumInfo());
     LOG.info(getReadLengthInfo());
     LOG.info(getReadUncompressLengthInfo());
   }
 
   @VisibleForTesting
-  public String getReadBlokNumInfo() {
-    return "Client read " + readHandlerMetric.getReadBlockNum()
-        + " blocks from [" + serverInfo + "], Consumed["
-        + " hot:" + hostHandlerMetric.getReadBlockNum()
-        + " warm:" + warmHandlerMetric.getReadBlockNum()
-        + " cold:" + coldHandlerMetric.getReadBlockNum()
-        + " frozen:" + frozenHandlerMetric.getReadBlockNum()
-        + " ], Skipped[" + " hot:" + hostHandlerMetric.getSkippedReadBlockNum()
-        + " warm:" + warmHandlerMetric.getSkippedReadBlockNum()
-        + " cold:" + coldHandlerMetric.getSkippedReadBlockNum()
-        + " frozen:" + frozenHandlerMetric.getSkippedReadBlockNum() + " ]";
+  public String getReadBlockNumInfo() {
+    return getMetricsInfo("blocks", ClientReadHandlerMetric::getReadBlockNum,
+        ClientReadHandlerMetric::getSkippedReadBlockNum);
   }
 
   @VisibleForTesting
   public String getReadLengthInfo() {
-    return "Client read " + readHandlerMetric.getReadLength()
-        + " bytes from [" + serverInfo + "], Consumed["
-        + " hot:" + hostHandlerMetric.getReadLength()
-        + " warm:" + warmHandlerMetric.getReadLength()
-        + " cold:" + coldHandlerMetric.getReadLength()
-        + " frozen:" + frozenHandlerMetric.getReadLength() + " ], Skipped["
-        + " hot:" + hostHandlerMetric.getSkippedReadLength()
-        + " warm:" + warmHandlerMetric.getSkippedReadLength()
-        + " cold:" + coldHandlerMetric.getSkippedReadLength()
-        + " frozen:" + frozenHandlerMetric.getSkippedReadLength() + " ]";
+    return getMetricsInfo("bytes", ClientReadHandlerMetric::getReadLength,
+        ClientReadHandlerMetric::getSkippedReadLength);
   }
 
   @VisibleForTesting
   public String getReadUncompressLengthInfo() {
-    return "Client read " + readHandlerMetric.getReadUncompressLength()
-        + " uncompressed bytes from [" + serverInfo + "], Consumed["
-        + " hot:" + hostHandlerMetric.getReadUncompressLength()
-        + " warm:" + warmHandlerMetric.getReadUncompressLength()
-        + " cold:" + coldHandlerMetric.getReadUncompressLength()
-        + " frozen:" + frozenHandlerMetric.getReadUncompressLength() + " ], Skipped["
-        + " hot:" + hostHandlerMetric.getSkippedReadUncompressLength()
-        + " warm:" + warmHandlerMetric.getSkippedReadUncompressLength()
-        + " cold:" + coldHandlerMetric.getSkippedReadUncompressLength()
-        + " frozen:" + frozenHandlerMetric.getSkippedReadUncompressLength() + " ]";
+    return getMetricsInfo("uncompressed bytes", ClientReadHandlerMetric::getReadUncompressLength,
+        ClientReadHandlerMetric::getSkippedReadUncompressLength);
+  }
+
+  private String getMetricsInfo(String name, Function<ClientReadHandlerMetric, Long> consumed,
+      Function<ClientReadHandlerMetric, Long> skipped) {
+    StringBuilder sb = new StringBuilder("Client read ").append(consumed.apply(readHandlerMetric))
+        .append(" ").append(name).append(" from [").append(serverInfo).append("], Consumed[");
+    for (Tier tier : Tier.VALUES) {
+      sb.append(" ").append(tier.name().toLowerCase()).append(":")
+          .append(consumed.apply(metricsMap.get(tier)));
+    }
+    sb.append(" ], Skipped[");
+    for (Tier tier : Tier.VALUES) {
+      sb.append(" ").append(tier.name().toLowerCase()).append(":")
+          .append(skipped.apply(metricsMap.get(tier)));
+    }
+    sb.append(" ]");
+    return sb.toString();
   }
 
 }
