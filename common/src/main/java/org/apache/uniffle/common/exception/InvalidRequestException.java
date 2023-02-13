@@ -15,21 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common.web;
 
-import java.io.IOException;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+package org.apache.uniffle.common.exception;
 
-public class DecommissionServlet extends RestAPIBaseServlet {
-  @Override
-  protected void handleGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+public class InvalidRequestException extends RuntimeException {
 
+  public InvalidRequestException(String message) {
+    super(message);
   }
 
-  @Override
-  protected void handlePost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-
+  public InvalidRequestException(String message, Throwable e) {
+    super(message, e);
   }
 }

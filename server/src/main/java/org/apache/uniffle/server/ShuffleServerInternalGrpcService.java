@@ -20,7 +20,7 @@ package org.apache.uniffle.server;
 import com.google.protobuf.BoolValue;
 import io.grpc.stub.StreamObserver;
 
-import org.apache.uniffle.common.exception.RejectException;
+import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.ShuffleServerInternalGrpc.ShuffleServerInternalImplBase;
@@ -51,7 +51,7 @@ public class ShuffleServerInternalGrpcService extends ShuffleServerInternalImplB
           .build();
     } catch (Exception e) {
       StatusCode statusCode = StatusCode.INTERNAL_ERROR;
-      if (e instanceof RejectException) {
+      if (e instanceof InvalidRequestException) {
         statusCode = StatusCode.REJECT;
       }
       response = RssProtos.DecommissionResponse

@@ -38,6 +38,8 @@ import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategy;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategyFactory;
+import org.apache.uniffle.coordinator.web.servlet.DecommissionServlet;
+import org.apache.uniffle.coordinator.web.servlet.NodesServlet;
 
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_ENABLE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE;
@@ -139,6 +141,7 @@ public class CoordinatorServer {
     id = ip + "-" + port;
     LOG.info("Start to initialize coordinator {}", id);
     jettyServer = new JettyServer(coordinatorConf);
+    registerRestAPI();
     // register metrics first to avoid NPE problem when add dynamic metrics
     registerMetrics();
     this.applicationManager = new ApplicationManager(coordinatorConf);
@@ -167,6 +170,16 @@ public class CoordinatorServer {
         applicationManager.getQuotaManager(), hadoopConf);
     CoordinatorFactory coordinatorFactory = new CoordinatorFactory(this);
     server = coordinatorFactory.getServer();
+  }
+
+  private void registerRestAPI() throws Exception {
+    LOG.info("Register REST API");
+    jettyServer.addServlet(
+        new NodesServlet(this),
+        "/api/server/nodes");
+    jettyServer.addServlet(
+        new DecommissionServlet(this),
+        "/api/server/decommission");
   }
 
   private void registerMetrics() throws Exception {

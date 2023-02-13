@@ -17,39 +17,18 @@
 
 package org.apache.uniffle.common;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.uniffle.proto.RssProtos;
 
 public enum ServerStatus {
-  NORMAL_STATUS(0),
-  DECOMMISSIONING(1);
-  private final int statusCode;
-
-  private static Map<Integer, ServerStatus> statusMap;
-
-  static {
-    statusMap = new HashMap<>();
-    for (ServerStatus status : ServerStatus.values()) {
-      statusMap.put(status.serverStatus(), status);
-    }
-  }
-
-  ServerStatus(int code) {
-    this.statusCode = code;
-  }
-
-  public int serverStatus() {
-    return statusCode;
-  }
+  NORMAL_STATUS,
+  DECOMMISSIONING;
 
   public RssProtos.ServerStatus toProto() {
-    return RssProtos.ServerStatus.forNumber(this.serverStatus());
+    return RssProtos.ServerStatus.forNumber(this.ordinal());
   }
 
   public static ServerStatus fromProto(RssProtos.ServerStatus status) {
-    return statusMap.get(status.getNumber());
+    return values()[status.getNumber()];
   }
 
 }

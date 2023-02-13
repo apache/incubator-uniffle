@@ -33,7 +33,7 @@ import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
 import org.apache.uniffle.common.ServerStatus;
-import org.apache.uniffle.common.exception.RejectException;
+import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
 import org.apache.uniffle.common.metrics.MetricReporter;
@@ -274,10 +274,11 @@ public class ShuffleServer {
 
   public void decommission() {
     if (isDecommissioning()) {
-      throw new RejectException("Shuffle Server is decommissioning. Nothing need to do.");
+      throw new InvalidRequestException("Shuffle Server is decommissioning. Nothing need to do.");
     }
     if (!ServerStatus.NORMAL_STATUS.equals(serverStatus)) {
-      throw new RejectException("Shuffle Server is processing other procedures, current status:" + serverStatus);
+      throw new InvalidRequestException(
+          "Shuffle Server is processing other procedures, current status:" + serverStatus);
     }
     synchronized (statusLock) {
       serverStatus = ServerStatus.DECOMMISSIONING;
@@ -310,7 +311,7 @@ public class ShuffleServer {
 
   public void cancelDecommission() {
     if (!isDecommissioning()) {
-      throw new RejectException("Shuffle server is not decommissioning. Nothing need to do.");
+      throw new InvalidRequestException("Shuffle server is not decommissioning. Nothing need to do.");
     }
     synchronized (statusLock) {
       serverStatus = ServerStatus.NORMAL_STATUS;

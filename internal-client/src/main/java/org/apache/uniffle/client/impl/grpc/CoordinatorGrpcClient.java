@@ -131,7 +131,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             .setEventNumInFlush(eventNumInFlush)
             .addAllTags(tags)
             .setIsHealthy(BoolValue.newBuilder().setValue(isHealthy).build())
-            .setStatusValue(serverStatus.serverStatus())
+            .setStatusValue(serverStatus.ordinal())
             .putAllStorageInfo(StorageInfoUtils.toProto(storageInfo))
             .build();
 
