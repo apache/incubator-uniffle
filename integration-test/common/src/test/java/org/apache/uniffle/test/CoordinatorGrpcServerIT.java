@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * This class is to test the GRPC server's related metrics like {@code GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_TAG}
  */
-public class CoordinatorGrpcServerTest {
+public class CoordinatorGrpcServerIT {
 
   static class MockedCoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorServerImplBase {
     @Override

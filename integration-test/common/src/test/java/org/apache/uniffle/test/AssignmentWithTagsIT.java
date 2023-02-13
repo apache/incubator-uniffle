@@ -54,8 +54,8 @@ import static org.junit.jupiter.api.Assertions.fail;
  * This class is to test the conf of {@code org.apache.uniffle.server.ShuffleServerConf.Tags}
  * and {@code RssClientConfig.RSS_CLIENT_ASSIGNMENT_TAGS}
  */
-public class AssignmentWithTagsTest extends CoordinatorTestBase {
-  private static final Logger LOG = LoggerFactory.getLogger(AssignmentWithTagsTest.class);
+public class AssignmentWithTagsIT extends CoordinatorTestIT {
+  private static final Logger LOG = LoggerFactory.getLogger(AssignmentWithTagsIT.class);
 
   // KV: tag -> shuffle server id
   private static Map<String, List<Integer>> tagOfShufflePorts = new HashMap<>();

@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables;
 
-public class CoordinatorGrpcTest extends CoordinatorTestBase {
+public class CoordinatorGrpcIT extends CoordinatorTestIT {
 
   @BeforeAll
   public static void setupServers() throws Exception {

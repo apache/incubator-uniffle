@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ShuffleServerWithHdfsTest extends ShuffleReadWriteBase {
+public class ShuffleServerWithHdfsIT extends ShuffleReadWriteBase {
 
   protected ShuffleServerGrpcClient shuffleServerClient;
 

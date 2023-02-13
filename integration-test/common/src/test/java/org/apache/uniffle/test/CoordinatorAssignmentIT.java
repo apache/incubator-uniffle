@@ -44,8 +44,8 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class CoordinatorAssignmentTest extends CoordinatorTestBase {
-  private static final Logger LOG = LoggerFactory.getLogger(CoordinatorAssignmentTest.class);
+public class CoordinatorAssignmentIT extends CoordinatorTestIT {
+  private static final Logger LOG = LoggerFactory.getLogger(CoordinatorAssignmentIT.class);
   private static final int SHUFFLE_NODES_MAX = 10;
   private static final int SERVER_NUM = 10;
   private static final HashSet<String> TAGS = Sets.newHashSet("t1");

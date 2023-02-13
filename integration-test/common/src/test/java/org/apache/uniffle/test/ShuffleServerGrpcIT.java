@@ -74,7 +74,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class ShuffleServerGrpcTest extends IntegrationTestBase {
+public class ShuffleServerGrpcIT extends IntegrationTestBase {
 
   private ShuffleServerGrpcClient shuffleServerClient;
   private final AtomicInteger atomicInteger = new AtomicInteger(0);

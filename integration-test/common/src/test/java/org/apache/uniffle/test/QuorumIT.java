@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class QuorumTest extends ShuffleReadWriteBase {
+public class QuorumIT extends ShuffleReadWriteBase {
 
   private static final String EXPECTED_EXCEPTION_MESSAGE = "Exception should be thrown";
   private static ShuffleServerInfo shuffleServerInfo0;

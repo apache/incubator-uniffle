@@ -61,7 +61,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 /**
  * This class is to test the local_order shuffle-data distribution
  */
-public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase {
+public class ShuffleServerWithLocalOfLocalOrderIT extends ShuffleReadWriteBase {
 
   private ShuffleServerGrpcClient shuffleServerClient;
 

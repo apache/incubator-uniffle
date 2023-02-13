@@ -25,11 +25,11 @@ import org.junit.jupiter.api.Test;
 import org.apache.uniffle.common.KerberizedHdfsBase;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
-public class AccessCandidatesCheckerKerberizedHdfsTest extends KerberizedHdfsBase {
+public class AccessCandidatesCheckerKerberizedHdfsIT extends KerberizedHdfsBase {
 
   @BeforeAll
   public static void beforeAll() throws Exception {
-    testRunner = AccessCandidatesCheckerKerberizedHdfsTest.class;
+    testRunner = AccessCandidatesCheckerKerberizedHdfsIT.class;
     KerberizedHdfsBase.init();
   }
 
@@ -48,7 +48,7 @@ public class AccessCandidatesCheckerKerberizedHdfsTest extends KerberizedHdfsBas
   @Test
   public void test() throws Exception {
     String candidatesFile =  kerberizedHdfs.getSchemeAndAuthorityPrefix() + "/test/access_checker_candidates";
-    AccessCandidatesCheckerHdfsTest.createAndRunCases(
+    AccessCandidatesCheckerHdfsIT.createAndRunCases(
         kerberizedHdfs.getSchemeAndAuthorityPrefix(),
         candidatesFile,
         kerberizedHdfs.getFileSystem(),

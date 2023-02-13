@@ -50,7 +50,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.apache.uniffle.common.util.Constants.SHUFFLE_DATA_FILE_SUFFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ShuffleServerConcurrentWriteOfHdfsTest extends ShuffleServerWithHdfsTest {
+public class ShuffleServerConcurrentWriteOfHdfsIT extends ShuffleServerWithHdfsIT {
   private static final int MAX_CONCURRENCY = 3;
 
   @BeforeAll

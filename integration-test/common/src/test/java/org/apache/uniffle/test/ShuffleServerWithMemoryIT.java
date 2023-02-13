@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
+public class ShuffleServerWithMemoryIT extends ShuffleReadWriteBase {
 
   private ShuffleServerGrpcClient shuffleServerClient;
 

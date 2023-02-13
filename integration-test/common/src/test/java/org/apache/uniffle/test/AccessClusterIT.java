@@ -50,7 +50,7 @@ import org.apache.uniffle.server.ShuffleServerConf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class AccessClusterTest extends CoordinatorTestBase {
+public class AccessClusterIT extends CoordinatorTestIT {
 
   public static class MockedAccessChecker implements AccessChecker {
     final String key = "key";

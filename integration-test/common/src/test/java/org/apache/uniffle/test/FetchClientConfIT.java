@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class FetchClientConfTest extends CoordinatorTestBase {
+public class FetchClientConfIT extends CoordinatorTestIT {
 
   @Test
   public void test(@TempDir File tempDir) throws Exception {

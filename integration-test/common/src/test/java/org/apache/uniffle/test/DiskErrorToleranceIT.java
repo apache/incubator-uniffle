@@ -53,7 +53,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
+public class DiskErrorToleranceIT extends ShuffleReadWriteBase {
   private ShuffleServerGrpcClient shuffleServerClient;
 
   @TempDir private static File serverTmpDir;

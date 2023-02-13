@@ -36,7 +36,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class ShuffleServerWithLocalOfExceptionTest extends ShuffleReadWriteBase {
+public class ShuffleServerWithLocalOfExceptionIT extends ShuffleReadWriteBase {
 
   private ShuffleServerGrpcClient shuffleServerClient;
   private static String REMOTE_STORAGE = HDFS_URI + "rss/test";

@@ -32,7 +32,7 @@ import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.util.StorageType;
 
-public class MultiStorageLocalFileFallbackTest extends MultiStorageFaultToleranceBase {
+public class MultiStorageLocalFileFallbackIT extends MultiStorageFaultToleranceBase {
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {

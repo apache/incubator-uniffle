@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
+public class ShuffleWithRssClientIT extends ShuffleReadWriteBase {
 
   private static final String EXPECTED_EXCEPTION_MESSAGE = "Exception should be thrown";
   private static ShuffleServerInfo shuffleServerInfo1;

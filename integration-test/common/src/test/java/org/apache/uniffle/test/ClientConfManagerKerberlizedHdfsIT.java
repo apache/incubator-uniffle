@@ -17,28 +17,27 @@
 
 package org.apache.uniffle.test;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.client.factory.CoordinatorClientFactory;
-import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
-import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.common.KerberizedHdfsBase;
 
-public class CoordinatorTestBase extends IntegrationTestBase {
+public class ClientConfManagerKerberlizedHdfsIT extends KerberizedHdfsBase {
 
-  protected CoordinatorClientFactory factory = new CoordinatorClientFactory(ClientType.GRPC);
-  protected CoordinatorGrpcClient coordinatorClient;
-
-  @BeforeEach
-  public void createClient() {
-    coordinatorClient =
-        (CoordinatorGrpcClient) factory.createCoordinatorClient(LOCALHOST, COORDINATOR_PORT_1);
+  @BeforeAll
+  public static void beforeAll() throws Exception {
+    testRunner = ClientConfManagerKerberlizedHdfsIT.class;
+    KerberizedHdfsBase.init();
   }
 
-  @AfterEach
-  public void closeClient() {
-    if (coordinatorClient != null) {
-      coordinatorClient.close();
-    }
+  @Test
+  public void testConfInHDFS() throws Exception {
+    String cfgFile = kerberizedHdfs.getSchemeAndAuthorityPrefix() + "/test/client_conf";
+    ClientConfManagerHdfsIT.createAndRunClientConfManagerCases(
+        kerberizedHdfs.getSchemeAndAuthorityPrefix(),
+        cfgFile,
+        kerberizedHdfs.getFileSystem(),
+        kerberizedHdfs.getConf()
+    );
   }
 }

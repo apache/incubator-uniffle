@@ -59,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
+public class ShuffleServerFaultToleranceIT extends ShuffleReadWriteBase {
 
   private List<ShuffleServerClient> shuffleServerClients;
 

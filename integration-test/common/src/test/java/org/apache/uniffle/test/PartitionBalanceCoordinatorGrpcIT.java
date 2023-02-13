@@ -33,7 +33,7 @@ import org.apache.uniffle.server.ShuffleServerConf;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class PartitionBalanceCoordinatorGrpcTest extends CoordinatorTestBase {
+public class PartitionBalanceCoordinatorGrpcIT extends CoordinatorTestIT {
 
   @BeforeAll
   public static void setupServers() throws Exception {

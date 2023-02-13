@@ -29,7 +29,7 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class MultiStorageHdfsFallbackTest extends MultiStorageFaultToleranceBase {
+public class MultiStorageHdfsFallbackIT extends MultiStorageFaultToleranceBase {
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {

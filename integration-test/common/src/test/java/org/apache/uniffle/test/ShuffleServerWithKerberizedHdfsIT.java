@@ -60,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
+public class ShuffleServerWithKerberizedHdfsIT extends KerberizedHdfsBase {
 
   protected static final String LOCALHOST;
 
@@ -107,7 +107,7 @@ public class ShuffleServerWithKerberizedHdfsTest extends KerberizedHdfsBase {
 
   @BeforeAll
   public static void setup() throws Exception {
-    testRunner = ShuffleServerWithKerberizedHdfsTest.class;
+    testRunner = ShuffleServerWithKerberizedHdfsIT.class;
     KerberizedHdfsBase.init();
 
     CoordinatorConf coordinatorConf = new CoordinatorConf();

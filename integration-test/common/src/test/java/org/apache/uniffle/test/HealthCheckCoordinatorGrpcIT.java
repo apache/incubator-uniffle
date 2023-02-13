@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
+public class HealthCheckCoordinatorGrpcIT extends CoordinatorTestIT {
 
   @TempDir private static File serverTmpDir;
   private static File tempDataFile = new File(serverTmpDir, "data");
