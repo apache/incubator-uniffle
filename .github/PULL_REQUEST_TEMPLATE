@@ -1,5 +1,5 @@
 <!--
-1. Title: [#<issue>]<type>(<scope>): <subject>
+1. Title: [#<issue>] <type>(<scope>): <subject>
    Examples:
      - "[#123] feat(operator): support xxx"
      - "[#233] fix: check null before access result in xxx"
