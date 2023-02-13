@@ -233,6 +233,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
 
     List<ShuffleServerInfo> selected = servers.limit(replicaNum).collect(Collectors.toList());
+    if (excludeServers != null) {
+      excludeServers.addAll(selected);
+    }
     for (ShuffleServerInfo ssi : selected) {
       serverToBlockIds.computeIfAbsent(ssi, id -> Lists.newArrayList())
           .add(sbi.getBlockId());
@@ -240,9 +243,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           .computeIfAbsent(sbi.getShuffleId(), id -> Maps.newHashMap())
           .computeIfAbsent(sbi.getPartitionId(), id -> Lists.newArrayList())
           .add(sbi);
-    }
-    if (excludeServers != null) {
-      excludeServers.addAll(selected);
     }
   }
 
