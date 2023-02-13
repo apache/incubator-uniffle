@@ -22,34 +22,21 @@ import java.util.Map;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.storage.StorageMedia;
-import org.apache.uniffle.common.util.RssUtilsTest;
 import org.apache.uniffle.server.storage.StorageMediaFromEnvProvider;
 import org.apache.uniffle.storage.common.StorageMediaProvider;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables;
 
 public class LocalSingleStorageTypeFromEnvProviderTest {
-  private static String STORAGE_TYPE_ENV_KEY = "RSS_LOCAL_STORAGE_TYPES";
-  private static String defaultStorageTypeSource;
+  private static final String STORAGE_TYPE_ENV_KEY = "RSS_LOCAL_STORAGE_TYPES";
 
   private ShuffleServerConf rssConf;
   private StorageMediaProvider provider;
-
-  @BeforeAll
-  static void setup() {
-    defaultStorageTypeSource = System.getenv(STORAGE_TYPE_ENV_KEY);
-  }
-
-  @AfterAll
-  static void reset() {
-    RssUtilsTest.setEnv(STORAGE_TYPE_ENV_KEY, defaultStorageTypeSource);
-  }
 
   @BeforeEach
   void setupRssServerConfig() {
@@ -59,25 +46,28 @@ public class LocalSingleStorageTypeFromEnvProviderTest {
   }
 
   @Test
-  public void testJsonSourceParse() {
+  public void testJsonSourceParse() throws Exception {
     String emptyJsonSource = "";
-    RssUtilsTest.setEnv(STORAGE_TYPE_ENV_KEY, emptyJsonSource);
-    // invalid json source should not throw exceptions
-    provider.init(rssConf);
-    assertEquals(StorageMedia.UNKNOWN, provider.getStorageMediaFor("/data01"));
+    withEnvironmentVariables(STORAGE_TYPE_ENV_KEY, emptyJsonSource).execute(() -> {
+      // invalid json source should not throw exceptions
+      provider.init(rssConf);
+      assertEquals(StorageMedia.UNKNOWN, provider.getStorageMediaFor("/data01"));
+    });
     emptyJsonSource = "{}";
-    RssUtilsTest.setEnv(STORAGE_TYPE_ENV_KEY, emptyJsonSource);
-    provider.init(rssConf);
-    assertEquals(StorageMedia.UNKNOWN, provider.getStorageMediaFor("/data01"));
+    withEnvironmentVariables(STORAGE_TYPE_ENV_KEY, emptyJsonSource).execute(() -> {
+      provider.init(rssConf);
+      assertEquals(StorageMedia.UNKNOWN, provider.getStorageMediaFor("/data01"));
+    });
 
     String storageTypeJson = "{\"/data01\": \"SSD\"}";
-    RssUtilsTest.setEnv(STORAGE_TYPE_ENV_KEY, storageTypeJson);
-    provider.init(rssConf);
-    assertEquals(StorageMedia.SSD, provider.getStorageMediaFor("/data01"));
+    withEnvironmentVariables(STORAGE_TYPE_ENV_KEY, storageTypeJson).execute(() -> {
+      provider.init(rssConf);
+      assertEquals(StorageMedia.SSD, provider.getStorageMediaFor("/data01"));
+    });
   }
 
   @Test
-  public void testMultipleMountPoints() {
+  public void testMultipleMountPoints() throws Exception {
     Map<String, String> storageTypes = Maps.newHashMap();
     storageTypes.put("/data01", "ssd");
     storageTypes.put("/data02", "hdd");
@@ -89,9 +79,8 @@ public class LocalSingleStorageTypeFromEnvProviderTest {
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
-    RssUtilsTest.setEnv(STORAGE_TYPE_ENV_KEY, jsonSource);
+    withEnvironmentVariables(STORAGE_TYPE_ENV_KEY, jsonSource).execute(() -> provider.init(rssConf));
 
-    provider.init(rssConf);
     assertEquals(StorageMedia.HDD, provider.getStorageMediaFor("/data02"));
     assertEquals(StorageMedia.SSD, provider.getStorageMediaFor("/data01"));
     assertEquals(StorageMedia.SSD, provider.getStorageMediaFor("/data03"));

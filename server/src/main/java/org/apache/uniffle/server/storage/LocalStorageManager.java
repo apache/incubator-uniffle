@@ -85,7 +85,7 @@ public class LocalStorageManager extends SingleStorageManager {
   @VisibleForTesting
   LocalStorageManager(ShuffleServerConf conf) {
     super(conf);
-    storageBasePaths = conf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH);
+    storageBasePaths = RssUtils.getConfiguredLocalDirs(conf);
     if (CollectionUtils.isEmpty(storageBasePaths)) {
       throw new IllegalArgumentException("Base path dirs must not be empty");
     }

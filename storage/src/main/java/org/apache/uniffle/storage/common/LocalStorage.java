@@ -19,8 +19,10 @@ package org.apache.uniffle.storage.common;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
@@ -76,9 +78,13 @@ public class LocalStorage extends AbstractStorage {
 
     File baseFolder = new File(basePath);
     try {
-      FileUtils.deleteDirectory(baseFolder);
-      if (!baseFolder.mkdirs()) {
-        throw new IOException("Failed to create base folder: " + basePath);
+      if (isEmptyAndWritableDir(baseFolder)) {
+        LOG.warn("Base directory is already an empty dir, skip init");
+      } else {
+        FileUtils.deleteDirectory(baseFolder);
+        if (!baseFolder.mkdirs()) {
+          throw new IOException("Failed to create base folder: " + basePath);
+        }
       }
       FileStore store = Files.getFileStore(baseFolder.toPath());
       this.mountPoint =  store.name();
@@ -97,6 +103,15 @@ public class LocalStorage extends AbstractStorage {
             + " is smaller than configuration");
       }
     }
+  }
+
+  private boolean isEmptyAndWritableDir(File baseDir) throws IOException {
+    if (baseDir.isDirectory() && baseDir.canWrite()) {
+      try (DirectoryStream<Path> stream = Files.newDirectoryStream(baseDir.toPath())) {
+        return !stream.iterator().hasNext();
+      }
+    }
+    return false;
   }
 
   @Override

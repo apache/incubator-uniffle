@@ -15,17 +15,13 @@
 # limitations under the License.
 #
 
-name: Main Profiles in Sequential
+name: All Deploy Profiles in Parallel
 
 on:
   workflow_call:
     inputs:
       maven-args:
         required: true
-        type: string
-      cache-key:
-        default: ''
-        required: false
         type: string
       summary:
         default: "grep -e '^\\[ERROR\\]' /tmp/maven.log || true"
@@ -47,11 +43,20 @@ on:
         default: 'temurin'
         required: false
         type: string
+      go-version:
+        default: '1.17'
+        required: false
+        type: string
 
 jobs:
-  maven:
+  package:
     runs-on: ubuntu-20.04
-    name: java ${{ inputs.java-version }}
+    strategy:
+      matrix:
+        profile:
+          - kubernetes
+      fail-fast: false
+    name: ${{ matrix.profile }}
     steps:
     - name: Checkout project
       uses: actions/checkout@v3
@@ -61,21 +66,20 @@ jobs:
         java-version: ${{ inputs.java-version }}
         distribution: ${{ inputs.jdk-distro }}
     - name: Cache local Maven repository
-      if: ${{ inputs.cache-key != '' }}
       uses: actions/cache@v3
       with:
         path: ~/.m2/repository
-        key: mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-${{ hashFiles('**/pom.xml') }}
+        key: mvn-${{ inputs.java-version }}-package-${{ matrix.profile }}-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
-          mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-
-    - name: Execute `mvn ${{ inputs.maven-args }} -Pspark3`
-      run: mvn -B -fae ${{ inputs.maven-args }} -Pspark3 | tee -a /tmp/maven.log;
-      shell: bash
-    - name: Execute `mvn ${{ inputs.maven-args }} -Pspark2`
-      run: mvn -B -fae ${{ inputs.maven-args }} -Pspark2 | tee -a /tmp/maven.log;
-      shell: bash
-    - name: Execute `mvn ${{ inputs.maven-args }} -Pmr`
-      run: mvn -B -fae ${{ inputs.maven-args }} -Pmr | tee -a /tmp/maven.log;
+          mvn-${{ inputs.java-version }}-package-${{ matrix.profile }}-
+          mvn-${{ inputs.java-version }}-package-
+    - name: Set up Go ${{ inputs.go-version }}
+      if: ${{ inputs.go-version != '' }}
+      uses: actions/setup-go@v3
+      with:
+        go-version: ${{ inputs.go-version }}
+    - name: Execute `mvn ${{ inputs.maven-args }} -P${{ matrix.profile }}`
+      run: mvn -B -fae ${{ inputs.maven-args }} -P${{ matrix.profile }} -DskipUTs -DskipITs | tee /tmp/maven.log
       shell: bash
     - name: Summary of failures
       if: ${{ failure() && inputs.summary != '' }}
@@ -85,6 +89,8 @@ jobs:
       if: ${{ failure() && inputs.reports-path != '' }}
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ inputs.reports-name }}
+        name: ${{ inputs.reports-name }}-${{ matrix.profile }}
         path: ${{ inputs.reports-path }}
       continue-on-error: true
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3

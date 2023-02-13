@@ -52,6 +52,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
@@ -211,31 +212,31 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     assertNull(sdr);
 
     if (checkSkippedMetrics) {
-      String readBlokNumInfo = composedClientReadHandler.getReadBlokNumInfo();
-      assert (readBlokNumInfo.contains("Client read 0 blocks from [" + ssi + "]")
-          && readBlokNumInfo.contains("Skipped[ hot:3 warm:3 cold:2 frozen:0 ]")
-          && readBlokNumInfo.contains("Consumed[ hot:0 warm:0 cold:0 frozen:0 ]"));
+      String readBlockNumInfo = composedClientReadHandler.getReadBlockNumInfo();
+      assertTrue(readBlockNumInfo.contains("Client read 0 blocks from [" + ssi + "]"));
+      assertTrue(readBlockNumInfo.contains("Skipped[ hot:3 warm:3 cold:2 frozen:0 ]"));
+      assertTrue(readBlockNumInfo.contains("Consumed[ hot:0 warm:0 cold:0 frozen:0 ]"));
       String readLengthInfo = composedClientReadHandler.getReadLengthInfo();
-      assert (readLengthInfo.contains("Client read 0 bytes from [" + ssi + "]")
-          && readLengthInfo.contains("Skipped[ hot:75 warm:150 cold:400 frozen:0 ]")
-          && readBlokNumInfo.contains("Consumed[ hot:0 warm:0 cold:0 frozen:0 ]"));
+      assertTrue(readLengthInfo.contains("Client read 0 bytes from [" + ssi + "]"));
+      assertTrue(readLengthInfo.contains("Skipped[ hot:75 warm:150 cold:400 frozen:0 ]"));
+      assertTrue(readBlockNumInfo.contains("Consumed[ hot:0 warm:0 cold:0 frozen:0 ]"));
       String readUncompressLengthInfo = composedClientReadHandler.getReadUncompressLengthInfo();
-      assert (readUncompressLengthInfo.contains("Client read 0 uncompressed bytes from [" + ssi + "]")
-          && readUncompressLengthInfo.contains("Skipped[ hot:75 warm:150 cold:400 frozen:0 ]")
-          && readBlokNumInfo.contains("Consumed[ hot:0 warm:0 cold:0 frozen:0 ]"));
+      assertTrue(readUncompressLengthInfo.contains("Client read 0 uncompressed bytes from [" + ssi + "]"));
+      assertTrue(readUncompressLengthInfo.contains("Skipped[ hot:75 warm:150 cold:400 frozen:0 ]"));
+      assertTrue(readBlockNumInfo.contains("Consumed[ hot:0 warm:0 cold:0 frozen:0 ]"));
     } else {
-      String readBlokNumInfo = composedClientReadHandler.getReadBlokNumInfo();
-      assert (readBlokNumInfo.contains("Client read 8 blocks from [" + ssi + "]")
-          && readBlokNumInfo.contains("Consumed[ hot:3 warm:3 cold:2 frozen:0 ]")
-          && readBlokNumInfo.contains("Skipped[ hot:0 warm:0 cold:0 frozen:0 ]"));
+      String readBlockNumInfo = composedClientReadHandler.getReadBlockNumInfo();
+      assertTrue(readBlockNumInfo.contains("Client read 8 blocks from [" + ssi + "]"));
+      assertTrue(readBlockNumInfo.contains("Consumed[ hot:3 warm:3 cold:2 frozen:0 ]"));
+      assertTrue(readBlockNumInfo.contains("Skipped[ hot:0 warm:0 cold:0 frozen:0 ]"));
       String readLengthInfo = composedClientReadHandler.getReadLengthInfo();
-      assert (readLengthInfo.contains("Client read 625 bytes from [" + ssi + "]")
-          && readLengthInfo.contains("Consumed[ hot:75 warm:150 cold:400 frozen:0 ]")
-          && readBlokNumInfo.contains("Skipped[ hot:0 warm:0 cold:0 frozen:0 ]"));
+      assertTrue(readLengthInfo.contains("Client read 625 bytes from [" + ssi + "]"));
+      assertTrue(readLengthInfo.contains("Consumed[ hot:75 warm:150 cold:400 frozen:0 ]"));
+      assertTrue(readBlockNumInfo.contains("Skipped[ hot:0 warm:0 cold:0 frozen:0 ]"));
       String readUncompressLengthInfo = composedClientReadHandler.getReadUncompressLengthInfo();
-      assert (readUncompressLengthInfo.contains("Client read 625 uncompressed bytes from [" + ssi + "]")
-          && readUncompressLengthInfo.contains("Consumed[ hot:75 warm:150 cold:400 frozen:0 ]")
-          && readBlokNumInfo.contains("Skipped[ hot:0 warm:0 cold:0 frozen:0 ]"));
+      assertTrue(readUncompressLengthInfo.contains("Client read 625 uncompressed bytes from [" + ssi + "]"));
+      assertTrue(readUncompressLengthInfo.contains("Consumed[ hot:75 warm:150 cold:400 frozen:0 ]"));
+      assertTrue(readBlockNumInfo.contains("Skipped[ hot:0 warm:0 cold:0 frozen:0 ]"));
     }
     
   }

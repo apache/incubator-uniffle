@@ -47,7 +47,9 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerInternalGrpcClient;
 import org.apache.uniffle.client.request.RssDecommissionRequest;
 import org.apache.uniffle.common.ServerStatus;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.InvalidRequestException;
+
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
@@ -63,7 +65,7 @@ public class SimpleClusterManager implements ClusterManager {
   private Map<String, Set<ServerNode>> tagToNodes = Maps.newConcurrentMap();
   private AtomicLong excludeLastModify = new AtomicLong(0L);
   private long heartbeatTimeout;
-  private int shuffleNodesMax;
+  private volatile int shuffleNodesMax;
   private ScheduledExecutorService scheduledExecutorService;
   private ScheduledExecutorService checkNodesExecutorService;
   private FileSystem hadoopFileSystem;
@@ -331,5 +333,19 @@ public class SimpleClusterManager implements ClusterManager {
   @VisibleForTesting
   public void setStartupSilentPeriodEnabled(boolean startupSilentPeriodEnabled) {
     this.startupSilentPeriodEnabled = startupSilentPeriodEnabled;
+  }
+
+  @Override
+  public void reconfigure(RssConf conf) {
+    int nodeMax = conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
+    if (nodeMax != shuffleNodesMax) {
+      LOG.warn("Coordinator update new shuffleNodesMax " + nodeMax);
+      shuffleNodesMax = nodeMax;
+    }
+  }
+
+  @Override
+  public boolean isPropertyReconfigurable(String property) {
+    return CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX.key().equals(property);
   }
 }

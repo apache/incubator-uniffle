@@ -17,10 +17,10 @@
 
 package org.apache.uniffle.common.util;
 
-import java.lang.reflect.Field;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -35,13 +35,17 @@ import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.config.RssConf;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
 
 public class RssUtilsTest {
 
@@ -66,18 +70,18 @@ public class RssUtilsTest {
       assertFalse(ia.isLinkLocalAddress() || ia.isAnyLocalAddress() || ia.isLoopbackAddress());
       assertNotNull(NetworkInterface.getByInetAddress(ia));
       assertTrue(ia.isReachable(5000));
-      setEnv("RSS_IP", "8.8.8.8");
-      assertEquals("8.8.8.8", RssUtils.getHostIp());
-      setEnv("RSS_IP", "xxxx");
-      boolean isException = false;
-      try {
-        RssUtils.getHostIp();
-      } catch (Exception e) {
-        isException = true;
-      }
-      setEnv("RSS_IP", realIp);
-      RssUtils.getHostIp();
-      assertTrue(isException);
+      withEnvironmentVariable("RSS_IP", "8.8.8.8")
+          .execute(() -> assertEquals("8.8.8.8", RssUtils.getHostIp()));
+      withEnvironmentVariable("RSS_IP", "xxxx").execute(() -> {
+        boolean isException = false;
+        try {
+          RssUtils.getHostIp();
+        } catch (Exception e) {
+          isException = true;
+        }
+        assertTrue(isException);
+      });
+      withEnvironmentVariable("RSS_IP", realIp).execute(RssUtils::getHostIp);
     } catch (Exception e) {
       fail(e.getMessage());
     }
@@ -177,6 +181,24 @@ public class RssUtilsTest {
     assertEquals(serverToPartitions.get(server4), Sets.newHashSet(2, 4));
   }
 
+  @Test
+  public void testGetConfiguredLocalDirs() throws Exception {
+    RssConf conf = new RssConf();
+    withEnvironmentVariable(RssUtils.RSS_LOCAL_DIR_KEY, "/path/a").execute(() -> {
+      assertEquals(Collections.singletonList("/path/a"), RssUtils.getConfiguredLocalDirs(conf));
+    });
+
+    withEnvironmentVariable(RssUtils.RSS_LOCAL_DIR_KEY, "/path/a,/path/b").execute(() -> {
+      assertEquals(Arrays.asList("/path/a", "/path/b"), RssUtils.getConfiguredLocalDirs(conf));
+    });
+
+    withEnvironmentVariable(RssUtils.RSS_LOCAL_DIR_KEY, null).execute(() -> {
+      assertNull(RssUtils.getConfiguredLocalDirs(conf));
+      conf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/path/a", "/path/b"));
+      assertEquals(Arrays.asList("/path/a", "/path/b"), RssUtils.getConfiguredLocalDirs(conf));
+    });
+  }
+
   // Copy from ClientUtils
   private Long getBlockId(long partitionId, long taskAttemptId, long atomicInt) {
     return (atomicInt << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
@@ -198,24 +220,6 @@ public class RssUtilsTest {
 
     public String get() {
       return null;
-    }
-  }
-
-  @SuppressWarnings("unchecked")
-  public static void setEnv(String key, String value) {
-    try {
-      Map<String, String> env = System.getenv();
-      Class<?> cl = env.getClass();
-      Field field = cl.getDeclaredField("m");
-      field.setAccessible(true);
-      Map<String, String> writableEnv = (Map<String, String>) field.get(env);
-      if (value != null) {
-        writableEnv.put(key, value);
-      } else {
-        writableEnv.remove(key);
-      }
-    } catch (Exception e) {
-      throw new IllegalStateException("Failed to set environment variable", e);
     }
   }
 

@@ -24,7 +24,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -287,10 +286,7 @@ public class ShuffleBufferManager {
     if (shuffleIdToBuffers == null) {
       return;
     }
-    removeBufferByShuffleId(
-        appId,
-        shuffleIdToBuffers.keySet().stream().collect(Collectors.toList()).toArray(new Integer[0])
-    );
+    removeBufferByShuffleId(appId, shuffleIdToBuffers.keySet());
     shuffleSizeMap.remove(appId);
     bufferPool.remove(appId);
   }
@@ -347,6 +343,7 @@ public class ShuffleBufferManager {
       synchronized (this) {
         if (readDataMemory.get() + size < readCapacity) {
           readDataMemory.addAndGet(size);
+          ShuffleServerMetrics.gaugeReadBufferUsedSize.inc(size);
           return true;
         }
       }
@@ -366,10 +363,12 @@ public class ShuffleBufferManager {
   public void releaseReadMemory(long size) {
     if (readDataMemory.get() >= size) {
       readDataMemory.addAndGet(-size);
+      ShuffleServerMetrics.gaugeReadBufferUsedSize.dec(size);
     } else {
       LOG.warn("Current read memory[" + readDataMemory.get()
           + "] is less than released[" + size + "], set read memory to 0");
       readDataMemory.set(0L);
+      ShuffleServerMetrics.gaugeReadBufferUsedSize.set(0);
     }
   }
 
@@ -536,7 +535,7 @@ public class ShuffleBufferManager {
     shuffleIdSet.add(shuffleId);
   }
 
-  public void removeBufferByShuffleId(String appId, Integer... shuffleIds) {
+  public void removeBufferByShuffleId(String appId, Collection<Integer> shuffleIds) {
     Map<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers = bufferPool.get(appId);
     if (shuffleIdToBuffers == null) {
       return;

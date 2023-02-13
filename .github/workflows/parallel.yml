@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
 
 name: All Profiles in Parallel
 
@@ -25,10 +23,6 @@ on:
       maven-args:
         required: true
         type: string
-      experimental:
-        default: false
-        required: false
-        type: boolean
       summary:
         default: "grep -e '^\\[ERROR\\]' /tmp/maven.log || true"
         required: false
@@ -64,7 +58,6 @@ jobs:
           - spark3.2.0
           - spark3.3
           - mr
-          - kubernetes
       fail-fast: false
     name: -P${{ matrix.profile }}
     steps:
@@ -77,23 +70,19 @@ jobs:
       with:
         java-version: ${{ inputs.java-version }}
         distribution: ${{ inputs.jdk-distro }}
-        cache: maven
-    - name: Set up Go 1.17
-      if: ${{ matrix.profile == 'kubernetes' }}
-      uses: actions/setup-go@v3
+    - name: Cache local Maven repository
+      uses: actions/cache@v3
       with:
-        go-version: 1.17
-    - name: Execute maven with -P${{ matrix.profile }}
-      if: ${{ !inputs.experimental }}
-      run: mvn -B -fae -P${{ matrix.profile }} ${{ inputs.maven-args }} | tee /tmp/maven.log
+        path: ~/.m2/repository
+        key: mvn-${{ inputs.java-version }}-package-${{ matrix.profile }}-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          mvn-${{ inputs.java-version }}-package-${{ matrix.profile }}-
+          mvn-${{ inputs.java-version }}-package-
+    - name: Execute `mvn ${{ inputs.maven-args }} -P${{ matrix.profile }}`
+      run: mvn -B -fae ${{ inputs.maven-args }} -P${{ matrix.profile }} | tee /tmp/maven.log
       shell: bash
-    - name: Execute maven with -P${{ matrix.profile }} (experimental)
-      if: ${{ inputs.experimental }}
-      run: mvn -B -fae -P${{ matrix.profile }} ${{ inputs.maven-args }} | tee /tmp/maven.log
-      shell: bash
-      continue-on-error: true
     - name: Summary of failures
-      if: ${{ (failure() || inputs.experimental) && inputs.summary != '' }}
+      if: ${{ failure() && inputs.summary != '' }}
       run: ${{ inputs.summary }}
       continue-on-error: true
     - name: Upload test reports

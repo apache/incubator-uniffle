@@ -24,6 +24,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.config.Reconfigurable;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.AccessManager;
 import org.apache.uniffle.coordinator.ClusterManager;
@@ -39,7 +41,7 @@ import static org.apache.uniffle.common.util.Constants.ACCESS_INFO_REQUIRED_SHUF
  * AccessClusterLoadChecker use the cluster load metrics including memory and healthy to
  * filter and count available nodes numbers and reject if the number do not reach the threshold.
  */
-public class AccessClusterLoadChecker extends AbstractAccessChecker {
+public class AccessClusterLoadChecker extends AbstractAccessChecker implements Reconfigurable {
 
   private static final Logger LOG = LoggerFactory.getLogger(AccessClusterLoadChecker.class);
 
@@ -47,7 +49,7 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker {
   private final double memoryPercentThreshold;
   // The hard constraint number of available shuffle servers
   private final int availableServerNumThreshold;
-  private final int defaultRequiredShuffleServerNumber;
+  private volatile int defaultRequiredShuffleServerNumber;
 
   public AccessClusterLoadChecker(AccessManager accessManager) throws Exception {
     super(accessManager);
@@ -113,5 +115,19 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker {
   }
 
   public void close() {
+  }
+
+  @Override
+  public void reconfigure(RssConf conf) {
+    int nodeMax = conf.get(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
+    if (nodeMax != defaultRequiredShuffleServerNumber) {
+      LOG.warn("Coordinator update new defaultRequiredShuffleServerNumber " + nodeMax);
+      defaultRequiredShuffleServerNumber = nodeMax;
+    }
+  }
+
+  @Override
+  public boolean isPropertyReconfigurable(String property) {
+    return CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX.key().equals(property);
   }
 }

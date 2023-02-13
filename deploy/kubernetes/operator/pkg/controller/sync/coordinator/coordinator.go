@@ -43,7 +43,9 @@ func init() {
 	defaultENVs.Insert(controllerconstants.CoordinatorRPCPortEnv,
 		controllerconstants.CoordinatorHTTPPortEnv,
 		controllerconstants.XmxSizeEnv,
-		controllerconstants.ServiceNameEnv)
+		controllerconstants.ServiceNameEnv,
+		controllerconstants.NodeNameEnv,
+		controllerconstants.RssIPEnv)
 }
 
 // GenerateCoordinators generates objects related to coordinators
@@ -52,13 +54,18 @@ func GenerateCoordinators(rss *unifflev1alpha1.RemoteShuffleService) (
 	sa := GenerateSA(rss)
 	cm := GenerateCM(rss)
 	count := *rss.Spec.Coordinator.Count
-	services := make([]*corev1.Service, count)
+	services := make([]*corev1.Service, 0)
 	deployments := make([]*appsv1.Deployment, count)
 	for i := 0; i < int(count); i++ {
-		svc := GenerateSvc(rss, i)
+		// only generate svc when nodePorts are specified
+		if len(rss.Spec.Coordinator.RPCNodePort) > 0 {
+			svc := GenerateSvc(rss, i)
+			services = append(services, svc)
+		}
+		headlessSvc := GenerateHeadlessSvc(rss, i)
 		deploy := GenerateDeploy(rss, i)
-		services[i] = svc
 		deployments[i] = deploy
+		services = append(services, headlessSvc)
 	}
 	return sa, cm, services, deployments
 }
@@ -93,7 +100,43 @@ func GenerateCM(rss *unifflev1alpha1.RemoteShuffleService) *corev1.ConfigMap {
 	return cm
 }
 
-// GenerateSvc generates service used by specific coordinator.
+// GenerateHeadlessSvc generates a headless service for corresponding coordinator.
+func GenerateHeadlessSvc(rss *unifflev1alpha1.RemoteShuffleService, index int) *corev1.Service {
+	name := GenerateNameByIndex(rss, index)
+	serviceName := appendHeadless(name)
+
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceName,
+			Namespace: rss.Namespace,
+		},
+		Spec: corev1.ServiceSpec{
+			ClusterIP: corev1.ClusterIPNone,
+			Selector: map[string]string{
+				"app": name,
+			},
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "rpc",
+					Protocol:   corev1.ProtocolTCP,
+					Port:       controllerconstants.ContainerCoordinatorRPCPort,
+					TargetPort: intstr.FromInt(int(*rss.Spec.Coordinator.RPCPort)),
+				},
+				{
+					Name:       "http",
+					Protocol:   corev1.ProtocolTCP,
+					Port:       controllerconstants.ContainerCoordinatorHTTPPort,
+					TargetPort: intstr.FromInt(int(*rss.Spec.Coordinator.HTTPPort)),
+				},
+			},
+		},
+	}
+	util.AddOwnerReference(&svc.ObjectMeta, rss)
+	return svc
+}
+
+// GenerateSvc generates NodePort service used by specific coordinator. If no RPCNodePort/HTTPNodePort is specified,
+//   this function is skipped.
 func GenerateSvc(rss *unifflev1alpha1.RemoteShuffleService, index int) *corev1.Service {
 	name := GenerateNameByIndex(rss, index)
 	svc := &corev1.Service{
@@ -189,6 +232,11 @@ func GenerateDeploy(rss *unifflev1alpha1.RemoteShuffleService, index int) *appsv
 		deploy.Spec.Template.Labels[k] = v
 	}
 
+	// set runtimeClassName
+	if rss.Spec.Coordinator.RuntimeClassName != nil {
+		deploy.Spec.Template.Spec.RuntimeClassName = rss.Spec.Coordinator.RuntimeClassName
+	}
+
 	// add init containers, the main container and other containers.
 	deploy.Spec.Template.Spec.InitContainers = util.GenerateInitContainers(rss.Spec.Coordinator.RSSPodSpec)
 	containers := []corev1.Container{*generateMainContainer(rss)}
@@ -223,12 +271,17 @@ func GenerateNameByIndex(rss *unifflev1alpha1.RemoteShuffleService, index int) s
 	return fmt.Sprintf("%v-%v-%v", constants.RSSCoordinator, rss.Name, index)
 }
 
+func appendHeadless(name string) string {
+	return name + "-headless"
+}
+
 // GenerateAddresses returns addresses of coordinators accessed by shuffle servers.
 func GenerateAddresses(rss *unifflev1alpha1.RemoteShuffleService) string {
 	var names []string
 	for i := 0; i < int(*rss.Spec.Coordinator.Count); i++ {
-		current := fmt.Sprintf("%v:%v", GenerateNameByIndex(rss, i),
-			controllerconstants.ContainerShuffleServerRPCPort)
+		name := GenerateNameByIndex(rss, i)
+		serviceName := appendHeadless(name)
+		current := fmt.Sprintf("%v:%v", serviceName, controllerconstants.ContainerShuffleServerRPCPort)
 		names = append(names, current)
 	}
 	return strings.Join(names, ",")

@@ -121,8 +121,8 @@ public class FetcherTest {
       allKeys.add(new Text(key).toString().trim());
       allValues.add(new Text(value).toString().trim());
     }
-    validate(allKeysExpected, allKeys);
-    validate(allValuesExpected, allValues);
+    assertEquals(allKeysExpected, allKeys);
+    assertEquals(allValuesExpected, allValues);
   }
 
   @Test
@@ -152,8 +152,8 @@ public class FetcherTest {
       allKeys.add(new Text(key).toString().trim());
       allValues.add(new Text(value).toString().trim());
     }
-    validate(allKeysExpected, allKeys);
-    validate(allValuesExpected, allValues);
+    assertEquals(allKeysExpected, allKeys);
+    assertEquals(allValuesExpected, allValues);
   }
 
   @Test
@@ -184,11 +184,11 @@ public class FetcherTest {
       allKeys.add(new Text(key).toString().trim());
       allValues.add(new Text(value).toString().trim());
     }
-    validate(allKeysExpected, allKeys);
-    validate(allValuesExpected, allValues);
+    assertEquals(allKeysExpected, allKeys);
+    assertEquals(allValuesExpected, allValues);
     // There will be 2 retries
-    assert (fetcher.getRetryCount() == 2);
-    assert (((MockMergeManagerImpl)merger).happenedFails.size() == 2);
+    assertEquals(2, fetcher.getRetryCount());
+    assertEquals(2, ((MockMergeManagerImpl)merger).happenedFails.size());
   }
 
   public void testCodecIsDuplicated() throws Exception {
@@ -206,13 +206,6 @@ public class FetcherTest {
     RssBypassWriter.write(mapOutput2, buffer);
     assertEquals(RssBypassWriter.getDecompressor(
         (InMemoryMapOutput) mapOutput1), RssBypassWriter.getDecompressor((InMemoryMapOutput) mapOutput2));
-  }
-
-  private void validate(List<String> expected, List<String> actual) {
-    assert (expected.size() == actual.size());
-    for (int i = 0; i < expected.size(); i++) {
-      assert (expected.get(i).equals(actual.get(i)));
-    }
   }
 
   private static void initRssData() throws Exception {

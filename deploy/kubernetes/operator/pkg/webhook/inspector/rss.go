@@ -18,11 +18,14 @@
 package inspector
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	"gomodules.xyz/jsonpatch/v2"
 	admissionv1 "k8s.io/api/admission/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/pointer"
 
@@ -53,6 +56,11 @@ func (i *inspector) validateRSS(ar *admissionv1.AdmissionReview) *admissionv1.Ad
 	if err := json.Unmarshal(ar.Request.Object.Raw, newRSS); err != nil {
 		klog.Errorf("unmarshal object of rss (%v) failed: %v",
 			string(ar.Request.Object.Raw), err)
+		return util.AdmissionReviewFailed(ar, err)
+	}
+	if err := validateRuntimeClassNames(newRSS, i.kubeClient); err != nil {
+		klog.Errorf("validate runtime class of rss (%v) failed: %v",
+			utils.UniqueName(newRSS), err)
 		return util.AdmissionReviewFailed(ar, err)
 	}
 	if err := validateCoordinator(newRSS.Spec.Coordinator); err != nil {
@@ -148,8 +156,10 @@ func generateRSSPatches(ar *admissionv1.AdmissionReview,
 
 // validateCoordinator validates configurations for coordinators.
 func validateCoordinator(coordinator *unifflev1alpha1.CoordinatorConfig) error {
-	if len(coordinator.RPCNodePort) != int(*coordinator.Count) ||
-		len(coordinator.HTTPNodePort) != int(*coordinator.Count) {
+	// number of RPCNodePort must equal with number of HTTPNodePort
+	if len(coordinator.RPCNodePort) != len(coordinator.HTTPNodePort) ||
+		// RPCNodePort/HTTPNodePort could be zero
+		(len(coordinator.HTTPNodePort) > 0 && len(coordinator.HTTPNodePort) != int(*coordinator.Count)) {
 		return fmt.Errorf("invalid number of http or rpc node ports (%v/%v) <> (%v)",
 			len(coordinator.RPCNodePort), len(coordinator.HTTPNodePort), *coordinator.Count)
 	}
@@ -162,4 +172,27 @@ func validateCoordinator(coordinator *unifflev1alpha1.CoordinatorConfig) error {
 		return fmt.Errorf("empty log volume mount path for coordinators")
 	}
 	return nil
+}
+
+func validateRuntimeClassNames(rss *unifflev1alpha1.RemoteShuffleService, kubeClient kubernetes.Interface) error {
+	if err := validateRuntimeClassName(rss.Spec.Coordinator.RuntimeClassName, kubeClient); err != nil {
+		klog.Errorf("failed to get runtime class for coordinator: %v", err)
+		return err
+	}
+	if err := validateRuntimeClassName(rss.Spec.ShuffleServer.RuntimeClassName, kubeClient); err != nil {
+		klog.Errorf("failed to get runtime class for shuffleServer: %v", err)
+		return err
+	}
+	return nil
+}
+
+func validateRuntimeClassName(runtimeClassName *string, kubeClient kubernetes.Interface) error {
+	if runtimeClassName == nil {
+		return nil
+	}
+	_, err := kubeClient.NodeV1().RuntimeClasses().Get(context.TODO(), *runtimeClassName, metav1.GetOptions{})
+	if err != nil {
+		klog.Errorf("failed to get runtime class %v: %v", *runtimeClassName, err)
+	}
+	return err
 }

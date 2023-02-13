@@ -33,13 +33,14 @@ import org.apache.hadoop.mapreduce.TaskType;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class EvenFetcherTest {
+public class EventFetcherTest {
   private static final int MAX_EVENTS_TO_FETCH = 100;
 
   @Test
@@ -63,7 +64,7 @@ public class EvenFetcherTest {
     }
 
     Roaring64NavigableMap taskIdBitmap = ef.fetchAllRssTaskIds();
-    validate(expected, taskIdBitmap);
+    assertEquals(expected, taskIdBitmap);
   }
 
   @Test
@@ -90,7 +91,7 @@ public class EvenFetcherTest {
     }
 
     Roaring64NavigableMap taskIdBitmap = ef.fetchAllRssTaskIds();
-    validate(expected, taskIdBitmap);
+    assertEquals(expected, taskIdBitmap);
   }
 
   @Test
@@ -123,7 +124,7 @@ public class EvenFetcherTest {
       expected.addLong(rssTaskId);
     }
     Roaring64NavigableMap taskIdBitmap = ef.fetchAllRssTaskIds();
-    validate(expected, taskIdBitmap);
+    assertEquals(expected, taskIdBitmap);
   }
 
   @Test
@@ -147,13 +148,9 @@ public class EvenFetcherTest {
           1);
       expected.addLong(rssTaskId);
     }
-    try {
-      ef.fetchAllRssTaskIds();
-      fail();
-    } catch (Exception e) {
-      assert (e.getMessage()
-        .contains("TaskAttemptIDs are inconsistent with map tasks"));
-    }
+    IllegalStateException ex =
+        assertThrows(IllegalStateException.class, () -> ef.fetchAllRssTaskIds());
+    assertEquals("TaskAttemptIDs are inconsistent with map tasks", ex.getMessage());
   }
 
   @Test
@@ -177,13 +174,9 @@ public class EvenFetcherTest {
           1);
       expected.addLong(rssTaskId);
     }
-    try {
-      ef.fetchAllRssTaskIds();
-      fail();
-    } catch (Exception e) {
-      assert (e.getMessage()
-        .contains("TaskAttemptIDs are inconsistent with map tasks"));
-    }
+    IllegalStateException ex =
+        assertThrows(IllegalStateException.class, () -> ef.fetchAllRssTaskIds());
+    assertEquals("TaskAttemptIDs are inconsistent with map tasks", ex.getMessage());
   }
 
   @Test
@@ -222,14 +215,7 @@ public class EvenFetcherTest {
     }
 
     Roaring64NavigableMap taskIdBitmap = ef.fetchAllRssTaskIds();
-    validate(expected, taskIdBitmap);
-  }
-
-  private void validate(Roaring64NavigableMap expected, Roaring64NavigableMap actual) {
-    assert (expected.getLongCardinality() == actual.getLongCardinality());
-    actual.forEach(taskId -> {
-      assert (expected.contains(taskId));
-    });
+    assertEquals(expected, taskIdBitmap);
   }
 
   private MapTaskCompletionEventsUpdate getMockedCompletionEventsUpdate(
