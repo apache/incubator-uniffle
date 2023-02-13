@@ -231,16 +231,18 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       servers = servers.filter(x -> !excludeServers.contains(x));
     }
 
-    servers.limit(replicaNum)
-        .peek(excludeServers != null ? excludeServers::add : ssi -> {})
-        .forEach(ssi -> {
-          serverToBlockIds.computeIfAbsent(ssi, id -> Lists.newArrayList())
-              .add(sbi.getBlockId());
-          serverToBlocks.computeIfAbsent(ssi, id -> Maps.newHashMap())
-              .computeIfAbsent(sbi.getShuffleId(), id -> Maps.newHashMap())
-              .computeIfAbsent(sbi.getPartitionId(), id -> Lists.newArrayList())
-              .add(sbi);
-        });
+    Stream<ShuffleServerInfo> selected = servers.limit(replicaNum);
+    if (excludeServers != null) {
+      selected = selected.peek(excludeServers::add);
+    }
+    selected.forEach(ssi -> {
+      serverToBlockIds.computeIfAbsent(ssi, id -> Lists.newArrayList())
+          .add(sbi.getBlockId());
+      serverToBlocks.computeIfAbsent(ssi, id -> Maps.newHashMap())
+          .computeIfAbsent(sbi.getShuffleId(), id -> Maps.newHashMap())
+          .computeIfAbsent(sbi.getPartitionId(), id -> Lists.newArrayList())
+          .add(sbi);
+    });
   }
 
   /**
