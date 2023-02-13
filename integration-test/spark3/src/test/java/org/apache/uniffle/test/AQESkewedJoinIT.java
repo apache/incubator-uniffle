@@ -41,7 +41,7 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class AQESkewedJoinTest extends SparkIntegrationTestBase {
+public class AQESkewedJoinIT extends SparkIntegrationTestBase {
 
   @BeforeAll
   public static void setupServers() throws Exception {

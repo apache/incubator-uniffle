@@ -24,7 +24,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-public class AQESkewedJoinWithLocalOrderTest extends AQESkewedJoinTest {
+public class AQESkewedJoinWithLocalOrderIT extends AQESkewedJoinIT {
 
   @Override
   public void updateSparkConfCustomer(SparkConf sparkConf) {

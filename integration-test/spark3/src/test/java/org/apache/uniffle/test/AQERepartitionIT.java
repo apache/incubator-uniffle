@@ -39,7 +39,7 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class AQERepartitionTest extends SparkIntegrationTestBase {
+public class AQERepartitionIT extends SparkIntegrationTestBase {
 
   @BeforeAll
   public static void setupServers() throws Exception {

@@ -27,7 +27,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.spark.SparkConf;
+import org.apache.spark.TaskContext;
+import org.apache.spark.shuffle.RssShuffleHandle;
+import org.apache.spark.shuffle.RssShuffleManager;
 import org.apache.spark.shuffle.RssSparkConfig;
+import org.apache.spark.shuffle.ShuffleHandle;
+import org.apache.spark.shuffle.ShuffleReadMetricsReporter;
+import org.apache.spark.shuffle.ShuffleReader;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -37,9 +43,10 @@ import org.apache.spark.sql.functions;
 import org.apache.spark.sql.internal.SQLConf;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.coordinator.strategy.assignment.AbstractAssignmentStrategy;
 import org.apache.uniffle.server.MockedGrpcServer;
 import org.apache.uniffle.server.MockedShuffleServerGrpcService;
 import org.apache.uniffle.server.ShuffleServer;
@@ -49,7 +56,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestBase {
+public class GetShuffleReportForMultiPartIT extends SparkIntegrationTestBase {
 
   private static final int replicateWrite = 3;
   private static final int replicateRead = 2;
@@ -60,9 +67,6 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
     dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
-
-    coordinatorConf.set(CoordinatorConf.COORDINATOR_SELECT_PARTITION_STRATEGY,
-        AbstractAssignmentStrategy.SelectPartitionStrategyName.CONTINUOUS);
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     // Create multi shuffle servers
@@ -71,7 +75,7 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
   }
 
   private static void createShuffleServers() throws Exception {
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
       // Copy from IntegrationTestBase#getShuffleServerConf
       File dataFolder = Files.createTempDirectory("rssdata" + i).toFile();
       ShuffleServerConf serverConf = new ShuffleServerConf();
@@ -79,7 +83,7 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
       serverConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + i);
       serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
       serverConf.setString("rss.storage.basePath", dataFolder.getAbsolutePath());
-      serverConf.setString("rss.server.buffer.capacity", String.valueOf(671088640 - i));
+      serverConf.setString("rss.server.buffer.capacity", "671088640");
       serverConf.setString("rss.server.memory.shuffle.highWaterMark", "50.0");
       serverConf.setString("rss.server.memory.shuffle.lowWaterMark", "0.0");
       serverConf.setString("rss.server.read.buffer.capacity", "335544320");
@@ -112,10 +116,6 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
     sparkConf.set(SQLConf.SHUFFLE_PARTITIONS().key(), "100");
     sparkConf.set(SQLConf.SKEW_JOIN_SKEWED_PARTITION_THRESHOLD().key(), "800");
     sparkConf.set(SQLConf.ADVISORY_PARTITION_SIZE_IN_BYTES().key(), "800");
-    sparkConf.set("spark.dynamicAllocation.enabled", "true");
-    sparkConf.set("spark.dynamicAllocation.maxExecutors", "5");
-    sparkConf.set("spark.dynamicAllocation.minExecutors", "3");
-    sparkConf.set("spark.executor.cores", "3");
   }
 
   @Override
@@ -131,6 +131,7 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
     sparkConf.set(RssSparkConfig.RSS_DATA_REPLICA.key(), String.valueOf(replicateWrite));
     sparkConf.set(RssSparkConfig.RSS_DATA_REPLICA_WRITE.key(), String.valueOf(replicateWrite));
     sparkConf.set(RssSparkConfig.RSS_DATA_REPLICA_READ.key(), String.valueOf(replicateRead));
+
     sparkConf.set("spark.shuffle.manager",
         "org.apache.uniffle.test.GetShuffleReportForMultiPartTest$RssShuffleManagerWrapper");
   }
@@ -145,12 +146,12 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
     Thread.sleep(4000);
     Map<Integer, String> map = Maps.newHashMap();
     Dataset<Row> df2 = spark.range(0, 1000, 1, 10)
-                           .select(functions.when(functions.col("id").$less(250), 249)
-                                       .otherwise(functions.col("id")).as("key2"), functions.col("id").as("value2"));
+        .select(functions.when(functions.col("id").$less(250), 249)
+            .otherwise(functions.col("id")).as("key2"), functions.col("id").as("value2"));
     Dataset<Row> df1 = spark.range(0, 1000, 1, 10)
-                           .select(functions.when(functions.col("id").$less(250), 249)
-                                       .when(functions.col("id").$greater(750), 1000)
-                                       .otherwise(functions.col("id")).as("key1"), functions.col("id").as("value2"));
+        .select(functions.when(functions.col("id").$less(250), 249)
+            .when(functions.col("id").$greater(750), 1000)
+                .otherwise(functions.col("id")).as("key1"), functions.col("id").as("value2"));
     Dataset<Row> df3 = df1.join(df2, df1.col("key1").equalTo(df2.col("key2")));
 
     List<String> result = Lists.newArrayList();
@@ -175,11 +176,11 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
     }
     SparkConf conf = spark.sparkContext().conf();
     if (conf.get("spark.shuffle.manager", "")
-            .equals("org.apache.uniffle.test.GetShuffleReportForMultiPartTest$RssShuffleManagerWrapper")) {
-      GetShuffleReportForMultiPartTest.RssShuffleManagerWrapper mockRssShuffleManager =
-          (GetShuffleReportForMultiPartTest.RssShuffleManagerWrapper) spark.sparkContext().env().shuffleManager();
+        .equals("org.apache.uniffle.test.GetShuffleReportForMultiPartTest$RssShuffleManagerWrapper")) {
+      RssShuffleManagerWrapper mockRssShuffleManager =
+          (RssShuffleManagerWrapper) spark.sparkContext().env().shuffleManager();
       int expectRequestNum = mockRssShuffleManager.getShuffleIdToPartitionNum().values().stream()
-                                 .mapToInt(x -> x.get()).sum();
+          .mapToInt(x -> x.get()).sum();
       // Validate getShuffleResultForMultiPart is correct before return result
       validateRequestCount(spark.sparkContext().applicationId(), expectRequestNum * replicateRead);
     }
@@ -191,10 +192,45 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
       MockedShuffleServerGrpcService service = ((MockedGrpcServer) shuffleServer.getServer()).getService();
       Map<String, Map<Integer, AtomicInteger>> serviceRequestCount = service.getShuffleIdToPartitionRequest();
       int requestNum = serviceRequestCount.entrySet().stream().filter(x -> x.getKey().startsWith(appId))
-                           .flatMap(x -> x.getValue().values().stream()).mapToInt(AtomicInteger::get).sum();
+          .flatMap(x -> x.getValue().values().stream()).mapToInt(AtomicInteger::get).sum();
       expectRequestNum -= requestNum;
     }
     assertEquals(0, expectRequestNum);
   }
 
+  public static class RssShuffleManagerWrapper extends RssShuffleManager {
+
+    // shuffleId -> partShouldRequestNum
+    Map<Integer, AtomicInteger> shuffleToPartShouldRequestNum = Maps.newConcurrentMap();
+
+    public RssShuffleManagerWrapper(SparkConf conf, boolean isDriver) {
+      super(conf, isDriver);
+    }
+
+    @Override
+    public <K, C> ShuffleReader<K, C> getReaderImpl(
+        ShuffleHandle handle,
+        int startMapIndex,
+        int endMapIndex,
+        int startPartition,
+        int endPartition,
+        TaskContext context,
+        ShuffleReadMetricsReporter metrics,
+        Roaring64NavigableMap taskIdBitmap) {
+      int shuffleId = handle.shuffleId();
+      RssShuffleHandle rssShuffleHandle = (RssShuffleHandle) handle;
+      Map<Integer, List<ShuffleServerInfo>> allPartitionToServers = rssShuffleHandle.getPartitionToServers();
+      int partitionNum = (int) allPartitionToServers.entrySet().stream()
+                                   .filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition).count();
+      AtomicInteger partShouldRequestNum = shuffleToPartShouldRequestNum.computeIfAbsent(shuffleId,
+          x -> new AtomicInteger(0));
+      partShouldRequestNum.addAndGet(partitionNum);
+      return super.getReaderImpl(handle, startMapIndex, endMapIndex, startPartition, endPartition,
+          context, metrics, taskIdBitmap);
+    }
+
+    public Map<Integer, AtomicInteger> getShuffleIdToPartitionNum() {
+      return shuffleToPartShouldRequestNum;
+    }
+  }
 }
