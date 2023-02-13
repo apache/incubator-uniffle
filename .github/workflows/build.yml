@@ -63,6 +63,14 @@ jobs:
     uses: ./.github/workflows/parallel.yml
     with:
       maven-args: package
+      cache-key: package
+      reports-path: "**/target/surefire-reports/*.txt"
+
+  verify:
+    uses: ./.github/workflows/parallel.yml
+    with:
+      maven-args: verify -DskipUTs
+      cache-key: verify
       reports-path: "**/target/surefire-reports/*.txt"
 
   deploy:

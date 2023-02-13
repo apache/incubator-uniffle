@@ -23,6 +23,10 @@ on:
       maven-args:
         required: true
         type: string
+      cache-key:
+        default: ''
+        required: false
+        type: string
       summary:
         default: "grep -e '^\\[ERROR\\]' /tmp/maven.log || true"
         required: false
@@ -74,10 +78,10 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/.m2/repository
-        key: mvn-${{ inputs.java-version }}-package-${{ matrix.profile }}-${{ hashFiles('**/pom.xml') }}
+        key: mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-${{ matrix.profile }}-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
-          mvn-${{ inputs.java-version }}-package-${{ matrix.profile }}-
-          mvn-${{ inputs.java-version }}-package-
+          mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-${{ matrix.profile }}-
+          mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-
     - name: Execute `mvn ${{ inputs.maven-args }} -P${{ matrix.profile }}`
       run: mvn -B -fae ${{ inputs.maven-args }} -P${{ matrix.profile }} | tee /tmp/maven.log
       shell: bash
