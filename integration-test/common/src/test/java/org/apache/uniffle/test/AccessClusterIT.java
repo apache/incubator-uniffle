@@ -80,7 +80,7 @@ public class AccessClusterIT extends CoordinatorTestIT {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setString(
             "rss.coordinator.access.checkers",
-            "org.apache.uniffle.test.AccessClusterTest$MockedAccessChecker");
+            "org.apache.uniffle.test.AccessClusterIT$MockedAccessChecker");
     createCoordinatorServer(coordinatorConf);
     startServers();
     Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);

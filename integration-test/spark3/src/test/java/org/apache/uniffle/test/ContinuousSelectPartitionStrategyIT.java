@@ -132,7 +132,7 @@ public class ContinuousSelectPartitionStrategyIT extends SparkIntegrationTestBas
     sparkConf.set(RssSparkConfig.RSS_DATA_REPLICA_WRITE.key(), String.valueOf(replicateWrite));
     sparkConf.set(RssSparkConfig.RSS_DATA_REPLICA_READ.key(), String.valueOf(replicateRead));
     sparkConf.set("spark.shuffle.manager",
-        "org.apache.uniffle.test.GetShuffleReportForMultiPartTest$RssShuffleManagerWrapper");
+        "org.apache.uniffle.test.GetShuffleReportForMultiPartIT$RssShuffleManagerWrapper");
   }
 
   @Test
