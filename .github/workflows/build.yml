@@ -71,7 +71,9 @@ jobs:
       maven-args: package -Dtest=org.apache.uniffle.test.**
       reports-path: "**/target/surefire-reports/*.txt"
 
-  deploy:
-    uses: ./.github/workflows/deploy.yml
+  kubernetes:
+    uses: ./.github/workflows/single.yml
     with:
-      maven-args: package
+      maven-args: package -Pkubernetes -DskipUTs -DskipITs
+      cache-key: package
+      go-version: '1.17'
