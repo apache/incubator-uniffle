@@ -222,7 +222,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
 
     Stream<ShuffleServerInfo> servers;
-    if (replica > 1 && excludeDefectiveServers) {
+    if (excludeDefectiveServers && CollectionUtils.isNotEmpty(defectiveServers)) {
       servers = Stream.concat(serverList.stream().filter(x -> !defectiveServers.contains(x)),
           serverList.stream().filter(defectiveServers::contains));
     } else {
