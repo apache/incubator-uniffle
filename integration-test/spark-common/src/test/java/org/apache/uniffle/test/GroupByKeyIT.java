@@ -27,7 +27,7 @@ import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.Test;
 import scala.Tuple2;
 
-public class GroupByKeyTest extends SimpleTestBase {
+public class GroupByKeyIT extends SimpleTestBase {
 
   @Test
   public void groupByTest() throws Exception {

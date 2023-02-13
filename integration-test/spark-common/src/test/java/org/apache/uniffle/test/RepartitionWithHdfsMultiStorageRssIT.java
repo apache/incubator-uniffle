@@ -31,7 +31,7 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-public class RepartitionWithHdfsMultiStorageRssTest extends RepartitionTest {
+public class RepartitionWithHdfsMultiStorageRssIT extends RepartitionIT {
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();

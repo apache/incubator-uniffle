@@ -25,7 +25,7 @@ import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.Test;
 import scala.Tuple2;
 
-public class CombineByKeyTest extends SimpleTestBase {
+public class CombineByKeyIT extends SimpleTestBase {
 
   @Test
   public void combineByKeyTest() throws Exception {

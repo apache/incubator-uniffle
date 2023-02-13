@@ -18,77 +18,57 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.apache.uniffle.common.config.RssClientConf.COMPRESSION_TYPE;
-
-public class RepartitionWithLocalFileRssTest extends RepartitionTest {
+public class RepartitionWithMemoryRssIT extends RepartitionIT {
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
+    coordinatorConf.set(CoordinatorConf.COORDINATOR_APP_EXPIRED, 5000L);
     Map<String, String> dynamicConf = Maps.newHashMap();
-    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
+    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    shuffleServerConf.set(ShuffleServerConf.SERVER_HEARTBEAT_INTERVAL, 5000L);
+    shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 4000L);
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
-    shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
-    shuffleServerConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
-    shuffleServerConf.setString("rss.storage.basePath", basePath);
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE.name());
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
+    shuffleServerConf.setString(ShuffleServerConf.SERVER_BUFFER_CAPACITY.key(), "512mb");
     createShuffleServer(shuffleServerConf);
     startServers();
   }
 
-  @Override
-  public void updateRssStorage(SparkConf sparkConf) {
+  @Test
+  public void testMemoryRelease() throws Exception {
+    final String fileName = generateTextFile(10000, 10000);
+    SparkConf sparkConf = createSparkConf();
+    updateSparkConfWithRss(sparkConf);
+    sparkConf.set("spark.executor.memory", "500m");
+    sparkConf.set("spark.unsafe.exceptionOnMemoryLeak", "true");
+    updateRssStorage(sparkConf);
+
+    // oom if there has no memory release
+    runSparkApp(sparkConf, fileName);
   }
 
-  /**
-   * Test different compression types with localfile rss mode.
-   * @throws Exception
-   */
   @Override
-  public void run() throws Exception {
-    String fileName = generateTestFile();
-    SparkConf sparkConf = createSparkConf();
-    Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
-
-    List<Map> results = new ArrayList<>();
-    Map resultWithoutRss = runSparkApp(sparkConf, fileName);
-    results.add(resultWithoutRss);
-
-    updateSparkConfWithRss(sparkConf);
-    updateSparkConfCustomer(sparkConf);
-    for (Codec.Type type :
-        new Codec.Type[]{
-            Codec.Type.NOOP,
-            Codec.Type.ZSTD,
-            Codec.Type.LZ4}) {
-      sparkConf.set("spark." + COMPRESSION_TYPE.key().toLowerCase(), type.name());
-      Map resultWithRss = runSparkApp(sparkConf, fileName);
-      results.add(resultWithRss);
-    }
-
-    for (int i = 1; i < results.size(); i++) {
-      verifyTestResult(results.get(0), results.get(i));
-    }
+  public void updateRssStorage(SparkConf sparkConf) {
   }
 }

@@ -17,11 +17,11 @@
 
 package org.apache.uniffle.test;
 
+import java.io.File;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -31,6 +31,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import scala.Tuple2;
 
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
@@ -38,18 +39,18 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ShuffleUnregisterWithHdfsTest extends SparkIntegrationTestBase {
+public class ShuffleUnregisterWithLocalFileIT extends SparkIntegrationTestBase {
 
   @BeforeAll
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
+    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.setString("rss.storage.type", StorageType.HDFS.name());
+    shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
     createShuffleServer(shuffleServerConf);
     startServers();
   }
@@ -78,23 +79,24 @@ public class ShuffleUnregisterWithHdfsTest extends SparkIntegrationTestBase {
 
     // The second run will use the rss. and we should check the effectiveness of unregisterShuffle method.
     if (runCounter == 1) {
-      String basePath = HDFS_URI + "rss/test";
-      String appPath = fs.listStatus(new Path(basePath))[0].getPath().toUri().getPath();
+      String path = shuffleServers.get(0).getShuffleServerConf()
+          .get(RssBaseConf.RSS_STORAGE_BASE_PATH).get(0);
+      String appPath = new File(path).listFiles()[0].getAbsolutePath();
 
       String shufflePath = appPath + "/0";
-      assertTrue(fs.exists(new Path(shufflePath)));
+      assertTrue(new File(shufflePath).exists());
 
       spark.sparkContext().env().blockManager().master().removeShuffle(0, true);
 
       // Wait some time to cleanup the shuffle resource for shuffle-server
       Thread.sleep(1000);
-      assertFalse(fs.exists(new Path(shufflePath)));
-      assertTrue(fs.exists(new Path(appPath)));
+      assertFalse(new File(shufflePath).exists());
+      assertTrue(new File(appPath).exists());
 
       // After unregistering partial shuffle, newly shuffle could work
       map = javaPairRDD.collectAsMap();
       shufflePath = appPath + "/1";
-      assertTrue(fs.exists(new Path(shufflePath)));
+      assertTrue(new File(shufflePath).exists());
     } else {
       runCounter++;
     }

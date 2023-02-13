@@ -20,8 +20,11 @@ package org.apache.uniffle.test;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
@@ -31,29 +34,46 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-public class RepartitionWithMemoryMultiStorageRssTest extends RepartitionTest {
+public class SparkSQLWithDelegationShuffleManagerIT extends SparkSQLIT {
+
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
+    final String candidates = Objects.requireNonNull(
+        SparkSQLWithDelegationShuffleManagerIT.class.getClassLoader().getResource("candidates")).getFile();
     CoordinatorConf coordinatorConf = getCoordinatorConf();
+    coordinatorConf.setString(
+        CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
+        "org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker,"
+            + "org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker");
+    coordinatorConf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, candidates);
+    coordinatorConf.set(CoordinatorConf.COORDINATOR_APP_EXPIRED, 5000L);
+    coordinatorConf.set(CoordinatorConf.COORDINATOR_ACCESS_LOADCHECKER_SERVER_NUM_THRESHOLD, 1);
     Map<String, String> dynamicConf = Maps.newHashMap();
-    dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
+    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-
-    // local storage config
+    shuffleServerConf.set(ShuffleServerConf.SERVER_HEARTBEAT_INTERVAL, 1000L);
+    shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 4000L);
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
-    shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 1024L * 1024L);
-
+    shuffleServerConf.setString(ShuffleServerConf.SERVER_BUFFER_CAPACITY.key(), "512mb");
     createShuffleServer(shuffleServerConf);
     startServers();
+    Uninterruptibles.sleepUninterruptibly(1L, TimeUnit.SECONDS);
   }
 
   @Override
   public void updateRssStorage(SparkConf sparkConf) {
+    sparkConf.set(RssSparkConfig.RSS_ACCESS_ID.key(), "test_access_id");
+    sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.DelegationRssShuffleManager");
   }
+
+  @Override
+  public void checkShuffleData() throws Exception {
+  }
+
 }
+

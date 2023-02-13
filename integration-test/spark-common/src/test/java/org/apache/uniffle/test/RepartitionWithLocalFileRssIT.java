@@ -18,9 +18,9 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Maps;
@@ -30,50 +30,65 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 
+import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-public class SparkSQLWithDelegationShuffleManagerFallback extends SparkSQLTest {
+import static org.apache.uniffle.common.config.RssClientConf.COMPRESSION_TYPE;
+
+public class RepartitionWithLocalFileRssIT extends RepartitionIT {
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
-    final String candidates = Objects.requireNonNull(
-        SparkSQLWithDelegationShuffleManager.class.getClassLoader().getResource("candidates")).getFile();
     CoordinatorConf coordinatorConf = getCoordinatorConf();
-    coordinatorConf.setString(
-        CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
-        "org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker,"
-            + "org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker");
-    coordinatorConf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, candidates);
-    coordinatorConf.set(CoordinatorConf.COORDINATOR_APP_EXPIRED, 5000L);
-    coordinatorConf.set(CoordinatorConf.COORDINATOR_ACCESS_LOADCHECKER_SERVER_NUM_THRESHOLD, 1);
     Map<String, String> dynamicConf = Maps.newHashMap();
-    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE.name());
+    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.set(ShuffleServerConf.SERVER_HEARTBEAT_INTERVAL, 1000L);
-    shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 4000L);
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
-    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
-    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
-    shuffleServerConf.setString(ShuffleServerConf.SERVER_BUFFER_CAPACITY.key(), "512mb");
+    shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
+    shuffleServerConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
+    shuffleServerConf.setString("rss.storage.basePath", basePath);
     createShuffleServer(shuffleServerConf);
     startServers();
-    Uninterruptibles.sleepUninterruptibly(1L, TimeUnit.SECONDS);
   }
 
   @Override
   public void updateRssStorage(SparkConf sparkConf) {
-    sparkConf.set(RssSparkConfig.RSS_ACCESS_ID.key(), "wrong_id");
-    sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.DelegationRssShuffleManager");
   }
 
+  /**
+   * Test different compression types with localfile rss mode.
+   * @throws Exception
+   */
   @Override
-  public void checkShuffleData() throws Exception {
-  }
+  public void run() throws Exception {
+    String fileName = generateTestFile();
+    SparkConf sparkConf = createSparkConf();
+    Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
 
+    List<Map> results = new ArrayList<>();
+    Map resultWithoutRss = runSparkApp(sparkConf, fileName);
+    results.add(resultWithoutRss);
+
+    updateSparkConfWithRss(sparkConf);
+    updateSparkConfCustomer(sparkConf);
+    for (Codec.Type type :
+        new Codec.Type[]{
+            Codec.Type.NOOP,
+            Codec.Type.ZSTD,
+            Codec.Type.LZ4}) {
+      sparkConf.set("spark." + COMPRESSION_TYPE.key().toLowerCase(), type.name());
+      Map resultWithRss = runSparkApp(sparkConf, fileName);
+      results.add(resultWithRss);
+    }
+
+    for (int i = 1; i < results.size(); i++) {
+      verifyTestResult(results.get(0), results.get(i));
+    }
+  }
 }

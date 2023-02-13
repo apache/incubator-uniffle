@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class AutoAccessTest extends IntegrationTestBase {
+public class AutoAccessIT extends IntegrationTestBase {
 
   @Test
   public void test() throws Exception {

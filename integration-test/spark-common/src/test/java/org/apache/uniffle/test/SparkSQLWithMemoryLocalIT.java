@@ -32,7 +32,7 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SparkSQLWithMemoryLocalTest extends SparkSQLTest {
+public class SparkSQLWithMemoryLocalIT extends SparkSQLIT {
 
   private static String basePath;
 

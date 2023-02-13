@@ -34,9 +34,9 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class SparkSQLTest extends SparkIntegrationTestBase {
+public abstract class SparkSQLIT extends SparkIntegrationTestBase {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SparkSQLTest.class);
+  private static final Logger LOG = LoggerFactory.getLogger(SparkSQLIT.class);
 
   @Test
   public void resultCompareTest() throws Exception {

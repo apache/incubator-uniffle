@@ -32,7 +32,7 @@ import org.apache.spark.status.api.v1.StageData;
 import org.junit.jupiter.api.Test;
 import scala.collection.Seq;
 
-public class WriteAndReadMetricsTest extends SimpleTestBase {
+public class WriteAndReadMetricsIT extends SimpleTestBase {
 
   @Test
   public void test() throws Exception {

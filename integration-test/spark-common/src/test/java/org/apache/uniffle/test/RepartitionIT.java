@@ -35,9 +35,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
-public abstract class RepartitionTest extends SparkIntegrationTestBase {
+public abstract class RepartitionIT extends SparkIntegrationTestBase {
 
-  private static final Logger LOG = LoggerFactory.getLogger(RepartitionTest.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RepartitionIT.class);
 
   @Test
   public void resultCompareTest() throws Exception {
