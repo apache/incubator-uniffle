@@ -32,7 +32,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -232,18 +231,16 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       servers = servers.filter(x -> !excludeServers.contains(x));
     }
 
-    List<ShuffleServerInfo> selected = servers.limit(replicaNum).collect(Collectors.toList());
-    if (excludeServers != null) {
-      excludeServers.addAll(selected);
-    }
-    for (ShuffleServerInfo ssi : selected) {
-      serverToBlockIds.computeIfAbsent(ssi, id -> Lists.newArrayList())
-          .add(sbi.getBlockId());
-      serverToBlocks.computeIfAbsent(ssi, id -> Maps.newHashMap())
-          .computeIfAbsent(sbi.getShuffleId(), id -> Maps.newHashMap())
-          .computeIfAbsent(sbi.getPartitionId(), id -> Lists.newArrayList())
-          .add(sbi);
-    }
+    servers.limit(replicaNum)
+        .peek(excludeServers != null ? excludeServers::add : ssi -> {})
+        .forEach(ssi -> {
+          serverToBlockIds.computeIfAbsent(ssi, id -> Lists.newArrayList())
+              .add(sbi.getBlockId());
+          serverToBlocks.computeIfAbsent(ssi, id -> Maps.newHashMap())
+              .computeIfAbsent(sbi.getShuffleId(), id -> Maps.newHashMap())
+              .computeIfAbsent(sbi.getPartitionId(), id -> Lists.newArrayList())
+              .add(sbi);
+        });
   }
 
   /**
