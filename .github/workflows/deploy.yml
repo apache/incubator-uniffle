@@ -23,10 +23,6 @@ on:
       maven-args:
         required: true
         type: string
-      maven-options:
-        default: ''
-        required: false
-        type: string
       summary:
         default: "grep -e '^\\[ERROR\\]' /tmp/maven.log || true"
         required: false
@@ -83,7 +79,7 @@ jobs:
       with:
         go-version: ${{ inputs.go-version }}
     - name: Execute `mvn ${{ inputs.maven-args }} -P${{ matrix.profile }}`
-      run: mvn -B -fae ${{ inputs.maven-args }} -P${{ matrix.profile }} ${{ inputs.maven-options }} | tee /tmp/maven.log
+      run: mvn -B -fae ${{ inputs.maven-args }} -P${{ matrix.profile }} -DskipUTs -DskipITs | tee /tmp/maven.log
       shell: bash
     - name: Summary of failures
       if: ${{ failure() && inputs.summary != '' }}
