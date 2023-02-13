@@ -32,7 +32,7 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-public class LargeSorterTest extends MRIntegrationTestBase {
+public class LargeSorterIT extends MRIntegrationTestBase {
 
   @BeforeAll
   public static void setupServers() throws Exception {
