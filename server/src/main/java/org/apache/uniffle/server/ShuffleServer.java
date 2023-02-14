@@ -274,14 +274,14 @@ public class ShuffleServer {
   }
 
   public void decommission() {
-    if (isDecommissioning()) {
-      throw new InvalidRequestException("Shuffle Server is decommissioning. Nothing need to do.");
-    }
-    if (!ServerStatus.NORMAL_STATUS.equals(serverStatus)) {
-      throw new InvalidRequestException(
-          "Shuffle Server is processing other procedures, current status:" + serverStatus);
-    }
     synchronized (statusLock) {
+      if (isDecommissioning()) {
+        throw new InvalidRequestException("Shuffle Server is decommissioning. Nothing need to do.");
+      }
+      if (!ServerStatus.NORMAL_STATUS.equals(serverStatus)) {
+        throw new InvalidRequestException(
+            "Shuffle Server is processing other procedures, current status:" + serverStatus);
+      }
       serverStatus = ServerStatus.DECOMMISSIONING;
       long checkInterval = shuffleServerConf.get(SERVER_DECOMMISSION_CHECK_INTERVAL);
       decommissionedThread = new Thread(() -> {
@@ -310,10 +310,10 @@ public class ShuffleServer {
   }
 
   public void cancelDecommission() {
-    if (!isDecommissioning()) {
-      throw new InvalidRequestException("Shuffle server is not decommissioning. Nothing need to do.");
-    }
     synchronized (statusLock) {
+      if (!isDecommissioning()) {
+        throw new InvalidRequestException("Shuffle server is not decommissioning. Nothing need to do.");
+      }
       serverStatus = ServerStatus.NORMAL_STATUS;
       if (decommissionedThread != null) {
         decommissionedThread.interrupt();
