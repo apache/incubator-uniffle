@@ -52,7 +52,7 @@ public class ShuffleServerInternalGrpcService extends ShuffleServerInternalImplB
     } catch (Exception e) {
       StatusCode statusCode = StatusCode.INTERNAL_ERROR;
       if (e instanceof InvalidRequestException) {
-        statusCode = StatusCode.REJECT;
+        statusCode = StatusCode.INVALID_REQUEST;
       }
       response = RssProtos.DecommissionResponse
           .newBuilder()

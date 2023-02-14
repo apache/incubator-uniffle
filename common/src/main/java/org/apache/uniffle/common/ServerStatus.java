@@ -23,12 +23,14 @@ public enum ServerStatus {
   NORMAL_STATUS,
   DECOMMISSIONING;
 
+  static final ServerStatus[] VALUES = ServerStatus.values();
+
   public RssProtos.ServerStatus toProto() {
     return RssProtos.ServerStatus.forNumber(this.ordinal());
   }
 
   public static ServerStatus fromProto(RssProtos.ServerStatus status) {
-    return values()[status.getNumber()];
+    return VALUES[status.getNumber()];
   }
 
 }

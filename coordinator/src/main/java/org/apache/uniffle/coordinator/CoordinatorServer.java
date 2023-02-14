@@ -148,7 +148,7 @@ public class CoordinatorServer extends ReconfigurableBase {
     id = ip + "-" + port;
     LOG.info("Start to initialize coordinator {}", id);
     jettyServer = new JettyServer(coordinatorConf);
-    registerRestAPI();
+    registerRESTAPI();
     // register metrics first to avoid NPE problem when add dynamic metrics
     registerMetrics();
     this.applicationManager = new ApplicationManager(coordinatorConf);
@@ -179,7 +179,7 @@ public class CoordinatorServer extends ReconfigurableBase {
     server = coordinatorFactory.getServer();
   }
 
-  private void registerRestAPI() throws Exception {
+  private void registerRESTAPI() throws Exception {
     LOG.info("Register REST API");
     jettyServer.addServlet(
         new NodesServlet(this),

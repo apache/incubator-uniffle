@@ -42,6 +42,7 @@ import org.apache.uniffle.common.rpc.ServerInterface;
 import org.apache.uniffle.common.security.SecurityConfig;
 import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.web.CommonMetricsServlet;
 import org.apache.uniffle.common.web.JettyServer;
@@ -292,8 +293,7 @@ public class ShuffleServer {
               stopServer();
               break;
             } catch (Exception e) {
-              LOG.error("Stop server failed!", e);
-              System.exit(0);
+              ExitUtils.terminate(1, "Stop server failed!", e, LOG);
             }
           }
           LOG.info("Shuffle server is decommissioning. remain {} applications not finished.", remainApplicationNum);

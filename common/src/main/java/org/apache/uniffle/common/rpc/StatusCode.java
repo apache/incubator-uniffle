@@ -29,7 +29,7 @@ public enum StatusCode {
   INTERNAL_ERROR(6),
   TIMEOUT(7),
   ACCESS_DENIED(8),
-  REJECT(9);
+  INVALID_REQUEST(9);
 
   private final int statusCode;
 

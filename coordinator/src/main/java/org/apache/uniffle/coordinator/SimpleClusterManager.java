@@ -269,10 +269,7 @@ public class SimpleClusterManager implements ClusterManager {
       throw new InvalidRequestException("Server [" + serverId
           + "] is processing other procedures, current status:" + serverNode.getStatus());
     }
-
-    ShuffleServerInternalGrpcClient shuffleServerClient = serverClientMap.computeIfAbsent(serverNode,
-        id -> new ShuffleServerInternalGrpcClient(serverNode.getIp(), serverNode.getPort()));
-    shuffleServerClient.decommission(new RssDecommissionRequest(true));
+    getShuffleServerClient(serverNode).decommission(new RssDecommissionRequest(true));
 
   }
 
@@ -283,10 +280,12 @@ public class SimpleClusterManager implements ClusterManager {
       throw new InvalidRequestException("Server ["
           + serverId + "] is not decommissioning. Nothing need to do.");
     }
+    getShuffleServerClient(serverNode).decommission(new RssDecommissionRequest(false));
+  }
 
-    ShuffleServerInternalGrpcClient shuffleServerClient = serverClientMap.computeIfAbsent(serverNode,
-        id -> new ShuffleServerInternalGrpcClient(serverNode.getIp(), serverNode.getPort()));
-    shuffleServerClient.decommission(new RssDecommissionRequest(false));
+  private ShuffleServerInternalGrpcClient getShuffleServerClient(ServerNode serverNode) {
+    return serverClientMap.computeIfAbsent(serverNode,
+        key -> new ShuffleServerInternalGrpcClient(serverNode.getIp(), serverNode.getPort()));
   }
 
   @Override
