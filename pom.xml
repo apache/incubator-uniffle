@@ -760,8 +760,15 @@
           <artifactId>maven-failsafe-plugin</artifactId>
           <version>2.22.2</version>
           <configuration>
+            <systemProperties>
+              <java.awt.headless>true</java.awt.headless>
+              <java.io.tmpdir>${project.build.directory}/tmp</java.io.tmpdir>
+              <project.version>${project.version}</project.version>
+              <jacoco-agent.destfile>target/jacoco.exec</jacoco-agent.destfile>
+            </systemProperties>
             <redirectTestOutputToFile>${test.redirectToFile}</redirectTestOutputToFile>
             <useFile>${test.redirectToFile}</useFile>
+            <argLine>${argLine} -ea -Xmx3g</argLine>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>${trimStackTrace}</trimStackTrace>
             <skipTests>${skipITs}</skipTests>
