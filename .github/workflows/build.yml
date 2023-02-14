@@ -62,7 +62,13 @@ jobs:
   package:
     uses: ./.github/workflows/parallel.yml
     with:
-      maven-args: package
+      maven-args: package -Dtest=!org.apache.uniffle.test.**
+      reports-path: "**/target/surefire-reports/*.txt"
+
+  integration:
+    uses: ./.github/workflows/parallel.yml
+    with:
+      maven-args: package -Dtest=org.apache.uniffle.test.**
       reports-path: "**/target/surefire-reports/*.txt"
 
   deploy:
