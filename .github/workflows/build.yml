@@ -71,7 +71,7 @@ jobs:
     with:
       maven-args: verify -DskipUTs
       cache-key: verify
-      reports-path: "**/target/surefire-reports/*.txt"
+      reports-path: "**/target/failsafe-reports/*.txt"
 
   deploy:
     uses: ./.github/workflows/deploy.yml
