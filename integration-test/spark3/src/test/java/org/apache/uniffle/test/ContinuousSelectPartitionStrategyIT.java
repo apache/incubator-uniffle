@@ -175,7 +175,7 @@ public class ContinuousSelectPartitionStrategyIT extends SparkIntegrationTestBas
     }
     SparkConf conf = spark.sparkContext().conf();
     if (conf.get("spark.shuffle.manager", "")
-            .equals("org.apache.uniffle.test.GetShuffleReportForMultiPartTest$RssShuffleManagerWrapper")) {
+            .equals("org.apache.uniffle.test.GetShuffleReportForMultiPartIT$RssShuffleManagerWrapper")) {
       GetShuffleReportForMultiPartIT.RssShuffleManagerWrapper mockRssShuffleManager =
           (GetShuffleReportForMultiPartIT.RssShuffleManagerWrapper) spark.sparkContext().env().shuffleManager();
       int expectRequestNum = mockRssShuffleManager.getShuffleIdToPartitionNum().values().stream()
