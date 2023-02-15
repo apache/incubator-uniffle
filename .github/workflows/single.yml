@@ -48,7 +48,7 @@ on:
         required: false
         type: string
       go-version:
-        default: 'None'
+        default: ''
         required: false
         type: string
       display-name:
@@ -77,7 +77,7 @@ jobs:
         restore-keys: |
           mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-
     - name: Set up Go ${{ inputs.go-version }}
-      if: ${{ inputs.go-version != 'None' }}
+      if: ${{ inputs.go-version != '' }}
       uses: actions/setup-go@v3
       with:
         go-version: ${{ inputs.go-version }}
