@@ -62,7 +62,7 @@ jobs:
       cache-key: package
       java-version: '17'
 
-  package:
+  unit:
     uses: ./.github/workflows/parallel.yml
     with:
       maven-args: package -Dtest=!org.apache.uniffle.test.**
