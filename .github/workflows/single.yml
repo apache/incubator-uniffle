@@ -51,15 +51,11 @@ on:
         default: ''
         required: false
         type: string
-      display-name:
-        default: 'maven'
-        required: false
-        type: string
 
 jobs:
   maven:
     runs-on: ubuntu-20.04
-    name: ${{ inputs.display-name }}
+    name: java ${{ inputs.java-version }} + go ${{ inputs.go-version }}
     steps:
     - name: Checkout project
       uses: actions/checkout@v3

@@ -74,11 +74,10 @@ jobs:
       maven-args: package -Dtest=org.apache.uniffle.test.**
       reports-path: "**/target/surefire-reports/*.txt"
 
-  deploy:
+  kubernetes:
     needs: [checkstyle, license] # delay execution
     uses: ./.github/workflows/single.yml
     with:
       maven-args: package -Pkubernetes -DskipUTs -DskipITs
       cache-key: package
       go-version: '1.17'
-      display-name: kubernetes
