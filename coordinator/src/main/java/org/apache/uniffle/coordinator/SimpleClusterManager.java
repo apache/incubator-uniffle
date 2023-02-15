@@ -312,12 +312,6 @@ public class SimpleClusterManager implements ClusterManager {
     }
   }
 
-  private ShuffleServerInternalGrpcClient createShuffleServerClient(ServerNode serverNode) {
-    synchronized (serverNode) {
-      return new ShuffleServerInternalGrpcClient(serverNode.getIp(), serverNode.getPort());
-    }
-  }
-
   @VisibleForTesting
   public void setStartTime(long startTime) {
     this.startTime = startTime;
