@@ -38,12 +38,14 @@ jobs:
       summary: "grep -r '!?????' --include='rat.txt' | awk '{print $3}'"
 
   spotbugs:
+    needs: [checkstyle, license] # delay execution
     uses: ./.github/workflows/sequential.yml
     with:
       maven-args: test-compile spotbugs:check
       cache-key: spotbugs
   
   java-11:
+    needs: [spotbugs] # delay execution
     name: 'compile'
     uses: ./.github/workflows/sequential.yml
     with:
@@ -52,6 +54,7 @@ jobs:
       java-version: '11'
 
   java-17:
+    needs: [spotbugs] # delay execution
     name: 'compile'
     uses: ./.github/workflows/sequential.yml
     with:
@@ -72,6 +75,7 @@ jobs:
       reports-path: "**/target/surefire-reports/*.txt"
 
   kubernetes:
+    needs: [checkstyle, license] # delay execution
     uses: ./.github/workflows/single.yml
     with:
       maven-args: package -Pkubernetes -DskipUTs -DskipITs
