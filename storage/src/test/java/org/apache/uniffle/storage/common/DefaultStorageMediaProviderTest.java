@@ -40,4 +40,11 @@ public class DefaultStorageMediaProviderTest {
     // invalid uri should also be reported as HDD
     assertEquals(StorageMedia.HDD, provider.getStorageMediaFor("file@xx:///path/to/a"));
   }
+
+  @Test
+  public void getGetDeviceName() {
+    assertEquals("rootfs", DefaultStorageMediaProvider.getDeviceName("rootfs"));
+    assertEquals("sda", DefaultStorageMediaProvider.getDeviceName("/dev/sda1"));
+    assertEquals("cl-home", DefaultStorageMediaProvider.getDeviceName("/dev/mapper/cl-home"));
+  }
 }
