@@ -22,14 +22,14 @@
   <parent>
     <artifactId>uniffle-parent</artifactId>
     <groupId>org.apache.uniffle</groupId>
-    <version>0.8.0-snapshot</version>
+    <version>0.8.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.apache.uniffle</groupId>
   <artifactId>rss-integration-spark2-test</artifactId>
-  <version>0.8.0-snapshot</version>
+  <version>0.8.0-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Apache Uniffle Integration Test (Spark 2)</name>
 
