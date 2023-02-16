@@ -16,7 +16,7 @@
 #
 
 name: Uniffle Flaky Test Report
-title: "Flaky Test: "
+title: "[Flaky Test] "
 description: Describe the flaky test you encountered with Apache Uniffle
 labels: ["kind:bug,kind:test,priority:major"]
 body:
@@ -66,7 +66,7 @@ body:
   - type: textarea
     attributes:
       label: Parent issue
-      value: "#1733"
+      value: ""
     validations:
       required: false
 
