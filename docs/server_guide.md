@@ -111,12 +111,11 @@ To do this, we introduce the extra configs
 
 |Property Name|Default|Description|
 |---|---|---|
-|rss.server.huge-partition.size.threshold|20g|Threshold of huge partition size, once exceeding threshold, memory usage limitation and huge partition buffer flushing will be triggered. This value depends on the capacity of per disk in shuffle server. For example, per disk capacity is 1TB, and the max size of huge partition in per disk is 5. So the total size of huge partition in local disk is 100g (10%)，this is an acceptable config value. Once reaching this threshold, it will be better to flush data 
-to HDFS directly, which could be handled by multiple storage manager fallback strategy|
+|rss.server.huge-partition.size.threshold|20g|Threshold of huge partition size, once exceeding threshold, memory usage limitation and huge partition buffer flushing will be triggered. This value depends on the capacity of per disk in shuffle server. For example, per disk capacity is 1TB, and the max size of huge partition in per disk is 5. So the total size of huge partition in local disk is 100g (10%)，this is an acceptable config value. Once reaching this threshold, it will be better to flush data to HDFS directly, which could be handled by multiple storage manager fallback strategy|
 |rss.server.huge-partition.memory.limit.ratio|0.2|The memory usage limit ratio for huge partition, it will only triggered when partition's size exceeds the threshold of 'rss.server.huge-partition.size.threshold'. If the buffer capacity is 10g, this means the default memory usage for huge partition is 2g. Samely, this config value depends on max size of huge partitions on per shuffle server.|
 
 #### Data flush
-Once the huge partition threshold is reached, the partition is marked as a huge partition. And then single buffer flush is triggered (writing to persistent storage as soon as possible). By default, single buffer flush is only enabled by configuring `rss.server.single.buffer.flush.enabled', but it's automatically valid for huge partition. 
+Once the huge partition threshold is reached, the partition is marked as a huge partition. And then single buffer flush is triggered (writing to persistent storage as soon as possible). By default, single buffer flush is only enabled by configuring `rss.server.single.buffer.flush.enabled`, but it's automatically valid for huge partition. 
 
 If you don't use HDFS, the huge partition may be flushed to local disk, which is dangerous if the partition size is larger than the free disk space. Therefore, it is recommended to use a mixed storage type, including HDFS or other distributed file systems.
 
