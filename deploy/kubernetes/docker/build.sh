@@ -24,18 +24,20 @@ function exit_with_usage() {
   echo "Usage:"
   echo "+------------------------------------------------------------------------------------------------------+"
   echo "| ./build.sh [--hadoop-version <hadoop version>] [--registry <registry url>] [--author <author name>]  |"
-  echo "|            [--apache-mirror <apache mirror url>]                                                     |"
+  echo "|            [--base-os-distribution <os distribution>] [--base-image <base image url>]                |"
+  echo "|            [--push-image <true|false>] [--apache-mirror <apache mirror url>]                         |"
   echo "+------------------------------------------------------------------------------------------------------+"
   exit 1
 }
 
-UNKNOWN_REGISTRY="UNKNOWN_REGISTRY"
-
-REGISTRY=$UNKNOWN_REGISTRY
+REGISTRY="docker.io/library"
 HADOOP_VERSION=2.8.5
 AUTHOR=$(whoami)
 # If you are based in China, you could pass --apache-mirror <a_mirror_url> when building this.
 APACHE_MIRROR="https://dlcdn.apache.org"
+OS_DISTRIBUTION=debian
+BASE_IMAGE=""
+PUSH_IMAGE="true"
 
 while (( "$#" )); do
   case $1 in
@@ -49,6 +51,18 @@ while (( "$#" )); do
       ;;
     --author)
       AUTHOR="$2"
+      shift
+      ;;
+    --base-os-distribution)
+      OS_DISTRIBUTION="$2"
+      shift
+      ;;
+    --base-image)
+      BASE_IMAGE="$2"
+      shift
+      ;;
+    --push-image)
+      PUSH_IMAGE="$2"
       shift
       ;;
     --help)
@@ -73,9 +87,15 @@ while (( "$#" )); do
   shift
 done
 
-if [ "$REGISTRY" == $UNKNOWN_REGISTRY ]; \
-  then echo "please set registry url"; exit; \
+if [ -z "$BASE_IMAGE" ]; then
+  echo "start building base image: rss-server-base"
+  docker build -t "rss-server-base:latest" \
+    -f rss-server-base/"${OS_DISTRIBUTION}"/Dockerfile .
+  BASE_IMAGE="rss-server-base:latest"
+else
+  echo "using base image(${BASE_IMAGE}) to build rss server"
 fi
+
 
 HADOOP_FILE=hadoop-${HADOOP_VERSION}.tar.gz
 ARCHIVE_HADOOP_URL=https://archive.apache.org/dist/hadoop/core/hadoop-${HADOOP_VERSION}/${HADOOP_FILE}
@@ -91,7 +111,7 @@ cd $RSS_DIR || exit
 RSS_VERSION=$(mvn help:evaluate -Dexpression=project.version 2>/dev/null | grep -v "INFO" | grep -v "WARNING" | tail -n 1)
 RSS_FILE=rss-${RSS_VERSION}.tgz
 if [ ! -e "$RSS_FILE" ]; \
-  then sh ./build_distribution.sh; \
+  then bash ./build_distribution.sh; \
   else echo "$RSS_FILE has been built"; \
 fi
 cd "$OLDPWD" || exit
@@ -108,7 +128,10 @@ docker build -t "$IMAGE" \
              --build-arg AUTHOR="$AUTHOR" \
              --build-arg GIT_COMMIT="$GIT_COMMIT" \
              --build-arg GIT_BRANCH="$GIT_BRANCH" \
+             --build-arg BASE_IMAGE="$BASE_IMAGE" \
              -f Dockerfile --no-cache .
 
-echo "pushing image: $IMAGE"
-docker push "$IMAGE"
+if [ x"${PUSH_IMAGE}" == x"true" ]; then
+  echo "pushing image: $IMAGE"
+  docker push "$IMAGE"
+fi

@@ -46,6 +46,19 @@
             </configuration>
           </execution>
           <execution>
+            <id>Build RSS server image</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <workingDirectory>${basedir}/docker</workingDirectory>
+              <executable>${basedir}/docker/build.sh</executable>
+              <commandlineArgs>--push-image false --hadoop-version 2.10.2</commandlineArgs>
+              <skip>${skipBuildImage}</skip>
+            </configuration>
+          </execution>
+          <execution>
             <id>Test Kubernetes Operator</id>
             <phase>test</phase>
             <goals>
