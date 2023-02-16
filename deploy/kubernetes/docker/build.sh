@@ -24,6 +24,7 @@ function exit_with_usage() {
   echo "Usage:"
   echo "+------------------------------------------------------------------------------------------------------+"
   echo "| ./build.sh [--hadoop-version <hadoop version>] [--registry <registry url>] [--author <author name>]  |"
+  echo "|            [--apache-mirror <apache mirror url>]                                                     |"
   echo "+------------------------------------------------------------------------------------------------------+"
   exit 1
 }
@@ -33,6 +34,8 @@ UNKNOWN_REGISTRY="UNKNOWN_REGISTRY"
 REGISTRY=$UNKNOWN_REGISTRY
 HADOOP_VERSION=2.8.5
 AUTHOR=$(whoami)
+# If you are based in China, you could pass --apache-mirror <a_mirror_url> when building this.
+APACHE_MIRROR="https://dlcdn.apache.org"
 
 while (( "$#" )); do
   case $1 in
@@ -50,6 +53,10 @@ while (( "$#" )); do
       ;;
     --help)
       exit_with_usage
+      ;;
+    --apache-mirror)
+      APACHE_MIRROR="$2"
+      shift
       ;;
     --*)
       echo "Error: $1 is not supported"
@@ -71,10 +78,11 @@ if [ "$REGISTRY" == $UNKNOWN_REGISTRY ]; \
 fi
 
 HADOOP_FILE=hadoop-${HADOOP_VERSION}.tar.gz
-HADOOP_URL=https://archive.apache.org/dist/hadoop/core/hadoop-${HADOOP_VERSION}/${HADOOP_FILE}
-echo "HADOOP_URL is $HADOOP_URL"
+ARCHIVE_HADOOP_URL=https://archive.apache.org/dist/hadoop/core/hadoop-${HADOOP_VERSION}/${HADOOP_FILE}
+HADOOP_URL=${APACHE_MIRROR}/hadoop/core/hadoop-${HADOOP_VERSION}/${HADOOP_FILE}
+echo "HADOOP_URL is either ${HADOOP_URL} or ${ARCHIVE_HADOOP_URL}"
 if [ ! -e "$HADOOP_FILE" ]; \
-  then wget "$HADOOP_URL"; \
+  then wget "${HADOOP_URL}" || wget "$ARCHIVE_HADOOP_URL"; \
   else echo "${HADOOP_FILE} has been downloaded"; \
 fi
 
