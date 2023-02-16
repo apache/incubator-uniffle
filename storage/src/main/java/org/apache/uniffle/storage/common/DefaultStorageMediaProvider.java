@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.directory.api.util.Strings;
@@ -61,10 +62,7 @@ public class DefaultStorageMediaProvider implements StorageMediaProvider {
       try {
         File baseFile = new File(baseDir);
         FileStore store = Files.getFileStore(baseFile.toPath());
-        String mountPoint = store.name(); // mountPoint would be /dev/sda1, /dev/vda1, rootfs, etc.
-        int separatorIndex = mountPoint.lastIndexOf(File.separator);
-        String deviceName = separatorIndex > -1 ? mountPoint.substring(separatorIndex) : mountPoint;
-        deviceName = StringUtils.stripEnd(deviceName, NUMBERIC_STRING);
+        String deviceName = getDeviceName(store.name());
         File blockFile = new File(String.format(BLOCK_PATH_FORMAT, deviceName));
         if (blockFile.exists()) {
           List<String> contents = Files.readAllLines(blockFile.toPath());
@@ -84,5 +82,13 @@ public class DefaultStorageMediaProvider implements StorageMediaProvider {
     }
     logger.info("Default storage type provider returns HDD by default");
     return StorageMedia.HDD;
+  }
+
+  @VisibleForTesting
+  String getDeviceName(String mountPoint) {
+    // mountPoint would be /dev/sda1, /dev/vda1, rootfs, etc.
+    int separatorIndex = mountPoint.lastIndexOf(File.separator);
+    String deviceName = separatorIndex > -1 ? mountPoint.substring(separatorIndex + 1) : mountPoint;
+    return StringUtils.stripEnd(deviceName, NUMBERIC_STRING);
   }
 }
