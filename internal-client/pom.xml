@@ -23,12 +23,12 @@
   <parent>
     <groupId>org.apache.uniffle</groupId>
     <artifactId>uniffle-parent</artifactId>
-    <version>0.7.0-snapshot</version>
+    <version>0.8.0-snapshot</version>
   </parent>
 
   <groupId>org.apache.uniffle</groupId>
   <artifactId>rss-internal-client</artifactId>
-  <version>0.7.0-snapshot</version>
+  <version>0.8.0-snapshot</version>
   <packaging>jar</packaging>
   <name>Apache Uniffle Internal Client</name>
 
