@@ -61,8 +61,9 @@ public class DefaultStorageMediaProvider implements StorageMediaProvider {
       try {
         File baseFile = new File(baseDir);
         FileStore store = Files.getFileStore(baseFile.toPath());
-        String mountPoint = store.name(); // mountPoint would be /dev/sda1 or /dev/vda1, etc.
-        String deviceName = mountPoint.substring(mountPoint.lastIndexOf(File.separator));
+        String mountPoint = store.name(); // mountPoint would be /dev/sda1, /dev/vda1, rootfs, etc.
+        int separatorIndex = mountPoint.lastIndexOf(File.separator);
+        String deviceName = separatorIndex > -1 ? mountPoint.substring(separatorIndex) : mountPoint;
         deviceName = StringUtils.stripEnd(deviceName, NUMBERIC_STRING);
         File blockFile = new File(String.format(BLOCK_PATH_FORMAT, deviceName));
         if (blockFile.exists()) {
