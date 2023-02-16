@@ -85,7 +85,7 @@ public class DefaultStorageMediaProvider implements StorageMediaProvider {
   }
 
   @VisibleForTesting
-  String getDeviceName(String mountPoint) {
+  static String getDeviceName(String mountPoint) {
     // mountPoint would be /dev/sda1, /dev/vda1, rootfs, etc.
     int separatorIndex = mountPoint.lastIndexOf(File.separator);
     String deviceName = separatorIndex > -1 ? mountPoint.substring(separatorIndex + 1) : mountPoint;

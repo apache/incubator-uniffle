@@ -43,9 +43,8 @@ public class DefaultStorageMediaProviderTest {
 
   @Test
   public void getGetDeviceName() {
-    DefaultStorageMediaProvider provider = new DefaultStorageMediaProvider();
-    assertEquals("rootfs", provider.getDeviceName("rootfs"));
-    assertEquals("sda", provider.getDeviceName("/dev/sda1"));
-    assertEquals("cl-home", provider.getDeviceName("/dev/mapper/cl-home"));
+    assertEquals("rootfs", DefaultStorageMediaProvider.getDeviceName("rootfs"));
+    assertEquals("sda", DefaultStorageMediaProvider.getDeviceName("/dev/sda1"));
+    assertEquals("cl-home", DefaultStorageMediaProvider.getDeviceName("/dev/mapper/cl-home"));
   }
 }
