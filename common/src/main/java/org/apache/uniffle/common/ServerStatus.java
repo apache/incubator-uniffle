@@ -17,20 +17,8 @@
 
 package org.apache.uniffle.common;
 
-import org.apache.uniffle.proto.RssProtos;
-
 public enum ServerStatus {
   NORMAL_STATUS,
   DECOMMISSIONING;
-
-  static final ServerStatus[] VALUES = ServerStatus.values();
-
-  public RssProtos.ServerStatus toProto() {
-    return RssProtos.ServerStatus.forNumber(this.ordinal());
-  }
-
-  public static ServerStatus fromProto(RssProtos.ServerStatus status) {
-    return VALUES[status.getNumber()];
-  }
 
 }
