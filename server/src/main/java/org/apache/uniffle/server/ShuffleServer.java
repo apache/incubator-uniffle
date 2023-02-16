@@ -82,7 +82,7 @@ public class ShuffleServer {
   private AtomicBoolean isHealthy = new AtomicBoolean(true);
   private GRPCMetrics grpcMetrics;
   private MetricReporter metricReporter;
-  private Thread decommissionedThread;
+  private Thread decommissionThread;
   private ServerStatus serverStatus = ServerStatus.NORMAL_STATUS;
   private Object statusLock = new Object();
   private boolean running;
@@ -274,17 +274,11 @@ public class ShuffleServer {
   }
 
   public void decommission() {
+    checkStatusForDecommission();
     synchronized (statusLock) {
-      if (isDecommissioning()) {
-        throw new InvalidRequestException("Shuffle Server is decommissioning. Nothing need to do.");
-      }
-      if (!ServerStatus.NORMAL_STATUS.equals(serverStatus)) {
-        throw new InvalidRequestException(
-            "Shuffle Server is processing other procedures, current status:" + serverStatus);
-      }
-      serverStatus = ServerStatus.DECOMMISSIONING;
+      checkStatusForDecommission();
       long checkInterval = shuffleServerConf.get(SERVER_DECOMMISSION_CHECK_INTERVAL);
-      decommissionedThread = new Thread(() -> {
+      decommissionThread = new Thread(() -> {
         while (isDecommissioning()) {
           int remainApplicationNum = shuffleTaskManager.getAppIds().size();
           if (remainApplicationNum == 0) {
@@ -304,21 +298,37 @@ public class ShuffleServer {
           }
         }
       });
-      decommissionedThread.setName("decommission");
-      decommissionedThread.start();
+      decommissionThread.setName("decommission");
+      decommissionThread.start();
+      serverStatus = ServerStatus.DECOMMISSIONING;
+    }
+  }
+
+  private void checkStatusForDecommission() {
+    if (isDecommissioning()) {
+      throw new InvalidRequestException("Shuffle Server is decommissioning. Nothing need to do.");
+    }
+    if (!ServerStatus.NORMAL_STATUS.equals(serverStatus)) {
+      throw new InvalidRequestException(
+          "Shuffle Server is processing other procedures, current status:" + serverStatus);
     }
   }
 
   public void cancelDecommission() {
+    checkStatusForCancelDecommission();
     synchronized (statusLock) {
-      if (!isDecommissioning()) {
-        throw new InvalidRequestException("Shuffle server is not decommissioning. Nothing need to do.");
+      checkStatusForCancelDecommission();
+      if (decommissionThread != null) {
+        decommissionThread.interrupt();
+        decommissionThread = null;
       }
       serverStatus = ServerStatus.NORMAL_STATUS;
-      if (decommissionedThread != null) {
-        decommissionedThread.interrupt();
-        decommissionedThread = null;
-      }
+    }
+  }
+
+  private void checkStatusForCancelDecommission() {
+    if (!isDecommissioning()) {
+      throw new InvalidRequestException("Shuffle server is not decommissioning. Nothing need to do.");
     }
   }
 
