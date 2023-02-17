@@ -40,6 +40,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -67,15 +68,19 @@ public class LocalStorageTest {
     testBaseDir.delete();
   }
 
-  @Test
-  public void canWriteTest() {
-    LocalStorage item = LocalStorage.newBuilder().basePath(testBaseDir.getAbsolutePath())
+  private LocalStorage createTestStorage(File baseDir) {
+    return LocalStorage.newBuilder().basePath(baseDir.getAbsolutePath())
         .cleanupThreshold(50)
         .highWaterMarkOfWrite(95)
         .lowWaterMarkOfWrite(80)
         .capacity(100)
         .cleanIntervalMs(5000)
         .build();
+  }
+
+  @Test
+  public void canWriteTest() {
+    LocalStorage item = createTestStorage(testBaseDir);
 
     item.getMetaData().updateDiskSize(20);
     assertTrue(item.canWrite());
@@ -90,7 +95,8 @@ public class LocalStorageTest {
   }
 
   @Test
-  public void unRemovableEmptyDirShouldNotFail() throws IOException {
+  public void baseDirectoryInitTest() throws IOException {
+    // empty and writable base dir
     File newBaseDir = new File(testBaseDirWithoutPermission, "test-new");
     assertTrue(newBaseDir.mkdirs());
     // then remove write permission to parent dir.
@@ -98,13 +104,21 @@ public class LocalStorageTest {
     perms.add(PosixFilePermission.OWNER_READ);
     perms.add(PosixFilePermission.OWNER_EXECUTE);
     Files.setPosixFilePermissions(testBaseDirWithoutPermission.toPath(), perms);
-    LocalStorage item = LocalStorage.newBuilder().basePath(newBaseDir.getAbsolutePath())
-        .cleanupThreshold(50)
-        .highWaterMarkOfWrite(95)
-        .lowWaterMarkOfWrite(80)
-        .capacity(100)
-        .cleanIntervalMs(5000)
-        .build();
+    createTestStorage(newBaseDir);
+    // non-empty and writable base dir
+    File childDir = new File(newBaseDir, "placeholder");
+    assertTrue(childDir.mkdirs());
+    createTestStorage(newBaseDir);
+    // base dir is configured to a wrong file instead of dir
+    File emptyFile = new File(newBaseDir, "empty_file");
+    assertTrue(emptyFile.createNewFile());
+    assertThrows(RuntimeException.class, () -> {
+      createTestStorage(emptyFile);
+    });
+
+    // not existed base dir should work
+    File notExisted = new File(newBaseDir, "not_existed");
+    createTestStorage(notExisted);
   }
 
   @Test
@@ -120,13 +134,7 @@ public class LocalStorageTest {
   }
 
   private LocalStorage prepareDiskItem() {
-    final LocalStorage item = LocalStorage.newBuilder().basePath(testBaseDir.getAbsolutePath())
-        .cleanupThreshold(50)
-        .highWaterMarkOfWrite(95)
-        .lowWaterMarkOfWrite(80)
-        .capacity(100)
-        .cleanIntervalMs(5000)
-        .build();
+    final LocalStorage item = createTestStorage(testBaseDir);
     RoaringBitmap partitionBitMap = RoaringBitmap.bitmapOf();
     partitionBitMap.add(1);
     partitionBitMap.add(2);
@@ -164,13 +172,7 @@ public class LocalStorageTest {
 
   @Test
   public void diskMetaTest() {
-    LocalStorage item = LocalStorage.newBuilder().basePath(testBaseDir.getAbsolutePath())
-        .cleanupThreshold(50)
-        .highWaterMarkOfWrite(95)
-        .lowWaterMarkOfWrite(80)
-        .capacity(100)
-        .cleanIntervalMs(5000)
-        .build();
+    LocalStorage item = createTestStorage(testBaseDir);
     List<Integer> partitionList1 = Lists.newArrayList(1, 2, 3, 4, 5);
     List<Integer> partitionList2 = Lists.newArrayList(6, 7, 8, 9, 10);
     List<Integer> partitionList3 = Lists.newArrayList(1, 2, 3);
