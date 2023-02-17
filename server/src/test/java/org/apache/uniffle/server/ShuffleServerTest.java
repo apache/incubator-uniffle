@@ -45,6 +45,7 @@ public class ShuffleServerTest {
       ShuffleServerConf serverConf = createShuffleServerConf();
       ShuffleServer ss1 = new ShuffleServer(serverConf);
       ss1.start();
+      ss1.stopServer();
       ExitUtils.disableSystemExit();
       ShuffleServer ss2 = new ShuffleServer(serverConf);
       String expectMessage = "Fail to start jetty http server";
@@ -55,6 +56,7 @@ public class ShuffleServerTest {
         assertEquals(expectMessage, e.getMessage());
         assertEquals(expectStatus, ((ExitException) e).getStatus());
       }
+      ss2.stopServer();
 
       serverConf.setInteger("rss.jetty.http.port", 9529);
       ss2 = new ShuffleServer(serverConf);
@@ -65,6 +67,7 @@ public class ShuffleServerTest {
         assertEquals(expectMessage, e.getMessage());
         assertEquals(expectStatus, ((ExitException) e).getStatus());
       }
+      ss2.stopServer();
 
       final Thread t = new Thread(null, () -> {
         throw new AssertionError("TestUncaughtException");
