@@ -359,8 +359,15 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Long> SERVER_DECOMMISSION_CHECK_INTERVAL = ConfigOptions
       .key("rss.server.decommission.check.interval")
       .longType()
+      .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "check interval times must be positive")
       .defaultValue(60 * 1000L)
-      .withDescription("The interval to check if all applications have finish when server decommissioning");
+      .withDescription("The interval to check if all applications have finish when server is decommissioning");
+
+  public static final ConfigOption<Boolean> SERVER_DECOMMISSION_SHUTDOWN = ConfigOptions
+      .key("rss.server.decommission.shutdown")
+      .booleanType()
+      .defaultValue(true)
+      .withDescription("Whether shutdown the server after server is decommissioned");
 
   public ShuffleServerConf() {
   }

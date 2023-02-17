@@ -18,7 +18,18 @@
 package org.apache.uniffle.common;
 
 public enum ServerStatus {
-  NORMAL_STATUS,
-  DECOMMISSIONING;
+  UNKNOWN(-1),
+  NORMAL_STATUS(0),
+  DECOMMISSIONING(1),
+  DECOMMISSIONED(2);
 
+  private final int code;
+
+  ServerStatus(int code) {
+    this.code = code;
+  }
+
+  public int code() {
+    return code;
+  }
 }

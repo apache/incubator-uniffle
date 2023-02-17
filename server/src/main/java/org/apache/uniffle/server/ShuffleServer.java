@@ -20,6 +20,8 @@ package org.apache.uniffle.server;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -44,6 +46,7 @@ import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.common.web.CommonMetricsServlet;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
@@ -59,6 +62,7 @@ import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_K
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_STORAGE_TYPE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_TEST_MODE_ENABLE;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_CHECK_INTERVAL;
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_SHUTDOWN;
 
 /**
  * Server that manages startup/shutdown of a {@code Greeter} server.
@@ -82,10 +86,9 @@ public class ShuffleServer {
   private AtomicBoolean isHealthy = new AtomicBoolean(true);
   private GRPCMetrics grpcMetrics;
   private MetricReporter metricReporter;
-  private Thread decommissionThread;
-  private ServerStatus serverStatus = ServerStatus.NORMAL_STATUS;
-  private Object statusLock = new Object();
-  private boolean running;
+  private volatile ServerStatus serverStatus = ServerStatus.NORMAL_STATUS;
+  private volatile boolean running;
+  private ExecutorService executorService;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -273,63 +276,60 @@ public class ShuffleServer {
     return serverStatus;
   }
 
-  public void decommission() {
-    checkStatusForDecommission();
-    synchronized (statusLock) {
-      checkStatusForDecommission();
-      long checkInterval = shuffleServerConf.get(SERVER_DECOMMISSION_CHECK_INTERVAL);
-      decommissionThread = new Thread(() -> {
-        while (isDecommissioning()) {
-          int remainApplicationNum = shuffleTaskManager.getAppIds().size();
-          if (remainApplicationNum == 0) {
-            LOG.info("all applications finished, exit now");
-            try {
-              stopServer();
-              break;
-            } catch (Exception e) {
-              ExitUtils.terminate(1, "Stop server failed!", e, LOG);
-            }
-          }
-          LOG.info("Shuffle server is decommissioning. remain {} applications not finished.", remainApplicationNum);
-          try {
-            Thread.sleep(checkInterval);
-          } catch (InterruptedException e) {
-            LOG.warn("Ignore the InterruptedException which should be caused by internal killed");
-          }
-        }
-      });
-      decommissionThread.setName("decommission");
-      decommissionThread.start();
-      serverStatus = ServerStatus.DECOMMISSIONING;
-    }
-  }
-
-  private void checkStatusForDecommission() {
+  public synchronized void decommission() {
     if (isDecommissioning()) {
-      throw new InvalidRequestException("Shuffle Server is decommissioning. Nothing need to do.");
+      LOG.info("Shuffle Server is decommissioning. Nothing need to do.");
+      return;
     }
     if (!ServerStatus.NORMAL_STATUS.equals(serverStatus)) {
       throw new InvalidRequestException(
           "Shuffle Server is processing other procedures, current status:" + serverStatus);
     }
-  }
-
-  public void cancelDecommission() {
-    checkStatusForCancelDecommission();
-    synchronized (statusLock) {
-      checkStatusForCancelDecommission();
-      if (decommissionThread != null) {
-        decommissionThread.interrupt();
-        decommissionThread = null;
+    serverStatus = ServerStatus.DECOMMISSIONING;
+    LOG.info("Shuffle Server is decommissioning.");
+    long checkInterval = shuffleServerConf.get(SERVER_DECOMMISSION_CHECK_INTERVAL);
+    boolean shutdownAfterDecommission = shuffleServerConf.get(SERVER_DECOMMISSION_SHUTDOWN);
+    executorService = Executors.newSingleThreadExecutor(
+        ThreadUtils.getThreadFactory("shuffle-server-decommission-%d"));
+    executorService.submit(() -> {
+      while (isDecommissioning()) {
+        int remainApplicationNum = shuffleTaskManager.getAppIds().size();
+        if (remainApplicationNum == 0) {
+          serverStatus = ServerStatus.DECOMMISSIONED;
+          LOG.info("All applications finished.");
+          if (shutdownAfterDecommission) {
+            LOG.info("Exiting.");
+            try {
+              stopServer();
+            } catch (Exception e) {
+              ExitUtils.terminate(1, "Stop server failed!", e, LOG);
+            }
+          }
+          break;
+        }
+        LOG.info("Shuffle server is decommissioning. remain {} applications not finished.", remainApplicationNum);
+        try {
+          Thread.sleep(checkInterval);
+        } catch (InterruptedException e) {
+          LOG.warn("Ignore the InterruptedException which should be caused by internal killed.");
+        }
       }
-      serverStatus = ServerStatus.NORMAL_STATUS;
-    }
+      LOG.info("Decommission thread is exiting. remain {} applications not finished.",
+          shuffleTaskManager.getAppIds().size());
+    });
   }
 
-  private void checkStatusForCancelDecommission() {
+  public synchronized void cancelDecommission() {
     if (!isDecommissioning()) {
-      throw new InvalidRequestException("Shuffle server is not decommissioning. Nothing need to do.");
+      LOG.info("Shuffle server is not decommissioning. Nothing need to do.");
+      return;
     }
+    serverStatus = ServerStatus.NORMAL_STATUS;
+    if (executorService != null) {
+      executorService.shutdownNow();
+      executorService = null;
+    }
+    LOG.info("Decommission canceled.");
   }
 
   public String getIp() {
@@ -407,9 +407,11 @@ public class ShuffleServer {
   }
 
   public boolean isDecommissioning() {
-    return ServerStatus.DECOMMISSIONING.equals(serverStatus);
+    return ServerStatus.DECOMMISSIONING.equals(serverStatus)
+        || ServerStatus.DECOMMISSIONED.equals(serverStatus);
   }
 
+  @VisibleForTesting
   public boolean isRunning() {
     return running;
   }

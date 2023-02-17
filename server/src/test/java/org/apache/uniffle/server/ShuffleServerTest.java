@@ -26,25 +26,23 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ServerStatus;
-import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.ExitUtils.ExitException;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_CHECK_INTERVAL;
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_SHUTDOWN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleServerTest {
 
-  private static final String EXPECTED_EXCEPTION_MESSAGE = "Exception should be thrown";
-
   @Test
   public void startTest() {
     try {
-      ShuffleServer ss1 = createShuffleServer();
+      ShuffleServerConf serverConf = createShuffleServerConf();
+      ShuffleServer ss1 = new ShuffleServer(serverConf);
       ss1.start();
-      ShuffleServerConf serverConf = ss1.getShuffleServerConf();
       ExitUtils.disableSystemExit();
       ShuffleServer ss2 = new ShuffleServer(serverConf);
       String expectMessage = "Fail to start jetty http server";
@@ -78,46 +76,60 @@ public class ShuffleServerTest {
 
   }
 
-  @Test
-  public void decommissionTest() throws Exception {
-    ShuffleServer shuffleServer = createShuffleServer();
+  public void decommissionTest(boolean shutdown) throws Exception {
+    ShuffleServerConf serverConf = createShuffleServerConf();
+    serverConf.set(SERVER_DECOMMISSION_CHECK_INTERVAL, 1000L);
+    serverConf.set(SERVER_DECOMMISSION_SHUTDOWN, shutdown);
+    ShuffleServer shuffleServer = new ShuffleServer(serverConf);
+    shuffleServer.start();
     assertEquals(ServerStatus.NORMAL_STATUS, shuffleServer.getServerStatus());
-    try {
-      shuffleServer.cancelDecommission();
-      fail(EXPECTED_EXCEPTION_MESSAGE);
-    } catch (Exception e) {
-      assertTrue(e instanceof InvalidRequestException);
-    }
+    // Shuffle server is not decommissioning, but we can also cancel it.
+    shuffleServer.cancelDecommission();
     ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
-    String appId = "decommissionTest_appId";
+    String appId = "decommissionTest_appId_" + shutdown;
     shuffleTaskManager.registerShuffle(appId, 0, Lists.newArrayList(), new RemoteStorageInfo("/tmp"), "");
     shuffleServer.decommission();
-    try {
-      assertEquals(ServerStatus.DECOMMISSIONING, shuffleServer.getServerStatus());
-      shuffleServer.decommission();
-      fail(EXPECTED_EXCEPTION_MESSAGE);
-    } catch (Exception e) {
-      assertTrue(e instanceof InvalidRequestException);
-    }
+    assertEquals(ServerStatus.DECOMMISSIONING, shuffleServer.getServerStatus());
+    // Shuffle server is decommissioning, but we can also decommission it again.
+    shuffleServer.decommission();
     shuffleServer.cancelDecommission();
-    shuffleTaskManager.removeShuffleDataSync(appId, 0);
+    shuffleTaskManager.removeResources(appId);
+    // Wait for 2 seconds, make sure cancel command is work.
+    Thread.sleep(2000);
     assertEquals(ServerStatus.NORMAL_STATUS, shuffleServer.getServerStatus());
     shuffleServer.decommission();
-    Awaitility.await().timeout(10, TimeUnit.SECONDS).until(
-                () -> !shuffleServer.isRunning());
+    if (shutdown) {
+      Awaitility.await().timeout(10, TimeUnit.SECONDS).until(
+          () -> !shuffleServer.isRunning());
+    } else {
+      Awaitility.await().timeout(10, TimeUnit.SECONDS).until(
+          () -> ServerStatus.DECOMMISSIONED.equals(shuffleServer.getServerStatus()));
+      assertEquals(true, shuffleServer.isRunning());
+      shuffleServer.stopServer();
+    }
   }
 
-  private ShuffleServer createShuffleServer() throws Exception {
+  @Test
+  public void notShutDownAfterDecommissionTest() throws Exception {
+    decommissionTest(false);
+  }
+
+  @Test
+  public void shutDownAfterDecommissionTest() throws Exception {
+    decommissionTest(true);
+  }
+
+  private ShuffleServerConf createShuffleServerConf() throws Exception {
     ShuffleServerConf serverConf = new ShuffleServerConf();
     serverConf.setInteger(ShuffleServerConf.RPC_SERVER_PORT, 9527);
     serverConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     serverConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     serverConf.setInteger(ShuffleServerConf.JETTY_HTTP_PORT, 9528);
     serverConf.setString(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:0");
-    serverConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/tmp/null"));
+    serverConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/home/fengxj/tmp111"));
     serverConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     serverConf.setLong(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 100);
     serverConf.setLong(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY, 10);
-    return new ShuffleServer(serverConf);
+    return serverConf;
   }
 }
