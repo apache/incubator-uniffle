@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.uniffle.common.exception;
 
 public class InvalidRequestException extends RuntimeException {
