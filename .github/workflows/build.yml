@@ -24,6 +24,9 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    uses: ./.github/workflows/changes.yml
+
   checkstyle:
     uses: ./.github/workflows/sequential.yml
     with:
@@ -75,7 +78,8 @@ jobs:
       reports-path: "**/target/surefire-reports/*.txt"
 
   kubernetes:
-    needs: [checkstyle, license] # delay execution
+    needs: [checkstyle, license, changes] # delay execution
+    if: needs.changes.output.kubernetes == 'true'
     uses: ./.github/workflows/single.yml
     with:
       maven-args: package -Pkubernetes -DskipUTs -DskipITs
