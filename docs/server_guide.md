@@ -91,7 +91,7 @@ This document will introduce how to deploy Uniffle shuffle servers.
 |Property Name|Default| Description                                                                                                                                                                                 |
 |---|---|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 |rss.server.storageMediaProvider.from.env.key|-| Sometimes, the local storage type/media info is provided by external system. RSS would read the env key defined by this configuration and get info about the storage media of its basePaths |
-|rss.server.decommission.check.interval|60000| The interval to check if all applications have finish when server is decommissioning                                                                                                        |
+|rss.server.decommission.check.interval|60000| The interval(ms) to check if all applications have finish when server is decommissioning                                                                                                        |
 |rss.server.decommission.shutdown|true| Whether shutdown the server after server is decommissioned                                                                                                                                  |
 
 

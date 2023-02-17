@@ -278,7 +278,7 @@ public class ShuffleServer {
 
   public synchronized void decommission() {
     if (isDecommissioning()) {
-      LOG.info("Shuffle Server is decommissioning. Nothing need to do.");
+      LOG.info("Shuffle Server is decommissioning. Nothing needs to be done.");
       return;
     }
     if (!ServerStatus.ACTIVE.equals(serverStatus)) {
@@ -287,8 +287,10 @@ public class ShuffleServer {
     }
     serverStatus = ServerStatus.DECOMMISSIONING;
     LOG.info("Shuffle Server is decommissioning.");
-    executorService = Executors.newSingleThreadExecutor(
-        ThreadUtils.getThreadFactory("shuffle-server-decommission-%d"));
+    if (executorService == null) {
+      executorService = Executors.newSingleThreadExecutor(
+          ThreadUtils.getThreadFactory("shuffle-server-decommission-%d"));
+    }
     executorService.submit(this::waitDecommissionFinish);
   }
 
@@ -311,30 +313,26 @@ public class ShuffleServer {
         }
         break;
       }
-      LOG.info("Shuffle server is decommissioning. remain {} applications not finished.", remainApplicationNum);
+      LOG.info("Shuffle server is decommissioning, remaining {} applications not finished.", remainApplicationNum);
       try {
         Thread.sleep(checkInterval);
       } catch (InterruptedException e) {
-        LOG.warn("Ignore the InterruptedException which should be caused by internal killed.");
+        LOG.warn("Ignore the InterruptedException which should be caused by internal kill.");
       }
     }
     remainApplicationNum = shuffleTaskManager.getAppIds().size();
     if (remainApplicationNum > 0) {
-      LOG.info("Decommission exiting. remain {} applications not finished.",
+      LOG.info("Decommission exiting, remaining {} applications not finished.",
           remainApplicationNum);
     }
   }
 
   public synchronized void cancelDecommission() {
     if (!isDecommissioning()) {
-      LOG.info("Shuffle server is not decommissioning. Nothing need to do.");
+      LOG.info("Shuffle server is not decommissioning. Nothing needs to be done.");
       return;
     }
     serverStatus = ServerStatus.ACTIVE;
-    if (executorService != null) {
-      executorService.shutdownNow();
-      executorService = null;
-    }
     LOG.info("Decommission canceled.");
   }
 
