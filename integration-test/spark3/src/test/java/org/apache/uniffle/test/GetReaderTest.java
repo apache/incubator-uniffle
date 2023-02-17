@@ -103,8 +103,9 @@ public class GetReaderTest extends IntegrationTestBase {
     SparkSession sparkSession = SparkSession.builder().config(sparkConf).getOrCreate();
     JavaSparkContext jsc1 = new JavaSparkContext(sparkSession.sparkContext());
     JavaPairRDD<String, Tuple2<Integer, Integer>> javaPairRDD1 = TestUtils.combineByKeyRDD(TestUtils.getRDD(jsc1));
-    ShuffleDependency shuffleDependency1 = (ShuffleDependency) javaPairRDD1.rdd().dependencies().head();
-    RssShuffleHandle rssShuffleHandle1 = (RssShuffleHandle) shuffleDependency1.shuffleHandle();
+    ShuffleDependency<?, ?, ?> shuffleDependency1 =
+        (ShuffleDependency<?, ?, ?>) javaPairRDD1.rdd().dependencies().head();
+    RssShuffleHandle<?, ?, ?> rssShuffleHandle1 = (RssShuffleHandle<?, ?, ?>) shuffleDependency1.shuffleHandle();
     RemoteStorageInfo remoteStorageInfo1 = rssShuffleHandle1.getRemoteStorage();
     assertEquals(remoteStorage1, remoteStorageInfo1.getPath());
     assertTrue(remoteStorageInfo1.getConfItems().isEmpty());
@@ -112,23 +113,26 @@ public class GetReaderTest extends IntegrationTestBase {
     // emptyRDD case
     JavaPairRDD<String, Tuple2<Integer, Integer>> javaEmptyPairRDD1 = TestUtils.combineByKeyRDD(
         TestUtils.getEmptyRDD(jsc1));
-    ShuffleDependency emptyShuffleDependency1 = (ShuffleDependency) javaEmptyPairRDD1.rdd().dependencies().head();
-    RssShuffleHandle emptyRssShuffleHandle1 = (RssShuffleHandle) emptyShuffleDependency1.shuffleHandle();
+    ShuffleDependency<?, ?, ?> emptyShuffleDependency1 =
+        (ShuffleDependency<?, ?, ?>) javaEmptyPairRDD1.rdd().dependencies().head();
+    RssShuffleHandle<?, ?, ?> emptyRssShuffleHandle1 =
+        (RssShuffleHandle<?, ?, ?>) emptyShuffleDependency1.shuffleHandle();
     assertEquals(javaEmptyPairRDD1.rdd().dependencies().head().rdd().getNumPartitions(), 0);
     assertEquals(emptyRssShuffleHandle1.getPartitionToServers(), Collections.emptyMap());
     assertEquals(emptyRssShuffleHandle1.getRemoteStorage(),RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
 
     // the same app would get the same storage info
     JavaPairRDD<String, Tuple2<Integer, Integer>> javaPairRDD2 = TestUtils.combineByKeyRDD(TestUtils.getRDD(jsc1));
-    ShuffleDependency shuffleDependency2 = (ShuffleDependency) javaPairRDD2.rdd().dependencies().head();
-    RssShuffleHandle rssShuffleHandle2 = (RssShuffleHandle) shuffleDependency2.shuffleHandle();
+    ShuffleDependency<?, ?, ?> shuffleDependency2 =
+        (ShuffleDependency<?, ?, ?>) javaPairRDD2.rdd().dependencies().head();
+    RssShuffleHandle<?, ?, ?> rssShuffleHandle2 = (RssShuffleHandle<?, ?, ?>) shuffleDependency2.shuffleHandle();
     RemoteStorageInfo remoteStorageInfo2 = rssShuffleHandle2.getRemoteStorage();
     assertEquals(remoteStorage1, remoteStorageInfo1.getPath());
     assertTrue(remoteStorageInfo2.getConfItems().isEmpty());
 
     RssShuffleManager rssShuffleManager = (RssShuffleManager) sparkSession.sparkContext().env().shuffleManager();
-    RssShuffleHandle rssShuffleHandle  = (RssShuffleHandle) shuffleDependency2.shuffleHandle();
-    RssShuffleReader rssShuffleReader = (RssShuffleReader) rssShuffleManager.getReader(
+    RssShuffleHandle<?, ?, ?> rssShuffleHandle  = (RssShuffleHandle<?, ?, ?>) shuffleDependency2.shuffleHandle();
+    RssShuffleReader<?, ?> rssShuffleReader = (RssShuffleReader<?, ?>) rssShuffleManager.getReader(
         rssShuffleHandle, 0, 0, new MockTaskContext(), new TempShuffleReadMetrics());
     Configuration hadoopConf =  rssShuffleReader.getHadoopConf();
     assertNull(hadoopConf.get("k1"));
@@ -141,8 +145,8 @@ public class GetReaderTest extends IntegrationTestBase {
     rssShuffleManager.setAppId("test2");
     JavaSparkContext jsc2 = new JavaSparkContext(sparkSession.sparkContext());
     JavaPairRDD<String, Tuple2<Integer, Integer>> javaPairRDD = TestUtils.combineByKeyRDD(TestUtils.getRDD(jsc2));
-    ShuffleDependency shuffleDependency = (ShuffleDependency) javaPairRDD.rdd().dependencies().head();
-    rssShuffleHandle = (RssShuffleHandle) shuffleDependency.shuffleHandle();
+    ShuffleDependency<?, ?, ?> shuffleDependency = (ShuffleDependency<?, ?, ?>) javaPairRDD.rdd().dependencies().head();
+    rssShuffleHandle = (RssShuffleHandle<?, ?, ?>) shuffleDependency.shuffleHandle();
     // the reason for sleep here is to ensure that threads can be scheduled normally
     Thread.sleep(500);
     RemoteStorageInfo remoteStorageInfo3 = rssShuffleHandle.getRemoteStorage();
@@ -151,7 +155,7 @@ public class GetReaderTest extends IntegrationTestBase {
     assertEquals("v1", remoteStorageInfo3.getConfItems().get("k1"));
     assertEquals("v2", remoteStorageInfo3.getConfItems().get("k2"));
 
-    rssShuffleReader = (RssShuffleReader) rssShuffleManager.getReader(
+    rssShuffleReader = (RssShuffleReader<?, ?>) rssShuffleManager.getReader(
         rssShuffleHandle, 0, 0, new MockTaskContext(), new TempShuffleReadMetrics());
     hadoopConf =  rssShuffleReader.getHadoopConf();
     assertEquals("v1", hadoopConf.get("k1"));
@@ -161,7 +165,7 @@ public class GetReaderTest extends IntegrationTestBase {
     assertNull(commonHadoopConf.get("k1"));
     assertNull(commonHadoopConf.get("k2"));
 
-    rssShuffleReader = (RssShuffleReader) rssShuffleManager.getReader(
+    rssShuffleReader = (RssShuffleReader<?, ?>) rssShuffleManager.getReader(
         rssShuffleHandle, 0, 0, new MockTaskContext(), new TempShuffleReadMetrics());
     hadoopConf =  rssShuffleReader.getHadoopConf();
     assertEquals("v1", hadoopConf.get("k1"));

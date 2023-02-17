@@ -66,8 +66,8 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     writeTestData(writeHandler, 2, 5, expectedData,
         blockIdBitmap, "key", KRYO_SERIALIZER, 0);
 
-    RssShuffleHandle handleMock = mock(RssShuffleHandle.class);
-    ShuffleDependency dependencyMock = mock(ShuffleDependency.class);
+    RssShuffleHandle<String, String, String> handleMock = mock(RssShuffleHandle.class);
+    ShuffleDependency<String, String, String> dependencyMock = mock(ShuffleDependency.class);
     when(handleMock.getAppId()).thenReturn("appId");
     when(handleMock.getDependency()).thenReturn(dependencyMock);
     when(handleMock.getShuffleId()).thenReturn(1);
@@ -87,7 +87,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
 
     Map<Integer, Roaring64NavigableMap> partitionToExpectBlocks = Maps.newHashMap();
     partitionToExpectBlocks.put(0, blockIdBitmap);
-    RssShuffleReader rssShuffleReaderSpy = spy(new RssShuffleReader<String, String>(
+    RssShuffleReader<String, String> rssShuffleReaderSpy = spy(new RssShuffleReader<>(
         0,
         1,
         0,
@@ -111,7 +111,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     writeTestData(writeHandler1, 2, 4, expectedData,
         blockIdBitmap1, "another_key", KRYO_SERIALIZER, 1);
     partitionToExpectBlocks.put(1, blockIdBitmap1);
-    RssShuffleReader rssShuffleReaderSpy1 = spy(new RssShuffleReader<String, String>(
+    RssShuffleReader<String, String> rssShuffleReaderSpy1 = spy(new RssShuffleReader<>(
         0,
         2,
         0,
@@ -132,7 +132,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     ));
     validateResult(rssShuffleReaderSpy1.read(), expectedData, 18);
 
-    RssShuffleReader rssShuffleReaderSpy2 = spy(new RssShuffleReader<String, String>(
+    RssShuffleReader<String, String> rssShuffleReaderSpy2 = spy(new RssShuffleReader<>(
         0,
         2,
         0,

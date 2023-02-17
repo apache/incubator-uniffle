@@ -40,7 +40,7 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
   }
 
   @Override
-  public Map runTest(SparkSession spark, String fileName) throws Exception {
+  public Map<String, Long> runTest(SparkSession spark, String fileName) throws Exception {
     // take a rest to make sure shuffle server is registered
     Thread.sleep(3000);
 
@@ -49,9 +49,9 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
             .otherwise(functions.col("id")).as("key1"), functions.col("id").as("value1"));
     df1.createOrReplaceTempView("table1");
 
-    List list = spark.sql("select count(value1) from table1 group by key1").collectAsList();
+    List<?> list = spark.sql("select count(value1) from table1 group by key1").collectAsList();
     Map<String, Long> result = new HashMap<>();
-    result.put("size", Long.valueOf(list.size()));
+    result.put("size", (long) list.size());
 
     for (int stageId : spark.sparkContext().statusTracker().getJobInfo(0).get().stageIds()) {
       long writeRecords = getFirstStageData(spark, stageId).shuffleWriteRecords();
