@@ -135,6 +135,10 @@ public class ShuffleTaskManager {
               this::triggerFlush, triggerFlushInterval / 2,
           triggerFlushInterval, TimeUnit.MILLISECONDS);
     }
+    if (shuffleBufferManager != null) {
+      shuffleBufferManager.setShuffleTaskManager(this);
+    }
+
     // the thread for clear expired resources
     clearResourceThread = () -> {
       while (true) {
@@ -204,8 +208,7 @@ public class ShuffleTaskManager {
         appId,
         shuffleId,
         isPreAllocated,
-        spd,
-        this::getPartitionDataSize
+        spd
     );
   }
 

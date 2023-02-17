@@ -284,6 +284,13 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(64L * 1024L * 1024L)
       .withDescription("For multistorage, the event size exceed this value, flush data  to cold storage");
 
+  public static final ConfigOption<String> MULTISTORAGE_MANAGER_SELECTOR_CLASS = ConfigOptions
+      .key("rss.server.multistorage.manager.selector.class")
+      .stringType()
+      .defaultValue("org.apache.uniffle.server.storage.multi.DefaultStorageManagerSelector")
+      .withDescription("For multistorage, the storage manager selector strategy to support "
+          + "policies of flushing to different storages");
+
   public static final ConfigOption<String> MULTISTORAGE_FALLBACK_STRATEGY_CLASS = ConfigOptions
       .key("rss.server.multistorage.fallback.strategy.class")
       .stringType()
