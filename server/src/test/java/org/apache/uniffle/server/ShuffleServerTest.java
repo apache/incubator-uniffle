@@ -23,6 +23,8 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.Lists;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ServerStatus;
@@ -76,13 +78,15 @@ public class ShuffleServerTest {
 
   }
 
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
   public void decommissionTest(boolean shutdown) throws Exception {
     ShuffleServerConf serverConf = createShuffleServerConf();
     serverConf.set(SERVER_DECOMMISSION_CHECK_INTERVAL, 1000L);
     serverConf.set(SERVER_DECOMMISSION_SHUTDOWN, shutdown);
     ShuffleServer shuffleServer = new ShuffleServer(serverConf);
     shuffleServer.start();
-    assertEquals(ServerStatus.NORMAL_STATUS, shuffleServer.getServerStatus());
+    assertEquals(ServerStatus.ACTIVE, shuffleServer.getServerStatus());
     // Shuffle server is not decommissioning, but we can also cancel it.
     shuffleServer.cancelDecommission();
     ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
@@ -96,7 +100,7 @@ public class ShuffleServerTest {
     shuffleTaskManager.removeResources(appId);
     // Wait for 2 seconds, make sure cancel command is work.
     Thread.sleep(2000);
-    assertEquals(ServerStatus.NORMAL_STATUS, shuffleServer.getServerStatus());
+    assertEquals(ServerStatus.ACTIVE, shuffleServer.getServerStatus());
     shuffleServer.decommission();
     if (shutdown) {
       Awaitility.await().timeout(10, TimeUnit.SECONDS).until(
@@ -109,16 +113,6 @@ public class ShuffleServerTest {
     }
   }
 
-  @Test
-  public void notShutDownAfterDecommissionTest() throws Exception {
-    decommissionTest(false);
-  }
-
-  @Test
-  public void shutDownAfterDecommissionTest() throws Exception {
-    decommissionTest(true);
-  }
-
   private ShuffleServerConf createShuffleServerConf() throws Exception {
     ShuffleServerConf serverConf = new ShuffleServerConf();
     serverConf.setInteger(ShuffleServerConf.RPC_SERVER_PORT, 9527);
@@ -126,7 +120,7 @@ public class ShuffleServerTest {
     serverConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     serverConf.setInteger(ShuffleServerConf.JETTY_HTTP_PORT, 9528);
     serverConf.setString(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:0");
-    serverConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/home/fengxj/tmp111"));
+    serverConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/tmp/null"));
     serverConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     serverConf.setLong(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 100);
     serverConf.setLong(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY, 10);

@@ -86,7 +86,7 @@ public class ShuffleServer {
   private AtomicBoolean isHealthy = new AtomicBoolean(true);
   private GRPCMetrics grpcMetrics;
   private MetricReporter metricReporter;
-  private volatile ServerStatus serverStatus = ServerStatus.NORMAL_STATUS;
+  private volatile ServerStatus serverStatus = ServerStatus.ACTIVE;
   private volatile boolean running;
   private ExecutorService executorService;
 
@@ -281,42 +281,48 @@ public class ShuffleServer {
       LOG.info("Shuffle Server is decommissioning. Nothing need to do.");
       return;
     }
-    if (!ServerStatus.NORMAL_STATUS.equals(serverStatus)) {
+    if (!ServerStatus.ACTIVE.equals(serverStatus)) {
       throw new InvalidRequestException(
           "Shuffle Server is processing other procedures, current status:" + serverStatus);
     }
     serverStatus = ServerStatus.DECOMMISSIONING;
     LOG.info("Shuffle Server is decommissioning.");
-    long checkInterval = shuffleServerConf.get(SERVER_DECOMMISSION_CHECK_INTERVAL);
-    boolean shutdownAfterDecommission = shuffleServerConf.get(SERVER_DECOMMISSION_SHUTDOWN);
     executorService = Executors.newSingleThreadExecutor(
         ThreadUtils.getThreadFactory("shuffle-server-decommission-%d"));
-    executorService.submit(() -> {
-      while (isDecommissioning()) {
-        int remainApplicationNum = shuffleTaskManager.getAppIds().size();
-        if (remainApplicationNum == 0) {
-          serverStatus = ServerStatus.DECOMMISSIONED;
-          LOG.info("All applications finished.");
-          if (shutdownAfterDecommission) {
-            LOG.info("Exiting.");
-            try {
-              stopServer();
-            } catch (Exception e) {
-              ExitUtils.terminate(1, "Stop server failed!", e, LOG);
-            }
+    executorService.submit(this::waitDecommissionFinish);
+  }
+
+  private void waitDecommissionFinish() {
+    long checkInterval = shuffleServerConf.get(SERVER_DECOMMISSION_CHECK_INTERVAL);
+    boolean shutdownAfterDecommission = shuffleServerConf.get(SERVER_DECOMMISSION_SHUTDOWN);
+    int remainApplicationNum;
+    while (isDecommissioning()) {
+      remainApplicationNum = shuffleTaskManager.getAppIds().size();
+      if (remainApplicationNum == 0) {
+        serverStatus = ServerStatus.DECOMMISSIONED;
+        LOG.info("All applications finished. Current status is " + serverStatus);
+        if (shutdownAfterDecommission) {
+          LOG.info("Exiting...");
+          try {
+            stopServer();
+          } catch (Exception e) {
+            ExitUtils.terminate(1, "Stop server failed!", e, LOG);
           }
-          break;
         }
-        LOG.info("Shuffle server is decommissioning. remain {} applications not finished.", remainApplicationNum);
-        try {
-          Thread.sleep(checkInterval);
-        } catch (InterruptedException e) {
-          LOG.warn("Ignore the InterruptedException which should be caused by internal killed.");
-        }
+        break;
       }
-      LOG.info("Decommission thread is exiting. remain {} applications not finished.",
-          shuffleTaskManager.getAppIds().size());
-    });
+      LOG.info("Shuffle server is decommissioning. remain {} applications not finished.", remainApplicationNum);
+      try {
+        Thread.sleep(checkInterval);
+      } catch (InterruptedException e) {
+        LOG.warn("Ignore the InterruptedException which should be caused by internal killed.");
+      }
+    }
+    remainApplicationNum = shuffleTaskManager.getAppIds().size();
+    if (remainApplicationNum > 0) {
+      LOG.info("Decommission exiting. remain {} applications not finished.",
+          remainApplicationNum);
+    }
   }
 
   public synchronized void cancelDecommission() {
@@ -324,7 +330,7 @@ public class ShuffleServer {
       LOG.info("Shuffle server is not decommissioning. Nothing need to do.");
       return;
     }
-    serverStatus = ServerStatus.NORMAL_STATUS;
+    serverStatus = ServerStatus.ACTIVE;
     if (executorService != null) {
       executorService.shutdownNow();
       executorService = null;

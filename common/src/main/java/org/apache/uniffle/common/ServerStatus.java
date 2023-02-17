@@ -19,7 +19,7 @@ package org.apache.uniffle.common;
 
 public enum ServerStatus {
   UNKNOWN(-1),
-  NORMAL_STATUS(0),
+  ACTIVE(0),
   DECOMMISSIONING(1),
   DECOMMISSIONED(2);
 
