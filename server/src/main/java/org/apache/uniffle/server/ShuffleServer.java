@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -89,6 +90,7 @@ public class ShuffleServer {
   private volatile ServerStatus serverStatus = ServerStatus.ACTIVE;
   private volatile boolean running;
   private ExecutorService executorService;
+  private Future<?> decommissionFuture;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -291,7 +293,7 @@ public class ShuffleServer {
       executorService = Executors.newSingleThreadExecutor(
           ThreadUtils.getThreadFactory("shuffle-server-decommission-%d"));
     }
-    executorService.submit(this::waitDecommissionFinish);
+    decommissionFuture = executorService.submit(this::waitDecommissionFinish);
   }
 
   private void waitDecommissionFinish() {
@@ -332,8 +334,13 @@ public class ShuffleServer {
       LOG.info("Shuffle server is not decommissioning. Nothing needs to be done.");
       return;
     }
-    serverStatus = ServerStatus.ACTIVE;
-    LOG.info("Decommission canceled.");
+    if (decommissionFuture.cancel(true)) {
+      serverStatus = ServerStatus.ACTIVE;
+      LOG.info("Decommission canceled.");
+    } else {
+      LOG.warn("Failed to cancel decommission.");
+    }
+    decommissionFuture = null;
   }
 
   public String getIp() {
