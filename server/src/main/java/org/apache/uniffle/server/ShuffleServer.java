@@ -334,8 +334,12 @@ public class ShuffleServer {
       LOG.info("Shuffle server is not decommissioning. Nothing needs to be done.");
       return;
     }
-    if (decommissionFuture.cancel(true)) {
+    if (ServerStatus.DECOMMISSIONED.equals(serverStatus)) {
       serverStatus = ServerStatus.ACTIVE;
+      return;
+    }
+    serverStatus = ServerStatus.ACTIVE;
+    if (decommissionFuture.cancel(true)) {
       LOG.info("Decommission canceled.");
     } else {
       LOG.warn("Failed to cancel decommission.");
