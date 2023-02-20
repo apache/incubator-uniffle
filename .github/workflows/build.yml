@@ -85,3 +85,17 @@ jobs:
       maven-args: package -Pkubernetes -DskipUTs -DskipITs -DskipBuildImage=${{ needs.changes.output.rss_server_docker == 'false' }}
       cache-key: package
       go-version: '1.17'
+  debug:
+    needs: [checkstyle, license, changes]
+    runs-on: ubuntu-20.04
+    name: debug
+    steps:
+      - id: a0
+        run: "echo ${{ toJson(needs.changes.output) }}"
+        shell: bash
+      - id: a
+        run: "echo ${{ needs.changes.output.kubernetes == 'true' }}"
+        shell: bash
+      - id: b
+        run: "echo ${{ needs.changes.output.kubernetes }} "
+        shell: bash
