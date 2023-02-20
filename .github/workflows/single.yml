@@ -15,13 +15,17 @@
 # limitations under the License.
 #
 
-name: All Deploy Profiles in Parallel
+name: Single Maven Profile
 
 on:
   workflow_call:
     inputs:
       maven-args:
         required: true
+        type: string
+      cache-key:
+        default: ''
+        required: false
         type: string
       summary:
         default: "grep -e '^\\[ERROR\\]' /tmp/maven.log || true"
@@ -44,19 +48,14 @@ on:
         required: false
         type: string
       go-version:
-        default: '1.17'
+        default: ''
         required: false
         type: string
 
 jobs:
-  package:
+  maven:
     runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        profile:
-          - kubernetes
-      fail-fast: false
-    name: ${{ matrix.profile }}
+    name: java ${{ inputs.java-version }} + go ${{ inputs.go-version }}
     steps:
     - name: Checkout project
       uses: actions/checkout@v3
@@ -66,20 +65,20 @@ jobs:
         java-version: ${{ inputs.java-version }}
         distribution: ${{ inputs.jdk-distro }}
     - name: Cache local Maven repository
+      if: ${{ inputs.cache-key != '' }}
       uses: actions/cache@v3
       with:
         path: ~/.m2/repository
-        key: mvn-${{ inputs.java-version }}-package-${{ matrix.profile }}-${{ hashFiles('**/pom.xml') }}
+        key: mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
-          mvn-${{ inputs.java-version }}-package-${{ matrix.profile }}-
-          mvn-${{ inputs.java-version }}-package-
+          mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-
     - name: Set up Go ${{ inputs.go-version }}
       if: ${{ inputs.go-version != '' }}
       uses: actions/setup-go@v3
       with:
         go-version: ${{ inputs.go-version }}
-    - name: Execute `mvn ${{ inputs.maven-args }} -P${{ matrix.profile }}`
-      run: mvn -B -fae ${{ inputs.maven-args }} -P${{ matrix.profile }} -DskipUTs -DskipITs | tee /tmp/maven.log
+    - name: Execute `mvn ${{ inputs.maven-args }}`
+      run: mvn -B -fae ${{ inputs.maven-args }} | tee /tmp/maven.log
       shell: bash
     - name: Summary of failures
       if: ${{ failure() && inputs.summary != '' }}
@@ -89,7 +88,7 @@ jobs:
       if: ${{ failure() && inputs.reports-path != '' }}
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ inputs.reports-name }}-${{ matrix.profile }}
+        name: ${{ inputs.reports-name }}
         path: ${{ inputs.reports-path }}
       continue-on-error: true
     - name: Upload coverage to Codecov

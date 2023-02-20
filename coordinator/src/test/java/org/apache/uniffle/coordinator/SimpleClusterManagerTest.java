@@ -220,7 +220,7 @@ public class SimpleClusterManagerTest {
     String excludeNodesPath = excludeNodesFolder + "/excludeNodes";
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setString(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH, URI.create(excludeNodesPath).toString());
-    ssc.setLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL, 2000);
+    ssc.setLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL, 1000);
 
     try (SimpleClusterManager scm = new SimpleClusterManager(ssc, new Configuration())) {
       scm.add(new ServerNode("node1-1999", "ip", 0, 100L, 50L, 20,
