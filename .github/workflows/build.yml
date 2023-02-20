@@ -90,6 +90,8 @@ jobs:
     runs-on: ubuntu-20.04
     name: debug
     steps:
+      - id: a-1
+        run: "echo ${{ toJson(needs) }}"
       - id: a0
         run: "echo ${{ toJson(needs.changes.output) }}"
         shell: bash
