@@ -23,6 +23,9 @@ on:
       kubernetes:
         description: "whether current workflow touches deploy/kubernetes dir or not"
         value: ${{ jobs.changes.outputs.kubernetes }}
+      rss_server_docker:
+        description: "whether current workflow touches deploy/kubernetes/docker dir or not"
+        value: ${{ jobs.changes.outputs.rss_server_docker }}
 
 jobs:
   changes:
@@ -37,5 +40,8 @@ jobs:
           filters: |
             kubernetes:
               - 'deploy/kubernetes/**'
+            rss_server_docker:
+              - 'deploy/kubernetes/docker/**'
     outputs:
       kubernetes: ${{ steps.filter.outputs.kubernetes }}
+      rss_server_docker: ${{ steps.filter.outputs.rss_server_docker }}

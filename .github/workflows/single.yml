@@ -51,12 +51,6 @@ on:
         default: ''
         required: false
         type: string
-  push:
-    paths:
-      - "deploy/kubernetes/**"
-  pull_request:
-    paths:
-      - "deploy/kubernetes/**"
 
 jobs:
   maven:
