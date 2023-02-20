@@ -79,7 +79,7 @@ jobs:
 
   kubernetes:
     needs: [checkstyle, license, changes] # delay execution
-    if: needs.changes.output.kubernetes == 'true' ||  github.event_name == 'push'
+    if: (needs.changes.output.kubernetes == 'true' ||  github.event_name == 'push')
     uses: ./.github/workflows/single.yml
     with:
       maven-args: package -Pkubernetes -DskipUTs -DskipITs -DskipBuildImage=${{ needs.changes.output.rss_server_docker == 'false' }}
