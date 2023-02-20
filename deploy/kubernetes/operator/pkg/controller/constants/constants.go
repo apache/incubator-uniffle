@@ -18,10 +18,6 @@
 package constants
 
 const (
-	// ContainerShuffleServerRPCPort indicates rpc port used in shuffle server containers.
-	ContainerShuffleServerRPCPort int32 = 19997
-	// ContainerShuffleServerHTTPPort indicates http port used in shuffle server containers.
-	ContainerShuffleServerHTTPPort int32 = 19996
 	// ContainerCoordinatorRPCPort indicates rpc port used in coordinator containers.
 	ContainerCoordinatorRPCPort int32 = 19997
 	// ContainerCoordinatorHTTPPort indicates http port used in coordinator containers.
