@@ -68,6 +68,19 @@ var (
 			Value: "1G",
 		},
 	}
+	testVolumeName = "test-volume"
+	testVolumes    = []corev1.Volume{
+		{
+			Name: testVolumeName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "test-config",
+					},
+				},
+			},
+		},
+	}
 )
 
 func buildRssWithLabels() *uniffleapi.RemoteShuffleService {
@@ -90,6 +103,12 @@ func buildRssWithRuntimeClassName() *uniffleapi.RemoteShuffleService {
 func buildRssWithCustomENVs() *uniffleapi.RemoteShuffleService {
 	rss := utils.BuildRSSWithDefaultValue()
 	rss.Spec.ShuffleServer.Env = testENVs
+	return rss
+}
+
+func withCustomVolumes(volumes []corev1.Volume) *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.ShuffleServer.Volumes = volumes
 	return rss
 }
 
@@ -313,6 +332,18 @@ func TestGenerateSts(t *testing.T) {
 						string(actualPortsBody), string(expectPortsBody))
 				}
 				return
+			},
+		},
+		{
+			name: "test custom volumes",
+			rss:  withCustomVolumes(testVolumes),
+			IsValidSts: func(sts *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (valid bool, err error) {
+				for _, volume := range sts.Spec.Template.Spec.Volumes {
+					if volume.Name == testVolumeName {
+						return true, nil
+					}
+				}
+				return false, fmt.Errorf("generated sts should include volume: %s", testVolumeName)
 			},
 		},
 	} {

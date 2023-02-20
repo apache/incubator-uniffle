@@ -68,6 +68,19 @@ var (
 			Value: "127.0.0.1",
 		},
 	}
+	testVolumeName = "test-volume"
+	testVolumes    = []corev1.Volume{
+		{
+			Name: testVolumeName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "test-config",
+					},
+				},
+			},
+		},
+	}
 )
 
 func buildRssWithLabels() *uniffleapi.RemoteShuffleService {
@@ -85,6 +98,12 @@ func buildRssWithRuntimeClassName() *uniffleapi.RemoteShuffleService {
 func buildRssWithCustomENVs() *uniffleapi.RemoteShuffleService {
 	rss := utils.BuildRSSWithDefaultValue()
 	rss.Spec.Coordinator.Env = testENVs
+	return rss
+}
+
+func withCustomVolumes(volumes []corev1.Volume) *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.Coordinator.Volumes = volumes
 	return rss
 }
 
@@ -306,6 +325,18 @@ func TestGenerateDeploy(t *testing.T) {
 						string(actualPortsBody), string(expectPortsBody))
 				}
 				return
+			},
+		},
+		{
+			name: "set custom volumes",
+			rss:  withCustomVolumes(testVolumes),
+			IsValidDeploy: func(deploy *appsv1.Deployment, rss *uniffleapi.RemoteShuffleService) (bool, error) {
+				for _, volume := range deploy.Spec.Template.Spec.Volumes {
+					if volume.Name == testVolumeName {
+						return true, nil
+					}
+				}
+				return false, fmt.Errorf("generated deploy should include volume: %s", testVolumeName)
 			},
 		},
 	} {
