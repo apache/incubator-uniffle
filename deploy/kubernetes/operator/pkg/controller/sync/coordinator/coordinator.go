@@ -178,12 +178,7 @@ func GenerateDeploy(rss *unifflev1alpha1.RemoteShuffleService, index int) *appsv
 	podSpec := corev1.PodSpec{
 		HostNetwork:        *rss.Spec.Coordinator.HostNetwork,
 		ServiceAccountName: utils.GenerateCoordinatorName(rss),
-		Tolerations: []corev1.Toleration{
-			{
-				Effect: corev1.TaintEffectNoSchedule,
-				Key:    "node-role.kubernetes.io/master",
-			},
-		},
+		Tolerations:  rss.Spec.Coordinator.Tolerations,
 		Volumes:      rss.Spec.Coordinator.Volumes,
 		NodeSelector: rss.Spec.Coordinator.NodeSelector,
 	}

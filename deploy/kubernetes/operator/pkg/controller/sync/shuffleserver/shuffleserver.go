@@ -85,12 +85,7 @@ func GenerateSts(rss *unifflev1alpha1.RemoteShuffleService) *appsv1.StatefulSet 
 		SecurityContext:    rss.Spec.ShuffleServer.SecurityContext,
 		HostNetwork:        *rss.Spec.ShuffleServer.HostNetwork,
 		ServiceAccountName: GenerateName(rss),
-		Tolerations: []corev1.Toleration{
-			{
-				Effect: corev1.TaintEffectNoSchedule,
-				Key:    "node-role.kubernetes.io/master",
-			},
-		},
+		Tolerations:  rss.Spec.ShuffleServer.Tolerations,
 		Volumes:      rss.Spec.ShuffleServer.Volumes,
 		NodeSelector: rss.Spec.ShuffleServer.NodeSelector,
 	}
