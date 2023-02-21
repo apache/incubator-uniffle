@@ -80,6 +80,10 @@ and Continuous partition assignment mechanism.
         # Default value is 1.0, used to estimate task concurrency, how likely is this part of the resource between spark.dynamicAllocation.minExecutors and spark.dynamicAllocation.maxExecutors to be allocated
         --conf spark.rss.estimate.task.concurrency.dynamic.factor=1.0
         ```
+   
+3. In `RssShuffleManager`, the local shuffle reader has been disabled by default (`spark.sql.adaptive.localShuffleReader.enabled=false`), as it would cause too many random small IOs and too many network connections with shuffle servers. 
+
+
 ### Deploy MapReduce Client Plugin
 
 1. Add client jar to the classpath of each NodeManager, e.g., <HADOOP>/share/hadoop/mapreduce/
