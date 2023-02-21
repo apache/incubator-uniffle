@@ -18,8 +18,8 @@
 package org.apache.spark.shuffle;
 
 import org.apache.spark.ShuffleDependency;
-
 import org.apache.spark.broadcast.Broadcast;
+
 import org.apache.uniffle.common.RemoteStorageInfo;
 
 public class RssShuffleHandle<K, V, C> extends ShuffleHandle {

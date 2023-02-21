@@ -17,12 +17,13 @@
 
 package org.apache.spark.shuffle;
 
-import com.google.common.collect.Sets;
-import org.apache.uniffle.common.ShuffleServerInfo;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.google.common.collect.Sets;
+
+import org.apache.uniffle.common.ShuffleServerInfo;
 
 /**
  * Class for holding partition ID -> shuffle servers mapping.
@@ -45,6 +46,7 @@ public class PartitionShuffleServerMap {
   public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
     return partitionToServers;
   }
+
   public Set<ShuffleServerInfo> getShuffleServersForData() {
     return shuffleServersForData;
   }
