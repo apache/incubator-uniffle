@@ -81,8 +81,9 @@ and Continuous partition assignment mechanism.
         --conf spark.rss.estimate.task.concurrency.dynamic.factor=1.0
         ```
    
-3. In `RssShuffleManager`, the local shuffle reader has been disabled by default (`spark.sql.adaptive.localShuffleReader.enabled=false`), as it would cause too many random small IOs and too many network connections with shuffle servers. 
+Since v0.8.0, `RssShuffleManager` would disable local shuffle reader(`set spark.sql.adaptive.localShuffleReader.enabled=false`) optimization by default.
 
+Local shuffle reader as its name indicates is suitable and optimized for spark's external shuffle service, and shall not be used for remote shuffle service. It would cause many random small IOs and network connections with Uniffle's shuffle server
 
 ### Deploy MapReduce Client Plugin
 
