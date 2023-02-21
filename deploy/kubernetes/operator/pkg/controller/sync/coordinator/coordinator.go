@@ -184,21 +184,21 @@ func GenerateDeploy(rss *unifflev1alpha1.RemoteShuffleService, index int) *appsv
 				Key:    "node-role.kubernetes.io/master",
 			},
 		},
-		Volumes: []corev1.Volume{
-			{
-				Name: controllerconstants.ConfigurationVolumeName,
-				VolumeSource: corev1.VolumeSource{
-					ConfigMap: &corev1.ConfigMapVolumeSource{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: rss.Spec.ConfigMapName,
-						},
-						DefaultMode: pointer.Int32(0777),
-					},
-				},
-			},
-		},
+		Volumes:      rss.Spec.Coordinator.Volumes,
 		NodeSelector: rss.Spec.Coordinator.NodeSelector,
 	}
+	configurationVolume := corev1.Volume{
+		Name: controllerconstants.ConfigurationVolumeName,
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: rss.Spec.ConfigMapName,
+				},
+				DefaultMode: pointer.Int32(0777),
+			},
+		},
+	}
+	podSpec.Volumes = append(podSpec.Volumes, configurationVolume)
 	if podSpec.HostNetwork {
 		podSpec.DNSPolicy = corev1.DNSClusterFirstWithHostNet
 	}
