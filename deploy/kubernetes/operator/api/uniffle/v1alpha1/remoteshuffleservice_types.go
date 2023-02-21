@@ -219,7 +219,7 @@ type RSSPodSpec struct {
 	// +optional
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 
-	// Indicates the tolerations the pods under this subset have.
+	// Tolerations indicates the tolerations the pods under this subset have.
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
@@ -253,15 +253,6 @@ type MainContainer struct {
 	// VolumeMounts indicates describes mountings of volumes within shuffle servers' container.
 	// +optional
 	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
-
-	// NodeSelector is a selector which must be true for the pod to fit on a node.
-	// Selector which must match a node's labels for the pod to be scheduled on that node.
-	// +optional
-	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
-
-	// Indicates the tolerations the pods under this subset have.
-	// +optional
-	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
 // RemoteShuffleServiceStatus defines the observed state of RemoteShuffleService

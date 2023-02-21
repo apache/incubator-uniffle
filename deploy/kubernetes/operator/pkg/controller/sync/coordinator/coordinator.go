@@ -178,9 +178,9 @@ func GenerateDeploy(rss *unifflev1alpha1.RemoteShuffleService, index int) *appsv
 	podSpec := corev1.PodSpec{
 		HostNetwork:        *rss.Spec.Coordinator.HostNetwork,
 		ServiceAccountName: utils.GenerateCoordinatorName(rss),
-		Tolerations:  rss.Spec.Coordinator.Tolerations,
-		Volumes:      rss.Spec.Coordinator.Volumes,
-		NodeSelector: rss.Spec.Coordinator.NodeSelector,
+		Tolerations:        rss.Spec.Coordinator.Tolerations,
+		Volumes:            rss.Spec.Coordinator.Volumes,
+		NodeSelector:       rss.Spec.Coordinator.NodeSelector,
 	}
 	configurationVolume := corev1.Volume{
 		Name: controllerconstants.ConfigurationVolumeName,

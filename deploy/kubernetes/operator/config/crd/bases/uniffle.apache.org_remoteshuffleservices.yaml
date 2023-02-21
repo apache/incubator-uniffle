@@ -1700,8 +1700,8 @@ spec:
                       to the running coordinators.
                     type: boolean
                   tolerations:
-                    description: Indicates the tolerations the pods under this subset
-                      have.
+                    description: Tolerations indicates the tolerations the pods under
+                      this subset have.
                     items:
                       description: The pod this Toleration is attached to tolerates
                         any taint that matches the triple <key,value,effect> using
@@ -4941,8 +4941,8 @@ spec:
                       to the running shuffle servers.
                     type: boolean
                   tolerations:
-                    description: Indicates the tolerations the pods under this subset
-                      have.
+                    description: Tolerations indicates the tolerations the pods under
+                      this subset have.
                     items:
                       description: The pod this Toleration is attached to tolerates
                         any taint that matches the triple <key,value,effect> using
