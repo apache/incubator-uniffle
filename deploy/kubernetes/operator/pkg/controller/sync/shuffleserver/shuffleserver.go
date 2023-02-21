@@ -136,9 +136,9 @@ func GenerateSts(rss *unifflev1alpha1.RemoteShuffleService) *appsv1.StatefulSet 
 						constants.AnnotationRssName: rss.Name,
 						constants.AnnotationRssUID:  string(rss.UID),
 						constants.AnnotationMetricsServerPort: fmt.Sprintf("%v",
-							controllerconstants.ContainerShuffleServerHTTPPort),
+							*rss.Spec.ShuffleServer.HTTPPort),
 						constants.AnnotationShuffleServerPort: fmt.Sprintf("%v",
-							controllerconstants.ContainerShuffleServerRPCPort),
+							*rss.Spec.ShuffleServer.RPCPort),
 					},
 				},
 				Spec: podSpec,
@@ -217,11 +217,11 @@ func generateMainContainer(rss *unifflev1alpha1.RemoteShuffleService) *corev1.Co
 func generateMainContainerPorts(rss *unifflev1alpha1.RemoteShuffleService) []corev1.ContainerPort {
 	ports := []corev1.ContainerPort{
 		{
-			ContainerPort: controllerconstants.ContainerShuffleServerRPCPort,
+			ContainerPort: *rss.Spec.ShuffleServer.RPCPort,
 			Protocol:      corev1.ProtocolTCP,
 		},
 		{
-			ContainerPort: controllerconstants.ContainerShuffleServerHTTPPort,
+			ContainerPort: *rss.Spec.ShuffleServer.HTTPPort,
 			Protocol:      corev1.ProtocolTCP,
 		},
 	}
@@ -234,11 +234,11 @@ func generateMainContainerENV(rss *unifflev1alpha1.RemoteShuffleService) []corev
 	env := []corev1.EnvVar{
 		{
 			Name:  controllerconstants.ShuffleServerRPCPortEnv,
-			Value: strconv.FormatInt(int64(controllerconstants.ContainerShuffleServerRPCPort), 10),
+			Value: strconv.FormatInt(int64(*rss.Spec.ShuffleServer.RPCPort), 10),
 		},
 		{
 			Name:  controllerconstants.ShuffleServerHTTPPortEnv,
-			Value: strconv.FormatInt(int64(controllerconstants.ContainerShuffleServerHTTPPort), 10),
+			Value: strconv.FormatInt(int64(*rss.Spec.ShuffleServer.HTTPPort), 10),
 		},
 		{
 			Name:  controllerconstants.RSSCoordinatorQuorumEnv,
