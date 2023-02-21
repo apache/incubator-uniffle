@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-ARG BASE_IMAGE=rss-server-base:latest
+ARG BASE_IMAGE=uniffle-base:latest
 FROM ${BASE_IMAGE}
 
 ARG HADOOP_VERSION

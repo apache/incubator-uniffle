@@ -82,6 +82,6 @@ jobs:
     if: needs.changes.outputs.kubernetes == 'true' ||  github.event_name == 'push'
     uses: ./.github/workflows/single.yml
     with:
-      maven-args: package -Pkubernetes -DskipUTs -DskipITs -DskipBuildImage=${{ needs.changes.output.rss_server_docker == 'false' }}
+      maven-args: package -Pkubernetes -DskipUTs -DskipITs -DskipBuildImage=${{ needs.changes.outputs.rss_server_docker == 'false' }}
       cache-key: package
       go-version: '1.17'

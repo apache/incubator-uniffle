@@ -88,10 +88,10 @@ while (( "$#" )); do
 done
 
 if [ -z "$BASE_IMAGE" ]; then
-  echo "start building base image: rss-server-base"
-  docker build -t "rss-server-base:latest" \
-    -f rss-server-base/"${OS_DISTRIBUTION}"/Dockerfile .
-  BASE_IMAGE="rss-server-base:latest"
+  echo "start building base image: uniffle-base"
+  docker build -t "uniffle-base:latest" \
+    -f base/"${OS_DISTRIBUTION}"/Dockerfile .
+  BASE_IMAGE="uniffle-base:latest"
 else
   echo "using base image(${BASE_IMAGE}) to build rss server"
 fi
