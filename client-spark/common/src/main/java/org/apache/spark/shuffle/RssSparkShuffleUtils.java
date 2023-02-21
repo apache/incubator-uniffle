@@ -27,7 +27,10 @@ import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.deploy.SparkHadoopUtil;
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +41,7 @@ import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
+import scala.reflect.ClassTag;
 
 public class RssSparkShuffleUtils {
 
@@ -189,5 +193,19 @@ public class RssSparkShuffleUtils {
     int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
     int taskConcurrencyPerServer = sparkConf.get(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER);
     return (int) Math.ceil(estimateTaskConcurrency * 1.0 / taskConcurrencyPerServer);
+  }
+
+  /**
+   * create broadcast variable for partition -> shuffleserver map
+   * make sure it's called in JVM with active SparkContext created
+   *
+   * @param partitionToServers
+   * @return Broadcast variable registered for auto cleanup
+   */
+  public static Broadcast<PartitionShuffleServerMap> createPartShuffleServerMap(
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers) {
+    PartitionShuffleServerMap partServerMap = new PartitionShuffleServerMap(partitionToServers);
+    ClassTag<PartitionShuffleServerMap> ptsTag = scala.reflect.ClassTag$.MODULE$.apply(PartitionShuffleServerMap.class);
+    return SparkContext.getOrCreate().broadcast(partServerMap, ptsTag);
   }
 }

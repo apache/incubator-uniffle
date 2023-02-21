@@ -23,9 +23,11 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.InterruptibleIterator;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.TaskContext;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.executor.TempShuffleReadMetrics;
 import org.apache.spark.serializer.Serializer;
+import org.apache.spark.shuffle.PartitionShuffleServerMap;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.ShuffleReader;
 import org.apache.spark.util.CompletionIterator;
@@ -105,8 +107,9 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.blockIdBitmap = blockIdBitmap;
     this.taskIdBitmap = taskIdBitmap;
     this.hadoopConf = hadoopConf;
+    Broadcast<PartitionShuffleServerMap> partServerMapBd = rssShuffleHandle.getPartServerMapBd();
     this.shuffleServerInfoList =
-        (List<ShuffleServerInfo>) (rssShuffleHandle.getPartitionToServers().get(startPartition));
+        (List<ShuffleServerInfo>) (partServerMapBd.value().getPartitionToServers().get(startPartition));
     this.rssConf = rssConf;
     expectedTaskIdsBitmapFilterEnable = shuffleServerInfoList.size() > 1;
   }

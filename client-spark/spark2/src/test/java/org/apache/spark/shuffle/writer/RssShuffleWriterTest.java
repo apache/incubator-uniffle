@@ -18,6 +18,7 @@
 package org.apache.spark.shuffle.writer;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,11 +31,13 @@ import org.apache.spark.Partitioner;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.executor.TaskMetrics;
 import org.apache.spark.memory.TaskMemoryManager;
 import org.apache.spark.serializer.KryoSerializer;
 import org.apache.spark.serializer.Serializer;
+import org.apache.spark.shuffle.PartitionShuffleServerMap;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.RssShuffleManager;
 import org.apache.spark.shuffle.RssSparkConfig;
@@ -89,7 +92,10 @@ public class RssShuffleWriterTest {
     when(mockHandle.getDependency()).thenReturn(mockDependency);
     when(mockDependency.partitioner()).thenReturn(mockPartitioner);
     when(mockPartitioner.numPartitions()).thenReturn(2);
-    when(mockHandle.getPartitionToServers()).thenReturn(Maps.newHashMap());
+    Broadcast<PartitionShuffleServerMap> ptsBd = mock(Broadcast.class);
+    PartitionShuffleServerMap ptsMap = new PartitionShuffleServerMap(Collections.emptyMap());
+    when(mockHandle.getPartServerMapBd()).thenReturn(ptsBd);
+    when(ptsBd.value()).thenReturn(ptsMap);
     TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
 
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
@@ -171,6 +177,10 @@ public class RssShuffleWriterTest {
     RssShuffleHandle mockHandle = mock(RssShuffleHandle.class);
     when(mockHandle.getDependency()).thenReturn(mockDependency);
     Serializer kryoSerializer = new KryoSerializer(conf);
+    Broadcast<PartitionShuffleServerMap> ptsBd = mock(Broadcast.class);
+    PartitionShuffleServerMap ptsMap = new PartitionShuffleServerMap(Collections.emptyMap());
+    when(mockHandle.getPartServerMapBd()).thenReturn(ptsBd);
+    when(ptsBd.value()).thenReturn(ptsMap);
     when(mockDependency.serializer()).thenReturn(kryoSerializer);
     when(mockDependency.partitioner()).thenReturn(mockPartitioner);
     when(mockPartitioner.numPartitions()).thenReturn(2);
@@ -277,6 +287,10 @@ public class RssShuffleWriterTest {
     when(mockShuffleManager.getEventLoop()).thenReturn(eventLoop);
     RssShuffleHandle mockHandle = mock(RssShuffleHandle.class);
     when(mockHandle.getDependency()).thenReturn(mockDependency);
+    Broadcast<PartitionShuffleServerMap> ptsBd = mock(Broadcast.class);
+    PartitionShuffleServerMap ptsMap = new PartitionShuffleServerMap(Collections.emptyMap());
+    when(mockHandle.getPartServerMapBd()).thenReturn(ptsBd);
+    when(ptsBd.value()).thenReturn(ptsMap);
     ShuffleWriteClient mockWriteClient = mock(ShuffleWriteClient.class);
     SparkConf conf = new SparkConf();
     conf.set(RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT.key(), "64")

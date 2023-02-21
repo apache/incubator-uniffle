@@ -17,6 +17,7 @@
 
 package org.apache.spark.shuffle.reader;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,10 +27,12 @@ import com.google.common.collect.Maps;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.TaskContext;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.executor.TaskMetrics;
 import org.apache.spark.serializer.KryoSerializer;
 import org.apache.spark.serializer.Serializer;
+import org.apache.spark.shuffle.PartitionShuffleServerMap;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -74,7 +77,10 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = new HashMap<>();
     partitionToServers.put(0, Lists.newArrayList(ssi));
     partitionToServers.put(1, Lists.newArrayList(ssi));
-    when(handleMock.getPartitionToServers()).thenReturn(partitionToServers);
+    Broadcast<PartitionShuffleServerMap> ptsBd = mock(Broadcast.class);
+    PartitionShuffleServerMap ptsMap = new PartitionShuffleServerMap(partitionToServers);
+    when(handleMock.getPartServerMapBd()).thenReturn(ptsBd);
+    when(ptsBd.value()).thenReturn(ptsMap);
     when(dependencyMock.serializer()).thenReturn(KRYO_SERIALIZER);
     TaskContext contextMock = mock(TaskContext.class);
     when(contextMock.attemptNumber()).thenReturn(1);

@@ -17,24 +17,17 @@
 
 package org.apache.spark.shuffle;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import com.google.common.collect.Sets;
 import org.apache.spark.ShuffleDependency;
 
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.common.ShuffleServerInfo;
 
 public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
 
   private String appId;
   private int numMaps;
   private ShuffleDependency<K, V, C> dependency;
-  private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
-  // shuffle servers which is for store shuffle data
-  private Set<ShuffleServerInfo> shuffleServersForData;
+  private Broadcast<PartitionShuffleServerMap> partServerMapBd;
   // remoteStorage used for this job
   private RemoteStorageInfo remoteStorage;
 
@@ -43,18 +36,14 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
       String appId,
       int numMaps,
       ShuffleDependency<K, V, C> dependency,
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+      Broadcast<PartitionShuffleServerMap> partServerMapBd,
       RemoteStorageInfo remoteStorage) {
     super(shuffleId);
     this.appId = appId;
     this.numMaps = numMaps;
     this.dependency = dependency;
-    this.partitionToServers = partitionToServers;
+    this.partServerMapBd = partServerMapBd;
     this.remoteStorage = remoteStorage;
-    shuffleServersForData = Sets.newHashSet();
-    for (List<ShuffleServerInfo> ssis : partitionToServers.values()) {
-      shuffleServersForData.addAll(ssis);
-    }
   }
 
   public String getAppId() {
@@ -69,19 +58,15 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
     return dependency;
   }
 
-  public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
-    return partitionToServers;
-  }
-
   public int getShuffleId() {
     return shuffleId();
   }
 
-  public Set<ShuffleServerInfo> getShuffleServersForData() {
-    return shuffleServersForData;
-  }
-
   public RemoteStorageInfo getRemoteStorage() {
     return remoteStorage;
+  }
+
+  public Broadcast<PartitionShuffleServerMap> getPartServerMapBd() {
+    return partServerMapBd;
   }
 }

@@ -42,6 +42,7 @@ import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkEnv;
 import org.apache.spark.TaskContext;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.shuffle.reader.RssShuffleReader;
@@ -274,7 +275,6 @@ public class RssShuffleManager implements ShuffleManager {
     heartBeatScheduledExecutorService = null;
   }
 
-
   // This method is called in Spark driver side,
   // and Spark driver will make some decision according to coordinator,
   // e.g. determining what RSS servers to use.
@@ -303,11 +303,13 @@ public class RssShuffleManager implements ShuffleManager {
     if (dependency.partitioner().numPartitions() == 0) {
       LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum is 0, "
           + "return the empty RssShuffleHandle directly");
+      Broadcast<PartitionShuffleServerMap> ptsBd = RssSparkShuffleUtils.createPartShuffleServerMap(
+          Collections.emptyMap());
       return new RssShuffleHandle(shuffleId,
         id.get(),
         dependency.rdd().getNumPartitions(),
         dependency,
-        Collections.emptyMap(),
+        ptsBd,
         RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
     }
 
@@ -344,13 +346,15 @@ public class RssShuffleManager implements ShuffleManager {
     }
     startHeartbeat();
 
+    Broadcast<PartitionShuffleServerMap> ptsBd = RssSparkShuffleUtils.createPartShuffleServerMap(
+        partitionToServers);
     LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum[" + partitionToServers.size()
         + "], shuffleServerForResult: " + partitionToServers);
     return new RssShuffleHandle(shuffleId,
         id.get(),
         dependency.rdd().getNumPartitions(),
         dependency,
-        partitionToServers,
+        ptsBd,
         remoteStorage);
   }
 
@@ -377,9 +381,10 @@ public class RssShuffleManager implements ShuffleManager {
     } else {
       writeMetrics = context.taskMetrics().shuffleWriteMetrics();
     }
+    Broadcast<PartitionShuffleServerMap> partServerMapBd = rssHandle.getPartServerMapBd();
     WriteBufferManager bufferManager = new WriteBufferManager(
         shuffleId, context.taskAttemptId(), bufferOptions, rssHandle.getDependency().serializer(),
-        rssHandle.getPartitionToServers(), context.taskMemoryManager(),
+        partServerMapBd.value().getPartitionToServers(), context.taskMemoryManager(),
         writeMetrics, RssSparkConfig.toRssConf(sparkConf));
     taskToBufferManager.put(taskId, bufferManager);
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
@@ -468,7 +473,8 @@ public class RssShuffleManager implements ShuffleManager {
       readBufferSize = Integer.MAX_VALUE;
     }
     int shuffleId = rssShuffleHandle.getShuffleId();
-    Map<Integer, List<ShuffleServerInfo>> allPartitionToServers = rssShuffleHandle.getPartitionToServers();
+    Broadcast<PartitionShuffleServerMap> partServerMapBd = rssShuffleHandle.getPartServerMapBd();
+    Map<Integer, List<ShuffleServerInfo>> allPartitionToServers = partServerMapBd.value().getPartitionToServers();
     Map<Integer, List<ShuffleServerInfo>> requirePartitionToServers = allPartitionToServers.entrySet()
         .stream().filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));

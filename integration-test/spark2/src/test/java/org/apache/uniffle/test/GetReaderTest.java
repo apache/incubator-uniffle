@@ -31,6 +31,8 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.TaskContextImpl;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.broadcast.Broadcast;
+import org.apache.spark.shuffle.PartitionShuffleServerMap;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.RssShuffleManager;
 import org.apache.spark.shuffle.RssSparkConfig;
@@ -105,7 +107,8 @@ public class GetReaderTest extends IntegrationTestBase {
     ShuffleDependency emptyShuffleDependency1 = (ShuffleDependency) javaEmptyPairRDD1.rdd().dependencies().head();
     RssShuffleHandle emptyRssShuffleHandle1 = (RssShuffleHandle) emptyShuffleDependency1.shuffleHandle();
     assertEquals(javaEmptyPairRDD1.rdd().dependencies().head().rdd().getNumPartitions(), 0);
-    assertEquals(emptyRssShuffleHandle1.getPartitionToServers(), Collections.emptyMap());
+    Broadcast<PartitionShuffleServerMap> ptsBd = emptyRssShuffleHandle1.getPartServerMapBd();
+    assertEquals(ptsBd.value().getPartitionToServers(), Collections.emptyMap());
     assertEquals(emptyRssShuffleHandle1.getRemoteStorage(),RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
 
 
