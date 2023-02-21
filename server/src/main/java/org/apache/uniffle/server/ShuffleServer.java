@@ -319,7 +319,8 @@ public class ShuffleServer {
       try {
         Thread.sleep(checkInterval);
       } catch (InterruptedException e) {
-        LOG.warn("Ignore the InterruptedException which should be caused by internal kill.");
+        LOG.warn("Interrupted while waiting for decommission to finish");
+        break;
       }
     }
     remainApplicationNum = shuffleTaskManager.getAppIds().size();
