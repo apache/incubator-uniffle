@@ -333,7 +333,13 @@ func TestGenerateDeploy(t *testing.T) {
 			IsValidDeploy: func(deploy *appsv1.Deployment, rss *uniffleapi.RemoteShuffleService) (bool, error) {
 				for _, volume := range deploy.Spec.Template.Spec.Volumes {
 					if volume.Name == testVolumeName {
-						return true, nil
+						expectedVolume := testVolumes[0]
+						equal := reflect.DeepEqual(expectedVolume, volume)
+						if equal {
+							return true, nil
+						}
+						volumeJSON, _ := json.Marshal(expectedVolume)
+						return false, fmt.Errorf("generated deploy doesn't contain expected volumn: %s", volumeJSON)
 					}
 				}
 				return false, fmt.Errorf("generated deploy should include volume: %s", testVolumeName)

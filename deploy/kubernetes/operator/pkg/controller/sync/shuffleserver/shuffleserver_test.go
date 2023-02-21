@@ -340,7 +340,13 @@ func TestGenerateSts(t *testing.T) {
 			IsValidSts: func(sts *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (valid bool, err error) {
 				for _, volume := range sts.Spec.Template.Spec.Volumes {
 					if volume.Name == testVolumeName {
-						return true, nil
+						expectedVolume := testVolumes[0]
+						equal := reflect.DeepEqual(expectedVolume, volume)
+						if equal {
+							return true, nil
+						}
+						volumeJSON, _ := json.Marshal(expectedVolume)
+						return false, fmt.Errorf("generated sts doesn't contain expected volumn: %s", volumeJSON)
 					}
 				}
 				return false, fmt.Errorf("generated sts should include volume: %s", testVolumeName)
