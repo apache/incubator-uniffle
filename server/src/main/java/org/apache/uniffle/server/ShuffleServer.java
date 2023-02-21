@@ -163,6 +163,9 @@ public class ShuffleServer {
     }
     SecurityContextFactory.get().getSecurityContext().close();
     server.stop();
+    if (executorService != null) {
+      executorService.shutdownNow();
+    }
     running = false;
     LOG.info("RPC Server Stopped!");
   }
