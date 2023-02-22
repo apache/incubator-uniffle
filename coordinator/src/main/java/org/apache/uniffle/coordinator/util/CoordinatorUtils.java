@@ -20,6 +20,7 @@ package org.apache.uniffle.coordinator.util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -39,6 +40,8 @@ public class CoordinatorUtils {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorUtils.class);
 
   public static final String COORDINATOR_ID = "coordinator.id";
+
+  private static final Random random = new Random();
 
   public static GetShuffleAssignmentsResponse toGetShuffleAssignmentsResponse(
       PartitionRangeAssignment pra) {
@@ -168,5 +171,9 @@ public class CoordinatorUtils {
       res.put(clusterId, curClusterConf);
     }
     return res;
+  }
+
+  public static int getRandomInt() {
+    return random.nextInt();
   }
 }

@@ -67,7 +67,8 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
     this.availableRemoteStorageInfo = availableRemoteStorageInfo;
     this.hdfsConf = new Configuration();
     readAndWriteTimes = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES);
-    coordinatorId = conf.getString(CoordinatorUtils.COORDINATOR_ID, String.valueOf(new Random().nextInt()));
+    coordinatorId = conf.getString(CoordinatorUtils.COORDINATOR_ID,
+        String.valueOf(CoordinatorUtils.getRandomInt()));
   }
 
   @VisibleForTesting

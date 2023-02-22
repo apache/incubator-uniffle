@@ -64,7 +64,8 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
     this.appIdToRemoteStorageInfo = appIdToRemoteStorageInfo;
     this.availableRemoteStorageInfo = availableRemoteStorageInfo;
     this.hdfsConf = new Configuration();
-    this.coordinatorId = conf.getString(CoordinatorUtils.COORDINATOR_ID, String.valueOf(new Random().nextInt()));
+    this.coordinatorId = conf.getString(CoordinatorUtils.COORDINATOR_ID,
+        String.valueOf(CoordinatorUtils.getRandomInt()));
   }
 
   @VisibleForTesting
