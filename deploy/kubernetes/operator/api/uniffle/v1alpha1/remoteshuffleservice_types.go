@@ -222,6 +222,10 @@ type RSSPodSpec struct {
 	// Tolerations indicates the tolerations the pods under this subset have.
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// Affinity is a group of affinity scheduling rules.
+	// +optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 }
 
 // MainContainer stores information of the main container of coordinators or shuffle servers,

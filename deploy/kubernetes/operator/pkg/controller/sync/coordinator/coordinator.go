@@ -181,6 +181,7 @@ func GenerateDeploy(rss *unifflev1alpha1.RemoteShuffleService, index int) *appsv
 		Tolerations:        rss.Spec.Coordinator.Tolerations,
 		Volumes:            rss.Spec.Coordinator.Volumes,
 		NodeSelector:       rss.Spec.Coordinator.NodeSelector,
+		Affinity:           rss.Spec.Coordinator.Affinity,
 	}
 	configurationVolume := corev1.Volume{
 		Name: controllerconstants.ConfigurationVolumeName,
