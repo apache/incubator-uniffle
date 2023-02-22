@@ -20,7 +20,6 @@ package org.apache.uniffle.coordinator.strategy.storage;
 import java.util.concurrent.CountDownLatch;
 
 import com.google.common.collect.Sets;
-import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +30,7 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
+import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 
 import static org.apache.uniffle.coordinator.ApplicationManager.StrategyName.IO_SAMPLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
