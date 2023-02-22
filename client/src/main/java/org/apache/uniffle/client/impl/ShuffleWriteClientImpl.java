@@ -781,7 +781,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   Set<ShuffleServerInfo> getAllShuffleServers(String appId) {
     Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
     if (appServerMap == null) {
-      return Collections.EMPTY_SET;
+      return Collections.emptySet();
     }
     Set<ShuffleServerInfo> serverInfos = Sets.newHashSet();
     appServerMap.values().forEach(serverInfos::addAll);
