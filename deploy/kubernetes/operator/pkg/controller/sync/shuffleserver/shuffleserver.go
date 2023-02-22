@@ -89,6 +89,16 @@ func GenerateSts(rss *unifflev1alpha1.RemoteShuffleService) *appsv1.StatefulSet 
 		Volumes:            rss.Spec.ShuffleServer.Volumes,
 		NodeSelector:       rss.Spec.ShuffleServer.NodeSelector,
 	}
+
+	if len(podSpec.Tolerations) == 0 {
+		podSpec.Tolerations = []corev1.Toleration{
+			{
+				Effect: corev1.TaintEffectNoSchedule,
+				Key:    "node-role.kubernetes.io/master",
+			},
+		}
+	}
+
 	configurationVolume := corev1.Volume{
 		Name: controllerconstants.ConfigurationVolumeName,
 		VolumeSource: corev1.VolumeSource{
