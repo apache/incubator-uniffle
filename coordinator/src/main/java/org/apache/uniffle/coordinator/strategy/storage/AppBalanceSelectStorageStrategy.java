@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -30,6 +31,7 @@ import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +53,7 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
   private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
   private final Configuration hdfsConf;
   private List<Map.Entry<String, RankValue>> uris;
+  private final String coordinatorId;
 
   public AppBalanceSelectStorageStrategy(
       Map<String, RankValue> remoteStoragePathRankValue,
@@ -61,6 +64,7 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
     this.appIdToRemoteStorageInfo = appIdToRemoteStorageInfo;
     this.availableRemoteStorageInfo = availableRemoteStorageInfo;
     this.hdfsConf = new Configuration();
+    this.coordinatorId = conf.getString(CoordinatorUtils.COORDINATOR_ID, String.valueOf(new Random().nextInt()));
   }
 
   @VisibleForTesting
@@ -89,7 +93,7 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
           RankValue rankValue = remoteStoragePathRankValue.get(uri.getKey());
           rankValue.setHealthy(new AtomicBoolean(true));
           Path remotePath = new Path(uri.getKey());
-          String rssTest = uri.getKey() + "/rssTest";
+          String rssTest = uri.getKey() + "/rssTest-" + coordinatorId ;
           Path testPath = new Path(rssTest);
           try {
             FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hdfsConf);
@@ -131,5 +135,10 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
     }
     LOG.warn("No remote storage is available, we will default to the first.");
     return availableRemoteStorageInfo.values().iterator().next();
+  }
+
+  // Only for test
+  String getCoordinatorId() {
+    return coordinatorId;
   }
 }

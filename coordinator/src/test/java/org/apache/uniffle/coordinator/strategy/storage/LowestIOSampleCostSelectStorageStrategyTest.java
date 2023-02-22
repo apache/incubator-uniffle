@@ -20,6 +20,7 @@ package org.apache.uniffle.coordinator.strategy.storage;
 import java.util.concurrent.CountDownLatch;
 
 import com.google.common.collect.Sets;
+import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,6 +64,7 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     conf.set(CoordinatorConf.COORDINATOR_APP_EXPIRED, appExpiredTime);
     conf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 1000);
     conf.set(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY, IO_SAMPLE);
+    conf.setString(CoordinatorUtils.COORDINATOR_ID, "TESTXXX");
     applicationManager = new ApplicationManager(conf);
     selectStorageStrategy = (LowestIOSampleCostSelectStorageStrategy) applicationManager.getSelectStorageStrategy();
     // to ensure that the reading and writing of hdfs can be controlled
@@ -191,5 +193,7 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     assertEquals(0, applicationManager.getAvailableRemoteStorageInfo().size());
     assertEquals(0, applicationManager.getRemoteStoragePathRankValue().size());
     assertFalse(applicationManager.hasErrorInStatusCheck());
+    assertEquals("TESTXXX",
+        ((LowestIOSampleCostSelectStorageStrategy)applicationManager.getSelectStorageStrategy()).getCoordinatorId());
   }
 }

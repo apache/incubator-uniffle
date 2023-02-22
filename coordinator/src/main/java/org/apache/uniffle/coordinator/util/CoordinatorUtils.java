@@ -38,6 +38,8 @@ public class CoordinatorUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorUtils.class);
 
+  public static final String COORDINATOR_ID = "coordinator.id";
+
   public static GetShuffleAssignmentsResponse toGetShuffleAssignmentsResponse(
       PartitionRangeAssignment pra) {
     List<RssProtos.PartitionRangeAssignment> praList = pra.convertToGrpcProto();

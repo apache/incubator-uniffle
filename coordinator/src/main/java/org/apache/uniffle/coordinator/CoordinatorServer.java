@@ -19,6 +19,7 @@ package org.apache.uniffle.coordinator;
 
 import io.prometheus.client.CollectorRegistry;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -160,6 +161,8 @@ public class CoordinatorServer extends ReconfigurableBase {
           .build();
     }
     SecurityContextFactory.get().init(securityConfig);
+
+    coordinatorConf.setString(CoordinatorUtils.COORDINATOR_ID, id);
 
     // load default hadoop configuration
     Configuration hadoopConf = new Configuration();
