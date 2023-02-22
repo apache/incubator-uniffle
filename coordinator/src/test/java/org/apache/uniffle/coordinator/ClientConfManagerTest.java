@@ -19,7 +19,6 @@ package org.apache.uniffle.coordinator;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.Map;
@@ -29,8 +28,6 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,11 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClientConfManagerTest {
 
-  @TempDir
-  private final File remotePath = new File("hdfs://rss");
-  private static MiniDFSCluster cluster;
-  private final Configuration hdfsConf = new Configuration();
-
   @BeforeEach
   public void setUp() {
     CoordinatorMetrics.register();
@@ -62,18 +54,6 @@ public class ClientConfManagerTest {
   @AfterEach
   public void clear() {
     CoordinatorMetrics.clear();
-  }
-
-  @AfterAll
-  public static void close() {
-    cluster.close();
-  }
-
-  public void createMiniHdfs(String hdfsPath) throws IOException {
-    hdfsConf.set("fs.defaultFS", remotePath.getAbsolutePath());
-    hdfsConf.set("dfs.nameservices", "rss");
-    hdfsConf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, hdfsPath);
-    cluster = (new MiniDFSCluster.Builder(hdfsConf)).build();
   }
 
   @Test
@@ -230,7 +210,6 @@ public class ClientConfManagerTest {
     File cfgFile = Files.createTempFile("dynamicRemoteStorageTest", ".conf").toFile();
     cfgFile.deleteOnExit();
     writeRemoteStorageConf(cfgFile, remotePath1);
-    createMiniHdfs(remotePath.getAbsolutePath());
 
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, updateIntervalSec);
