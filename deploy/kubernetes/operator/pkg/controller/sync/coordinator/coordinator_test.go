@@ -81,6 +81,53 @@ var (
 			},
 		},
 	}
+	testTolerationName = "test-toleration"
+	testTolerations    = []corev1.Toleration{
+		{
+			Key:      testTolerationName,
+			Operator: corev1.TolerationOperator("In"),
+			Value:    "",
+			Effect:   corev1.TaintEffectNoSchedule,
+		},
+	}
+	testAffinity = &corev1.Affinity{
+		NodeAffinity: &corev1.NodeAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+				NodeSelectorTerms: []corev1.NodeSelectorTerm{
+					{
+						MatchExpressions: []corev1.NodeSelectorRequirement{
+							{
+								Key:      "key2",
+								Operator: corev1.NodeSelectorOpIn,
+								Values:   []string{"value1", "value2"},
+							},
+						},
+						MatchFields: []corev1.NodeSelectorRequirement{
+							{
+								Key:      "metadata.name",
+								Operator: corev1.NodeSelectorOpIn,
+								Values:   []string{"host1"},
+							},
+						},
+					},
+				},
+			},
+			PreferredDuringSchedulingIgnoredDuringExecution: []corev1.PreferredSchedulingTerm{
+				{
+					Weight: 10,
+					Preference: corev1.NodeSelectorTerm{
+						MatchExpressions: []corev1.NodeSelectorRequirement{
+							{
+								Key:      "foo",
+								Operator: corev1.NodeSelectorOpIn,
+								Values:   []string{"bar"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 )
 
 func buildRssWithLabels() *uniffleapi.RemoteShuffleService {
@@ -104,6 +151,18 @@ func buildRssWithCustomENVs() *uniffleapi.RemoteShuffleService {
 func withCustomVolumes(volumes []corev1.Volume) *uniffleapi.RemoteShuffleService {
 	rss := utils.BuildRSSWithDefaultValue()
 	rss.Spec.Coordinator.Volumes = volumes
+	return rss
+}
+
+func withCustomTolerations(tolerations []corev1.Toleration) *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.Coordinator.Tolerations = tolerations
+	return rss
+}
+
+func withCustomAffinity(affinity *corev1.Affinity) *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.Coordinator.Affinity = affinity
 	return rss
 }
 
@@ -343,6 +402,38 @@ func TestGenerateDeploy(t *testing.T) {
 					}
 				}
 				return false, fmt.Errorf("generated deploy should include volume: %s", testVolumeName)
+			},
+		},
+		{
+			name: "set custom tolerations",
+			rss:  withCustomTolerations(testTolerations),
+			IsValidDeploy: func(deploy *appsv1.Deployment, rss *uniffleapi.RemoteShuffleService) (bool, error) {
+				for _, toleration := range deploy.Spec.Template.Spec.Tolerations {
+					if toleration.Key == testTolerationName {
+						expectedToleration := testTolerations[0]
+						equal := reflect.DeepEqual(expectedToleration, toleration)
+						if equal {
+							return true, nil
+						}
+						tolerationJSON, _ := json.Marshal(expectedToleration)
+						return false, fmt.Errorf("generated deploy doesn't contain expected tolerations: %s", tolerationJSON)
+					}
+				}
+				return false, fmt.Errorf("generated deploy should include tolerations: %s", testTolerationName)
+			},
+		},
+		{
+			name: "set custom affinity",
+			rss:  withCustomAffinity(testAffinity),
+			IsValidDeploy: func(deploy *appsv1.Deployment, rss *uniffleapi.RemoteShuffleService) (bool, error) {
+				if deploy.Spec.Template.Spec.Affinity != nil {
+					deploy.Spec.Template.Spec.Affinity = rss.Spec.Coordinator.Affinity
+					equal := reflect.DeepEqual(deploy.Spec.Template.Spec.Affinity, testAffinity)
+					if equal {
+						return true, nil
+					}
+				}
+				return false, fmt.Errorf("generated deploy should include affinity: %v", testAffinity)
 			},
 		},
 	} {
