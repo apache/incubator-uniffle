@@ -93,7 +93,7 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
           RankValue rankValue = remoteStoragePathRankValue.get(uri.getKey());
           rankValue.setHealthy(new AtomicBoolean(true));
           Path remotePath = new Path(uri.getKey());
-          String rssTest = uri.getKey() + "/rssTest-" + coordinatorId ;
+          String rssTest = uri.getKey() + "/rssTest-" + coordinatorId;
           Path testPath = new Path(rssTest);
           try {
             FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hdfsConf);
