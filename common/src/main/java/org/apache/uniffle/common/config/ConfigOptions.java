@@ -241,6 +241,7 @@ public class ConfigOptions {
     private final Function<Object, E> atomicConverter;
     private Function<Object, List<E>> asListConverter;
 
+    @SuppressWarnings("unchecked")
     public ListConfigOptionBuilder(String key, Class<E> clazz, Function<Object, E> atomicConverter) {
       this.key = key;
       this.clazz = clazz;

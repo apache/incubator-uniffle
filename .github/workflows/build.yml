@@ -24,6 +24,9 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    uses: ./.github/workflows/changes.yml
+
   checkstyle:
     uses: ./.github/workflows/sequential.yml
     with:
@@ -75,9 +78,10 @@ jobs:
       reports-path: "**/target/surefire-reports/*.txt"
 
   kubernetes:
-    needs: [checkstyle, license] # delay execution
+    needs: [checkstyle, license, changes] # delay execution
+    if: needs.changes.outputs.kubernetes == 'true' ||  github.event_name == 'push'
     uses: ./.github/workflows/single.yml
     with:
-      maven-args: package -Pkubernetes -DskipUTs -DskipITs
+      maven-args: package -Pkubernetes -DskipUTs -DskipITs -DskipBuildImage=${{ needs.changes.outputs.rss_server_docker == 'false' }}
       cache-key: package
       go-version: '1.17'

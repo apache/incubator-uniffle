@@ -36,7 +36,9 @@ import (
 )
 
 const (
-	testRuntimeClassName = "test-runtime"
+	testRuntimeClassName       = "test-runtime"
+	testRPCPort          int32 = 19998
+	testHTTPPort         int32 = 19999
 )
 
 // IsValidSts checks generated statefulSet, returns whether it is valid and error message.
@@ -66,6 +68,19 @@ var (
 			Value: "1G",
 		},
 	}
+	testVolumeName = "test-volume"
+	testVolumes    = []corev1.Volume{
+		{
+			Name: testVolumeName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "test-config",
+					},
+				},
+			},
+		},
+	}
 )
 
 func buildRssWithLabels() *uniffleapi.RemoteShuffleService {
@@ -89,6 +104,67 @@ func buildRssWithCustomENVs() *uniffleapi.RemoteShuffleService {
 	rss := utils.BuildRSSWithDefaultValue()
 	rss.Spec.ShuffleServer.Env = testENVs
 	return rss
+}
+
+func withCustomVolumes(volumes []corev1.Volume) *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.ShuffleServer.Volumes = volumes
+	return rss
+}
+
+func buildRssWithCustomRPCPort() *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.ShuffleServer.RPCPort = pointer.Int32(testRPCPort)
+	return rss
+}
+
+func buildRssWithCustomHTTPPort() *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.ShuffleServer.HTTPPort = pointer.Int32(testHTTPPort)
+	return rss
+}
+
+func buildCommonExpectedENVs(rss *uniffleapi.RemoteShuffleService) []corev1.EnvVar {
+	return []corev1.EnvVar{
+		{
+			Name:  controllerconstants.ShuffleServerRPCPortEnv,
+			Value: strconv.FormatInt(int64(*rss.Spec.ShuffleServer.RPCPort), 10),
+		},
+		{
+			Name:  controllerconstants.ShuffleServerHTTPPortEnv,
+			Value: strconv.FormatInt(int64(*rss.Spec.ShuffleServer.HTTPPort), 10),
+		},
+		{
+			Name:  controllerconstants.RSSCoordinatorQuorumEnv,
+			Value: coordinator.GenerateAddresses(rss),
+		},
+		{
+			Name:  controllerconstants.XmxSizeEnv,
+			Value: rss.Spec.ShuffleServer.XmxSize,
+		},
+		{
+			Name:  controllerconstants.ServiceNameEnv,
+			Value: controllerconstants.ShuffleServerServiceName,
+		},
+		{
+			Name: controllerconstants.NodeNameEnv,
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "spec.nodeName",
+				},
+			},
+		},
+		{
+			Name: controllerconstants.RssIPEnv,
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "status.podIP",
+				},
+			},
+		},
+	}
 }
 
 func TestGenerateSts(t *testing.T) {
@@ -148,46 +224,7 @@ func TestGenerateSts(t *testing.T) {
 			name: "set custom environment variables",
 			rss:  buildRssWithCustomENVs(),
 			IsValidSts: func(sts *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (valid bool, err error) {
-				expectENVs := []corev1.EnvVar{
-					{
-						Name:  controllerconstants.ShuffleServerRPCPortEnv,
-						Value: strconv.FormatInt(int64(controllerconstants.ContainerShuffleServerRPCPort), 10),
-					},
-					{
-						Name:  controllerconstants.ShuffleServerHTTPPortEnv,
-						Value: strconv.FormatInt(int64(controllerconstants.ContainerShuffleServerHTTPPort), 10),
-					},
-					{
-						Name:  controllerconstants.RSSCoordinatorQuorumEnv,
-						Value: coordinator.GenerateAddresses(rss),
-					},
-					{
-						Name:  controllerconstants.XmxSizeEnv,
-						Value: rss.Spec.ShuffleServer.XmxSize,
-					},
-					{
-						Name:  controllerconstants.ServiceNameEnv,
-						Value: controllerconstants.ShuffleServerServiceName,
-					},
-					{
-						Name: controllerconstants.NodeNameEnv,
-						ValueFrom: &corev1.EnvVarSource{
-							FieldRef: &corev1.ObjectFieldSelector{
-								APIVersion: "v1",
-								FieldPath:  "spec.nodeName",
-							},
-						},
-					},
-					{
-						Name: controllerconstants.RssIPEnv,
-						ValueFrom: &corev1.EnvVarSource{
-							FieldRef: &corev1.ObjectFieldSelector{
-								APIVersion: "v1",
-								FieldPath:  "status.podIP",
-							},
-						},
-					},
-				}
+				expectENVs := buildCommonExpectedENVs(rss)
 				defaultEnvNames := sets.NewString()
 				for i := range expectENVs {
 					defaultEnvNames.Insert(expectENVs[i].Name)
@@ -207,6 +244,112 @@ func TestGenerateSts(t *testing.T) {
 						string(actualEnvBody), string(expectEnvBody))
 				}
 				return
+			},
+		},
+		{
+			name: "set custom rpc port used by shuffle server",
+			rss:  buildRssWithCustomRPCPort(),
+			IsValidSts: func(sts *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (
+				valid bool, err error) {
+				// check envs
+				expectENVs := buildCommonExpectedENVs(rss)
+				for i := range expectENVs {
+					if expectENVs[i].Name == controllerconstants.ShuffleServerRPCPortEnv {
+						expectENVs[i].Value = strconv.FormatInt(int64(testRPCPort), 10)
+					}
+				}
+				actualENVs := sts.Spec.Template.Spec.Containers[0].Env
+				valid = reflect.DeepEqual(expectENVs, actualENVs)
+				if !valid {
+					actualEnvBody, _ := json.Marshal(actualENVs)
+					expectEnvBody, _ := json.Marshal(expectENVs)
+					err = fmt.Errorf("unexpected ENVs:\n%v,\nexpected:\n%v",
+						string(actualEnvBody), string(expectEnvBody))
+					return
+				}
+
+				// check ports
+				expectPorts := []corev1.ContainerPort{
+					{
+						ContainerPort: testRPCPort,
+						Protocol:      corev1.ProtocolTCP,
+					},
+					{
+						ContainerPort: *rss.Spec.ShuffleServer.HTTPPort,
+						Protocol:      corev1.ProtocolTCP,
+					},
+				}
+				actualPorts := sts.Spec.Template.Spec.Containers[0].Ports
+				valid = reflect.DeepEqual(expectPorts, actualPorts)
+				if !valid {
+					actualPortsBody, _ := json.Marshal(actualPorts)
+					expectPortsBody, _ := json.Marshal(expectPorts)
+					err = fmt.Errorf("unexpected Ports:\n%v,\nexpected:\n%v",
+						string(actualPortsBody), string(expectPortsBody))
+				}
+				return
+			},
+		},
+		{
+			name: "set custom http port used by shuffle server",
+			rss:  buildRssWithCustomHTTPPort(),
+			IsValidSts: func(sts *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (
+				valid bool, err error) {
+				// check envs
+				expectENVs := buildCommonExpectedENVs(rss)
+				for i := range expectENVs {
+					if expectENVs[i].Name == controllerconstants.ShuffleServerHTTPPortEnv {
+						expectENVs[i].Value = strconv.FormatInt(int64(testHTTPPort), 10)
+					}
+				}
+				actualENVs := sts.Spec.Template.Spec.Containers[0].Env
+				valid = reflect.DeepEqual(expectENVs, actualENVs)
+				if !valid {
+					actualEnvBody, _ := json.Marshal(actualENVs)
+					expectEnvBody, _ := json.Marshal(expectENVs)
+					err = fmt.Errorf("unexpected ENVs:\n%v,\nexpected:\n%v",
+						string(actualEnvBody), string(expectEnvBody))
+					return
+				}
+
+				// check ports
+				expectPorts := []corev1.ContainerPort{
+					{
+						ContainerPort: *rss.Spec.ShuffleServer.RPCPort,
+						Protocol:      corev1.ProtocolTCP,
+					},
+					{
+						ContainerPort: testHTTPPort,
+						Protocol:      corev1.ProtocolTCP,
+					},
+				}
+				actualPorts := sts.Spec.Template.Spec.Containers[0].Ports
+				valid = reflect.DeepEqual(expectPorts, actualPorts)
+				if !valid {
+					actualPortsBody, _ := json.Marshal(actualPorts)
+					expectPortsBody, _ := json.Marshal(expectPorts)
+					err = fmt.Errorf("unexpected Ports:\n%v,\nexpected:\n%v",
+						string(actualPortsBody), string(expectPortsBody))
+				}
+				return
+			},
+		},
+		{
+			name: "test custom volumes",
+			rss:  withCustomVolumes(testVolumes),
+			IsValidSts: func(sts *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (valid bool, err error) {
+				for _, volume := range sts.Spec.Template.Spec.Volumes {
+					if volume.Name == testVolumeName {
+						expectedVolume := testVolumes[0]
+						equal := reflect.DeepEqual(expectedVolume, volume)
+						if equal {
+							return true, nil
+						}
+						volumeJSON, _ := json.Marshal(expectedVolume)
+						return false, fmt.Errorf("generated sts doesn't contain expected volumn: %s", volumeJSON)
+					}
+				}
+				return false, fmt.Errorf("generated sts should include volume: %s", testVolumeName)
 			},
 		},
 	} {
