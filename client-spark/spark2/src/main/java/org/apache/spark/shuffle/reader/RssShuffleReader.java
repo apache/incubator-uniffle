@@ -77,7 +77,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       int startPartition,
       int endPartition,
       TaskContext context,
-      RssShuffleHandle rssShuffleHandle,
+      RssShuffleHandle<K, C, ?> rssShuffleHandle,
       String basePath,
       int indexReadLimit,
       Configuration hadoopConf,
@@ -154,7 +154,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 
     if (shuffleDependency.keyOrdering().isDefined()) {
       // Create an ExternalSorter to sort the data
-      ExternalSorter sorter = new ExternalSorter<K, C, C>(context, Option.empty(), Option.empty(),
+      ExternalSorter<K, C, C> sorter = new ExternalSorter<>(context, Option.empty(), Option.empty(),
           shuffleDependency.keyOrdering(), serializer);
       LOG.info("Inserting aggregated records to sorter");
       long startTime = System.currentTimeMillis();

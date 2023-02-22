@@ -31,7 +31,7 @@ if [ "$SERVICE_NAME" == "coordinator" ];then
     bash ${basedir}/bin/start-coordinator.sh &
     sleep 10
     while : ; do
-        pid=$(/usr/bin/lsof -i:"${COORDINATOR_RPC_PORT}" -sTCP:LISTEN)
+        pid=$(lsof -i:"${COORDINATOR_RPC_PORT}" -sTCP:LISTEN)
         if [ "$pid" = "" ]; then
           break
         else
@@ -46,7 +46,7 @@ if [ "$SERVICE_NAME" == "server" ];then
     bash ${basedir}/bin/start-shuffle-server.sh &
     sleep 10
     while : ; do
-        pid=$(/usr/bin/lsof -i:"$SERVER_RPC_PORT" -sTCP:LISTEN)
+        pid=$(lsof -i:"$SERVER_RPC_PORT" -sTCP:LISTEN)
         if [ "$pid" = "" ]; then
           break
         else

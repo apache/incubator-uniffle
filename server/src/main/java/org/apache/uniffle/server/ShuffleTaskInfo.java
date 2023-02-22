@@ -62,7 +62,7 @@ public class ShuffleTaskInfo {
   /**
    * shuffleId -> huge partitionIds set
    */
-  private final Map<Integer, Set> hugePartitionTags;
+  private final Map<Integer, Set<Integer>> hugePartitionTags;
   private final AtomicBoolean existHugePartition;
 
   public ShuffleTaskInfo(String appId) {

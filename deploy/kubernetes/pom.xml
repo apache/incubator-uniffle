@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.apache.uniffle</groupId>
     <artifactId>uniffle-parent</artifactId>
-    <version>0.7.0-snapshot</version>
+    <version>0.8.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
@@ -43,6 +43,19 @@
             </goals>
             <configuration>
               <executable>${basedir}/build-operator.sh</executable>
+            </configuration>
+          </execution>
+          <execution>
+            <id>Build RSS server image</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <workingDirectory>${basedir}/docker</workingDirectory>
+              <executable>${basedir}/docker/build.sh</executable>
+              <commandlineArgs>--push-image false --hadoop-version 2.10.2</commandlineArgs>
+              <skip>${skipBuildImage}</skip>
             </configuration>
           </execution>
           <execution>

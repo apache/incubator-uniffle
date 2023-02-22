@@ -36,7 +36,9 @@ import (
 )
 
 const (
-	testRuntimeClassName = "test-runtime"
+	testRuntimeClassName       = "test-runtime"
+	testRPCPort          int32 = 19990
+	testHTTPPort         int32 = 19991
 )
 
 // IsValidDeploy checks generated deployment, returns whether it is valid and error message.
@@ -66,6 +68,19 @@ var (
 			Value: "127.0.0.1",
 		},
 	}
+	testVolumeName = "test-volume"
+	testVolumes    = []corev1.Volume{
+		{
+			Name: testVolumeName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "test-config",
+					},
+				},
+			},
+		},
+	}
 )
 
 func buildRssWithLabels() *uniffleapi.RemoteShuffleService {
@@ -84,6 +99,63 @@ func buildRssWithCustomENVs() *uniffleapi.RemoteShuffleService {
 	rss := utils.BuildRSSWithDefaultValue()
 	rss.Spec.Coordinator.Env = testENVs
 	return rss
+}
+
+func withCustomVolumes(volumes []corev1.Volume) *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.Coordinator.Volumes = volumes
+	return rss
+}
+
+func buildRssWithCustomRPCPort() *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.Coordinator.RPCPort = pointer.Int32(testRPCPort)
+	return rss
+}
+
+func buildRssWithCustomHTTPPort() *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.Coordinator.HTTPPort = pointer.Int32(testHTTPPort)
+	return rss
+}
+
+func buildCommonExpectedENVs(rss *uniffleapi.RemoteShuffleService) []corev1.EnvVar {
+	return []corev1.EnvVar{
+		{
+			Name:  controllerconstants.CoordinatorRPCPortEnv,
+			Value: strconv.FormatInt(int64(*rss.Spec.Coordinator.RPCPort), 10),
+		},
+		{
+			Name:  controllerconstants.CoordinatorHTTPPortEnv,
+			Value: strconv.FormatInt(int64(*rss.Spec.Coordinator.HTTPPort), 10),
+		},
+		{
+			Name:  controllerconstants.XmxSizeEnv,
+			Value: rss.Spec.Coordinator.XmxSize,
+		},
+		{
+			Name:  controllerconstants.ServiceNameEnv,
+			Value: controllerconstants.CoordinatorServiceName,
+		},
+		{
+			Name: controllerconstants.NodeNameEnv,
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "spec.nodeName",
+				},
+			},
+		},
+		{
+			Name: controllerconstants.RssIPEnv,
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "status.podIP",
+				},
+			},
+		},
+	}
 }
 
 func TestGenerateDeploy(t *testing.T) {
@@ -145,42 +217,7 @@ func TestGenerateDeploy(t *testing.T) {
 			rss:  buildRssWithCustomENVs(),
 			IsValidDeploy: func(deploy *appsv1.Deployment, rss *uniffleapi.RemoteShuffleService) (
 				valid bool, err error) {
-				expectENVs := []corev1.EnvVar{
-					{
-						Name:  controllerconstants.CoordinatorRPCPortEnv,
-						Value: strconv.FormatInt(int64(controllerconstants.ContainerCoordinatorRPCPort), 10),
-					},
-					{
-						Name:  controllerconstants.CoordinatorHTTPPortEnv,
-						Value: strconv.FormatInt(int64(controllerconstants.ContainerCoordinatorHTTPPort), 10),
-					},
-					{
-						Name:  controllerconstants.XmxSizeEnv,
-						Value: rss.Spec.Coordinator.XmxSize,
-					},
-					{
-						Name:  controllerconstants.ServiceNameEnv,
-						Value: controllerconstants.CoordinatorServiceName,
-					},
-					{
-						Name: controllerconstants.NodeNameEnv,
-						ValueFrom: &corev1.EnvVarSource{
-							FieldRef: &corev1.ObjectFieldSelector{
-								APIVersion: "v1",
-								FieldPath:  "spec.nodeName",
-							},
-						},
-					},
-					{
-						Name: controllerconstants.RssIPEnv,
-						ValueFrom: &corev1.EnvVarSource{
-							FieldRef: &corev1.ObjectFieldSelector{
-								APIVersion: "v1",
-								FieldPath:  "status.podIP",
-							},
-						},
-					},
-				}
+				expectENVs := buildCommonExpectedENVs(rss)
 				defaultEnvNames := sets.NewString()
 				for i := range expectENVs {
 					defaultEnvNames.Insert(expectENVs[i].Name)
@@ -200,6 +237,112 @@ func TestGenerateDeploy(t *testing.T) {
 						string(actualEnvBody), string(expectEnvBody))
 				}
 				return
+			},
+		},
+		{
+			name: "set custom rpc port used by coordinator",
+			rss:  buildRssWithCustomRPCPort(),
+			IsValidDeploy: func(deploy *appsv1.Deployment, rss *uniffleapi.RemoteShuffleService) (
+				valid bool, err error) {
+				// check envs
+				expectENVs := buildCommonExpectedENVs(rss)
+				for i := range expectENVs {
+					if expectENVs[i].Name == controllerconstants.CoordinatorRPCPortEnv {
+						expectENVs[i].Value = strconv.FormatInt(int64(testRPCPort), 10)
+					}
+				}
+				actualENVs := deploy.Spec.Template.Spec.Containers[0].Env
+				valid = reflect.DeepEqual(expectENVs, actualENVs)
+				if !valid {
+					actualEnvBody, _ := json.Marshal(actualENVs)
+					expectEnvBody, _ := json.Marshal(expectENVs)
+					err = fmt.Errorf("unexpected ENVs:\n%v,\nexpected:\n%v",
+						string(actualEnvBody), string(expectEnvBody))
+					return
+				}
+
+				// check ports
+				expectPorts := []corev1.ContainerPort{
+					{
+						ContainerPort: testRPCPort,
+						Protocol:      corev1.ProtocolTCP,
+					},
+					{
+						ContainerPort: *rss.Spec.Coordinator.HTTPPort,
+						Protocol:      corev1.ProtocolTCP,
+					},
+				}
+				actualPorts := deploy.Spec.Template.Spec.Containers[0].Ports
+				valid = reflect.DeepEqual(expectPorts, actualPorts)
+				if !valid {
+					actualPortsBody, _ := json.Marshal(actualPorts)
+					expectPortsBody, _ := json.Marshal(expectPorts)
+					err = fmt.Errorf("unexpected Ports:\n%v,\nexpected:\n%v",
+						string(actualPortsBody), string(expectPortsBody))
+				}
+				return
+			},
+		},
+		{
+			name: "set custom http port used by coordinator",
+			rss:  buildRssWithCustomHTTPPort(),
+			IsValidDeploy: func(deploy *appsv1.Deployment, rss *uniffleapi.RemoteShuffleService) (
+				valid bool, err error) {
+				// check envs
+				expectENVs := buildCommonExpectedENVs(rss)
+				for i := range expectENVs {
+					if expectENVs[i].Name == controllerconstants.CoordinatorHTTPPortEnv {
+						expectENVs[i].Value = strconv.FormatInt(int64(testHTTPPort), 10)
+					}
+				}
+				actualENVs := deploy.Spec.Template.Spec.Containers[0].Env
+				valid = reflect.DeepEqual(expectENVs, actualENVs)
+				if !valid {
+					actualEnvBody, _ := json.Marshal(actualENVs)
+					expectEnvBody, _ := json.Marshal(expectENVs)
+					err = fmt.Errorf("unexpected ENVs:\n%v,\nexpected:\n%v",
+						string(actualEnvBody), string(expectEnvBody))
+					return
+				}
+
+				// check ports
+				expectPorts := []corev1.ContainerPort{
+					{
+						ContainerPort: *rss.Spec.Coordinator.RPCPort,
+						Protocol:      corev1.ProtocolTCP,
+					},
+					{
+						ContainerPort: testHTTPPort,
+						Protocol:      corev1.ProtocolTCP,
+					},
+				}
+				actualPorts := deploy.Spec.Template.Spec.Containers[0].Ports
+				valid = reflect.DeepEqual(expectPorts, actualPorts)
+				if !valid {
+					actualPortsBody, _ := json.Marshal(actualPorts)
+					expectPortsBody, _ := json.Marshal(expectPorts)
+					err = fmt.Errorf("unexpected Ports:\n%v,\nexpected:\n%v",
+						string(actualPortsBody), string(expectPortsBody))
+				}
+				return
+			},
+		},
+		{
+			name: "set custom volumes",
+			rss:  withCustomVolumes(testVolumes),
+			IsValidDeploy: func(deploy *appsv1.Deployment, rss *uniffleapi.RemoteShuffleService) (bool, error) {
+				for _, volume := range deploy.Spec.Template.Spec.Volumes {
+					if volume.Name == testVolumeName {
+						expectedVolume := testVolumes[0]
+						equal := reflect.DeepEqual(expectedVolume, volume)
+						if equal {
+							return true, nil
+						}
+						volumeJSON, _ := json.Marshal(expectedVolume)
+						return false, fmt.Errorf("generated deploy doesn't contain expected volumn: %s", volumeJSON)
+					}
+				}
+				return false, fmt.Errorf("generated deploy should include volume: %s", testVolumeName)
 			},
 		},
 	} {
@@ -269,4 +412,8 @@ func TestGenerateAddresses(t *testing.T) {
 	rss := buildRssWithLabels()
 	quorum := GenerateAddresses(rss)
 	assertion.Contains(quorum, "headless")
+
+	rss = buildRssWithCustomRPCPort()
+	quorum = GenerateAddresses(rss)
+	assertion.Contains(quorum, strconv.FormatInt(int64(testRPCPort), 10))
 }

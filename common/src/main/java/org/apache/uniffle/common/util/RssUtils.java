@@ -191,6 +191,7 @@ public class RssUtils {
     return String.join(Constants.KEY_SPLIT_CHAR, appId, String.valueOf(shuffleId), String.valueOf(partition));
   }
 
+  @SuppressWarnings("unchecked")
   public static <T> List<T> loadExtensions(Class<T> extClass, List<String> classes, Object obj) {
     if (classes == null || classes.isEmpty()) {
       throw new RuntimeException("Empty classes");
