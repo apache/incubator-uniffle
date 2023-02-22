@@ -37,7 +37,6 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 
 /**
  * AppBalanceSelectStorageStrategy will consider the number of apps allocated on each remote path is balanced.
@@ -52,7 +51,6 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
   private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
   private final Configuration hdfsConf;
   private List<Map.Entry<String, RankValue>> uris;
-  private final String coordinatorId;
 
   public AppBalanceSelectStorageStrategy(
       Map<String, RankValue> remoteStoragePathRankValue,
@@ -63,8 +61,6 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
     this.appIdToRemoteStorageInfo = appIdToRemoteStorageInfo;
     this.availableRemoteStorageInfo = availableRemoteStorageInfo;
     this.hdfsConf = new Configuration();
-    this.coordinatorId = conf.getString(CoordinatorUtils.COORDINATOR_ID,
-        String.valueOf(CoordinatorUtils.getRandomInt()));
   }
 
   @VisibleForTesting
@@ -93,7 +89,7 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
           RankValue rankValue = remoteStoragePathRankValue.get(uri.getKey());
           rankValue.setHealthy(new AtomicBoolean(true));
           Path remotePath = new Path(uri.getKey());
-          String rssTest = uri.getKey() + "/rssTest-" + coordinatorId;
+          String rssTest = uri.getKey() + "/rssTest-" + getCoordinatorId();
           Path testPath = new Path(rssTest);
           try {
             FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hdfsConf);
@@ -135,10 +131,5 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
     }
     LOG.warn("No remote storage is available, we will default to the first.");
     return availableRemoteStorageInfo.values().iterator().next();
-  }
-
-  // Only for test
-  String getCoordinatorId() {
-    return coordinatorId;
   }
 }

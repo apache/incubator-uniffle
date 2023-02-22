@@ -36,7 +36,6 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 
 /**
  * LowestIOSampleCostSelectStorageStrategy considers that when allocating apps to different remote paths,
@@ -54,7 +53,6 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
   private final Configuration hdfsConf;
   private final int readAndWriteTimes;
   private List<Map.Entry<String, RankValue>> uris;
-  private final String coordinatorId;
 
   public LowestIOSampleCostSelectStorageStrategy(
       Map<String, RankValue> remoteStoragePathRankValue,
@@ -66,8 +64,6 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
     this.availableRemoteStorageInfo = availableRemoteStorageInfo;
     this.hdfsConf = new Configuration();
     readAndWriteTimes = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES);
-    coordinatorId = conf.getString(CoordinatorUtils.COORDINATOR_ID,
-        String.valueOf(CoordinatorUtils.getRandomInt()));
   }
 
   @VisibleForTesting
@@ -106,7 +102,7 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
       for (Map.Entry<String, RankValue> uri : uris) {
         if (uri.getKey().startsWith(ApplicationManager.getPathSchema().get(0))) {
           Path remotePath = new Path(uri.getKey());
-          String rssTest = uri.getKey() + "/rssTest-" + coordinatorId;
+          String rssTest = uri.getKey() + "/rssTest-" + getCoordinatorId();
           Path testPath = new Path(rssTest);
           RankValue rankValue = remoteStoragePathRankValue.get(uri.getKey());
           rankValue.setHealthy(new AtomicBoolean(true));
@@ -138,10 +134,5 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
     }
     LOG.warn("No remote storage is available, we will default to the first.");
     return availableRemoteStorageInfo.values().iterator().next();
-  }
-
-  // Only for test
-  String getCoordinatorId() {
-    return coordinatorId;
   }
 }
