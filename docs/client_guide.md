@@ -63,7 +63,7 @@ To improve performance of AQE skew optimization, uniffle introduces the LOCAL_OR
 and Continuous partition assignment mechanism.
 
 1. LOCAL_ORDER shuffle-data distribution mechanism filter the lots of data to reduce network bandwidth and shuffle-server local-disk pressure. 
-   It's enabled by default in Spark3.x
+   It will be enabled by default when AQE is enabled.
 
 2. Continuous partition assignment mechanism assign consecutive partitions to the same ShuffleServer to reduce the frequency of getShuffleResult.
 

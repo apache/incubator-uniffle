@@ -40,7 +40,7 @@ public class RssClientConf {
   public static final ConfigOption<ShuffleDataDistributionType> DATA_DISTRIBUTION_TYPE = ConfigOptions
       .key("rss.client.shuffle.data.distribution.type")
       .enumType(ShuffleDataDistributionType.class)
-      .defaultValue(ShuffleDataDistributionType.LOCAL_ORDER)
+      .defaultValue(ShuffleDataDistributionType.NORMAL)
       .withDescription("The type of partition shuffle data distribution, including normal and local_order. "
           + "The default value is normal. This config is only valid in Spark3.x");
 }
