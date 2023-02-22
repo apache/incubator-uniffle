@@ -239,15 +239,6 @@ func GenerateDeploy(rss *unifflev1alpha1.RemoteShuffleService, index int) *appsv
 	containers = append(containers, rss.Spec.Coordinator.SidecarContainers...)
 	deploy.Spec.Template.Spec.Containers = containers
 
-	if len(podSpec.Tolerations) == 0 {
-		podSpec.Tolerations = []corev1.Toleration{
-			{
-				Effect: corev1.TaintEffectNoSchedule,
-				Key:    "node-role.kubernetes.io/master",
-			},
-		}
-	}
-
 	// add configMap volume to save exclude nodes.
 	configMapVolume := corev1.Volume{
 		Name: controllerconstants.ExcludeNodesFile,
