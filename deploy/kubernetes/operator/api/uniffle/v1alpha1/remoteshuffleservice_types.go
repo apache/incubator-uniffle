@@ -218,6 +218,14 @@ type RSSPodSpec struct {
 	// Selector which must match a node's labels for the pod to be scheduled on that node.
 	// +optional
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+
+	// Tolerations indicates the tolerations the pods under this subset have.
+	// +optional
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// Affinity is a group of affinity scheduling rules.
+	// +optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 }
 
 // MainContainer stores information of the main container of coordinators or shuffle servers,
