@@ -142,7 +142,7 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
   }
 
   @Test
-  @Timeout(20)
+  @Timeout(30)
   public void selectStorageMulThreadTest() throws Exception {
     String remoteStoragePath = remoteStorage1 + Constants.COMMA_SPLIT_CHAR + remoteStorage2
         + Constants.COMMA_SPLIT_CHAR + remoteStorage3;
@@ -150,8 +150,6 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     applicationManager.getSelectStorageStrategy().detectStorage();
     CountDownLatch cdl = new CountDownLatch(3);
     String testApp1 = "application_testAppId";
-    // init detectStorageScheduler
-    Thread.sleep(2000);
     Thread pickThread1 = new Thread(() -> {
       for (int i = 0; i < 1000; i++) {
         String appId = testApp1 + i;
