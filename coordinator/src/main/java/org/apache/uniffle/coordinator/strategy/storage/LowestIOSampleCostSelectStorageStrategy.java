@@ -102,7 +102,7 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
       for (Map.Entry<String, RankValue> uri : uris) {
         if (uri.getKey().startsWith(ApplicationManager.getPathSchema().get(0))) {
           Path remotePath = new Path(uri.getKey());
-          String rssTest = uri.getKey() + "/rssTest";
+          String rssTest = uri.getKey() + "/rssTest-" + getCoordinatorId();
           Path testPath = new Path(rssTest);
           RankValue rankValue = remoteStoragePathRankValue.get(uri.getKey());
           rankValue.setHealthy(new AtomicBoolean(true));
