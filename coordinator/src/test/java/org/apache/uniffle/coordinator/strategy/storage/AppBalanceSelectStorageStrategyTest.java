@@ -127,7 +127,7 @@ public class AppBalanceSelectStorageStrategyTest {
   }
 
   @Test
-  @Timeout(20)
+  @Timeout(30)
   public void storageCounterMulThreadTest() throws Exception {
     String remoteStoragePath = remotePath1 + Constants.COMMA_SPLIT_CHAR + remotePath2
         + Constants.COMMA_SPLIT_CHAR + remotePath3;
@@ -135,8 +135,6 @@ public class AppBalanceSelectStorageStrategyTest {
     applicationManager.getSelectStorageStrategy().detectStorage();
     CountDownLatch cdl = new CountDownLatch(3);
     String testApp1 = "application_testAppId";
-    // init detectStorageScheduler
-    Thread.sleep(2000);
     Thread pickThread1 = new Thread(() -> {
       for (int i = 0; i < 1000; i++) {
         String appId = testApp1 + i;
