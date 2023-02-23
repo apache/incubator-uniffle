@@ -17,15 +17,15 @@
 
 # Apache Uniffle (Incubating)
 
-Uniffle is a high performance, general purpose remote shuffle service for distributed compute engines
-like [Apache Spark][1], [Apache Hadoop MapReduce][2], [Apache Flink][3] and so on.
-It brings in several advantages like supporting disaggregated storage deployment,
-super large shuffle jobs, and high elasticity by changing the shuffle style
+Uniffle is a high performance, general purpose remote shuffle service for distributed compute engines.
+It provides the ability to push shuffle data into centralized storage service, changing the shuffle style
 from "local file pull-like style" to "remote block push-like style".
+It brings in several advantages like supporting disaggregated storage deployment,
+super large shuffle jobs, and high elasticity.
+Currently it supports [Apache Spark][1] and [Apache Hadoop MapReduce][2].
 
 [1]: https://spark.apache.org
 [2]: https://hadoop.apache.org
-[3]: https://flink.apache.org
 
 [![Build](https://github.com/apache/incubator-uniffle/actions/workflows/build.yml/badge.svg?branch=master&event=push)](https://github.com/apache/incubator-uniffle/actions/workflows/build.yml)
 [![Codecov](https://codecov.io/gh/apache/incubator-uniffle/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/incubator-uniffle)
