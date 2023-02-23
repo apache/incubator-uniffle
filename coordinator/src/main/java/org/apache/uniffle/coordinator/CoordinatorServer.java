@@ -40,6 +40,7 @@ import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategy;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategyFactory;
+import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_ENABLE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE;
@@ -160,6 +161,8 @@ public class CoordinatorServer extends ReconfigurableBase {
           .build();
     }
     SecurityContextFactory.get().init(securityConfig);
+
+    coordinatorConf.setString(CoordinatorUtils.COORDINATOR_ID, id);
 
     // load default hadoop configuration
     Configuration hadoopConf = new Configuration();
