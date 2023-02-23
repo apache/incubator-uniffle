@@ -34,6 +34,7 @@ import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import org.apache.spark.SparkEnv;
 import org.apache.spark.TaskContext;
 import org.apache.spark.broadcast.Broadcast;
@@ -65,7 +66,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.common.util.RetryUtils;-
+import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
@@ -239,14 +240,13 @@ public class RssShuffleManager implements ShuffleManager {
     if (dependency.partitioner().numPartitions() == 0) {
       LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum is 0, "
           + "return the empty RssShuffleHandle directly");
-      Broadcast<PartitionShuffleServerMap> ptsBd = RssSparkShuffleUtils.createPartShuffleServerMap(
-          Collections.emptyMap());
+      Broadcast<byte[]> ptsBd = RssSparkShuffleUtils.createPartShuffleServerMap(SparkContext.getOrCreate(),
+          shuffleId, Collections.emptyMap(), RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
       return new RssShuffleHandle(shuffleId,
         appId,
         dependency.rdd().getNumPartitions(),
         dependency,
-        ptsBd,
-        RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+        ptsBd);
     }
 
     String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
@@ -280,10 +280,10 @@ public class RssShuffleManager implements ShuffleManager {
 
     startHeartbeat();
 
-    Broadcast<PartitionShuffleServerMap> ptsBd = RssSparkShuffleUtils.createPartShuffleServerMap(
-        partitionToServers);
+    Broadcast<byte[]> ptsBd = RssSparkShuffleUtils.createPartShuffleServerMap(SparkContext.getOrCreate(),
+        shuffleId, partitionToServers, remoteStorage);
     LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum[" + partitionToServers.size() + "]");
-    return new RssShuffleHandle(shuffleId, appId, numMaps, dependency, ptsBd, remoteStorage);
+    return new RssShuffleHandle(shuffleId, appId, numMaps, dependency, ptsBd);
   }
 
   private void startHeartbeat() {
@@ -351,13 +351,12 @@ public class RssShuffleManager implements ShuffleManager {
       String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
       BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
       ShuffleWriteMetrics writeMetrics = context.taskMetrics().shuffleWriteMetrics();
-      Broadcast<PartitionShuffleServerMap> partServerMapBd = rssHandle.getPartServerMapBd();
       WriteBufferManager bufferManager = new WriteBufferManager(
           shuffleId,
           context.taskAttemptId(),
           bufferOptions,
           rssHandle.getDependency().serializer(),
-          partServerMapBd.value().getPartitionToServers(),
+          rssHandle.getPartitionToServers(),
           context.taskMemoryManager(),
           writeMetrics,
           RssSparkConfig.toRssConf(sparkConf)
@@ -396,8 +395,7 @@ public class RssShuffleManager implements ShuffleManager {
           + taskIdBitmap.getLongCardinality() + " tasks for shuffleId[" + shuffleId + "], partitionId["
           + startPartition + "]");
       start = System.currentTimeMillis();
-      Broadcast<PartitionShuffleServerMap> partServerMapBd = rssShuffleHandle.getPartServerMapBd();
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers = partServerMapBd.value().getPartitionToServers();
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers = rssShuffleHandle.getPartitionToServers();
       Roaring64NavigableMap blockIdBitmap = shuffleWriteClient.getShuffleResult(
           clientType, Sets.newHashSet(partitionToServers.get(startPartition)),
           rssShuffleHandle.getAppId(), shuffleId, startPartition);

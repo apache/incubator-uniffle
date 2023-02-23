@@ -30,6 +30,10 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.deploy.SparkHadoopUtil;
+import org.apache.spark.network.util.JavaUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import scala.reflect.ClassTag;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
@@ -40,14 +44,14 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import scala.reflect.ClassTag;
 
 public class RssSparkShuffleUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssSparkShuffleUtils.class);
+
+  public static final ClassTag<ShuffleHandleInfo> SHUFFLE_HANDLER_INFO_CLASS_TAG = scala.reflect.ClassTag$.MODULE$
+      .apply(ShuffleHandleInfo.class);
+  public static final ClassTag<byte[]> BYTE_ARRAY_CLASS_TAG = scala.reflect.ClassTag$.MODULE$.apply(byte[].class);
 
   public static Configuration newHadoopConfiguration(SparkConf sparkConf) {
     SparkHadoopUtil util = new SparkHadoopUtil();
@@ -198,16 +202,19 @@ public class RssSparkShuffleUtils {
   }
 
   /**
-   * create broadcast variable for partition -> shuffleserver map
-   * make sure it's called in JVM with active SparkContext created
+   * create broadcast variable of {@link ShuffleHandleInfo}
    *
+   * @param sc
+   * @param shuffleId
    * @param partitionToServers
+   * @param storageInfo
    * @return Broadcast variable registered for auto cleanup
    */
-  public static Broadcast<PartitionShuffleServerMap> createPartShuffleServerMap(
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers) {
-    PartitionShuffleServerMap partServerMap = new PartitionShuffleServerMap(partitionToServers);
-    ClassTag<PartitionShuffleServerMap> ptsTag = scala.reflect.ClassTag$.MODULE$.apply(PartitionShuffleServerMap.class);
-    return SparkContext.getOrCreate().broadcast(partServerMap, ptsTag);
+  public static Broadcast<byte[]> createPartShuffleServerMap(SparkContext sc, int shuffleId,
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers, RemoteStorageInfo storageInfo) {
+    ShuffleHandleInfo partServerMap = new ShuffleHandleInfo(shuffleId, partitionToServers, storageInfo);
+    byte[] bytes = JavaUtils.bufferToArray(sc.env().closureSerializer().newInstance()
+        .serialize(partServerMap, SHUFFLE_HANDLER_INFO_CLASS_TAG));
+    return sc.broadcast(bytes, BYTE_ARRAY_CLASS_TAG);
   }
 }

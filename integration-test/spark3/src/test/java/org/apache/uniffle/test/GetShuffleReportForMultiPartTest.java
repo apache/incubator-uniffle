@@ -28,8 +28,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.spark.SparkConf;
 import org.apache.spark.TaskContext;
-import org.apache.spark.broadcast.Broadcast;
-import org.apache.spark.shuffle.PartitionShuffleServerMap;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.RssShuffleManager;
 import org.apache.spark.shuffle.RssSparkConfig;
@@ -221,8 +219,7 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
         Roaring64NavigableMap taskIdBitmap) {
       int shuffleId = handle.shuffleId();
       RssShuffleHandle rssShuffleHandle = (RssShuffleHandle) handle;
-      Broadcast<PartitionShuffleServerMap> ptsBd = rssShuffleHandle.getPartServerMapBd();
-      Map<Integer, List<ShuffleServerInfo>> allPartitionToServers = ptsBd.value().getPartitionToServers();
+      Map<Integer, List<ShuffleServerInfo>> allPartitionToServers = rssShuffleHandle.getPartitionToServers();
       int partitionNum = (int) allPartitionToServers.entrySet().stream()
                                    .filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition).count();
       AtomicInteger partShouldRequestNum = shuffleToPartShouldRequestNum.computeIfAbsent(shuffleId,
