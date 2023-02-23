@@ -62,13 +62,8 @@ After apply the patch and rebuild spark, add following configuration in spark co
 To improve performance of AQE skew optimization, uniffle introduces the LOCAL_ORDER shuffle-data distribution mechanism 
 and Continuous partition assignment mechanism.
 
-1. LOCAL_ORDER shuffle-data distribution mechanism filter the lots of data to reduce network bandwidth and shuffle-server local-disk pressure.
-
-    It can be enabled by the following config
-      ```bash
-      # Default value is NORMAL, it will directly append to file when the memory data is flushed to external storage 
-      spark.rss.client.shuffle.data.distribution.type LOCAL_ORDER
-      ```
+1. LOCAL_ORDER shuffle-data distribution mechanism filter the lots of data to reduce network bandwidth and shuffle-server local-disk pressure. 
+   It will be enabled by default when AQE is enabled.
 
 2. Continuous partition assignment mechanism assign consecutive partitions to the same ShuffleServer to reduce the frequency of getShuffleResult.
 
