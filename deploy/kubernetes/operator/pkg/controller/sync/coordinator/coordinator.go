@@ -178,27 +178,23 @@ func GenerateDeploy(rss *unifflev1alpha1.RemoteShuffleService, index int) *appsv
 	podSpec := corev1.PodSpec{
 		HostNetwork:        *rss.Spec.Coordinator.HostNetwork,
 		ServiceAccountName: utils.GenerateCoordinatorName(rss),
-		Tolerations: []corev1.Toleration{
-			{
-				Effect: corev1.TaintEffectNoSchedule,
-				Key:    "node-role.kubernetes.io/master",
-			},
-		},
-		Volumes: []corev1.Volume{
-			{
-				Name: controllerconstants.ConfigurationVolumeName,
-				VolumeSource: corev1.VolumeSource{
-					ConfigMap: &corev1.ConfigMapVolumeSource{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: rss.Spec.ConfigMapName,
-						},
-						DefaultMode: pointer.Int32(0777),
-					},
-				},
-			},
-		},
-		NodeSelector: rss.Spec.Coordinator.NodeSelector,
+		Tolerations:        rss.Spec.Coordinator.Tolerations,
+		Volumes:            rss.Spec.Coordinator.Volumes,
+		NodeSelector:       rss.Spec.Coordinator.NodeSelector,
+		Affinity:           rss.Spec.Coordinator.Affinity,
 	}
+	configurationVolume := corev1.Volume{
+		Name: controllerconstants.ConfigurationVolumeName,
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: rss.Spec.ConfigMapName,
+				},
+				DefaultMode: pointer.Int32(0777),
+			},
+		},
+	}
+	podSpec.Volumes = append(podSpec.Volumes, configurationVolume)
 	if podSpec.HostNetwork {
 		podSpec.DNSPolicy = corev1.DNSClusterFirstWithHostNet
 	}
@@ -281,7 +277,7 @@ func GenerateAddresses(rss *unifflev1alpha1.RemoteShuffleService) string {
 	for i := 0; i < int(*rss.Spec.Coordinator.Count); i++ {
 		name := GenerateNameByIndex(rss, i)
 		serviceName := appendHeadless(name)
-		current := fmt.Sprintf("%v:%v", serviceName, controllerconstants.ContainerShuffleServerRPCPort)
+		current := fmt.Sprintf("%v:%v", serviceName, *rss.Spec.Coordinator.RPCPort)
 		names = append(names, current)
 	}
 	return strings.Join(names, ",")
@@ -312,11 +308,11 @@ func generateMainContainer(rss *unifflev1alpha1.RemoteShuffleService) *corev1.Co
 func generateMainContainerPorts(rss *unifflev1alpha1.RemoteShuffleService) []corev1.ContainerPort {
 	ports := []corev1.ContainerPort{
 		{
-			ContainerPort: controllerconstants.ContainerCoordinatorRPCPort,
+			ContainerPort: *rss.Spec.Coordinator.RPCPort,
 			Protocol:      corev1.ProtocolTCP,
 		},
 		{
-			ContainerPort: controllerconstants.ContainerCoordinatorHTTPPort,
+			ContainerPort: *rss.Spec.Coordinator.HTTPPort,
 			Protocol:      corev1.ProtocolTCP,
 		},
 	}
@@ -329,11 +325,11 @@ func generateMainContainerENV(rss *unifflev1alpha1.RemoteShuffleService) []corev
 	env := []corev1.EnvVar{
 		{
 			Name:  controllerconstants.CoordinatorRPCPortEnv,
-			Value: strconv.FormatInt(int64(controllerconstants.ContainerCoordinatorRPCPort), 10),
+			Value: strconv.FormatInt(int64(*rss.Spec.Coordinator.RPCPort), 10),
 		},
 		{
 			Name:  controllerconstants.CoordinatorHTTPPortEnv,
-			Value: strconv.FormatInt(int64(controllerconstants.ContainerCoordinatorHTTPPort), 10),
+			Value: strconv.FormatInt(int64(*rss.Spec.Coordinator.HTTPPort), 10),
 		},
 		{
 			Name:  controllerconstants.XmxSizeEnv,

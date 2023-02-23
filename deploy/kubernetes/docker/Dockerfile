@@ -15,7 +15,8 @@
 # limitations under the License.
 #
 
-FROM openjdk:8-jdk-slim
+ARG BASE_IMAGE=uniffle-base:latest
+FROM ${BASE_IMAGE}
 
 ARG HADOOP_VERSION
 ARG RSS_VERSION
@@ -26,9 +27,6 @@ ARG GIT_COMMIT=unknown
 LABEL author=${AUTHOR}
 LABEL git-branch=${GIT_BRANCH}
 LABEL git-commit=${GIT_COMMIT}
-
-RUN apt-get update && apt-get install -y zlib1g zlib1g-dev lzop lsof netcat dnsutils less procps iputils-ping \
-      && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -ms /bin/bash rssadmin
 RUN mkdir -p /data/rssadmin/

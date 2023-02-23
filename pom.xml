@@ -81,6 +81,7 @@
     <trimStackTrace>false</trimStackTrace>
     <skipUTs>${skipTests}</skipUTs>
     <skipITs>${skipTests}</skipITs>
+    <skipBuildImage>true</skipBuildImage>
   </properties>
 
   <repositories>

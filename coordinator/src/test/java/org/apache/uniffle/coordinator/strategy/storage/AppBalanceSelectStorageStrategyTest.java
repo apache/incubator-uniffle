@@ -30,6 +30,7 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
+import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 
 import static org.apache.uniffle.coordinator.ApplicationManager.StrategyName.APP_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,6 +61,7 @@ public class AppBalanceSelectStorageStrategyTest {
     conf.set(CoordinatorConf.COORDINATOR_APP_EXPIRED, appExpiredTime);
     conf.set(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY, APP_BALANCE);
     conf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 1000);
+    conf.setString(CoordinatorUtils.COORDINATOR_ID, "TESTXXX");
     applicationManager = new ApplicationManager(conf);
     // to ensure that the reading and writing of hdfs can be controlled
     applicationManager.closeDetectStorageScheduler();
@@ -125,7 +127,7 @@ public class AppBalanceSelectStorageStrategyTest {
   }
 
   @Test
-  @Timeout(20)
+  @Timeout(30)
   public void storageCounterMulThreadTest() throws Exception {
     String remoteStoragePath = remotePath1 + Constants.COMMA_SPLIT_CHAR + remotePath2
         + Constants.COMMA_SPLIT_CHAR + remotePath3;
@@ -133,8 +135,6 @@ public class AppBalanceSelectStorageStrategyTest {
     applicationManager.getSelectStorageStrategy().detectStorage();
     CountDownLatch cdl = new CountDownLatch(3);
     String testApp1 = "application_testAppId";
-    // init detectStorageScheduler
-    Thread.sleep(2000);
     Thread pickThread1 = new Thread(() -> {
       for (int i = 0; i < 1000; i++) {
         String appId = testApp1 + i;
@@ -174,5 +174,7 @@ public class AppBalanceSelectStorageStrategyTest {
     assertEquals(0, applicationManager.getAvailableRemoteStorageInfo().size());
     assertEquals(0, applicationManager.getRemoteStoragePathRankValue().size());
     assertFalse(applicationManager.hasErrorInStatusCheck());
+    assertEquals("TESTXXX",
+        ((AppBalanceSelectStorageStrategy)applicationManager.getSelectStorageStrategy()).getCoordinatorId());
   }
 }

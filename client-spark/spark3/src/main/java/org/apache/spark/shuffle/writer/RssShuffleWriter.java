@@ -80,7 +80,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final Map<Integer, Set<Long>> partitionToBlockIds;
   private final ShuffleWriteClient shuffleWriteClient;
   private final Map<Integer, List<ShuffleServerInfo>> partitionToServers;
-  private final Set shuffleServersForData;
+  private final Set<ShuffleServerInfo> shuffleServersForData;
   private final long[] partitionLengths;
   private boolean isMemoryShuffleEnabled;
   private final Function<String, Boolean> taskFailureCallback;
@@ -95,7 +95,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
-      RssShuffleHandle rssHandle) {
+      RssShuffleHandle<K, V, C> rssHandle) {
     this(
         appId,
         shuffleId,
@@ -121,7 +121,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
-      RssShuffleHandle rssHandle,
+      RssShuffleHandle<K, V, C> rssHandle,
       Function<String, Boolean> taskFailureCallback) {
     LOG.warn("RssShuffle start write taskAttemptId data" + taskAttemptId);
     this.shuffleManager = shuffleManager;
@@ -169,7 +169,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     List<ShuffleBlockInfo> shuffleBlockInfos;
     Set<Long> blockIds = Sets.newHashSet();
     boolean isCombine = shuffleDependency.mapSideCombine();
-    Function1 createCombiner = null;
+    Function1<V, C> createCombiner = null;
     if (isCombine) {
       createCombiner = shuffleDependency.aggregator().get().createCombiner();
     }
@@ -314,7 +314,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   }
 
   @VisibleForTesting
-  protected <K> int getPartition(K key) {
+  protected <T> int getPartition(T key) {
     int result = 0;
     if (shouldPartition) {
       result = partitioner.getPartition(key);

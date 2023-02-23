@@ -20,6 +20,9 @@ package org.apache.uniffle.server;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -32,6 +35,8 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
+import org.apache.uniffle.common.ServerStatus;
+import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
 import org.apache.uniffle.common.metrics.MetricReporter;
@@ -40,7 +45,9 @@ import org.apache.uniffle.common.rpc.ServerInterface;
 import org.apache.uniffle.common.security.SecurityConfig;
 import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.common.web.CommonMetricsServlet;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
@@ -55,6 +62,8 @@ import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_K
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KRB5_CONF_FILE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_STORAGE_TYPE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_TEST_MODE_ENABLE;
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_CHECK_INTERVAL;
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_SHUTDOWN;
 
 /**
  * Server that manages startup/shutdown of a {@code Greeter} server.
@@ -78,6 +87,10 @@ public class ShuffleServer {
   private AtomicBoolean isHealthy = new AtomicBoolean(true);
   private GRPCMetrics grpcMetrics;
   private MetricReporter metricReporter;
+  private volatile ServerStatus serverStatus = ServerStatus.ACTIVE;
+  private volatile boolean running;
+  private ExecutorService executorService;
+  private Future<?> decommissionFuture;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -123,6 +136,7 @@ public class ShuffleServer {
         LOG.info("*** server shut down");
       }
     });
+    running = true;
     LOG.info("Shuffle server start successfully!");
   }
 
@@ -149,6 +163,10 @@ public class ShuffleServer {
     }
     SecurityContextFactory.get().getSecurityContext().close();
     server.stop();
+    if (executorService != null) {
+      executorService.shutdownNow();
+    }
+    running = false;
     LOG.info("RPC Server Stopped!");
   }
 
@@ -259,6 +277,80 @@ public class ShuffleServer {
     server.blockUntilShutdown();
   }
 
+  public ServerStatus getServerStatus() {
+    return serverStatus;
+  }
+
+  public synchronized void decommission() {
+    if (isDecommissioning()) {
+      LOG.info("Shuffle Server is decommissioning. Nothing needs to be done.");
+      return;
+    }
+    if (!ServerStatus.ACTIVE.equals(serverStatus)) {
+      throw new InvalidRequestException(
+          "Shuffle Server is processing other procedures, current status:" + serverStatus);
+    }
+    serverStatus = ServerStatus.DECOMMISSIONING;
+    LOG.info("Shuffle Server is decommissioning.");
+    if (executorService == null) {
+      executorService = Executors.newSingleThreadExecutor(
+          ThreadUtils.getThreadFactory("shuffle-server-decommission-%d"));
+    }
+    decommissionFuture = executorService.submit(this::waitDecommissionFinish);
+  }
+
+  private void waitDecommissionFinish() {
+    long checkInterval = shuffleServerConf.get(SERVER_DECOMMISSION_CHECK_INTERVAL);
+    boolean shutdownAfterDecommission = shuffleServerConf.get(SERVER_DECOMMISSION_SHUTDOWN);
+    int remainApplicationNum;
+    while (isDecommissioning()) {
+      remainApplicationNum = shuffleTaskManager.getAppIds().size();
+      if (remainApplicationNum == 0) {
+        serverStatus = ServerStatus.DECOMMISSIONED;
+        LOG.info("All applications finished. Current status is " + serverStatus);
+        if (shutdownAfterDecommission) {
+          LOG.info("Exiting...");
+          try {
+            stopServer();
+          } catch (Exception e) {
+            ExitUtils.terminate(1, "Stop server failed!", e, LOG);
+          }
+        }
+        break;
+      }
+      LOG.info("Shuffle server is decommissioning, remaining {} applications not finished.", remainApplicationNum);
+      try {
+        Thread.sleep(checkInterval);
+      } catch (InterruptedException e) {
+        LOG.warn("Interrupted while waiting for decommission to finish");
+        break;
+      }
+    }
+    remainApplicationNum = shuffleTaskManager.getAppIds().size();
+    if (remainApplicationNum > 0) {
+      LOG.info("Decommission exiting, remaining {} applications not finished.",
+          remainApplicationNum);
+    }
+  }
+
+  public synchronized void cancelDecommission() {
+    if (!isDecommissioning()) {
+      LOG.info("Shuffle server is not decommissioning. Nothing needs to be done.");
+      return;
+    }
+    if (ServerStatus.DECOMMISSIONED.equals(serverStatus)) {
+      serverStatus = ServerStatus.ACTIVE;
+      return;
+    }
+    serverStatus = ServerStatus.ACTIVE;
+    if (decommissionFuture.cancel(true)) {
+      LOG.info("Decommission canceled.");
+    } else {
+      LOG.warn("Failed to cancel decommission.");
+    }
+    decommissionFuture = null;
+  }
+
   public String getIp() {
     return this.ip;
   }
@@ -332,4 +424,15 @@ public class ShuffleServer {
   public GRPCMetrics getGrpcMetrics() {
     return grpcMetrics;
   }
+
+  public boolean isDecommissioning() {
+    return ServerStatus.DECOMMISSIONING.equals(serverStatus)
+        || ServerStatus.DECOMMISSIONED.equals(serverStatus);
+  }
+
+  @VisibleForTesting
+  public boolean isRunning() {
+    return running;
+  }
+
 }

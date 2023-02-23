@@ -71,6 +71,7 @@ public class ConfigUtils {
     throw new IllegalArgumentException("Unsupported type: " + clazz);
   }
 
+  @SuppressWarnings("unchecked")
   public static <E extends Enum<?>> E convertToEnum(Object o, Class<E> clazz) {
     if (o.getClass().equals(clazz)) {
       return (E) o;
@@ -184,7 +185,8 @@ public class ConfigUtils {
     return Double.parseDouble(o.toString());
   }
 
-  public static List<ConfigOption<Object>> getAllConfigOptions(Class confClass) {
+  @SuppressWarnings("unchecked")
+  public static List<ConfigOption<Object>> getAllConfigOptions(Class<? extends RssBaseConf> confClass) {
     List<ConfigOption<Object>> configOptionList = Lists.newArrayList();
     try {
       Field[] fields = confClass.getFields();

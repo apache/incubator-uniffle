@@ -62,13 +62,8 @@ After apply the patch and rebuild spark, add following configuration in spark co
 To improve performance of AQE skew optimization, uniffle introduces the LOCAL_ORDER shuffle-data distribution mechanism 
 and Continuous partition assignment mechanism.
 
-1. LOCAL_ORDER shuffle-data distribution mechanism filter the lots of data to reduce network bandwidth and shuffle-server local-disk pressure.
-
-    It can be enabled by the following config
-      ```bash
-      # Default value is NORMAL, it will directly append to file when the memory data is flushed to external storage 
-      spark.rss.client.shuffle.data.distribution.type LOCAL_ORDER
-      ```
+1. LOCAL_ORDER shuffle-data distribution mechanism filter the lots of data to reduce network bandwidth and shuffle-server local-disk pressure. 
+   It will be enabled by default when AQE is enabled.
 
 2. Continuous partition assignment mechanism assign consecutive partitions to the same ShuffleServer to reduce the frequency of getShuffleResult.
 
@@ -80,6 +75,11 @@ and Continuous partition assignment mechanism.
         # Default value is 1.0, used to estimate task concurrency, how likely is this part of the resource between spark.dynamicAllocation.minExecutors and spark.dynamicAllocation.maxExecutors to be allocated
         --conf spark.rss.estimate.task.concurrency.dynamic.factor=1.0
         ```
+   
+Since v0.8.0, `RssShuffleManager` would disable local shuffle reader(`set spark.sql.adaptive.localShuffleReader.enabled=false`) optimization by default.
+
+Local shuffle reader as its name indicates is suitable and optimized for spark's external shuffle service, and shall not be used for remote shuffle service. It would cause many random small IOs and network connections with Uniffle's shuffle server
+
 ### Deploy MapReduce Client Plugin
 
 1. Add client jar to the classpath of each NodeManager, e.g., <HADOOP>/share/hadoop/mapreduce/
