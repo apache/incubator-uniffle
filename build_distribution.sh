@@ -42,9 +42,9 @@ function exit_with_usage() {
   exit 1
 }
 
-SPARK2_PROFILE_ID="spark2"
+SPARK2_PROFILE_ID="spark2.4"
 SPARK2_MVN_OPTS=""
-SPARK3_PROFILE_ID="spark3"
+SPARK3_PROFILE_ID="spark3.1"
 SPARK3_MVN_OPTS=""
 while (( "$#" )); do
   case $1 in

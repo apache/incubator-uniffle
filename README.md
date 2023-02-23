@@ -75,13 +75,13 @@ To build it, run:
 
     mvn -DskipTests clean package
 
-Build against profile Spark 2 (2.4.6)
+Build against profile Spark 2.4.x
 
-    mvn -DskipTests clean package -Pspark2
+    mvn -DskipTests clean package -Pspark2.4
 
-Build against profile Spark 3 (3.1.2)
+Build against profile Spark 3.1.x
 
-    mvn -DskipTests clean package -Pspark3
+    mvn -DskipTests clean package -Pspark3.1
 
 Build against Spark 3.2.x, Except 3.2.0
 

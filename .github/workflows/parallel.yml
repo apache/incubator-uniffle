@@ -50,10 +50,10 @@ jobs:
     strategy:
       matrix:
         profile:
-          - spark2
           - spark2.3
+          - spark2.4
           - spark3.0
-          - spark3
+          - spark3.1
           - spark3.2
           - spark3.2.0
           - spark3.3
