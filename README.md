@@ -17,7 +17,7 @@
 
 # Apache Uniffle (Incubating)
 
-Uniffle is a high performance, general purpose remote shuffle service for distributed compute engines.
+Uniffle is a high performance, general purpose remote shuffle service for distributed computing engines.
 It provides the ability to push shuffle data into centralized storage service,
 changing the shuffle style from "local file pull-like style" to "remote block push-like style".
 It brings in several advantages like supporting disaggregated storage deployment,
