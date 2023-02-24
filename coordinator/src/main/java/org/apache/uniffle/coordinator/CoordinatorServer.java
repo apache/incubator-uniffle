@@ -149,6 +149,7 @@ public class CoordinatorServer extends ReconfigurableBase {
     jettyServer = new JettyServer(coordinatorConf);
     // register metrics first to avoid NPE problem when add dynamic metrics
     registerMetrics();
+    coordinatorConf.setString(CoordinatorUtils.COORDINATOR_ID, id);
     this.applicationManager = new ApplicationManager(coordinatorConf);
 
     SecurityConfig securityConfig = null;
@@ -162,7 +163,6 @@ public class CoordinatorServer extends ReconfigurableBase {
     }
     SecurityContextFactory.get().init(securityConfig);
 
-    coordinatorConf.setString(CoordinatorUtils.COORDINATOR_ID, id);
 
     // load default hadoop configuration
     Configuration hadoopConf = new Configuration();
