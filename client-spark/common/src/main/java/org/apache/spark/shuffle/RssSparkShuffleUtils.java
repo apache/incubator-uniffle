@@ -202,9 +202,21 @@ public class RssSparkShuffleUtils {
   }
 
   /**
+   * Get current active {@link SparkContext}. It should be called inside Driver since we don't mean to create any
+   * new {@link SparkContext} here.
+   *
+   * Note: We could use "SparkContext.getActive()" instead of "SparkContext.getOrCreate()" if the "getActive" method
+   * is not declared as package private in Scala.
+   * @return Active SparkContext created by Driver.
+   */
+  public static SparkContext getActiveSparkContext() {
+    return SparkContext.getOrCreate();
+  }
+
+  /**
    * create broadcast variable of {@link ShuffleHandleInfo}
    *
-   * @param sc
+   * @param sc                    expose for easy unit-test
    * @param shuffleId
    * @param partitionToServers
    * @param storageInfo
