@@ -621,5 +621,10 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
         fail("Flush data time out");
       }
     } while (committedCount < expectedBlockNum);
+
+    // Need to wait for `event.doCleanup` to be executed
+    // to ensure the correctness of subsequent checks of
+    // `shuffleBufferManager.getUsedMemory()` and `shuffleBufferManager.getInFlushSize()`.
+    Thread.sleep(100);
   }
 }
