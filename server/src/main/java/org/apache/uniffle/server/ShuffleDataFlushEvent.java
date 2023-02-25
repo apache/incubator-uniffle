@@ -160,7 +160,7 @@ public class ShuffleDataFlushEvent {
         + ", startPartition=" + startPartition
         + ", endPartition=" + endPartition
         + ", retryTimes=" + retryTimes
-        + ", underStorage=" + underStorage.getClass().getSimpleName()
+        + ", underStorage=" + (underStorage == null ? null : underStorage.getClass().getSimpleName())
         + ", isPended=" + isPended;
   }
 }
