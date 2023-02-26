@@ -87,9 +87,10 @@ public class LocalStorage extends AbstractStorage {
       throw new RuntimeException(ioe);
     }
     if (capacity < 0L) {
-      this.capacity = baseFolder.getTotalSpace();
-      LOG.info("Make the disk capacity the total space when \"rss.server.disk.capacity\" is not specified "
-          + "or less than 0");
+      long totalSpace = baseFolder.getTotalSpace();
+      this.capacity = (long) (totalSpace * builder.ratio);
+      LOG.info("The `rss.server.disk.capacity` is not specified nor negative, the " +
+              "ratio(`rss.server.disk.capacity.ratio`:{}) * disk space({}) is used, ", builder.ratio, totalSpace);
     } else {
       long freeSpace = baseFolder.getFreeSpace();
       if (freeSpace < capacity) {
@@ -336,6 +337,7 @@ public class LocalStorage extends AbstractStorage {
 
   public static class Builder {
     private long capacity;
+    private double ratio;
     private double lowWaterMarkOfWrite;
     private double highWaterMarkOfWrite;
     private double cleanupThreshold;
@@ -349,6 +351,11 @@ public class LocalStorage extends AbstractStorage {
 
     public Builder capacity(long capacity) {
       this.capacity = capacity;
+      return this;
+    }
+
+    public Builder ratio(double ratio) {
+      this.ratio = ratio;
       return this;
     }
 

@@ -95,6 +95,19 @@ public class LocalStorageTest {
   }
 
   @Test
+  public void getCapacityInitTest() {
+    LocalStorage item = LocalStorage.newBuilder().basePath(testBaseDir.getAbsolutePath())
+            .cleanupThreshold(50)
+            .highWaterMarkOfWrite(95)
+            .lowWaterMarkOfWrite(80)
+            .capacity(-1)
+            .ratio(0.1)
+            .cleanIntervalMs(5000)
+            .build();
+    assertEquals((long) (testBaseDir.getTotalSpace() * 0.1), item.getCapacity());
+  }
+
+  @Test
   public void baseDirectoryInitTest() throws IOException {
     // empty and writable base dir
     File newBaseDir = new File(testBaseDirWithoutPermission, "test-new");
