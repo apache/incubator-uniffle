@@ -41,7 +41,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Double> SERVER_BUFFER_CAPACITY_RATIO = ConfigOptions
           .key("rss.server.buffer.capacity.ratio")
           .doubleType()
-          .defaultValue(0.7)
+          .defaultValue(0.6)
           .withDescription("JVM heap size * ratio for the maximum memory of buffer manager for shuffle server, this "
               + "is only effective when `rss.server.buffer.capacity` is not explicitly set");
 
