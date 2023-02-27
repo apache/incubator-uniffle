@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
+import io.grpc.StatusRuntimeException;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,8 +42,8 @@ import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleServerInternalGrpcTest extends IntegrationTestBase {
 
@@ -88,15 +89,11 @@ public class ShuffleServerInternalGrpcTest extends IntegrationTestBase {
     response = shuffleServerInternalClient.decommission(new RssDecommissionRequest(true));
     assertTrue(response.isOn());
     assertEquals(ServerStatus.DECOMMISSIONING, shuffleServer.getServerStatus());
-    try {
-      Awaitility.await().timeout(10, TimeUnit.SECONDS).until(() ->
-          !shuffleServer.isRunning());
-      // Server is already shutdown, so io exception should be thrown here.
-      shuffleServerInternalClient.decommission(new RssDecommissionRequest(false));
-      fail(EXPECTED_EXCEPTION_MESSAGE);
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("UNAVAILABLE: io exception"));
-    }
+    Awaitility.await().timeout(10, TimeUnit.SECONDS).until(() ->
+        !shuffleServer.isRunning());
+    // Server is already shutdown, so io exception should be thrown here.
+    assertThrows(StatusRuntimeException.class,
+        () -> shuffleServerInternalClient.decommission(new RssDecommissionRequest(false)));
   }
 
 }
