@@ -18,11 +18,13 @@
 package org.apache.uniffle.server.buffer;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.RangeMap;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -625,6 +627,6 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     // Need to wait for `event.doCleanup` to be executed
     // to ensure the correctness of subsequent checks of
     // `shuffleBufferManager.getUsedMemory()` and `shuffleBufferManager.getInFlushSize()`.
-    Thread.sleep(100);
+    Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> shuffleBufferManager.getUsedMemory() == 0);
   }
 }
