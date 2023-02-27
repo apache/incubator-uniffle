@@ -77,8 +77,16 @@ public class ShuffleBufferManager {
   protected Map<String, Map<Integer, AtomicLong>> shuffleSizeMap = Maps.newConcurrentMap();
 
   public ShuffleBufferManager(ShuffleServerConf conf, ShuffleFlushManager shuffleFlushManager) {
+    long heapSize = Runtime.getRuntime().maxMemory();
     this.capacity = conf.getSizeAsBytes(ShuffleServerConf.SERVER_BUFFER_CAPACITY);
+    if (this.capacity < 0) {
+      this.capacity = (long) (heapSize * conf.getDouble(ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO));
+    }
     this.readCapacity = conf.getSizeAsBytes(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY);
+    if (this.readCapacity < 0) {
+      this.readCapacity = (long) (heapSize * conf.getDouble(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO));
+    }
+    LOG.info("Init shuffle buffer manager with capacity: {}, read buffer capacity: {}.", capacity, readCapacity);
     this.shuffleFlushManager = shuffleFlushManager;
     this.bufferPool = new ConcurrentHashMap<>();
     this.retryNum = conf.getInteger(ShuffleServerConf.SERVER_MEMORY_REQUEST_RETRY_MAX);
@@ -435,6 +443,11 @@ public class ShuffleBufferManager {
 
   public long getCapacity() {
     return capacity;
+  }
+
+  @VisibleForTesting
+  public long getReadCapacity() {
+    return readCapacity;
   }
 
   @VisibleForTesting

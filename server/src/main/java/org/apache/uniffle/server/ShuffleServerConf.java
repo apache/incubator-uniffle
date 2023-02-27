@@ -35,14 +35,28 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Long> SERVER_BUFFER_CAPACITY = ConfigOptions
       .key("rss.server.buffer.capacity")
       .longType()
-      .noDefaultValue()
+      .defaultValue(-1L)
       .withDescription("Max memory of buffer manager for shuffle server");
+
+  public static final ConfigOption<Double> SERVER_BUFFER_CAPACITY_RATIO = ConfigOptions
+          .key("rss.server.buffer.capacity.ratio")
+          .doubleType()
+          .defaultValue(0.6)
+          .withDescription("JVM heap size * ratio for the maximum memory of buffer manager for shuffle server, this "
+              + "is only effective when `rss.server.buffer.capacity` is not explicitly set");
 
   public static final ConfigOption<Long> SERVER_READ_BUFFER_CAPACITY = ConfigOptions
       .key("rss.server.read.buffer.capacity")
       .longType()
-      .defaultValue(10000L)
+      .defaultValue(-1L)
       .withDescription("Max size of buffer for reading data");
+
+  public static final ConfigOption<Double> SERVER_READ_BUFFER_CAPACITY_RATIO = ConfigOptions
+          .key("rss.server.read.buffer.capacity.ratio")
+          .doubleType()
+          .defaultValue(0.2)
+          .withDescription("JVM heap size * ratio for read buffer size, this is only effective when "
+              + "`rss.server.reader.buffer.capacity.ratio` is not explicitly set");
 
   public static final ConfigOption<Long> SERVER_HEARTBEAT_DELAY = ConfigOptions
       .key("rss.server.heartbeat.delay")
@@ -180,6 +194,13 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(-1L)
       .withDescription("Disk capacity that shuffle server can use. "
           + "If it's negative, it will use the default whole space");
+
+  public static final ConfigOption<Double> DISK_CAPACITY_RATIO = ConfigOptions
+          .key("rss.server.disk.capacity.ratio")
+          .doubleType()
+          .defaultValue(0.9)
+          .withDescription("The maximum ratio of disk that could be used as shuffle server. This is only effective "
+              + "when `rss.server.disk.capacity` is not explicitly set");
 
   public static final ConfigOption<Long> SHUFFLE_EXPIRED_TIMEOUT_MS = ConfigOptions
       .key("rss.server.shuffle.expired.timeout.ms")
