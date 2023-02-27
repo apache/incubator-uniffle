@@ -627,10 +627,12 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   public void bufferManagerInitTest() {
     ShuffleServerConf serverConf = new ShuffleServerConf();
     shuffleBufferManager = new ShuffleBufferManager(serverConf, mockShuffleFlushManager);
-    assertEquals((long) (Runtime.getRuntime().maxMemory() * 0.8), shuffleBufferManager.getCapacity());
-    assertEquals((long) (Runtime.getRuntime().maxMemory() * 0.4), shuffleBufferManager.getReadCapacity());
-    double ratio = 0.6;
-    double readRatio = 0.3;
+    double ratio = ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO.defaultValue();
+    double readRatio = ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO.defaultValue();
+    assertEquals((long) (Runtime.getRuntime().maxMemory() * ratio), shuffleBufferManager.getCapacity());
+    assertEquals((long) (Runtime.getRuntime().maxMemory() * readRatio), shuffleBufferManager.getReadCapacity());
+    ratio = 0.6;
+    readRatio = 0.1;
     serverConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO, ratio);
     serverConf.set(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO, readRatio);
     shuffleBufferManager = new ShuffleBufferManager(serverConf, mockShuffleFlushManager);
