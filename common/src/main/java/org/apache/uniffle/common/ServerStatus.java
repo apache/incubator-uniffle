@@ -17,17 +17,17 @@
 
 package org.apache.uniffle.common;
 
-import org.apache.uniffle.proto.RssProtos;
-
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.uniffle.proto.RssProtos;
+
 public enum ServerStatus {
-  UNKNOWN(-1),
   ACTIVE(0),
   DECOMMISSIONING(1),
-  DECOMMISSIONED(2);
+  DECOMMISSIONED(2),
+  UNKNOWN(-1); // UNKNOWN should be the last element of this enum, or unit test will fail.
 
   static final Map<Integer, ServerStatus> VALUE_MAP =
       Arrays.stream(ServerStatus.values()).collect(Collectors.toMap(ServerStatus::code, s -> s));

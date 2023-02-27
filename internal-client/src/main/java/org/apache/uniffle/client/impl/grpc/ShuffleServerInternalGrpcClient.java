@@ -26,15 +26,13 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleServerInternalClient;
 import org.apache.uniffle.client.request.RssDecommissionRequest;
 import org.apache.uniffle.client.response.RssDecommissionResponse;
-import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.ShuffleServerInternalGrpc;
 
 public class ShuffleServerInternalGrpcClient extends GrpcClient implements ShuffleServerInternalClient {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerGrpcClient.class);
-  private static final long FAILED_REQUIRE_ID = -1;
+  private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerInternalGrpcClient.class);
   private static final long RPC_TIMEOUT_DEFAULT_MS = 60000;
   private long rpcTimeout = RPC_TIMEOUT_DEFAULT_MS;
   private ShuffleServerInternalGrpc.ShuffleServerInternalBlockingStub blockingStub;
@@ -62,22 +60,9 @@ public class ShuffleServerInternalGrpcClient extends GrpcClient implements Shuff
     RssProtos.DecommissionRequest protoRequest =
         RssProtos.DecommissionRequest.newBuilder().setOn(BoolValue.newBuilder().setValue(request.isOn()).build())
             .build();
-    RssProtos.DecommissionResponse rpcResponse =
-        blockingStub.withDeadlineAfter(RPC_TIMEOUT_DEFAULT_MS, TimeUnit.MILLISECONDS).decommission(protoRequest);
-    RssProtos.StatusCode statusCode = rpcResponse.getStatus();
-
-    RssDecommissionResponse response;
-    switch (statusCode) {
-      case SUCCESS:
-        response = new RssDecommissionResponse(
-            StatusCode.SUCCESS, rpcResponse.getOn().getValue());
-        break;
-      default:
-        String msg = String.format("Send %s command to %s:%s failed, errorMsg:%s",
-            request.isOn() ? "decommission" : "cancel decommission", host, port, rpcResponse.getRetMsg());
-        LOG.error(msg);
-        throw new RuntimeException(msg);
-    }
-    return response;
+    RssProtos.DecommissionResponse rpcResponse = getBlockingStub().decommission(protoRequest);
+    return new RssDecommissionResponse(
+        StatusCode.fromProto(rpcResponse.getStatus()),
+        rpcResponse.getOn().getValue(), rpcResponse.getRetMsg());
   }
 }

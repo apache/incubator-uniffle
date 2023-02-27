@@ -51,9 +51,9 @@ public class ServerStatusTest {
         fail(e.getMessage());
       }
     }
-    for (int i = 1; i < statusCodes.length; i++) {
-      assertEquals(protoStatusCode[i - 1], statusCodes[i].toProto());
-      assertEquals(ServerStatus.fromProto(protoStatusCode[i - 1]), statusCodes[i]);
+    for (int i = 0; i < statusCodes.length - 1; i++) {
+      assertEquals(protoStatusCode[i], statusCodes[i].toProto());
+      assertEquals(ServerStatus.fromProto(protoStatusCode[i]), statusCodes[i]);
     }
   }
 }

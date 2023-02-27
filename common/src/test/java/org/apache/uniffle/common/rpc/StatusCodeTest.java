@@ -49,6 +49,7 @@ public class StatusCodeTest {
     }
     for (int i = 0; i < statusCodes.length; i++) {
       assertEquals(protoStatusCode[i], statusCodes[i].toProto());
+      assertEquals(StatusCode.fromProto(protoStatusCode[i]), statusCodes[i]);
     }
   }
 }

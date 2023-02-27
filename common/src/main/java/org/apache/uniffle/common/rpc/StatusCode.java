@@ -17,6 +17,10 @@
 
 package org.apache.uniffle.common.rpc;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.apache.uniffle.proto.RssProtos;
 
 public enum StatusCode {
@@ -31,6 +35,8 @@ public enum StatusCode {
   ACCESS_DENIED(8),
   INVALID_REQUEST(9);
 
+  static final Map<Integer, StatusCode> VALUE_MAP =
+      Arrays.stream(StatusCode.values()).collect(Collectors.toMap(StatusCode::statusCode, s -> s));
   private final int statusCode;
 
   StatusCode(int code) {
@@ -41,8 +47,16 @@ public enum StatusCode {
     return statusCode;
   }
 
+  public static StatusCode fromCode(Integer code) {
+    return VALUE_MAP.get(code);
+  }
+
   public RssProtos.StatusCode toProto() {
     RssProtos.StatusCode code = RssProtos.StatusCode.forNumber(this.statusCode());
     return code == null ? RssProtos.StatusCode.INTERNAL_ERROR : code;
+  }
+
+  public static StatusCode fromProto(RssProtos.StatusCode status) {
+    return fromCode(status.getNumber());
   }
 }

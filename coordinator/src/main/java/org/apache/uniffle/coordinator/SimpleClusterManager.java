@@ -265,21 +265,12 @@ public class SimpleClusterManager implements ClusterManager {
   @Override
   public void decommission(String serverId) {
     ServerNode serverNode = getServerNodeById(serverId);
-    if (!ServerStatus.ACTIVE.equals(serverNode.getStatus())) {
-      throw new InvalidRequestException("Server [" + serverId
-          + "] is processing other procedures, current status:" + serverNode.getStatus());
-    }
     getShuffleServerClient(serverNode).decommission(new RssDecommissionRequest(true));
-
   }
 
   @Override
   public void cancelDecommission(String serverId) {
     ServerNode serverNode = getServerNodeById(serverId);
-    if (!ServerStatus.DECOMMISSIONING.equals(serverNode.getStatus())) {
-      LOG.info("Shuffle server is not decommissioning. Nothing needs to be done.");
-      return;
-    }
     getShuffleServerClient(serverNode).decommission(new RssDecommissionRequest(false));
   }
 
