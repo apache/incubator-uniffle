@@ -89,8 +89,8 @@ public class LocalStorage extends AbstractStorage {
     if (capacity < 0L) {
       long totalSpace = baseFolder.getTotalSpace();
       this.capacity = (long) (totalSpace * builder.ratio);
-      LOG.info("The `rss.server.disk.capacity` is not specified nor negative, the " +
-              "ratio(`rss.server.disk.capacity.ratio`:{}) * disk space({}) is used, ", builder.ratio, totalSpace);
+      LOG.info("The `rss.server.disk.capacity` is not specified nor negative, the "
+          + "ratio(`rss.server.disk.capacity.ratio`:{}) * disk space({}) is used, ", builder.ratio, totalSpace);
     } else {
       long freeSpace = baseFolder.getFreeSpace();
       if (freeSpace < capacity) {
