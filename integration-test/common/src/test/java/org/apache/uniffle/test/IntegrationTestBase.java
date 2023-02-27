@@ -40,6 +40,7 @@ import org.apache.uniffle.storage.util.StorageType;
 
 public abstract class IntegrationTestBase extends HdfsTestBase {
 
+  protected static final String EXPECTED_EXCEPTION_MESSAGE = "Exception should be thrown";
   protected static final int SHUFFLE_SERVER_PORT = 20001;
   protected static final String LOCALHOST;
 

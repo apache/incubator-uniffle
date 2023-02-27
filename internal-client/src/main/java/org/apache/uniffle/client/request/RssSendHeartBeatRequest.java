@@ -21,6 +21,7 @@ package org.apache.uniffle.client.request;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.storage.StorageInfo;
 
 public class RssSendHeartBeatRequest {
@@ -35,6 +36,7 @@ public class RssSendHeartBeatRequest {
   private final Set<String> tags;
   private final long timeout;
   private final boolean isHealthy;
+  private final ServerStatus serverStatus;
   private final Map<String, StorageInfo> storageInfo;
 
   public RssSendHeartBeatRequest(
@@ -48,6 +50,7 @@ public class RssSendHeartBeatRequest {
       long timeout,
       Set<String> tags,
       boolean isHealthy,
+      ServerStatus serverStatus,
       Map<String, StorageInfo> storageInfo) {
     this.shuffleServerId = shuffleServerId;
     this.shuffleServerIp = shuffleServerIp;
@@ -59,6 +62,7 @@ public class RssSendHeartBeatRequest {
     this.tags = tags;
     this.timeout = timeout;
     this.isHealthy = isHealthy;
+    this.serverStatus = serverStatus;
     this.storageInfo = storageInfo;
   }
 
@@ -100,6 +104,10 @@ public class RssSendHeartBeatRequest {
 
   public boolean isHealthy() {
     return isHealthy;
+  }
+
+  public ServerStatus getServerStatus() {
+    return serverStatus;
   }
 
   public Map<String, StorageInfo> getStorageInfo() {

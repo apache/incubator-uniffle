@@ -28,7 +28,8 @@ public enum StatusCode {
   NO_PARTITION(5),
   INTERNAL_ERROR(6),
   TIMEOUT(7),
-  ACCESS_DENIED(8);
+  ACCESS_DENIED(8),
+  INVALID_REQUEST(9);
 
   private final int statusCode;
 

@@ -15,25 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.server;
+package org.apache.uniffle.client.response;
 
-import com.google.common.collect.Lists;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.uniffle.common.rpc.StatusCode;
 
-import org.apache.uniffle.common.config.RssBaseConf;
-import org.apache.uniffle.common.metrics.GRPCMetrics;
-import org.apache.uniffle.common.rpc.GrpcServer;
+public class RssDecommissionResponse extends ClientResponse {
+  private boolean on;
 
-public class MockedGrpcServer extends GrpcServer {
-  MockedShuffleServerGrpcService service;
-
-  public MockedGrpcServer(RssBaseConf conf, MockedShuffleServerGrpcService service,
-                          GRPCMetrics grpcMetrics) {
-    super(conf, Lists.newArrayList(Pair.of(service, Lists.newArrayList())), grpcMetrics);
-    this.service = service;
+  public RssDecommissionResponse(StatusCode statusCode, boolean on) {
+    super(statusCode);
+    this.on = on;
   }
 
-  public MockedShuffleServerGrpcService getService() {
-    return service;
+  public boolean isOn() {
+    return on;
   }
 }

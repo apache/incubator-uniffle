@@ -44,7 +44,11 @@ import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.impl.grpc.ShuffleServerInternalGrpcClient;
+import org.apache.uniffle.client.request.RssDecommissionRequest;
+import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
@@ -54,6 +58,7 @@ public class SimpleClusterManager implements ClusterManager {
   private static final Logger LOG = LoggerFactory.getLogger(SimpleClusterManager.class);
 
   private final Map<String, ServerNode> servers = Maps.newConcurrentMap();
+  private Map<ServerNode, ShuffleServerInternalGrpcClient> serverClientMap = Maps.newConcurrentMap();
   private Set<String> excludeNodes = Sets.newConcurrentHashSet();
   // tag -> nodes
   private Map<String, Set<ServerNode>> tagToNodes = Maps.newConcurrentMap();
@@ -117,6 +122,10 @@ public class SimpleClusterManager implements ClusterManager {
       for (String serverId : deleteIds) {
         ServerNode sn = servers.remove(serverId);
         if (sn != null) {
+          ShuffleServerInternalGrpcClient shuffleServerClient = serverClientMap.remove(sn);
+          if (shuffleServerClient != null) {
+            shuffleServerClient.close();
+          }
           for (Set<ServerNode> nodesWithTag : tagToNodes.values()) {
             nodesWithTag.remove(sn);
           }
@@ -200,6 +209,9 @@ public class SimpleClusterManager implements ClusterManager {
   public List<ServerNode> getServerList(Set<String> requiredTags) {
     List<ServerNode> availableNodes = Lists.newArrayList();
     for (ServerNode node : servers.values()) {
+      if (!ServerStatus.ACTIVE.equals(node.getStatus())) {
+        continue;
+      }
       if (!excludeNodes.contains(node.getId())
           && node.getTags().containsAll(requiredTags)
           && node.isHealthy()) {
@@ -248,6 +260,41 @@ public class SimpleClusterManager implements ClusterManager {
     }
 
     return readyForServe;
+  }
+
+  @Override
+  public void decommission(String serverId) {
+    ServerNode serverNode = getServerNodeById(serverId);
+    if (!ServerStatus.ACTIVE.equals(serverNode.getStatus())) {
+      throw new InvalidRequestException("Server [" + serverId
+          + "] is processing other procedures, current status:" + serverNode.getStatus());
+    }
+    getShuffleServerClient(serverNode).decommission(new RssDecommissionRequest(true));
+
+  }
+
+  @Override
+  public void cancelDecommission(String serverId) {
+    ServerNode serverNode = getServerNodeById(serverId);
+    if (!ServerStatus.DECOMMISSIONING.equals(serverNode.getStatus())) {
+      LOG.info("Shuffle server is not decommissioning. Nothing needs to be done.");
+      return;
+    }
+    getShuffleServerClient(serverNode).decommission(new RssDecommissionRequest(false));
+  }
+
+  private ShuffleServerInternalGrpcClient getShuffleServerClient(ServerNode serverNode) {
+    return serverClientMap.computeIfAbsent(serverNode,
+        key -> new ShuffleServerInternalGrpcClient(serverNode.getIp(), serverNode.getPort()));
+  }
+
+  @Override
+  public ServerNode getServerNodeById(String serverId) {
+    ServerNode serverNode = servers.get(serverId);
+    if (serverNode == null) {
+      throw new InvalidRequestException("Server Id [" + serverId + "] not found!");
+    }
+    return serverNode;
   }
 
   @Override

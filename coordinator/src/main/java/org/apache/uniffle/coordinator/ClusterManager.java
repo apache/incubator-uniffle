@@ -56,4 +56,10 @@ public interface ClusterManager extends Closeable, Reconfigurable {
    * @return whether to be ready for serving
    */
   boolean isReadyForServe();
+
+  ServerNode getServerNodeById(String serverId);
+
+  void decommission(String serverId);
+
+  void cancelDecommission(String serverId);
 }

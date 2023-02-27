@@ -33,8 +33,13 @@ public class ShuffleServerFactory {
   public ServerInterface getServer() {
     String type = conf.getString(ShuffleServerConf.RPC_SERVER_TYPE);
     if (type.equals(ServerType.GRPC.name())) {
-      return new GrpcServer(conf, new ShuffleServerGrpcService(shuffleServer),
-          shuffleServer.getGrpcMetrics());
+      return GrpcServer.Builder.newBuilder()
+          .conf(conf)
+          .grpcMetrics(shuffleServer.getGrpcMetrics())
+          .addService(new ShuffleServerGrpcService(shuffleServer))
+          // todo: Add ServerInterceptor for authentication
+          .addService(new ShuffleServerInternalGrpcService(shuffleServer))
+          .build();
     } else {
       throw new UnsupportedOperationException("Unsupported server type " + type);
     }
