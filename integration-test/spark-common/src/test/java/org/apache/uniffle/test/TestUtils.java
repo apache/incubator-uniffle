@@ -53,7 +53,7 @@ public class TestUtils {
     return javaPairRDD1;
   }
 
-  static JavaPairRDD<String, Tuple2<Integer, Integer>> combineByKeyRDD(JavaPairRDD javaPairRDD1) {
+  static JavaPairRDD<String, Tuple2<Integer, Integer>> combineByKeyRDD(JavaPairRDD<String, Integer> javaPairRDD1) {
     JavaPairRDD<String, Tuple2<Integer, Integer>> javaPairRDD = javaPairRDD1
         .combineByKey((Function<Integer, Tuple2<Integer, Integer>>) i -> new Tuple2<>(1, i),
             (Function2<Tuple2<Integer, Integer>, Integer, Tuple2<Integer, Integer>>)

@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.spark.SparkConf;
+import org.apache.spark.shuffle.writer.AddBlockEvent;
 import org.apache.spark.util.EventLoop;
 
 public class TestUtils {
@@ -32,7 +33,7 @@ public class TestUtils {
   public static RssShuffleManager createShuffleManager(
       SparkConf conf,
       Boolean isDriver,
-      EventLoop loop,
+      EventLoop<AddBlockEvent> loop,
       Map<String, Set<Long>> successBlockIds,
       Map<String, Set<Long>> failBlockIds) {
     return new RssShuffleManager(conf, isDriver, loop, successBlockIds, failBlockIds);

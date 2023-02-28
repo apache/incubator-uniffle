@@ -382,6 +382,7 @@ public class LocalOrderSegmentSplitterTest {
     assertEquals(1, dataSegments.get(1).getLength());
   }
 
+  @SafeVarargs
   public static byte[] generateData(Pair<Integer, Integer>... configEntries) {
     ByteBuffer byteBuffer = ByteBuffer.allocate(configEntries.length * 40);
     int total = 0;

@@ -142,7 +142,7 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
   }
 
   @Override
-  Map runTest(SparkSession spark, String fileName) throws Exception {
+  Map<Integer, String> runTest(SparkSession spark, String fileName) throws Exception {
     Thread.sleep(4000);
     Map<Integer, String> map = Maps.newHashMap();
     Dataset<Row> df2 = spark.range(0, 1000, 1, 10)
@@ -218,7 +218,7 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
         ShuffleReadMetricsReporter metrics,
         Roaring64NavigableMap taskIdBitmap) {
       int shuffleId = handle.shuffleId();
-      RssShuffleHandle rssShuffleHandle = (RssShuffleHandle) handle;
+      RssShuffleHandle<?, ?, ?> rssShuffleHandle = (RssShuffleHandle<?, ?, ?>) handle;
       Map<Integer, List<ShuffleServerInfo>> allPartitionToServers = rssShuffleHandle.getPartitionToServers();
       int partitionNum = (int) allPartitionToServers.entrySet().stream()
                                    .filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition).count();
