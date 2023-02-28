@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
 /**
  * QuotaManager is a manager for resource restriction.
@@ -124,6 +126,7 @@ public class QuotaManager {
         return true;
       } else {
         appAndTimes.put(uuid, System.currentTimeMillis());
+        addQuotaMetrics(user);
         return false;
       }
     }
@@ -137,6 +140,24 @@ public class QuotaManager {
     synchronized (this) {
       appAndTime.remove(uuidFromApp);
       appAndTime.put(appId, currentTimeMillis);
+    }
+  }
+
+  protected void updateQuotaMetrics() {
+    for (Map.Entry<String, Map<String, Long>> userAndApp : currentUserAndApp.entrySet()) {
+      String user = userAndApp.getKey();
+      try {
+        CoordinatorMetrics.updateDynamicGaugeForUser(user, userAndApp.getValue().size());
+      } catch (Exception e) {
+        LOG.warn("Update user metrics for {} failed ", user, e);
+      }
+    }
+  }
+
+  protected void addQuotaMetrics(String user) {
+    if (!StringUtils.isEmpty(user)) {
+      CoordinatorMetrics.addDynamicGaugeForUser(user);
+      LOG.info("Add user metrics for {} successfully ", user);
     }
   }
 
