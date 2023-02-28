@@ -16,47 +16,24 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <artifactId>uniffle-parent</artifactId>
     <groupId>org.apache.uniffle</groupId>
-    <version>0.7.0</version>
+    <version>0.7.0-snapshot</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.apache.uniffle</groupId>
-  <artifactId>rss-integration-spark2-test</artifactId>
-  <version>0.7.0</version>
+  <artifactId>rss-integration-spark-common-test</artifactId>
+  <version>0.7.0-snapshot</version>
   <packaging>jar</packaging>
-  <name>Apache Uniffle Integration Test (Spark 2)</name>
+  <name>Apache Uniffle Integration Test (Spark Common)</name>
 
   <dependencies>
-
-    <dependency>
-      <groupId>org.apache.uniffle</groupId>
-      <artifactId>rss-integration-spark-common-test</artifactId>
-      <scope>test</scope>
-      <type>test-jar</type>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.uniffle</groupId>
-      <artifactId>rss-client-spark2</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.uniffle</groupId>
-      <artifactId>rss-client-spark-common</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.servlet</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
     <dependency>
       <groupId>org.apache.uniffle</groupId>
       <artifactId>rss-internal-client</artifactId>
@@ -67,6 +44,12 @@
           <artifactId>javax.servlet</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>3.1.0</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.uniffle</groupId>
@@ -83,28 +66,20 @@
       <artifactId>rss-client</artifactId>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.apache.uniffle</groupId>
       <artifactId>rss-integration-common-test</artifactId>
-      <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-core_${scala.binary.version}</artifactId>
+      <groupId>org.apache.uniffle</groupId>
+      <artifactId>rss-client-spark-common</artifactId>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>com.fasterxml.jackson.module</groupId>
-          <artifactId>jackson-module-scala_${scala.binary.version}</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-sql_${scala.binary.version}</artifactId>
+      <groupId>org.apache.uniffle</groupId>
+      <artifactId>rss-client-spark${client.type}</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -113,7 +88,6 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-core_${scala.binary.version}</artifactId>
@@ -145,12 +119,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
-      <version>${jackson.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>com.fasterxml.jackson.module</groupId>
       <artifactId>jackson-module-scala_${scala.binary.version}</artifactId>
       <version>${jackson.version}</version>
@@ -168,10 +136,59 @@
       </exclusions>
     </dependency>
     <dependency>
+      <groupId>org.apache.uniffle</groupId>
+      <artifactId>rss-client</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>net.jpountz.lz4</groupId>
       <artifactId>lz4</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
 
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.22.2</version>
+          <configuration>
+            <systemProperties>
+              <java.awt.headless>true</java.awt.headless>
+              <java.io.tmpdir>${project.build.directory}/tmp</java.io.tmpdir>
+              <project.version>${project.version}</project.version>
+            </systemProperties>
+            <redirectTestOutputToFile>${test.redirectToFile}</redirectTestOutputToFile>
+            <useFile>${test.redirectToFile}</useFile>
+            <argLine>-ea -Xmx3g</argLine>
+            <failIfNoTests>false</failIfNoTests>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.4</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <executions>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

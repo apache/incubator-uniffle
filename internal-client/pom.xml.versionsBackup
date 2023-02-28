@@ -23,42 +23,23 @@
   <parent>
     <groupId>org.apache.uniffle</groupId>
     <artifactId>uniffle-parent</artifactId>
-    <version>0.7.0</version>
+    <version>0.7.0-snapshot</version>
   </parent>
 
   <groupId>org.apache.uniffle</groupId>
-  <artifactId>rss-client</artifactId>
-  <version>0.7.0</version>
+  <artifactId>rss-internal-client</artifactId>
+  <version>0.7.0-snapshot</version>
   <packaging>jar</packaging>
-  <name>Apache Uniffle Client</name>
+  <name>Apache Uniffle Internal Client</name>
 
   <dependencies>
     <dependency>
       <groupId>org.apache.uniffle</groupId>
-      <artifactId>shuffle-storage</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.uniffle</groupId>
-      <artifactId>shuffle-storage</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
+      <artifactId>rss-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-inline</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-minicluster</artifactId>
     </dependency>
   </dependencies>
 </project>

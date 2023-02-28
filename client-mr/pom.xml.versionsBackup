@@ -15,7 +15,6 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -23,63 +22,91 @@
     <parent>
         <artifactId>uniffle-parent</artifactId>
         <groupId>org.apache.uniffle</groupId>
-        <version>0.7.0</version>
-        <relativePath>../../pom.xml</relativePath>
+        <version>0.7.0-snapshot</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <groupId>org.apache.uniffle</groupId>
-    <artifactId>rss-client-spark3</artifactId>
-    <version>0.7.0</version>
+    <artifactId>rss-client-mr</artifactId>
+    <version>0.7.0-snapshot</version>
     <packaging>jar</packaging>
-    <name>Apache Uniffle Client (Spark 3)</name>
+    <name>Apache Uniffle Client (MapReduce)</name>
 
     <dependencies>
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>${protobuf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_${scala.binary.version}</artifactId>
-            <version>${spark.version}</version>
-            <scope>provided</scope>
-        </dependency>
         <dependency>
             <groupId>org.apache.uniffle</groupId>
             <artifactId>rss-client</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.uniffle</groupId>
-            <artifactId>rss-client-spark-common</artifactId>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-mapreduce-client-core</artifactId>
+            <version>${hadoop.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.protobuf</groupId>
+                    <artifactId>protobuf-java</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-mapreduce-client-app</artifactId>
+            <version>${hadoop.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.protobuf</groupId>
+                    <artifactId>protobuf-java</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.jpountz.lz4</groupId>
+            <artifactId>lz4</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty-shaded</artifactId>
+            <version>${grpc.version}</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-protobuf</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>${protobuf.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-inline</artifactId>
+            <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.uniffle</groupId>
-            <artifactId>rss-client-spark-common</artifactId>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.uniffle</groupId>
-            <artifactId>shuffle-storage</artifactId>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-minicluster</artifactId>
-            <scope>test</scope>
+            <groupId>com.github.luben</groupId>
+            <artifactId>zstd-jni</artifactId>
         </dependency>
     </dependencies>
+
     <build>
         <plugins>
             <plugin>
@@ -87,7 +114,7 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>rss-client-spark3-jar</id>
+                        <id>rss-client-mr-jar</id>
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
@@ -112,6 +139,7 @@
                                     <include>com.fasterxml.jackson.core:jackson-annotations</include>
                                     <include>org.roaringbitmap:RoaringBitmap</include>
                                     <include>org.roaringbitmap:shims</include>
+                                    <include>net.jpountz.lz4:lz4</include>
                                 </includes>
                             </artifactSet>
                             <finalName>${project.artifactId}-${project.version}</finalName>
