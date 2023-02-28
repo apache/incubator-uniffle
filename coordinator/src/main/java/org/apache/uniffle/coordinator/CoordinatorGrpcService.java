@@ -368,6 +368,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     if (request.hasIsHealthy()) {
       isHealthy = request.getIsHealthy().getValue();
     }
+    ServerStatus serverStatus = request.hasStatus() ? ServerStatus.fromProto(request.getStatus()) : ServerStatus.ACTIVE;
     return new ServerNode(request.getServerId().getId(),
         request.getServerId().getIp(),
         request.getServerId().getPort(),
@@ -377,7 +378,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         request.getEventNumInFlush(),
         Sets.newHashSet(request.getTagsList()),
         isHealthy,
-        ServerStatus.fromProto(request.getStatus()),
+        serverStatus,
         StorageInfoUtils.fromProto(request.getStorageInfoMap()));
   }
 }
