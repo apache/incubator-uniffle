@@ -19,10 +19,12 @@ package config
 
 import (
 	"flag"
+	"time"
+
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/constants"
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/utils"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"time"
 )
 
 const (
@@ -37,7 +39,7 @@ const (
 
 // Config contains all configurations.
 type Config struct {
-	Workers int
+	Workers        int
 	ManagerOptions ctrl.Options
 	utils.GenericConfig
 }
@@ -56,8 +58,8 @@ func (c *Config) AddFlags() {
 	flag.StringVar(&c.ManagerOptions.LeaderElectionID, managerLeaderElectionID, c.LeaderElectionID(), "LeaderElectionID determines the name of the resource that leader election will use for holding the leader lock.")
 	flag.StringVar(&c.ManagerOptions.LeaderElectionNamespace, managerLeaderElectionNamespace, "kube-system", "LeaderElectionNamespace determines the namespace in which the leader election resource will be created.")
 	flag.StringVar(&c.ManagerOptions.Namespace, managerNamespace, "", "Namespace if specified restricts the manager's cache to watch objects in the desired namespace Defaults to all namespaces.")
-	flag.DurationVar(&syncPeriod, managerSyncPeriod, time.Hour * 10, "SyncPeriod determines the minimum frequency at which watched resources are reconciled.")
-	flag.DurationVar(&retryPeriod, managerRetryPeriod, time.Second * 2, "RetryPeriod is the duration the LeaderElector clients should wait between tries of actions.")
+	flag.DurationVar(&syncPeriod, managerSyncPeriod, time.Hour*10, "SyncPeriod determines the minimum frequency at which watched resources are reconciled.")
+	flag.DurationVar(&retryPeriod, managerRetryPeriod, time.Second*2, "RetryPeriod is the duration the LeaderElector clients should wait between tries of actions.")
 
 	c.ManagerOptions.SyncPeriod = &syncPeriod
 	c.ManagerOptions.RetryPeriod = &retryPeriod
