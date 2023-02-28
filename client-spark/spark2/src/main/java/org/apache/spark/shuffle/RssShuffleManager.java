@@ -427,6 +427,7 @@ public class RssShuffleManager implements ShuffleManager {
 
   @Override
   public boolean unregisterShuffle(int shuffleId) {
+    RssShuffleHandle.removeShuffleHandle(shuffleId);
     try {
       if (SparkEnv.get().executorId().equals("driver")) {
         shuffleWriteClient.unregisterShuffle(appId, shuffleId);

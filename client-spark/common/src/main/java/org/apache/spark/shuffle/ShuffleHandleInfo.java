@@ -18,6 +18,7 @@
 package org.apache.spark.shuffle;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +44,9 @@ public class ShuffleHandleInfo implements Serializable {
   private Set<ShuffleServerInfo> shuffleServersForData;
   // remoteStorage used for this job
   private RemoteStorageInfo remoteStorage;
+
+  public static final ShuffleHandleInfo EMPTY_HANDLE_INFO = new ShuffleHandleInfo(-1, Collections.EMPTY_MAP,
+      RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
 
   public ShuffleHandleInfo(int shuffleId, Map<Integer, List<ShuffleServerInfo>> partitionToServers,
                            RemoteStorageInfo storageInfo) {
