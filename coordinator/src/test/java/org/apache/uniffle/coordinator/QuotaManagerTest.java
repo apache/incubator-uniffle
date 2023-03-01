@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Timeout;
 
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -139,9 +140,10 @@ public class QuotaManagerTest {
     assertTrue(icCheck3);
     assertEquals(applicationManager.getQuotaManager().getCurrentUserAndApp().get("user4").size(), 2);
     assertEquals(CoordinatorMetrics.GAUGE_APP_NUM_TO_USER.get("user4").get(), 2);
-    Thread.sleep(2000);
-    applicationManager.statusCheck();
-    // If the number of apps corresponding to this user is 0, remove this user
-    assertEquals(CoordinatorMetrics.GAUGE_APP_NUM_TO_USER.size(), 0);
+    await().atMost(2, TimeUnit.SECONDS).until(() -> {
+      applicationManager.statusCheck();
+      // If the number of apps corresponding to this user is 0, remove this user
+      return CoordinatorMetrics.GAUGE_APP_NUM_TO_USER.size() == 0;
+    });
   }
 }

@@ -107,7 +107,8 @@ public class CoordinatorMetrics {
   }
 
   public static void updateDynamicGaugeForUser(String user, double value) {
-    if (GAUGE_APP_NUM_TO_USER.containsKey(user)) {
+    Gauge gauge = GAUGE_APP_NUM_TO_USER.get(user);
+    if (gauge != null) {
       GAUGE_APP_NUM_TO_USER.get(user).set(value);
       if (value == 0) {
         GAUGE_APP_NUM_TO_USER.remove(user);
