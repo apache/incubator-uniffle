@@ -20,17 +20,11 @@ package org.apache.uniffle.client.response;
 import org.apache.uniffle.common.rpc.StatusCode;
 
 public class RssDecommissionResponse extends ClientResponse {
-  private boolean on;
   private String retMsg;
 
-  public RssDecommissionResponse(StatusCode statusCode, boolean on, String retMsg) {
+  public RssDecommissionResponse(StatusCode statusCode, String retMsg) {
     super(statusCode);
-    this.on = on;
     this.retMsg = retMsg;
-  }
-
-  public boolean isOn() {
-    return on;
   }
 
   public String getRetMsg() {

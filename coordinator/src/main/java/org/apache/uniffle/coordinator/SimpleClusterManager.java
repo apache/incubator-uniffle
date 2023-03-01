@@ -265,13 +265,13 @@ public class SimpleClusterManager implements ClusterManager {
   @Override
   public void decommission(String serverId) {
     ServerNode serverNode = getServerNodeById(serverId);
-    getShuffleServerClient(serverNode).decommission(new RssDecommissionRequest(true));
+    getShuffleServerClient(serverNode).decommission(new RssDecommissionRequest(false));
   }
 
   @Override
   public void cancelDecommission(String serverId) {
     ServerNode serverNode = getServerNodeById(serverId);
-    getShuffleServerClient(serverNode).decommission(new RssDecommissionRequest(false));
+    getShuffleServerClient(serverNode).decommission(new RssDecommissionRequest(true));
   }
 
   private ShuffleServerInternalGrpcClient getShuffleServerClient(ServerNode serverNode) {

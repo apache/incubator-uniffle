@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.server;
 
-import com.google.protobuf.BoolValue;
 import io.grpc.stub.StreamObserver;
 
 import org.apache.uniffle.common.exception.InvalidRequestException;
@@ -36,18 +35,17 @@ public class ShuffleServerInternalGrpcService extends ShuffleServerInternalImplB
   public void decommission(
       RssProtos.DecommissionRequest request,
       StreamObserver<RssProtos.DecommissionResponse> responseObserver) {
-    boolean decommission = request.getOn().getValue();
+    boolean isCancel = request.getCancel().getValue();
     RssProtos.DecommissionResponse response;
     try {
-      if (decommission) {
-        shuffleServer.decommission();
-      } else {
+      if (isCancel) {
         shuffleServer.cancelDecommission();
+      } else {
+        shuffleServer.decommission();
       }
       response = RssProtos.DecommissionResponse
           .newBuilder()
           .setStatus(StatusCode.SUCCESS.toProto())
-          .setOn(BoolValue.newBuilder().setValue(shuffleServer.isDecommissioning()).build())
           .build();
     } catch (Exception e) {
       StatusCode statusCode = StatusCode.INTERNAL_ERROR;
@@ -57,7 +55,6 @@ public class ShuffleServerInternalGrpcService extends ShuffleServerInternalImplB
       response = RssProtos.DecommissionResponse
           .newBuilder()
           .setStatus(statusCode.toProto())
-          .setOn(BoolValue.newBuilder().setValue(shuffleServer.isDecommissioning()).build())
           .setRetMsg(e.getMessage())
           .build();
     }

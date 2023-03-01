@@ -37,13 +37,13 @@ import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
 import org.apache.uniffle.client.response.RssDecommissionResponse;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ServerStatus;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShuffleServerInternalGrpcTest extends IntegrationTestBase {
 
@@ -77,23 +77,25 @@ public class ShuffleServerInternalGrpcTest extends IntegrationTestBase {
     int shuffleId = 0;
     shuffleServerClient.registerShuffle(new RssRegisterShuffleRequest(appId, shuffleId,
         Lists.newArrayList(new PartitionRange(0, 1)), ""));
-    RssDecommissionResponse response = shuffleServerInternalClient.decommission(new RssDecommissionRequest(true));
-    assertTrue(response.isOn());
-    response = shuffleServerInternalClient.decommission(new RssDecommissionRequest(false));
-    assertTrue(!response.isOn());
+
     ShuffleServer shuffleServer = shuffleServers.get(0);
+    RssDecommissionResponse response = shuffleServerInternalClient.decommission(new RssDecommissionRequest(false));
+    assertEquals(StatusCode.SUCCESS, response.getStatusCode());
+    assertEquals(ServerStatus.DECOMMISSIONING, shuffleServer.getServerStatus());
+    response = shuffleServerInternalClient.decommission(new RssDecommissionRequest(true));
+    assertEquals(StatusCode.SUCCESS, response.getStatusCode());
     assertEquals(ServerStatus.ACTIVE, shuffleServer.getServerStatus());
 
     // Clean all apps, shuffle server will be shutdown right now.
     shuffleServerClient.unregisterShuffle(new RssUnregisterShuffleRequest(appId, shuffleId));
-    response = shuffleServerInternalClient.decommission(new RssDecommissionRequest(true));
-    assertTrue(response.isOn());
+    response = shuffleServerInternalClient.decommission(new RssDecommissionRequest(false));
+    assertEquals(StatusCode.SUCCESS, response.getStatusCode());
     assertEquals(ServerStatus.DECOMMISSIONING, shuffleServer.getServerStatus());
     Awaitility.await().timeout(10, TimeUnit.SECONDS).until(() ->
         !shuffleServer.isRunning());
     // Server is already shutdown, so io exception should be thrown here.
     assertThrows(StatusRuntimeException.class,
-        () -> shuffleServerInternalClient.decommission(new RssDecommissionRequest(false)));
+        () -> shuffleServerInternalClient.decommission(new RssDecommissionRequest(true)));
   }
 
 }

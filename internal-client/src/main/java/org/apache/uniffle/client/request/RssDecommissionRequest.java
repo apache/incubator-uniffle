@@ -18,13 +18,13 @@
 package org.apache.uniffle.client.request;
 
 public class RssDecommissionRequest {
-  private boolean on;
+  private boolean cancel;
 
-  public boolean isOn() {
-    return on;
+  public boolean isCancel() {
+    return cancel;
   }
 
-  public RssDecommissionRequest(boolean on) {
-    this.on = on;
+  public RssDecommissionRequest(boolean cancel) {
+    this.cancel = cancel;
   }
 }

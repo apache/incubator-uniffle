@@ -473,11 +473,10 @@ service ShuffleServerInternal {
 }
 
 message DecommissionRequest {
-  google.protobuf.BoolValue on = 1;
+  google.protobuf.BoolValue cancel = 1;
 }
 
 message DecommissionResponse {
   StatusCode status = 1;
-  google.protobuf.BoolValue on = 2;
-  string retMsg = 3;
+  string retMsg = 2;
 }

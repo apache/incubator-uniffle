@@ -58,11 +58,11 @@ public class ShuffleServerInternalGrpcClient extends GrpcClient implements Shuff
   @Override
   public RssDecommissionResponse decommission(RssDecommissionRequest request) {
     RssProtos.DecommissionRequest protoRequest =
-        RssProtos.DecommissionRequest.newBuilder().setOn(BoolValue.newBuilder().setValue(request.isOn()).build())
+        RssProtos.DecommissionRequest.newBuilder()
+            .setCancel(BoolValue.newBuilder().setValue(request.isCancel()).build())
             .build();
     RssProtos.DecommissionResponse rpcResponse = getBlockingStub().decommission(protoRequest);
     return new RssDecommissionResponse(
-        StatusCode.fromProto(rpcResponse.getStatus()),
-        rpcResponse.getOn().getValue(), rpcResponse.getRetMsg());
+        StatusCode.fromProto(rpcResponse.getStatus()), rpcResponse.getRetMsg());
   }
 }
