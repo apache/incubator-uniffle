@@ -47,6 +47,8 @@ public class ShuffleDataFlushEvent {
   private Storage underStorage;
   private final List<Runnable> cleanupCallbackChains;
 
+  private boolean ownedByHugePartition = false;
+
   public ShuffleDataFlushEvent(
       long eventId,
       String appId,
@@ -162,5 +164,13 @@ public class ShuffleDataFlushEvent {
         + ", retryTimes=" + retryTimes
         + ", underStorage=" + (underStorage == null ? null : underStorage.getClass().getSimpleName())
         + ", isPended=" + isPended;
+  }
+
+  public boolean isOwnedByHugePartition() {
+    return ownedByHugePartition;
+  }
+
+  public void markOwnedByHugePartition() {
+    this.ownedByHugePartition = true;
   }
 }
