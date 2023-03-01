@@ -101,8 +101,7 @@ public class CoordinatorMetrics {
   public static void addDynamicGaugeForUser(String user) {
     if (StringUtils.isNotEmpty(user)) {
       GAUGE_APP_NUM_TO_USER.computeIfAbsent(
-          user, x -> metricsManager.addGauge(APP_NUM_TO_USER + user));
-      GAUGE_APP_NUM_TO_USER.get(user).inc();
+          user, x -> metricsManager.addGauge(APP_NUM_TO_USER + user)).inc();
     }
   }
 
