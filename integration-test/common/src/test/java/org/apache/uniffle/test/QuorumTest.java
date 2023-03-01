@@ -132,11 +132,11 @@ public class QuorumTest extends ShuffleReadWriteBase {
     // spark.rss.data.replica.write=2
     // spark.rss.data.replica.read=2
     ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-        .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo0)).adjustTimeout(200);
+        .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo0)).adjustTimeout(2000);
     ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-        .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo1)).adjustTimeout(200);
+        .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo1)).adjustTimeout(2000);
     ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-        .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(200);
+        .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(2000);
 
     Thread.sleep(2000);
   }
@@ -340,8 +340,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     // When 2 servers are timeout, the block sending should fail
-    enableTimeout((MockedShuffleServer)shuffleServers.get(1), 500);
-    enableTimeout((MockedShuffleServer)shuffleServers.get(2), 500);
+    enableTimeout((MockedShuffleServer)shuffleServers.get(1), 5000);
+    enableTimeout((MockedShuffleServer)shuffleServers.get(2), 5000);
 
     List<ShuffleBlockInfo> blocks = createShuffleBlockList(
         0, 0, 0, 3, 25, blockIdBitmap,
@@ -386,7 +386,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     disableTimeout((MockedShuffleServer)shuffleServers.get(2));
 
     // When 1 server is timeout and 1 server is failed after sending, the block sending should fail
-    enableTimeout((MockedShuffleServer)shuffleServers.get(2), 500);
+    enableTimeout((MockedShuffleServer)shuffleServers.get(2), 5000);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
