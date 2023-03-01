@@ -155,10 +155,8 @@ public class QuotaManager {
   }
 
   protected void addQuotaMetrics(String user) {
-    if (StringUtils.isNotEmpty(user)) {
-      CoordinatorMetrics.addDynamicGaugeForUser(user);
-      LOG.info("Add user metrics for {} successfully ", user);
-    }
+    CoordinatorMetrics.addDynamicGaugeForUser(user);
+    LOG.info("Add user metrics for {} successfully ", user);
   }
 
   @VisibleForTesting

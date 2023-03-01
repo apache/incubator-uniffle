@@ -99,19 +99,16 @@ public class CoordinatorMetrics {
   }
 
   public static void addDynamicGaugeForUser(String user) {
-    if (StringUtils.isNotEmpty(user)) {
-      GAUGE_APP_NUM_TO_USER.computeIfAbsent(
-          user, x -> metricsManager.addGauge(APP_NUM_TO_USER + user)).inc();
-    }
+    GAUGE_APP_NUM_TO_USER.computeIfAbsent(
+        user, x -> metricsManager.addGauge(APP_NUM_TO_USER + user)).inc();
   }
 
   public static void updateDynamicGaugeForUser(String user, double value) {
     Gauge gauge = GAUGE_APP_NUM_TO_USER.get(user);
-    if (gauge != null) {
-      GAUGE_APP_NUM_TO_USER.get(user).set(value);
-      if (value == 0) {
-        GAUGE_APP_NUM_TO_USER.remove(user);
-      }
+    if (value == 0) {
+      GAUGE_APP_NUM_TO_USER.remove(user);
+    } else if (gauge != null) {
+      gauge.set(value);
     }
   }
 
