@@ -33,7 +33,8 @@ public enum StatusCode {
   INTERNAL_ERROR(6),
   TIMEOUT(7),
   ACCESS_DENIED(8),
-  INVALID_REQUEST(9);
+  INVALID_REQUEST(9),
+  UNKNOWN(-1); // UNKNOWN should be the last element of this enum, or unit test will fail.
 
   static final Map<Integer, StatusCode> VALUE_MAP =
       Arrays.stream(StatusCode.values()).collect(Collectors.toMap(StatusCode::statusCode, s -> s));
@@ -48,12 +49,13 @@ public enum StatusCode {
   }
 
   public static StatusCode fromCode(Integer code) {
-    return VALUE_MAP.get(code);
+    StatusCode statusCode = VALUE_MAP.get(code);
+    return statusCode == null ? UNKNOWN : statusCode;
   }
 
   public RssProtos.StatusCode toProto() {
     RssProtos.StatusCode code = RssProtos.StatusCode.forNumber(this.statusCode());
-    return code == null ? RssProtos.StatusCode.INTERNAL_ERROR : code;
+    return code == null ? RssProtos.StatusCode.UNRECOGNIZED : code;
   }
 
   public static StatusCode fromProto(RssProtos.StatusCode status) {

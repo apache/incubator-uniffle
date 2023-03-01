@@ -15,7 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client.request;
+package org.apache.uniffle.client.response;
 
-public class RssDecommissionRequest {
+import org.apache.uniffle.common.rpc.StatusCode;
+
+public class RssCancelDecommissionResponse extends ClientResponse {
+  private String retMsg;
+
+  public RssCancelDecommissionResponse(StatusCode statusCode, String retMsg) {
+    super(statusCode);
+    this.retMsg = retMsg;
+  }
+
+  public String getRetMsg() {
+    return retMsg;
+  }
 }

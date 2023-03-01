@@ -41,13 +41,16 @@ public class StatusCodeTest {
     }
     StatusCode[] statusCodes = StatusCode.values();
     for (StatusCode statusCode : statusCodes) {
+      if (StatusCode.UNKNOWN.equals(statusCode)) {
+        continue;
+      }
       try {
         RssProtos.StatusCode.valueOf(statusCode.name());
       } catch (Exception e) {
         fail(e.getMessage());
       }
     }
-    for (int i = 0; i < statusCodes.length; i++) {
+    for (int i = 0; i < statusCodes.length - 1; i++) {
       assertEquals(protoStatusCode[i], statusCodes[i].toProto());
       assertEquals(StatusCode.fromProto(protoStatusCode[i]), statusCodes[i]);
     }

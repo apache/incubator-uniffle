@@ -17,12 +17,16 @@
 
 package org.apache.uniffle.client.api;
 
+import org.apache.uniffle.client.request.RssCancelDecommissionRequest;
 import org.apache.uniffle.client.request.RssDecommissionRequest;
+import org.apache.uniffle.client.response.RssCancelDecommissionResponse;
 import org.apache.uniffle.client.response.RssDecommissionResponse;
 
 public interface ShuffleServerInternalClient {
 
   RssDecommissionResponse decommission(RssDecommissionRequest request);
+
+  RssCancelDecommissionResponse cancelDecommission(RssCancelDecommissionRequest rssCancelDecommissionRequest);
 
   void close();
 

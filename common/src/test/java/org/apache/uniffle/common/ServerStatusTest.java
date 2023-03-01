@@ -29,6 +29,8 @@ public class ServerStatusTest {
   @Test
   public void test() throws Exception {
     assertEquals(-1, ServerStatus.UNKNOWN.code());
+    assertEquals(ServerStatus.fromCode(-2), ServerStatus.UNKNOWN);
+    assertEquals(ServerStatus.fromCode(Integer.MAX_VALUE), ServerStatus.UNKNOWN);
     RssProtos.ServerStatus[] protoStatusCode = RssProtos.ServerStatus.values();
     for (RssProtos.ServerStatus statusCode : protoStatusCode) {
       try {

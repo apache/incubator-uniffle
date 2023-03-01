@@ -42,11 +42,13 @@ public enum ServerStatus {
   }
 
   public static ServerStatus fromCode(Integer code) {
-    return VALUE_MAP.get(code);
+    ServerStatus serverStatus = VALUE_MAP.get(code);
+    return serverStatus == null ? UNKNOWN : serverStatus;
   }
 
   public RssProtos.ServerStatus toProto() {
-    return RssProtos.ServerStatus.forNumber(this.code());
+    RssProtos.ServerStatus serverStatus = RssProtos.ServerStatus.forNumber(this.code());
+    return serverStatus == null ? RssProtos.ServerStatus.UNRECOGNIZED : serverStatus;
   }
 
   public static ServerStatus fromProto(RssProtos.ServerStatus status) {

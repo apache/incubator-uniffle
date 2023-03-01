@@ -19,12 +19,13 @@ package org.apache.uniffle.client.impl.grpc;
 
 import java.util.concurrent.TimeUnit;
 
-import com.google.protobuf.BoolValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleServerInternalClient;
+import org.apache.uniffle.client.request.RssCancelDecommissionRequest;
 import org.apache.uniffle.client.request.RssDecommissionRequest;
+import org.apache.uniffle.client.response.RssCancelDecommissionResponse;
 import org.apache.uniffle.client.response.RssDecommissionResponse;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.proto.RssProtos;
@@ -58,11 +59,18 @@ public class ShuffleServerInternalGrpcClient extends GrpcClient implements Shuff
   @Override
   public RssDecommissionResponse decommission(RssDecommissionRequest request) {
     RssProtos.DecommissionRequest protoRequest =
-        RssProtos.DecommissionRequest.newBuilder()
-            .setCancel(BoolValue.newBuilder().setValue(request.isCancel()).build())
-            .build();
+        RssProtos.DecommissionRequest.newBuilder().build();
     RssProtos.DecommissionResponse rpcResponse = getBlockingStub().decommission(protoRequest);
     return new RssDecommissionResponse(
         StatusCode.fromProto(rpcResponse.getStatus()), rpcResponse.getRetMsg());
+  }
+
+  @Override
+  public RssCancelDecommissionResponse cancelDecommission(RssCancelDecommissionRequest rssCancelDecommissionRequest) {
+    RssProtos.CancelDecommissionRequest protoRequest =
+            RssProtos.CancelDecommissionRequest.newBuilder().build();
+    RssProtos.CancelDecommissionResponse rpcResponse = getBlockingStub().cancelDecommission(protoRequest);
+    return new RssCancelDecommissionResponse(
+            StatusCode.fromProto(rpcResponse.getStatus()), rpcResponse.getRetMsg());
   }
 }

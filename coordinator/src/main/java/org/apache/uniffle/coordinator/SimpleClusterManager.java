@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +34,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -45,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.impl.grpc.ShuffleServerInternalGrpcClient;
+import org.apache.uniffle.client.request.RssCancelDecommissionRequest;
 import org.apache.uniffle.client.request.RssDecommissionRequest;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.config.RssConf;
@@ -58,7 +62,7 @@ public class SimpleClusterManager implements ClusterManager {
   private static final Logger LOG = LoggerFactory.getLogger(SimpleClusterManager.class);
 
   private final Map<String, ServerNode> servers = Maps.newConcurrentMap();
-  private Map<ServerNode, ShuffleServerInternalGrpcClient> serverClientMap = Maps.newConcurrentMap();
+  private final Cache<ServerNode, ShuffleServerInternalGrpcClient> clientCache;
   private Set<String> excludeNodes = Sets.newConcurrentHashSet();
   // tag -> nodes
   private Map<String, Set<ServerNode>> tagToNodes = Maps.newConcurrentMap();
@@ -88,6 +92,7 @@ public class SimpleClusterManager implements ClusterManager {
     this.startupSilentPeriodDurationMs = conf.get(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_DURATION);
 
     periodicOutputIntervalTimes = conf.get(CoordinatorConf.COORDINATOR_NODES_PERIODIC_OUTPUT_INTERVAL_TIMES);
+
     scheduledExecutorService.scheduleAtFixedRate(
         this::nodesCheck, heartbeatTimeout / 3,
         heartbeatTimeout / 3, TimeUnit.MILLISECONDS);
@@ -102,7 +107,13 @@ public class SimpleClusterManager implements ClusterManager {
           () -> updateExcludeNodes(excludeNodesPath), updateNodesInterval, updateNodesInterval, TimeUnit.MILLISECONDS);
     }
 
+    Long clientExpiredTime = conf.get(CoordinatorConf.COORDINATOR_NODES_CLIENT_CACHE_EXPIRED);
+    clientCache = CacheBuilder.newBuilder()
+            .expireAfterAccess(clientExpiredTime, TimeUnit.MILLISECONDS)
+            .removalListener(notify -> ((ShuffleServerInternalGrpcClient) notify.getValue()).close())
+            .build();
     this.startTime = System.currentTimeMillis();
+
   }
 
   void nodesCheck() {
@@ -122,10 +133,7 @@ public class SimpleClusterManager implements ClusterManager {
       for (String serverId : deleteIds) {
         ServerNode sn = servers.remove(serverId);
         if (sn != null) {
-          ShuffleServerInternalGrpcClient shuffleServerClient = serverClientMap.remove(sn);
-          if (shuffleServerClient != null) {
-            shuffleServerClient.close();
-          }
+          clientCache.invalidate(sn);
           for (Set<ServerNode> nodesWithTag : tagToNodes.values()) {
             nodesWithTag.remove(sn);
           }
@@ -265,18 +273,22 @@ public class SimpleClusterManager implements ClusterManager {
   @Override
   public void decommission(String serverId) {
     ServerNode serverNode = getServerNodeById(serverId);
-    getShuffleServerClient(serverNode).decommission(new RssDecommissionRequest(false));
+    getShuffleServerClient(serverNode).decommission(new RssDecommissionRequest());
   }
 
   @Override
   public void cancelDecommission(String serverId) {
     ServerNode serverNode = getServerNodeById(serverId);
-    getShuffleServerClient(serverNode).decommission(new RssDecommissionRequest(true));
+    getShuffleServerClient(serverNode).cancelDecommission(new RssCancelDecommissionRequest());
   }
 
   private ShuffleServerInternalGrpcClient getShuffleServerClient(ServerNode serverNode) {
-    return serverClientMap.computeIfAbsent(serverNode,
-        key -> new ShuffleServerInternalGrpcClient(serverNode.getIp(), serverNode.getPort()));
+    try {
+      return clientCache.get(serverNode,
+              () -> new ShuffleServerInternalGrpcClient(serverNode.getIp(), serverNode.getPort()));
+    } catch (ExecutionException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override

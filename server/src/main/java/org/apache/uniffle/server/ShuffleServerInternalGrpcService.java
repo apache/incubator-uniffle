@@ -35,14 +35,9 @@ public class ShuffleServerInternalGrpcService extends ShuffleServerInternalImplB
   public void decommission(
       RssProtos.DecommissionRequest request,
       StreamObserver<RssProtos.DecommissionResponse> responseObserver) {
-    boolean isCancel = request.getCancel().getValue();
     RssProtos.DecommissionResponse response;
     try {
-      if (isCancel) {
-        shuffleServer.cancelDecommission();
-      } else {
-        shuffleServer.decommission();
-      }
+      shuffleServer.decommission();
       response = RssProtos.DecommissionResponse
           .newBuilder()
           .setStatus(StatusCode.SUCCESS.toProto())
@@ -57,6 +52,32 @@ public class ShuffleServerInternalGrpcService extends ShuffleServerInternalImplB
           .setStatus(statusCode.toProto())
           .setRetMsg(e.getMessage())
           .build();
+    }
+    responseObserver.onNext(response);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void cancelDecommission(
+          RssProtos.CancelDecommissionRequest request,
+          StreamObserver<RssProtos.CancelDecommissionResponse> responseObserver) {
+    RssProtos.CancelDecommissionResponse response;
+    try {
+      shuffleServer.cancelDecommission();
+      response = RssProtos.CancelDecommissionResponse
+              .newBuilder()
+              .setStatus(StatusCode.SUCCESS.toProto())
+              .build();
+    } catch (Exception e) {
+      StatusCode statusCode = StatusCode.INTERNAL_ERROR;
+      if (e instanceof InvalidRequestException) {
+        statusCode = StatusCode.INVALID_REQUEST;
+      }
+      response = RssProtos.CancelDecommissionResponse
+              .newBuilder()
+              .setStatus(statusCode.toProto())
+              .setRetMsg(e.getMessage())
+              .build();
     }
     responseObserver.onNext(response);
     responseObserver.onCompleted();

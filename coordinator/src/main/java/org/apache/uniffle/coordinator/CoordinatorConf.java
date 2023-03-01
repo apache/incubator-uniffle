@@ -197,6 +197,12 @@ public class CoordinatorConf extends RssBaseConf {
       .defaultValue(60 * 1000L)
       .withDescription("Update interval for the default number of submitted apps per user");
 
+  public static final ConfigOption<Long> COORDINATOR_NODES_CLIENT_CACHE_EXPIRED = ConfigOptions
+          .key("rss.coordinator.nodes.client.cache.expired")
+          .longType()
+          .defaultValue(120 * 1000L)
+          .withDescription("Expired time (ms) for the clients communicating with nodes.");
+
   public CoordinatorConf() {
   }
 
