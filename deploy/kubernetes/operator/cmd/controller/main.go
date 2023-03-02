@@ -30,7 +30,6 @@ import (
 func main() {
 	klog.InitFlags(nil)
 	cfg := &config.Config{}
-	cfg.ManagerOptions = ctrl.Options{}
 	cfg.AddFlags()
 	flag.Parse()
 
