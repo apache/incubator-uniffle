@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common.rpc;
+package org.apache.uniffle.common;
 
 import java.util.Arrays;
 import java.util.List;
@@ -28,36 +28,36 @@ import org.apache.uniffle.proto.RssProtos;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class StatusCodeTest {
+public class ServerStatusTest {
 
   @Test
   public void test() throws Exception {
-    assertEquals(-1, StatusCode.UNKNOWN.statusCode());
-    assertEquals(StatusCode.fromCode(-2), StatusCode.UNKNOWN);
-    assertEquals(StatusCode.fromCode(Integer.MAX_VALUE), StatusCode.UNKNOWN);
-    List<RssProtos.StatusCode> protoStatusCode = Arrays.stream(RssProtos.StatusCode.values())
-        .filter(s -> !RssProtos.StatusCode.UNRECOGNIZED.equals(s)).collect(Collectors.toList());
+    assertEquals(-1, ServerStatus.UNKNOWN.code());
+    assertEquals(ServerStatus.fromCode(-2), ServerStatus.UNKNOWN);
+    assertEquals(ServerStatus.fromCode(Integer.MAX_VALUE), ServerStatus.UNKNOWN);
+    List<RssProtos.ServerStatus> protoServerStatuses = Arrays.stream(RssProtos.ServerStatus.values())
+        .filter(s -> !RssProtos.ServerStatus.UNRECOGNIZED.equals(s)).collect(Collectors.toList());
 
-    for (RssProtos.StatusCode statusCode : protoStatusCode) {
+    for (RssProtos.ServerStatus statusCode : protoServerStatuses) {
+
       try {
-        StatusCode.valueOf(statusCode.name());
+        ServerStatus.valueOf(statusCode.name());
       } catch (Exception e) {
         fail(e.getMessage());
       }
     }
-    List<StatusCode> statusCodes = Arrays.stream(StatusCode.values())
-        .filter(s -> !StatusCode.UNKNOWN.equals(s)).collect(Collectors.toList());
-
-    for (StatusCode statusCode : statusCodes) {
+    List<ServerStatus> serverStatuses = Arrays.stream(ServerStatus.values())
+        .filter(s -> !ServerStatus.UNKNOWN.equals(s)).collect(Collectors.toList());
+    for (ServerStatus serverStatus : serverStatuses) {
       try {
-        RssProtos.StatusCode.valueOf(statusCode.name());
+        RssProtos.ServerStatus.valueOf(serverStatus.name());
       } catch (Exception e) {
         fail(e.getMessage());
       }
     }
-    for (int i = 0; i < statusCodes.size() - 1; i++) {
-      assertEquals(protoStatusCode.get(i), statusCodes.get(i).toProto());
-      assertEquals(StatusCode.fromProto(protoStatusCode.get(i)), statusCodes.get(i));
+    for (int i = 0; i < serverStatuses.size() - 1; i++) {
+      assertEquals(protoServerStatuses.get(i), serverStatuses.get(i).toProto());
+      assertEquals(ServerStatus.fromProto(protoServerStatuses.get(i)), serverStatuses.get(i));
     }
   }
 }

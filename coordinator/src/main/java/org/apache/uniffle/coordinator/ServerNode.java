@@ -22,6 +22,7 @@ import java.util.Set;
 
 import com.google.common.collect.Maps;
 
+import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
 
@@ -37,8 +38,10 @@ public class ServerNode implements Comparable<ServerNode> {
   private long timestamp;
   private Set<String> tags;
   private boolean isHealthy;
+  private final ServerStatus status;
   private Map<String, StorageInfo> storageInfo;
 
+  // Only for test
   public ServerNode(
       String id,
       String ip,
@@ -50,7 +53,7 @@ public class ServerNode implements Comparable<ServerNode> {
       Set<String> tags,
       boolean isHealthy) {
     this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags, isHealthy,
-        Maps.newHashMap());
+        ServerStatus.ACTIVE, Maps.newHashMap());
   }
 
   public ServerNode(
@@ -63,6 +66,22 @@ public class ServerNode implements Comparable<ServerNode> {
       int eventNumInFlush,
       Set<String> tags,
       boolean isHealthy,
+      ServerStatus status) {
+    this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags, isHealthy,
+        status, Maps.newHashMap());
+  }
+
+  public ServerNode(
+      String id,
+      String ip,
+      int port,
+      long usedMemory,
+      long preAllocatedMemory,
+      long availableMemory,
+      int eventNumInFlush,
+      Set<String> tags,
+      boolean isHealthy,
+      ServerStatus status,
       Map<String, StorageInfo> storageInfoMap) {
     this.id = id;
     this.ip = ip;
@@ -74,6 +93,7 @@ public class ServerNode implements Comparable<ServerNode> {
     this.timestamp = System.currentTimeMillis();
     this.tags = tags;
     this.isHealthy = isHealthy;
+    this.status = status;
     this.storageInfo = storageInfoMap;
   }
 
@@ -121,6 +141,10 @@ public class ServerNode implements Comparable<ServerNode> {
     return isHealthy;
   }
 
+  public ServerStatus getStatus() {
+    return status;
+  }
+
   public Map<String, StorageInfo> getStorageInfo() {
     return storageInfo;
   }
@@ -137,6 +161,7 @@ public class ServerNode implements Comparable<ServerNode> {
         + "], timestamp[" + timestamp
         + "], tags" + tags.toString() + ""
         + ", healthy[" + isHealthy
+        + ", status[" + status
         + "], storages[num=" + storageInfo.size() + "]";
 
   }

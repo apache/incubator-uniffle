@@ -15,25 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.server;
+package org.apache.uniffle.client.api;
 
-import com.google.common.collect.Lists;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.uniffle.client.request.RssCancelDecommissionRequest;
+import org.apache.uniffle.client.request.RssDecommissionRequest;
+import org.apache.uniffle.client.response.RssCancelDecommissionResponse;
+import org.apache.uniffle.client.response.RssDecommissionResponse;
 
-import org.apache.uniffle.common.config.RssBaseConf;
-import org.apache.uniffle.common.metrics.GRPCMetrics;
-import org.apache.uniffle.common.rpc.GrpcServer;
+public interface ShuffleServerInternalClient {
 
-public class MockedGrpcServer extends GrpcServer {
-  MockedShuffleServerGrpcService service;
+  RssDecommissionResponse decommission(RssDecommissionRequest request);
 
-  public MockedGrpcServer(RssBaseConf conf, MockedShuffleServerGrpcService service,
-                          GRPCMetrics grpcMetrics) {
-    super(conf, Lists.newArrayList(Pair.of(service, Lists.newArrayList())), grpcMetrics);
-    this.service = service;
-  }
+  RssCancelDecommissionResponse cancelDecommission(RssCancelDecommissionRequest rssCancelDecommissionRequest);
 
-  public MockedShuffleServerGrpcService getService() {
-    return service;
-  }
+  void close();
+
 }

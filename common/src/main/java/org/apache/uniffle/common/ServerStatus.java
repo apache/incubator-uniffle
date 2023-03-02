@@ -17,12 +17,20 @@
 
 package org.apache.uniffle.common;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.apache.uniffle.proto.RssProtos;
+
 public enum ServerStatus {
-  UNKNOWN(-1),
   ACTIVE(0),
   DECOMMISSIONING(1),
-  DECOMMISSIONED(2);
+  DECOMMISSIONED(2),
+  UNKNOWN(-1);
 
+  static final Map<Integer, ServerStatus> VALUE_MAP =
+      Arrays.stream(ServerStatus.values()).collect(Collectors.toMap(ServerStatus::code, s -> s));
   private final int code;
 
   ServerStatus(int code) {
@@ -31,5 +39,19 @@ public enum ServerStatus {
 
   public int code() {
     return code;
+  }
+
+  public static ServerStatus fromCode(Integer code) {
+    ServerStatus serverStatus = VALUE_MAP.get(code);
+    return serverStatus == null ? UNKNOWN : serverStatus;
+  }
+
+  public RssProtos.ServerStatus toProto() {
+    RssProtos.ServerStatus serverStatus = RssProtos.ServerStatus.forNumber(this.code());
+    return serverStatus == null ? RssProtos.ServerStatus.UNRECOGNIZED : serverStatus;
+  }
+
+  public static ServerStatus fromProto(RssProtos.ServerStatus status) {
+    return fromCode(status.getNumber());
   }
 }
