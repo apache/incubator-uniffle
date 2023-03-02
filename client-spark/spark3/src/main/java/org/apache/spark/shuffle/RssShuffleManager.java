@@ -318,14 +318,14 @@ public class RssShuffleManager implements ShuffleManager {
     if (dependency.partitioner().numPartitions() == 0) {
       LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum is 0, "
           + "return the empty RssShuffleHandle directly");
-      Broadcast<byte[]> ptsBd = RssSparkShuffleUtils.broadcastShuffleHdlInfo(
+      Broadcast<byte[]> hdlInfoBd = RssSparkShuffleUtils.broadcastShuffleHdlInfo(
           RssSparkShuffleUtils.getActiveSparkContext(), shuffleId, Collections.emptyMap(),
           RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
       return new RssShuffleHandle<>(shuffleId,
         id.get(),
         dependency.rdd().getNumPartitions(),
         dependency,
-        ptsBd);
+        hdlInfoBd);
     }
 
     String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
@@ -361,7 +361,7 @@ public class RssShuffleManager implements ShuffleManager {
     }
     startHeartbeat();
 
-    Broadcast<byte[]> shiBd = RssSparkShuffleUtils.broadcastShuffleHdlInfo(
+    Broadcast<byte[]> hdlInfoBd = RssSparkShuffleUtils.broadcastShuffleHdlInfo(
         RssSparkShuffleUtils.getActiveSparkContext(), shuffleId, partitionToServers, remoteStorage);
     LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum[" + partitionToServers.size()
         + "], shuffleServerForResult: " + partitionToServers);
@@ -369,7 +369,7 @@ public class RssShuffleManager implements ShuffleManager {
         id.get(),
         dependency.rdd().getNumPartitions(),
         dependency,
-        shiBd);
+        hdlInfoBd);
   }
 
   @Override

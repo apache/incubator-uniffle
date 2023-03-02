@@ -224,9 +224,9 @@ public class RssSparkShuffleUtils {
    */
   public static Broadcast<byte[]> broadcastShuffleHdlInfo(SparkContext sc, int shuffleId,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers, RemoteStorageInfo storageInfo) {
-    ShuffleHandleInfo partServerMap = new ShuffleHandleInfo(shuffleId, partitionToServers, storageInfo);
+    ShuffleHandleInfo handleInfo = new ShuffleHandleInfo(shuffleId, partitionToServers, storageInfo);
     byte[] bytes = JavaUtils.bufferToArray(sc.env().closureSerializer().newInstance()
-        .serialize(partServerMap, SHUFFLE_HANDLER_INFO_CLASS_TAG));
+        .serialize(handleInfo, SHUFFLE_HANDLER_INFO_CLASS_TAG));
     return sc.broadcast(bytes, BYTE_ARRAY_CLASS_TAG);
   }
 }
