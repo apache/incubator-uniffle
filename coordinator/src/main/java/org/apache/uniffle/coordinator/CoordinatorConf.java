@@ -203,6 +203,12 @@ public class CoordinatorConf extends RssBaseConf {
           .defaultValue(120 * 1000L)
           .withDescription("Expired time (ms) for the clients communicating with nodes.");
 
+  public static final ConfigOption<Integer> COORDINATOR_NODES_CLIENT_CACHE_MAX = ConfigOptions
+      .key("rss.coordinator.nodes.client.cache.max")
+      .intType()
+      .defaultValue(1000)
+      .withDescription("The max number of clients that communicating with nodes and storing in the cache.");
+
   public CoordinatorConf() {
   }
 

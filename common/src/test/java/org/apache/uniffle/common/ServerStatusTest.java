@@ -17,6 +17,10 @@
 
 package org.apache.uniffle.common;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.proto.RssProtos;
@@ -31,31 +35,29 @@ public class ServerStatusTest {
     assertEquals(-1, ServerStatus.UNKNOWN.code());
     assertEquals(ServerStatus.fromCode(-2), ServerStatus.UNKNOWN);
     assertEquals(ServerStatus.fromCode(Integer.MAX_VALUE), ServerStatus.UNKNOWN);
-    RssProtos.ServerStatus[] protoStatusCode = RssProtos.ServerStatus.values();
-    for (RssProtos.ServerStatus statusCode : protoStatusCode) {
+    List<RssProtos.ServerStatus> protoServerStatuses = Arrays.stream(RssProtos.ServerStatus.values())
+        .filter(s -> !RssProtos.ServerStatus.UNRECOGNIZED.equals(s)).collect(Collectors.toList());
+
+    for (RssProtos.ServerStatus statusCode : protoServerStatuses) {
+
       try {
-        if (RssProtos.ServerStatus.UNRECOGNIZED.equals(statusCode)) {
-          continue;
-        }
         ServerStatus.valueOf(statusCode.name());
       } catch (Exception e) {
         fail(e.getMessage());
       }
     }
-    ServerStatus[] statusCodes = ServerStatus.values();
-    for (ServerStatus statusCode : statusCodes) {
-      if (ServerStatus.UNKNOWN.equals(statusCode)) {
-        continue;
-      }
+    List<ServerStatus> serverStatuses = Arrays.stream(ServerStatus.values())
+        .filter(s -> !ServerStatus.UNKNOWN.equals(s)).collect(Collectors.toList());
+    for (ServerStatus serverStatus : serverStatuses) {
       try {
-        RssProtos.ServerStatus.valueOf(statusCode.name());
+        RssProtos.ServerStatus.valueOf(serverStatus.name());
       } catch (Exception e) {
         fail(e.getMessage());
       }
     }
-    for (int i = 0; i < statusCodes.length - 1; i++) {
-      assertEquals(protoStatusCode[i], statusCodes[i].toProto());
-      assertEquals(ServerStatus.fromProto(protoStatusCode[i]), statusCodes[i]);
+    for (int i = 0; i < serverStatuses.size() - 1; i++) {
+      assertEquals(protoServerStatuses.get(i), serverStatuses.get(i).toProto());
+      assertEquals(ServerStatus.fromProto(protoServerStatuses.get(i)), serverStatuses.get(i));
     }
   }
 }

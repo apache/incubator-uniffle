@@ -34,7 +34,7 @@ public enum StatusCode {
   TIMEOUT(7),
   ACCESS_DENIED(8),
   INVALID_REQUEST(9),
-  UNKNOWN(-1); // UNKNOWN should be the last element of this enum, or unit test will fail.
+  UNKNOWN(-1);
 
   static final Map<Integer, StatusCode> VALUE_MAP =
       Arrays.stream(StatusCode.values()).collect(Collectors.toMap(StatusCode::statusCode, s -> s));

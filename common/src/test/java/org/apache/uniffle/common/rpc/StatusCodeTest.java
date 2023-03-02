@@ -17,6 +17,10 @@
 
 package org.apache.uniffle.common.rpc;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.proto.RssProtos;
@@ -28,31 +32,32 @@ public class StatusCodeTest {
 
   @Test
   public void test() throws Exception {
-    RssProtos.StatusCode[] protoStatusCode = RssProtos.StatusCode.values();
+    assertEquals(-1, StatusCode.UNKNOWN.statusCode());
+    assertEquals(StatusCode.fromCode(-2), StatusCode.UNKNOWN);
+    assertEquals(StatusCode.fromCode(Integer.MAX_VALUE), StatusCode.UNKNOWN);
+    List<RssProtos.StatusCode> protoStatusCode = Arrays.stream(RssProtos.StatusCode.values())
+        .filter(s -> !RssProtos.StatusCode.UNRECOGNIZED.equals(s)).collect(Collectors.toList());
+
     for (RssProtos.StatusCode statusCode : protoStatusCode) {
       try {
-        if (RssProtos.StatusCode.UNRECOGNIZED.equals(statusCode)) {
-          continue;
-        }
         StatusCode.valueOf(statusCode.name());
       } catch (Exception e) {
         fail(e.getMessage());
       }
     }
-    StatusCode[] statusCodes = StatusCode.values();
+    List<StatusCode> statusCodes = Arrays.stream(StatusCode.values())
+        .filter(s -> !StatusCode.UNKNOWN.equals(s)).collect(Collectors.toList());
+
     for (StatusCode statusCode : statusCodes) {
-      if (StatusCode.UNKNOWN.equals(statusCode)) {
-        continue;
-      }
       try {
         RssProtos.StatusCode.valueOf(statusCode.name());
       } catch (Exception e) {
         fail(e.getMessage());
       }
     }
-    for (int i = 0; i < statusCodes.length - 1; i++) {
-      assertEquals(protoStatusCode[i], statusCodes[i].toProto());
-      assertEquals(StatusCode.fromProto(protoStatusCode[i]), statusCodes[i]);
+    for (int i = 0; i < statusCodes.size() - 1; i++) {
+      assertEquals(protoStatusCode.get(i), statusCodes.get(i).toProto());
+      assertEquals(StatusCode.fromProto(protoStatusCode.get(i)), statusCodes.get(i));
     }
   }
 }

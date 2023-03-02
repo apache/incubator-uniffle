@@ -27,7 +27,7 @@ public enum ServerStatus {
   ACTIVE(0),
   DECOMMISSIONING(1),
   DECOMMISSIONED(2),
-  UNKNOWN(-1); // UNKNOWN should be the last element of this enum, or unit test will fail.
+  UNKNOWN(-1);
 
   static final Map<Integer, ServerStatus> VALUE_MAP =
       Arrays.stream(ServerStatus.values()).collect(Collectors.toMap(ServerStatus::code, s -> s));

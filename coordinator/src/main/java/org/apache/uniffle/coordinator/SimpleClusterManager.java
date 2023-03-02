@@ -107,11 +107,13 @@ public class SimpleClusterManager implements ClusterManager {
           () -> updateExcludeNodes(excludeNodesPath), updateNodesInterval, updateNodesInterval, TimeUnit.MILLISECONDS);
     }
 
-    Long clientExpiredTime = conf.get(CoordinatorConf.COORDINATOR_NODES_CLIENT_CACHE_EXPIRED);
+    long clientExpiredTime = conf.get(CoordinatorConf.COORDINATOR_NODES_CLIENT_CACHE_EXPIRED);
+    int maxClient = conf.get(CoordinatorConf.COORDINATOR_NODES_CLIENT_CACHE_MAX);
     clientCache = CacheBuilder.newBuilder()
-            .expireAfterAccess(clientExpiredTime, TimeUnit.MILLISECONDS)
-            .removalListener(notify -> ((ShuffleServerInternalGrpcClient) notify.getValue()).close())
-            .build();
+        .expireAfterAccess(clientExpiredTime, TimeUnit.MILLISECONDS)
+        .maximumSize(maxClient)
+        .removalListener(notify -> ((ShuffleServerInternalGrpcClient) notify.getValue()).close())
+        .build();
     this.startTime = System.currentTimeMillis();
 
   }
