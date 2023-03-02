@@ -222,7 +222,7 @@ public class RssSparkShuffleUtils {
    * @param storageInfo
    * @return Broadcast variable registered for auto cleanup
    */
-  public static Broadcast<byte[]> createPartShuffleServerMap(SparkContext sc, int shuffleId,
+  public static Broadcast<byte[]> broadcastShuffleHdlInfo(SparkContext sc, int shuffleId,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers, RemoteStorageInfo storageInfo) {
     ShuffleHandleInfo partServerMap = new ShuffleHandleInfo(shuffleId, partitionToServers, storageInfo);
     byte[] bytes = JavaUtils.bufferToArray(sc.env().closureSerializer().newInstance()

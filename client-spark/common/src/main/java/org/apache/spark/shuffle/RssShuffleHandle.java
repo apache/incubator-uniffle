@@ -77,8 +77,8 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
   }
 
   /**
-   * Tried to get cached {@link ShuffleHandleInfo} from local thread first and then memory if not existing in local.
-   * If not cached, one of competing threads gets chance to deserialize it and caches it for other threads.
+   * Tried to get {@link ShuffleHandleInfo} from local cache first.
+   * If not cached, deserialize and cache it in local thread.
    *
    * @return
    */
