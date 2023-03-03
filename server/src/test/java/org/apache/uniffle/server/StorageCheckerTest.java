@@ -18,10 +18,18 @@
 package org.apache.uniffle.server;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.RandomUtils;
+import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -30,6 +38,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.uniffle.common.util.Constants.DEVICE_NO_SPACE_ERROR_MESSAGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -102,6 +111,19 @@ public class StorageCheckerTest {
     assertEquals(250, ShuffleServerMetrics.gaugeLocalStorageUsedSpace.get());
     assertEquals(3, ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.get());
     assertEquals(0, ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.get());
+
+    storages.clear();
+    storages.add(LocalStorage.newBuilder().basePath(st1).build());
+    checker = new MockNoSpaceStorageChecker(conf, storages);
+    assertTrue(checker.checkIsHealthy());
+    storages.clear();
+    storages.add(LocalStorage.newBuilder().basePath(st2).build());
+    checker = new MockNoSpaceStorageChecker(conf, storages);
+    assertTrue(checker.checkIsHealthy());
+    storages.clear();
+    storages.add(LocalStorage.newBuilder().basePath(st3).build());
+    checker = new MockNoSpaceStorageChecker(conf, storages);
+    assertFalse(checker.checkIsHealthy());
   }
 
   private class MockStorageChecker extends LocalStorageChecker {
@@ -173,5 +195,73 @@ public class StorageCheckerTest {
       }
       return result;
     }
+
+    @Override
+    public boolean checkIsHealthy() {
+      return super.checkIsHealthy();
+    }
   }
+
+  private class MockNoSpaceStorageChecker extends LocalStorageChecker {
+
+    private final List<MockNoSpaceStorageInfo> mockNoSpaceStorageInfos  = Lists.newArrayList();
+
+    public MockNoSpaceStorageChecker(ShuffleServerConf conf, List<LocalStorage> storages) {
+      super(conf, storages);
+      for (LocalStorage storage : storages) {
+        mockNoSpaceStorageInfos.add(new MockNoSpaceStorageInfo(storage));
+      }
+    }
+
+    @Override
+    public boolean checkIsHealthy() {
+      for (StorageInfo storageInfo : mockNoSpaceStorageInfos) {
+        if (!storageInfo.checkStorageReadAndWrite()) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    private class MockNoSpaceStorageInfo extends StorageInfo{
+
+      private final File storageDir;
+      private final LocalStorage storage;
+
+      MockNoSpaceStorageInfo(LocalStorage storage) {
+        super(storage);
+        this.storageDir = new File(storage.getBasePath());
+        this.storage = storage;
+      }
+
+      @Override
+      boolean checkStorageReadAndWrite() {
+        if (storage.isCorrupted()) {
+          return false;
+        }
+        File checkDir = new File(storageDir, CHECKER_DIR_NAME);
+        try {
+          if(storage.getBasePath().contains("st2")){
+            throw new IOException("No space left on device");
+          }
+          if(storage.getBasePath().contains("st3")){
+            throw new IOException("mock");
+          }
+        } catch (Exception e) {
+          if(e.getMessage()!= null && DEVICE_NO_SPACE_ERROR_MESSAGE.equals(e.getMessage())){
+            return true;
+          }
+          return false;
+        } finally {
+          try {
+            FileUtils.deleteDirectory(checkDir);
+          } catch (IOException ioe) {
+            return false;
+          }
+        }
+        return true;
+      }
+    }
+  }
+
 }
