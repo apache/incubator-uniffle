@@ -41,11 +41,14 @@ public class CoordinatorMetrics {
   private static final String TOTAL_LOAD_DENIED_REQUEST = "total_load_denied_request";
   private static final String TOTAL_QUOTA_DENIED_REQUEST = "total_quota_denied_request";
   public static final String REMOTE_STORAGE_IN_USED_PREFIX = "remote_storage_in_used_";
+  public static final String APP_NUM_TO_USER = "app_num";
+  public static final String USER_LABEL = "user_name";
 
   public static Gauge gaugeTotalServerNum;
   public static Gauge gaugeExcludeServerNum;
   public static Gauge gaugeUnhealthyServerNum;
   public static Gauge gaugeRunningAppNum;
+  public static Gauge gaugeRunningAppNumToUser;
   public static Counter counterTotalAppNum;
   public static Counter counterTotalAccessRequest;
   public static Counter counterTotalCandidatesDeniedRequest;
@@ -101,6 +104,7 @@ public class CoordinatorMetrics {
     gaugeExcludeServerNum = metricsManager.addGauge(EXCLUDE_SERVER_NUM);
     gaugeUnhealthyServerNum = metricsManager.addGauge(UNHEALTHY_SERVER_NUM);
     gaugeRunningAppNum = metricsManager.addGauge(RUNNING_APP_NUM);
+    gaugeRunningAppNumToUser = metricsManager.addGauge(APP_NUM_TO_USER, USER_LABEL);
     counterTotalAppNum = metricsManager.addCounter(TOTAL_APP_NUM);
     counterTotalAccessRequest = metricsManager.addCounter(TOTAL_ACCESS_REQUEST);
     counterTotalCandidatesDeniedRequest = metricsManager.addCounter(TOTAL_CANDIDATES_DENIED_REQUEST);

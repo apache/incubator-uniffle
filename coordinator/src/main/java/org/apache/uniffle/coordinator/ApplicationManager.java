@@ -262,7 +262,7 @@ public class ApplicationManager {
     detectStorageScheduler.shutdownNow();
   }
 
-  private void statusCheck() {
+  protected void statusCheck() {
     List<Map<String, Long>> appAndNums = Lists.newArrayList(currentUserAndApp.values());
     Map<String, Long> appIds = Maps.newHashMap();
     // The reason for setting an expired uuid here is that there is a scenario where accessCluster succeeds,
@@ -293,6 +293,9 @@ public class ApplicationManager {
       }
       CoordinatorMetrics.gaugeRunningAppNum.set(appIds.size());
       updateRemoteStorageMetrics();
+      if (quotaManager != null) {
+        quotaManager.updateQuotaMetrics();
+      }
     } catch (Exception e) {
       // the flag is only for test case
       hasErrorInStatusCheck = true;
