@@ -25,10 +25,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
+
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,6 +46,16 @@ public class QuotaManagerTest {
   private final String quotaFile =
       Objects.requireNonNull(this.getClass().getClassLoader().getResource(fileName)).getFile();
   private static final String fileName = "quotaFile.properties";
+
+  @BeforeAll
+  public static void setup() {
+    CoordinatorMetrics.register();
+  }
+
+  @AfterAll
+  public static void clear() {
+    CoordinatorMetrics.clear();
+  }
 
   @Timeout(value = 10)
   @Test
@@ -67,7 +83,6 @@ public class QuotaManagerTest {
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS,
         Lists.newArrayList("org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker"));
     ApplicationManager applicationManager = new ApplicationManager(conf);
-    Thread.sleep(500);
     // it didn't detectUserResource because `org.apache.unifle.coordinator.AccessQuotaChecker` is not configured
     assertNull(applicationManager.getQuotaManager());
   }
@@ -75,8 +90,7 @@ public class QuotaManagerTest {
   @Test
   public void testCheckQuota() throws Exception {
     CoordinatorConf conf = new CoordinatorConf();
-    conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH,
-        quotaFile);
+    conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH, quotaFile);
     final ApplicationManager applicationManager = new ApplicationManager(conf);
     final AtomicInteger uuid = new AtomicInteger();
     Map<String, Long> uuidAndTime = new ConcurrentHashMap<>();
@@ -97,5 +111,45 @@ public class QuotaManagerTest {
     registerThread.join();
     assertTrue(icCheck);
     assertEquals(applicationManager.getQuotaManager().getCurrentUserAndApp().get("user4").size(), 5);
+  }
+
+  @Test
+  public void testCheckQuotaMetrics() {
+    CoordinatorConf conf = new CoordinatorConf();
+    conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH, quotaFile);
+    conf.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 1500);
+    conf.setInteger(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_APP_NUM, 2);
+    final ApplicationManager applicationManager = new ApplicationManager(conf);
+    final AtomicInteger uuid = new AtomicInteger();
+    final int i1 = uuid.incrementAndGet();
+    final int i2 = uuid.incrementAndGet();
+    final int i3 = uuid.incrementAndGet();
+    final int i4 = uuid.incrementAndGet();
+    Map<String, Long> uuidAndTime = new ConcurrentHashMap<>();
+    uuidAndTime.put(String.valueOf(i1), System.currentTimeMillis());
+    uuidAndTime.put(String.valueOf(i2), System.currentTimeMillis());
+    uuidAndTime.put(String.valueOf(i3), System.currentTimeMillis());
+    uuidAndTime.put(String.valueOf(i4), System.currentTimeMillis());
+    final boolean icCheck = applicationManager.getQuotaManager()
+        .checkQuota("user4", String.valueOf(i1));
+    final boolean icCheck2 = applicationManager.getQuotaManager()
+        .checkQuota("user4", String.valueOf(i2));
+    final boolean icCheck3 = applicationManager.getQuotaManager()
+        .checkQuota("user4", String.valueOf(i3));
+    final boolean icCheck4 = applicationManager.getQuotaManager()
+        .checkQuota("user3", String.valueOf(i4));
+    assertFalse(icCheck);
+    assertFalse(icCheck2);
+    // The default number of tasks submitted is 2, and the third will be rejected
+    assertTrue(icCheck3);
+    assertEquals(applicationManager.getQuotaManager().getCurrentUserAndApp().get("user4").size(), 2);
+    assertEquals(CoordinatorMetrics.gaugeRunningAppNumToUser.labels("user4").get(), 2);
+    assertEquals(CoordinatorMetrics.gaugeRunningAppNumToUser.labels("user3").get(), 1);
+    await().atMost(2, TimeUnit.SECONDS).until(() -> {
+      applicationManager.statusCheck();
+      // If the number of apps corresponding to this user is 0, remove this user
+      return CoordinatorMetrics.gaugeRunningAppNumToUser.labels("user4").get() == 0
+          && CoordinatorMetrics.gaugeRunningAppNumToUser.labels("user3").get() == 0;
+    });
   }
 }
