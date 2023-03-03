@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -84,6 +85,7 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
   public void detectStorage() {
     uris = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
     if (remoteStoragePathRankValue.size() > 1) {
+      CountDownLatch countDownLatch = new CountDownLatch(uris.size());
       for (Map.Entry<String, RankValue> uri : uris) {
         Thread detectThread = new Thread(() -> {
           if (uri.getKey().startsWith(ApplicationManager.getPathSchema().get(0))) {
@@ -101,11 +103,17 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
               LOG.error("Storage read and write error, we will not use this remote path {}.", uri, e);
             } finally {
               sortPathByRankValue(uri.getKey(), rssTest);
+              countDownLatch.countDown();
             }
           }
         });
         detectThread.setDaemon(true);
         detectThread.start();
+      }
+      try {
+        countDownLatch.await();
+      } catch (InterruptedException e) {
+        LOG.error("Failed to detectStorage!");
       }
     }
   }

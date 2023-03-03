@@ -20,6 +20,7 @@ package org.apache.uniffle.coordinator.strategy.storage;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -99,6 +100,7 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
   public void detectStorage() {
     uris = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
     if (remoteStoragePathRankValue.size() > 1) {
+      CountDownLatch countDownLatch = new CountDownLatch(uris.size());
       for (Map.Entry<String, RankValue> uri : uris) {
         Thread detectThread = new Thread(() -> {
           if (uri.getKey().startsWith(ApplicationManager.getPathSchema().get(0))) {
@@ -119,11 +121,17 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
               rankValue.setHealthy(new AtomicBoolean(false));
             } finally {
               sortPathByRankValue(uri.getKey(), rssTest, startWriteTime);
+              countDownLatch.countDown();
             }
           }
         });
         detectThread.setDaemon(true);
         detectThread.start();
+      }
+      try {
+        countDownLatch.await();
+      } catch (InterruptedException e) {
+        LOG.error("Failed to detectStorage!");
       }
     }
   }
