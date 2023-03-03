@@ -100,25 +100,29 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
     uris = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
     if (remoteStoragePathRankValue.size() > 1) {
       for (Map.Entry<String, RankValue> uri : uris) {
-        if (uri.getKey().startsWith(ApplicationManager.getPathSchema().get(0))) {
-          Path remotePath = new Path(uri.getKey());
-          String rssTest = uri.getKey() + "/rssTest-" + getCoordinatorId();
-          Path testPath = new Path(rssTest);
-          RankValue rankValue = remoteStoragePathRankValue.get(uri.getKey());
-          rankValue.setHealthy(new AtomicBoolean(true));
-          long startWriteTime = System.currentTimeMillis();
-          try {
-            FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hdfsConf);
-            for (int j = 0; j < readAndWriteTimes; j++) {
-              readAndWriteHdfsStorage(fs, testPath, uri.getKey(), rankValue);
+        Thread detectThread = new Thread(() -> {
+          if (uri.getKey().startsWith(ApplicationManager.getPathSchema().get(0))) {
+            Path remotePath = new Path(uri.getKey());
+            String rssTest = uri.getKey() + "/rssTest-" + getCoordinatorId();
+            Path testPath = new Path(rssTest);
+            RankValue rankValue = remoteStoragePathRankValue.get(uri.getKey());
+            rankValue.setHealthy(new AtomicBoolean(true));
+            long startWriteTime = System.currentTimeMillis();
+            try {
+              FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hdfsConf);
+              for (int j = 0; j < readAndWriteTimes; j++) {
+                readAndWriteHdfsStorage(fs, testPath, uri.getKey(), rankValue);
+              }
+            } catch (Exception e) {
+              LOG.error("Storage read and write error, we will not use this remote path {}.", uri, e);
+              rankValue.setHealthy(new AtomicBoolean(false));
+            } finally {
+              sortPathByRankValue(uri.getKey(), rssTest, startWriteTime);
             }
-          } catch (Exception e) {
-            LOG.error("Storage read and write error, we will not use this remote path {}.", uri, e);
-            rankValue.setHealthy(new AtomicBoolean(false));
-          } finally {
-            sortPathByRankValue(uri.getKey(), rssTest, startWriteTime);
           }
-        }
+        });
+        detectThread.setDaemon(true);
+        detectThread.start();
       }
     }
   }
