@@ -78,7 +78,6 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
     }
     uris = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet()).stream()
         .filter(Objects::nonNull).collect(Collectors.toList());
-    LOG.error("SSSSSS:uris is {}, path is {}, rankValue is {}", uris, path, rankValue);
   }
 
   @Override
