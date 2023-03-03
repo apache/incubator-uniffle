@@ -73,7 +73,8 @@ public class LocalStorageChecker extends Checker {
     int corruptedDirs = 0;
 
     for (StorageInfo storageInfo : storageInfos) {
-      if (!storageInfo.checkStorageReadAndWrite()) {
+      if (storageInfo.checkIsSpaceEnough()
+              && !storageInfo.checkStorageReadAndWrite()) {
         storageInfo.markCorrupted();
         corruptedDirs++;
         continue;
