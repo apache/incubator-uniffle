@@ -148,8 +148,8 @@ public class QuotaManagerTest {
     await().atMost(2, TimeUnit.SECONDS).until(() -> {
       applicationManager.statusCheck();
       // If the number of apps corresponding to this user is 0, remove this user
-      return CoordinatorMetrics.gaugeRunningAppNumToUser.labels("user4").get() == 0 &&
-          CoordinatorMetrics.gaugeRunningAppNumToUser.labels("user3").get() == 0;
+      return CoordinatorMetrics.gaugeRunningAppNumToUser.labels("user4").get() == 0
+          && CoordinatorMetrics.gaugeRunningAppNumToUser.labels("user3").get() == 0;
     });
   }
 }
