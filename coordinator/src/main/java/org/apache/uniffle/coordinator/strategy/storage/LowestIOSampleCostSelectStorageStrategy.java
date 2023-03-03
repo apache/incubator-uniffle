@@ -103,7 +103,8 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
         Thread detectThread = new Thread(() -> {
           if (uri.getKey().startsWith(ApplicationManager.getPathSchema().get(0))) {
             Path remotePath = new Path(uri.getKey());
-            String rssTest = uri.getKey() + "/rssTest-" + getCoordinatorId();
+            String rssTest = uri.getKey() + "/rssTest-" + getCoordinatorId()
+                + Thread.currentThread().getName();
             Path testPath = new Path(rssTest);
             RankValue rankValue = remoteStoragePathRankValue.get(uri.getKey());
             rankValue.setHealthy(new AtomicBoolean(true));
