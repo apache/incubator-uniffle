@@ -46,8 +46,6 @@ type Config struct {
 	utils.GenericConfig
 }
 
-var syncPeriod, retryPeriod time.Duration
-
 // LeaderElectionID returns leader election ID.
 func (c *Config) LeaderElectionID() string {
 	return "rss-controller-" + constants.LeaderIDSuffix
