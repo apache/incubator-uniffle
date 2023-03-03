@@ -18,18 +18,12 @@
 package org.apache.uniffle.server;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.RandomUtils;
-import org.apache.uniffle.common.util.RssUtils;
-import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -206,7 +200,7 @@ public class StorageCheckerTest {
 
     private final List<MockNoSpaceStorageInfo> mockNoSpaceStorageInfos  = Lists.newArrayList();
 
-    public MockNoSpaceStorageChecker(ShuffleServerConf conf, List<LocalStorage> storages) {
+    MockNoSpaceStorageChecker(ShuffleServerConf conf, List<LocalStorage> storages) {
       super(conf, storages);
       for (LocalStorage storage : storages) {
         mockNoSpaceStorageInfos.add(new MockNoSpaceStorageInfo(storage));
@@ -223,7 +217,7 @@ public class StorageCheckerTest {
       return true;
     }
 
-    private class MockNoSpaceStorageInfo extends StorageInfo{
+    private class MockNoSpaceStorageInfo extends StorageInfo {
 
       private final File storageDir;
       private final LocalStorage storage;
@@ -241,14 +235,14 @@ public class StorageCheckerTest {
         }
         File checkDir = new File(storageDir, CHECKER_DIR_NAME);
         try {
-          if(storage.getBasePath().contains("st2")){
+          if (storage.getBasePath().contains("st2")) {
             throw new IOException("No space left on device");
           }
-          if(storage.getBasePath().contains("st3")){
+          if (storage.getBasePath().contains("st3")) {
             throw new IOException("mock");
           }
         } catch (Exception e) {
-          if(e.getMessage()!= null && DEVICE_NO_SPACE_ERROR_MESSAGE.equals(e.getMessage())){
+          if (e.getMessage() != null && DEVICE_NO_SPACE_ERROR_MESSAGE.equals(e.getMessage())) {
             return true;
           }
           return false;

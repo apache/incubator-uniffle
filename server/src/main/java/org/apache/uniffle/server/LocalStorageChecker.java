@@ -202,7 +202,7 @@ public class LocalStorageChecker extends Checker {
         }
       } catch (Exception e) {
         LOG.error("Storage read and write error. Storage dir: {}", storageDir, e);
-        if(e.getMessage()!= null && DEVICE_NO_SPACE_ERROR_MESSAGE.equals(e.getMessage())){
+        if (e.getMessage() !=  null && DEVICE_NO_SPACE_ERROR_MESSAGE.equals(e.getMessage())) {
           return true;
         }
         return false;
