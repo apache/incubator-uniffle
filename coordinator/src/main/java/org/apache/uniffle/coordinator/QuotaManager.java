@@ -125,7 +125,7 @@ public class QuotaManager {
         return true;
       } else {
         appAndTimes.put(uuid, System.currentTimeMillis());
-        addQuotaMetrics(user);
+        CoordinatorMetrics.gaugeRunningAppNumToUser.labels(user).inc();
         return false;
       }
     }
@@ -146,16 +146,11 @@ public class QuotaManager {
     for (Map.Entry<String, Map<String, Long>> userAndApp : currentUserAndApp.entrySet()) {
       String user = userAndApp.getKey();
       try {
-        CoordinatorMetrics.updateDynamicGaugeForUser(user, userAndApp.getValue().size());
+        CoordinatorMetrics.gaugeRunningAppNumToUser.labels(user).set(userAndApp.getValue().size());
       } catch (Exception e) {
         LOG.warn("Update user metrics for {} failed ", user, e);
       }
     }
-  }
-
-  protected void addQuotaMetrics(String user) {
-    CoordinatorMetrics.addDynamicGaugeForUser(user);
-    LOG.info("Add user metrics for {} successfully ", user);
   }
 
   @VisibleForTesting

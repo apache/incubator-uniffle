@@ -114,7 +114,7 @@ public class QuotaManagerTest {
   }
 
   @Test
-  public void testCheckQuotaMetrics() throws Exception {
+  public void testCheckQuotaMetrics() {
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH, quotaFile);
     conf.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 1500);
@@ -124,26 +124,32 @@ public class QuotaManagerTest {
     final int i1 = uuid.incrementAndGet();
     final int i2 = uuid.incrementAndGet();
     final int i3 = uuid.incrementAndGet();
+    final int i4 = uuid.incrementAndGet();
     Map<String, Long> uuidAndTime = new ConcurrentHashMap<>();
     uuidAndTime.put(String.valueOf(i1), System.currentTimeMillis());
     uuidAndTime.put(String.valueOf(i2), System.currentTimeMillis());
     uuidAndTime.put(String.valueOf(i3), System.currentTimeMillis());
+    uuidAndTime.put(String.valueOf(i4), System.currentTimeMillis());
     final boolean icCheck = applicationManager.getQuotaManager()
         .checkQuota("user4", String.valueOf(i1));
     final boolean icCheck2 = applicationManager.getQuotaManager()
         .checkQuota("user4", String.valueOf(i2));
     final boolean icCheck3 = applicationManager.getQuotaManager()
         .checkQuota("user4", String.valueOf(i3));
+    final boolean icCheck4 = applicationManager.getQuotaManager()
+        .checkQuota("user3", String.valueOf(i4));
     assertFalse(icCheck);
     assertFalse(icCheck2);
     // The default number of tasks submitted is 2, and the third will be rejected
     assertTrue(icCheck3);
     assertEquals(applicationManager.getQuotaManager().getCurrentUserAndApp().get("user4").size(), 2);
-    assertEquals(CoordinatorMetrics.GAUGE_APP_NUM_TO_USER.get("user4").get(), 2);
+    assertEquals(CoordinatorMetrics.gaugeRunningAppNumToUser.labels("user4").get(), 2);
+    assertEquals(CoordinatorMetrics.gaugeRunningAppNumToUser.labels("user3").get(), 1);
     await().atMost(2, TimeUnit.SECONDS).until(() -> {
       applicationManager.statusCheck();
       // If the number of apps corresponding to this user is 0, remove this user
-      return CoordinatorMetrics.GAUGE_APP_NUM_TO_USER.size() == 0;
+      return CoordinatorMetrics.gaugeRunningAppNumToUser.labels("user4").get() == 0 &&
+          CoordinatorMetrics.gaugeRunningAppNumToUser.labels("user3").get() == 0;
     });
   }
 }

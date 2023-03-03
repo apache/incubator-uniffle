@@ -41,19 +41,20 @@ public class CoordinatorMetrics {
   private static final String TOTAL_LOAD_DENIED_REQUEST = "total_load_denied_request";
   private static final String TOTAL_QUOTA_DENIED_REQUEST = "total_quota_denied_request";
   public static final String REMOTE_STORAGE_IN_USED_PREFIX = "remote_storage_in_used_";
-  public static final String APP_NUM_TO_USER = "app_num_to_";
+  public static final String APP_NUM_TO_USER = "app_num";
+  public static final String USER_LABEL = "user_name";
 
   public static Gauge gaugeTotalServerNum;
   public static Gauge gaugeExcludeServerNum;
   public static Gauge gaugeUnhealthyServerNum;
   public static Gauge gaugeRunningAppNum;
+  public static Gauge gaugeRunningAppNumToUser;
   public static Counter counterTotalAppNum;
   public static Counter counterTotalAccessRequest;
   public static Counter counterTotalCandidatesDeniedRequest;
   public static Counter counterTotalQuotaDeniedRequest;
   public static Counter counterTotalLoadDeniedRequest;
   public static final Map<String, Gauge> GAUGE_USED_REMOTE_STORAGE = Maps.newConcurrentMap();
-  public static final Map<String, Gauge> GAUGE_APP_NUM_TO_USER = Maps.newConcurrentMap();
 
   private static MetricsManager metricsManager;
   private static boolean isRegister = false;
@@ -98,20 +99,6 @@ public class CoordinatorMetrics {
     }
   }
 
-  public static void addDynamicGaugeForUser(String user) {
-    GAUGE_APP_NUM_TO_USER.computeIfAbsent(
-        user, x -> metricsManager.addGauge(APP_NUM_TO_USER + user)).inc();
-  }
-
-  public static void updateDynamicGaugeForUser(String user, double value) {
-    Gauge gauge = GAUGE_APP_NUM_TO_USER.get(user);
-    if (value == 0) {
-      GAUGE_APP_NUM_TO_USER.remove(user);
-    } else if (gauge != null) {
-      gauge.set(value);
-    }
-  }
-
   private static void setUpMetrics() {
     gaugeTotalServerNum = metricsManager.addGauge(TOTAL_SERVER_NUM);
     gaugeExcludeServerNum = metricsManager.addGauge(EXCLUDE_SERVER_NUM);
@@ -122,5 +109,6 @@ public class CoordinatorMetrics {
     counterTotalCandidatesDeniedRequest = metricsManager.addCounter(TOTAL_CANDIDATES_DENIED_REQUEST);
     counterTotalQuotaDeniedRequest = metricsManager.addCounter(TOTAL_QUOTA_DENIED_REQUEST);
     counterTotalLoadDeniedRequest = metricsManager.addCounter(TOTAL_LOAD_DENIED_REQUEST);
+    gaugeRunningAppNumToUser = metricsManager.addGauge(APP_NUM_TO_USER, USER_LABEL);
   }
 }
