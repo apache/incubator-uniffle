@@ -70,4 +70,5 @@ public final class Constants {
   public static final double MR_SLOW_START_DEFAULT_VALUE = 0.05;
   
   public static final double MILLION_SECONDS_PER_SECOND = 1E3D;
+  public static final String DEVICE_NO_SPACE_ERROR_MESSAGE = "No space left on device";
 }
