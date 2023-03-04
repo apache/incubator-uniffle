@@ -19,20 +19,13 @@ package org.apache.uniffle.coordinator.strategy.storage;
 
 import java.util.Comparator;
 import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.commons.collections.comparators.NullComparator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 
 /**
@@ -55,23 +48,6 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
     super(remoteStoragePathRankValue, conf);
     this.appIdToRemoteStorageInfo = appIdToRemoteStorageInfo;
     this.availableRemoteStorageInfo = availableRemoteStorageInfo;
-  }
-
-  @VisibleForTesting
-  public void sortPathByRankValue(String path, String test, Configuration hdfsConf) {
-    RankValue rankValue = remoteStoragePathRankValue.get(path);
-    try {
-      FileSystem fs = HadoopFilesystemProvider.getFilesystem(new Path(path), hdfsConf);
-      fs.delete(new Path(test),true);
-      if (rankValue.getHealthy().get()) {
-        rankValue.setCostTime(new AtomicLong(0));
-      }
-    } catch (Exception e) {
-      rankValue.setCostTime(new AtomicLong(Long.MAX_VALUE));
-      LOG.error("Failed to sort, we will not use this remote path {}.", path, e);
-    }
-    uris = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet()).stream()
-        .filter(Objects::nonNull).collect(Collectors.toList());
   }
 
   /**
@@ -100,5 +76,10 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
     }
     LOG.warn("No remote storage is available, we will default to the first.");
     return availableRemoteStorageInfo.values().iterator().next();
+  }
+
+  @Override
+  public Comparator<Map.Entry<String, RankValue>> getComparator() {
+    return (o1, o2) -> 0;
   }
 }

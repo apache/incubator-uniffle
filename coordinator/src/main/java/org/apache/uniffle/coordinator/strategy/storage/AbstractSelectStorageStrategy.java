@@ -18,12 +18,17 @@
 package org.apache.uniffle.coordinator.strategy.storage;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -120,15 +125,7 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
             LOG.error("Storage read and write error, we will not use this remote path {}.", uri, e);
             rankValue.setHealthy(new AtomicBoolean(false));
           } finally {
-            if (strategyName == ApplicationManager.StrategyName.IO_SAMPLE) {
-              ((LowestIOSampleCostSelectStorageStrategy) this)
-                  .sortPathByRankValue(uri.getKey(), rssTest, startWriteTime, hdfsConf);
-            } else if (strategyName == ApplicationManager.StrategyName.APP_BALANCE) {
-              ((AppBalanceSelectStorageStrategy) this)
-                  .sortPathByRankValue(uri.getKey(), rssTest, hdfsConf);
-            } else {
-              LOG.error("Failed to sort path by detectStorage!");
-            }
+            sortPathByRankValue(uri.getKey(), rssTest, startWriteTime);
           }
           countDownLatch.countDown();
         }
@@ -140,6 +137,30 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
       }
     }
   }
+
+  @VisibleForTesting
+  public void sortPathByRankValue(
+      String path, String testPath, long startWrite) {
+    RankValue rankValue = remoteStoragePathRankValue.get(path);
+    try {
+      FileSystem fs = HadoopFilesystemProvider.getFilesystem(new Path(path), hdfsConf);
+      fs.delete(new Path(testPath), true);
+      if (rankValue.getHealthy().get()) {
+        rankValue.setCostTime(new AtomicLong(System.currentTimeMillis() - startWrite));
+      }
+    } catch (Exception e) {
+      rankValue.setCostTime(new AtomicLong(Long.MAX_VALUE));
+      LOG.error("Failed to sort, we will not use this remote path {}.", path, e);
+    }
+
+    uris = Lists.newCopyOnWriteArrayList(
+        remoteStoragePathRankValue.entrySet()).stream().filter(
+            Objects::nonNull).sorted(this.getComparator()).collect(Collectors.toList());
+    LOG.info("The sorted remote path list is: {}", uris);
+  }
+
+  @Override
+  public abstract Comparator<Map.Entry<String, RankValue>> getComparator();
 
   String getCoordinatorId() {
     return coordinatorId;

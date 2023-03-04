@@ -97,12 +97,12 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     String testApp1 = "application_test_" + 1;
     applicationManager.registerApplicationInfo(testApp1, "user");
     applicationManager.refreshAppId(testApp1);
-    selectStorageStrategy.sortPathByRankValue(remoteStorage2, testFile, System.currentTimeMillis(), configuration);
+    selectStorageStrategy.sortPathByRankValue(remoteStorage2, testFile, System.currentTimeMillis());
     // Ensure that the `System.currentTimeMillis()` corresponding to remoteStorage1 is greater than that of
     // remoteStorage2, because under the LowestIOSampleCostSelectStorageStrategy, this time is used to measure
     // which remote path is selected, and the smaller the time, the better it will be selected.
     Thread.sleep(10);
-    selectStorageStrategy.sortPathByRankValue(remoteStorage1, testFile, System.currentTimeMillis(), configuration);
+    selectStorageStrategy.sortPathByRankValue(remoteStorage1, testFile, System.currentTimeMillis());
     assertEquals(remoteStorage2, applicationManager.pickRemoteStorage(testApp1).getPath());
     assertEquals(remoteStorage2, applicationManager.getAppIdToRemoteStorageInfo().get(testApp1).getPath());
     assertEquals(1,
