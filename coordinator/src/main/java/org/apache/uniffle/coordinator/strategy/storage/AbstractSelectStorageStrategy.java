@@ -54,7 +54,8 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
   private final String coordinatorId;
   private final Configuration hdfsConf;
   protected List<Map.Entry<String, RankValue>> uris;
-  private final int readAndWriteTimes;
+  private int readAndWriteTimes = 1;
+  private final ApplicationManager.StrategyName strategyName;
 
   public AbstractSelectStorageStrategy(
       Map<String, RankValue> remoteStoragePathRankValue,
@@ -63,7 +64,11 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
     this.hdfsConf = new Configuration();
     this.fileSize = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_FILE_SIZE);
     this.coordinatorId = conf.getString(CoordinatorUtils.COORDINATOR_ID, UUID.randomUUID().toString());
-    this.readAndWriteTimes = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES);
+    this.strategyName = conf.get(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY);
+    if (strategyName == ApplicationManager.StrategyName.IO_SAMPLE) {
+      this.readAndWriteTimes = conf.getInteger(
+          CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES);
+    }
   }
 
   public void readAndWriteHdfsStorage(FileSystem fs, Path testPath,
@@ -115,17 +120,17 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
             LOG.error("Storage read and write error, we will not use this remote path {}.", uri, e);
             rankValue.setHealthy(new AtomicBoolean(false));
           } finally {
-            if (this instanceof LowestIOSampleCostSelectStorageStrategy) {
+            if (strategyName == ApplicationManager.StrategyName.IO_SAMPLE) {
               ((LowestIOSampleCostSelectStorageStrategy) this)
                   .sortPathByRankValue(uri.getKey(), rssTest, startWriteTime, hdfsConf);
-            } else if (this instanceof AppBalanceSelectStorageStrategy) {
+            } else if (strategyName == ApplicationManager.StrategyName.APP_BALANCE) {
               ((AppBalanceSelectStorageStrategy) this)
                   .sortPathByRankValue(uri.getKey(), rssTest, hdfsConf);
             } else {
               LOG.error("Failed to sort path by detectStorage!");
             }
-            countDownLatch.countDown();
           }
+          countDownLatch.countDown();
         }
       });
       try {
