@@ -17,16 +17,12 @@
 
 package org.apache.uniffle.coordinator.web.servlet;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.coordinator.ServerNode;
@@ -41,13 +37,19 @@ public class NodesServlet extends BaseServlet {
   }
 
   @Override
-  protected Response handleGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+  protected Response handleGet(HttpServletRequest req, HttpServletResponse resp) {
     List<ServerNode> serverList = coordinator.getClusterManager().getServerList(Collections.EMPTY_SET);
     String id = req.getParameter("id");
-    if (StringUtils.isNotEmpty(id)) {
-      serverList = serverList.stream().filter((server) ->
-          id.equals(server.getId())).collect(Collectors.toList());
-    }
+    String status = req.getParameter("status");
+    serverList = serverList.stream().filter((server) -> {
+      if (id != null && !id.equals(server.getId())) {
+        return false;
+      }
+      if (status != null && !server.getStatus().toString().equals(status)) {
+        return false;
+      }
+      return true;
+    }).collect(Collectors.toList());
     Collections.sort(serverList, Comparator.comparing(ServerNode::getId));
     return Response.success(serverList);
   }

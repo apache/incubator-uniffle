@@ -18,16 +18,15 @@
 package org.apache.uniffle.coordinator.web.servlet;
 
 import java.io.IOException;
-import java.util.Map;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.google.common.base.Preconditions;
+import org.apache.commons.collections.CollectionUtils;
 
 import org.apache.uniffle.coordinator.ClusterManager;
 import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.coordinator.web.Response;
+import org.apache.uniffle.coordinator.web.request.CancelDecommissionRequest;
 
 public class CancelDecommissionServlet extends BaseServlet {
   private final CoordinatorServer coordinator;
@@ -37,12 +36,15 @@ public class CancelDecommissionServlet extends BaseServlet {
   }
 
   @Override
-  protected Response handlePost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-    Map<String, Object> params = parseParamsFromJson(req);
-    String serverId = (String) params.get("serverId");
-    Preconditions.checkNotNull(serverId, "Parameter[serverId] should not be null!");
+  protected Response handlePost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    CancelDecommissionRequest params = parseParamsFromJson(req, CancelDecommissionRequest.class);
+    if (CollectionUtils.isEmpty(params.getServerIds())) {
+      return Response.fail("Parameter[serverIds] should not be null!");
+    }
     ClusterManager clusterManager = coordinator.getClusterManager();
-    clusterManager.cancelDecommission(serverId);
+    params.getServerIds().forEach((serverId) -> {
+      clusterManager.cancelDecommission(serverId);
+    });
     return Response.success(null);
   }
 }

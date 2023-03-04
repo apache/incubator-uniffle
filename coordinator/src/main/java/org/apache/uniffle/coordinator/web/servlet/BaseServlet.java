@@ -19,7 +19,6 @@ package org.apache.uniffle.coordinator.web.servlet;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -36,12 +35,12 @@ public abstract class BaseServlet extends HttpServlet {
   final ObjectMapper mapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
   @Override
-  protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+  protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
     writeJSON(resp, handlerRequest(() -> handleGet(req, resp)));
   }
 
   @Override
-  protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+  protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
     writeJSON(resp, handlerRequest(() -> handlePost(req, resp)));
   }
 
@@ -80,7 +79,7 @@ public abstract class BaseServlet extends HttpServlet {
     mapper.writeValue(stream, obj);
   }
 
-  protected Map<String, Object> parseParamsFromJson(HttpServletRequest req) throws IOException {
-    return mapper.readValue(req.getInputStream(), Map.class);
+  protected <T> T parseParamsFromJson(HttpServletRequest req, Class<T> clazz) throws IOException {
+    return mapper.readValue(req.getInputStream(), clazz);
   }
 }
