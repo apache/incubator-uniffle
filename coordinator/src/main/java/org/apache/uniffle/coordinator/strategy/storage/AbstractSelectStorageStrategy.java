@@ -18,16 +18,25 @@
 package org.apache.uniffle.coordinator.strategy.storage;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
+import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 
@@ -35,19 +44,26 @@ import org.apache.uniffle.coordinator.util.CoordinatorUtils;
  * This is a simple implementation class, which provides some methods to check whether the path is normal
  */
 public abstract class AbstractSelectStorageStrategy implements SelectStorageStrategy {
+
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractSelectStorageStrategy.class);
   /**
    * store remote path -> application count for assignment strategy
    */
   protected final Map<String, RankValue> remoteStoragePathRankValue;
   protected final int fileSize;
   private final String coordinatorId;
+  private final Configuration hdfsConf;
+  protected List<Map.Entry<String, RankValue>> uris;
+  private final int readAndWriteTimes;
 
   public AbstractSelectStorageStrategy(
       Map<String, RankValue> remoteStoragePathRankValue,
       CoordinatorConf conf) {
     this.remoteStoragePathRankValue = remoteStoragePathRankValue;
-    fileSize = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_FILE_SIZE);
+    this.hdfsConf = new Configuration();
+    this.fileSize = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_FILE_SIZE);
     this.coordinatorId = conf.getString(CoordinatorUtils.COORDINATOR_ID, UUID.randomUUID().toString());
+    this.readAndWriteTimes = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES);
   }
 
   public void readAndWriteHdfsStorage(FileSystem fs, Path testPath,
@@ -73,6 +89,50 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
         }
         hasReadBytes += readBytes;
       } while (readBytes != -1);
+    }
+  }
+
+  @Override
+  public void detectStorage() {
+    uris = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
+    if (remoteStoragePathRankValue.size() > 1) {
+      CountDownLatch countDownLatch = new CountDownLatch(uris.size());
+      uris.parallelStream().forEach(uri -> {
+        if (uri.getKey().startsWith(ApplicationManager.getPathSchema().get(0))) {
+          Path remotePath = new Path(uri.getKey());
+          String rssTest = uri.getKey() + "/rssTest-" + getCoordinatorId()
+              + Thread.currentThread().getName();
+          Path testPath = new Path(rssTest);
+          RankValue rankValue = remoteStoragePathRankValue.get(uri.getKey());
+          rankValue.setHealthy(new AtomicBoolean(true));
+          long startWriteTime = System.currentTimeMillis();
+          try {
+            FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hdfsConf);
+            for (int j = 0; j < readAndWriteTimes; j++) {
+              readAndWriteHdfsStorage(fs, testPath, uri.getKey(), rankValue);
+            }
+          } catch (Exception e) {
+            LOG.error("Storage read and write error, we will not use this remote path {}.", uri, e);
+            rankValue.setHealthy(new AtomicBoolean(false));
+          } finally {
+            if (this instanceof LowestIOSampleCostSelectStorageStrategy) {
+              ((LowestIOSampleCostSelectStorageStrategy) this)
+                  .sortPathByRankValue(uri.getKey(), rssTest, startWriteTime, hdfsConf);
+            } else if (this instanceof AppBalanceSelectStorageStrategy) {
+              ((AppBalanceSelectStorageStrategy) this)
+                  .sortPathByRankValue(uri.getKey(), rssTest, hdfsConf);
+            } else {
+              LOG.error("Failed to sort path by detectStorage!");
+            }
+            countDownLatch.countDown();
+          }
+        }
+      });
+      try {
+        countDownLatch.await();
+      } catch (InterruptedException e) {
+        LOG.error("Failed to detectStorage!");
+      }
     }
   }
 

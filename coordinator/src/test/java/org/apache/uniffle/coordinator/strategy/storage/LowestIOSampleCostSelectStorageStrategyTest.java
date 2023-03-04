@@ -20,6 +20,7 @@ package org.apache.uniffle.coordinator.strategy.storage;
 import java.util.concurrent.CountDownLatch;
 
 import com.google.common.collect.Sets;
+import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,17 +91,18 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     assertEquals(0, applicationManager.getRemoteStoragePathRankValue().get(remoteStorage2).getAppNum().get());
 
     // compare with two remote path
+    final Configuration configuration = new Configuration();
     applicationManager.incRemoteStorageCounter(remoteStorage1);
     applicationManager.incRemoteStorageCounter(remoteStorage1);
     String testApp1 = "application_test_" + 1;
     applicationManager.registerApplicationInfo(testApp1, "user");
     applicationManager.refreshAppId(testApp1);
-    selectStorageStrategy.sortPathByRankValue(remoteStorage2, testFile, System.currentTimeMillis());
+    selectStorageStrategy.sortPathByRankValue(remoteStorage2, testFile, System.currentTimeMillis(), configuration);
     // Ensure that the `System.currentTimeMillis()` corresponding to remoteStorage1 is greater than that of
     // remoteStorage2, because under the LowestIOSampleCostSelectStorageStrategy, this time is used to measure
     // which remote path is selected, and the smaller the time, the better it will be selected.
     Thread.sleep(10);
-    selectStorageStrategy.sortPathByRankValue(remoteStorage1, testFile, System.currentTimeMillis());
+    selectStorageStrategy.sortPathByRankValue(remoteStorage1, testFile, System.currentTimeMillis(), configuration);
     assertEquals(remoteStorage2, applicationManager.pickRemoteStorage(testApp1).getPath());
     assertEquals(remoteStorage2, applicationManager.getAppIdToRemoteStorageInfo().get(testApp1).getPath());
     assertEquals(1,

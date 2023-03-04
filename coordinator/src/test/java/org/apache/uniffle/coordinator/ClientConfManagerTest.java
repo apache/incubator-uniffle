@@ -224,13 +224,14 @@ public class ClientConfManagerTest {
     LowestIOSampleCostSelectStorageStrategy selectStorageStrategy =
         (LowestIOSampleCostSelectStorageStrategy) applicationManager.getSelectStorageStrategy();
     String testPath = "/test";
+    final Configuration configuration = new Configuration();
 
     final ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
     // the reason for sleep here is to ensure that threads can be scheduled normally, the same below
     applicationManager.getSelectStorageStrategy().detectStorage();
     Set<String> expectedAvailablePath = Sets.newHashSet(remotePath1);
     assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
-    selectStorageStrategy.sortPathByRankValue(remotePath1, testPath, System.currentTimeMillis());
+    selectStorageStrategy.sortPathByRankValue(remotePath1, testPath, System.currentTimeMillis(), configuration);
     RemoteStorageInfo remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId1");
     assertEquals(remotePath1, remoteStorageInfo.getPath());
     assertTrue(remoteStorageInfo.getConfItems().isEmpty());
@@ -239,7 +240,7 @@ public class ClientConfManagerTest {
     expectedAvailablePath = Sets.newHashSet(remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
 
-    selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, System.currentTimeMillis());
+    selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, System.currentTimeMillis(), configuration);
     applicationManager.getSelectStorageStrategy().detectStorage();
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId2");
     assertEquals(remotePath3, remoteStorageInfo.getPath());
@@ -249,8 +250,8 @@ public class ClientConfManagerTest {
     writeRemoteStorageConf(cfgFile, remotePath2 + Constants.COMMA_SPLIT_CHAR + remotePath3, confItems);
     expectedAvailablePath = Sets.newHashSet(remotePath2, remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
-    selectStorageStrategy.sortPathByRankValue(remotePath2, testPath, current);
-    selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, current);
+    selectStorageStrategy.sortPathByRankValue(remotePath2, testPath, current, configuration);
+    selectStorageStrategy.sortPathByRankValue(remotePath3, testPath, current, configuration);
     applicationManager.getSelectStorageStrategy().detectStorage();
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId3");
     assertEquals(remotePath2, remoteStorageInfo.getPath());

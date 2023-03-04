@@ -17,11 +17,8 @@
 
 package org.apache.uniffle.coordinator.strategy.storage;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -35,7 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
-import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 
 /**
@@ -51,9 +47,6 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
    */
   private final Map<String, RemoteStorageInfo> appIdToRemoteStorageInfo;
   private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
-  private final Configuration hdfsConf;
-  private final int readAndWriteTimes;
-  private List<Map.Entry<String, RankValue>> uris;
 
   public LowestIOSampleCostSelectStorageStrategy(
       Map<String, RankValue> remoteStoragePathRankValue,
@@ -63,13 +56,11 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
     super(remoteStoragePathRankValue, conf);
     this.appIdToRemoteStorageInfo = appIdToRemoteStorageInfo;
     this.availableRemoteStorageInfo = availableRemoteStorageInfo;
-    this.hdfsConf = new Configuration();
-    readAndWriteTimes = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES);
   }
 
   @VisibleForTesting
   public void sortPathByRankValue(
-      String path, String testPath, long startWrite) {
+      String path, String testPath, long startWrite, Configuration hdfsConf) {
     RankValue rankValue = remoteStoragePathRankValue.get(path);
     try {
       FileSystem fs = HadoopFilesystemProvider.getFilesystem(new Path(path), hdfsConf);
@@ -94,46 +85,6 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
           }
         }).collect(Collectors.toList());
     LOG.info("The sorted remote path list is: {}", uris);
-  }
-
-  @Override
-  public void detectStorage() {
-    uris = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
-    if (remoteStoragePathRankValue.size() > 1) {
-      CountDownLatch countDownLatch = new CountDownLatch(uris.size());
-      for (Map.Entry<String, RankValue> uri : uris) {
-        Thread detectThread = new Thread(() -> {
-          if (uri.getKey().startsWith(ApplicationManager.getPathSchema().get(0))) {
-            Path remotePath = new Path(uri.getKey());
-            String rssTest = uri.getKey() + "/rssTest-" + getCoordinatorId()
-                + Thread.currentThread().getName();
-            Path testPath = new Path(rssTest);
-            RankValue rankValue = remoteStoragePathRankValue.get(uri.getKey());
-            rankValue.setHealthy(new AtomicBoolean(true));
-            long startWriteTime = System.currentTimeMillis();
-            try {
-              FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hdfsConf);
-              for (int j = 0; j < readAndWriteTimes; j++) {
-                readAndWriteHdfsStorage(fs, testPath, uri.getKey(), rankValue);
-              }
-            } catch (Exception e) {
-              LOG.error("Storage read and write error, we will not use this remote path {}.", uri, e);
-              rankValue.setHealthy(new AtomicBoolean(false));
-            } finally {
-              sortPathByRankValue(uri.getKey(), rssTest, startWriteTime);
-              countDownLatch.countDown();
-            }
-          }
-        });
-        detectThread.setDaemon(true);
-        detectThread.start();
-      }
-      try {
-        countDownLatch.await();
-      } catch (InterruptedException e) {
-        LOG.error("Failed to detectStorage!");
-      }
-    }
   }
 
   @Override
