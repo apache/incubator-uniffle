@@ -25,19 +25,21 @@ public class ShuffleServerInfo implements Serializable {
 
   private String host;
 
-  private int port;
+  private int grpcPort;
+  private int nettyPort;
 
   // Only for test
-  public ShuffleServerInfo(String host, int port) {
-    this.id = host + "-" + port;
+  public ShuffleServerInfo(String host, int grpcPort) {
+    this.id = host + "-" + grpcPort;
     this.host = host;
-    this.port = port;
+    this.grpcPort = grpcPort;
   }
 
-  public ShuffleServerInfo(String id, String host, int port) {
+  public ShuffleServerInfo(String id, String host, int grpcPort, int nettyPort) {
     this.id = id;
     this.host = host;
-    this.port = port;
+    this.grpcPort = grpcPort;
+    this.nettyPort = nettyPort;
   }
 
   public String getId() {
@@ -48,8 +50,12 @@ public class ShuffleServerInfo implements Serializable {
     return host;
   }
 
-  public int getPort() {
-    return port;
+  public int getGrpcPort() {
+    return grpcPort;
+  }
+
+  public int getNettyPort() {
+    return nettyPort;
   }
 
   @Override
@@ -62,14 +68,15 @@ public class ShuffleServerInfo implements Serializable {
   public boolean equals(Object obj) {
     if (obj instanceof ShuffleServerInfo) {
       return id.equals(((ShuffleServerInfo) obj).getId())
-          && host.equals(((ShuffleServerInfo) obj).getHost())
-          && port == ((ShuffleServerInfo) obj).getPort();
+                 && host.equals(((ShuffleServerInfo) obj).getHost())
+                 && grpcPort == ((ShuffleServerInfo) obj).getGrpcPort();
     }
     return false;
   }
 
   @Override
   public String toString() {
-    return "ShuffleServerInfo{id[" + id + "], host[" + host + "], port[" + port + "]}";
+    return "ShuffleServerInfo{id[" + id + "], host[" + host + "], grpcPort["
+               + grpcPort + "], nettyPort[" + nettyPort + "]}";
   }
 }

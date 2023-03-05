@@ -30,6 +30,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.prometheus.client.CollectorRegistry;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.uniffle.server.netty.StreamServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -74,7 +75,8 @@ public class ShuffleServer {
   private RegisterHeartBeat registerHeartBeat;
   private String id;
   private String ip;
-  private int port;
+  private int grpcPort;
+  private int nettyPort;
   private ShuffleServerConf shuffleServerConf;
   private JettyServer jettyServer;
   private ShuffleTaskManager shuffleTaskManager;
@@ -86,6 +88,7 @@ public class ShuffleServer {
   private Set<String> tags = Sets.newHashSet();
   private AtomicBoolean isHealthy = new AtomicBoolean(true);
   private GRPCMetrics grpcMetrics;
+  private StreamServer streamServer;
   private MetricReporter metricReporter;
   private volatile ServerStatus serverStatus = ServerStatus.ACTIVE;
   private volatile boolean running;
@@ -123,6 +126,7 @@ public class ShuffleServer {
     registerHeartBeat.startHeartBeat();
     jettyServer.start();
     server.start();
+    streamServer.start();
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
@@ -182,8 +186,9 @@ public class ShuffleServer {
     if (ip == null) {
       throw new RuntimeException("Couldn't acquire host Ip");
     }
-    port = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
-    id = ip + "-" + port;
+    grpcPort = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
+
+    id = ip + "-" + grpcPort;
     LOG.info("Start to initialize server {}", id);
     jettyServer = new JettyServer(shuffleServerConf);
     registerMetrics();
@@ -215,6 +220,8 @@ public class ShuffleServer {
     shuffleBufferManager = new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager);
     shuffleTaskManager = new ShuffleTaskManager(shuffleServerConf, shuffleFlushManager,
         shuffleBufferManager, storageManager);
+    streamServer = new StreamServer(this);
+    nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.SERVER_UPLOAD_PORT);
 
     setServer();
 
@@ -359,8 +366,12 @@ public class ShuffleServer {
     return this.id;
   }
 
-  public int getPort() {
-    return this.port;
+  public int getGrpcPort() {
+    return grpcPort;
+  }
+
+  public int getNettyPort() {
+    return nettyPort;
   }
 
   public ShuffleServerConf getShuffleServerConf() {

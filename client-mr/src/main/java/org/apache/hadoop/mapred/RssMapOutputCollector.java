@@ -149,7 +149,7 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
           throw new RssException("partition " + i + " server info isn't right");
         }
         ShuffleServerInfo sever = new ShuffleServerInfo(StringUtils.join(serverInfo, "-"),
-            serverInfo[0], Integer.parseInt(serverInfo[1]));
+            serverInfo[0], Integer.parseInt(serverInfo[1]), Integer.parseInt(serverInfo[2]));
         assignServers.add(sever);
       }
       partitionToServers.put(i, assignServers);

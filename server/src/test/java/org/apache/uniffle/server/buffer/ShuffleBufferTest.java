@@ -603,7 +603,8 @@ public class ShuffleBufferTest extends BufferTestBase {
     int offset = 0;
     for (ShufflePartitionedData spd : spds) {
       ShufflePartitionedBlock block = spd.getBlockList()[0];
-      System.arraycopy(block.getData(), 0, expectedData, offset, block.getLength());
+      block.getData().readBytes(expectedData, offset, block.getLength());
+//      System.arraycopy(block.getData(), 0, expectedData, offset, block.getLength());
       offset += block.getLength();
     }
     return expectedData;

@@ -39,11 +39,11 @@ public class ServerNodeTest {
   @Test
   public void compareTest() {
     Set<String> tags = Sets.newHashSet("test");
-    ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
+    ServerNode sn1 = new ServerNode("sn1", "ip", 0, 0, 100L, 50L, 20,
         10, tags, true);
-    ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
+    ServerNode sn2 = new ServerNode("sn2", "ip", 0, 0, 100L, 50L, 21,
         10, tags, true);
-    ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
+    ServerNode sn3 = new ServerNode("sn3", "ip", 0, 0, 100L, 50L, 20,
         11, tags, true);
     List<ServerNode> nodes = Lists.newArrayList(sn1, sn2, sn3);
     Collections.sort(nodes);
@@ -55,7 +55,7 @@ public class ServerNodeTest {
   @Test
   public void testStorageInfoOfServerNode() {
     Set<String> tags = Sets.newHashSet("tag");
-    ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20, 10, tags, true);
+    ServerNode sn1 = new ServerNode("sn1", "ip", 0, 0, 100L, 50L, 20, 10, tags, true);
     // default constructor creates ServerNode with zero size of LocalStorage
     assertEquals(0, sn1.getStorageInfo().size());
     Map<String, StorageInfo> localStorageInfo = Maps.newHashMap();
@@ -66,7 +66,7 @@ public class ServerNodeTest {
         60L,
         StorageStatus.NORMAL);
     localStorageInfo.put("/mnt", info);
-    ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 20, 10, tags,
+    ServerNode sn2 = new ServerNode("sn2", "ip", 0, 0, 100L, 50L, 20, 10, tags,
         true, ServerStatus.ACTIVE, localStorageInfo);
     assertEquals(1, sn2.getStorageInfo().size());
   }

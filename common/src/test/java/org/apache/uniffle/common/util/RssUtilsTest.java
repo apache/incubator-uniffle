@@ -165,10 +165,10 @@ public class RssUtilsTest {
   @Test
   public void testGenerateServerToPartitions() {
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
-    ShuffleServerInfo server1 = new ShuffleServerInfo("server1", "0.0.0.1", 100);
-    ShuffleServerInfo server2 = new ShuffleServerInfo("server2", "0.0.0.2", 200);
-    ShuffleServerInfo server3 = new ShuffleServerInfo("server3", "0.0.0.3", 300);
-    ShuffleServerInfo server4 = new ShuffleServerInfo("server4", "0.0.0.4", 400);
+    ShuffleServerInfo server1 = new ShuffleServerInfo("server1", "0.0.0.1", 100, 0);
+    ShuffleServerInfo server2 = new ShuffleServerInfo("server2", "0.0.0.2", 200, 0);
+    ShuffleServerInfo server3 = new ShuffleServerInfo("server3", "0.0.0.3", 300, 0);
+    ShuffleServerInfo server4 = new ShuffleServerInfo("server4", "0.0.0.4", 400, 0);
     partitionToServers.put(1, Lists.newArrayList(server1, server2));
     partitionToServers.put(2, Lists.newArrayList(server3, server4));
     partitionToServers.put(3, Lists.newArrayList(server1, server2));

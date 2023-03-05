@@ -40,7 +40,7 @@ public class PartitionRangeAssignmentTest {
     for (int i = 0; i < 9; i = i + 3) {
       PartitionRange range = new PartitionRange(i, i + 2);
       List<ServerNode> nodes = Collections.singletonList(new ServerNode(
-          String.valueOf(i), "127.0.0." + i, i / 3, 0, 0, 0, 0, Sets.newHashSet("test"), true));
+          String.valueOf(i), "127.0.0." + i, i / 3, 0, 0, 0, 0, 0, Sets.newHashSet("test"), true));
       sortedMap.put(range, nodes);
     }
 
@@ -51,7 +51,7 @@ public class PartitionRangeAssignmentTest {
     for (int i = 0; i < 3; ++i) {
       RssProtos.PartitionRangeAssignment pra = res.get(i);
       assertEquals(1, pra.getServerCount());
-      assertEquals(i, pra.getServer(0).getPort());
+      assertEquals(i, pra.getServer(0).getGrpcPort());
       assertEquals(3 * i, pra.getStartPartition());
       assertEquals(3 * i + 2, pra.getEndPartition());
     }

@@ -287,7 +287,7 @@ public class SimpleClusterManager implements ClusterManager {
   private ShuffleServerInternalGrpcClient getShuffleServerClient(ServerNode serverNode) {
     try {
       return clientCache.get(serverNode,
-              () -> new ShuffleServerInternalGrpcClient(serverNode.getIp(), serverNode.getPort()));
+              () -> new ShuffleServerInternalGrpcClient(serverNode.getIp(), serverNode.getGrpcPort()));
     } catch (ExecutionException e) {
       throw new RuntimeException(e);
     }

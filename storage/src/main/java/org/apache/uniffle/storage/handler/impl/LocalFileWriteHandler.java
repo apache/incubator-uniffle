@@ -23,6 +23,9 @@ import java.nio.file.Files;
 import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.netty.buffer.ByteBuf;
+import org.apache.uniffle.common.util.ByteBufUtils;
+import org.apache.uniffle.common.util.ByteUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,7 +109,8 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
         long blockId = block.getBlockId();
         long crc = block.getCrc();
         long startOffset = dataWriter.nextOffset();
-        dataWriter.writeData(block.getData());
+        byte[] bytes = block.getData();
+        dataWriter.writeData(bytes);
 
         FileBasedShuffleSegment segment = new FileBasedShuffleSegment(
             blockId, startOffset, block.getLength(), block.getUncompressLength(), crc, block.getTaskAttemptId());

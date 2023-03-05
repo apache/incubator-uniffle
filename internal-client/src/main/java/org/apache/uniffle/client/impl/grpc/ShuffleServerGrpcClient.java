@@ -103,9 +103,9 @@ import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerBlockingStub;
 public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServerClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerGrpcClient.class);
-  private static final long FAILED_REQUIRE_ID = -1;
+  protected static final long FAILED_REQUIRE_ID = -1;
   private static final long RPC_TIMEOUT_DEFAULT_MS = 60000;
-  private long rpcTimeout = RPC_TIMEOUT_DEFAULT_MS;
+  protected long rpcTimeout = RPC_TIMEOUT_DEFAULT_MS;
   private ShuffleServerBlockingStub blockingStub;
 
   public ShuffleServerGrpcClient(String host, int port) {

@@ -29,7 +29,7 @@ public class ShuffleBlockInfoTest {
   @Test
   public void testToString() {
     List<ShuffleServerInfo> shuffleServerInfos =
-        Collections.singletonList(new ShuffleServerInfo("0", "localhost", 1234));
+        Collections.singletonList(new ShuffleServerInfo("0", "localhost", 1234, 0));
     ShuffleBlockInfo info = new ShuffleBlockInfo(1, 2, 3, 4, 5, new byte[6],
         shuffleServerInfos, 7, 8, 9);
     assertEquals("ShuffleBlockInfo:shuffleId[" + info.getShuffleId()

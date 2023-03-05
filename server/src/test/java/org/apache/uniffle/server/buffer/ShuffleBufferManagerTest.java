@@ -32,6 +32,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.server.ShuffleFlushManager;
@@ -171,11 +172,11 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     // validate get shuffle data
     ShuffleDataResult sdr = shuffleBufferManager.getShuffleData(
         appId, 2, 0, Constants.INVALID_BLOCK_ID, 60);
-    assertArrayEquals(spd2.getBlockList()[0].getData(), sdr.getData());
+    assertArrayEquals(ByteBufUtils.readBytes(spd2.getBlockList()[0].getData()), sdr.getData());
     long lastBlockId = spd2.getBlockList()[0].getBlockId();
     sdr = shuffleBufferManager.getShuffleData(
         appId, 2, 0, lastBlockId, 100);
-    assertArrayEquals(spd3.getBlockList()[0].getData(), sdr.getData());
+    assertArrayEquals(ByteBufUtils.readBytes(spd3.getBlockList()[0].getData()), sdr.getData());
     // flush happen
     ShufflePartitionedData spd5 = createData(0, 10);
     shuffleBufferManager.cacheShuffleData(appId, 4, false, spd5);
@@ -191,11 +192,11 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     // data in flush buffer now, it also can be got before flush finish
     sdr = shuffleBufferManager.getShuffleData(
         appId, 2, 0, Constants.INVALID_BLOCK_ID, 60);
-    assertArrayEquals(spd2.getBlockList()[0].getData(), sdr.getData());
+    assertArrayEquals(ByteBufUtils.readBytes(spd2.getBlockList()[0].getData()), sdr.getData());
     lastBlockId = spd2.getBlockList()[0].getBlockId();
     sdr = shuffleBufferManager.getShuffleData(
         appId, 2, 0, lastBlockId, 100);
-    assertArrayEquals(spd3.getBlockList()[0].getData(), sdr.getData());
+    assertArrayEquals(ByteBufUtils.readBytes(spd3.getBlockList()[0].getData()), sdr.getData());
     // cache data again, it should cause flush
     spd1 = createData(0, 10);
     shuffleBufferManager.cacheShuffleData(appId, 1, false, spd1);

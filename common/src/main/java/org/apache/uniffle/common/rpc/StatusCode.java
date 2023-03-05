@@ -61,4 +61,32 @@ public enum StatusCode {
   public static StatusCode fromProto(RssProtos.StatusCode status) {
     return fromCode(status.getNumber());
   }
+
+  public static StatusCode valueOf(int value) {
+    if (value == SUCCESS.statusCode) {
+      return SUCCESS;
+    } else if (value == DOUBLE_REGISTER.statusCode) {
+      return DOUBLE_REGISTER;
+    } else if (value == NO_BUFFER.statusCode) {
+      return NO_BUFFER;
+    } else if (value == INVALID_STORAGE.statusCode) {
+      return INVALID_STORAGE;
+    } else if (value == NO_REGISTER.statusCode) {
+      return NO_REGISTER;
+    } else if (value == NO_PARTITION.statusCode) {
+      return NO_PARTITION;
+    } else if (value == INTERNAL_ERROR.statusCode) {
+      return INTERNAL_ERROR;
+    } else if (value == TIMEOUT.statusCode) {
+      return TIMEOUT;
+    } else if (value == ACCESS_DENIED.statusCode) {
+      return ACCESS_DENIED;
+    } else if (value == INVALID_REQUEST.statusCode) {
+      return INVALID_REQUEST;
+    } else if (value == UNKNOWN.statusCode) {
+      return UNKNOWN;
+    } else {
+      throw new RuntimeException("Unknown value");
+    }
+  }
 }

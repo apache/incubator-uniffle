@@ -26,8 +26,8 @@ public class ShuffleServerInfoTest {
 
   @Test
   public void testEquals() {
-    ShuffleServerInfo info = new ShuffleServerInfo("1", "localhost", 1234);
-    ShuffleServerInfo info2 = new ShuffleServerInfo("1", "localhost", 1234);
+    ShuffleServerInfo info = new ShuffleServerInfo("1", "localhost", 1234, 0);
+    ShuffleServerInfo info2 = new ShuffleServerInfo("1", "localhost", 1234, 0);
     assertEquals(info, info);
     assertEquals(info.hashCode(), info.hashCode());
     assertEquals(info, info2);
@@ -35,9 +35,9 @@ public class ShuffleServerInfoTest {
     assertNotEquals(info, null);
     assertNotEquals(info, new Object());
 
-    ShuffleServerInfo info3 = new ShuffleServerInfo("2", "localhost", 1234);
-    ShuffleServerInfo info4 = new ShuffleServerInfo("1", "host1", 1234);
-    ShuffleServerInfo info5 = new ShuffleServerInfo("1", "localhost", 1235);
+    ShuffleServerInfo info3 = new ShuffleServerInfo("2", "localhost", 1234, 0);
+    ShuffleServerInfo info4 = new ShuffleServerInfo("1", "host1", 1234, 0);
+    ShuffleServerInfo info5 = new ShuffleServerInfo("1", "localhost", 1235, 0);
     assertNotEquals(info, info3);
     assertNotEquals(info, info4);
     assertNotEquals(info, info5);
@@ -46,10 +46,10 @@ public class ShuffleServerInfoTest {
 
   @Test
   public void testToString() {
-    ShuffleServerInfo info = new ShuffleServerInfo("1", "localhost", 1234);
+    ShuffleServerInfo info = new ShuffleServerInfo("1", "localhost", 1234, 0);
     assertEquals("ShuffleServerInfo{id[" + info.getId()
         + "], host[" + info.getHost()
-        + "], port[" + info.getPort()
+        + "], port[" + info.getGrpcPort()
         + "]}", info.toString());
   }
 

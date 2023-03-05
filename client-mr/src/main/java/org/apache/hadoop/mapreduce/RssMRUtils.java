@@ -112,7 +112,7 @@ public class RssMRUtils {
         throw new RssException("partition " + reduceID + " server info isn't right");
       }
       ShuffleServerInfo sever = new ShuffleServerInfo(StringUtils.join(serverInfo, "-"),
-          serverInfo[0], Integer.parseInt(serverInfo[1]));
+          serverInfo[0], Integer.parseInt(serverInfo[1]), Integer.parseInt(serverInfo[2]));
       assignServers.add(sever);
     }
     return assignServers;

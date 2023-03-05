@@ -110,7 +110,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
   public ShuffleServerHeartBeatResponse doSendHeartBeat(
       String id,
       String ip,
-      int port,
+      int grpcPort,
+      int nettyPort,
       long usedMemory,
       long preAllocatedMemory,
       long availableMemory,
@@ -121,7 +122,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       ServerStatus serverStatus,
       Map<String, StorageInfo> storageInfo) {
     ShuffleServerId serverId =
-        ShuffleServerId.newBuilder().setId(id).setIp(ip).setPort(port).build();
+        ShuffleServerId.newBuilder().setId(id).setIp(ip).setGrpcPort(port).setNettyPort(nettyPort).build();
     ShuffleServerHeartBeatRequest request =
         ShuffleServerHeartBeatRequest.newBuilder()
             .setServerId(serverId)
@@ -189,7 +190,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
     ShuffleServerHeartBeatResponse rpcResponse = doSendHeartBeat(
         request.getShuffleServerId(),
         request.getShuffleServerIp(),
-        request.getShuffleServerPort(),
+        request.getShuffleServerGrpcPort(),
+        request.getShuffleServerNettyPort(),
         request.getUsedMemory(),
         request.getPreAllocatedMemory(),
         request.getAvailableMemory(),
@@ -372,7 +374,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       final List<ShuffleServerInfo> shuffleServerInfos = partitionRangeAssignment
           .getServerList()
           .stream()
-          .map(ss -> new ShuffleServerInfo(ss.getId(), ss.getIp(), ss.getPort()))
+          .map(ss -> new ShuffleServerInfo(ss.getId(), ss.getIp(), ss.getGrpcPort(), ss.getNettyPort()))
           .collect(Collectors.toList());
       for (int i = startPartition; i <= endPartition; i++) {
         partitionToServers.put(i, shuffleServerInfos);
@@ -396,7 +398,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         PartitionRange partitionRange = new PartitionRange(assign.getStartPartition(), assign.getEndPartition());
         for (ShuffleServerId ssi : shuffleServerIds) {
           ShuffleServerInfo shuffleServerInfo =
-              new ShuffleServerInfo(ssi.getId(), ssi.getIp(), ssi.getPort());
+              new ShuffleServerInfo(ssi.getId(), ssi.getIp(), ssi.getGrpcPort(), ssi.getNettyPort());
           if (!serverToPartitionRanges.containsKey(shuffleServerInfo)) {
             serverToPartitionRanges.put(shuffleServerInfo, Lists.newArrayList());
           }

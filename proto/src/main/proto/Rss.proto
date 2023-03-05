@@ -261,7 +261,8 @@ message ShuffleServerHeartBeatResponse {
 message ShuffleServerId {
   string id = 1;
   string ip = 2;
-  int32 port = 3;
+  int32 grpcPort = 3;
+  int32 nettyPort = 4;
 }
 
 message ShuffleServerResult {

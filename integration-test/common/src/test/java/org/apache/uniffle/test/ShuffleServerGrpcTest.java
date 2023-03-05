@@ -111,7 +111,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
             "GRPC", 2, 10000L, 4, 1, 1, 1, true, 1, 1, 10, 10);
     shuffleWriteClient.registerCoordinators("127.0.0.1:19999");
     shuffleWriteClient.registerShuffle(
-        new ShuffleServerInfo("127.0.0.1-20001", "127.0.0.1", 20001),
+        new ShuffleServerInfo("127.0.0.1-20001", "127.0.0.1", 20001, 0),
         "application_clearResourceTest1",
         0,
         Lists.newArrayList(new PartitionRange(0, 1)),

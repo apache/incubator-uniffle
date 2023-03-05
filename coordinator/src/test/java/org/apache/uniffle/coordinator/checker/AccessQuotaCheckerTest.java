@@ -68,6 +68,7 @@ public class AccessQuotaCheckerTest {
         "1",
         "1",
         0,
+        0,
         50,
         20,
         1000,
@@ -77,6 +78,7 @@ public class AccessQuotaCheckerTest {
     ServerNode node2 = new ServerNode(
         "1",
         "1",
+        0,
         0,
         50,
         20,

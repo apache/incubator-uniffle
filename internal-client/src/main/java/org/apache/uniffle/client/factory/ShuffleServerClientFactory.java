@@ -22,6 +22,7 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -44,7 +45,10 @@ public class ShuffleServerClientFactory {
 
   private ShuffleServerClient createShuffleServerClient(String clientType, ShuffleServerInfo shuffleServerInfo) {
     if (clientType.equalsIgnoreCase(ClientType.GRPC.name())) {
-      return new ShuffleServerGrpcClient(shuffleServerInfo.getHost(), shuffleServerInfo.getPort());
+      return new ShuffleServerGrpcClient(shuffleServerInfo.getHost(), shuffleServerInfo.getGrpcPort());
+    } if (clientType.equalsIgnoreCase(ClientType.GRPC_NETTY.name())) {
+      return new ShuffleServerGrpcNettyClient(shuffleServerInfo.getHost(),
+          shuffleServerInfo.getGrpcPort(), shuffleServerInfo.getNettyPort());
     } else {
       throw new UnsupportedOperationException("Unsupported client type " + clientType);
     }

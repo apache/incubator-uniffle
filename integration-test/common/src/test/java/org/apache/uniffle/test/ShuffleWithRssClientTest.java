@@ -84,9 +84,9 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     createShuffleServer(shuffleServerConf);
     startServers();
     shuffleServerInfo1 =
-        new ShuffleServerInfo("127.0.0.1-20001", shuffleServers.get(0).getIp(), SHUFFLE_SERVER_PORT);
+        new ShuffleServerInfo("127.0.0.1-20001", shuffleServers.get(0).getIp(), SHUFFLE_SERVER_PORT, 0);
     shuffleServerInfo2 =
-        new ShuffleServerInfo("127.0.0.1-20001", shuffleServers.get(1).getIp(), SHUFFLE_SERVER_PORT + 1);
+        new ShuffleServerInfo("127.0.0.1-20001", shuffleServers.get(1).getIp(), SHUFFLE_SERVER_PORT + 1, 0);
   }
 
   @BeforeEach
@@ -116,7 +116,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
 
     // simulator a failed server
     ShuffleServerInfo fakeShuffleServerInfo =
-        new ShuffleServerInfo("127.0.0.1-20001", shuffleServers.get(0).getIp(), SHUFFLE_SERVER_PORT + 100);
+        new ShuffleServerInfo("127.0.0.1-20001", shuffleServers.get(0).getIp(), SHUFFLE_SERVER_PORT + 100, 0);
     List<ShuffleBlockInfo> blocks = createShuffleBlockList(
         0, 0, 0, 3, 25, blockIdBitmap,
         expectedData, Lists.newArrayList(shuffleServerInfo1, fakeShuffleServerInfo));
@@ -328,7 +328,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
 
     // commit will be failed because of fakeIp
     commitResult = shuffleWriteClientImpl.sendCommit(Sets.newHashSet(new ShuffleServerInfo(
-        "127.0.0.1-20001", "fakeIp", SHUFFLE_SERVER_PORT)), testAppId, 0, 2);
+        "127.0.0.1-20001", "fakeIp", SHUFFLE_SERVER_PORT, 0)), testAppId, 0, 2);
     assertFalse(commitResult);
 
     // wait resource to be deleted

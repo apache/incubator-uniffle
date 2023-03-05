@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.netty.util.internal.PlatformDependent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +78,8 @@ public class RegisterHeartBeat {
         sendHeartBeat(
             shuffleServer.getId(),
             shuffleServer.getIp(),
-            shuffleServer.getPort(),
+            shuffleServer.getGrpcPort(),
+            shuffleServer.getNettyPort(),
             shuffleServer.getUsedMemory(),
             shuffleServer.getPreAllocatedMemory(),
             shuffleServer.getAvailableMemory(),
@@ -97,7 +99,8 @@ public class RegisterHeartBeat {
   boolean sendHeartBeat(
       String id,
       String ip,
-      int port,
+      int grpcPort,
+      int nettyPort,
       long usedMemory,
       long preAllocatedMemory,
       long availableMemory,
@@ -110,7 +113,8 @@ public class RegisterHeartBeat {
     RssSendHeartBeatRequest request = new RssSendHeartBeatRequest(
         id,
         ip,
-        port,
+        grpcPort,
+        nettyPort,
         usedMemory,
         preAllocatedMemory,
         availableMemory,

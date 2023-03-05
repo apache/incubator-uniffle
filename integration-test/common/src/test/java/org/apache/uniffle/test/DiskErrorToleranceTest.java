@@ -60,7 +60,7 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
   private static File data1 = new File(serverTmpDir, "data1");
   private static File data2 = new File(serverTmpDir, "data2");
   private List<ShuffleServerInfo> shuffleServerInfo =
-      Lists.newArrayList(new ShuffleServerInfo("127.0.0.1-20001", LOCALHOST, SHUFFLE_SERVER_PORT));
+      Lists.newArrayList(new ShuffleServerInfo("127.0.0.1-20001", LOCALHOST, SHUFFLE_SERVER_PORT, 0));
 
   @BeforeAll
   public static void setupServers() throws Exception {

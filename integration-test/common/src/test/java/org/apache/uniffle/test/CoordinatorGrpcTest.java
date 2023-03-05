@@ -83,17 +83,17 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     Map<Integer, List<ShuffleServerInfo>> partitionToServers =
         coordinatorClient.getPartitionToServers(testResponse);
 
-    assertEquals(Arrays.asList(new ShuffleServerInfo("id1", "0.0.0.1", 100),
-        new ShuffleServerInfo("id2", "0.0.0.2", 100)),
+    assertEquals(Arrays.asList(new ShuffleServerInfo("id1", "0.0.0.1", 100, 0),
+        new ShuffleServerInfo("id2", "0.0.0.2", 100, 0)),
         partitionToServers.get(0));
-    assertEquals(Arrays.asList(new ShuffleServerInfo("id1", "0.0.0.1", 100),
-        new ShuffleServerInfo("id2", "0.0.0.2", 100)),
+    assertEquals(Arrays.asList(new ShuffleServerInfo("id1", "0.0.0.1", 100, 0),
+        new ShuffleServerInfo("id2", "0.0.0.2", 100, 0)),
         partitionToServers.get(1));
-    assertEquals(Arrays.asList(new ShuffleServerInfo("id3", "0.0.0.3", 100),
-        new ShuffleServerInfo("id4", "0.0.0.4", 100)),
+    assertEquals(Arrays.asList(new ShuffleServerInfo("id3", "0.0.0.3", 100, 0),
+        new ShuffleServerInfo("id4", "0.0.0.4", 100, 0)),
         partitionToServers.get(2));
-    assertEquals(Arrays.asList(new ShuffleServerInfo("id3", "0.0.0.3", 100),
-        new ShuffleServerInfo("id4", "0.0.0.4", 100)),
+    assertEquals(Arrays.asList(new ShuffleServerInfo("id3", "0.0.0.3", 100, 0),
+        new ShuffleServerInfo("id4", "0.0.0.4", 100, 0)),
         partitionToServers.get(3));
     assertNull(partitionToServers.get(4));
   }
@@ -104,13 +104,13 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
         coordinatorClient.getServerToPartitionRanges(testResponse);
     List<ShuffleRegisterInfo> expected = Arrays.asList(
-        new ShuffleRegisterInfo(new ShuffleServerInfo("id1", "0.0.0.1", 100),
+        new ShuffleRegisterInfo(new ShuffleServerInfo("id1", "0.0.0.1", 100, 0),
             Lists.newArrayList(new PartitionRange(0, 1))),
-        new ShuffleRegisterInfo(new ShuffleServerInfo("id2", "0.0.0.2", 100),
+        new ShuffleRegisterInfo(new ShuffleServerInfo("id2", "0.0.0.2", 100, 0),
             Lists.newArrayList(new PartitionRange(0, 1))),
-        new ShuffleRegisterInfo(new ShuffleServerInfo("id3", "0.0.0.3", 100),
+        new ShuffleRegisterInfo(new ShuffleServerInfo("id3", "0.0.0.3", 100, 0),
             Lists.newArrayList(new PartitionRange(2, 3))),
-        new ShuffleRegisterInfo(new ShuffleServerInfo("id4", "0.0.0.4", 100),
+        new ShuffleRegisterInfo(new ShuffleServerInfo("id4", "0.0.0.4", 100, 0),
             Lists.newArrayList(new PartitionRange(2, 3))));
     assertEquals(4, serverToPartitionRanges.size());
     for (ShuffleRegisterInfo sri : expected) {
@@ -292,25 +292,25 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
   private GetShuffleAssignmentsResponse generateShuffleAssignmentsResponse() {
     ShuffleServerId ss1 = RssProtos.ShuffleServerId.newBuilder()
         .setIp("0.0.0.1")
-        .setPort(100)
+        .setGrpcPort(100)
         .setId("id1")
         .build();
 
     ShuffleServerId ss2 = RssProtos.ShuffleServerId.newBuilder()
         .setIp("0.0.0.2")
-        .setPort(100)
+        .setGrpcPort(100)
         .setId("id2")
         .build();
 
     ShuffleServerId ss3 = RssProtos.ShuffleServerId.newBuilder()
         .setIp("0.0.0.3")
-        .setPort(100)
+        .setGrpcPort(100)
         .setId("id3")
         .build();
 
     ShuffleServerId ss4 = RssProtos.ShuffleServerId.newBuilder()
         .setIp("0.0.0.4")
-        .setPort(100)
+        .setGrpcPort(100)
         .setId("id4")
         .build();
 

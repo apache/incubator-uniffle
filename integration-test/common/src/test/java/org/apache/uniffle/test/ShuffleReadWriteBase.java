@@ -48,7 +48,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
 
   private static AtomicLong ATOMIC_LONG = new AtomicLong(0L);
   public static List<ShuffleServerInfo> mockSSI =
-      Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
+      Lists.newArrayList(new ShuffleServerInfo("id", "host", 0, 0));
 
   public static List<ShuffleBlockInfo> createShuffleBlockList(int shuffleId, int partitionId, long taskAttemptId,
       int blockNum, int length, Roaring64NavigableMap blockIdBitmap, Map<Long, byte[]> dataMap,
@@ -75,7 +75,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
                                                               Roaring64NavigableMap blockIdBitmap,
                                                               Map<Long, byte[]> dataMap) {
     List<ShuffleServerInfo> shuffleServerInfoList =
-        Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
+        Lists.newArrayList(new ShuffleServerInfo("id", "host", 0, 0));
     return createShuffleBlockList(
         shuffleId, partitionId, taskAttemptId, blockNum, length, blockIdBitmap, dataMap, shuffleServerInfoList);
   }

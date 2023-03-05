@@ -371,7 +371,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     ServerStatus serverStatus = request.hasStatus() ? ServerStatus.fromProto(request.getStatus()) : ServerStatus.ACTIVE;
     return new ServerNode(request.getServerId().getId(),
         request.getServerId().getIp(),
-        request.getServerId().getPort(),
+        request.getServerId().getGrpcPort(),
+        request.getServerId().getNettyPort(),
         request.getUsedMemory(),
         request.getPreAllocatedMemory(),
         request.getAvailableMemory(),

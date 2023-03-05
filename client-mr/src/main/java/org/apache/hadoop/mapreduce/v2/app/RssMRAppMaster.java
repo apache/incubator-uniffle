@@ -262,7 +262,7 @@ public class RssMRAppMaster extends MRAppMaster {
       response.getPartitionToServers().entrySet().forEach(entry -> {
         List<String> servers = Lists.newArrayList();
         for (ShuffleServerInfo server : entry.getValue()) {
-          servers.add(server.getHost() + ":" + server.getPort());
+          servers.add(server.getHost() + ":" + server.getGrpcPort());
         }
         extraConf.set(RssMRConfig.RSS_ASSIGNMENT_PREFIX + entry.getKey(), StringUtils.join(servers, ","));
       });

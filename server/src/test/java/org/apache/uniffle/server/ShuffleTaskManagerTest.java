@@ -35,6 +35,7 @@ import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.hadoop.fs.Path;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -994,7 +995,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
       byte[] buf = new byte[length];
       new Random().nextBytes(buf);
       blocks[i] = new ShufflePartitionedBlock(
-          length, length, ChecksumUtils.getCrc32(buf), ATOMIC_INT.incrementAndGet(), 0, buf);
+          length, length, ChecksumUtils.getCrc32(buf), ATOMIC_INT.incrementAndGet(), 0, ByteBufUtils.wrappedBuffer(buf));
     }
     return blocks;
   }

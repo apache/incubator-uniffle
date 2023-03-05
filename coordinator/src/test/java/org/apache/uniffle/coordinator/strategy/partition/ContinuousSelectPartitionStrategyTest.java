@@ -85,6 +85,7 @@ public class ContinuousSelectPartitionStrategyTest {
           String.valueOf((char) ('a' + i)),
           "127.0.0." + i,
           0,
+          0,
           10L,
           5L,
           resources.get(i),

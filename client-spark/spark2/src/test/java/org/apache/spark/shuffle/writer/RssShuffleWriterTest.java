@@ -176,14 +176,14 @@ public class RssShuffleWriterTest {
     when(mockPartitioner.numPartitions()).thenReturn(2);
 
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
-    List<ShuffleServerInfo> ssi12 = Arrays.asList(new ShuffleServerInfo("id1", "0.0.0.1", 100),
-        new ShuffleServerInfo("id2", "0.0.0.2", 100));
+    List<ShuffleServerInfo> ssi12 = Arrays.asList(new ShuffleServerInfo("id1", "0.0.0.1", 100, 0),
+        new ShuffleServerInfo("id2", "0.0.0.2", 100, 0));
     partitionToServers.put(0, ssi12);
-    List<ShuffleServerInfo> ssi34 = Arrays.asList(new ShuffleServerInfo("id3", "0.0.0.3", 100),
-        new ShuffleServerInfo("id4", "0.0.0.4", 100));
+    List<ShuffleServerInfo> ssi34 = Arrays.asList(new ShuffleServerInfo("id3", "0.0.0.3", 100, 0),
+        new ShuffleServerInfo("id4", "0.0.0.4", 100, 0));
     partitionToServers.put(1, ssi34);
-    List<ShuffleServerInfo> ssi56 = Arrays.asList(new ShuffleServerInfo("id5", "0.0.0.5", 100),
-        new ShuffleServerInfo("id6", "0.0.0.6", 100));
+    List<ShuffleServerInfo> ssi56 = Arrays.asList(new ShuffleServerInfo("id5", "0.0.0.5", 100, 0),
+        new ShuffleServerInfo("id6", "0.0.0.6", 100, 0));
     partitionToServers.put(2, ssi56);
     when(mockPartitioner.getPartition("testKey1")).thenReturn(0);
     when(mockPartitioner.getPartition("testKey2")).thenReturn(1);
@@ -352,7 +352,7 @@ public class RssShuffleWriterTest {
 
   private List<ShuffleBlockInfo> createShuffleBlockList(int blockNum, int blockLength) {
     List<ShuffleServerInfo> shuffleServerInfoList =
-        Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
+        Lists.newArrayList(new ShuffleServerInfo("id", "host", 0, 0));
     List<ShuffleBlockInfo> shuffleBlockInfoList = Lists.newArrayList();
     for (int i = 0; i < blockNum; i++) {
       shuffleBlockInfoList.add(new ShuffleBlockInfo(
