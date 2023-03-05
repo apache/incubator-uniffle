@@ -60,7 +60,6 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
   private final Configuration hdfsConf;
   protected List<Map.Entry<String, RankValue>> uris;
   private int readAndWriteTimes = 1;
-  private final ApplicationManager.StrategyName strategyName;
 
   public AbstractSelectStorageStrategy(
       Map<String, RankValue> remoteStoragePathRankValue,
@@ -69,7 +68,8 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
     this.hdfsConf = new Configuration();
     this.fileSize = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_FILE_SIZE);
     this.coordinatorId = conf.getString(CoordinatorUtils.COORDINATOR_ID, UUID.randomUUID().toString());
-    this.strategyName = conf.get(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY);
+    ApplicationManager.StrategyName strategyName = conf.get(
+        CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY);
     if (strategyName == ApplicationManager.StrategyName.IO_SAMPLE) {
       this.readAndWriteTimes = conf.getInteger(
           CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES);
