@@ -153,9 +153,15 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
       LOG.error("Failed to sort, we will not use this remote path {}.", path, e);
     }
 
-    uris = Lists.newCopyOnWriteArrayList(
-        remoteStoragePathRankValue.entrySet()).stream().filter(
-            Objects::nonNull).sorted(this.getComparator()).collect(Collectors.toList());
+    if (this.getComparator() == null) {
+      uris = Lists.newCopyOnWriteArrayList(
+          remoteStoragePathRankValue.entrySet()).stream().filter(
+          Objects::nonNull).sorted(this.getComparator()).collect(Collectors.toList());
+    } else {
+      uris = Lists.newCopyOnWriteArrayList(
+          remoteStoragePathRankValue.entrySet()).stream().filter(
+          Objects::nonNull).collect(Collectors.toList());
+    }
     LOG.info("The sorted remote path list is: {}", uris);
   }
 

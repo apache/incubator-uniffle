@@ -79,6 +79,6 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
 
   @Override
   public Comparator<Map.Entry<String, RankValue>> getComparator() {
-    return (o1, o2) -> 0;
+    return null;
   }
 }
