@@ -58,7 +58,7 @@ public class ShuffleWriteClientImplTest {
     });
 
     List<ShuffleServerInfo> shuffleServerInfoList =
-        Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
+        Lists.newArrayList(new ShuffleServerInfo("id", "host", 0, 0));
     List<ShuffleBlockInfo> shuffleBlockInfoList = Lists.newArrayList(new ShuffleBlockInfo(
         0, 0, 10, 10, 10, new byte[]{1}, shuffleServerInfoList, 10, 100, 0));
 
@@ -80,7 +80,7 @@ public class ShuffleWriteClientImplTest {
         new RssSendShuffleDataResponse(StatusCode.NO_BUFFER));
 
     List<ShuffleServerInfo> shuffleServerInfoList =
-        Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
+        Lists.newArrayList(new ShuffleServerInfo("id", "host", 0, 0));
     List<ShuffleBlockInfo> shuffleBlockInfoList = Lists.newArrayList(new ShuffleBlockInfo(
         0, 0, 10, 10, 10, new byte[]{1}, shuffleServerInfoList, 10, 100, 0));
     SendShuffleDataResult result = spyClient.sendShuffleData("appId", shuffleBlockInfoList, () -> false);
@@ -94,9 +94,9 @@ public class ShuffleWriteClientImplTest {
         new ShuffleWriteClientImpl("GRPC", 3, 2000, 4, 1, 1, 1, true, 1, 1, 10, 10);
     String appId1 = "testRegisterAndUnRegisterShuffleServer-1";
     String appId2 = "testRegisterAndUnRegisterShuffleServer-2";
-    ShuffleServerInfo server1 = new ShuffleServerInfo("host1-0", "host1", 0);
-    ShuffleServerInfo server2 = new ShuffleServerInfo("host2-0", "host2", 0);
-    ShuffleServerInfo server3 = new ShuffleServerInfo("host3-0", "host3", 0);
+    ShuffleServerInfo server1 = new ShuffleServerInfo("host1-0", "host1", 0, 0);
+    ShuffleServerInfo server2 = new ShuffleServerInfo("host2-0", "host2", 0, 0);
+    ShuffleServerInfo server3 = new ShuffleServerInfo("host3-0", "host3", 0, 0);
     shuffleWriteClient.addShuffleServer(appId1, 0, server1);
     shuffleWriteClient.addShuffleServer(appId1, 1, server2);
     shuffleWriteClient.addShuffleServer(appId2, 1, server3);

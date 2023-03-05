@@ -35,6 +35,8 @@ import io.netty.util.ReferenceCountUtil;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.network.protocol.UploadDataResponse;
+import org.apache.uniffle.server.ShuffleTaskManager;
+import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.netty.util.HandlerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,8 +120,9 @@ public class UploadDataChannelInboundHandler extends ChannelInboundHandlerAdapte
         });
 //        LOG.info("SSSSSS: UploadData shuffleId=" + shuffleId + " requireSize=" + requireSize + " blockNum=" + blockNum + " size=" + size);
         if (!shuffleData.isEmpty()) {
-          boolean isPreAllocated =
-              shuffleServer.getShuffleTaskManager().isPreAllocated(requireBufferId);
+          ShuffleTaskManager manager = shuffleServer.getShuffleTaskManager();
+          PreAllocatedBufferInfo info = manager.getAndRemovePreAllocatedBuffer(requireBufferId);
+          boolean isPreAllocated = info != null;
           if (!isPreAllocated) {
             String errorMsg = "Can't find requireBufferId[" + requireBufferId + "] for appId[" + appId
                                   + "], shuffleId[" + shuffleId + "]";
@@ -133,6 +136,7 @@ public class UploadDataChannelInboundHandler extends ChannelInboundHandlerAdapte
           }
           final long start = System.currentTimeMillis();
           List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(shuffleData);
+          long alreadyReleasedSize = 0;
           for (ShufflePartitionedData spd : shufflePartitionedData) {
             String shuffleDataInfo = "appId[" + appId + "], shuffleId[" + shuffleId
                                          + "], partitionId[" + spd.getPartitionId() + "]";
@@ -140,9 +144,7 @@ public class UploadDataChannelInboundHandler extends ChannelInboundHandlerAdapte
 //              for(ShufflePartitionedBlock block : spd.getBlockList()) {
 //                LOG.info("UploadDataChannelInboundHandler cacheShuffleData partitionId=" + spd.getPartitionId() + " blockId=" +  block.getBlockId() + ", size=" + block.getSize());
 //              }
-              ret = shuffleServer
-                        .getShuffleTaskManager()
-                        .cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
+              ret = manager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
               if (ret != StatusCode.SUCCESS) {
                 String errorMsg = "Error happened when shuffleEngine.write for "
                                       + shuffleDataInfo + ", statusCode=" + ret;
@@ -150,11 +152,11 @@ public class UploadDataChannelInboundHandler extends ChannelInboundHandlerAdapte
                 responseMessage = errorMsg;
                 break;
               } else {
-                // remove require bufferId, the memory should be updated already
-                shuffleServer
-                    .getShuffleTaskManager().removeRequireBufferId(requireBufferId);
-                shuffleServer.getShuffleTaskManager().updateCachedBlockIds(
-                    appId, shuffleId, spd.getBlockList());
+                long toReleasedSize = spd.getTotalBlockSize();
+                // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
+                manager.releasePreAllocatedSize(toReleasedSize);
+                alreadyReleasedSize += toReleasedSize;
+                manager.updateCachedBlockIds(appId, shuffleId, spd.getPartitionId(), spd.getBlockList());
               }
             } catch (Exception e) {
               String errorMsg = "Error happened when shuffleEngine.write for "
@@ -168,6 +170,9 @@ public class UploadDataChannelInboundHandler extends ChannelInboundHandlerAdapte
           LOG.debug("Cache Shuffle Data for appId[" + appId + "], shuffleId[" + shuffleId
                         + "], cost " + (System.currentTimeMillis() - start)
                         + " ms with " + shufflePartitionedData.size() + " blocks and " + requireSize + " bytes");
+          if (info.getRequireSize() > alreadyReleasedSize) {
+            manager.releasePreAllocatedSize(info.getRequireSize() - alreadyReleasedSize);
+          }
         } else {
           ret = StatusCode.INTERNAL_ERROR;
           responseMessage = "No data in request";

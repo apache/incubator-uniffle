@@ -39,7 +39,6 @@ import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.HdfsTestBase;
@@ -57,8 +56,8 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
   private static final String EXPECTED_EXCEPTION_MESSAGE = "Exception should be thrown";
   private static AtomicLong ATOMIC_LONG = new AtomicLong(0);
 
-  private ShuffleServerInfo ssi1 = new ShuffleServerInfo("host1-0", "host1", 0);
-  private ShuffleServerInfo ssi2 = new ShuffleServerInfo("host2-0", "host2", 0);
+  private ShuffleServerInfo ssi1 = new ShuffleServerInfo("host1-0", "host1", 0, 0);
+  private ShuffleServerInfo ssi2 = new ShuffleServerInfo("host2-0", "host2", 0, 0);
 
   @Test
   public void readTest1() throws Exception {
@@ -489,7 +488,7 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
       long blockId = (ATOMIC_LONG.getAndIncrement()
           << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH)) + taskAttemptId;
       blocks.add(new ShufflePartitionedBlock(
-          length, length, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, ByteBufUtils.wrappedBuffer(buf)));
+          length, length, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, buf));
       expectedData.put(blockId, buf);
       blockIdBitmap.addLong(blockId);
     }
@@ -508,7 +507,7 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
       long blockId = (ATOMIC_LONG.incrementAndGet()
           << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH)) + taskAttemptId;
       ShufflePartitionedBlock spb = new ShufflePartitionedBlock(
-          length, length, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, ByteBufUtils.wrappedBuffer(buf));
+          length, length, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, buf);
       blocks.add(spb);
       blocks.add(spb);
       expectedData.put(blockId, buf);

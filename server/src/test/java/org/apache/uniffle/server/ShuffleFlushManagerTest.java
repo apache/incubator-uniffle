@@ -39,7 +39,6 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
-import org.apache.uniffle.common.util.ByteBufUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -423,7 +422,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
       new Random().nextBytes(buf);
       blocks.add(new ShufflePartitionedBlock(
           length, length, ChecksumUtils.getCrc32(buf),
-          ATOMIC_INT.incrementAndGet(), 0, ByteBufUtils.wrappedBuffer(buf)));
+          ATOMIC_INT.incrementAndGet(), 0, buf));
     }
     return blocks;
   }

@@ -63,8 +63,8 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
   private static final Serializer KRYO_SERIALIZER = new KryoSerializer(new SparkConf(false));
   private static final String EXPECTED_EXCEPTION_MESSAGE = "Exception should be thrown";
 
-  private ShuffleServerInfo ssi1 = new ShuffleServerInfo("host1-0", "host1", 0);
-  private ShuffleServerInfo ssi2 = new ShuffleServerInfo("host2-0", "host2", 0);
+  private ShuffleServerInfo ssi1 = new ShuffleServerInfo("host1-0", "host1", 0, 0);
+  private ShuffleServerInfo ssi2 = new ShuffleServerInfo("host2-0", "host2", 0, 0);
 
   @Test
   public void readTest1() throws Exception {

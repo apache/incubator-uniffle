@@ -202,6 +202,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
 
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks = request.getShuffleIdToBlocks();
     AtomicBoolean isAllSuccess = new AtomicBoolean(true);
+    // todo: We need to modify the way of asynchronous callback
     CountDownLatch countDownLatch = new CountDownLatch(shuffleIdToBlocks.size());
 
     for (Map.Entry<Integer, Map<Integer, List<ShuffleBlockInfo>>> stb : shuffleIdToBlocks.entrySet()) {
@@ -217,6 +218,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
 
       int allocateSize = size;
       int finalBlockNum = blockNum;
+      // todo: Add retry logic
       try {
         long requireId = requirePreAllocation(allocateSize, request.getRetryMax(), request.getRetryIntervalMax());
         if (requireId == FAILED_REQUIRE_ID) {

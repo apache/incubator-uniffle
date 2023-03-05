@@ -37,7 +37,6 @@ import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
-import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.storage.HdfsTestBase;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
@@ -115,8 +114,7 @@ public abstract class AbstractRssReaderTest extends HdfsTestBase {
       compressData = Codec.newInstance(new RssConf()).compress(data);
     }
     long crc = ChecksumUtils.getCrc32(compressData);
-    return new ShufflePartitionedBlock(compressData.length, data.length, crc, blockId, 0,
-        ByteBufUtils.wrappedBuffer(compressData));
+    return new ShufflePartitionedBlock(compressData.length, data.length, crc, blockId, 0, compressData);
   }
 
   protected void writeData(SerializationStream serializeStream, String key, String value) {

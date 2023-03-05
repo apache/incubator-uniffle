@@ -75,7 +75,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     startServers();
     shuffleServerClients = new ArrayList<>();
     for (ShuffleServer shuffleServer : shuffleServers) {
-      shuffleServerClients.add(new ShuffleServerGrpcClient(shuffleServer.getIp(), shuffleServer.getPort()));
+      shuffleServerClients.add(new ShuffleServerGrpcClient(shuffleServer.getIp(), shuffleServer.getGrpcPort()));
     }
   }
 
@@ -109,7 +109,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     List<ShuffleServerInfo> shuffleServerInfoList = new ArrayList<>();
     for (ShuffleServer shuffleServer : shuffleServers) {
       shuffleServerInfoList.add(new ShuffleServerInfo(shuffleServer.getId(),
-          shuffleServer.getIp(), shuffleServer.getPort()));
+          shuffleServer.getIp(), shuffleServer.getGrpcPort(), shuffleServer.getNettyPort()));
     }
 
     CreateShuffleReadHandlerRequest request = mockCreateShuffleReadHandlerRequest(
