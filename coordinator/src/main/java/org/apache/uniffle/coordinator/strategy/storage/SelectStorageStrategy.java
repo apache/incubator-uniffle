@@ -17,8 +17,6 @@
 
 package org.apache.uniffle.coordinator.strategy.storage;
 
-import java.util.Comparator;
-
 import org.apache.uniffle.common.RemoteStorageInfo;
 
 public interface SelectStorageStrategy {
@@ -26,6 +24,4 @@ public interface SelectStorageStrategy {
   void detectStorage();
 
   RemoteStorageInfo pickStorage(String appId);
-
-  Comparator getComparator();
 }

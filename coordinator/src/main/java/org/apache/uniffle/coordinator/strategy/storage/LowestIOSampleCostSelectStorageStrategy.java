@@ -77,4 +77,9 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
     LOG.warn("No remote storage is available, we will default to the first.");
     return availableRemoteStorageInfo.values().iterator().next();
   }
+
+  @Override
+  public int readAndWriteTimes(CoordinatorConf conf) {
+    return conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES);
+  }
 }

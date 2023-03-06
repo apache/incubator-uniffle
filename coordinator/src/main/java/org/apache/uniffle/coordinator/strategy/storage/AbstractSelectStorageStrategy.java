@@ -58,8 +58,8 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
   protected final int fileSize;
   private final String coordinatorId;
   private final Configuration hdfsConf;
+  private final CoordinatorConf conf;
   protected List<Map.Entry<String, RankValue>> uris;
-  private int readAndWriteTimes = 1;
 
   public AbstractSelectStorageStrategy(
       Map<String, RankValue> remoteStoragePathRankValue,
@@ -68,12 +68,7 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
     this.hdfsConf = new Configuration();
     this.fileSize = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_FILE_SIZE);
     this.coordinatorId = conf.getString(CoordinatorUtils.COORDINATOR_ID, UUID.randomUUID().toString());
-    ApplicationManager.StrategyName strategyName = conf.get(
-        CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY);
-    if (strategyName == ApplicationManager.StrategyName.IO_SAMPLE) {
-      this.readAndWriteTimes = conf.getInteger(
-          CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES);
-    }
+    this.conf = conf;
   }
 
   public void readAndWriteHdfsStorage(FileSystem fs, Path testPath,
@@ -118,7 +113,7 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
           long startWriteTime = System.currentTimeMillis();
           try {
             FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hdfsConf);
-            for (int j = 0; j < readAndWriteTimes; j++) {
+            for (int j = 0; j < readAndWriteTimes(conf); j++) {
               readAndWriteHdfsStorage(fs, testPath, uri.getKey(), rankValue);
             }
           } catch (Exception e) {
@@ -165,8 +160,15 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
     LOG.info("The sorted remote path list is: {}", uris);
   }
 
-  @Override
-  public abstract Comparator<Map.Entry<String, RankValue>> getComparator();
+  public int readAndWriteTimes(CoordinatorConf conf) {
+    return 1;
+  }
+
+  /**
+   * Different strategies will have different sorting methods of remote paths
+   * @return A comparator is to calculate the RankValue
+   */
+  abstract Comparator<Map.Entry<String, RankValue>> getComparator();
 
   String getCoordinatorId() {
     return coordinatorId;
