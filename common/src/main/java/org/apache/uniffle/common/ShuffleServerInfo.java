@@ -69,7 +69,8 @@ public class ShuffleServerInfo implements Serializable {
     if (obj instanceof ShuffleServerInfo) {
       return id.equals(((ShuffleServerInfo) obj).getId())
                  && host.equals(((ShuffleServerInfo) obj).getHost())
-                 && grpcPort == ((ShuffleServerInfo) obj).getGrpcPort();
+                 && grpcPort == ((ShuffleServerInfo) obj).getGrpcPort()
+                 && nettyPort == ((ShuffleServerInfo) obj).getNettyPort();
     }
     return false;
   }

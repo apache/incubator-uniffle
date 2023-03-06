@@ -64,7 +64,7 @@ public class UploadDataMessage {
     }
     List<ShufflePartitionedBlock> dataList = shuffleData.get(partitionId);
     dataList.add(new ShufflePartitionedBlock(dataLength, uncompressLength, crc, blockId, taskAttemptId,
-        buf.array()));
+        ByteBufUtils.readBytes(buf)));
   }
 
   public void setRequestId(long requestId) {

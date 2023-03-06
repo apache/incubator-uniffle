@@ -122,7 +122,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       ServerStatus serverStatus,
       Map<String, StorageInfo> storageInfo) {
     ShuffleServerId serverId =
-        ShuffleServerId.newBuilder().setId(id).setIp(ip).setGrpcPort(port).setNettyPort(nettyPort).build();
+        ShuffleServerId.newBuilder().setId(id).setIp(ip).setGrpcPort(grpcPort).setNettyPort(nettyPort).build();
     ShuffleServerHeartBeatRequest request =
         ShuffleServerHeartBeatRequest.newBuilder()
             .setServerId(serverId)

@@ -397,10 +397,10 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(true)
       .withDescription("Whether shutdown the server after server is decommissioned");
 
-  public static final ConfigOption<Boolean> SERVER_UPLOAD_ENABLE = ConfigOptions.key("rss.server.upload.enable")
+  public static final ConfigOption<Boolean> NETTY_SERVER_ENABLED = ConfigOptions.key("rss.server.netty.enable")
                           .booleanType()
                           .defaultValue(false)
-                          .withDescription("If enable upload data with netty server");
+                          .withDescription("If enable netty server");
 
   public static final ConfigOption<Boolean> SERVER_UPLOAD_EPOLL_ENABLE = ConfigOptions.key("rss.server.upload.epoll.enable")
                           .booleanType()

@@ -144,5 +144,6 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     validateResult(readClient, expectedData);
     shuffleData = new File(data1, appId);
     assertTrue(shuffleData.exists());
+    data2.delete();
   }
 }

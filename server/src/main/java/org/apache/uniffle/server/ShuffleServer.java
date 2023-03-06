@@ -94,6 +94,7 @@ public class ShuffleServer {
   private volatile boolean running;
   private ExecutorService executorService;
   private Future<?> decommissionFuture;
+  private boolean nettyServerEnabled;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -126,7 +127,9 @@ public class ShuffleServer {
     registerHeartBeat.startHeartBeat();
     jettyServer.start();
     server.start();
-    streamServer.start();
+    if(nettyServerEnabled) {
+      streamServer.start();
+    }
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
@@ -167,7 +170,7 @@ public class ShuffleServer {
     }
     SecurityContextFactory.get().getSecurityContext().close();
     server.stop();
-    if(streamServer != null) {
+    if(nettyServerEnabled && streamServer != null) {
       streamServer.stop();
     }
     if (executorService != null) {
@@ -223,7 +226,10 @@ public class ShuffleServer {
     shuffleBufferManager = new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager);
     shuffleTaskManager = new ShuffleTaskManager(shuffleServerConf, shuffleFlushManager,
         shuffleBufferManager, storageManager);
-    streamServer = new StreamServer(this);
+    nettyServerEnabled = shuffleServerConf.get(ShuffleServerConf.NETTY_SERVER_ENABLED);
+    if (nettyServerEnabled) {
+      streamServer = new StreamServer(this);
+    }
     nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.SERVER_UPLOAD_PORT);
 
     setServer();
