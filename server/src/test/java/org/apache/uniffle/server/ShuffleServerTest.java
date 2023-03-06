@@ -53,7 +53,7 @@ public class ShuffleServerTest {
       ss1.stopServer();
       ExitUtils.disableSystemExit();
       ShuffleServer ss2 = new ShuffleServer(serverConf);
-      String expectMessage = "Fail to start jetty http server";
+      String expectMessage = "Fail to start stream server";
       final int expectStatus = 1;
       try {
         ss2.start();
@@ -65,7 +65,7 @@ public class ShuffleServerTest {
 
       serverConf.setInteger("rss.jetty.http.port", 9529);
       ss2 = new ShuffleServer(serverConf);
-      expectMessage = "Fail to start grpc server";
+      expectMessage = "Fail to start stream server";
       try {
         ss2.start();
       } catch (Exception e) {

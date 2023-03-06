@@ -167,6 +167,9 @@ public class ShuffleServer {
     }
     SecurityContextFactory.get().getSecurityContext().close();
     server.stop();
+    if(streamServer != null) {
+      streamServer.stop();
+    }
     if (executorService != null) {
       executorService.shutdownNow();
     }

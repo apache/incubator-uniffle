@@ -18,6 +18,7 @@
 
 package org.apache.uniffle.server.netty;
 
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -28,6 +29,7 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import org.apache.uniffle.common.util.ExitUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +45,7 @@ public class StreamServer {
   private EventLoopGroup shuffleBossGroup;
   private EventLoopGroup shuffleWorkerGroup;
   private ShuffleServerConf ssc;
+  private ChannelFuture channelFuture;
 
   public StreamServer(ShuffleServer shuffleServer) {
     this.shuffleServer = shuffleServer;
@@ -93,8 +96,19 @@ public class StreamServer {
     // Bind the ports and save the results so that the channels can be closed later.
     // If the second bind fails, the first one gets cleaned up in the shutdown.
     int port = ssc.getInteger(ShuffleServerConf.SERVER_UPLOAD_PORT);
-    Channel channel =  streamServerBootstrap.bind(port).sync().channel();
-    LOG.info("bind localAddress is " + channel.localAddress());
-    LOG.info("Start stream server successfully with port " + port);
+    try {
+      channelFuture =  streamServerBootstrap.bind(port);
+      channelFuture.syncUninterruptibly();
+      LOG.info("bind localAddress is " + channelFuture.channel().localAddress());
+      LOG.info("Start stream server successfully with port " + port);
+    } catch (Exception e) {
+      ExitUtils.terminate(1, "Fail to start stream server", e, LOG);
+    }
+  }
+
+  public void stop() {
+    if(channelFuture != null) {
+      channelFuture.channel().close().awaitUninterruptibly(10L, TimeUnit.SECONDS);
+    }
   }
 }
