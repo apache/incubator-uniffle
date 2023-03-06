@@ -160,7 +160,7 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
     LOG.info("The sorted remote path list is: {}", uris);
   }
 
-  public int readAndWriteTimes(CoordinatorConf conf) {
+  protected int readAndWriteTimes(CoordinatorConf conf) {
     return 1;
   }
 
@@ -168,7 +168,9 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
    * Different strategies will have different sorting methods of remote paths
    * @return A comparator is to calculate the RankValue
    */
-  abstract Comparator<Map.Entry<String, RankValue>> getComparator();
+  protected Comparator<Map.Entry<String, RankValue>> getComparator() {
+    return null;
+  }
 
   String getCoordinatorId() {
     return coordinatorId;

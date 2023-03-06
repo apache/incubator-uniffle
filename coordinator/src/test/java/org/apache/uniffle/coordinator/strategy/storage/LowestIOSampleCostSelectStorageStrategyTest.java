@@ -91,7 +91,6 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     assertEquals(0, applicationManager.getRemoteStoragePathRankValue().get(remoteStorage2).getAppNum().get());
 
     // compare with two remote path
-    final Configuration configuration = new Configuration();
     applicationManager.incRemoteStorageCounter(remoteStorage1);
     applicationManager.incRemoteStorageCounter(remoteStorage1);
     String testApp1 = "application_test_" + 1;

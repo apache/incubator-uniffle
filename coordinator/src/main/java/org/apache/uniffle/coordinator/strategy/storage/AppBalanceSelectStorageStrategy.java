@@ -76,9 +76,4 @@ public class AppBalanceSelectStorageStrategy extends AbstractSelectStorageStrate
     LOG.warn("No remote storage is available, we will default to the first.");
     return availableRemoteStorageInfo.values().iterator().next();
   }
-
-  @Override
-  public Comparator<Map.Entry<String, RankValue>> getComparator() {
-    return null;
-  }
 }
