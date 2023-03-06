@@ -85,11 +85,11 @@ public class StreamServer {
         .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
   }
 
-  public void start() throws InterruptedException {
+  public void start() {
     Supplier<ChannelHandler[]> streamHandlers = () -> new ChannelHandler[]{
         new StreamServerInitDecoder(shuffleServer)
     };
-    ServerBootstrap streamServerBootstrap = bootstrapChannel(shuffleBossGroup, shuffleWorkerGroup,
+    ServerBootstrap serverBootstrap = bootstrapChannel(shuffleBossGroup, shuffleWorkerGroup,
         ssc.getInteger(ShuffleServerConf.SERVER_UPLOAD_CONNECT_BACKLOG),
         ssc.getInteger(ShuffleServerConf.SERVER_UPLOAD_CONNECT_TIMEOUT), streamHandlers);
 
@@ -97,7 +97,7 @@ public class StreamServer {
     // If the second bind fails, the first one gets cleaned up in the shutdown.
     int port = ssc.getInteger(ShuffleServerConf.SERVER_UPLOAD_PORT);
     try {
-      channelFuture =  streamServerBootstrap.bind(port);
+      channelFuture =  serverBootstrap.bind(port);
       channelFuture.syncUninterruptibly();
       LOG.info("bind localAddress is " + channelFuture.channel().localAddress());
       LOG.info("Start stream server successfully with port " + port);
@@ -109,6 +109,11 @@ public class StreamServer {
   public void stop() {
     if(channelFuture != null) {
       channelFuture.channel().close().awaitUninterruptibly(10L, TimeUnit.SECONDS);
+      channelFuture = null;
     }
+    shuffleBossGroup.shutdownGracefully();
+    shuffleWorkerGroup.shutdownGracefully();
+    shuffleBossGroup = null;
+    shuffleWorkerGroup = null;
   }
 }
