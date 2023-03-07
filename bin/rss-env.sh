@@ -31,3 +31,4 @@ XMX_SIZE="80g" # Shuffle Server JVM XMX size
 # RSS_PID_DIR, Where the pid file is stored (Default: ${RSS_HOME})
 # RSS_LOG_DIR, Where log files are stored (Default: ${RSS_HOME}/logs)
 # RSS_IP, IP address Shuffle Server binds to on this node (Default: first non-loopback ipv4)
+# MAX_DIRECT_MEMORY_SIZE Shuffle Server JVM off heap memory size (Default: 0)
