@@ -33,14 +33,14 @@ public class TestUtils {
     URL url = new URL(urlString);
     HttpURLConnection con = (HttpURLConnection) url.openConnection();
     con.setRequestMethod("GET");
-    BufferedReader in = new BufferedReader(
-        new InputStreamReader(con.getInputStream()));
-    String inputLine;
-    StringBuffer content = new StringBuffer();
-    while ((inputLine = in.readLine()) != null) {
-      content.append(inputLine);
+    StringBuilder content = new StringBuilder();
+    try (BufferedReader in = new BufferedReader(
+        new InputStreamReader(con.getInputStream()));) {
+      String inputLine;
+      while ((inputLine = in.readLine()) != null) {
+        content.append(inputLine);
+      }
     }
-    in.close();
     return content.toString();
   }
 
@@ -49,16 +49,18 @@ public class TestUtils {
     HttpURLConnection con = (HttpURLConnection) url.openConnection();
     con.setDoOutput(true);
     con.setRequestMethod("POST");
-    OutputStream outputStream = con.getOutputStream();
-    outputStream.write(postData.getBytes());
-    BufferedReader in = new BufferedReader(
-        new InputStreamReader(con.getInputStream()));
-    String inputLine;
-    StringBuffer content = new StringBuffer();
-    while ((inputLine = in.readLine()) != null) {
-      content.append(inputLine);
+    StringBuilder content = new StringBuilder();
+    try (OutputStream outputStream = con.getOutputStream();) {
+      outputStream.write(postData.getBytes());
+      try (BufferedReader in = new BufferedReader(
+          new InputStreamReader(con.getInputStream()));) {
+        String inputLine;
+        while ((inputLine = in.readLine()) != null) {
+          content.append(inputLine);
+        }
+      }
     }
-    in.close();
+
     return content.toString();
   }
 }
