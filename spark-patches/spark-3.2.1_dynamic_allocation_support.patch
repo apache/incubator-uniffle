@@ -59,4 +59,18 @@ index a82d261d545..72e54940ca2 100644
      removeExecutorAndUnregisterOutputs(
        execId = execId,
        fileLost = fileLost,
+diff --git a/core/src/main/scala/org/apache/spark/scheduler/TaskSetManager.scala b/core/src/main/scala/org/apache/spark/scheduler/TaskSetManager.scala
+index 3b72103f993..8e03754941e 100644
+--- a/core/src/main/scala/org/apache/spark/scheduler/TaskSetManager.scala
++++ b/core/src/main/scala/org/apache/spark/scheduler/TaskSetManager.scala
+@@ -1015,7 +1015,8 @@ private[spark] class TaskSetManager(
+     // and we are not using an external shuffle server which could serve the shuffle outputs.
+     // The reason is the next stage wouldn't be able to fetch the data from this dead executor
+     // so we would need to rerun these tasks on other executors.
+-    if (isShuffleMapTasks && !env.blockManager.externalShuffleServiceEnabled && !isZombie) {
++    if (isShuffleMapTasks && !env.blockManager.externalShuffleServiceEnabled &&
++        !isZombie && !conf.isRssEnable()) {
+       for ((tid, info) <- taskInfos if info.executorId == execId) {
+         val index = taskInfos(tid).index
+         // We may have a running task whose partition has been marked as successful,
 
