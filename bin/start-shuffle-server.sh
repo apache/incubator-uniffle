@@ -66,9 +66,9 @@ JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native"
 
 echo "class path is $CLASSPATH"
 
-MAX_DIRECT_MEMORY_OPTS = ""
+MAX_DIRECT_MEMORY_OPTS=""
 if [ -n "$MAX_DIRECT_MEMORY_SIZE" ]; then
-  MAX_DIRECT_MEMORY_OPTS = "-XX:MaxDirectMemorySize=$MAX_DIRECT_MEMORY_SIZE"
+  MAX_DIRECT_MEMORY_OPTS="-XX:MaxDirectMemorySize=$MAX_DIRECT_MEMORY_SIZE"
 fi
 
 JVM_ARGS=" -server \
