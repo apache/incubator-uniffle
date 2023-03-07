@@ -187,7 +187,8 @@ public class RssShuffleManager implements ShuffleManager {
     RssSparkShuffleUtils.validateRssClientConf(sparkConf);
     // External shuffle service is not supported when using remote shuffle service
     sparkConf.set("spark.shuffle.service.enabled", "false");
-    LOG.info("Disable external shuffle service in RssShuffleManager.");
+    sparkConf.set("spark.shuffle.reduceLocality.enabled", "false");
+    LOG.info("Disable external shuffle service and shuffle data locality in RssShuffleManager.");
     if (!sparkConf.getBoolean(RssSparkConfig.RSS_TEST_FLAG.key(), false)) {
       // for non-driver executor, start a thread for sending shuffle data to shuffle server
       LOG.info("RSS data send thread is starting");

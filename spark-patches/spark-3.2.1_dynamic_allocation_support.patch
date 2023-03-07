@@ -59,34 +59,4 @@ index a82d261d545..72e54940ca2 100644
      removeExecutorAndUnregisterOutputs(
        execId = execId,
        fileLost = fileLost,
-diff --git a/core/src/main/scala/org/apache/spark/scheduler/TaskSetManager.scala b/core/src/main/scala/org/apache/spark/scheduler/TaskSetManager.scala
-index 3b72103f993..8e03754941e 100644
---- a/core/src/main/scala/org/apache/spark/scheduler/TaskSetManager.scala
-+++ b/core/src/main/scala/org/apache/spark/scheduler/TaskSetManager.scala
-@@ -1015,7 +1015,8 @@ private[spark] class TaskSetManager(
-     // and we are not using an external shuffle server which could serve the shuffle outputs.
-     // The reason is the next stage wouldn't be able to fetch the data from this dead executor
-     // so we would need to rerun these tasks on other executors.
--    if (isShuffleMapTasks && !env.blockManager.externalShuffleServiceEnabled && !isZombie) {
-+    if (isShuffleMapTasks && !env.blockManager.externalShuffleServiceEnabled &&
-+        !isZombie && !conf.isRssEnable()) {
-       for ((tid, info) <- taskInfos if info.executorId == execId) {
-         val index = taskInfos(tid).index
-         // We may have a running task whose partition has been marked as successful,
-diff --git a/sql/core/src/main/scala/org/apache/spark/sql/execution/ShuffledRowRDD.scala b/sql/core/src/main/scala/org/apache/spark/sql/execution/ShuffledRowRDD.scala
-index 47d61196fe8..98a5381bef4 100644
---- a/sql/core/src/main/scala/org/apache/spark/sql/execution/ShuffledRowRDD.scala
-+++ b/sql/core/src/main/scala/org/apache/spark/sql/execution/ShuffledRowRDD.scala
-@@ -174,6 +174,9 @@ class ShuffledRowRDD(
-   }
- 
-   override def getPreferredLocations(partition: Partition): Seq[String] = {
-+    if (conf.isRssEnable()) {
-+      return Nil
-+    }
-     val tracker = SparkEnv.get.mapOutputTracker.asInstanceOf[MapOutputTrackerMaster]
-     partition.asInstanceOf[ShuffledRowRDDPartition].spec match {
-       case CoalescedPartitionSpec(startReducerIndex, endReducerIndex, _) =>
--- 
-2.32.0
 

@@ -72,44 +72,4 @@ index ad0791fa42..2d2ad52c71 100644
        for ((tid, info) <- taskInfos if info.executorId == execId) {
          val index = taskInfos(tid).index
          // We may have a running task whose partition has been marked as successful,
-diff --git a/sql/core/src/main/scala/org/apache/spark/sql/execution/ShuffledRowRDD.scala b/sql/core/src/main/scala/org/apache/spark/sql/execution/ShuffledRowRDD.scala
-index ef84cd27a3..0b1ab0d50b 100644
---- a/sql/core/src/main/scala/org/apache/spark/sql/execution/ShuffledRowRDD.scala
-+++ b/sql/core/src/main/scala/org/apache/spark/sql/execution/ShuffledRowRDD.scala
-@@ -159,19 +159,23 @@ class ShuffledRowRDD(
-   }
- 
-   override def getPreferredLocations(partition: Partition): Seq[String] = {
--    val tracker = SparkEnv.get.mapOutputTracker.asInstanceOf[MapOutputTrackerMaster]
--    partition.asInstanceOf[ShuffledRowRDDPartition].spec match {
--      case CoalescedPartitionSpec(startReducerIndex, endReducerIndex) =>
--        // TODO order by partition size.
--        startReducerIndex.until(endReducerIndex).flatMap { reducerIndex =>
--          tracker.getPreferredLocationsForShuffle(dependency, reducerIndex)
--        }
--
--      case PartialReducerPartitionSpec(_, startMapIndex, endMapIndex, _) =>
--        tracker.getMapLocation(dependency, startMapIndex, endMapIndex)
--
--      case PartialMapperPartitionSpec(mapIndex, _, _) =>
--        tracker.getMapLocation(dependency, mapIndex, mapIndex + 1)
-+    if (!conf.isRssEnable()) {
-+      val tracker = SparkEnv.get.mapOutputTracker.asInstanceOf[MapOutputTrackerMaster]
-+      partition.asInstanceOf[ShuffledRowRDDPartition].spec match {
-+        case CoalescedPartitionSpec(startReducerIndex, endReducerIndex) =>
-+          // TODO order by partition size.
-+          startReducerIndex.until(endReducerIndex).flatMap { reducerIndex =>
-+            tracker.getPreferredLocationsForShuffle(dependency, reducerIndex)
-+          }
-+
-+        case PartialReducerPartitionSpec(_, startMapIndex, endMapIndex, _) =>
-+          tracker.getMapLocation(dependency, startMapIndex, endMapIndex)
-+
-+        case PartialMapperPartitionSpec(mapIndex, _, _) =>
-+          tracker.getMapLocation(dependency, mapIndex, mapIndex + 1)
-+      }
-+    } else {
-+      Nil
-     }
-   }
- 
+
