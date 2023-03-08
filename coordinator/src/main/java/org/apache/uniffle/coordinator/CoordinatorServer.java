@@ -192,8 +192,8 @@ public class CoordinatorServer extends ReconfigurableBase {
         new DecommissionServlet(this),
         "/api/server/decommission");
     jettyServer.addServlet(
-            new CancelDecommissionServlet(this),
-            "/api/server/cancelDecommission");
+        new CancelDecommissionServlet(this),
+        "/api/server/cancelDecommission");
   }
 
   private void registerMetrics() throws Exception {
