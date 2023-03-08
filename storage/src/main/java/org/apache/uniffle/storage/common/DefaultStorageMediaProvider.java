@@ -29,7 +29,6 @@ import java.util.List;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
-import org.apache.directory.api.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +46,7 @@ public class DefaultStorageMediaProvider implements StorageMediaProvider {
     try {
       URI uri = new URI(baseDir);
       String scheme = uri.getScheme();
-      if (Strings.equals(scheme, HDFS)) {
+      if (HDFS.equals(scheme)) {
         return StorageMedia.HDFS;
       } else if (scheme != null && OBJECT_STORE_SCHEMAS.contains(scheme.toLowerCase())) {
         return StorageMedia.OBJECT_STORE;
