@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.common.config;
 
+
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.compression.Codec;
 
@@ -43,4 +44,11 @@ public class RssClientConf {
       .defaultValue(ShuffleDataDistributionType.NORMAL)
       .withDescription("The type of partition shuffle data distribution, including normal and local_order. "
           + "The default value is normal. This config is only valid in Spark3.x");
+
+  // this is reversed for internal settings, and should never set by user.
+  public static final ConfigOption<Integer> SHUFFLE_MANAGER_GRPC_PORT = ConfigOptions
+      .key("rss.shuffle.manager.grpc.port")
+      .intType()
+      .noDefaultValue()
+      .withDescription("internal configuration to indicate which port is actually bind for shuffle manager service.");
 }

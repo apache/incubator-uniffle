@@ -36,16 +36,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class GrpcServerTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(GrpcServerTest.class);
 
-  static class MockedGRPCMetrics extends GRPCMetrics {
-    @Override
-    public void registerMetrics() {
-      // ignore
-    }
-  }
-
   @Test
   public void testGrpcExecutorPool() throws Exception {
-    GRPCMetrics grpcMetrics = new MockedGRPCMetrics();
+    GRPCMetrics grpcMetrics = GRPCMetrics.getDummyGRPCMetrics();
     grpcMetrics.register(new CollectorRegistry(true));
     GrpcServer.GrpcThreadPoolExecutor executor = new GrpcServer.GrpcThreadPoolExecutor(
         2,

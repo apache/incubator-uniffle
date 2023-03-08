@@ -18,6 +18,7 @@
 package org.apache.spark.shuffle;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -30,12 +31,16 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.deploy.SparkHadoopUtil;
+import org.apache.spark.storage.BlockManagerId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Option;
 import scala.reflect.ClassTag;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
+import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
+import org.apache.uniffle.client.factory.ShuffleManagerClientFactory;
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -226,4 +231,48 @@ public class RssSparkShuffleUtils {
     ShuffleHandleInfo handleInfo = new ShuffleHandleInfo(shuffleId, partitionToServers, storageInfo);
     return sc.broadcast(handleInfo, SHUFFLE_HANDLER_INFO_CLASS_TAG);
   }
+
+  public static ShuffleManagerClient createShuffleManagerClient(String driverHost, int port) {
+    // this is passed from spark.driver.bindAddress, which would be set when SparkContext is constructed.
+    return ShuffleManagerClientFactory.getINSTANCE().createShuffleManagerClient(driverHost, port);
+  }
+
+  private static <T> T instantiateFetchFailedException(
+      BlockManagerId dummy, int shuffleId, int mapIndex, int reduceId, Throwable cause) {
+    String className = FetchFailedException.class.getName();
+    T instance;
+    Class<?> klass;
+    try {
+      klass = Class.forName(className);
+    } catch (ClassNotFoundException e) {
+      // ever happens;
+      throw new RuntimeException(e);
+    }
+    try {
+      instance = (T) klass
+          .getConstructor(dummy.getClass(), Integer.TYPE, Integer.TYPE, Integer.TYPE, Integer.TYPE, cause.getClass())
+          .newInstance(dummy, shuffleId, mapIndex, mapIndex, reduceId, cause);
+    } catch (NoSuchMethodException | IllegalAccessException
+        | IllegalArgumentException | InstantiationException
+        | InvocationTargetException e) { // anything goes wrong, fallback to the another constructor.
+      try {
+        instance = (T) klass
+            .getConstructor(dummy.getClass(), Integer.TYPE, Integer.TYPE, Integer.TYPE, cause.getClass())
+            .newInstance(dummy, shuffleId, mapIndex, reduceId, cause);
+      } catch (Exception ae) {
+        LOG.error("Fail to new instance.", ae);
+        throw new RuntimeException(e);
+      }
+    }
+    return instance;
+  }
+
+  public static FetchFailedException createFetchFailedException(
+      int shuffleId, int mapIndex, int reduceId, Throwable cause) {
+    final String dummyHost = "dummy_host";
+    final int dummyPort = 9999;
+    BlockManagerId dummy = BlockManagerId.apply(null, dummyHost, dummyPort, Option.empty());
+    return instantiateFetchFailedException(dummy, shuffleId, mapIndex, reduceId, cause);
+  }
+
 }

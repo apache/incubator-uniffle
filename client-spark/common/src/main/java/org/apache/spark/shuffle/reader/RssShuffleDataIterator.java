@@ -101,7 +101,8 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       // read next segment
       long startFetch = System.currentTimeMillis();
       // depends on spark.shuffle.compress, shuffled block may not be compressed
-      CompressedShuffleBlock rawBlock = shuffleReadClient.readShuffleBlockData();
+      CompressedShuffleBlock rawBlock = null;
+      rawBlock = shuffleReadClient.readShuffleBlockData();
       // If ShuffleServer delete
 
       ByteBuffer rawData = rawBlock != null ? rawBlock.getByteBuffer() : null;

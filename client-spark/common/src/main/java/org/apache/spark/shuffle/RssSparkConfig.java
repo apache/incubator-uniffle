@@ -29,6 +29,7 @@ import scala.runtime.AbstractFunction1;
 
 import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.config.ConfigUtils;
+import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 
 public class RssSparkConfig {
@@ -264,6 +265,17 @@ public class RssSparkConfig {
           .doc("How many tasks concurrency to allocate a ShuffleServer, you need to enable"
                    + " spark.rss.estimate.server.assignment.enabled"))
       .createWithDefault(RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE);
+
+  public static final ConfigEntry<Integer> RSS_SHUFFLE_MANAGER_GRPC_PORT = createIntegerBuilder(
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConf.SHUFFLE_MANAGER_GRPC_PORT.key())
+          .internal()
+          .doc(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT.description())
+  ).createWithDefault(-1);
+
+  public static final ConfigEntry<Boolean> RSS_STAGE_RECOMPUTE = createBooleanBuilder(
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_STAGE_RECOMPUTE)
+          .doc("Whether to re compute the whole map stage when there are shuffle fetch failures")
+  ).createWithDefault(false);
 
   // spark2 doesn't have this key defined
   public static final String SPARK_SHUFFLE_COMPRESS_KEY = "spark.shuffle.compress";
