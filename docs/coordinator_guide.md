@@ -147,7 +147,7 @@ PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, whi
 
 ##### Example cURL
 
-> ```shell
+> ```javascript
 >  curl -X GET http://localhost:19998/api/server/nodes
 > ```
 </details>
