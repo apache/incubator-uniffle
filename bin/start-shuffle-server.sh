@@ -32,16 +32,14 @@ LOG_CONF_FILE="${RSS_CONF_DIR}/log4j.properties"
 LOG_PATH="${RSS_LOG_DIR}/shuffle_server.log"
 OUT_PATH="${RSS_LOG_DIR}/shuffle_server.out"
 
-set +o nounset
-if [ -z "$XMX_SIZE" ]; then
+if [ -z "${XMX_SIZE:-}" ]; then
   echo "No env XMX_SIZE."
   exit 1
 fi
 echo "Shuffle Server JVM XMX size: ${XMX_SIZE}"
-if [ -n "$RSS_IP" ]; then
+if [ -n "${RSS_IP:-}" ]; then
   echo "Shuffle Server RSS_IP: ${RSS_IP}"
 fi
-set -o nounset
 
 MAIN_CLASS="org.apache.uniffle.server.ShuffleServer"
 
@@ -67,7 +65,7 @@ JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native"
 echo "class path is $CLASSPATH"
 
 MAX_DIRECT_MEMORY_OPTS=""
-if [ -n "$MAX_DIRECT_MEMORY_SIZE" ]; then
+if [ -n "${MAX_DIRECT_MEMORY_SIZE:-}" ]; then
   MAX_DIRECT_MEMORY_OPTS="-XX:MaxDirectMemorySize=$MAX_DIRECT_MEMORY_SIZE"
 fi
 
