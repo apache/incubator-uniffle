@@ -32,16 +32,14 @@ LOG_CONF_FILE="${RSS_CONF_DIR}/log4j.properties"
 LOG_PATH="${RSS_LOG_DIR}/shuffle_server.log"
 OUT_PATH="${RSS_LOG_DIR}/shuffle_server.out"
 
-set +o nounset
-if [ -z "$XMX_SIZE" ]; then
+if [ -z "${XMX_SIZE:-}" ]; then
   echo "No env XMX_SIZE."
   exit 1
 fi
 echo "Shuffle Server JVM XMX size: ${XMX_SIZE}"
-if [ -n "$RSS_IP" ]; then
+if [ -n "${RSS_IP:-}" ]; then
   echo "Shuffle Server RSS_IP: ${RSS_IP}"
 fi
-set -o nounset
 
 MAIN_CLASS="org.apache.uniffle.server.ShuffleServer"
 
