@@ -17,16 +17,16 @@
 
 package org.apache.uniffle.coordinator.web.request;
 
-import java.util.List;
+import java.util.Set;
 
 public class CancelDecommissionRequest {
-  private List<String> serverIds;
+  private Set<String> serverIds;
 
-  public List<String> getServerIds() {
+  public Set<String> getServerIds() {
     return serverIds;
   }
 
-  public void setServerIds(List<String> serverIds) {
+  public void setServerIds(Set<String> serverIds) {
     this.serverIds = serverIds;
   }
 }

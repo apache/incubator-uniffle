@@ -62,7 +62,6 @@ public abstract class BaseServlet extends HttpServlet {
     throw new IOException("Method not support!");
   }
 
-
   protected Response handlePost(
       HttpServletRequest req,
       HttpServletResponse resp) throws ServletException, IOException {

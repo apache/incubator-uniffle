@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -122,13 +123,13 @@ public class ServletTest extends IntegrationTestBase {
     ShuffleServer shuffleServer = shuffleServers.get(0);
     assertEquals(ServerStatus.ACTIVE, shuffleServer.getServerStatus());
     DecommissionRequest decommissionRequest = new DecommissionRequest();
-    decommissionRequest.setServerIds(Lists.newArrayList("not_exist_serverId"));
+    decommissionRequest.setServerIds(Sets.newHashSet("not_exist_serverId"));
     String content = TestUtils.httpPost(CANCEL_DECOMMISSION_URL, objectMapper.writeValueAsString(decommissionRequest));
     Response response = objectMapper.readValue(content, Response.class);
     assertEquals(-1, response.getCode());
     assertNotNull(response.getErrMsg());
     CancelDecommissionRequest cancelDecommissionRequest = new CancelDecommissionRequest();
-    cancelDecommissionRequest.setServerIds(Lists.newArrayList(shuffleServer.getId()));
+    cancelDecommissionRequest.setServerIds(Sets.newHashSet(shuffleServer.getId()));
     content = TestUtils.httpPost(CANCEL_DECOMMISSION_URL, objectMapper.writeValueAsString(cancelDecommissionRequest));
     response = objectMapper.readValue(content, Response.class);
     assertEquals(0, response.getCode());
@@ -137,7 +138,7 @@ public class ServletTest extends IntegrationTestBase {
     ShuffleServerGrpcClient shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
     shuffleServerClient.registerShuffle(new RssRegisterShuffleRequest("testDecommissionServlet_appId", 0,
         Lists.newArrayList(new PartitionRange(0, 1)), ""));
-    decommissionRequest.setServerIds(Lists.newArrayList(shuffleServer.getId()));
+    decommissionRequest.setServerIds(Sets.newHashSet(shuffleServer.getId()));
     content = TestUtils.httpPost(DECOMMISSION_URL, objectMapper.writeValueAsString(decommissionRequest));
     response = objectMapper.readValue(content, Response.class);
     assertEquals(0, response.getCode());

@@ -131,7 +131,7 @@ PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, whi
 |rss.metrics.prometheus.pushgateway.jobname|-| The job name under which metrics will be pushed.                                                                                                                                                                                                                                                                                      |
 |rss.metrics.prometheus.pushgateway.report.interval.seconds|10| The interval in seconds for the reporter to report metrics.                                                                                                                                                                                                                                                                                     |
 
-## RESTful API
+## RESTful API(beta)
 
 ### Fetch Shuffle servers
 
@@ -147,7 +147,7 @@ PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, whi
 
 ##### Example cURL
 
-> ```javascript
+> ```bash
 >  curl -X GET http://localhost:19998/api/server/nodes
 > ```
 </details>
@@ -165,7 +165,7 @@ PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, whi
 > 
 ##### Example cURL
 
-> ```javascript
+> ```bash
 >  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/decommission  -d '{"serverIds:": ["127.0.0.1:19999"]}'
 > ```
 </details>
@@ -184,7 +184,7 @@ PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, whi
 >
 ##### Example cURL
 
-> ```javascript
+> ```bash
 >  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/cancelDecommission  -d '{"serverIds:": ["127.0.0.1:19999"]}'
 > ```
 </details>
