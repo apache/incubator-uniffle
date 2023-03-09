@@ -42,9 +42,9 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
   // shuffle ID to ShuffleIdRef
   // ShuffleIdRef acts as strong reference to prevent cached ShuffleHandleInfo being GCed during shuffle
   // ShuffleIdRef will be removed when unregisterShuffle()
-  private static Map<Integer, ShuffleIdRef> _globalShuffleIdRefMap = new ConcurrentHashMap<>();
+  private static Map<Integer, ShuffleIdRef> globalShuffleIdRefMap = new ConcurrentHashMap<>();
   // each shuffle has unique ID even for multiple concurrent running shuffles and jobs per application
-  private static ThreadLocal<HandleInfoLocalCache> _localHandleInfoCache =
+  private static ThreadLocal<HandleInfoLocalCache> localHandleInfoCache =
       ThreadLocal.withInitial(() -> new HandleInfoLocalCache());
 
   public RssShuffleHandle(
@@ -84,20 +84,20 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
    */
   private ShuffleHandleInfo getCurrentHandleInfo() {
     // most probably, current ShuffleHandleInfo is desired one
-    HandleInfoLocalCache localCache = _localHandleInfoCache.get();
+    HandleInfoLocalCache localCache = localHandleInfoCache.get();
     ShuffleHandleInfo info = localCache.current.get();
     int shuffleId = shuffleId();
     if (info != null && shuffleId == info.getShuffleId()) {
       return info;
     }
     // get ShuffleIdRef from global map. It's volatile read most probably
-    ShuffleIdRef idRef = _globalShuffleIdRefMap.get(shuffleId);
+    ShuffleIdRef idRef = globalShuffleIdRefMap.get(shuffleId);
     if (idRef != null && (info = localCache.handleInfoMap.get(idRef)) != null) {
       localCache.current = new WeakReference<>(info);
       return info;
     }
     // threads share same ShuffleIdRef per shuffle
-    idRef = _globalShuffleIdRefMap.computeIfAbsent(shuffleId, id -> new ShuffleIdRef(id));
+    idRef = globalShuffleIdRefMap.computeIfAbsent(shuffleId, id -> new ShuffleIdRef(id));
     // each thread deserializes one ShuffleHandleInfo per shuffle id
     // Other threads will block here anyway if they all share one ShuffleHandleInfo per shuffle ID
     info = SparkEnv.get().closureSerializer().newInstance()
@@ -109,7 +109,7 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
   }
 
   public static void removeShuffleHandle(int shuffleId) {
-    _globalShuffleIdRefMap.remove(shuffleId);
+    globalShuffleIdRefMap.remove(shuffleId);
   }
 
   public RemoteStorageInfo getRemoteStorage() {
