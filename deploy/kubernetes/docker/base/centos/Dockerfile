@@ -16,7 +16,7 @@
 #
 
 # this docker file serves the rss server base image for CentOS/RedHat distributions
-ARG BASE_IMAGE=eclipse-temurin:8-jdk-centos7
+ARG BASE_IMAGE=eclipse-temurin:11-jdk-centos7
 FROM ${BASE_IMAGE}
 
 RUN yum install lzo zlib zlib-devel lzop lsof netcat dnsutils less procps iputils-ping -y && \
