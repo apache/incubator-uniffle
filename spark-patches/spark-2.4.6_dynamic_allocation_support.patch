@@ -69,24 +69,3 @@ index 459f575ba7..f563368fa5 100644
        for ((tid, info) <- taskInfos if info.executorId == execId) {
          val index = taskInfos(tid).index
          // We may have a running task whose partition has been marked as successful,
-diff --git a/sql/core/src/main/scala/org/apache/spark/sql/execution/ShuffledRowRDD.scala b/sql/core/src/main/scala/org/apache/spark/sql/execution/ShuffledRowRDD.scala
-index 021ce2eac0..50c52b0091 100644
---- a/sql/core/src/main/scala/org/apache/spark/sql/execution/ShuffledRowRDD.scala
-+++ b/sql/core/src/main/scala/org/apache/spark/sql/execution/ShuffledRowRDD.scala
-@@ -149,9 +149,13 @@ class ShuffledRowRDD(
-   }
- 
-   override def getPreferredLocations(partition: Partition): Seq[String] = {
--    val tracker = SparkEnv.get.mapOutputTracker.asInstanceOf[MapOutputTrackerMaster]
--    val dep = dependencies.head.asInstanceOf[ShuffleDependency[_, _, _]]
--    tracker.getPreferredLocationsForShuffle(dep, partition.index)
-+    if (!conf.isRssEnable()) {
-+      val tracker = SparkEnv.get.mapOutputTracker.asInstanceOf[MapOutputTrackerMaster]
-+      val dep = dependencies.head.asInstanceOf[ShuffleDependency[_, _, _]]
-+      tracker.getPreferredLocationsForShuffle(dep, partition.index)
-+    } else {
-+      Nil
-+    }
-   }
- 
-   override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {

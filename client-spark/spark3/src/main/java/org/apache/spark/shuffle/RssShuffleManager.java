@@ -205,6 +205,10 @@ public class RssShuffleManager implements ShuffleManager {
     LOG.info("Disable external shuffle service in RssShuffleManager.");
     sparkConf.set("spark.sql.adaptive.localShuffleReader.enabled", "false");
     LOG.info("Disable local shuffle reader in RssShuffleManager.");
+    // If we store shuffle data in distributed filesystem or in a disaggregated
+    // shuffle cluster, we don't need shuffle data locality
+    sparkConf.set("spark.shuffle.reduceLocality.enabled", "false");
+    LOG.info("Disable shuffle data locality in RssShuffleManager.");
     taskToSuccessBlockIds = Maps.newConcurrentMap();
     taskToFailedBlockIds = Maps.newConcurrentMap();
     // for non-driver executor, start a thread for sending shuffle data to shuffle server
