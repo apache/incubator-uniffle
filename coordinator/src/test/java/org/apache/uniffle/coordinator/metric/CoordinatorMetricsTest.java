@@ -89,7 +89,14 @@ public class CoordinatorMetricsTest {
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
-    assertEquals(10, actualObj.get("metrics").size());
+    int actualMetrics = 0;
+    for (JsonNode metrics : actualObj.get("metrics")) {
+      if (CoordinatorMetrics.APP_NUM_TO_USER.equals(metrics.get("name").textValue())) {
+        continue;
+      }
+      actualMetrics++;
+    }
+    assertEquals(10, actualMetrics);
   }
 
   @Test
