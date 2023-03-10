@@ -90,7 +90,6 @@ public class LocalStorageManager extends SingleStorageManager {
       throw new IllegalArgumentException("Base path dirs must not be empty");
     }
     this.partitionsOfStorage = Maps.newConcurrentMap();
-    long shuffleExpiredTimeoutMs = conf.get(ShuffleServerConf.SHUFFLE_EXPIRED_TIMEOUT_MS);
     long capacity = conf.getSizeAsBytes(ShuffleServerConf.DISK_CAPACITY);
     double ratio = conf.getDouble(ShuffleServerConf.DISK_CAPACITY_RATIO);
     double highWaterMarkOfWrite = conf.get(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE);
