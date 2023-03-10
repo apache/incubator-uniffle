@@ -97,7 +97,7 @@ public class ApplicationManager implements Closeable {
     // the thread for checking application status
     checkAppScheduler = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("ApplicationManager-%d"));
-    scheduledExecutorService.scheduleAtFixedRate(
+    checkAppScheduler.scheduleAtFixedRate(
         this::statusCheck, expired / 2, expired / 2, TimeUnit.MILLISECONDS);
     // the thread for checking if the storage is normal
     detectStorageScheduler = Executors.newSingleThreadScheduledExecutor(
