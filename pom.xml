@@ -651,11 +651,6 @@
           <version>2.6</version>
         </plugin>
         <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-antrun-plugin</artifactId>
-          <version>1.8</version>
-        </plugin>
-        <plugin>
           <groupId>org.xolstice.maven.plugins</groupId>
           <artifactId>protobuf-maven-plugin</artifactId>
           <version>0.6.1</version>
@@ -805,41 +800,6 @@
             <arg>-Xlint:all,-options,-path</arg>
           </compilerArgs>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <!-- Cleans up files that tests append to (because we have two test plugins). -->
-          <execution>
-            <id>pre-test-clean</id>
-            <phase>generate-test-resources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target>
-                <delete file="${project.build.directory}/unit-tests.log"
-                    quiet="true"/>
-                <delete dir="${project.build.directory}/jacoco" quiet="true"/>
-                <delete dir="${project.build.directory}/tmp" quiet="true"/>
-              </target>
-            </configuration>
-          </execution>
-          <!-- Create the temp directory to be  used by tests. -->
-          <execution>
-            <id>create-tmp-dir</id>
-            <phase>generate-test-resources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target>
-                <mkdir dir="${project.build.directory}/tmp"/>
-              </target>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>
