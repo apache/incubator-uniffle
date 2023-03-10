@@ -262,6 +262,7 @@ message ShuffleServerId {
   string id = 1;
   string ip = 2;
   int32 port = 3;
+  int32 netty_port = 4;
 }
 
 message ShuffleServerResult {

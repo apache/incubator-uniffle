@@ -49,7 +49,7 @@ public class ShuffleServerInfoTest {
     ShuffleServerInfo info = new ShuffleServerInfo("1", "localhost", 1234);
     assertEquals("ShuffleServerInfo{id[" + info.getId()
         + "], host[" + info.getHost()
-        + "], port[" + info.getPort()
+        + "], port[" + info.getGrpcPort()
         + "]}", info.toString());
   }
 

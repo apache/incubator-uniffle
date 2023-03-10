@@ -44,7 +44,7 @@ public class ShuffleServerClientFactory {
 
   private ShuffleServerClient createShuffleServerClient(String clientType, ShuffleServerInfo shuffleServerInfo) {
     if (clientType.equalsIgnoreCase(ClientType.GRPC.name())) {
-      return new ShuffleServerGrpcClient(shuffleServerInfo.getHost(), shuffleServerInfo.getPort());
+      return new ShuffleServerGrpcClient(shuffleServerInfo.getHost(), shuffleServerInfo.getGrpcPort());
     } else {
       throw new UnsupportedOperationException("Unsupported client type " + clientType);
     }

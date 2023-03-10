@@ -77,7 +77,7 @@ public class RegisterHeartBeat {
         sendHeartBeat(
             shuffleServer.getId(),
             shuffleServer.getIp(),
-            shuffleServer.getPort(),
+            shuffleServer.getGrpcPort(),
             shuffleServer.getUsedMemory(),
             shuffleServer.getPreAllocatedMemory(),
             shuffleServer.getAvailableMemory(),
