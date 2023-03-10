@@ -102,9 +102,6 @@ This document will introduce how to deploy Uniffle coordinators.
 |rss.coordinator.startup-silent-period.enabled|false|Enable the startup-silent-period to reject the assignment requests for avoiding partial assignments. To avoid service interruption, this mechanism is disabled by default. Especially it's recommended to use in coordinator HA mode when restarting single coordinator.|
 |rss.coordinator.startup-silent-period.duration|20000|The waiting duration(ms) when conf of rss.coordinator.startup-silent-period.enabled is enabled.|
 |rss.coordinator.select.partition.strategy|ROUND|There are two strategies for selecting partitions: ROUND and CONTINUOUS. ROUND will poll to allocate partitions to ShuffleServer, and CONTINUOUS will try to allocate consecutive partitions to ShuffleServer, this feature can improve performance in AQE scenarios.|
-|rss.coordinator.quota.update.interval|60000|Update interval for the default number of submitted apps per user.|
-|rss.coordinator.quota.default.path|-|A configuration file for the number of apps for a user-defined user.|
-|rss.coordinator.quota.default.app.num|5|Default number of apps at user level.|
 |rss.metrics.reporter.class|-|The class of metrics reporter.|
 |rss.reconfigure.interval.sec|5|Reconfigure check interval.|
 
@@ -121,6 +118,15 @@ AccessCandidatesChecker is one of the built-in access checker, which will allow 
 |rss.coordinator.access.candidates.updateIntervalSec|120|Accessed candidates update interval in seconds, which is only valid when AccessCandidatesChecker is enabled.|
 |rss.coordinator.access.candidates.path|-|Accessed candidates file path, the file can be stored on HDFS|
 
+### AccessQuotaChecker settings
+AccessQuotaChecker is a checker when the number of concurrent tasks submitted by users increases sharply, some important apps may be affected. Therefore, we restrict users to submit to the uniffle cluster, and rejected apps will be submitted to ESS.
+
+|Property Name|Default|	Description|
+|---|---|---|
+|rss.coordinator.quota.update.interval|60000|Update interval for the default number of submitted apps per user.|
+|rss.coordinator.quota.default.path|-|A configuration file for the number of apps for a user-defined user.|
+|rss.coordinator.quota.default.app.num|5|Default number of apps at user level.|
+
 ### PrometheusPushGatewayMetricReporter settings
 PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, which will allow user pushes metrics to a [Prometheus Pushgateway](https://github.com/prometheus/pushgateway), which can be scraped by Prometheus.
 
@@ -130,3 +136,61 @@ PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, whi
 |rss.metrics.prometheus.pushgateway.groupingkey|-| Specifies the grouping key which is the group and global labels of all metrics. The label name and value are separated by '=', and labels are separated by ';', e.g., k1=v1;k2=v2. Please ensure that your grouping key meets the [Prometheus requirements](https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels). |
 |rss.metrics.prometheus.pushgateway.jobname|-| The job name under which metrics will be pushed.                                                                                                                                                                                                                                                                                      |
 |rss.metrics.prometheus.pushgateway.report.interval.seconds|10| The interval in seconds for the reporter to report metrics.                                                                                                                                                                                                                                                                                     |
+
+## RESTful API(beta)
+
+### Fetch Shuffle servers
+
+<details>
+ <summary><code>GET</code> <code><b>/api/server/nodes</b></code> </summary>
+
+##### Parameters
+
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |id|required|string|shuffle server id, eg:127.0.0.1:19999|
+> |status|optional|string|Shuffle server status, eg:ACTIVE, DECOMMISSIONING, DECOMMISSIONED|
+
+##### Example cURL
+
+> ```bash
+>  curl -X GET http://localhost:19998/api/server/nodes
+> ```
+</details>
+
+### Decommission shuffle servers
+
+<details>
+ <summary><code>POST</code> <code><b>/api/server/decommission</b></code> </summary>
+
+##### Parameters
+
+> |name|type| data type         |description|
+> |----|-------------------|---------|-----------|
+> |serverIds|required| array |Shuffle server array, eg:["127.0.0.1:19999"]|
+> 
+##### Example cURL
+
+> ```bash
+>  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/decommission  -d '{"serverIds:": ["127.0.0.1:19999"]}'
+> ```
+</details>
+
+
+### Cancel decommission shuffle servers
+
+<details>
+ <summary><code>POST</code> <code><b>/api/server/cancelDecommission</b></code> </summary>
+
+##### Parameters
+
+> |name|type| data type         |description|
+> |----|-------------------|---------|-----------|
+> |serverIds|required| array |Shuffle server array, eg:["127.0.0.1:19999"]|
+>
+##### Example cURL
+
+> ```bash
+>  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/cancelDecommission  -d '{"serverIds:": ["127.0.0.1:19999"]}'
+> ```
+</details>

@@ -55,7 +55,7 @@ public class ServerStatusTest {
         fail(e.getMessage());
       }
     }
-    for (int i = 0; i < serverStatuses.size() - 1; i++) {
+    for (int i = 0; i < serverStatuses.size(); i++) {
       assertEquals(protoServerStatuses.get(i), serverStatuses.get(i).toProto());
       assertEquals(ServerStatus.fromProto(protoServerStatuses.get(i)), serverStatuses.get(i));
     }

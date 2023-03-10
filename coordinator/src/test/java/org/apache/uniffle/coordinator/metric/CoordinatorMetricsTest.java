@@ -68,7 +68,7 @@ public class CoordinatorMetricsTest {
 
   @Test
   public void testDynamicMetrics() throws Exception {
-    String content = TestUtils.httpGetMetrics(SERVER_METRICS_URL);
+    String content = TestUtils.httpGet(SERVER_METRICS_URL);
     ObjectMapper mapper = new ObjectMapper();
     JsonNode metricsNode = mapper.readTree(content).get("metrics");
     String remoteStorageMetricsName = CoordinatorMetrics.REMOTE_STORAGE_IN_USED_PREFIX + "path1";
@@ -85,16 +85,23 @@ public class CoordinatorMetricsTest {
 
   @Test
   public void testCoordinatorMetrics() throws Exception {
-    String content = TestUtils.httpGetMetrics(SERVER_METRICS_URL);
+    String content = TestUtils.httpGet(SERVER_METRICS_URL);
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
-    assertEquals(10, actualObj.get("metrics").size());
+    int actualMetrics = 0;
+    for (JsonNode metrics : actualObj.get("metrics")) {
+      if (CoordinatorMetrics.APP_NUM_TO_USER.equals(metrics.get("name").textValue())) {
+        continue;
+      }
+      actualMetrics++;
+    }
+    assertEquals(10, actualMetrics);
   }
 
   @Test
   public void testJvmMetrics() throws Exception {
-    String content = TestUtils.httpGetMetrics(SERVER_JVM_URL);
+    String content = TestUtils.httpGet(SERVER_JVM_URL);
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
@@ -102,7 +109,7 @@ public class CoordinatorMetricsTest {
 
   @Test
   public void testGrpcMetrics() throws Exception {
-    String content = TestUtils.httpGetMetrics(SERVER_GRPC_URL);
+    String content = TestUtils.httpGet(SERVER_GRPC_URL);
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());

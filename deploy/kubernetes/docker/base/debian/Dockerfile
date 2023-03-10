@@ -16,7 +16,7 @@
 #
 
 # this docker file serves the rss server base image for Debian/Ubuntu releated distributions
-ARG BASE_IMAGE=eclipse-temurin:8-jdk
+ARG BASE_IMAGE=eclipse-temurin:11-jdk
 FROM ${BASE_IMAGE}
 
 RUN apt-get update && \

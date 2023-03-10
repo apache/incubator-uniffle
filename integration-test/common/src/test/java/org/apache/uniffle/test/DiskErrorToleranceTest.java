@@ -56,14 +56,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
   private ShuffleServerGrpcClient shuffleServerClient;
 
-  @TempDir private static File serverTmpDir;
-  private static File data1 = new File(serverTmpDir, "data1");
-  private static File data2 = new File(serverTmpDir, "data2");
+  private static File data1;
+  private static File data2;
   private List<ShuffleServerInfo> shuffleServerInfo =
       Lists.newArrayList(new ShuffleServerInfo("127.0.0.1-20001", LOCALHOST, SHUFFLE_SERVER_PORT));
 
   @BeforeAll
-  public static void setupServers() throws Exception {
+  public static void setupServers(@TempDir File serverTmpDir) throws Exception {
+    data1 = new File(serverTmpDir, "data1");
+    data2 = new File(serverTmpDir, "data2");
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();

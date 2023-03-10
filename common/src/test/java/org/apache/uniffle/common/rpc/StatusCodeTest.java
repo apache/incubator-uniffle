@@ -55,7 +55,7 @@ public class StatusCodeTest {
         fail(e.getMessage());
       }
     }
-    for (int i = 0; i < statusCodes.size() - 1; i++) {
+    for (int i = 0; i < statusCodes.size(); i++) {
       assertEquals(protoStatusCode.get(i), statusCodes.get(i).toProto());
       assertEquals(StatusCode.fromProto(protoStatusCode.get(i)), statusCodes.get(i));
     }
