@@ -120,6 +120,9 @@ public class CoordinatorServer extends ReconfigurableBase {
     if (jettyServer != null) {
       jettyServer.stop();
     }
+    if (applicationManager != null) {
+      applicationManager.close();
+    }
     if (clusterManager != null) {
       clusterManager.close();
     }
