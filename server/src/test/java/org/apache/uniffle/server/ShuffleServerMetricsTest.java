@@ -77,7 +77,7 @@ public class ShuffleServerMetricsTest {
 
   @Test
   public void testJvmMetrics() throws Exception {
-    String content = TestUtils.httpGetMetrics(SERVER_JVM_URL);
+    String content = TestUtils.httpGet(SERVER_JVM_URL);
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
@@ -85,7 +85,7 @@ public class ShuffleServerMetricsTest {
 
   @Test
   public void testServerMetrics() throws Exception {
-    String content = TestUtils.httpGetMetrics(SERVER_METRICS_URL);
+    String content = TestUtils.httpGet(SERVER_METRICS_URL);
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
@@ -145,7 +145,7 @@ public class ShuffleServerMetricsTest {
 
   @Test
   public void testGrpcMetrics() throws Exception {
-    String content = TestUtils.httpGetMetrics(SERVER_GRPC_URL);
+    String content = TestUtils.httpGet(SERVER_GRPC_URL);
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
@@ -187,7 +187,7 @@ public class ShuffleServerMetricsTest {
       f.get();
     }
 
-    String content = TestUtils.httpGetMetrics(SERVER_METRICS_URL);
+    String content = TestUtils.httpGet(SERVER_METRICS_URL);
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
 

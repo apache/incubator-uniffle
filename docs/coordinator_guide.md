@@ -136,3 +136,61 @@ PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, whi
 |rss.metrics.prometheus.pushgateway.groupingkey|-| Specifies the grouping key which is the group and global labels of all metrics. The label name and value are separated by '=', and labels are separated by ';', e.g., k1=v1;k2=v2. Please ensure that your grouping key meets the [Prometheus requirements](https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels). |
 |rss.metrics.prometheus.pushgateway.jobname|-| The job name under which metrics will be pushed.                                                                                                                                                                                                                                                                                      |
 |rss.metrics.prometheus.pushgateway.report.interval.seconds|10| The interval in seconds for the reporter to report metrics.                                                                                                                                                                                                                                                                                     |
+
+## RESTful API(beta)
+
+### Fetch Shuffle servers
+
+<details>
+ <summary><code>GET</code> <code><b>/api/server/nodes</b></code> </summary>
+
+##### Parameters
+
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |id|required|string|shuffle server id, eg:127.0.0.1:19999|
+> |status|optional|string|Shuffle server status, eg:ACTIVE, DECOMMISSIONING, DECOMMISSIONED|
+
+##### Example cURL
+
+> ```bash
+>  curl -X GET http://localhost:19998/api/server/nodes
+> ```
+</details>
+
+### Decommission shuffle servers
+
+<details>
+ <summary><code>POST</code> <code><b>/api/server/decommission</b></code> </summary>
+
+##### Parameters
+
+> |name|type| data type         |description|
+> |----|-------------------|---------|-----------|
+> |serverIds|required| array |Shuffle server array, eg:["127.0.0.1:19999"]|
+> 
+##### Example cURL
+
+> ```bash
+>  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/decommission  -d '{"serverIds:": ["127.0.0.1:19999"]}'
+> ```
+</details>
+
+
+### Cancel decommission shuffle servers
+
+<details>
+ <summary><code>POST</code> <code><b>/api/server/cancelDecommission</b></code> </summary>
+
+##### Parameters
+
+> |name|type| data type         |description|
+> |----|-------------------|---------|-----------|
+> |serverIds|required| array |Shuffle server array, eg:["127.0.0.1:19999"]|
+>
+##### Example cURL
+
+> ```bash
+>  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/cancelDecommission  -d '{"serverIds:": ["127.0.0.1:19999"]}'
+> ```
+</details>
