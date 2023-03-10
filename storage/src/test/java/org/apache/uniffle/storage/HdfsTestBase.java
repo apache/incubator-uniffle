@@ -47,7 +47,7 @@ public class HdfsTestBase implements Serializable {
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR,
         baseDir.getAbsolutePath());
     cluster = (new MiniDFSCluster.Builder(conf)).build();
-    HDFS_URI = "hdfs://localhost:" + cluster.getNameNodePort() + "/";
+    HDFS_URI = "hdfs://" + cluster.getNameNode().getNameNodeAddressHostPortString() + "/";
     fs = (new Path(HDFS_URI)).getFileSystem(conf);
   }
 
