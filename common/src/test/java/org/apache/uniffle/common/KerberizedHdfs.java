@@ -259,7 +259,7 @@ public class KerberizedHdfs implements Serializable {
   }
 
   public String getSchemeAndAuthorityPrefix() {
-    return String.format("hdfs://localhost:%s/", kerberizedDfsCluster.getNameNodePort());
+    return kerberizedDfsCluster.getURI().toString() + "/";
   }
 
   public Configuration getConf() throws IOException {

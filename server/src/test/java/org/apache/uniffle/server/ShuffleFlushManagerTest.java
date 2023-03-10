@@ -153,7 +153,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     storageManager.registerRemoteStorage(appId, remoteStorage);
-    String storageHost = "localhost";
+    String storageHost = cluster.getURI().getHost();
     assertEquals(0.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.get(storageHost).get(), 0.5);
     assertEquals(0.0, ShuffleServerMetrics.counterRemoteStorageRetryWrite.get(storageHost).get(), 0.5);
     assertEquals(0.0, ShuffleServerMetrics.counterRemoteStorageFailedWrite.get(storageHost).get(), 0.5);

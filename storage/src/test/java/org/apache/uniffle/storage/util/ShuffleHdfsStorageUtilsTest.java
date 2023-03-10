@@ -32,7 +32,6 @@ import org.apache.uniffle.storage.HdfsTestBase;
 import org.apache.uniffle.storage.handler.impl.HdfsFileWriter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleHdfsStorageUtilsTest extends HdfsTestBase {
 
@@ -46,27 +45,20 @@ public class ShuffleHdfsStorageUtilsTest extends HdfsTestBase {
       FileSystem fileSystem,
       String clusterPathPrefix,
       Configuration hadoopConf) throws Exception {
-    FileOutputStream fileOut = null;
-    DataOutputStream dataOut = null;
-    try {
-      File file = new File(tempDir, "test");
-      fileOut = new FileOutputStream(file);
-      dataOut = new DataOutputStream(fileOut);
-      byte[] buf = new byte[2096];
-      new Random().nextBytes(buf);
-      dataOut.write(buf);
-      dataOut.close();
-      fileOut.close();
-      String path = clusterPathPrefix + "test";
-      HdfsFileWriter writer = new HdfsFileWriter(fileSystem, new Path(path), hadoopConf);
-      long size = ShuffleStorageUtils.uploadFile(file, writer, 1024);
-      assertEquals(2096, size);
-      size = ShuffleStorageUtils.uploadFile(file, writer, 100);
-      assertEquals(2096, size);
-      writer.close();
-    } catch (Exception e) {
-      e.printStackTrace();
-      fail();
-    }
+    File file = new File(tempDir, "test");
+    FileOutputStream fileOut = new FileOutputStream(file);
+    DataOutputStream dataOut = new DataOutputStream(fileOut);
+    byte[] buf = new byte[2096];
+    new Random().nextBytes(buf);
+    dataOut.write(buf);
+    dataOut.close();
+    fileOut.close();
+    String path = clusterPathPrefix + "test";
+    HdfsFileWriter writer = new HdfsFileWriter(fileSystem, new Path(path), hadoopConf);
+    long size = ShuffleStorageUtils.uploadFile(file, writer, 1024);
+    assertEquals(2096, size);
+    size = ShuffleStorageUtils.uploadFile(file, writer, 100);
+    assertEquals(2096, size);
+    writer.close();
   }
 }
