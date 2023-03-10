@@ -259,7 +259,7 @@ public class KerberizedHdfs implements Serializable {
   }
 
   public String getSchemeAndAuthorityPrefix() {
-    return kerberizedDfsCluster.getURI().toString();
+    return kerberizedDfsCluster.getURI().toString() + "/";
   }
 
   public Configuration getConf() throws IOException {
