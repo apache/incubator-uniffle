@@ -113,7 +113,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     }
 
     CreateShuffleReadHandlerRequest request = mockCreateShuffleReadHandlerRequest(
-        testAppId, shuffleId, partitionId, shuffleServerInfoList, expectBlockIds, StorageType.MEMORY_LOCALFILE);
+        testAppId, shuffleId, partitionId, shuffleServerInfoList, expectBlockIds, StorageType.MEMORY_LOCALFILE_HDFS);
     AbstractClientReadHandler clientReadHandler = 
         (AbstractClientReadHandler) ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
