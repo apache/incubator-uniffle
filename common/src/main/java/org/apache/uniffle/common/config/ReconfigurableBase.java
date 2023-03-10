@@ -52,7 +52,7 @@ public abstract class ReconfigurableBase implements Reconfigurable {
   }
 
   public void stopReconfigureThread() {
-    scheduledExecutorService.shutdown();
+    scheduledExecutorService.shutdownNow();
   }
 
   private void checkConfiguration() {
