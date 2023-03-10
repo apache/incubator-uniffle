@@ -46,12 +46,12 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
 
-  @TempDir private static File serverTmpDir;
-  private static File tempDataFile = new File(serverTmpDir, "data");
+  private static File tempDataFile;
   private static int writeDataSize;
 
   @BeforeAll
-  public static void setupServers() throws Exception {
+  public static void setupServers(@TempDir File serverTmpDir) throws Exception {
+    tempDataFile = new File(serverTmpDir, "data");
     File data1 = new File(serverTmpDir, "data1");
     data1.mkdirs();
     File data2 = new File(serverTmpDir, "data2");
