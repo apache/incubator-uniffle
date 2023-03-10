@@ -23,12 +23,10 @@ import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Queues;
 import org.apache.commons.io.FileUtils;
 import org.roaringbitmap.RoaringBitmap;
 import org.slf4j.Logger;
@@ -51,14 +49,9 @@ public class LocalStorage extends AbstractStorage {
   private long capacity;
   private final String basePath;
   private final String mountPoint;
-  private final double cleanupThreshold;
-  private final long cleanIntervalMs;
   private final double highWaterMarkOfWrite;
   private final double lowWaterMarkOfWrite;
-  private final long shuffleExpiredTimeoutMs;
-  private final Queue<String> expiredShuffleKeys = Queues.newLinkedBlockingQueue();
-
-  private LocalStorageMeta metaData = new LocalStorageMeta();
+  private final LocalStorageMeta metaData = new LocalStorageMeta();
   private final StorageMedia media;
   private boolean isSpaceEnough = true;
   private volatile boolean isCorrupted = false;
@@ -66,12 +59,9 @@ public class LocalStorage extends AbstractStorage {
 
   private LocalStorage(Builder builder) {
     this.basePath = builder.basePath;
-    this.cleanupThreshold = builder.cleanupThreshold;
-    this.cleanIntervalMs = builder.cleanIntervalMs;
     this.highWaterMarkOfWrite = builder.highWaterMarkOfWrite;
     this.lowWaterMarkOfWrite = builder.lowWaterMarkOfWrite;
     this.capacity = builder.capacity;
-    this.shuffleExpiredTimeoutMs = builder.shuffleExpiredTimeoutMs;
     this.media = builder.media;
 
     File baseFolder = new File(basePath);
@@ -194,16 +184,6 @@ public class LocalStorage extends AbstractStorage {
     metaData.prepareStartRead(key);
   }
 
-  public boolean isShuffleLongTimeNotRead(String shuffleKey) {
-    if (metaData.getShuffleLastReadTs(shuffleKey) == -1) {
-      return false;
-    }
-    if (System.currentTimeMillis() - metaData.getShuffleLastReadTs(shuffleKey) > shuffleExpiredTimeoutMs) {
-      return true;
-    }
-    return false;
-  }
-
   public void updateShuffleLastReadTs(String shuffleKey) {
     metaData.updateShuffleLastReadTs(shuffleKey);
   }
@@ -238,18 +218,6 @@ public class LocalStorage extends AbstractStorage {
     return media;
   }
 
-  public double getHighWaterMarkOfWrite() {
-    return highWaterMarkOfWrite;
-  }
-
-  public double getLowWaterMarkOfWrite() {
-    return lowWaterMarkOfWrite;
-  }
-
-  public void addExpiredShuffleKey(String shuffleKey) {
-    expiredShuffleKeys.offer(shuffleKey);
-  }
-
   // This is the only place to remove shuffle metadata, clean and gc thread may remove
   // the shuffle metadata concurrently or serially. Force uploader thread may update the
   // shuffle size so gc thread must acquire write lock before updating disk size, and force
@@ -271,13 +239,11 @@ public class LocalStorage extends AbstractStorage {
             shuffleKey, metaData.getDiskSize(), metaData.getShuffleMetaSet().size());
       } catch (Exception e) {
         LOG.error("Fail to update disk size", e);
-        expiredShuffleKeys.offer(shuffleKey);
       } finally {
         lock.writeLock().unlock();
       }
     } else {
       LOG.info("Fail to get write lock of {}, add it back to expired shuffle queue", shuffleKey);
-      expiredShuffleKeys.offer(shuffleKey);
     }
   }
 
@@ -291,20 +257,6 @@ public class LocalStorage extends AbstractStorage {
 
   public List<String> getSortedShuffleKeys(boolean checkRead, int num) {
     return metaData.getSortedShuffleKeys(checkRead, num);
-  }
-
-  public Set<String> getShuffleMetaSet() {
-    return metaData.getShuffleMetaSet();
-  }
-
-  public void removeShuffle(String shuffleKey, long size, List<Integer> partitions) {
-    metaData.removeShufflePartitionList(shuffleKey, partitions);
-    metaData.updateDiskSize(-size);
-    metaData.updateShuffleSize(shuffleKey, -size);
-  }
-
-  public Queue<String> getExpiredShuffleKeys() {
-    return expiredShuffleKeys;
   }
 
   public boolean isCorrupted() {
@@ -340,10 +292,7 @@ public class LocalStorage extends AbstractStorage {
     private double ratio;
     private double lowWaterMarkOfWrite;
     private double highWaterMarkOfWrite;
-    private double cleanupThreshold;
     private String basePath;
-    private long cleanIntervalMs;
-    private long shuffleExpiredTimeoutMs;
     private StorageMedia media;
 
     private Builder() {
@@ -369,23 +318,8 @@ public class LocalStorage extends AbstractStorage {
       return this;
     }
 
-    public Builder cleanupThreshold(double cleanupThreshold) {
-      this.cleanupThreshold = cleanupThreshold;
-      return this;
-    }
-
     public Builder highWaterMarkOfWrite(double highWaterMarkOfWrite) {
       this.highWaterMarkOfWrite = highWaterMarkOfWrite;
-      return this;
-    }
-
-    public Builder cleanIntervalMs(long cleanIntervalMs) {
-      this.cleanIntervalMs = cleanIntervalMs;
-      return this;
-    }
-
-    public Builder shuffleExpiredTimeoutMs(long shuffleExpiredTimeoutMs) {
-      this.shuffleExpiredTimeoutMs = shuffleExpiredTimeoutMs;
       return this;
     }
 

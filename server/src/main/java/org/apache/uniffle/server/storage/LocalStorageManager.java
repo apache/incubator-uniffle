@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,6 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -121,7 +121,6 @@ public class LocalStorageManager extends SingleStorageManager {
               .ratio(ratio)
               .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
               .highWaterMarkOfWrite(highWaterMarkOfWrite)
-              .shuffleExpiredTimeoutMs(shuffleExpiredTimeoutMs)
               .localStorageMedia(storageType)
               .build();
           successCount.incrementAndGet();
@@ -216,8 +215,7 @@ public class LocalStorageManager extends SingleStorageManager {
     int shuffleId = event.getShuffleId();
     int partitionId = event.getStartPartition();
 
-    LocalStorage storage = partitionsOfStorage.get(UnionKey.buildKey(appId, shuffleId, partitionId));
-    return storage;
+    return partitionsOfStorage.get(UnionKey.buildKey(appId, shuffleId, partitionId));
   }
 
   @Override
@@ -264,7 +262,7 @@ public class LocalStorageManager extends SingleStorageManager {
         }
         return paths.stream();
       } else {
-        return Arrays.asList(basicPath).stream();
+        return Stream.of(basicPath);
       }
     }).collect(Collectors.toList());
 
@@ -293,13 +291,7 @@ public class LocalStorageManager extends SingleStorageManager {
   }
 
   private <K, V> void deleteElement(Map<K, V> map, Function<K, Boolean> deleteConditionFunc) {
-    Iterator<Map.Entry<K, V>> iterator = map.entrySet().iterator();
-    while (iterator.hasNext()) {
-      Map.Entry<K, V> entry = iterator.next();
-      if (deleteConditionFunc.apply(entry.getKey())) {
-        iterator.remove();
-      }
-    }
+    map.entrySet().removeIf(entry -> deleteConditionFunc.apply(entry.getKey()));
   }
 
   @Override
