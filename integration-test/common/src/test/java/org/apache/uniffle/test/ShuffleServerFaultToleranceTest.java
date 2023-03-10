@@ -244,7 +244,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
     shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 450L);
-    shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + id);
+    shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 20 + id);
     shuffleServerConf.setInteger("rss.jetty.http.port", 19081 + id * 100);
     shuffleServerConf.setString("rss.storage.basePath", basePath);
     return new MockedShuffleServer(shuffleServerConf);
