@@ -18,6 +18,7 @@
 package org.apache.uniffle.test;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -261,6 +262,19 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     ServerNode ssdNode = nodes.get(0);
     infoHead = ssdNode.getStorageInfo().values().iterator().next();
     assertEquals(StorageMedia.SSD, infoHead.getType());
+
+    shuffleServers.get(0).stopServer();
+    ShuffleServerConf anotherShuffleServerConf = shuffleServers.get(0).getShuffleServerConf();
+    anotherShuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 4);
+    anotherShuffleServerConf.setInteger("rss.jetty.http.port", 18084);
+    anotherShuffleServerConf.setInteger(ShuffleServerConf.NETTY_SERVER_PORT, SHUFFLE_SERVER_PORT + 5);
+    ShuffleServer ss = new ShuffleServer(anotherShuffleServerConf);
+    ss.start();
+    shuffleServers.set(0, ss);
+    Thread.sleep(3000);
+    nodes = scm.getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION, "SSD"));
+    assertEquals(SHUFFLE_SERVER_PORT + 5, nodes.get(0).getNettyPort());
+
     scm.close();
   }
 

@@ -185,7 +185,7 @@ public class ShuffleServer {
     }
     grpcPort = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
-    if (grpcPort > 0) {
+    if (nettyPort > 0) {
       id = ip + "-" + grpcPort + "-" + nettyPort;
     } else {
       id = ip + "-" + grpcPort;
@@ -441,4 +441,7 @@ public class ShuffleServer {
     return running;
   }
 
+  public int getNettyPort() {
+    return nettyPort;
+  }
 }

@@ -18,7 +18,6 @@
 package org.apache.hadoop.mapreduce;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -265,10 +264,10 @@ public class RssMRUtils {
       }
       ShuffleServerInfo server;
       if (serverInfo.length == 2) {
-        server =new ShuffleServerInfo(StringUtils.join(serverInfo, "-"),
+        server = new ShuffleServerInfo(StringUtils.join(serverInfo, "-"),
             serverInfo[0], Integer.parseInt(serverInfo[1]));
       } else {
-        server =new ShuffleServerInfo(StringUtils.join(serverInfo, "-"),
+        server = new ShuffleServerInfo(StringUtils.join(serverInfo, "-"),
             serverInfo[0], Integer.parseInt(serverInfo[1]), Integer.parseInt(serverInfo[2]));
       }
       assignServers.add(server);

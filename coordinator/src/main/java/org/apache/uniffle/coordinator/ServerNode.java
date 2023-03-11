@@ -84,18 +84,8 @@ public class ServerNode implements Comparable<ServerNode> {
       boolean isHealthy,
       ServerStatus status,
       Map<String, StorageInfo> storageInfoMap) {
-    this.id = id;
-    this.ip = ip;
-    this.grpcPort = port;
-    this.usedMemory = usedMemory;
-    this.preAllocatedMemory = preAllocatedMemory;
-    this.availableMemory = availableMemory;
-    this.eventNumInFlush = eventNumInFlush;
-    this.timestamp = System.currentTimeMillis();
-    this.tags = tags;
-    this.isHealthy = isHealthy;
-    this.status = status;
-    this.storageInfo = storageInfoMap;
+    this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags, isHealthy,
+        status, storageInfoMap, 0);
   }
 
   public ServerNode(
@@ -229,5 +219,9 @@ public class ServerNode implements Comparable<ServerNode> {
 
   public long getTotalMemory() {
     return availableMemory + usedMemory;
+  }
+
+  public int getNettyPort() {
+    return nettyPort;
   }
 }
