@@ -86,7 +86,7 @@ public class ShuffleServerInfo implements Serializable {
 
   @Override
   public String toString() {
-    if (nettyPort > 0 ) {
+    if (nettyPort > 0) {
       return "ShuffleServerInfo{id[" + id + "], host[" + host + "],"
           + " grpc port[" + grpcPort + "], netty port[" + nettyPort + "]}";
     } else {
