@@ -244,6 +244,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     ShuffleServerConf shuffleServerConf = shuffleServers.get(0).getShuffleServerConf();
     shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 2);
     shuffleServerConf.setInteger("rss.jetty.http.port", 18082);
+    shuffleServerConf.setInteger(ShuffleServerConf.NETTY_SERVER_PORT, SHUFFLE_SERVER_PORT + 5);
     shuffleServerConf.set(ShuffleServerConf.STORAGE_MEDIA_PROVIDER_ENV_KEY, "RSS_ENV_KEY");
     String baseDir = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0);
     String storageTypeJsonSource = String.format("{\"%s\": \"ssd\"}", baseDir);
@@ -260,19 +261,8 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     assertEquals(1, nodes.size());
     ServerNode ssdNode = nodes.get(0);
     infoHead = ssdNode.getStorageInfo().values().iterator().next();
+    assertEquals(SHUFFLE_SERVER_PORT + 5, ssdNode.getNettyPort());
     assertEquals(StorageMedia.SSD, infoHead.getType());
-
-    shuffleServers.get(0).stopServer();
-    ShuffleServerConf anotherShuffleServerConf = shuffleServers.get(0).getShuffleServerConf();
-    anotherShuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 4);
-    anotherShuffleServerConf.setInteger("rss.jetty.http.port", 18084);
-    anotherShuffleServerConf.setInteger(ShuffleServerConf.NETTY_SERVER_PORT, SHUFFLE_SERVER_PORT + 5);
-    ShuffleServer ss = new ShuffleServer(anotherShuffleServerConf);
-    ss.start();
-    shuffleServers.set(0, ss);
-    Thread.sleep(3000);
-    nodes = scm.getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION, "SSD"));
-    assertEquals(SHUFFLE_SERVER_PORT + 5, nodes.get(0).getNettyPort());
 
     scm.close();
   }
