@@ -119,9 +119,10 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       Set<String> tags,
       boolean isHealthy,
       ServerStatus serverStatus,
-      Map<String, StorageInfo> storageInfo) {
+      Map<String, StorageInfo> storageInfo,
+      int nettyPort) {
     ShuffleServerId serverId =
-        ShuffleServerId.newBuilder().setId(id).setIp(ip).setPort(port).build();
+        ShuffleServerId.newBuilder().setId(id).setIp(ip).setPort(port).setNettyPort(nettyPort).build();
     ShuffleServerHeartBeatRequest request =
         ShuffleServerHeartBeatRequest.newBuilder()
             .setServerId(serverId)
@@ -198,7 +199,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         request.getTags(),
         request.isHealthy(),
         request.getServerStatus(),
-        request.getStorageInfo());
+        request.getStorageInfo(),
+        request.getNettyPort());
 
     RssSendHeartBeatResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
