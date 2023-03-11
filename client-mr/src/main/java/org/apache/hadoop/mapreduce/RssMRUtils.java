@@ -17,6 +17,8 @@
 
 package org.apache.hadoop.mapreduce;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -106,15 +108,7 @@ public class RssMRUtils {
         + String.valueOf(reduceID));
     String[] splitServers = servers.split(",");
     Set<ShuffleServerInfo> assignServers = Sets.newHashSet();
-    for (String splitServer : splitServers) {
-      String[] serverInfo = splitServer.split(":");
-      if (serverInfo.length != 2) {
-        throw new RssException("partition " + reduceID + " server info isn't right");
-      }
-      ShuffleServerInfo sever = new ShuffleServerInfo(StringUtils.join(serverInfo, "-"),
-          serverInfo[0], Integer.parseInt(serverInfo[1]));
-      assignServers.add(sever);
-    }
+    buildAssignServers(reduceID, splitServers, assignServers);
     return assignServers;
   }
 
@@ -257,6 +251,27 @@ public class RssMRUtils {
           retryIntervalMax,
           RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
           sendCheckTimeout));
+    }
+  }
+
+  public static void buildAssignServers(
+      int reduceId,
+      String[] splitServers,
+      Collection<ShuffleServerInfo> assignServers) {
+    for (String splitServer : splitServers) {
+      String[] serverInfo = splitServer.split(":");
+      if (serverInfo.length != 2 && serverInfo.length != 3) {
+        throw new RssException("partition " + reduceId + " server info isn't right");
+      }
+      ShuffleServerInfo server;
+      if (serverInfo.length == 2) {
+        server =new ShuffleServerInfo(StringUtils.join(serverInfo, "-"),
+            serverInfo[0], Integer.parseInt(serverInfo[1]));
+      } else {
+        server =new ShuffleServerInfo(StringUtils.join(serverInfo, "-"),
+            serverInfo[0], Integer.parseInt(serverInfo[1]), Integer.parseInt(serverInfo[2]));
+      }
+      assignServers.add(server);
     }
   }
 }

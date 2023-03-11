@@ -67,7 +67,9 @@ public class ShuffleServerInfo implements Serializable {
 
   @Override
   public int hashCode() {
-    // By default id = host + "-" + port, so it is enough to calculate hashCode with id.
+    // By default id = host + "-" + grpc port, if netty port is greater than 0,
+    // id = host + "-" + grpc port + "-" + netty port
+    // so it is enough to calculate hashCode with id.
     return id.hashCode();
   }
 

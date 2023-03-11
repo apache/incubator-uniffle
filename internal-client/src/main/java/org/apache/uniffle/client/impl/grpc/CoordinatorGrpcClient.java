@@ -372,7 +372,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       final List<ShuffleServerInfo> shuffleServerInfos = partitionRangeAssignment
           .getServerList()
           .stream()
-          .map(ss -> new ShuffleServerInfo(ss.getId(), ss.getIp(), ss.getPort()))
+          .map(ss -> new ShuffleServerInfo(ss.getId(), ss.getIp(), ss.getPort(), ss.getNettyPort()))
           .collect(Collectors.toList());
       for (int i = startPartition; i <= endPartition; i++) {
         partitionToServers.put(i, shuffleServerInfos);
@@ -396,7 +396,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         PartitionRange partitionRange = new PartitionRange(assign.getStartPartition(), assign.getEndPartition());
         for (ShuffleServerId ssi : shuffleServerIds) {
           ShuffleServerInfo shuffleServerInfo =
-              new ShuffleServerInfo(ssi.getId(), ssi.getIp(), ssi.getPort());
+              new ShuffleServerInfo(ssi.getId(), ssi.getIp(), ssi.getPort(), ssi.getNettyPort());
           if (!serverToPartitionRanges.containsKey(shuffleServerInfo)) {
             serverToPartitionRanges.put(shuffleServerInfo, Lists.newArrayList());
           }
