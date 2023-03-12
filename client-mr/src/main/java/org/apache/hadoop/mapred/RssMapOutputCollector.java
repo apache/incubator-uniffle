@@ -149,8 +149,6 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     return partitionToServers;
   }
 
-
-
   @Override
   public void collect(K key, V value, int partition) throws IOException, InterruptedException {
     reporter.progress();
