@@ -18,6 +18,8 @@
 package org.apache.uniffle.common.rpc;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -25,11 +27,14 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.ServerInterceptor;
 import io.grpc.ServerInterceptors;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +51,10 @@ public class GrpcServer implements ServerInterface {
   private final int port;
   private final ExecutorService pool;
 
-  public GrpcServer(RssBaseConf conf, BindableService service, GRPCMetrics grpcMetrics) {
+  protected GrpcServer(
+      RssBaseConf conf,
+      List<Pair<BindableService, List<ServerInterceptor>>> servicesWithInterceptors,
+      GRPCMetrics grpcMetrics) {
     this.port = conf.getInteger(RssBaseConf.RPC_SERVER_PORT);
     long maxInboundMessageSize = conf.getLong(RssBaseConf.RPC_MESSAGE_MAX_SIZE);
     int rpcExecutorSize = conf.getInteger(RssBaseConf.RPC_EXECUTOR_SIZE);
@@ -61,23 +69,55 @@ public class GrpcServer implements ServerInterface {
     );
 
     boolean isMetricsEnabled = conf.getBoolean(RssBaseConf.RPC_METRICS_ENABLED);
+    ServerBuilder<?> builder = ServerBuilder
+        .forPort(port)
+        .executor(pool)
+        .maxInboundMessageSize((int)maxInboundMessageSize);
     if (isMetricsEnabled) {
-      MonitoringServerInterceptor monitoringInterceptor =
-          new MonitoringServerInterceptor(grpcMetrics);
-      this.server = ServerBuilder
-          .forPort(port)
-          .addService(ServerInterceptors.intercept(service, monitoringInterceptor))
-          .executor(pool)
-          .addTransportFilter(new MonitoringServerTransportFilter(grpcMetrics))
-          .maxInboundMessageSize((int)maxInboundMessageSize)
-          .build();
-    } else {
-      this.server = ServerBuilder
-          .forPort(port)
-          .addService(service)
-          .executor(pool)
-          .maxInboundMessageSize((int)maxInboundMessageSize)
-          .build();
+      builder.addTransportFilter(new MonitoringServerTransportFilter(grpcMetrics));
+    }
+    servicesWithInterceptors.forEach((serviceWithInterceptors) -> {
+      List<ServerInterceptor> interceptors = serviceWithInterceptors.getRight();
+      if (isMetricsEnabled) {
+        MonitoringServerInterceptor monitoringInterceptor =
+            new MonitoringServerInterceptor(grpcMetrics);
+        List<ServerInterceptor> newInterceptors = Lists.newArrayList(interceptors);
+        newInterceptors.add(monitoringInterceptor);
+        interceptors = newInterceptors;
+      }
+      builder.addService(ServerInterceptors.intercept(serviceWithInterceptors.getLeft(), interceptors));
+    });
+    this.server = builder.build();
+  }
+
+  public static class Builder {
+
+    private RssBaseConf rssBaseConf;
+    private GRPCMetrics grpcMetrics;
+
+    private List<Pair<BindableService, List<ServerInterceptor>>> servicesWithInterceptors = new ArrayList<>();
+
+    public static Builder newBuilder() {
+      return new Builder();
+    }
+
+    public Builder conf(RssBaseConf rssBaseConf) {
+      this.rssBaseConf = rssBaseConf;
+      return this;
+    }
+
+    public Builder addService(BindableService bindableService, ServerInterceptor... interceptors) {
+      this.servicesWithInterceptors.add(Pair.of(bindableService, Lists.newArrayList(interceptors)));
+      return this;
+    }
+
+    public Builder grpcMetrics(GRPCMetrics metrics) {
+      this.grpcMetrics = metrics;
+      return this;
+    }
+
+    public GrpcServer build() {
+      return new GrpcServer(rssBaseConf, servicesWithInterceptors, grpcMetrics);
     }
   }
 

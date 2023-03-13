@@ -61,8 +61,8 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     writeTestData(writeHandler, 2, 5, expectedData,
         blockIdBitmap, "key", KRYO_SERIALIZER, 0);
 
-    RssShuffleHandle handleMock = mock(RssShuffleHandle.class);
-    ShuffleDependency dependencyMock = mock(ShuffleDependency.class);
+    RssShuffleHandle<String, String, String> handleMock = mock(RssShuffleHandle.class);
+    ShuffleDependency<String, String, String> dependencyMock = mock(ShuffleDependency.class);
     when(handleMock.getAppId()).thenReturn("appId");
     when(handleMock.getShuffleId()).thenReturn(1);
     when(handleMock.getDependency()).thenReturn(dependencyMock);
@@ -80,7 +80,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     when(dependencyMock.aggregator()).thenReturn(Option.empty());
     when(dependencyMock.keyOrdering()).thenReturn(Option.empty());
 
-    RssShuffleReader rssShuffleReaderSpy = spy(new RssShuffleReader<String, String>(0, 1, contextMock,
+    RssShuffleReader<String, String> rssShuffleReaderSpy = spy(new RssShuffleReader<>(0, 1, contextMock,
         handleMock, basePath, 1000, conf, StorageType.HDFS.name(),
         1000, 2, 10, blockIdBitmap, taskIdBitmap, new RssConf()));
 

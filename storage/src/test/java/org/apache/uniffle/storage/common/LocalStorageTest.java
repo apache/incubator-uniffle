@@ -70,11 +70,9 @@ public class LocalStorageTest {
 
   private LocalStorage createTestStorage(File baseDir) {
     return LocalStorage.newBuilder().basePath(baseDir.getAbsolutePath())
-        .cleanupThreshold(50)
         .highWaterMarkOfWrite(95)
         .lowWaterMarkOfWrite(80)
         .capacity(100)
-        .cleanIntervalMs(5000)
         .build();
   }
 
@@ -92,6 +90,17 @@ public class LocalStorageTest {
     assertFalse(item.canWrite());
     item.getMetaData().updateDiskSize(-10);
     assertTrue(item.canWrite());
+  }
+
+  @Test
+  public void getCapacityInitTest() {
+    LocalStorage item = LocalStorage.newBuilder().basePath(testBaseDir.getAbsolutePath())
+            .highWaterMarkOfWrite(95)
+            .lowWaterMarkOfWrite(80)
+            .capacity(-1)
+            .ratio(0.1)
+            .build();
+    assertEquals((long) (testBaseDir.getTotalSpace() * 0.1), item.getCapacity());
   }
 
   @Test
@@ -203,22 +212,18 @@ public class LocalStorageTest {
   public void diskStorageInfoTest() {
     LocalStorage item = LocalStorage.newBuilder()
         .basePath(testBaseDir.getAbsolutePath())
-        .cleanupThreshold(50)
         .highWaterMarkOfWrite(95)
         .lowWaterMarkOfWrite(80)
         .capacity(100)
-        .cleanIntervalMs(5000)
         .build();
     assertEquals(mountPoint, item.getMountPoint());
     assertNull(item.getStorageMedia());
 
     LocalStorage itemWithStorageType = LocalStorage.newBuilder()
         .basePath(testBaseDir.getAbsolutePath())
-        .cleanupThreshold(50)
         .highWaterMarkOfWrite(95)
         .lowWaterMarkOfWrite(80)
         .capacity(100)
-        .cleanIntervalMs(5000)
         .localStorageMedia(StorageMedia.SSD)
         .build();
     assertEquals(StorageMedia.SSD, itemWithStorageType.getStorageMedia());

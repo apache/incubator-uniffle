@@ -20,6 +20,7 @@ package org.apache.uniffle.common.metrics;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -28,18 +29,38 @@ public class TestUtils {
   private TestUtils() {
   }
 
-  public static String httpGetMetrics(String urlString) throws IOException {
+  public static String httpGet(String urlString) throws IOException {
     URL url = new URL(urlString);
     HttpURLConnection con = (HttpURLConnection) url.openConnection();
     con.setRequestMethod("GET");
-    BufferedReader in = new BufferedReader(
-        new InputStreamReader(con.getInputStream()));
-    String inputLine;
-    StringBuffer content = new StringBuffer();
-    while ((inputLine = in.readLine()) != null) {
-      content.append(inputLine);
+    StringBuilder content = new StringBuilder();
+    try (BufferedReader in = new BufferedReader(
+        new InputStreamReader(con.getInputStream()));) {
+      String inputLine;
+      while ((inputLine = in.readLine()) != null) {
+        content.append(inputLine);
+      }
     }
-    in.close();
+    return content.toString();
+  }
+
+  public static String httpPost(String urlString, String postData) throws IOException {
+    URL url = new URL(urlString);
+    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+    con.setDoOutput(true);
+    con.setRequestMethod("POST");
+    StringBuilder content = new StringBuilder();
+    try (OutputStream outputStream = con.getOutputStream();) {
+      outputStream.write(postData.getBytes());
+      try (BufferedReader in = new BufferedReader(
+          new InputStreamReader(con.getInputStream()));) {
+        String inputLine;
+        while ((inputLine = in.readLine()) != null) {
+          content.append(inputLine);
+        }
+      }
+    }
+
     return content.toString();
   }
 }

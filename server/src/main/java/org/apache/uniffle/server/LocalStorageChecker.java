@@ -22,6 +22,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -34,6 +37,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
+
+import static org.apache.uniffle.common.util.Constants.DEVICE_NO_SPACE_ERROR_MESSAGE;
 
 public class LocalStorageChecker extends Checker {
 
@@ -67,31 +72,37 @@ public class LocalStorageChecker extends Checker {
 
   @Override
   public boolean checkIsHealthy() {
-    int num = 0;
-    long totalSpace = 0L;
-    long usedSpace = 0L;
-    int corruptedDirs = 0;
-
-    for (StorageInfo storageInfo : storageInfos) {
+    AtomicInteger num = new AtomicInteger(0);
+    AtomicLong totalSpace = new AtomicLong(0L);
+    AtomicLong usedSpace = new AtomicLong(0L);
+    AtomicInteger corruptedDirs = new AtomicInteger(0);
+    CountDownLatch cdl = new CountDownLatch(storageInfos.size());
+    storageInfos.parallelStream().forEach(storageInfo -> {
       if (!storageInfo.checkStorageReadAndWrite()) {
         storageInfo.markCorrupted();
-        corruptedDirs++;
-        continue;
+        corruptedDirs.incrementAndGet();
+        cdl.countDown();
+        return;
       }
 
-      totalSpace += getTotalSpace(storageInfo.storageDir);
-      usedSpace += getUsedSpace(storageInfo.storageDir);
+      totalSpace.addAndGet(getTotalSpace(storageInfo.storageDir));
+      usedSpace.addAndGet(getUsedSpace(storageInfo.storageDir));
 
       if (storageInfo.checkIsSpaceEnough()) {
-        num++;
+        num.incrementAndGet();
       }
+      cdl.countDown();
+    });
+    try {
+      cdl.await();
+    } catch (InterruptedException e) {
+      LOG.error("Failed to check local storage!");
     }
-
-    ShuffleServerMetrics.gaugeLocalStorageTotalSpace.set(totalSpace);
-    ShuffleServerMetrics.gaugeLocalStorageUsedSpace.set(usedSpace);
+    ShuffleServerMetrics.gaugeLocalStorageTotalSpace.set(totalSpace.get());
+    ShuffleServerMetrics.gaugeLocalStorageUsedSpace.set(usedSpace.get());
     ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.set(storageInfos.size());
-    ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.set(corruptedDirs);
-    ShuffleServerMetrics.gaugeLocalStorageUsedSpaceRatio.set(usedSpace * 1.0 / totalSpace);
+    ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.set(corruptedDirs.get());
+    ShuffleServerMetrics.gaugeLocalStorageUsedSpaceRatio.set(usedSpace.get() * 1.0 / totalSpace.get());
 
     if (storageInfos.isEmpty()) {
       if (isHealthy) {
@@ -101,7 +112,7 @@ public class LocalStorageChecker extends Checker {
       return false;
     }
 
-    double availablePercentage = num * 100.0 / storageInfos.size();
+    double availablePercentage = num.get() * 100.0 / storageInfos.size();
     if (Double.compare(availablePercentage, minStorageHealthyPercentage) >= 0) {
       if (!isHealthy) {
         LOG.info("shuffle server become healthy");
@@ -200,6 +211,10 @@ public class LocalStorageChecker extends Checker {
         }
       } catch (Exception e) {
         LOG.error("Storage read and write error. Storage dir: {}", storageDir, e);
+        // avoid check bad track failure due to lack of disk space
+        if (e.getMessage() !=  null && DEVICE_NO_SPACE_ERROR_MESSAGE.equals(e.getMessage())) {
+          return true;
+        }
         return false;
       } finally {
         try {

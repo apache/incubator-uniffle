@@ -93,18 +93,22 @@ public class LocalStorageMeta {
     return shuffleMeta == null ? 0 : shuffleMeta.getNotUploadedSize();
   }
 
-  public long updateDiskSize(long delta) {
-    return size.addAndGet(delta);
+  public void updateDiskSize(long delta) {
+    size.addAndGet(delta);
   }
 
-  public long updateShuffleSize(String shuffleId, long delta) {
+  public void updateShuffleSize(String shuffleId, long delta) {
     ShuffleMeta shuffleMeta = getShuffleMeta(shuffleId);
-    return shuffleMeta == null ? 0 : shuffleMeta.getSize().addAndGet(delta);
+    if (shuffleMeta != null) {
+      shuffleMeta.getSize().addAndGet(delta);
+    }
   }
 
-  public long updateUploadedShuffleSize(String shuffleKey, long delta) {
+  public void updateUploadedShuffleSize(String shuffleKey, long delta) {
     ShuffleMeta shuffleMeta = getShuffleMeta(shuffleKey);
-    return shuffleMeta == null ? 0 : shuffleMeta.uploadedSize.addAndGet(delta);
+    if (shuffleMeta != null) {
+      shuffleMeta.uploadedSize.addAndGet(delta);
+    }
   }
 
   public void addShufflePartitionList(String shuffleKey, List<Integer> partitions) {
@@ -131,16 +135,6 @@ public class LocalStorageMeta {
     ShuffleMeta shuffleMeta = getShuffleMeta(shuffleId);
     if (shuffleMeta != null) {
       shuffleMeta.markStartRead();
-    }
-  }
-
-  public void removeShufflePartitionList(String shuffleKey, List<Integer> partitions) {
-    ShuffleMeta shuffleMeta = getShuffleMeta(shuffleKey);
-    if (shuffleMeta != null) {
-      RoaringBitmap bitmap = shuffleMeta.partitionBitmap;
-      synchronized (bitmap) {
-        partitions.forEach(bitmap::remove);
-      }
     }
   }
 
@@ -197,11 +191,6 @@ public class LocalStorageMeta {
     return shuffleMeta;
   }
 
-  public long getShuffleLastReadTs(String shuffleKey) {
-    ShuffleMeta shuffleMeta = getShuffleMeta(shuffleKey);
-    return shuffleMeta == null ? -1 : shuffleMeta.getShuffleLastReadTs();
-  }
-
   public void updateShuffleLastReadTs(String shuffleKey) {
     ShuffleMeta shuffleMeta = getShuffleMeta(shuffleKey);
     if (shuffleMeta != null) {
@@ -222,22 +211,14 @@ public class LocalStorageMeta {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final AtomicBoolean isStartRead = new AtomicBoolean(false);
     private final RoaringBitmap uploadedPartitionBitmap = RoaringBitmap.bitmapOf();
-    private AtomicLong lastReadTs = new AtomicLong(-1L);
+    private final AtomicLong lastReadTs = new AtomicLong(-1L);
 
     public AtomicLong getSize() {
       return size;
     }
 
-    public AtomicLong getUploadedSize() {
-      return uploadedSize;
-    }
-
     public long getNotUploadedSize() {
       return size.longValue() - uploadedSize.longValue();
-    }
-
-    public boolean isStartRead() {
-      return isStartRead.get();
     }
 
     public void markStartRead() {
@@ -246,11 +227,6 @@ public class LocalStorageMeta {
 
     public void updateLastReadTs() {
       lastReadTs.set(System.currentTimeMillis());
-    }
-
-
-    public long getShuffleLastReadTs() {
-      return lastReadTs.get();
     }
 
     public ReadWriteLock getLock() {

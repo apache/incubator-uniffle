@@ -50,6 +50,7 @@ import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
 import org.apache.uniffle.client.response.RssSendHeartBeatResponse;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -117,6 +118,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       long timeout,
       Set<String> tags,
       boolean isHealthy,
+      ServerStatus serverStatus,
       Map<String, StorageInfo> storageInfo) {
     ShuffleServerId serverId =
         ShuffleServerId.newBuilder().setId(id).setIp(ip).setPort(port).build();
@@ -129,6 +131,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             .setEventNumInFlush(eventNumInFlush)
             .addAllTags(tags)
             .setIsHealthy(BoolValue.newBuilder().setValue(isHealthy).build())
+            .setStatusValue(serverStatus.ordinal())
             .putAllStorageInfo(StorageInfoUtils.toProto(storageInfo))
             .build();
 
@@ -194,6 +197,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         request.getTimeout(),
         request.getTags(),
         request.isHealthy(),
+        request.getServerStatus(),
         request.getStorageInfo());
 
     RssSendHeartBeatResponse response;

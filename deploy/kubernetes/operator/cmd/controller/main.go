@@ -37,10 +37,7 @@ func main() {
 	klog.Infof("run config: %+v", cfg)
 
 	// create a manager for leader election.
-	mgr, err := ctrl.NewManager(cfg.RESTConfig, ctrl.Options{
-		LeaderElection:   true,
-		LeaderElectionID: cfg.LeaderElectionID(),
-	})
+	mgr, err := ctrl.NewManager(cfg.RESTConfig, cfg.ManagerOptions)
 	if err != nil {
 		klog.Fatal(err)
 	}

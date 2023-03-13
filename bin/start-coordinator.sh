@@ -54,12 +54,19 @@ JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native"
 echo "class path is $CLASSPATH"
 
 JVM_ARGS=" -server \
-          -Xmx8g \
+          -Xmx${XMX_SIZE:-8g} \
+          -Xms${XMX_SIZE:-8g} \
           -XX:+UseG1GC \
           -XX:MaxGCPauseMillis=200 \
           -XX:ParallelGCThreads=20 \
           -XX:ConcGCThreads=5 \
-          -XX:InitiatingHeapOccupancyPercent=45 "
+          -XX:InitiatingHeapOccupancyPercent=45 \
+          -XX:+PrintGC \
+          -XX:+PrintAdaptiveSizePolicy \
+          -XX:+PrintGCDateStamps \
+          -XX:+PrintGCTimeStamps \
+          -XX:+PrintGCDetails \
+          -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 
 ARGS=""
 

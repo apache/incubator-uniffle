@@ -33,7 +33,7 @@ public class CombineByKeyTest extends SimpleTestBase {
   }
 
   @Override
-  public Map runTest(SparkSession spark, String fileName) throws Exception {
+  public Map<String, Tuple2<Integer, Integer>> runTest(SparkSession spark, String fileName) throws Exception {
     // take a rest to make sure shuffle server is registered
     Thread.sleep(4000);
     JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());

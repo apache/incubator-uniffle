@@ -18,11 +18,13 @@
 package org.apache.uniffle.server.buffer;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.RangeMap;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -621,5 +623,28 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
         fail("Flush data time out");
       }
     } while (committedCount < expectedBlockNum);
+
+    // Need to wait for `event.doCleanup` to be executed
+    // to ensure the correctness of subsequent checks of
+    // `shuffleBufferManager.getUsedMemory()` and `shuffleBufferManager.getInFlushSize()`.
+    Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> shuffleBufferManager.getUsedMemory() == 0);
+  }
+
+  @Test
+  public void bufferManagerInitTest() {
+    ShuffleServerConf serverConf = new ShuffleServerConf();
+    shuffleBufferManager = new ShuffleBufferManager(serverConf, mockShuffleFlushManager);
+    double ratio = ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO.defaultValue();
+    double readRatio = ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO.defaultValue();
+    assertEquals((long) (Runtime.getRuntime().maxMemory() * ratio), shuffleBufferManager.getCapacity());
+    assertEquals((long) (Runtime.getRuntime().maxMemory() * readRatio), shuffleBufferManager.getReadCapacity());
+    ratio = 0.6;
+    readRatio = 0.1;
+    serverConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO, ratio);
+    serverConf.set(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO, readRatio);
+    shuffleBufferManager = new ShuffleBufferManager(serverConf, mockShuffleFlushManager);
+    assertEquals((long) (Runtime.getRuntime().maxMemory() * ratio), shuffleBufferManager.getCapacity());
+    assertEquals((long) (Runtime.getRuntime().maxMemory() * readRatio), shuffleBufferManager.getReadCapacity());
+
   }
 }

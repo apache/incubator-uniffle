@@ -59,7 +59,8 @@ public class SortWriteBufferManagerTest {
     Set<Long> failedBlocks = Sets.newConcurrentHashSet();
     Counters.Counter mapOutputByteCounter = new Counters.Counter();
     Counters.Counter mapOutputRecordCounter = new Counters.Counter();
-    SortWriteBufferManager<BytesWritable, BytesWritable> manager = new SortWriteBufferManager(
+    SortWriteBufferManager<BytesWritable, BytesWritable> manager;
+    manager = new SortWriteBufferManager<BytesWritable, BytesWritable>(
         10240,
         1L,
         10,
@@ -109,7 +110,7 @@ public class SortWriteBufferManagerTest {
     }
     assertFalse(failedBlocks.isEmpty());
     isException = false;
-    manager = new SortWriteBufferManager(
+    manager = new SortWriteBufferManager<BytesWritable, BytesWritable>(
         100,
         1L,
         10,
@@ -158,7 +159,8 @@ public class SortWriteBufferManagerTest {
     Set<Long> failedBlocks = Sets.newConcurrentHashSet();
     Counters.Counter mapOutputByteCounter = new Counters.Counter();
     Counters.Counter mapOutputRecordCounter = new Counters.Counter();
-    SortWriteBufferManager<BytesWritable, BytesWritable> manager = new SortWriteBufferManager(
+    SortWriteBufferManager<BytesWritable, BytesWritable> manager;
+    manager = new SortWriteBufferManager<BytesWritable, BytesWritable>(
         10240,
         1L,
         10,
@@ -206,7 +208,8 @@ public class SortWriteBufferManagerTest {
     Set<Long> failedBlocks = Sets.newConcurrentHashSet();
     Counters.Counter mapOutputByteCounter = new Counters.Counter();
     Counters.Counter mapOutputRecordCounter = new Counters.Counter();
-    SortWriteBufferManager<BytesWritable, BytesWritable> manager = new SortWriteBufferManager(
+    SortWriteBufferManager<BytesWritable, BytesWritable> manager;
+    manager = new SortWriteBufferManager<BytesWritable, BytesWritable>(
         10240,
         1L,
         10,

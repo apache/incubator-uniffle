@@ -41,16 +41,17 @@ import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
-import org.apache.uniffle.common.util.TripleFunction;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleFlushManager;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
+import org.apache.uniffle.server.ShuffleTaskManager;
 
 public class ShuffleBufferManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleBufferManager.class);
 
+  private ShuffleTaskManager shuffleTaskManager;
   private final ShuffleFlushManager shuffleFlushManager;
   private long capacity;
   private long readCapacity;
@@ -77,8 +78,16 @@ public class ShuffleBufferManager {
   protected Map<String, Map<Integer, AtomicLong>> shuffleSizeMap = Maps.newConcurrentMap();
 
   public ShuffleBufferManager(ShuffleServerConf conf, ShuffleFlushManager shuffleFlushManager) {
+    long heapSize = Runtime.getRuntime().maxMemory();
     this.capacity = conf.getSizeAsBytes(ShuffleServerConf.SERVER_BUFFER_CAPACITY);
+    if (this.capacity < 0) {
+      this.capacity = (long) (heapSize * conf.getDouble(ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO));
+    }
     this.readCapacity = conf.getSizeAsBytes(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY);
+    if (this.readCapacity < 0) {
+      this.readCapacity = (long) (heapSize * conf.getDouble(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO));
+    }
+    LOG.info("Init shuffle buffer manager with capacity: {}, read buffer capacity: {}.", capacity, readCapacity);
     this.shuffleFlushManager = shuffleFlushManager;
     this.bufferPool = new ConcurrentHashMap<>();
     this.retryNum = conf.getInteger(ShuffleServerConf.SERVER_MEMORY_REQUEST_RETRY_MAX);
@@ -93,6 +102,10 @@ public class ShuffleBufferManager {
     this.hugePartitionMemoryLimitSize = Math.round(
         capacity * conf.get(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO)
     );
+  }
+
+  public void setShuffleTaskManager(ShuffleTaskManager taskManager) {
+    this.shuffleTaskManager = taskManager;
   }
 
   public StatusCode registerBuffer(String appId, int shuffleId, int startPartition, int endPartition) {
@@ -112,27 +125,11 @@ public class ShuffleBufferManager {
     return StatusCode.SUCCESS;
   }
 
-  // Only for tests
   public StatusCode cacheShuffleData(
       String appId,
       int shuffleId,
       boolean isPreAllocated,
       ShufflePartitionedData spd) {
-    return cacheShuffleData(
-        appId,
-        shuffleId,
-        isPreAllocated,
-        spd,
-        null
-    );
-  }
-
-  public StatusCode cacheShuffleData(
-      String appId,
-      int shuffleId,
-      boolean isPreAllocated,
-      ShufflePartitionedData spd,
-      TripleFunction<String, Integer, Integer, Long> getPartitionDataSizeFunc) {
     if (!isPreAllocated && isFull()) {
       LOG.warn("Got unexpected data, can't cache it because the space is full");
       return StatusCode.NO_BUFFER;
@@ -157,8 +154,7 @@ public class ShuffleBufferManager {
           shuffleId,
           spd.getPartitionId(),
           entry.getKey().lowerEndpoint(),
-          entry.getKey().upperEndpoint(),
-          getPartitionDataSizeFunc
+          entry.getKey().upperEndpoint()
       );
       flushIfNecessary();
     }
@@ -224,19 +220,12 @@ public class ShuffleBufferManager {
       int shuffleId,
       int partitionId,
       int startPartition,
-      int endPartition,
-      TripleFunction<String, Integer, Integer, Long> getPartitionDataSizeFunc) {
+      int endPartition) {
+    boolean isHugePartition = isHugePartition(appId, shuffleId, partitionId);
     // When we use multi storage and trigger single buffer flush, the buffer size should be bigger
     // than rss.server.flush.cold.storage.threshold.size, otherwise cold storage will be useless.
-    if (this.bufferFlushEnabled && buffer.getSize() > this.bufferFlushThreshold) {
-      flushBuffer(buffer, appId, shuffleId, startPartition, endPartition);
-      return;
-    }
-
-    if (getPartitionDataSizeFunc != null
-        && getPartitionDataSizeFunc.accept(appId, shuffleId, partitionId) > hugePartitionSizeThreshold
-        && buffer.getSize() > this.bufferFlushThreshold) {
-      flushBuffer(buffer, appId, shuffleId, startPartition, endPartition);
+    if ((isHugePartition || this.bufferFlushEnabled) && buffer.getSize() > this.bufferFlushThreshold) {
+      flushBuffer(buffer, appId, shuffleId, startPartition, endPartition, isHugePartition);
       return;
     }
   }
@@ -257,12 +246,19 @@ public class ShuffleBufferManager {
     for (Map.Entry<Range<Integer>, ShuffleBuffer> entry : buffers.asMapOfRanges().entrySet()) {
       ShuffleBuffer buffer = entry.getValue();
       Range<Integer> range = entry.getKey();
-      flushBuffer(buffer, appId, shuffleId, range.lowerEndpoint(), range.upperEndpoint());
+      flushBuffer(
+          buffer,
+          appId,
+          shuffleId,
+          range.lowerEndpoint(),
+          range.upperEndpoint(),
+          isHugePartition(appId, shuffleId, range.lowerEndpoint())
+      );
     }
   }
 
   protected void flushBuffer(ShuffleBuffer buffer, String appId,
-      int shuffleId, int startPartition, int endPartition) {
+      int shuffleId, int startPartition, int endPartition, boolean isHugePartition) {
     ShuffleDataFlushEvent event =
         buffer.toFlushEvent(
             appId,
@@ -276,6 +272,9 @@ public class ShuffleBufferManager {
       event.addCleanupCallback(() -> releaseMemory(event.getSize(), true, false));
       updateShuffleSize(appId, shuffleId, -event.getSize());
       inFlushSize.addAndGet(event.getSize());
+      if (isHugePartition) {
+        event.markOwnedByHugePartition();
+      }
       ShuffleServerMetrics.gaugeInFlushBufferSize.set(inFlushSize.get());
       shuffleFlushManager.addToFlushQueue(event);
     }
@@ -386,8 +385,14 @@ public class ShuffleBufferManager {
             for (Map.Entry<Range<Integer>, ShuffleBuffer> rangeEntry :
                 shuffleIdToBuffers.getValue().asMapOfRanges().entrySet()) {
               Range<Integer> range = rangeEntry.getKey();
-              flushBuffer(rangeEntry.getValue(), appId, shuffleId,
-                  range.lowerEndpoint(), range.upperEndpoint());
+              flushBuffer(
+                  rangeEntry.getValue(),
+                  appId,
+                  shuffleId,
+                  range.lowerEndpoint(),
+                  range.upperEndpoint(),
+                  isHugePartition(appId, shuffleId, range.lowerEndpoint())
+              );
             }
           }
         }
@@ -435,6 +440,11 @@ public class ShuffleBufferManager {
 
   public long getCapacity() {
     return capacity;
+  }
+
+  @VisibleForTesting
+  public long getReadCapacity() {
+    return readCapacity;
   }
 
   @VisibleForTesting
@@ -561,6 +571,11 @@ public class ShuffleBufferManager {
         shuffleIdToSizeMap.remove(shuffleId);
       }
     }
+  }
+
+  boolean isHugePartition(String appId, int shuffleId, int partitionId) {
+    return shuffleTaskManager != null
+        && shuffleTaskManager.getPartitionDataSize(appId, shuffleId, partitionId) > hugePartitionSizeThreshold;
   }
 
   public boolean isHugePartition(long usedPartitionDataSize) {

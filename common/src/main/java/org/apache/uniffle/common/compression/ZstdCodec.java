@@ -32,7 +32,6 @@ public class ZstdCodec extends Codec {
 
   public ZstdCodec(int level) {
     this.compressionLevel = level;
-    LOGGER.info("Initializing zstd compressor.");
   }
 
   @Override

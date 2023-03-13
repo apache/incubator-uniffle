@@ -17,6 +17,9 @@
 
 package org.apache.uniffle.server;
 
+import com.google.common.collect.Lists;
+import org.apache.commons.lang3.tuple.Pair;
+
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.rpc.GrpcServer;
@@ -26,7 +29,7 @@ public class MockedGrpcServer extends GrpcServer {
 
   public MockedGrpcServer(RssBaseConf conf, MockedShuffleServerGrpcService service,
                           GRPCMetrics grpcMetrics) {
-    super(conf, service, grpcMetrics);
+    super(conf, Lists.newArrayList(Pair.of(service, Lists.newArrayList())), grpcMetrics);
     this.service = service;
   }
 

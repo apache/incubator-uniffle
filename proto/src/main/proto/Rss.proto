@@ -234,6 +234,13 @@ message ShuffleCommitResponse {
   string retMsg = 3;
 }
 
+enum ServerStatus {
+  ACTIVE = 0;
+  DECOMMISSIONING = 1;
+  DECOMMISSIONED = 2;
+  // todo: more status, such as UPGRADING
+}
+
 message ShuffleServerHeartBeatRequest {
   ShuffleServerId serverId = 1;
   int64 usedMemory = 2;
@@ -242,6 +249,7 @@ message ShuffleServerHeartBeatRequest {
   int32 eventNumInFlush = 5;
   repeated string tags = 6;
   google.protobuf.BoolValue isHealthy = 7;
+  optional ServerStatus status = 8;
   map<string, StorageInfo> storageInfo = 21; // mount point to storage info mapping.
 }
 
@@ -272,6 +280,7 @@ enum StatusCode {
   INTERNAL_ERROR = 6;
   TIMEOUT = 7;
   ACCESS_DENIED = 8;
+  INVALID_REQUEST = 9;
   // add more status
 }
 
@@ -457,4 +466,25 @@ message RemoteStorage {
 message FetchRemoteStorageResponse {
   StatusCode status = 1;
   RemoteStorage remoteStorage = 2;
+}
+
+service ShuffleServerInternal {
+  rpc decommission(DecommissionRequest) returns (DecommissionResponse);
+  rpc cancelDecommission(CancelDecommissionRequest) returns (CancelDecommissionResponse);
+}
+
+message DecommissionRequest {
+}
+
+message DecommissionResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
+}
+
+message CancelDecommissionRequest {
+}
+
+message CancelDecommissionResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
 }

@@ -36,7 +36,10 @@
       <groupId>org.apache.uniffle</groupId>
       <artifactId>rss-common</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>org.apache.uniffle</groupId>
+      <artifactId>rss-internal-client</artifactId>
+    </dependency>
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java-util</artifactId>
@@ -104,6 +107,7 @@
                 <includes>
                   <include>com.google.protobuf:protobuf-java-util</include>
                   <include>com.google.guava:guava</include>
+                  <include>com.google.guava:failureaccess</include>
                   <include>com.fasterxml.jackson.core:jackson-databind</include>
                   <include>com.fasterxml.jackson.core:jackson-core</include>
                 </includes>

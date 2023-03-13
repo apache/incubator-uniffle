@@ -63,13 +63,6 @@ body:
     validations:
       required: true
 
-  - type: textarea
-    attributes:
-      label: Parent issue
-      value: ""
-    validations:
-      required: false
-
   - type: checkboxes
     attributes:
       label: Are you willing to submit PR?

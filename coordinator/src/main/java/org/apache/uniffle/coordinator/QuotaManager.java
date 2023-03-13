@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
 /**
  * QuotaManager is a manager for resource restriction.
@@ -124,6 +125,7 @@ public class QuotaManager {
         return true;
       } else {
         appAndTimes.put(uuid, System.currentTimeMillis());
+        CoordinatorMetrics.gaugeRunningAppNumToUser.labels(user).inc();
         return false;
       }
     }
@@ -137,6 +139,17 @@ public class QuotaManager {
     synchronized (this) {
       appAndTime.remove(uuidFromApp);
       appAndTime.put(appId, currentTimeMillis);
+    }
+  }
+
+  protected void updateQuotaMetrics() {
+    for (Map.Entry<String, Map<String, Long>> userAndApp : currentUserAndApp.entrySet()) {
+      String user = userAndApp.getKey();
+      try {
+        CoordinatorMetrics.gaugeRunningAppNumToUser.labels(user).set(userAndApp.getValue().size());
+      } catch (Exception e) {
+        LOG.warn("Update user metrics for {} failed ", user, e);
+      }
     }
   }
 

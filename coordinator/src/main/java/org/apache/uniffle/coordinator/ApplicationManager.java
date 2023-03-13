@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.io.Closeable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -46,7 +47,7 @@ import org.apache.uniffle.coordinator.strategy.storage.RankValue;
 import org.apache.uniffle.coordinator.strategy.storage.SelectStorageStrategy;
 import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 
-public class ApplicationManager {
+public class ApplicationManager implements Closeable {
 
   private static final Logger LOG = LoggerFactory.getLogger(ApplicationManager.class);
   // TODO: Add anomaly detection for other storage
@@ -62,6 +63,7 @@ public class ApplicationManager {
   private final Map<String, String> remoteStorageToHost = Maps.newConcurrentMap();
   private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
   private final ScheduledExecutorService detectStorageScheduler;
+  private final ScheduledExecutorService checkAppScheduler;
   private Map<String, Map<String, Long>> currentUserAndApp = Maps.newConcurrentMap();
   private Map<String, String> appIdToUser = Maps.newConcurrentMap();
   private QuotaManager quotaManager;
@@ -93,9 +95,9 @@ public class ApplicationManager {
       }
     }
     // the thread for checking application status
-    ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
+    checkAppScheduler = Executors.newSingleThreadScheduledExecutor(
         ThreadUtils.getThreadFactory("ApplicationManager-%d"));
-    scheduledExecutorService.scheduleAtFixedRate(
+    checkAppScheduler.scheduleAtFixedRate(
         this::statusCheck, expired / 2, expired / 2, TimeUnit.MILLISECONDS);
     // the thread for checking if the storage is normal
     detectStorageScheduler = Executors.newSingleThreadScheduledExecutor(
@@ -262,7 +264,7 @@ public class ApplicationManager {
     detectStorageScheduler.shutdownNow();
   }
 
-  private void statusCheck() {
+  protected void statusCheck() {
     List<Map<String, Long>> appAndNums = Lists.newArrayList(currentUserAndApp.values());
     Map<String, Long> appIds = Maps.newHashMap();
     // The reason for setting an expired uuid here is that there is a scenario where accessCluster succeeds,
@@ -293,6 +295,9 @@ public class ApplicationManager {
       }
       CoordinatorMetrics.gaugeRunningAppNum.set(appIds.size());
       updateRemoteStorageMetrics();
+      if (quotaManager != null) {
+        quotaManager.updateQuotaMetrics();
+      }
     } catch (Exception e) {
       // the flag is only for test case
       hasErrorInStatusCheck = true;
@@ -345,6 +350,15 @@ public class ApplicationManager {
 
   public static List<String> getPathSchema() {
     return REMOTE_PATH_SCHEMA;
+  }
+
+  public void close() {
+    if (detectStorageScheduler != null) {
+      detectStorageScheduler.shutdownNow();
+    }
+    if (checkAppScheduler != null) {
+      checkAppScheduler.shutdownNow();
+    }
   }
 
   public enum StrategyName {

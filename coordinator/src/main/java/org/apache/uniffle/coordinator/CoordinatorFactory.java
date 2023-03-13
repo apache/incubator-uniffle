@@ -33,8 +33,10 @@ public class CoordinatorFactory {
   public ServerInterface getServer() {
     String type = conf.getString(CoordinatorConf.RPC_SERVER_TYPE);
     if (type.equals(ServerType.GRPC.name())) {
-      return new GrpcServer(conf, new CoordinatorGrpcService(coordinatorServer),
-          coordinatorServer.getGrpcMetrics());
+      return GrpcServer.Builder.newBuilder()
+          .conf(conf)
+          .grpcMetrics(coordinatorServer.getGrpcMetrics())
+          .addService(new CoordinatorGrpcService(coordinatorServer)).build();
     } else {
       throw new UnsupportedOperationException("Unsupported server type " + type);
     }

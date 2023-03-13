@@ -34,6 +34,7 @@ import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.event.PurgeEvent;
+import org.apache.uniffle.server.storage.multi.StorageManagerSelector;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 
@@ -43,23 +44,51 @@ public class MultiStorageManager implements StorageManager {
 
   private final StorageManager warmStorageManager;
   private final StorageManager coldStorageManager;
-  private final long flushColdStorageThresholdSize;
-  private AbstractStorageManagerFallbackStrategy storageManagerFallbackStrategy;
   private final Cache<ShuffleDataFlushEvent, StorageManager> eventOfUnderStorageManagers;
+  private final StorageManagerSelector storageManagerSelector;
 
   MultiStorageManager(ShuffleServerConf conf) {
     warmStorageManager = new LocalStorageManager(conf);
     coldStorageManager = new HdfsStorageManager(conf);
-    flushColdStorageThresholdSize = conf.getSizeAsBytes(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE);
+
     try {
-      storageManagerFallbackStrategy = loadFallbackStrategy(conf);
+      AbstractStorageManagerFallbackStrategy storageManagerFallbackStrategy = loadFallbackStrategy(conf);
+      this.storageManagerSelector = loadManagerSelector(
+          conf,
+          storageManagerFallbackStrategy,
+          warmStorageManager,
+          coldStorageManager
+      );
     } catch (Exception e) {
-      throw new RuntimeException("Load fallback strategy failed.", e);
+      throw new RuntimeException("Errors on loading selector manager.", e);
     }
+
     long cacheTimeout = conf.getLong(ShuffleServerConf.STORAGEMANAGER_CACHE_TIMEOUT);
     eventOfUnderStorageManagers = CacheBuilder.newBuilder()
         .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)
         .build();
+  }
+
+  private StorageManagerSelector loadManagerSelector(
+      ShuffleServerConf conf,
+      AbstractStorageManagerFallbackStrategy storageManagerFallbackStrategy,
+      StorageManager warmStorageManager,
+      StorageManager coldStorageManager) throws Exception {
+    String name = conf.get(ShuffleServerConf.MULTISTORAGE_MANAGER_SELECTOR_CLASS);
+    Class<?> klass = Class.forName(name);
+    Constructor<?> constructor = klass.getConstructor(
+        StorageManager.class,
+        StorageManager.class,
+        AbstractStorageManagerFallbackStrategy.class,
+        conf.getClass()
+    );
+    StorageManagerSelector instance = (StorageManagerSelector) constructor.newInstance(
+        warmStorageManager,
+        coldStorageManager,
+        storageManagerFallbackStrategy,
+        conf
+    );
+    return instance;
   }
 
   public static AbstractStorageManagerFallbackStrategy loadFallbackStrategy(
@@ -100,17 +129,7 @@ public class MultiStorageManager implements StorageManager {
   }
 
   private StorageManager selectStorageManager(ShuffleDataFlushEvent event) {
-    StorageManager storageManager;
-    if (event.getSize() > flushColdStorageThresholdSize) {
-      storageManager = coldStorageManager;
-    } else {
-      storageManager = warmStorageManager;
-    }
-
-    if (!storageManager.canWrite(event) || event.getRetryTimes() > 0) {
-      storageManager = storageManagerFallbackStrategy.tryFallback(
-          storageManager, event, warmStorageManager, coldStorageManager);
-    }
+    StorageManager storageManager = storageManagerSelector.select(event);
     eventOfUnderStorageManagers.put(event, storageManager);
     event.addCleanupCallback(() -> eventOfUnderStorageManagers.invalidate(event));
     return storageManager;
