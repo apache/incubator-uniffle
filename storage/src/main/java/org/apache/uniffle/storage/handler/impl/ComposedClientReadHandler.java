@@ -46,7 +46,22 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   private static final Logger LOG = LoggerFactory.getLogger(ComposedClientReadHandler.class);
 
   private enum Tier {
-    HOT, WARM, COLD, FROZEN;
+    /**
+     * data in memory
+     */
+    HOT,
+    /**
+     * data in local disk
+     */
+    WARM,
+    /**
+     * data in remote storage
+     */
+    COLD,
+    /**
+     * not supported temporarily
+     */
+    FROZEN;
 
     static final Tier[] VALUES = Tier.values();
 
@@ -59,7 +74,8 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   private final Map<Tier, Supplier<ClientReadHandler>> supplierMap = new EnumMap<>(Tier.class);
   private final Map<Tier, ClientReadHandler> handlerMap = new EnumMap<>(Tier.class);
   private final Map<Tier, ClientReadHandlerMetric> metricsMap = new EnumMap<>(Tier.class);
-  private Tier currentTier = Tier.VALUES[0]; // == Tier.HOT
+  /** The first one tier is Tier.HOT **/
+  private Tier currentTier = Tier.VALUES[0];
   private final int numTiers;
 
   {
