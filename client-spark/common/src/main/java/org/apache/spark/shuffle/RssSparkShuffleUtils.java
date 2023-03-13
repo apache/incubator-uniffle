@@ -30,7 +30,6 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.deploy.SparkHadoopUtil;
-import org.apache.spark.network.util.JavaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.reflect.ClassTag;
@@ -222,11 +221,9 @@ public class RssSparkShuffleUtils {
    * @param storageInfo
    * @return Broadcast variable registered for auto cleanup
    */
-  public static Broadcast<byte[]> broadcastShuffleHdlInfo(SparkContext sc, int shuffleId,
+  public static Broadcast<ShuffleHandleInfo> broadcastShuffleHdlInfo(SparkContext sc, int shuffleId,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers, RemoteStorageInfo storageInfo) {
     ShuffleHandleInfo handleInfo = new ShuffleHandleInfo(shuffleId, partitionToServers, storageInfo);
-    byte[] bytes = JavaUtils.bufferToArray(sc.env().closureSerializer().newInstance()
-        .serialize(handleInfo, SHUFFLE_HANDLER_INFO_CLASS_TAG));
-    return sc.broadcast(bytes, BYTE_ARRAY_CLASS_TAG);
+    return sc.broadcast(handleInfo, SHUFFLE_HANDLER_INFO_CLASS_TAG);
   }
 }
