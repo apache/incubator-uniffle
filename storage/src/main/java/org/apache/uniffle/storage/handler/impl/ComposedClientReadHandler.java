@@ -51,7 +51,7 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
      */
     HOT,
     /**
-     * data in local disk
+     * data in local disk or remote storage(when using the MEMORY_HDFS mode)
      */
     WARM,
     /**
@@ -74,8 +74,7 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   private final Map<Tier, Supplier<ClientReadHandler>> supplierMap = new EnumMap<>(Tier.class);
   private final Map<Tier, ClientReadHandler> handlerMap = new EnumMap<>(Tier.class);
   private final Map<Tier, ClientReadHandlerMetric> metricsMap = new EnumMap<>(Tier.class);
-  /** The first one tier is Tier.HOT **/
-  private Tier currentTier = Tier.VALUES[0];
+  private Tier currentTier = Tier.VALUES[0]; // == Tier.HOT
   private final int numTiers;
 
   {
