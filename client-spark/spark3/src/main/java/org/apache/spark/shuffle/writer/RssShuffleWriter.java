@@ -75,7 +75,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final boolean shouldPartition;
   private final long sendCheckTimeout;
   private final long sendCheckInterval;
-  private final long sendSizeLimit;
   private final int bitmapSplitNum;
   private final Map<Integer, Set<Long>> partitionToBlockIds;
   private final ShuffleWriteClient shuffleWriteClient;
@@ -137,8 +136,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.shouldPartition = partitioner.numPartitions() > 1;
     this.sendCheckTimeout = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS);
     this.sendCheckInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS);
-    this.sendSizeLimit = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT.key(),
-        RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT.defaultValue().get());
     this.bitmapSplitNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM);
     this.partitionToBlockIds = Maps.newHashMap();
     this.shuffleWriteClient = shuffleWriteClient;
@@ -231,26 +228,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   }
 
   protected void postBlockEvent(List<ShuffleBlockInfo> shuffleBlockInfoList) {
-    long totalSize = 0;
-    List<ShuffleBlockInfo> shuffleBlockInfosPerEvent = Lists.newArrayList();
-    for (ShuffleBlockInfo sbi : shuffleBlockInfoList) {
-      totalSize += sbi.getSize();
-      shuffleBlockInfosPerEvent.add(sbi);
-      // split shuffle data according to the size
-      if (totalSize > sendSizeLimit) {
-        LOG.debug("Post event to queue with " + shuffleBlockInfosPerEvent.size()
-            + " blocks and " + totalSize + " bytes");
-        shuffleManager.postEvent(
-            new AddBlockEvent(taskId, shuffleBlockInfosPerEvent));
-        shuffleBlockInfosPerEvent = Lists.newArrayList();
-        totalSize = 0;
-      }
-    }
-    if (!shuffleBlockInfosPerEvent.isEmpty()) {
-      LOG.debug("Post event to queue with " + shuffleBlockInfosPerEvent.size()
-          + " blocks and " + totalSize + " bytes");
-      shuffleManager.postEvent(
-          new AddBlockEvent(taskId, shuffleBlockInfosPerEvent));
+    for (AddBlockEvent event : bufferManager.buildBlockEvents(shuffleBlockInfoList)) {
+      shuffleManager.sendData(event);
     }
   }
 

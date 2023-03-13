@@ -22,15 +22,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.util.concurrent.DefaultThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/**
- * Provide a general method to create a thread factory to make the code more standardized
- */
 public class ThreadUtils {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ThreadUtils.class);
 
+  /**
+   * Provide a general method to create a thread factory to make the code more standardized
+   */
   public static ThreadFactory getThreadFactory(String factoryName) {
     return new ThreadFactoryBuilder().setDaemon(true).setNameFormat(factoryName + "-%d").build();
   }
@@ -73,5 +77,18 @@ public class ThreadUtils {
    */
   public static ExecutorService getDaemonCachedThreadPool(String factoryName) {
     return Executors.newCachedThreadPool(getThreadFactory(factoryName));
+  }
+
+  public static void shutdownThreadPool(ExecutorService threadPool, int waitSec) throws InterruptedException {
+    if (threadPool == null) {
+      return;
+    }
+    threadPool.shutdown();
+    if (!threadPool.awaitTermination(waitSec, TimeUnit.SECONDS)) {
+      threadPool.shutdownNow();
+      if (!threadPool.awaitTermination(waitSec, TimeUnit.SECONDS)) {
+        LOGGER.warn("Thread pool don't stop gracefully.");
+      }
+    }
   }
 }

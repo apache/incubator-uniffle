@@ -17,6 +17,7 @@
 
 package org.apache.spark.shuffle.writer;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
@@ -25,10 +26,26 @@ public class AddBlockEvent {
 
   private String taskId;
   private List<ShuffleBlockInfo> shuffleDataInfoList;
+  private List<Runnable> processedCallbackChain;
 
   public AddBlockEvent(String taskId, List<ShuffleBlockInfo> shuffleDataInfoList) {
     this.taskId = taskId;
     this.shuffleDataInfoList = shuffleDataInfoList;
+    this.processedCallbackChain = new ArrayList<>();
+  }
+
+  public AddBlockEvent(String taskId, List<ShuffleBlockInfo> shuffleBlockInfoList, Runnable callback) {
+    this.taskId = taskId;
+    this.shuffleDataInfoList = shuffleBlockInfoList;
+    this.processedCallbackChain = new ArrayList<>();
+    addCallback(callback);
+  }
+
+  /**
+   * @param callback, should not throw any exception and execute fast.
+   */
+  public void addCallback(Runnable callback) {
+    processedCallbackChain.add(callback);
   }
 
   public String getTaskId() {
@@ -37,6 +54,10 @@ public class AddBlockEvent {
 
   public List<ShuffleBlockInfo> getShuffleDataInfoList() {
     return shuffleDataInfoList;
+  }
+
+  public List<Runnable> getProcessedCallbackChain() {
+    return processedCallbackChain;
   }
 
   @Override
