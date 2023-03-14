@@ -94,9 +94,9 @@ public class ServletTest extends IntegrationTestBase {
     List<HashMap> serverList = response.getData();
     assertEquals(0, response.getCode());
     assertEquals(2, serverList.size());
-    assertEquals(SHUFFLE_SERVER_PORT, Integer.parseInt(serverList.get(0).get("port").toString()));
+    assertEquals(SHUFFLE_SERVER_PORT, Integer.parseInt(serverList.get(0).get("grpcPort").toString()));
     assertEquals(ServerStatus.ACTIVE.toString(), serverList.get(0).get("status"));
-    assertEquals(SHUFFLE_SERVER_PORT + 1, Integer.parseInt(serverList.get(1).get("port").toString()));
+    assertEquals(SHUFFLE_SERVER_PORT + 1, Integer.parseInt(serverList.get(1).get("grpcPort").toString()));
     assertEquals(ServerStatus.ACTIVE.toString(), serverList.get(1).get("status"));
 
     // Only fetch one server.

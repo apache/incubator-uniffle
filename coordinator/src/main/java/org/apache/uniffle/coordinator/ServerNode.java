@@ -30,7 +30,7 @@ public class ServerNode implements Comparable<ServerNode> {
 
   private String id;
   private String ip;
-  private int port;
+  private int grpcPort;
   private long usedMemory;
   private long preAllocatedMemory;
   private long availableMemory;
@@ -40,6 +40,7 @@ public class ServerNode implements Comparable<ServerNode> {
   private boolean isHealthy;
   private final ServerStatus status;
   private Map<String, StorageInfo> storageInfo;
+  private int nettyPort = -1;
 
   // Only for test
   public ServerNode(
@@ -83,9 +84,26 @@ public class ServerNode implements Comparable<ServerNode> {
       boolean isHealthy,
       ServerStatus status,
       Map<String, StorageInfo> storageInfoMap) {
+    this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags, isHealthy,
+        status, storageInfoMap, -1);
+  }
+
+  public ServerNode(
+      String id,
+      String ip,
+      int grpcPort,
+      long usedMemory,
+      long preAllocatedMemory,
+      long availableMemory,
+      int eventNumInFlush,
+      Set<String> tags,
+      boolean isHealthy,
+      ServerStatus status,
+      Map<String, StorageInfo> storageInfoMap,
+      int nettyPort) {
     this.id = id;
     this.ip = ip;
-    this.port = port;
+    this.grpcPort = grpcPort;
     this.usedMemory = usedMemory;
     this.preAllocatedMemory = preAllocatedMemory;
     this.availableMemory = availableMemory;
@@ -95,10 +113,14 @@ public class ServerNode implements Comparable<ServerNode> {
     this.isHealthy = isHealthy;
     this.status = status;
     this.storageInfo = storageInfoMap;
+    if (nettyPort > 0) {
+      this.nettyPort = nettyPort;
+    }
   }
 
   public ShuffleServerId convertToGrpcProto() {
-    return ShuffleServerId.newBuilder().setId(id).setIp(ip).setPort(port).build();
+    return ShuffleServerId.newBuilder().setId(id).setIp(ip).setPort(grpcPort)
+      .setNettyPort(nettyPort).build();
   }
 
   public String getId() {
@@ -109,8 +131,8 @@ public class ServerNode implements Comparable<ServerNode> {
     return ip;
   }
 
-  public int getPort() {
-    return port;
+  public int getGrpcPort() {
+    return grpcPort;
   }
 
   public long getTimestamp() {
@@ -153,7 +175,8 @@ public class ServerNode implements Comparable<ServerNode> {
   public String toString() {
     return "ServerNode with id[" + id
         + "], ip[" + ip
-        + "], port[" + port
+        + "], grpc port[" + grpcPort
+        + "], netty port[" + nettyPort
         + "], usedMemory[" + usedMemory
         + "], preAllocatedMemory[" + preAllocatedMemory
         + "], availableMemory[" + availableMemory
@@ -198,5 +221,9 @@ public class ServerNode implements Comparable<ServerNode> {
 
   public long getTotalMemory() {
     return availableMemory + usedMemory;
+  }
+
+  public int getNettyPort() {
+    return nettyPort;
   }
 }

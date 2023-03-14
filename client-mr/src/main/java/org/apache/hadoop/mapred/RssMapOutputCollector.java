@@ -143,15 +143,7 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
       }
       String[] splitServers = servers.split(",");
       List<ShuffleServerInfo> assignServers = Lists.newArrayList();
-      for (String splitServer : splitServers) {
-        String[] serverInfo = splitServer.split(":");
-        if (serverInfo.length != 2) {
-          throw new RssException("partition " + i + " server info isn't right");
-        }
-        ShuffleServerInfo sever = new ShuffleServerInfo(StringUtils.join(serverInfo, "-"),
-            serverInfo[0], Integer.parseInt(serverInfo[1]));
-        assignServers.add(sever);
-      }
+      RssMRUtils.buildAssignServers(i, splitServers, assignServers);
       partitionToServers.put(i, assignServers);
     }
     return partitionToServers;

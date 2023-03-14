@@ -74,7 +74,8 @@ public class ShuffleServer {
   private RegisterHeartBeat registerHeartBeat;
   private String id;
   private String ip;
-  private int port;
+  private int grpcPort;
+  private int nettyPort;
   private ShuffleServerConf shuffleServerConf;
   private JettyServer jettyServer;
   private ShuffleTaskManager shuffleTaskManager;
@@ -182,8 +183,13 @@ public class ShuffleServer {
     if (ip == null) {
       throw new RuntimeException("Couldn't acquire host Ip");
     }
-    port = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
-    id = ip + "-" + port;
+    grpcPort = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
+    nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
+    if (nettyPort > 0) {
+      id = ip + "-" + grpcPort + "-" + nettyPort;
+    } else {
+      id = ip + "-" + grpcPort;
+    }
     LOG.info("Start to initialize server {}", id);
     jettyServer = new JettyServer(shuffleServerConf);
     registerMetrics();
@@ -359,8 +365,8 @@ public class ShuffleServer {
     return this.id;
   }
 
-  public int getPort() {
-    return this.port;
+  public int getGrpcPort() {
+    return this.grpcPort;
   }
 
   public ShuffleServerConf getShuffleServerConf() {
@@ -435,4 +441,7 @@ public class ShuffleServer {
     return running;
   }
 
+  public int getNettyPort() {
+    return nettyPort;
+  }
 }

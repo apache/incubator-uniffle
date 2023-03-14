@@ -119,9 +119,10 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       Set<String> tags,
       boolean isHealthy,
       ServerStatus serverStatus,
-      Map<String, StorageInfo> storageInfo) {
+      Map<String, StorageInfo> storageInfo,
+      int nettyPort) {
     ShuffleServerId serverId =
-        ShuffleServerId.newBuilder().setId(id).setIp(ip).setPort(port).build();
+        ShuffleServerId.newBuilder().setId(id).setIp(ip).setPort(port).setNettyPort(nettyPort).build();
     ShuffleServerHeartBeatRequest request =
         ShuffleServerHeartBeatRequest.newBuilder()
             .setServerId(serverId)
@@ -198,7 +199,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         request.getTags(),
         request.isHealthy(),
         request.getServerStatus(),
-        request.getStorageInfo());
+        request.getStorageInfo(),
+        request.getNettyPort());
 
     RssSendHeartBeatResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
@@ -372,7 +374,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       final List<ShuffleServerInfo> shuffleServerInfos = partitionRangeAssignment
           .getServerList()
           .stream()
-          .map(ss -> new ShuffleServerInfo(ss.getId(), ss.getIp(), ss.getPort()))
+          .map(ss -> new ShuffleServerInfo(ss.getId(), ss.getIp(), ss.getPort(), ss.getNettyPort()))
           .collect(Collectors.toList());
       for (int i = startPartition; i <= endPartition; i++) {
         partitionToServers.put(i, shuffleServerInfos);
@@ -396,7 +398,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         PartitionRange partitionRange = new PartitionRange(assign.getStartPartition(), assign.getEndPartition());
         for (ShuffleServerId ssi : shuffleServerIds) {
           ShuffleServerInfo shuffleServerInfo =
-              new ShuffleServerInfo(ssi.getId(), ssi.getIp(), ssi.getPort());
+              new ShuffleServerInfo(ssi.getId(), ssi.getIp(), ssi.getPort(), ssi.getNettyPort());
           if (!serverToPartitionRanges.containsKey(shuffleServerInfo)) {
             serverToPartitionRanges.put(shuffleServerInfo, Lists.newArrayList());
           }

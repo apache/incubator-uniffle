@@ -77,7 +77,7 @@ public class RegisterHeartBeat {
         sendHeartBeat(
             shuffleServer.getId(),
             shuffleServer.getIp(),
-            shuffleServer.getPort(),
+            shuffleServer.getGrpcPort(),
             shuffleServer.getUsedMemory(),
             shuffleServer.getPreAllocatedMemory(),
             shuffleServer.getAvailableMemory(),
@@ -85,7 +85,8 @@ public class RegisterHeartBeat {
             shuffleServer.getTags(),
             shuffleServer.isHealthy(),
             shuffleServer.getServerStatus(),
-            shuffleServer.getStorageManager().getStorageInfo());
+            shuffleServer.getStorageManager().getStorageInfo(),
+            shuffleServer.getNettyPort());
       } catch (Exception e) {
         LOG.warn("Error happened when send heart beat to coordinator");
       }
@@ -97,7 +98,7 @@ public class RegisterHeartBeat {
   boolean sendHeartBeat(
       String id,
       String ip,
-      int port,
+      int grpcPort,
       long usedMemory,
       long preAllocatedMemory,
       long availableMemory,
@@ -105,12 +106,13 @@ public class RegisterHeartBeat {
       Set<String> tags,
       boolean isHealthy,
       ServerStatus serverStatus,
-      Map<String, StorageInfo> localStorageInfo) {
+      Map<String, StorageInfo> localStorageInfo,
+      int nettyPort) {
     boolean sendSuccessfully = false;
     RssSendHeartBeatRequest request = new RssSendHeartBeatRequest(
         id,
         ip,
-        port,
+        grpcPort,
         usedMemory,
         preAllocatedMemory,
         availableMemory,
@@ -119,7 +121,8 @@ public class RegisterHeartBeat {
         tags,
         isHealthy,
         serverStatus,
-        localStorageInfo);
+        localStorageInfo,
+        nettyPort);
     List<Future<RssSendHeartBeatResponse>> respFutures = coordinatorClients
         .stream()
         .map(client -> heartBeatExecutorService.submit(() -> client.sendHeartBeat(request)))

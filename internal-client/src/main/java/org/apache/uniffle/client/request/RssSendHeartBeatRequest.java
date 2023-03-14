@@ -38,6 +38,7 @@ public class RssSendHeartBeatRequest {
   private final boolean isHealthy;
   private final ServerStatus serverStatus;
   private final Map<String, StorageInfo> storageInfo;
+  private final int nettyPort;
 
   public RssSendHeartBeatRequest(
       String shuffleServerId,
@@ -51,7 +52,8 @@ public class RssSendHeartBeatRequest {
       Set<String> tags,
       boolean isHealthy,
       ServerStatus serverStatus,
-      Map<String, StorageInfo> storageInfo) {
+      Map<String, StorageInfo> storageInfo,
+      int nettyPort) {
     this.shuffleServerId = shuffleServerId;
     this.shuffleServerIp = shuffleServerIp;
     this.shuffleServerPort = shuffleServerPort;
@@ -64,6 +66,7 @@ public class RssSendHeartBeatRequest {
     this.isHealthy = isHealthy;
     this.serverStatus = serverStatus;
     this.storageInfo = storageInfo;
+    this.nettyPort = nettyPort;
   }
 
   public String getShuffleServerId() {
@@ -112,5 +115,9 @@ public class RssSendHeartBeatRequest {
 
   public Map<String, StorageInfo> getStorageInfo() {
     return storageInfo;
+  }
+
+  public int getNettyPort() {
+    return nettyPort;
   }
 }

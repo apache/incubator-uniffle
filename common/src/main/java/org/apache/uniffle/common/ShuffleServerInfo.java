@@ -25,19 +25,28 @@ public class ShuffleServerInfo implements Serializable {
 
   private String host;
 
-  private int port;
+  private int grpcPort;
+
+  private int nettyPort = -1;
 
   // Only for test
   public ShuffleServerInfo(String host, int port) {
     this.id = host + "-" + port;
     this.host = host;
-    this.port = port;
+    this.grpcPort = port;
   }
 
   public ShuffleServerInfo(String id, String host, int port) {
     this.id = id;
     this.host = host;
-    this.port = port;
+    this.grpcPort = port;
+  }
+
+  public ShuffleServerInfo(String id, String host, int grpcPort, int nettyPort) {
+    this.id = id;
+    this.host = host;
+    this.grpcPort = grpcPort;
+    this.nettyPort = nettyPort;
   }
 
   public String getId() {
@@ -48,13 +57,19 @@ public class ShuffleServerInfo implements Serializable {
     return host;
   }
 
-  public int getPort() {
-    return port;
+  public int getGrpcPort() {
+    return grpcPort;
+  }
+
+  public int getNettyPort() {
+    return nettyPort;
   }
 
   @Override
   public int hashCode() {
-    // By default id = host + "-" + port, so it is enough to calculate hashCode with id.
+    // By default id = host + "-" + grpc port, if netty port is greater than 0,
+    // id = host + "-" + grpc port + "-" + netty port
+    // so it is enough to calculate hashCode with id.
     return id.hashCode();
   }
 
@@ -63,13 +78,20 @@ public class ShuffleServerInfo implements Serializable {
     if (obj instanceof ShuffleServerInfo) {
       return id.equals(((ShuffleServerInfo) obj).getId())
           && host.equals(((ShuffleServerInfo) obj).getHost())
-          && port == ((ShuffleServerInfo) obj).getPort();
+          && grpcPort == ((ShuffleServerInfo) obj).getGrpcPort()
+          && nettyPort == ((ShuffleServerInfo) obj).getNettyPort();
     }
     return false;
   }
 
   @Override
   public String toString() {
-    return "ShuffleServerInfo{id[" + id + "], host[" + host + "], port[" + port + "]}";
+    if (nettyPort > 0) {
+      return "ShuffleServerInfo{id[" + id + "], host[" + host + "],"
+          + " grpc port[" + grpcPort + "], netty port[" + nettyPort + "]}";
+    } else {
+      return "ShuffleServerInfo{id[" + id + "], host[" + host + "],"
+          + " grpc port[" + grpcPort + "]}";
+    }
   }
 }
