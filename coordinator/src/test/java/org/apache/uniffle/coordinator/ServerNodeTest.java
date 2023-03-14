@@ -77,7 +77,7 @@ public class ServerNodeTest {
     Map<String, StorageInfo> localStorageInfo = Maps.newHashMap();
     ServerNode sn1 = new ServerNode("sn1", "ip", 1, 100L, 50L, 20, 10, tags,
         true, ServerStatus.ACTIVE, localStorageInfo);
-    assertEquals(sn1.getNettyPort(), 0);
+    assertEquals(sn1.getNettyPort(), -1);
     ServerNode sn2 = new ServerNode("sn2", "ip", 1, 100L, 50L, 20, 10, tags,
         true, ServerStatus.ACTIVE, localStorageInfo, 2);
     assertEquals(sn2.getNettyPort(), 2);
