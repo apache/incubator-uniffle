@@ -51,6 +51,7 @@ import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.common.web.CommonMetricsServlet;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
+import org.apache.uniffle.server.netty.StreamServer;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
 import org.apache.uniffle.storage.util.StorageType;
@@ -92,6 +93,8 @@ public class ShuffleServer {
   private volatile boolean running;
   private ExecutorService executorService;
   private Future<?> decommissionFuture;
+  private boolean nettyServerEnabled;
+  private StreamServer streamServer;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -124,6 +127,9 @@ public class ShuffleServer {
     registerHeartBeat.startHeartBeat();
     jettyServer.start();
     server.start();
+    if (nettyServerEnabled) {
+      streamServer.start();
+    }
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
@@ -164,6 +170,9 @@ public class ShuffleServer {
     }
     SecurityContextFactory.get().getSecurityContext().close();
     server.stop();
+    if (nettyServerEnabled && streamServer != null) {
+      streamServer.stop();
+    }
     if (executorService != null) {
       executorService.shutdownNow();
     }
@@ -221,6 +230,10 @@ public class ShuffleServer {
     shuffleBufferManager = new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager);
     shuffleTaskManager = new ShuffleTaskManager(shuffleServerConf, shuffleFlushManager,
         shuffleBufferManager, storageManager);
+    nettyServerEnabled = shuffleServerConf.get(ShuffleServerConf.NETTY_SERVER_ENABLED);
+    if (nettyServerEnabled) {
+      streamServer = new StreamServer(this);
+    }
 
     setServer();
 

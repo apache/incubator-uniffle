@@ -404,6 +404,48 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(-1)
       .withDescription("Shuffle netty server port");
 
+  public static final ConfigOption<Boolean> NETTY_SERVER_ENABLED = ConfigOptions
+      .key("rss.server.netty.enable")
+      .booleanType()
+      .defaultValue(false)
+      .withDescription("If enable netty server");
+
+  public static final ConfigOption<Boolean> SERVER_UPLOAD_EPOLL_ENABLE = ConfigOptions
+      .key("rss.server.upload.epoll.enable")
+      .booleanType()
+      .defaultValue(false)
+      .withDescription("If enable epoll model with netty server");
+
+  public static final ConfigOption<Integer> SERVER_UPLOAD_ACCEPT_THREAD = ConfigOptions
+      .key("rss.server.upload.accept.thread")
+      .intType()
+      .defaultValue(10)
+      .withDescription("Accept thread count in netty");
+
+  public static final ConfigOption<Integer> SERVER_UPLOAD_WORKER_THREAD = ConfigOptions
+      .key("rss.server.upload.worker.thread")
+      .intType()
+      .defaultValue(100)
+      .withDescription("Worker thread count in netty");
+
+  public static final ConfigOption<Long> SERVER_NETTY_HANDLER_IDLE_TIMEOUT = ConfigOptions
+      .key("rss.server.netty.handler.idle.timeout")
+      .longType()
+      .defaultValue(60000L)
+      .withDescription("Idle timeout if there has not data");
+
+  public static final ConfigOption<Integer> SERVER_UPLOAD_CONNECT_BACKLOG = ConfigOptions
+      .key("rss.server.upload.connect.backlog")
+      .intType()
+      .defaultValue(1000)
+      .withDescription("Backlog for connection in netty");
+
+  public static final ConfigOption<Integer> SERVER_UPLOAD_CONNECT_TIMEOUT = ConfigOptions
+      .key("rss.server.upload.connect.timeout")
+      .intType()
+      .defaultValue(5000)
+      .withDescription("Timeout for connection in netty");
+
   public ShuffleServerConf() {
   }
 
