@@ -40,7 +40,7 @@ public class ServerNode implements Comparable<ServerNode> {
   private boolean isHealthy;
   private final ServerStatus status;
   private Map<String, StorageInfo> storageInfo;
-  private int nettyPort = 0;
+  private int nettyPort = -1;
 
   // Only for test
   public ServerNode(

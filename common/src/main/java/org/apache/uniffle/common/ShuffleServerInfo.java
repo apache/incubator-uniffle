@@ -27,7 +27,7 @@ public class ShuffleServerInfo implements Serializable {
 
   private int grpcPort;
 
-  private int nettyPort = 0;
+  private int nettyPort = -1;
 
   // Only for test
   public ShuffleServerInfo(String host, int port) {
