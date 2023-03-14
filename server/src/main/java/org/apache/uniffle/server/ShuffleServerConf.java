@@ -440,6 +440,22 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(5000)
       .withDescription("Timeout for connection in netty");
 
+  public static final ConfigOption<Integer> NETTY_SERVER_SEND_BUF = ConfigOptions
+      .key("rss.server.netty.send.buf")
+      .intType()
+      .defaultValue(-1)
+      .withDescription("the optimal size for send buffer(SO_SNDBUF) "
+                           + "should be latency * network_bandwidth. Assuming latency = 1ms,"
+                           + "network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB");
+
+  public static final ConfigOption<Integer> NETTY_SERVER_RECEIVE_BUF = ConfigOptions
+      .key("rss.server.netty.receive.buf")
+      .intType()
+      .defaultValue(-1)
+      .withDescription("the optimal size for receive buffer(SO_RCVBUF) "
+                           + "should be latency * network_bandwidth. Assuming latency = 1ms,"
+                           + "network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB");
+
   public ShuffleServerConf() {
   }
 

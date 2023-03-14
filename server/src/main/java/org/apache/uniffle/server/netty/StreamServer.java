@@ -70,6 +70,8 @@ public class StreamServer {
       EventLoopGroup workerGroup,
       int backlogSize,
       int timeoutMillis,
+      int sendBuf,
+      int receiveBuf,
       Supplier<ChannelHandler[]> handlerSupplier) {
     ServerBootstrap serverBootstrap = bossGroup instanceof EpollEventLoopGroup
                                           ? new ServerBootstrap().group(bossGroup, workerGroup)
@@ -77,7 +79,7 @@ public class StreamServer {
                                           : new ServerBootstrap().group(bossGroup, workerGroup)
                                                 .channel(NioServerSocketChannel.class);
 
-    return serverBootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
+    serverBootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
       @Override
       public void initChannel(final SocketChannel ch) {
         ch.pipeline().addLast(handlerSupplier.get());
@@ -87,7 +89,17 @@ public class StreamServer {
                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMillis)
                .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                .childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMillis)
-               .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
+               .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+               .childOption(ChannelOption.TCP_NODELAY, true)
+               .childOption(ChannelOption.SO_KEEPALIVE, true);
+
+    if (sendBuf > 0) {
+      serverBootstrap.childOption(ChannelOption.SO_SNDBUF, sendBuf);
+    }
+    if (receiveBuf > 0) {
+      serverBootstrap.childOption(ChannelOption.SO_RCVBUF, receiveBuf);
+    }
+    return serverBootstrap;
   }
 
   public void start() {
@@ -96,7 +108,10 @@ public class StreamServer {
     };
     ServerBootstrap serverBootstrap = bootstrapChannel(shuffleBossGroup, shuffleWorkerGroup,
         shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_BACKLOG),
-        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_TIMEOUT), streamHandlers);
+        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_TIMEOUT),
+        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_SEND_BUF),
+        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_RECEIVE_BUF),
+        streamHandlers);
 
     // Bind the ports and save the results so that the channels can be closed later.
     // If the second bind fails, the first one gets cleaned up in the shutdown.
@@ -116,9 +131,11 @@ public class StreamServer {
       channelFuture.channel().close().awaitUninterruptibly(10L, TimeUnit.SECONDS);
       channelFuture = null;
     }
-    shuffleBossGroup.shutdownGracefully();
-    shuffleWorkerGroup.shutdownGracefully();
-    shuffleBossGroup = null;
-    shuffleWorkerGroup = null;
+    if (shuffleBossGroup != null) {
+      shuffleBossGroup.shutdownGracefully();
+      shuffleWorkerGroup.shutdownGracefully();
+      shuffleBossGroup = null;
+      shuffleWorkerGroup = null;
+    }
   }
 }

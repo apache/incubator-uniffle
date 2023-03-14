@@ -45,5 +45,4 @@ public class StreamServerInitDecoder extends ByteToMessageDecoder {
 
     addDecoder(ctx, magicByte);
   }
-
 }
