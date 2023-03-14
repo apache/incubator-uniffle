@@ -85,7 +85,7 @@ public class ServerNode implements Comparable<ServerNode> {
       ServerStatus status,
       Map<String, StorageInfo> storageInfoMap) {
     this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags, isHealthy,
-        status, storageInfoMap, 0);
+        status, storageInfoMap, -1);
   }
 
   public ServerNode(
@@ -113,7 +113,9 @@ public class ServerNode implements Comparable<ServerNode> {
     this.isHealthy = isHealthy;
     this.status = status;
     this.storageInfo = storageInfoMap;
-    this.nettyPort = nettyPort;
+    if (nettyPort > 0) {
+      this.nettyPort = nettyPort;
+    }
   }
 
   public ShuffleServerId convertToGrpcProto() {

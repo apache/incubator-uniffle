@@ -296,24 +296,28 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     ShuffleServerId ss1 = RssProtos.ShuffleServerId.newBuilder()
         .setIp("0.0.0.1")
         .setPort(100)
+        .setNettyPort(-1)
         .setId("id1")
         .build();
 
     ShuffleServerId ss2 = RssProtos.ShuffleServerId.newBuilder()
         .setIp("0.0.0.2")
         .setPort(100)
+        .setNettyPort(-1)
         .setId("id2")
         .build();
 
     ShuffleServerId ss3 = RssProtos.ShuffleServerId.newBuilder()
         .setIp("0.0.0.3")
         .setPort(100)
+        .setNettyPort(-1)
         .setId("id3")
         .build();
 
     ShuffleServerId ss4 = RssProtos.ShuffleServerId.newBuilder()
         .setIp("0.0.0.4")
         .setPort(100)
+        .setNettyPort(-1)
         .setId("id4")
         .build();
 
