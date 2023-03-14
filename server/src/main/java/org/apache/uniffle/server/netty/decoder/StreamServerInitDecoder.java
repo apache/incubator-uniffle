@@ -29,12 +29,7 @@ import org.apache.uniffle.server.ShuffleServer;
 
 public class StreamServerInitDecoder extends ByteToMessageDecoder {
 
-  private static final Logger logger = LoggerFactory.getLogger(StreamServerInitDecoder.class);
-
-  private ShuffleServer shuffleServer;
-
-  public StreamServerInitDecoder(ShuffleServer shuffleServer) {
-    this.shuffleServer = shuffleServer;
+  public StreamServerInitDecoder() {
   }
 
   private void addDecoder(ChannelHandlerContext ctx, byte type) {

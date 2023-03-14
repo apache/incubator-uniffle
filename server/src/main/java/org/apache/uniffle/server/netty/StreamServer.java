@@ -53,9 +53,9 @@ public class StreamServer {
   public StreamServer(ShuffleServer shuffleServer) {
     this.shuffleServer = shuffleServer;
     this.shuffleServerConf = shuffleServer.getShuffleServerConf();
-    boolean isEpollEnable = shuffleServerConf.getBoolean(ShuffleServerConf.SERVER_UPLOAD_EPOLL_ENABLE);
-    int acceptThreads = shuffleServerConf.getInteger(ShuffleServerConf.SERVER_UPLOAD_ACCEPT_THREAD);
-    int workerThreads = shuffleServerConf.getInteger(ShuffleServerConf.SERVER_UPLOAD_WORKER_THREAD);
+    boolean isEpollEnable = shuffleServerConf.getBoolean(ShuffleServerConf.NETTY_SERVER_EPOLL_ENABLE);
+    int acceptThreads = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_ACCEPT_THREAD);
+    int workerThreads = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_WORKER_THREAD);
     if (isEpollEnable) {
       shuffleBossGroup = new EpollEventLoopGroup(acceptThreads);
       shuffleWorkerGroup = new EpollEventLoopGroup(workerThreads);
@@ -92,11 +92,11 @@ public class StreamServer {
 
   public void start() {
     Supplier<ChannelHandler[]> streamHandlers = () -> new ChannelHandler[]{
-        new StreamServerInitDecoder(shuffleServer)
+        new StreamServerInitDecoder()
     };
     ServerBootstrap serverBootstrap = bootstrapChannel(shuffleBossGroup, shuffleWorkerGroup,
-        shuffleServerConf.getInteger(ShuffleServerConf.SERVER_UPLOAD_CONNECT_BACKLOG),
-        shuffleServerConf.getInteger(ShuffleServerConf.SERVER_UPLOAD_CONNECT_TIMEOUT), streamHandlers);
+        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_BACKLOG),
+        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_TIMEOUT), streamHandlers);
 
     // Bind the ports and save the results so that the channels can be closed later.
     // If the second bind fails, the first one gets cleaned up in the shutdown.
