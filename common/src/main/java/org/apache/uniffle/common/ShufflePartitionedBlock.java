@@ -17,8 +17,10 @@
 
 package org.apache.uniffle.common;
 
-import java.util.Arrays;
+import java.nio.ByteBuffer;
 import java.util.Objects;
+
+import com.google.common.annotations.VisibleForTesting;
 
 public class ShufflePartitionedBlock {
 
@@ -26,9 +28,27 @@ public class ShufflePartitionedBlock {
   private long crc;
   private long blockId;
   private int uncompressLength;
-  private byte[] data;
   private long taskAttemptId;
+  // Read only byte buffer
+  private ByteBuffer bufferData;
 
+  public ShufflePartitionedBlock(
+      int length,
+      int uncompressLength,
+      long crc,
+      long blockId,
+      ByteBuffer data,
+      long taskAttemptId) {
+    this.length = length;
+    this.crc = crc;
+    this.blockId = blockId;
+    this.uncompressLength = uncompressLength;
+    this.taskAttemptId = taskAttemptId;
+    this.bufferData = data;
+  }
+
+  // Only for tests
+  @VisibleForTesting
   public ShufflePartitionedBlock(
       int length,
       int uncompressLength,
@@ -36,12 +56,7 @@ public class ShufflePartitionedBlock {
       long blockId,
       long taskAttemptId,
       byte[] data) {
-    this.length = length;
-    this.crc = crc;
-    this.blockId = blockId;
-    this.uncompressLength = uncompressLength;
-    this.taskAttemptId = taskAttemptId;
-    this.data = data;
+    this(length, uncompressLength, crc, blockId, ByteBuffer.wrap(data), taskAttemptId);
   }
 
   // calculate the data size for this block in memory including metadata which are
@@ -62,12 +77,12 @@ public class ShufflePartitionedBlock {
     return length == that.length
         && crc == that.crc
         && blockId == that.blockId
-        && Arrays.equals(data, that.data);
+        && bufferData.equals(that.bufferData);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(length, crc, blockId, Arrays.hashCode(data));
+    return Objects.hash(length, crc, blockId, bufferData.hashCode());
   }
 
   public int getLength() {
@@ -95,11 +110,7 @@ public class ShufflePartitionedBlock {
   }
 
   public byte[] getData() {
-    return data;
-  }
-
-  public void setData(byte[] data) {
-    this.data = data;
+    return bufferData.array();
   }
 
   public int getUncompressLength() {
@@ -114,10 +125,13 @@ public class ShufflePartitionedBlock {
     this.taskAttemptId = taskAttemptId;
   }
 
+  public ByteBuffer getBufferData() {
+    return bufferData;
+  }
+
   @Override
   public String toString() {
     return "ShufflePartitionedBlock{blockId[" + blockId + "], length[" + length
         + "], uncompressLength[" + uncompressLength + "], crc[" + crc + "], taskAttemptId[" + taskAttemptId + "]}";
   }
-
 }

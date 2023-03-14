@@ -760,8 +760,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           block.getUncompressLength(),
           block.getCrc(),
           block.getBlockId(),
-          block.getTaskAttemptId(),
-          block.getData().toByteArray());
+          block.getData().asReadOnlyByteBuffer(),
+          block.getTaskAttemptId()
+      );
       i++;
     }
     return ret;

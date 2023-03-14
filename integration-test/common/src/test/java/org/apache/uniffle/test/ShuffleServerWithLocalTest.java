@@ -65,7 +65,7 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
-    shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
+    shuffleServerConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE.name());
     shuffleServerConf.setString("rss.storage.basePath", basePath);
     shuffleServerConf.setString("rss.server.app.expired.withoutHeartbeat", "5000");
     createShuffleServer(shuffleServerConf);

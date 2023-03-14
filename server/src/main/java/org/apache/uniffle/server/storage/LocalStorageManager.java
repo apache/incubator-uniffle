@@ -113,7 +113,9 @@ public class LocalStorageManager extends SingleStorageManager {
       final int idx = i;
       String storagePath = storageBasePaths.get(i);
       executorService.submit(() -> {
+        LOG.info("Start checking {}", storagePath);
         try {
+          LOG.info("Enter this.");
           StorageMedia storageType = getStorageTypeForBasePath(storagePath);
           localStorageArray[idx] = LocalStorage.newBuilder()
               .basePath(storagePath)
@@ -125,10 +127,12 @@ public class LocalStorageManager extends SingleStorageManager {
               .localStorageMedia(storageType)
               .build();
           successCount.incrementAndGet();
+          LOG.info("Initialized path: {}", storagePath);
         } catch (Exception e) {
           LOG.error("LocalStorage init failed!", e);
         } finally {
           countDownLatch.countDown();
+          LOG.info("Finished. {}", storagePath);
         }
       });
     }
@@ -158,13 +162,13 @@ public class LocalStorageManager extends SingleStorageManager {
   }
 
   private StorageMedia getStorageTypeForBasePath(String basePath) {
-    for (StorageMediaProvider provider : this.typeProviders) {
-      StorageMedia result = provider.getStorageMediaFor(basePath);
-      if (result != StorageMedia.UNKNOWN) {
-        return result;
-      }
-    }
-    return StorageMedia.UNKNOWN;
+//    for (StorageMediaProvider provider : this.typeProviders) {
+//      StorageMedia result = provider.getStorageMediaFor(basePath);
+//      if (result != StorageMedia.UNKNOWN) {
+//        return result;
+//      }
+//    }
+    return StorageMedia.SSD;
   }
 
   @Override

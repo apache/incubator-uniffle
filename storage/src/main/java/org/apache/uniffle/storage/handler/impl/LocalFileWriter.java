@@ -23,6 +23,8 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 
 import org.apache.uniffle.storage.api.FileWriter;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
@@ -31,13 +33,24 @@ public class LocalFileWriter implements FileWriter, Closeable {
 
   private DataOutputStream dataOutputStream;
   private FileOutputStream fileOutputStream;
+  private FileChannel fileChannel;
   private long nextOffset;
 
   public LocalFileWriter(File file) throws IOException {
     fileOutputStream = new FileOutputStream(file, true);
+    fileChannel = fileOutputStream.getChannel();
     // init fsDataOutputStream
     dataOutputStream = new DataOutputStream(new BufferedOutputStream(fileOutputStream));
     nextOffset = file.length();
+  }
+
+  @Override
+  public void writeData(ByteBuffer data) throws Exception {
+    if (data != null && data.limit() - data.position() > 0) {
+      int len = data.limit();
+      fileChannel.write(data);
+      nextOffset = nextOffset + len;
+    }
   }
 
   public void writeData(byte[] data) throws IOException {

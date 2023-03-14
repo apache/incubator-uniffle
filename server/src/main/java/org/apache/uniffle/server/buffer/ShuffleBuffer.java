@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server.buffer;
 
+import java.nio.ByteBuffer;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
@@ -155,6 +156,7 @@ public class ShuffleBuffer {
   // todo: if block was flushed, it's possible to get duplicated data
   public synchronized ShuffleDataResult getShuffleData(
       long lastBlockId, int readBufferSize, Roaring64NavigableMap expectedTaskIds) {
+    LOG.info("Last block id: {}", lastBlockId);
     try {
       List<BufferSegment> bufferSegments = Lists.newArrayList();
       List<ShufflePartitionedBlock> readBlocks = Lists.newArrayList();
@@ -162,10 +164,10 @@ public class ShuffleBuffer {
           lastBlockId, readBufferSize, bufferSegments, readBlocks, expectedTaskIds);
       if (!bufferSegments.isEmpty()) {
         int length = calculateDataLength(bufferSegments);
-        byte[] data = new byte[length];
-        // copy result data
-        updateShuffleData(readBlocks, data);
-        return new ShuffleDataResult(data, bufferSegments);
+        ByteBuffer bufferData = ByteBuffer.allocate(length);
+        updateShuffleData(readBlocks, bufferData);
+        bufferData.flip();
+        return new ShuffleDataResult(bufferSegments, bufferData);
       }
     } catch (Exception e) {
       LOG.error("Exception happened when getShuffleData in buffer", e);
@@ -238,19 +240,12 @@ public class ShuffleBuffer {
     return bufferSegment.getOffset() + bufferSegment.getLength();
   }
 
-  private void updateShuffleData(List<ShufflePartitionedBlock> readBlocks, byte[] data) {
-    int offset = 0;
+  private void updateShuffleData(List<ShufflePartitionedBlock> readBlocks, ByteBuffer bufferData) {
     for (ShufflePartitionedBlock block : readBlocks) {
-      // fill shuffle data
-      try {
-        System.arraycopy(block.getData(), 0, data, offset, block.getLength());
-      } catch (Exception e) {
-        LOG.error("Unexpected exception for System.arraycopy, length["
-            + block.getLength() + "], offset["
-            + offset + "], dataLength[" + data.length + "]", e);
-        throw e;
-      }
-      offset += block.getLength();
+      ByteBuffer tmp = block.getBufferData().duplicate();
+      tmp.clear();
+      bufferData.put(tmp);
+      tmp.clear();
     }
   }
 
