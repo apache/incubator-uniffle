@@ -27,21 +27,30 @@ import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.deploy.SparkHadoopUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.reflect.ClassTag;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
+
 
 public class RssSparkShuffleUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssSparkShuffleUtils.class);
+
+  public static final ClassTag<ShuffleHandleInfo> SHUFFLE_HANDLER_INFO_CLASS_TAG = scala.reflect.ClassTag$.MODULE$
+      .apply(ShuffleHandleInfo.class);
+  public static final ClassTag<byte[]> BYTE_ARRAY_CLASS_TAG = scala.reflect.ClassTag$.MODULE$.apply(byte[].class);
 
   public static Configuration newHadoopConfiguration(SparkConf sparkConf) {
     SparkHadoopUtil util = new SparkHadoopUtil();
@@ -189,5 +198,32 @@ public class RssSparkShuffleUtils {
     int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
     int taskConcurrencyPerServer = sparkConf.get(RssSparkConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER);
     return (int) Math.ceil(estimateTaskConcurrency * 1.0 / taskConcurrencyPerServer);
+  }
+
+  /**
+   * Get current active {@link SparkContext}. It should be called inside Driver since we don't mean to create any
+   * new {@link SparkContext} here.
+   *
+   * Note: We could use "SparkContext.getActive()" instead of "SparkContext.getOrCreate()" if the "getActive" method
+   * is not declared as package private in Scala.
+   * @return Active SparkContext created by Driver.
+   */
+  public static SparkContext getActiveSparkContext() {
+    return SparkContext.getOrCreate();
+  }
+
+  /**
+   * create broadcast variable of {@link ShuffleHandleInfo}
+   *
+   * @param sc                    expose for easy unit-test
+   * @param shuffleId
+   * @param partitionToServers
+   * @param storageInfo
+   * @return Broadcast variable registered for auto cleanup
+   */
+  public static Broadcast<ShuffleHandleInfo> broadcastShuffleHdlInfo(SparkContext sc, int shuffleId,
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers, RemoteStorageInfo storageInfo) {
+    ShuffleHandleInfo handleInfo = new ShuffleHandleInfo(shuffleId, partitionToServers, storageInfo);
+    return sc.broadcast(handleInfo, SHUFFLE_HANDLER_INFO_CLASS_TAG);
   }
 }

@@ -42,6 +42,7 @@ import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkEnv;
 import org.apache.spark.TaskContext;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.shuffle.reader.RssShuffleReader;
@@ -293,7 +294,6 @@ public class RssShuffleManager implements ShuffleManager {
     heartBeatScheduledExecutorService = null;
   }
 
-
   // This method is called in Spark driver side,
   // and Spark driver will make some decision according to coordinator,
   // e.g. determining what RSS servers to use.
@@ -322,12 +322,14 @@ public class RssShuffleManager implements ShuffleManager {
     if (dependency.partitioner().numPartitions() == 0) {
       LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum is 0, "
           + "return the empty RssShuffleHandle directly");
+      Broadcast<ShuffleHandleInfo> hdlInfoBd = RssSparkShuffleUtils.broadcastShuffleHdlInfo(
+          RssSparkShuffleUtils.getActiveSparkContext(), shuffleId, Collections.emptyMap(),
+          RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
       return new RssShuffleHandle<>(shuffleId,
         id.get(),
         dependency.rdd().getNumPartitions(),
         dependency,
-        Collections.emptyMap(),
-        RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+        hdlInfoBd);
     }
 
     String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
@@ -363,14 +365,15 @@ public class RssShuffleManager implements ShuffleManager {
     }
     startHeartbeat();
 
+    Broadcast<ShuffleHandleInfo> hdlInfoBd = RssSparkShuffleUtils.broadcastShuffleHdlInfo(
+        RssSparkShuffleUtils.getActiveSparkContext(), shuffleId, partitionToServers, remoteStorage);
     LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum[" + partitionToServers.size()
         + "], shuffleServerForResult: " + partitionToServers);
     return new RssShuffleHandle<>(shuffleId,
         id.get(),
         dependency.rdd().getNumPartitions(),
         dependency,
-        partitionToServers,
-        remoteStorage);
+        hdlInfoBd);
   }
 
   @Override

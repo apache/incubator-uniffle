@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.Sets;
 import org.apache.spark.ShuffleDependency;
+import org.apache.spark.broadcast.Broadcast;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -32,29 +32,19 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
   private String appId;
   private int numMaps;
   private ShuffleDependency<K, V, C> dependency;
-  private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
-  // shuffle servers which is for store shuffle data
-  private Set<ShuffleServerInfo> shuffleServersForData;
-  // remoteStorage used for this job
-  private RemoteStorageInfo remoteStorage;
+  private Broadcast<ShuffleHandleInfo> handlerInfoBd;
 
   public RssShuffleHandle(
       int shuffleId,
       String appId,
       int numMaps,
       ShuffleDependency<K, V, C> dependency,
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
-      RemoteStorageInfo remoteStorage) {
+      Broadcast<ShuffleHandleInfo> handlerInfoBd) {
     super(shuffleId);
     this.appId = appId;
     this.numMaps = numMaps;
     this.dependency = dependency;
-    this.partitionToServers = partitionToServers;
-    this.remoteStorage = remoteStorage;
-    shuffleServersForData = Sets.newHashSet();
-    for (List<ShuffleServerInfo> ssis : partitionToServers.values()) {
-      shuffleServersForData.addAll(ssis);
-    }
+    this.handlerInfoBd = handlerInfoBd;
   }
 
   public String getAppId() {
@@ -69,19 +59,20 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
     return dependency;
   }
 
-  public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
-    return partitionToServers;
-  }
-
   public int getShuffleId() {
     return shuffleId();
   }
 
-  public Set<ShuffleServerInfo> getShuffleServersForData() {
-    return shuffleServersForData;
+  public RemoteStorageInfo getRemoteStorage() {
+    return handlerInfoBd.value().getRemoteStorage();
   }
 
-  public RemoteStorageInfo getRemoteStorage() {
-    return remoteStorage;
+  public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
+    return handlerInfoBd.value().getPartitionToServers();
   }
+
+  public Set<ShuffleServerInfo> getShuffleServersForData() {
+    return handlerInfoBd.value().getShuffleServersForData();
+  }
+
 }
