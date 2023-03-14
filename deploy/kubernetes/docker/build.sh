@@ -110,6 +110,8 @@ RSS_DIR=../../..
 cd $RSS_DIR || exit
 RSS_VERSION=$(mvn help:evaluate -Dexpression=project.version 2>/dev/null | grep -v "INFO" | grep -v "WARNING" | tail -n 1)
 RSS_FILE=rss-${RSS_VERSION}.tgz
+echo "RSS_VERSION: $RSS_VERSION"
+echo "RSS_FILE: $RSS_FILE"
 if [ ! -e "$RSS_FILE" ]; \
   then bash ./build_distribution.sh; \
   else echo "$RSS_FILE has been built"; \
@@ -122,7 +124,7 @@ GIT_COMMIT=$(git describe --dirty --always --tags | sed 's/-/./g')
 echo "image version: ${IMAGE_VERSION:=$RSS_VERSION-$GIT_COMMIT}"
 IMAGE=$REGISTRY/rss-server:$IMAGE_VERSION
 echo "building image: $IMAGE"
-docker build -t "$IMAGE" \
+docker build --network=host -t "$IMAGE" \
              --build-arg RSS_VERSION="$RSS_VERSION" \
              --build-arg HADOOP_VERSION="$HADOOP_VERSION" \
              --build-arg AUTHOR="$AUTHOR" \
