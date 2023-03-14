@@ -73,11 +73,12 @@ public class StreamServer {
       int sendBuf,
       int receiveBuf,
       Supplier<ChannelHandler[]> handlerSupplier) {
-    ServerBootstrap serverBootstrap = bossGroup instanceof EpollEventLoopGroup
-                                          ? new ServerBootstrap().group(bossGroup, workerGroup)
-                                                .channel(EpollServerSocketChannel.class)
-                                          : new ServerBootstrap().group(bossGroup, workerGroup)
-                                                .channel(NioServerSocketChannel.class);
+    ServerBootstrap serverBootstrap = new ServerBootstrap().group(bossGroup, workerGroup);
+    if (bossGroup instanceof EpollEventLoopGroup) {
+      serverBootstrap.channel(EpollServerSocketChannel.class);
+    } else {
+      serverBootstrap.channel(NioServerSocketChannel.class);
+    }
 
     serverBootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
       @Override

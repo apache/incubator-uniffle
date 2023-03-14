@@ -431,8 +431,9 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Integer> NETTY_SERVER_CONNECT_BACKLOG = ConfigOptions
       .key("rss.server.netty.connect.backlog")
       .intType()
-      .defaultValue(1000)
-      .withDescription("Backlog for connection in netty");
+      .defaultValue(0)
+      .withDescription("For netty server, requested maximum length of the queue of incoming connections. "
+                           + "Default 0 for no backlog.");
 
   public static final ConfigOption<Integer> NETTY_SERVER_CONNECT_TIMEOUT = ConfigOptions
       .key("rss.server.netty.connect.timeout")
@@ -443,18 +444,20 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Integer> NETTY_SERVER_SEND_BUF = ConfigOptions
       .key("rss.server.netty.send.buf")
       .intType()
-      .defaultValue(-1)
+      .defaultValue(0)
       .withDescription("the optimal size for send buffer(SO_SNDBUF) "
                            + "should be latency * network_bandwidth. Assuming latency = 1ms,"
-                           + "network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB");
+                           + "network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB."
+                           + "Default is 0, OS will dynamically adjust the buf size.");
 
   public static final ConfigOption<Integer> NETTY_SERVER_RECEIVE_BUF = ConfigOptions
       .key("rss.server.netty.receive.buf")
       .intType()
-      .defaultValue(-1)
+      .defaultValue(0)
       .withDescription("the optimal size for receive buffer(SO_RCVBUF) "
                            + "should be latency * network_bandwidth. Assuming latency = 1ms,"
-                           + "network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB");
+                           + "network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB."
+                           + "Default is 0, OS will dynamically adjust the buf size.");
 
   public ShuffleServerConf() {
   }
