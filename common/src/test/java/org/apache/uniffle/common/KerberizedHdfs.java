@@ -25,8 +25,6 @@ import java.io.Serializable;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,8 +73,7 @@ public class KerberizedHdfs implements Serializable {
 
   private MiniKdc kdc;
   private File workDir;
-  private Path tempDir;
-  private Path kerberizedDfsBaseDir;
+  private File kerberizedDfsBaseDir;
 
   private MiniDFSCluster kerberizedDfsCluster;
 
@@ -91,9 +88,12 @@ public class KerberizedHdfs implements Serializable {
   // krb5.conf file path
   private String krb5ConfFile;
 
+  KerberizedHdfs(File workDir, File kerberizedDfsBaseDir) {
+    this.workDir = workDir;
+    this.kerberizedDfsBaseDir = kerberizedDfsBaseDir;
+  }
+
   protected void setup() throws Exception {
-    tempDir = Files.createTempDirectory("tempDir").toFile().toPath();
-    kerberizedDfsBaseDir = Files.createTempDirectory("kerberizedDfsBaseDir").toFile().toPath();
 
     startKDC();
     try {
@@ -159,7 +159,7 @@ public class KerberizedHdfs implements Serializable {
         CommonConfigurationKeysPublic.HADOOP_SECURITY_IMPERSONATION_PROVIDER_CLASS,
         TestDummyImpersonationProvider.class.getName());
 
-    String keystoresDir = kerberizedDfsBaseDir.toFile().getAbsolutePath();
+    String keystoresDir = kerberizedDfsBaseDir.getAbsolutePath();
     String sslConfDir = KeyStoreTestUtil.getClasspathDir(testRunnerCls);
     KeyStoreTestUtil.setupSSLConfig(keystoresDir, sslConfDir, conf, false);
 
@@ -222,7 +222,6 @@ public class KerberizedHdfs implements Serializable {
     kdcConf.setProperty(MiniKdc.ORG_DOMAIN, "COM");
     kdcConf.setProperty(MiniKdc.KDC_BIND_ADDRESS, hostName);
     kdcConf.setProperty(MiniKdc.KDC_PORT, "0");
-    workDir = tempDir.toFile();
     kdc = new MiniKdc(kdcConf, workDir);
     kdc.start();
 
