@@ -180,7 +180,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             if (defectiveServers != null) {
               defectiveServers.remove(ssi);
             }
-            LOG.info("{} successfully.", logMsg);
+            LOG.debug("{} successfully.", logMsg);
           } else {
             if (defectiveServers != null) {
               defectiveServers.add(ssi);
