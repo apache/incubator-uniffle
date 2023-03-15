@@ -53,7 +53,7 @@ public class NettyUtilsTest {
   private EventLoopGroup workerGroup;
   private ChannelFuture channelFuture;
   private static final String EXPECTED_MESSAGE = "test_message";
-  private final int PORT = 12345;
+  private static final int PORT = 12345;
 
   static class MockDecoder extends ByteToMessageDecoder {
     @Override
@@ -62,6 +62,7 @@ public class NettyUtilsTest {
       NettyUtils.writeResponseMsg(ctx, rpcResponse, true);
     }
   }
+
   @Test
   public void test() throws InterruptedException {
     EventLoopGroup workerGroup = NettyUtils.createEventLoop(IOMode.NIO, 2, "netty-client");
@@ -83,7 +84,7 @@ public class NettyUtilsTest {
           public void initChannel(SocketChannel ch) {
             ch.pipeline().addLast(new ByteToMessageDecoder() {
               @Override
-              protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) throws Exception {
+              protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) {
                 Message.Type messageType;
                 messageType = Message.Type.decode(byteBuf);
                 assertEquals(Message.Type.RPC_RESPONSE, messageType);
