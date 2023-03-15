@@ -17,25 +17,34 @@
 
 package org.apache.uniffle.common.util;
 
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.apache.uniffle.common.netty.IOMode;
 import org.apache.uniffle.common.netty.protocol.Message;
 import org.apache.uniffle.common.netty.protocol.RpcResponse;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.junit.jupiter.api.*;
-
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -90,6 +99,8 @@ public class NettyUtilsTest {
     bootstrap.connect("localhost", PORT);
     ByteBuf byteBuf = Unpooled.buffer(1);
     byteBuf.writeByte(1);
+    // wait for initChannel
+    Thread.sleep(200);
     channelRef.get().writeAndFlush(byteBuf);
     channelRef.get().closeFuture().await(3L, TimeUnit.SECONDS);
   }

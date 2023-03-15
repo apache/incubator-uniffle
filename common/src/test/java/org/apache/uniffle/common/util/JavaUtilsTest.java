@@ -17,10 +17,10 @@
 
 package org.apache.uniffle.common.util;
 
-import org.junit.jupiter.api.Test;
-
 import java.io.Closeable;
 import java.io.IOException;
+
+import org.junit.jupiter.api.Test;
 
 public class JavaUtilsTest {
 
@@ -31,9 +31,10 @@ public class JavaUtilsTest {
       throw new IOException("test exception!");
     }
   }
+
   @Test
   public void test() {
     MockClient client = new MockClient();
     JavaUtils.closeQuietly(client);
-    }
+  }
 }
