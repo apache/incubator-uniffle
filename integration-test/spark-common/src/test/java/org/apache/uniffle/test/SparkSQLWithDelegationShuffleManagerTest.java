@@ -34,12 +34,12 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-public class SparkSQLWithDelegationShuffleManagerFallback extends SparkSQLTest {
+public class SparkSQLWithDelegationShuffleManagerTest extends SparkSQLTest {
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
     final String candidates = Objects.requireNonNull(
-        SparkSQLWithDelegationShuffleManager.class.getClassLoader().getResource("candidates")).getFile();
+        SparkSQLWithDelegationShuffleManagerTest.class.getClassLoader().getResource("candidates")).getFile();
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setString(
         CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
@@ -58,7 +58,6 @@ public class SparkSQLWithDelegationShuffleManagerFallback extends SparkSQLTest {
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
-    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
     shuffleServerConf.setString(ShuffleServerConf.SERVER_BUFFER_CAPACITY.key(), "512mb");
     createShuffleServer(shuffleServerConf);
@@ -68,7 +67,7 @@ public class SparkSQLWithDelegationShuffleManagerFallback extends SparkSQLTest {
 
   @Override
   public void updateRssStorage(SparkConf sparkConf) {
-    sparkConf.set(RssSparkConfig.RSS_ACCESS_ID.key(), "wrong_id");
+    sparkConf.set(RssSparkConfig.RSS_ACCESS_ID.key(), "test_access_id");
     sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.DelegationRssShuffleManager");
   }
 
@@ -77,3 +76,4 @@ public class SparkSQLWithDelegationShuffleManagerFallback extends SparkSQLTest {
   }
 
 }
+
