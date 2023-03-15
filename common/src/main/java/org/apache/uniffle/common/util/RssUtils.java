@@ -156,6 +156,16 @@ public class RssUtils {
     return siteLocalAddress;
   }
 
+  public static int selectNettyPort(int nettyPortConf) {
+    if (nettyPortConf == 0) {
+      return ServerPortUtils.findAvailableTcpPort();
+    } else if (nettyPortConf < -1 || nettyPortConf > 65535) {
+      throw new IllegalArgumentException("Bad netty port");
+    } else {
+      return nettyPortConf;
+    }
+  }
+
   public static byte[] serializeBitMap(Roaring64NavigableMap bitmap) throws IOException {
     long size = bitmap.serializedSizeInBytes();
     if (size > Integer.MAX_VALUE) {

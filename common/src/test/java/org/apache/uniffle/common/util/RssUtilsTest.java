@@ -88,6 +88,19 @@ public class RssUtilsTest {
   }
 
   @Test
+  public void testSelectNettyPort() {
+    int nettyPortConf = -1;
+    assertEquals(RssUtils.selectNettyPort(nettyPortConf), nettyPortConf);
+    nettyPortConf = 28888;
+    assertEquals(RssUtils.selectNettyPort(nettyPortConf), nettyPortConf);
+    nettyPortConf = 0;
+    for (int i = 0; i < 100; i++) {
+      assertTrue(ServerPortUtils.isPortAvailable(RssUtils.selectNettyPort(nettyPortConf)));
+    }
+  }
+
+
+  @Test
   public void testSerializeBitmap() throws Exception {
     Roaring64NavigableMap bitmap1 = Roaring64NavigableMap.bitmapOf(1, 2, 100, 10000);
     byte[] bytes = RssUtils.serializeBitMap(bitmap1);
