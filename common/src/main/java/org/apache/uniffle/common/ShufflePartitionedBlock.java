@@ -56,7 +56,7 @@ public class ShufflePartitionedBlock {
       long blockId,
       long taskAttemptId,
       byte[] data) {
-    this(length, uncompressLength, crc, blockId, ByteBuffer.wrap(data), taskAttemptId);
+    this(length, uncompressLength, crc, blockId, data == null ? null : ByteBuffer.wrap(data), taskAttemptId);
   }
 
   // calculate the data size for this block in memory including metadata which are

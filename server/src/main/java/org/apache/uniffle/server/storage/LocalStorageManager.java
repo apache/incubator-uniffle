@@ -162,13 +162,13 @@ public class LocalStorageManager extends SingleStorageManager {
   }
 
   private StorageMedia getStorageTypeForBasePath(String basePath) {
-//    for (StorageMediaProvider provider : this.typeProviders) {
-//      StorageMedia result = provider.getStorageMediaFor(basePath);
-//      if (result != StorageMedia.UNKNOWN) {
-//        return result;
-//      }
-//    }
-    return StorageMedia.SSD;
+    for (StorageMediaProvider provider : this.typeProviders) {
+      StorageMedia result = provider.getStorageMediaFor(basePath);
+      if (result != StorageMedia.UNKNOWN) {
+        return result;
+      }
+    }
+    return StorageMedia.UNKNOWN;
   }
 
   @Override
