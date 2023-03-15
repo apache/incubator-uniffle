@@ -17,7 +17,10 @@
 
 package org.apache.uniffle.common;
 
+import java.io.File;
+
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.common.security.HadoopSecurityContext;
 import org.apache.uniffle.common.security.NoOpSecurityContext;
@@ -30,8 +33,13 @@ public class KerberizedHdfsBase {
   protected static KerberizedHdfs kerberizedHdfs;
   protected static Class<?> testRunner = KerberizedHdfsBase.class;
 
+  @TempDir
+  private static File workDir;
+  @TempDir
+  private static File kerberizedDfsBaseDir;
+
   public static void init() throws Exception {
-    kerberizedHdfs = new KerberizedHdfs();
+    kerberizedHdfs = new KerberizedHdfs(workDir, kerberizedDfsBaseDir);
     kerberizedHdfs.setTestRunner(testRunner);
     kerberizedHdfs.setup();
   }
