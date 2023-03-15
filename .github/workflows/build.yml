@@ -52,7 +52,7 @@ jobs:
     name: 'compile'
     uses: ./.github/workflows/sequential.yml
     with:
-      maven-args: package -DskipTests
+      maven-args: package -DskipTests -Djava.version=11
       cache-key: package
       java-version: '11'
 
@@ -61,7 +61,7 @@ jobs:
     name: 'compile'
     uses: ./.github/workflows/sequential.yml
     with:
-      maven-args: package -DskipTests
+      maven-args: package -DskipTests -Djava.version=17
       cache-key: package
       java-version: '17'
 
