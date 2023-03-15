@@ -404,6 +404,61 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(-1)
       .withDescription("Shuffle netty server port");
 
+  public static final ConfigOption<Boolean> NETTY_SERVER_EPOLL_ENABLE = ConfigOptions
+      .key("rss.server.netty.epoll.enable")
+      .booleanType()
+      .defaultValue(false)
+      .withDescription("If enable epoll model with netty server");
+
+  public static final ConfigOption<Integer> NETTY_SERVER_ACCEPT_THREAD = ConfigOptions
+      .key("rss.server.netty.accept.thread")
+      .intType()
+      .defaultValue(10)
+      .withDescription("Accept thread count in netty");
+
+  public static final ConfigOption<Integer> NETTY_SERVER_WORKER_THREAD = ConfigOptions
+      .key("rss.server.netty.worker.thread")
+      .intType()
+      .defaultValue(100)
+      .withDescription("Worker thread count in netty");
+
+  public static final ConfigOption<Long> SERVER_NETTY_HANDLER_IDLE_TIMEOUT = ConfigOptions
+      .key("rss.server.netty.handler.idle.timeout")
+      .longType()
+      .defaultValue(60000L)
+      .withDescription("Idle timeout if there has not data");
+
+  public static final ConfigOption<Integer> NETTY_SERVER_CONNECT_BACKLOG = ConfigOptions
+      .key("rss.server.netty.connect.backlog")
+      .intType()
+      .defaultValue(0)
+      .withDescription("For netty server, requested maximum length of the queue of incoming connections. "
+                           + "Default 0 for no backlog.");
+
+  public static final ConfigOption<Integer> NETTY_SERVER_CONNECT_TIMEOUT = ConfigOptions
+      .key("rss.server.netty.connect.timeout")
+      .intType()
+      .defaultValue(5000)
+      .withDescription("Timeout for connection in netty");
+
+  public static final ConfigOption<Integer> NETTY_SERVER_SEND_BUF = ConfigOptions
+      .key("rss.server.netty.send.buf")
+      .intType()
+      .defaultValue(0)
+      .withDescription("the optimal size for send buffer(SO_SNDBUF) "
+                           + "should be latency * network_bandwidth. Assuming latency = 1ms,"
+                           + "network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB."
+                           + "Default is 0, OS will dynamically adjust the buf size.");
+
+  public static final ConfigOption<Integer> NETTY_SERVER_RECEIVE_BUF = ConfigOptions
+      .key("rss.server.netty.receive.buf")
+      .intType()
+      .defaultValue(0)
+      .withDescription("the optimal size for receive buffer(SO_RCVBUF) "
+                           + "should be latency * network_bandwidth. Assuming latency = 1ms,"
+                           + "network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB."
+                           + "Default is 0, OS will dynamically adjust the buf size.");
+
   public ShuffleServerConf() {
   }
 
