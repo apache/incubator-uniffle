@@ -78,6 +78,8 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
 
   @Test
   public void testCreateIllegalContext() throws Exception {
+    System.setProperty("sun.security.krb5.debug", "true");
+
     // case1: lack principal, should throw exception
     try (HadoopSecurityContext context = new HadoopSecurityContext(
             null,
@@ -111,20 +113,9 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
       assertTrue(e.getMessage().contains("refreshIntervalSec must be not negative"));
     }
 
-    // case4: lack krb5 conf, should throw exception
+    // case4: After setting the krb5 conf, it should pass
     String krbConfFilePath = System.getProperty("java.security.krb5.conf");
     System.clearProperty("java.security.krb5.conf");
-    try (HadoopSecurityContext context = new HadoopSecurityContext(
-              null,
-              kerberizedHdfs.getHdfsKeytab(),
-              kerberizedHdfs.getHdfsPrincipal(),
-              100)) {
-      fail();
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("Cannot locate KDC"));
-    }
-
-    // case5: After setting the krb5 conf, it should pass
     HadoopSecurityContext context = new HadoopSecurityContext(
             krbConfFilePath,
             kerberizedHdfs.getHdfsKeytab(),
@@ -132,6 +123,25 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
             100
     );
     context.close();
+
+    // recover System property of krb5 conf
+    System.setProperty("java.security.krb5.conf", krbConfFilePath);
+  }
+
+  @Test
+  public void testWithOutKrb5Conf(){
+    // case: lack krb5 conf, should throw exception
+    String krbConfFilePath = System.getProperty("java.security.krb5.conf");
+    System.clearProperty("java.security.krb5.conf");
+    try (HadoopSecurityContext context2 = new HadoopSecurityContext(
+            null,
+            kerberizedHdfs.getHdfsKeytab(),
+            kerberizedHdfs.getHdfsPrincipal(),
+            100)) {
+      fail();
+    } catch (Exception e) {
+      assertTrue(e.getMessage().contains("Cannot locate KDC"));
+    }
 
     // recover System property of krb5 conf
     System.setProperty("java.security.krb5.conf", krbConfFilePath);
