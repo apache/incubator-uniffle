@@ -17,15 +17,15 @@
 
 package org.apache.uniffle.common;
 
+import java.io.File;
+
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.common.security.HadoopSecurityContext;
 import org.apache.uniffle.common.security.NoOpSecurityContext;
 import org.apache.uniffle.common.security.SecurityConfig;
 import org.apache.uniffle.common.security.SecurityContextFactory;
-import org.junit.jupiter.api.io.TempDir;
-
-import java.io.File;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
