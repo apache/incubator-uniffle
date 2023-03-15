@@ -129,7 +129,7 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
   }
 
   @Test
-  public void testWithOutKrb5Conf(){
+  public void testWithOutKrb5Conf() {
     // case: lack krb5 conf, should throw exception
     String krbConfFilePath = System.getProperty("java.security.krb5.conf");
     System.clearProperty("java.security.krb5.conf");
