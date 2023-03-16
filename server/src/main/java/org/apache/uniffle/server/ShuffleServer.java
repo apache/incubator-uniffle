@@ -184,7 +184,7 @@ public class ShuffleServer {
       throw new RuntimeException("Couldn't acquire host Ip");
     }
     grpcPort = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
-    nettyPort = RssUtils.selectNettyPort(shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
+    nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
     if (nettyPort > 0) {
       id = ip + "-" + grpcPort + "-" + nettyPort;
     } else {

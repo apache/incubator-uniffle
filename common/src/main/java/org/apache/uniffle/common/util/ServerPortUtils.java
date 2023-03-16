@@ -22,25 +22,29 @@ import java.net.ServerSocket;
 import java.util.Random;
 import javax.net.ServerSocketFactory;
 
+import org.apache.uniffle.common.config.RssBaseConf;
+
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_RANDOM_PORT_ATTEMPT;
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_RANDOM_PORT_MAX;
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_RANDOM_PORT_MIN;
 
 public class ServerPortUtils {
 
-  private static final int PORT_RANGE_MIN = 40000;
-  private static final int PORT_RANGE_MAX = 65535;
-  private static final int PORT_RANGE = PORT_RANGE_MAX - PORT_RANGE_MIN;
-  private static final int MAX_ATTEMPTS = 1_000;
-  private static final Random random = new Random(System.nanoTime());
-
-  public static int findAvailableTcpPort() {
+  public static int findAvailableTcpPort(RssBaseConf baseConf) {
+    int portRangeMin = baseConf.getInteger(RSS_RANDOM_PORT_MIN);
+    int portRangeMax =  baseConf.getInteger(RSS_RANDOM_PORT_MAX);
+    int portRange = portRangeMax - portRangeMin;
+    int maxAttempts = baseConf.getInteger(RSS_RANDOM_PORT_ATTEMPT);
+    Random random = new Random(System.nanoTime());
     int candidatePort;
     int searchCounter = 0;
     do {
-      if (searchCounter > MAX_ATTEMPTS) {
+      if (searchCounter > maxAttempts) {
         throw new IllegalStateException(String.format(
             "Could not find an available TCP port in the range [%d, %d] after %d attempts",
-            PORT_RANGE_MIN, PORT_RANGE_MAX, MAX_ATTEMPTS));
+            portRangeMin, portRangeMax, maxAttempts));
       }
-      candidatePort = PORT_RANGE_MIN + random.nextInt(PORT_RANGE + 1);
+      candidatePort = portRangeMin + random.nextInt(portRange + 1);
       searchCounter++;
     } while (!isPortAvailable(candidatePort));
 

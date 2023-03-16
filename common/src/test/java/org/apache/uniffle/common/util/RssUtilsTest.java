@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.common.util;
 
+import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -37,6 +38,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.rpc.ServerInterface;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -88,14 +90,30 @@ public class RssUtilsTest {
   }
 
   @Test
-  public void testSelectNettyPort() {
-    int nettyPortConf = -1;
-    assertEquals(RssUtils.selectNettyPort(nettyPortConf), nettyPortConf);
-    nettyPortConf = 28888;
-    assertEquals(RssUtils.selectNettyPort(nettyPortConf), nettyPortConf);
-    nettyPortConf = 0;
-    for (int i = 0; i < 100; i++) {
-      assertTrue(ServerPortUtils.isPortAvailable(RssUtils.selectNettyPort(nettyPortConf)));
+  public void startServiceOnPort() {
+    RssBaseConf rssBaseConf = new RssBaseConf();
+    rssBaseConf.set(RssBaseConf.SERVER_PORT_MAX_RETRIES, 100);
+    rssBaseConf.set(RssBaseConf.RSS_RANDOM_PORT_MIN, 30000);
+    rssBaseConf.set(RssBaseConf.RSS_RANDOM_PORT_MAX, 39999);
+    int actualPort = RssUtils.startServiceOnPort(new MockServer(), "MockServer", 0, rssBaseConf);
+    assertTrue(ServerPortUtils.isPortAvailable(actualPort));
+    assertTrue(actualPort >= 30000 && actualPort < 39999 + rssBaseConf.get(RssBaseConf.SERVER_PORT_MAX_RETRIES));
+
+    try {
+      RssUtils.startServiceOnPort(new MockServer(), "MockServer", -1, rssBaseConf);
+    } catch (RuntimeException e) {
+      assertTrue(e.toString().startsWith("java.lang.IllegalArgumentException: Bad service"));
+    }
+
+    actualPort = RssUtils.startServiceOnPort(new MockServer(), "MockServer", 10000, rssBaseConf);
+    assertTrue(ServerPortUtils.isPortAvailable(actualPort));
+    assertTrue(actualPort >= 10000 && actualPort < 10000 + rssBaseConf.get(RssBaseConf.SERVER_PORT_MAX_RETRIES));
+
+    try {
+      rssBaseConf.set(RssBaseConf.SERVER_PORT_MAX_RETRIES, 1);
+      RssUtils.startServiceOnPort(new MockServer(), "MockServer", 10000, rssBaseConf);
+    } catch (RuntimeException e) {
+      assertTrue(e.getMessage().startsWith("Failed to start service"));
     }
   }
 
@@ -245,6 +263,31 @@ public class RssUtilsTest {
 
     public String get() {
       return s;
+    }
+  }
+
+  public static class MockServer implements ServerInterface {
+
+    @Override
+    public void start() throws IOException {
+      // not implement
+    }
+
+    @Override
+    public void startOnPort(int port) throws IOException {
+      if (!ServerPortUtils.isPortAvailable(port) || port % 10 == 0) {
+        throw new IOException(String.format("port (%s) is used", port));
+      }
+    }
+
+    @Override
+    public void stop() throws InterruptedException {
+        // not implement
+    }
+
+    @Override
+    public void blockUntilShutdown() throws InterruptedException {
+      // not implement
     }
   }
 

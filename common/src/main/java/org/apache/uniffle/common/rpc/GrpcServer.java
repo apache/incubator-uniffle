@@ -163,6 +163,11 @@ public class GrpcServer implements ServerInterface {
     LOG.info("Grpc server started, listening on {}.", port);
   }
 
+  @Override
+  public void startOnPort(int port) throws IOException {
+    throw new RuntimeException("GRpcServer not implement now");
+  }
+
   public void stop() throws InterruptedException {
     if (server != null) {
       server.shutdown().awaitTermination(10, TimeUnit.SECONDS);

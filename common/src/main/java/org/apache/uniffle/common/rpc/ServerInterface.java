@@ -23,6 +23,8 @@ public interface ServerInterface {
 
   void start() throws IOException;
 
+  void startOnPort(int port) throws IOException;
+
   void stop() throws InterruptedException;
 
   void blockUntilShutdown() throws InterruptedException;

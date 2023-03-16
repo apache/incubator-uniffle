@@ -19,13 +19,16 @@ package org.apache.uniffle.common.util;
 
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.common.config.RssBaseConf;
+
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ServerPortUtilsTest {
 
   @Test
   void findAvailableTcpPort() {
-    int availableTcpPort = ServerPortUtils.findAvailableTcpPort();
+    RssBaseConf rssBaseConf = new RssBaseConf();
+    int availableTcpPort = ServerPortUtils.findAvailableTcpPort(rssBaseConf);
     assertTrue(ServerPortUtils.isPortAvailable(availableTcpPort));
   }
 }

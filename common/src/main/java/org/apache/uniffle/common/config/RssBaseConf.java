@@ -36,6 +36,12 @@ public class RssBaseConf extends RssConf {
       .defaultValue("GRPC")
       .withDescription("Shuffle server type, default is grpc");
 
+  public static final ConfigOption<Integer> SERVER_PORT_MAX_RETRIES = ConfigOptions
+      .key("rss.port.maxRetries")
+      .intType()
+      .defaultValue(16)
+      .withDescription("start server service max retry");
+
   public static final ConfigOption<Integer> RPC_SERVER_PORT = ConfigOptions
       .key("rss.rpc.server.port")
       .intType()
@@ -211,6 +217,24 @@ public class RssBaseConf extends RssConf {
       .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "The value must be posite long")
       .defaultValue(5L)
       .withDescription("Reconfigure check interval.");
+
+  public static final ConfigOption<Integer> RSS_RANDOM_PORT_MIN = ConfigOptions
+      .key("rss.random.port.min")
+      .intType()
+      .defaultValue(40000)
+      .withDescription("Min value for random for range");
+
+  public static final ConfigOption<Integer> RSS_RANDOM_PORT_MAX = ConfigOptions
+      .key("rss.random.port.max")
+      .intType()
+      .defaultValue(65535)
+      .withDescription("Max value for random for range");
+
+  public static final ConfigOption<Integer> RSS_RANDOM_PORT_ATTEMPT = ConfigOptions
+      .key("rss.random.port.attempt")
+      .intType()
+      .defaultValue(1000)
+      .withDescription("Max value for random for range");
 
   public boolean loadCommonConf(Map<String, String> properties) {
     if (properties == null) {

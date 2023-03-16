@@ -52,6 +52,9 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.rpc.ServerInterface;
+
+import static org.apache.uniffle.common.config.RssBaseConf.SERVER_PORT_MAX_RETRIES;
 
 public class RssUtils {
 
@@ -156,14 +159,27 @@ public class RssUtils {
     return siteLocalAddress;
   }
 
-  public static int selectNettyPort(int nettyPortConf) {
-    if (nettyPortConf == 0) {
-      return ServerPortUtils.findAvailableTcpPort();
-    } else if (nettyPortConf < -1 || nettyPortConf > 65535) {
-      throw new IllegalArgumentException("Bad netty port");
-    } else {
-      return nettyPortConf;
+  public static int startServiceOnPort(ServerInterface service, String serviceName, int servicePort, RssBaseConf conf) {
+    if (servicePort < 0 || servicePort > 65535) {
+      throw new IllegalArgumentException(String.format("Bad service %s on port (%s)", serviceName, servicePort));
     }
+    int actualPort = servicePort;
+    int maxRetries = conf.get(SERVER_PORT_MAX_RETRIES);
+    for (int i = 0; i < maxRetries; i++) {
+      try {
+        if (servicePort == 0) {
+          actualPort = ServerPortUtils.findAvailableTcpPort(conf);
+        } else {
+          actualPort += i;
+        }
+        service.startOnPort(actualPort);
+        return actualPort;
+      } catch (IOException e) {
+        LOGGER.warn(String.format("%s:Service %s failed after %s retries (on a random free port (%s))!",
+            e.getMessage(), serviceName, i + 1, actualPort));
+      }
+    }
+    throw new RssException(String.format("Failed to start service %s on port %s", serviceName, servicePort));
   }
 
   public static byte[] serializeBitMap(Roaring64NavigableMap bitmap) throws IOException {
