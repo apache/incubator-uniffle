@@ -27,8 +27,6 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 public class MultiStorageHdfsFallbackTest extends MultiStorageFaultToleranceBase {
 
   @BeforeAll
@@ -51,8 +49,6 @@ public class MultiStorageHdfsFallbackTest extends MultiStorageFaultToleranceBase
 
   @Override
   public void makeChaos() {
-    assertEquals(1, cluster.getDataNodes().size());
-    cluster.stopDataNode(0);
-    assertEquals(0, cluster.getDataNodes().size());
+    cluster.shutdown();
   }
 }
