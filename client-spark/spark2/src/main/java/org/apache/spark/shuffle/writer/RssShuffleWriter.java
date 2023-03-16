@@ -240,7 +240,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       shuffleBlockInfosPerEvent.add(sbi);
       // split shuffle data according to the size
       if (totalSize > sendSizeLimit) {
-        LOG.info("Post event to queue with " + shuffleBlockInfosPerEvent.size()
+        LOG.debug("Post event to queue with " + shuffleBlockInfosPerEvent.size()
             + " blocks and " + totalSize + " bytes");
         shuffleManager.getEventLoop().post(
             new AddBlockEvent(taskId, shuffleBlockInfosPerEvent));
@@ -249,7 +249,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       }
     }
     if (!shuffleBlockInfosPerEvent.isEmpty()) {
-      LOG.info("Post event to queue with " + shuffleBlockInfosPerEvent.size()
+      LOG.debug("Post event to queue with " + shuffleBlockInfosPerEvent.size()
           + " blocks and " + totalSize + " bytes");
       shuffleManager.getEventLoop().post(
           new AddBlockEvent(taskId, shuffleBlockInfosPerEvent));

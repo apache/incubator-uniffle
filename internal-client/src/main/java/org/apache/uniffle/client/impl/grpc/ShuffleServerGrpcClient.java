@@ -233,7 +233,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       retry++;
     }
     if (rpcResponse.getStatus() == RssProtos.StatusCode.SUCCESS) {
-      LOG.info("Require preAllocated size of {} from {}:{}, cost: {}(ms)",
+      LOG.debug("Require preAllocated size of {} from {}:{}, cost: {}(ms)",
           requireSize, host, port, System.currentTimeMillis() - start);
       result = rpcResponse.getRequireBufferId();
     }
@@ -355,7 +355,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
               .setTimestamp(start)
               .build();
           SendShuffleDataResponse response = getBlockingStub().sendShuffleData(rpcRequest);
-          LOG.info("Do sendShuffleData to {}:{} rpc cost:" + (System.currentTimeMillis() - start)
+          LOG.debug("Do sendShuffleData to {}:{} rpc cost:" + (System.currentTimeMillis() - start)
               + " ms for " + allocateSize + " bytes with " + finalBlockNum + " blocks", host, port);
           if (response.getStatus() != RssProtos.StatusCode.SUCCESS) {
             String msg = "Can't send shuffle data with " + finalBlockNum
