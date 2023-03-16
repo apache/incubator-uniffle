@@ -90,7 +90,7 @@ public class RssUtilsTest {
   }
 
   @Test
-  public void startServiceOnPort() {
+  public void testStartServiceOnPort() {
     RssBaseConf rssBaseConf = new RssBaseConf();
     rssBaseConf.set(RssBaseConf.SERVER_PORT_MAX_RETRIES, 100);
     rssBaseConf.set(RssBaseConf.RSS_RANDOM_PORT_MIN, 30000);
