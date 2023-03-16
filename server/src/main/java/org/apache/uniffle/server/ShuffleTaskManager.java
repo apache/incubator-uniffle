@@ -39,7 +39,6 @@ import com.google.common.collect.Queues;
 import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
-import org.roaringbitmap.longlong.LongIterator;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -441,15 +440,13 @@ public class ShuffleTaskManager {
   // filter the specific partition blockId in the bitmap to the resultBitmap
   protected Roaring64NavigableMap getBlockIdsByPartitionId(Set<Integer> requestPartitions,
       Roaring64NavigableMap bitmap, Roaring64NavigableMap resultBitmap) {
-    LongIterator iter = bitmap.getLongIterator();
-    long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;
-    while (iter.hasNext()) {
-      long blockId = iter.next();
+    final long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;
+    bitmap.forEach(blockId -> {
       int partitionId = Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask);
       if (requestPartitions.contains(partitionId)) {
         resultBitmap.addLong(blockId);
       }
-    }
+    });
     return resultBitmap;
   }
 
