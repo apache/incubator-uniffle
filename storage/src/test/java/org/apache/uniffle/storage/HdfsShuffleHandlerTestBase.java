@@ -18,6 +18,7 @@
 package org.apache.uniffle.storage;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -88,7 +89,7 @@ public class HdfsShuffleHandlerTestBase {
       offset += spb.getLength();
       segments.add(segment);
       if (doWrite) {
-        writer.writeData(spb.getData());
+        writer.writeData(ByteBuffer.wrap(spb.getData()));
       }
     }
     expectedIndexSegments.put(partitionId, segments);
@@ -97,7 +98,7 @@ public class HdfsShuffleHandlerTestBase {
   public static byte[] writeData(HdfsFileWriter writer, int len) throws IOException {
     byte[] data = new byte[len];
     new Random().nextBytes(data);
-    writer.writeData(data);
+    writer.writeData(ByteBuffer.wrap(data));
     return data;
   }
 

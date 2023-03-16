@@ -54,7 +54,7 @@ public class HdfsFileWriterTest extends HdfsTestBase {
     Path path = new Path(HDFS_URI, "createStreamAppendTest");
     try (HdfsFileWriter writer = new HdfsFileWriter(fs, path, conf)) {
       assertEquals(0, writer.nextOffset());
-      writer.writeData(data);
+      writer.writeData(ByteBuffer.wrap(data));
       assertEquals(32, writer.nextOffset());
     }
 
@@ -92,7 +92,7 @@ public class HdfsFileWriterTest extends HdfsTestBase {
     try (HdfsFileWriter writer = new HdfsFileWriter(fs, path, conf)) {
       assertEquals(0, writer.nextOffset());
       buf.flip();
-      writer.writeData(buf.array());
+      writer.writeData(buf);
       assertEquals(32, writer.nextOffset());
     }
   }
@@ -105,7 +105,7 @@ public class HdfsFileWriterTest extends HdfsTestBase {
     Path path = new Path(HDFS_URI, "writeBufferTest");
     try (HdfsFileWriter writer = new HdfsFileWriter(fs, path, conf)) {
       assertEquals(0, writer.nextOffset());
-      writer.writeData(data);
+      writer.writeData(ByteBuffer.wrap(data));
       assertEquals(32, writer.nextOffset());
     }
 
@@ -130,7 +130,7 @@ public class HdfsFileWriterTest extends HdfsTestBase {
     Path path = new Path(HDFS_URI, "writeBufferArrayTest");
     try (HdfsFileWriter writer = new HdfsFileWriter(fs, path, conf)) {
       assertEquals(0, writer.nextOffset());
-      writer.writeData(buf.array());
+      writer.writeData(buf);
       assertEquals(20, writer.nextOffset());
     }
 

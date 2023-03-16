@@ -81,8 +81,8 @@ public class HdfsClientReadHandlerTest extends HdfsTestBase {
        */
       String indexFileName = ShuffleStorageUtils.generateIndexFileName("test_0");
       HdfsFileWriter indexWriter = writeHandler.createWriter(indexFileName);
-      indexWriter.writeData(ByteBuffer.allocate(4).putInt(169560).array());
-      indexWriter.writeData(ByteBuffer.allocate(4).putInt(999).array());
+      indexWriter.writeData(ByteBuffer.allocate(4).putInt(169560));
+      indexWriter.writeData(ByteBuffer.allocate(4).putInt(999));
       indexWriter.close();
 
       Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();

@@ -67,7 +67,7 @@ public class HdfsFileReaderTest extends HdfsTestBase {
     long crc11 = ChecksumUtils.getCrc32(ByteBuffer.wrap(data, offset, length));
 
     try (HdfsFileWriter writer = new HdfsFileWriter(fs, path, conf)) {
-      writer.writeData(data);
+      writer.writeData(ByteBuffer.wrap(data));
     }
     FileBasedShuffleSegment segment = new FileBasedShuffleSegment(23, offset, length, length, 0xdeadbeef, 1);
     try (HdfsFileReader reader = new HdfsFileReader(path, conf)) {

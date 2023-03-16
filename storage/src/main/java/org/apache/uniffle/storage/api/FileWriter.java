@@ -24,9 +24,7 @@ import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
 public interface FileWriter {
 
-  void writeData(ByteBuffer data) throws Exception;
-
-  void writeData(byte[] data) throws IOException;
+  void writeData(ByteBuffer data) throws IOException;
 
   void writeIndex(FileBasedShuffleSegment segment) throws IOException;
 }

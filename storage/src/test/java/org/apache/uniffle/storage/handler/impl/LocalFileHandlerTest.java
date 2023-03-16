@@ -19,6 +19,7 @@ package org.apache.uniffle.storage.handler.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -110,13 +111,13 @@ public class LocalFileHandlerTest {
   }
 
   @Test
-  public void writeBigDataTest(@TempDir File tmpDir) throws IOException  {
+  public void writeBigDataTest(@TempDir File tmpDir) throws IOException {
     File writeFile = new File(tmpDir, "writetest");
     LocalFileWriter writer = new LocalFileWriter(writeFile);
     int  size = Integer.MAX_VALUE / 100;
     byte[] data = new byte[size];
     for (int i = 0; i < 200; i++) {
-      writer.writeData(data);
+      writer.writeData(ByteBuffer.wrap(data));
     }
     long totalSize = 200L * size;
     assertEquals(writer.nextOffset(), totalSize);

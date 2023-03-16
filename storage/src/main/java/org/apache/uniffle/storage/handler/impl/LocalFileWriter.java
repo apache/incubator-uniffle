@@ -45,7 +45,7 @@ public class LocalFileWriter implements FileWriter, Closeable {
   }
 
   @Override
-  public void writeData(ByteBuffer data) throws Exception {
+  public void writeData(ByteBuffer data) throws IOException {
     if (data != null && data.limit() - data.position() > 0) {
       int len = data.limit() - data.position();
       fileChannel.write(data);
