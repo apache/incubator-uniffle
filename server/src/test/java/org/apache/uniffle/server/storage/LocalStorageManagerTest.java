@@ -17,14 +17,17 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.SystemUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -236,10 +239,25 @@ public class LocalStorageManagerTest {
     Map<String, StorageInfo> storageInfo = localStorageManager.getStorageInfo();
     assertEquals(1, storageInfo.size());
     try {
-      String mountPoint = Files.getFileStore(new File("/tmp").toPath()).name();
+      final String path = "/tmp";
+      final String mountPoint = Files.getFileStore(new File(path).toPath()).name();
       assertNotNull(storageInfo.get(mountPoint));
-      // by default, it should report HDD as local storage type
-      assertEquals(StorageMedia.HDD, storageInfo.get(mountPoint).getType());
+      // on Linux environment, it can detect SSD as local storage type
+      if (SystemUtils.IS_OS_LINUX) {
+        final String cmd = String.format("%s | %s | %s",
+            "lsblk -a -o name,rota",
+            "grep $(df --output=source " + path + " | tail -n 1 | sed -E 's_^.+/__')",
+            "awk '{print $2}'"
+        );
+        Process process = Runtime.getRuntime().exec(new String[]{"bash", "-c", cmd});
+        BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        final String line = br.readLine();
+        br.close();
+        final StorageMedia expected = "0".equals(line) ? StorageMedia.SSD : StorageMedia.HDD;
+        assertEquals(expected, storageInfo.get(mountPoint).getType());
+      } else {
+        assertEquals(StorageMedia.HDD, storageInfo.get(mountPoint).getType());
+      }
       assertEquals(StorageStatus.NORMAL, storageInfo.get(mountPoint).getStatus());
     } catch (IOException e) {
       throw new RuntimeException(e);
