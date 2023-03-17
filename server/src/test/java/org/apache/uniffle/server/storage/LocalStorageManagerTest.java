@@ -244,15 +244,12 @@ public class LocalStorageManagerTest {
       assertNotNull(storageInfo.get(mountPoint));
       // on Linux environment, it can detect SSD as local storage type
       if (SystemUtils.IS_OS_LINUX) {
-        String[] cmd = {
-            "bash", "-c",
-            String.format("%s | %s | %s",
-                "lsblk -a -o name,rota",
-                "grep $(df " + path + " | tail -n 1 | awk '{print $1}' | sed -E 's_^.+/__')",
-                "awk '{print $2}'"
-            )
-        };
-        Process process = Runtime.getRuntime().exec(cmd);
+        final String cmd = String.format("%s | %s | %s",
+            "lsblk -a -o name,rota",
+            "grep $(df " + path + " | tail -n 1 | awk '{print $1}' | sed -E 's_^.+/__')",
+            "awk '{print $2}'"
+        );
+        Process process = Runtime.getRuntime().exec(new String[]{"bash", "-c", cmd});
         BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
         final String line = br.readLine();
         br.close();
