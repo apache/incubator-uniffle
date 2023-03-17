@@ -47,7 +47,6 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -245,13 +244,14 @@ public class LocalStorageManagerTest {
       assertNotNull(storageInfo.get(mountPoint));
       // on Linux environment, it can detect SSD as local storage type
       if (SystemUtils.IS_OS_LINUX) {
-        // CHECKSTYLE.OFF: LineLengthExceed - Much more readable
         String[] cmd = {
-            "bash",
-            "-c",
-            String.format("lsblk -a -o name,rota | grep $(df %s | tail -n 1 | awk '{print $1}' | sed -E 's/^.+\\///') | awk '{print $2}'", path)
+            "bash", "-c",
+            String.format("%s | %s | %s",
+                "lsblk -a -o name,rota",
+                String.format("grep $(df %s | tail -n 1 | awk '{print $1}' | sed -E 's/^.+\\///')", path),
+                "awk '{print $2}'"
+            )
         };
-        // CHECKSTYLE.ON: LineLengthExceed
         Process process = Runtime.getRuntime().exec(cmd);
         BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
         final String line = br.readLine();
