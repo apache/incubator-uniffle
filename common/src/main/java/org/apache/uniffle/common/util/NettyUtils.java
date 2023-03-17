@@ -96,24 +96,18 @@ public class NettyUtils {
   }
 
   public static ChannelFuture writeResponseMsg(ChannelHandlerContext ctx, Message msg, boolean doWriteType) {
-    ByteBuf serializedMsgBuf = ctx.alloc().buffer(1000);
+    ByteBuf responseMsgBuf = ctx.alloc().buffer(1000);
     try {
-      // need to serialize msg to get its length
-      msg.encode(serializedMsgBuf);
-      ByteBuf responseMsgBuf = ctx.alloc().buffer(1000);
-      try {
-        if (doWriteType) {
-          responseMsgBuf.writeByte(msg.type().id());
-        }
-        responseMsgBuf.writeBytes(serializedMsgBuf);
-        return ctx.writeAndFlush(responseMsgBuf);
-      } catch (Throwable ex) {
-        logger.warn("Caught exception, releasing ByteBuf", ex);
-        responseMsgBuf.release();
-        throw ex;
+      if (doWriteType) {
+        responseMsgBuf.writeByte(msg.type().id());
       }
-    } finally {
-      serializedMsgBuf.release();
+      // need to serialize msg to get its length
+      msg.encode(responseMsgBuf);
+      return ctx.writeAndFlush(responseMsgBuf);
+    } catch (Throwable ex) {
+      logger.warn("Caught exception, releasing ByteBuf", ex);
+      responseMsgBuf.release();
+      throw ex;
     }
   }
 

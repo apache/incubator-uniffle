@@ -48,10 +48,10 @@ public class RpcResponse extends Message {
   @Override
   public String toString() {
     return "RpcResponse{"
-               + "requestId=" + requestId
-               + ", statusCode=" + statusCode
-               + ", retMessage='" + retMessage
-               + '\'' + '}';
+        + "requestId=" + requestId
+        + ", statusCode=" + statusCode
+        + ", retMessage='" + retMessage
+        + '\'' + '}';
   }
 
   @Override
