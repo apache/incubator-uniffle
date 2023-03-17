@@ -246,14 +246,14 @@ public class LocalStorageManagerTest {
       if (SystemUtils.IS_OS_LINUX) {
         final String cmd = String.format("%s | %s | %s",
             "lsblk -a -o name,rota",
-            "grep $(df " + path + " | tail -n 1 | awk '{print $1}' | sed -E 's_^.+/__')",
+            "grep $(df --output=source " + path + " | tail -n 1 | sed -E 's_^.+/__')",
             "awk '{print $2}'"
         );
         Process process = Runtime.getRuntime().exec(new String[]{"bash", "-c", cmd});
         BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
         final String line = br.readLine();
         br.close();
-        final StorageMedia expected = line != null && line.equals("0") ? StorageMedia.SSD : StorageMedia.HDD;
+        final StorageMedia expected = "0".equals(line) ? StorageMedia.SSD : StorageMedia.HDD;
         assertEquals(expected, storageInfo.get(mountPoint).getType());
       } else {
         assertEquals(StorageMedia.HDD, storageInfo.get(mountPoint).getType());
