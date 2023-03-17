@@ -23,6 +23,10 @@ import io.netty.buffer.ByteBuf;
 
 public class ByteBufUtils {
 
+  public static int encodedLength(String s) {
+    return 4 + s.getBytes(StandardCharsets.UTF_8).length;
+  }
+
   public static final void writeLengthAndString(ByteBuf buf, String str) {
     if (str == null) {
       buf.writeInt(-1);

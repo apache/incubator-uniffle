@@ -56,7 +56,7 @@ public class RpcResponse extends Message {
 
   @Override
   public int encodedLength() {
-    return 0;
+    return Long.BYTES + Integer.BYTES + ByteBufUtils.encodedLength(retMessage);
   }
 
   @Override
