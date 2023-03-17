@@ -248,7 +248,7 @@ public class LocalStorageManagerTest {
             "bash", "-c",
             String.format("%s | %s | %s",
                 "lsblk -a -o name,rota",
-                String.format("grep $(df %s | tail -n 1 | awk '{print $1}' | sed -E 's/^.+\\///')", path),
+                String.format("grep $(df %s | tail -n 1 | awk '{print $1}' | sed -E 's_^.+/__')", path),
                 "awk '{print $2}'"
             )
         };
