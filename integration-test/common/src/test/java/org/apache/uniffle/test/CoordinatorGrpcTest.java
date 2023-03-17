@@ -237,7 +237,9 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     ServerNode node = nodes.get(0);
     assertEquals(1, node.getStorageInfo().size());
     StorageInfo infoHead = node.getStorageInfo().values().iterator().next();
-    assertEquals(StorageMedia.HDD, infoHead.getType());
+    final StorageInfo expectedStorageInfo = shuffleServers.get(1)
+        .getStorageManager().getStorageInfo().values().iterator().next();
+    assertEquals(expectedStorageInfo, infoHead);
     assertEquals(StorageStatus.NORMAL, infoHead.getStatus());
     assertTrue(node.getTags().contains(Constants.SHUFFLE_SERVER_VERSION));
     assertTrue(scm.getTagToNodes().get(Constants.SHUFFLE_SERVER_VERSION).contains(node));
