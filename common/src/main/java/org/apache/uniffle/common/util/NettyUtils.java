@@ -40,14 +40,9 @@ import org.apache.uniffle.common.netty.protocol.Message;
 public class NettyUtils {
   private static final Logger logger = LoggerFactory.getLogger(NettyUtils.class);
 
-  /** Creates a new ThreadFactory which prefixes each thread with the given name. */
-  public static ThreadFactory createThreadFactory(String threadPoolPrefix) {
-    return new DefaultThreadFactory(threadPoolPrefix, true);
-  }
-
   /** Creates a Netty EventLoopGroup based on the IOMode. */
   public static EventLoopGroup createEventLoop(IOMode mode, int numThreads, String threadPrefix) {
-    ThreadFactory threadFactory = createThreadFactory(threadPrefix);
+    ThreadFactory threadFactory = ThreadUtils.getNettyThreadFactory(threadPrefix);
 
     switch (mode) {
       case NIO:
