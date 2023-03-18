@@ -270,7 +270,7 @@ public class RssShuffleManager implements ShuffleManager {
     // retryInterval must bigger than `rss.server.heartbeat.timeout`, or maybe it will return the same result
     long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL);
     int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES);
-    if (sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE).equals(ClientType.GRPC_NETTY.name())) {
+    if (ClientType.GRPC_NETTY.name().equals(clientType)) {
       assignmentTags.add(ClientType.GRPC_NETTY.name());
     } else {
       assignmentTags.add(ClientType.GRPC.name());

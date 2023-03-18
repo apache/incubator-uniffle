@@ -347,7 +347,7 @@ public class RssShuffleManager implements ShuffleManager {
     long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL);
     int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES);
     int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
-    if (sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE).equals(ClientType.GRPC_NETTY.name())) {
+    if (ClientType.GRPC_NETTY.name().equals(clientType)) {
       assignmentTags.add(ClientType.GRPC_NETTY.name());
     } else {
       assignmentTags.add(ClientType.GRPC.name());

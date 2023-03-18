@@ -249,11 +249,11 @@ public class ShuffleServer {
     if (CollectionUtils.isNotEmpty(configuredTags)) {
       tags.addAll(configuredTags);
     }
-    isNettyServerEnabled();
+    tagServer();
     LOG.info("Server tags: {}", tags);
   }
 
-  private void isNettyServerEnabled() {
+  private void tagServer() {
     if (nettyServerEnabled) {
       tags.add(ClientType.GRPC_NETTY.name());
     } else {

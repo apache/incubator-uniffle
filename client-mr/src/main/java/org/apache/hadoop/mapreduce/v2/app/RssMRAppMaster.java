@@ -131,7 +131,7 @@ public class RssMRAppMaster extends MRAppMaster {
         assignmentTags.addAll(Arrays.asList(rawTags.split(",")));
       }
       assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
-      if (conf.get(RssMRConfig.RSS_CLIENT_TYPE).equals(ClientType.GRPC_NETTY.name())) {
+      if (ClientType.GRPC_NETTY.name().equals(conf.get(RssMRConfig.RSS_CLIENT_TYPE))) {
         assignmentTags.add(ClientType.GRPC_NETTY.name());
       } else {
         assignmentTags.add(ClientType.GRPC.name());
