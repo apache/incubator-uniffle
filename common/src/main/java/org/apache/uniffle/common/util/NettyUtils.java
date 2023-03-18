@@ -38,7 +38,6 @@ import org.apache.uniffle.common.netty.protocol.Message;
 
 public class NettyUtils {
   private static final Logger logger = LoggerFactory.getLogger(NettyUtils.class);
-  private static final int INIT_BUFFER_SIZE = 64;
 
   /** Creates a Netty EventLoopGroup based on the IOMode. */
   public static EventLoopGroup createEventLoop(IOMode mode, int numThreads, String threadPrefix) {
@@ -91,7 +90,7 @@ public class NettyUtils {
   }
 
   public static ChannelFuture writeResponseMsg(ChannelHandlerContext ctx, Message msg, boolean doWriteType) {
-    ByteBuf responseMsgBuf = ctx.alloc().buffer(INIT_BUFFER_SIZE);
+    ByteBuf responseMsgBuf = ctx.alloc().buffer(msg.encodedLength());
     try {
       if (doWriteType) {
         responseMsgBuf.writeByte(msg.type().id());
