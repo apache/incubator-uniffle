@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
@@ -248,7 +249,16 @@ public class ShuffleServer {
     if (CollectionUtils.isNotEmpty(configuredTags)) {
       tags.addAll(configuredTags);
     }
+    isNettyServerEnabled();
     LOG.info("Server tags: {}", tags);
+  }
+
+  private void isNettyServerEnabled() {
+    if (nettyServerEnabled) {
+      tags.add(ClientType.GRPC_NETTY.name());
+    } else {
+      tags.add(ClientType.GRPC.name());
+    }
   }
 
   private void registerMetrics() throws Exception {
