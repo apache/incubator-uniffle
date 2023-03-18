@@ -17,22 +17,23 @@
 
 package org.apache.uniffle.common.util;
 
-import java.util.concurrent.ThreadFactory;
+import java.io.Closeable;
+import java.io.IOException;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.netty.util.concurrent.DefaultThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/**
- * Provide a general method to create a thread factory to make the code more standardized
- */
-public class ThreadUtils {
+public class JavaUtils {
+  private static final Logger logger = LoggerFactory.getLogger(JavaUtils.class);
 
-  public static ThreadFactory getThreadFactory(String factoryName) {
-    return new ThreadFactoryBuilder().setDaemon(true).setNameFormat(factoryName).build();
-  }
-
-  /** Creates a new ThreadFactory which prefixes each thread with the given name. */
-  public static ThreadFactory getNettyThreadFactory(String threadPoolPrefix) {
-    return new DefaultThreadFactory(threadPoolPrefix, true);
+  /** Closes the given object, ignoring IOExceptions. */
+  public static void closeQuietly(Closeable closeable) {
+    try {
+      if (closeable != null) {
+        closeable.close();
+      }
+    } catch (IOException e) {
+      logger.error("IOException should not have been thrown.", e);
+    }
   }
 }

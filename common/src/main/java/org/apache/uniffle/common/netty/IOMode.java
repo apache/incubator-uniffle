@@ -15,24 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common.util;
+package org.apache.uniffle.common.netty;
 
-import java.util.concurrent.ThreadFactory;
-
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.netty.util.concurrent.DefaultThreadFactory;
-
-/**
- * Provide a general method to create a thread factory to make the code more standardized
- */
-public class ThreadUtils {
-
-  public static ThreadFactory getThreadFactory(String factoryName) {
-    return new ThreadFactoryBuilder().setDaemon(true).setNameFormat(factoryName).build();
-  }
-
-  /** Creates a new ThreadFactory which prefixes each thread with the given name. */
-  public static ThreadFactory getNettyThreadFactory(String threadPoolPrefix) {
-    return new DefaultThreadFactory(threadPoolPrefix, true);
-  }
+public enum IOMode {
+  NIO,
+  EPOLL
 }
