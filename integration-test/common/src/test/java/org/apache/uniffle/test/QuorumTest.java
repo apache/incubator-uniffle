@@ -378,7 +378,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
   }
 
   @Test
-  public void case3() throws Exception {
+  public void case3(@TempDir File tmpDir) throws Exception {
     String testAppId = "case3";
     registerShuffleServer(testAppId,3, 2, 2, true);
     disableTimeout((MockedShuffleServer)shuffleServers.get(0));
@@ -434,6 +434,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
       Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
       testAppId, 0, 0);
     assertEquals(report, blockIdBitmap);
+    shuffleServers.set(1, createServer(1, tmpDir));
     shuffleServers.get(1).start();
   }
 
