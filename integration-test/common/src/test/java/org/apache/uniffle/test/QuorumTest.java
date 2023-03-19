@@ -20,6 +20,7 @@ package org.apache.uniffle.test;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -52,6 +53,7 @@ import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -429,6 +431,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
     }
     shuffleServers.set(1, createServer(1, tmpDir));
     shuffleServers.get(1).start();
+    await().timeout(10, TimeUnit.SECONDS).until(
+        () -> !shuffleServers.get(1).isRunning());
 
     // When the timeout of one server is recovered, the block sending should success
     disableTimeout((MockedShuffleServer)shuffleServers.get(2));
