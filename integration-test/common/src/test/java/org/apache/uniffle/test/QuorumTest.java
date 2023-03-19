@@ -18,6 +18,8 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -446,8 +448,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     String testAppId = "case4";
     /** We must wait until server1 finish start, because {@link #case3} will restart server1. */
     await().timeout(10, TimeUnit.SECONDS).until(
-        () -> shuffleServers.get(1).isRunning());
-    Thread.sleep(1000);
+        () -> isPortAvailable(SHUFFLE_SERVER_PORT + 1));
     registerShuffleServer(testAppId, 3, 2, 2, true);
     // when 1 server is timeout, the sending multiple blocks should success
     enableTimeout((MockedShuffleServer)shuffleServers.get(2), 500);
@@ -820,5 +821,14 @@ public class QuorumTest extends ShuffleReadWriteBase {
       csb = readClient.readShuffleBlockData();
     }
     assertTrue(blockIdBitmap.equals(matched));
+  }
+
+  private boolean isPortAvailable(int port) {
+    try (Socket socket = new Socket()) {
+      socket.connect(new InetSocketAddress("127.0.0.1", port), 500);
+      return true;
+    } catch (Exception e) {
+      return false;
+    }
   }
 }

@@ -88,6 +88,7 @@ public class ShuffleServer {
   private GRPCMetrics grpcMetrics;
   private MetricReporter metricReporter;
   private volatile ServerStatus serverStatus = ServerStatus.ACTIVE;
+  private volatile boolean running;
   private ExecutorService executorService;
   private Future<?> decommissionFuture;
 
@@ -135,6 +136,7 @@ public class ShuffleServer {
         LOG.info("*** server shut down");
       }
     });
+    running = true;
     LOG.info("Shuffle server start successfully!");
   }
 
@@ -164,6 +166,7 @@ public class ShuffleServer {
     if (executorService != null) {
       executorService.shutdownNow();
     }
+    running = false;
     LOG.info("RPC Server Stopped!");
   }
 
@@ -429,7 +432,7 @@ public class ShuffleServer {
 
   @VisibleForTesting
   public boolean isRunning() {
-    return jettyServer.isRunning();
+    return running;
   }
 
 }
