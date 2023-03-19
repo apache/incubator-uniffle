@@ -155,4 +155,8 @@ public class JettyServer {
   public ServletContextHandler getServletContextHandler() {
     return this.servletContextHandler;
   }
+
+  public boolean isRunning() {
+    return server.isStarted();
+  }
 }

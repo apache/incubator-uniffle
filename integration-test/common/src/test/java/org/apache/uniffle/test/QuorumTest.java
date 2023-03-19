@@ -420,17 +420,17 @@ public class QuorumTest extends ShuffleReadWriteBase {
     assertEquals(report, blockIdBitmap);
 
     // let this server be failed, the reading will be also be failed
-//    shuffleServers.get(1).stopServer();
-//    try {
-//      report = shuffleWriteClientImpl.getShuffleResult("GRPC",
-//        Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
-//        testAppId, 0, 0);
-//      fail(EXPECTED_EXCEPTION_MESSAGE);
-//    } catch (Exception e) {
-//      assertTrue(e.getMessage().startsWith("Get shuffle result is failed"));
-//    }
-//    shuffleServers.set(1, createServer(1, tmpDir));
-//    shuffleServers.get(1).start();
+    shuffleServers.get(1).stopServer();
+    try {
+      report = shuffleWriteClientImpl.getShuffleResult("GRPC",
+        Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
+        testAppId, 0, 0);
+      fail(EXPECTED_EXCEPTION_MESSAGE);
+    } catch (Exception e) {
+      assertTrue(e.getMessage().startsWith("Get shuffle result is failed"));
+    }
+    shuffleServers.set(1, createServer(1, tmpDir));
+    shuffleServers.get(1).start();
 
     // When the timeout of one server is recovered, the block sending should success
     disableTimeout((MockedShuffleServer)shuffleServers.get(2));
@@ -438,9 +438,9 @@ public class QuorumTest extends ShuffleReadWriteBase {
       Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
       testAppId, 0, 0);
     assertEquals(report, blockIdBitmap);
-//    /** We must wait until server1 finish start, or {@link #case4} will be fail. */
-//    await().timeout(10, TimeUnit.SECONDS).until(
-//        () -> shuffleServers.get(1).isRunning());
+    /** We must wait until server1 finish start, or {@link #case4} will be fail. */
+    await().timeout(10, TimeUnit.SECONDS).until(
+        () -> shuffleServers.get(1).isRunning());
   }
 
   @Test
