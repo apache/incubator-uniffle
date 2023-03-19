@@ -438,14 +438,15 @@ public class QuorumTest extends ShuffleReadWriteBase {
       Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
       testAppId, 0, 0);
     assertEquals(report, blockIdBitmap);
-    /** We must wait until server1 finish start, or {@link #case4} will be fail. */
-    await().timeout(10, TimeUnit.SECONDS).until(
-        () -> shuffleServers.get(1).isRunning());
+
   }
 
   @Test
   public void case4() throws Exception {
     String testAppId = "case4";
+    /** We must wait until server1 finish start, because {@link #case3} will restart server1. */
+    await().timeout(10, TimeUnit.SECONDS).until(
+        () -> shuffleServers.get(1).isRunning());
     registerShuffleServer(testAppId, 3, 2, 2, true);
     // when 1 server is timeout, the sending multiple blocks should success
     enableTimeout((MockedShuffleServer)shuffleServers.get(2), 500);
