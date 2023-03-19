@@ -427,6 +427,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
     } catch (Exception e) {
       assertTrue(e.getMessage().startsWith("Get shuffle result is failed"));
     }
+    shuffleServers.set(1, createServer(1, tmpDir));
+    shuffleServers.get(1).start();
 
     // When the timeout of one server is recovered, the block sending should success
     disableTimeout((MockedShuffleServer)shuffleServers.get(2));
@@ -434,8 +436,6 @@ public class QuorumTest extends ShuffleReadWriteBase {
       Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
       testAppId, 0, 0);
     assertEquals(report, blockIdBitmap);
-    shuffleServers.set(1, createServer(1, tmpDir));
-    shuffleServers.get(1).start();
   }
 
   @Test
