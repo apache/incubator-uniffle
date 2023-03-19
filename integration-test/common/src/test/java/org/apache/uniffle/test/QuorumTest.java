@@ -434,6 +434,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
       Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
       testAppId, 0, 0);
     assertEquals(report, blockIdBitmap);
+    shuffleServers.get(1).start();
   }
 
   @Test
