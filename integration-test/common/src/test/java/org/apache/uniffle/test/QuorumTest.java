@@ -432,7 +432,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     shuffleServers.set(1, createServer(1, tmpDir));
     shuffleServers.get(1).start();
     await().timeout(10, TimeUnit.SECONDS).until(
-        () -> !shuffleServers.get(1).isRunning());
+        () -> shuffleServers.get(1).isRunning());
 
     // When the timeout of one server is recovered, the block sending should success
     disableTimeout((MockedShuffleServer)shuffleServers.get(2));
