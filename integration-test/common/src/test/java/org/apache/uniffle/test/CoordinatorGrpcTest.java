@@ -17,10 +17,12 @@
 
 package org.apache.uniffle.test;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -31,10 +33,12 @@ import org.apache.uniffle.client.request.RssApplicationInfoRequest;
 import org.apache.uniffle.client.request.RssGetShuffleAssignmentsRequest;
 import org.apache.uniffle.client.response.RssApplicationInfoResponse;
 import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleRegisterInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageMedia;
@@ -121,11 +125,28 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
 
   @Test
   public void getShuffleAssignmentsTest() throws Exception {
-    String appId = "getShuffleAssignmentsTest";
+    final String appId = "getShuffleAssignmentsTest";
     CoordinatorTestUtils.waitForRegister(coordinatorClient,2);
+    // When the shuffleServerHeartbeat Test is completed before the current test,
+    // the server's tags will be [ss_v4, GRPC_NETTY] and [ss_v4, GRPC], respectively.
+    // We need to remove the first machine's tag from GRPC_NETTY to GRPC
+    shuffleServers.get(0).stopServer();
+    RssConf shuffleServerConf = shuffleServers.get(0).getShuffleServerConf();
+    Class<RssConf> clazz = RssConf.class;
+    Field field = clazz.getDeclaredField("settings");
+    field.setAccessible(true);
+    ((ConcurrentHashMap) field.get(shuffleServerConf)).remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
+    String storageTypeJsonSource = String.format("{\"%s\": \"ssd\"}", baseDir);
+    withEnvironmentVariables("RSS_ENV_KEY", storageTypeJsonSource).execute(() -> {
+      ShuffleServer ss = new ShuffleServer((ShuffleServerConf) shuffleServerConf);
+      ss.start();
+      shuffleServers.set(0, ss);
+    });
+    Thread.sleep(5000);
+    // add tag when ClientType is `GRPC`
     RssGetShuffleAssignmentsRequest request = new RssGetShuffleAssignmentsRequest(
         appId, 1, 10, 4, 1,
-        Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+        Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION, ClientType.GRPC.name()));
     RssGetShuffleAssignmentsResponse response = coordinatorClient.getShuffleAssignments(request);
     Set<Integer> expectedStart = Sets.newHashSet(0, 4, 8);
 
@@ -157,7 +178,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
 
     request = new RssGetShuffleAssignmentsRequest(
         appId, 1, 10, 4, 2,
-        Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+        Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION, ClientType.GRPC.name()));
     response = coordinatorClient.getShuffleAssignments(request);
     serverToPartitionRanges = response.getServerToPartitionRanges();
     assertEquals(2, serverToPartitionRanges.size());

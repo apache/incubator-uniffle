@@ -339,6 +339,8 @@ public class RssShuffleManager implements ShuffleManager {
         id.get(), defaultRemoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
 
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
+    ClientUtils.validateClientType(clientType);
+    assignmentTags.add(clientType);
 
     int requiredShuffleServerNumber = RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf);
 

@@ -130,6 +130,9 @@ public class RssMRAppMaster extends MRAppMaster {
         assignmentTags.addAll(Arrays.asList(rawTags.split(",")));
       }
       assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
+      String clientType = conf.get(RssMRConfig.RSS_CLIENT_TYPE);
+      ClientUtils.validateClientType(clientType);
+      assignmentTags.add(clientType);
 
       final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
           new ThreadFactory() {

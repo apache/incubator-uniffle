@@ -134,4 +134,17 @@ public class ClientUtilsTest {
     List<CompletableFuture<Boolean>> futures3 = getFutures(false);
     Awaitility.await().timeout(4, TimeUnit.SECONDS).until(() -> waitUntilDoneOrFail(futures3, true));
   }
+
+  @Test
+  public void testValidateClientType() {
+    String clientType = "GRPC_NETTY";
+    ClientUtils.validateClientType(clientType);
+    clientType = "test";
+    try {
+      ClientUtils.validateClientType(clientType);
+      fail();
+    } catch (Exception e) {
+      // Ignore
+    }
+  }
 }
