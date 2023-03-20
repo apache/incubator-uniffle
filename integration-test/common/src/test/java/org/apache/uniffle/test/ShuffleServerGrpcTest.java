@@ -29,6 +29,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.UnsafeByteOperations;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -424,7 +425,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
               .setLength(sbi.getLength())
               .setTaskAttemptId(sbi.getTaskAttemptId())
               .setUncompressLength(sbi.getUncompressLength())
-              .setData(ByteString.copyFrom(sbi.getData()))
+              .setData(UnsafeByteOperations.unsafeWrap(sbi.getData().nioBuffer()))
               .build());
         }
         shuffleData.add(RssProtos.ShuffleData.newBuilder().setPartitionId(ptb.getKey())

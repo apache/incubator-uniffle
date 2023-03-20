@@ -19,6 +19,9 @@ package org.apache.uniffle.common;
 
 import java.util.List;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 public class ShuffleBlockInfo {
 
   private int partitionId;
@@ -27,14 +30,21 @@ public class ShuffleBlockInfo {
   private int shuffleId;
   private long crc;
   private long taskAttemptId;
-  private byte[] data;
+  private ByteBuf data;
   private List<ShuffleServerInfo> shuffleServerInfos;
   private int uncompressLength;
   private long freeMemory;
 
   public ShuffleBlockInfo(int shuffleId, int partitionId, long blockId, int length, long crc,
       byte[] data, List<ShuffleServerInfo> shuffleServerInfos,
-      int uncompressLength, int freeMemory, long taskAttemptId) {
+      int uncompressLength, long freeMemory, long taskAttemptId) {
+    this(shuffleId, partitionId, blockId, length, crc, Unpooled.wrappedBuffer(data),
+        shuffleServerInfos, uncompressLength, freeMemory, taskAttemptId);
+  }
+
+  public ShuffleBlockInfo(int shuffleId, int partitionId, long blockId, int length, long crc,
+      ByteBuf data, List<ShuffleServerInfo> shuffleServerInfos,
+      int uncompressLength, long freeMemory, long taskAttemptId) {
     this.partitionId = partitionId;
     this.blockId = blockId;
     this.length = length;
@@ -56,7 +66,7 @@ public class ShuffleBlockInfo {
   }
 
   // calculate the data size for this block in memory including metadata which are
-  // blockId, crc, taskAttemptId, length, uncompressLength
+  // partitionId, blockId, crc, taskAttemptId, length, uncompressLength
   public int getSize() {
     return length + 3 * 8 + 2 * 4;
   }
@@ -65,7 +75,7 @@ public class ShuffleBlockInfo {
     return crc;
   }
 
-  public byte[] getData() {
+  public ByteBuf getData() {
     return data;
   }
 
@@ -114,5 +124,26 @@ public class ShuffleBlockInfo {
     }
 
     return sb.toString();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    ShuffleBlockInfo that = (ShuffleBlockInfo) o;
+    return partitionId == that.partitionId
+        && blockId == that.blockId
+        && length == that.length
+        && shuffleId == that.shuffleId
+        && crc == that.crc
+        && taskAttemptId == that.taskAttemptId
+        && uncompressLength == that.uncompressLength
+        && freeMemory == that.freeMemory
+        && data.equals(that.data)
+        && shuffleServerInfos.equals(that.shuffleServerInfos);
   }
 }
