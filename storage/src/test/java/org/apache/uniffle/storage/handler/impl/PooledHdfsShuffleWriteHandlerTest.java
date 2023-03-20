@@ -58,7 +58,7 @@ public class PooledHdfsShuffleWriteHandlerTest {
     int concurrency = 5;
     CopyOnWriteArrayList<Integer> invokedIndexes = new CopyOnWriteArrayList<>();
     LinkedBlockingDeque deque = new LinkedBlockingDeque(concurrency);
-    for (int i = 0; i < concurrency; i ++) {
+    for (int i = 0; i < concurrency; i++) {
       deque.addFirst(
           new FakedShuffleWriteHandler(invokedIndexes, i, () -> {
             try {
@@ -83,7 +83,7 @@ public class PooledHdfsShuffleWriteHandlerTest {
     int concurrency = 5;
     CopyOnWriteArrayList<Integer> invokedIndexes = new CopyOnWriteArrayList<>();
     LinkedBlockingDeque deque = new LinkedBlockingDeque(concurrency);
-    for (int i = 0; i < concurrency; i ++) {
+    for (int i = 0; i < concurrency; i++) {
       deque.addFirst(
           new FakedShuffleWriteHandler(invokedIndexes, i, () -> {
             try {

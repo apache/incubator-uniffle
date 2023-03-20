@@ -138,9 +138,9 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
         new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", mockShuffleServer, storageManager);
 
     for (int i = 0; i < 10; i++) {
-      ShuffleDataFlushEvent shuffleDataFlushEvent = createShuffleDataFlushEvent(appId, 1, 1, 1, null);
+      ShuffleDataFlushEvent shuffleDataFlushEvent = createShuffleDataFlushEvent(appId, i, 1, 1, null);
       manager.addToFlushQueue(shuffleDataFlushEvent);
-      waitForFlush(manager, appId, 1, 5);
+      waitForFlush(manager, appId, i, 5);
     }
 
     FileStatus[] fileStatuses = fs.listStatus(new Path(HDFS_URI + "/rss/test/" + appId + "/1/1-1"));
