@@ -230,12 +230,6 @@ public class RssBaseConf extends RssConf {
       .defaultValue(65535)
       .withDescription("Max value for random for range");
 
-  public static final ConfigOption<Integer> RSS_RANDOM_PORT_ATTEMPT = ConfigOptions
-      .key("rss.random.port.attempt")
-      .intType()
-      .defaultValue(1000)
-      .withDescription("Max value for random for range");
-
   public boolean loadCommonConf(Map<String, String> properties) {
     if (properties == null) {
       return false;
