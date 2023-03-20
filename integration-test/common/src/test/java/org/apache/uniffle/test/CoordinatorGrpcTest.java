@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -131,12 +132,10 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     // We need to remove the first machine's tag from GRPC_NETTY to GRPC
     shuffleServers.get(0).stopServer();
     RssConf shuffleServerConf = shuffleServers.get(0).getShuffleServerConf();
-    Map<String, Object> originConf = shuffleServerConf.getSettings();
     Class<RssConf> clazz = RssConf.class;
     Field field = clazz.getDeclaredField("settings");
     field.setAccessible(true);
-    originConf.remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
-    field.set(shuffleServerConf, originConf);
+    ((ConcurrentHashMap) field.get(shuffleServerConf)).remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
     String storageTypeJsonSource = String.format("{\"%s\": \"ssd\"}", baseDir);
     withEnvironmentVariables("RSS_ENV_KEY", storageTypeJsonSource).execute(() -> {
       ShuffleServer ss = new ShuffleServer((ShuffleServerConf) shuffleServerConf);

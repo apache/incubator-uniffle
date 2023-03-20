@@ -646,8 +646,4 @@ public class RssConf implements Cloneable {
     return System.getenv(key);
   }
 
-  @VisibleForTesting
-  public Map<String, Object> getSettings() {
-    return settings;
-  }
 }
