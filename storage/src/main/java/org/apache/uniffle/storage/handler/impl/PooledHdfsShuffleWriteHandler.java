@@ -18,9 +18,10 @@
 package org.apache.uniffle.storage.handler.impl;
 
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,9 +33,17 @@ import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(PooledHdfsShuffleWriteHandler.class);
 
-  private final BlockingQueue<HdfsShuffleWriteHandler> queue;
+  private final LinkedBlockingDeque<ShuffleWriteHandler> queue;
   private final int maxConcurrency;
   private final String basePath;
+
+  // Only for tests
+  @VisibleForTesting
+  public PooledHdfsShuffleWriteHandler(LinkedBlockingDeque<ShuffleWriteHandler> queue) {
+    this.queue = queue;
+    this.maxConcurrency =  queue.size();
+    this.basePath = StringUtils.EMPTY;
+  }
 
   public PooledHdfsShuffleWriteHandler(
       String appId,
@@ -48,7 +57,7 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
       int concurrency) {
     // todo: support max concurrency specified by client side
     this.maxConcurrency = concurrency;
-    this.queue = new LinkedBlockingQueue<>(maxConcurrency);
+    this.queue = new LinkedBlockingDeque<>(maxConcurrency);
     this.basePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
         ShuffleStorageUtils.getShuffleDataPath(appId, shuffleId, startPartition, endPartition));
 
@@ -80,13 +89,13 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
     if (queue.isEmpty()) {
       LOGGER.warn("No free hdfs writer handler, it will wait. storage path: {}", basePath);
     }
-    HdfsShuffleWriteHandler writeHandler = queue.take();
+    ShuffleWriteHandler writeHandler = queue.take();
     try {
       writeHandler.write(shuffleBlocks);
     } finally {
-      // Use add() here because we are sure the capacity will not be exceeded.
-      // Note: add() throws IllegalStateException when queue is full.
-      queue.add(writeHandler);
+      // Use addFirst() here because we are sure the capacity will not be exceeded.
+      // Note: addFirst() throws IllegalStateException when queue is full.
+      queue.addFirst(writeHandler);
     }
   }
 }

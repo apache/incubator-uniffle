@@ -118,6 +118,38 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     assertEquals("value", manager.getHadoopConf().get("a.b"));
   }
 
+  /**
+   * When enable concurrent writing single partition data,
+   * it should always write one file if no race condition.
+   */
+  @Test
+  public void concurrentWrite2HdfsWriteOneByOne() throws Exception {
+    ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.emptyList());
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    int maxConcurrency = 3;
+    shuffleServerConf.setInteger(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, maxConcurrency);
+
+    String appId = "concurrentWrite2HdfsWriteOneByOne_appId";
+    StorageManager storageManager =
+        StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
+    storageManager.registerRemoteStorage(appId, remoteStorage);
+    ShuffleFlushManager manager =
+        new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", mockShuffleServer, storageManager);
+
+    for (int i = 0; i < 10; i++) {
+      ShuffleDataFlushEvent shuffleDataFlushEvent = createShuffleDataFlushEvent(appId, 1, 1, 1, null);
+      manager.addToFlushQueue(shuffleDataFlushEvent);
+      waitForFlush(manager, appId, 1, 5);
+    }
+
+    FileStatus[] fileStatuses = fs.listStatus(new Path(HDFS_URI + "/rss/test/" + appId + "/1/1-1"));
+    long actual = Arrays.stream(fileStatuses).filter(x -> x.getPath().getName().endsWith("data")).count();
+    assertEquals(1, actual);
+    actual = Arrays.stream(fileStatuses).filter(x -> x.getPath().getName().endsWith("index")).count();
+    assertEquals(1, actual);
+  }
+
   @Test
   public void concurrentWrite2HdfsWriteOfSinglePartition() throws Exception {
     ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
