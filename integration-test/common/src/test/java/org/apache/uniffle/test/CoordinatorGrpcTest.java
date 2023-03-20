@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.test;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleRegisterInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageMedia;
@@ -128,15 +130,16 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     // the server's tags will be [ss_v4, GRPC_NETTY] and [ss_v4, GRPC], respectively.
     // We need to remove the first machine's tag from GRPC_NETTY to GRPC
     shuffleServers.get(0).stopServer();
-    ShuffleServerConf shuffleServerConf = shuffleServers.get(0).getShuffleServerConf();
-    shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 3);
-    shuffleServerConf.setInteger("rss.jetty.http.port", 18089);
-    shuffleServerConf.setInteger(ShuffleServerConf.NETTY_SERVER_PORT, -3);
-    shuffleServerConf.set(ShuffleServerConf.STORAGE_MEDIA_PROVIDER_ENV_KEY, "RSS_ENV_KEY");
-    String baseDir = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0);
+    RssConf shuffleServerConf = shuffleServers.get(0).getShuffleServerConf();
+    Map<String, Object> originConf = shuffleServerConf.getSettings();
+    Class<RssConf> clazz = RssConf.class;
+    Field field = clazz.getDeclaredField("settings");
+    field.setAccessible(true);
+    originConf.remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
+    field.set(shuffleServerConf, originConf);
     String storageTypeJsonSource = String.format("{\"%s\": \"ssd\"}", baseDir);
     withEnvironmentVariables("RSS_ENV_KEY", storageTypeJsonSource).execute(() -> {
-      ShuffleServer ss = new ShuffleServer(shuffleServerConf);
+      ShuffleServer ss = new ShuffleServer((ShuffleServerConf) shuffleServerConf);
       ss.start();
       shuffleServers.set(0, ss);
     });
