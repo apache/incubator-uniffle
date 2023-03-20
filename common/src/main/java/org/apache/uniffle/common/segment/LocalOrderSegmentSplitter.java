@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import org.roaringbitmap.longlong.LongIterator;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -156,10 +155,7 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
 
   private List<Long> getExpectedTaskIds(Roaring64NavigableMap expectTaskIds) {
     List<Long> taskIds = new ArrayList<>();
-    LongIterator iterator = expectTaskIds.getLongIterator();
-    while (iterator.hasNext()) {
-      taskIds.add(iterator.next());
-    }
+    expectTaskIds.forEach(value -> taskIds.add(value));
     return taskIds;
   }
 }

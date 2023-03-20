@@ -134,4 +134,26 @@ public class ShuffleServerTest {
     serverConf.setLong(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY, 10);
     return serverConf;
   }
+
+  @Test
+  public void nettyServerTest() throws Exception {
+    ShuffleServerConf serverConf = createShuffleServerConf();
+    serverConf.set(ShuffleServerConf.NETTY_SERVER_PORT, 29999);
+    ShuffleServer ss1 = new ShuffleServer(serverConf);
+    ss1.start();
+    ExitUtils.disableSystemExit();
+    serverConf.set(ShuffleServerConf.RPC_SERVER_PORT, 19997);
+    serverConf.set(ShuffleServerConf.JETTY_HTTP_PORT, 19996);
+    ShuffleServer ss2 = new ShuffleServer(serverConf);
+    String expectMessage = "Fail to start stream server";
+    final int expectStatus = 1;
+    try {
+      ss2.start();
+    } catch (Exception e) {
+      assertEquals(expectMessage, e.getMessage());
+      assertEquals(expectStatus, ((ExitException) e).getStatus());
+      return;
+    }
+    fail();
+  }
 }
