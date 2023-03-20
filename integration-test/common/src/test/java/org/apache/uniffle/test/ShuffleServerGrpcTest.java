@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
