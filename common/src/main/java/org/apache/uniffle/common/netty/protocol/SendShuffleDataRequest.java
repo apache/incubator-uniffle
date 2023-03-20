@@ -19,6 +19,7 @@ package org.apache.uniffle.common.netty.protocol;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -143,5 +144,10 @@ public class SendShuffleDataRequest extends Message {
         && timestamp == that.timestamp
         && appId.equals(that.appId)
         && partitionToBlocks.equals(that.partitionToBlocks);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(requestId, appId, shuffleId, requireId, partitionToBlocks, timestamp);
   }
 }
