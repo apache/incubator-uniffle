@@ -449,7 +449,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     /** We must wait until server1 finish start, because {@link #case3} will restart server1. */
     await().timeout(10, TimeUnit.SECONDS).until(
         () -> isPortAvailable(SHUFFLE_SERVER_PORT + 1));
-    Thread.sleep(500);
+    Thread.sleep(1000);
     registerShuffleServer(testAppId, 3, 2, 2, true);
     // when 1 server is timeout, the sending multiple blocks should success
     enableTimeout((MockedShuffleServer)shuffleServers.get(2), 500);
