@@ -476,9 +476,8 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
         LocalStorageManagerFallbackStrategy.class.getCanonicalName());
 
     StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
-    String remoteStorage = "test";
     String appId = "fallbackWrittenWhenMultiStorageManagerEnableTest";
-    storageManager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
+    storageManager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage.getPath()));
 
     ShuffleFlushManager flushManager = new ShuffleFlushManager(
         shuffleServerConf,
