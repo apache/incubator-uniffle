@@ -75,6 +75,7 @@ public class ShuffleTaskInfo {
     this.cachedBlockIds = Maps.newConcurrentMap();
     this.user = new AtomicReference<>();
     this.dataDistType = new AtomicReference<>();
+    this.blockIdLayoutConfig = new AtomicReference<>();
     this.partitionDataSizes = Maps.newConcurrentMap();
     this.hugePartitionTags = Maps.newConcurrentMap();
     this.existHugePartition = new AtomicBoolean(false);

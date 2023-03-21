@@ -40,6 +40,15 @@ public class BlockIdLayoutConfig {
     return sequenceIdLength;
   }
 
+  @Override
+  public String toString() {
+    return "BlockIdLayoutConfig{"
+        + "partitionIdLength=" + partitionIdLength
+        + ", taskAttemptIdLength=" + taskAttemptIdLength
+        + ", sequenceIdLength=" + sequenceIdLength
+        + '}';
+  }
+
   private static BlockIdLayoutConfig from(Map<String, String> blockIdLayoutMap) {
     String partitionIdRawVal = blockIdLayoutMap.get(PARTITION_ID_LENGTH);
     if (partitionIdRawVal == null) {
