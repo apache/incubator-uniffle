@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.mapred.JobConf;
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
@@ -167,7 +169,11 @@ public class RssMRUtils {
     return rssJobConf.get(key, mrJobConf.get(key, defaultValue));
   }
 
-  public static long getBlockId(long partitionId, long taskAttemptId, int nextSeqNo) {
+  public static long getBlockId(
+      BlockIdLayoutConfig config,
+      long partitionId,
+      long taskAttemptId,
+      int nextSeqNo) {
     long attemptId = taskAttemptId >> (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH);
     if (attemptId < 0 || attemptId > MAX_ATTEMPT_ID) {
       throw new RuntimeException("Can't support attemptId [" + attemptId
@@ -188,15 +194,30 @@ public class RssMRUtils {
       throw new RuntimeException("Can't support taskId["
           + taskId + "], the max value should be " + Constants.MAX_TASK_ATTEMPT_ID);
     }
-    return (atomicInt << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
-        + (partitionId << Constants.TASK_ATTEMPT_ID_MAX_LENGTH) + taskId;
+    return BlockIdLayoutConfig.createBlockId(
+        config,
+        partitionId,
+        taskId,
+        atomicInt
+    );
   }
 
-  public static long getTaskAttemptId(long blockId) {
-    long mapId = blockId & Constants.MAX_TASK_ATTEMPT_ID;
-    long attemptId = (blockId >> (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH))
+  @VisibleForTesting
+  public static long getBlockId(long partitionId, long taskAttemptId, int nextSeqNo) {
+    return getBlockId(BlockIdLayoutConfig.from(), partitionId, taskAttemptId, nextSeqNo);
+  }
+
+  public static long getTaskAttemptId(BlockIdLayoutConfig config, long blockId) {
+    long maxTaskAttemptId = (1 << config.getTaskAttemptIdLength() ) - 1;
+    long mapId = blockId & maxTaskAttemptId;
+    long attemptId = (blockId >> (config.getTaskAttemptIdLength() + config.getPartitionIdLength()))
         & MAX_ATTEMPT_ID;
-    return (attemptId << (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH)) + mapId;
+    return (attemptId << (config.getTaskAttemptIdLength() + config.getPartitionIdLength())) + mapId;
+  }
+
+  @VisibleForTesting
+  public static long getTaskAttemptId(long blockId) {
+    return getTaskAttemptId(BlockIdLayoutConfig.from(), blockId);
   }
 
   public static int estimateTaskConcurrency(JobConf jobConf) {

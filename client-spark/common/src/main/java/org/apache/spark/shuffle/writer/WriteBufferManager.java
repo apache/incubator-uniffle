@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 import scala.reflect.ClassTag$;
 import scala.reflect.ManifestFactory$;
 
-import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.compression.Codec;
@@ -81,6 +81,7 @@ public class WriteBufferManager extends MemoryConsumer {
   private long requireMemoryInterval;
   private int requireMemoryRetryMax;
   private Codec codec;
+  private BlockIdLayoutConfig blockIdLayoutConfig;
 
   public WriteBufferManager(
       int shuffleId,
@@ -111,6 +112,7 @@ public class WriteBufferManager extends MemoryConsumer {
             .substring(RssSparkConfig.SPARK_RSS_CONFIG_PREFIX.length()),
         RssSparkConfig.SPARK_SHUFFLE_COMPRESS_DEFAULT);
     this.codec = compress ? Codec.newInstance(rssConf) : null;
+    this.blockIdLayoutConfig = BlockIdLayoutConfig.from(rssConf);
   }
 
   public List<ShuffleBlockInfo> addRecord(int partitionId, Object key, Object value) {
@@ -193,7 +195,12 @@ public class WriteBufferManager extends MemoryConsumer {
       compressTime += System.currentTimeMillis() - start;
     }
     final long crc32 = ChecksumUtils.getCrc32(compressed);
-    final long blockId = ClientUtils.getBlockId(partitionId, taskAttemptId, getNextSeqNo(partitionId));
+    final long blockId = BlockIdLayoutConfig.createBlockId(
+        blockIdLayoutConfig,
+        partitionId,
+        taskAttemptId,
+        getNextSeqNo(partitionId)
+    );
     uncompressedDataLen += data.length;
     shuffleWriteMetrics.incBytesWritten(compressed.length);
     // add memory to indicate bytes which will be sent to shuffle server

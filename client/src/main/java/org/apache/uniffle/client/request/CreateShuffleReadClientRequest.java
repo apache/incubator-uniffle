@@ -61,10 +61,10 @@ public class CreateShuffleReadClientRequest {
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
       ShuffleDataDistributionType dataDistributionType,
-      boolean expectedTaskIdsBitmapFilterEnable) {
+      boolean expectedTaskIdsBitmapFilterEnable, IdHelper idHelper) {
     this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
-        hadoopConf, new DefaultIdHelper(), expectedTaskIdsBitmapFilterEnable);
+        hadoopConf, idHelper, expectedTaskIdsBitmapFilterEnable);
     this.shuffleDataDistributionType = dataDistributionType;
   }
 

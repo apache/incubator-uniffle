@@ -79,6 +79,20 @@ public class RssMRUtilsTest {
   }
 
   @Test
+  public void test1() {
+    int a = 3;
+    System.out.println(a << 2);
+
+    int i = 1;
+    System.out.println(i << 2);
+    int j = (i << 4) + 2;
+    System.out.println(j);
+    int mask = (1 << 4) - 1;
+    System.out.println(mask);
+    System.out.println(j & mask);
+  }
+
+  @Test
   public void partitionIdConvertBlockTest() {
     JobID jobID =  new JobID();
     TaskID taskId =  new TaskID(jobID, TaskType.MAP, 233);

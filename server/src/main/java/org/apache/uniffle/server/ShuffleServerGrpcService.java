@@ -35,6 +35,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -134,6 +135,17 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                     .name()
             );
 
+    // Default value
+    BlockIdLayoutConfig blockIdLayoutConfig = BlockIdLayoutConfig.from();
+    RssProtos.BlockIdLayout layout = req.getBlockIdLayout();
+    if (layout != null) {
+      blockIdLayoutConfig = BlockIdLayoutConfig.from(
+          layout.getPartitionIdLength(),
+          layout.getTaskAttemptIdLength(),
+          layout.getSequenceIdLength()
+      );
+    }
+
     Map<String, String> remoteStorageConf = req
         .getRemoteStorage()
         .getRemoteStorageConfList()
@@ -153,7 +165,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             partitionRanges,
             new RemoteStorageInfo(remoteStoragePath, remoteStorageConf),
             user,
-            shuffleDataDistributionType
+            shuffleDataDistributionType,
+            blockIdLayoutConfig
         );
 
     reply = ShuffleRegisterResponse

@@ -49,6 +49,8 @@ import scala.runtime.BoxedUnit;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
+import org.apache.uniffle.client.util.DefaultIdHelper;
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
@@ -210,7 +212,8 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
             appId, shuffleId, partition, storageType, basePath, indexReadLimit, readBufferSize,
             1, partitionNum, partitionToExpectBlocks.get(partition), taskIdBitmap, shuffleServerInfoList,
-            hadoopConf, dataDistributionType, expectedTaskIdsBitmapFilterEnable);
+            hadoopConf, dataDistributionType, expectedTaskIdsBitmapFilterEnable,
+            new DefaultIdHelper(BlockIdLayoutConfig.from(rssConf)));
         ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
         RssShuffleDataIterator<K, C> iterator = new RssShuffleDataIterator<>(
             shuffleDependency.serializer(), shuffleReadClient,

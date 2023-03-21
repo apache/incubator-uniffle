@@ -55,6 +55,7 @@ import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -136,13 +137,21 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorageInfo,
       String user,
-      ShuffleDataDistributionType dataDistributionType) {
+      ShuffleDataDistributionType dataDistributionType,
+      BlockIdLayoutConfig blockIdLayoutConfig) {
     ShuffleRegisterRequest.Builder reqBuilder = ShuffleRegisterRequest.newBuilder();
     reqBuilder
         .setAppId(appId)
         .setShuffleId(shuffleId)
         .setUser(user)
         .setShuffleDataDistribution(RssProtos.DataDistribution.valueOf(dataDistributionType.name()))
+        .setBlockIdLayout(
+            RssProtos.BlockIdLayout.newBuilder()
+                .setPartitionIdLength(blockIdLayoutConfig.getPartitionIdLength())
+                .setTaskAttemptIdLength(blockIdLayoutConfig.getTaskAttemptIdLength())
+                .setSequenceIdLength(blockIdLayoutConfig.getSequenceIdLength())
+                .build()
+        )
         .addAllPartitionRanges(toShufflePartitionRanges(partitionRanges));
     RemoteStorage.Builder rsBuilder = RemoteStorage.newBuilder();
     rsBuilder.setPath(remoteStorageInfo.getPath());
@@ -277,7 +286,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         request.getPartitionRanges(),
         request.getRemoteStorageInfo(),
         request.getUser(),
-        request.getDataDistributionType()
+        request.getDataDistributionType(),
+        request.getBlockIdLayoutConfig()
     );
 
     RssRegisterShuffleResponse response;

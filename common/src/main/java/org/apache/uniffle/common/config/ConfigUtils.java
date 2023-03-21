@@ -21,9 +21,12 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
+import org.apache.commons.lang.StringUtils;
 
 import org.apache.uniffle.common.util.UnitConverter;
 
@@ -67,8 +70,33 @@ public class ConfigUtils {
       return (T) convertToString(rawValue);
     } else if (clazz.isEnum()) {
       return (T) convertToEnum(rawValue, (Class<? extends Enum<?>>) clazz);
+    } else if (clazz == Map.class) {
+      return (T) convertToProperties(rawValue);
     }
     throw new IllegalArgumentException("Unsupported type: " + clazz);
+  }
+
+  @SuppressWarnings("unchecked")
+  static Map<String, String> convertToProperties(Object o) {
+    if (o instanceof Map) {
+      return (Map<String, String>) o;
+    } else {
+      if (o == null) {
+        throw new NullPointerException();
+      }
+      String rawValues = StringUtils.trim(o.toString());
+      String[] listOfRawProperties = StringUtils.split(rawValues, ',');
+      return Arrays.stream(listOfRawProperties)
+          .map(s -> StringUtils.split(s, ':'))
+          .peek(
+              pair -> {
+                if (pair.length != 2) {
+                  throw new IllegalArgumentException(
+                      "Could not parse pair in the map " + pair);
+                }
+              })
+          .collect(Collectors.toMap(a -> a[0], a -> a[1]));
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -215,5 +243,5 @@ public class ConfigUtils {
 
   public static final Function<Double, Boolean> PERCENTAGE_DOUBLE_VALIDATOR =
       value -> Double.compare(value, 100.0) <= 0 && Double.compare(value, 0.0) >= 0;
-
+  
 }

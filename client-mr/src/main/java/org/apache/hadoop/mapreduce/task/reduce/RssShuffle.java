@@ -42,8 +42,10 @@ import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.UnitConverter;
 
 public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionReporter {
@@ -191,14 +193,15 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
       LOG.info("In reduce: " + reduceId
           + ", Rss MR client starts to fetch blocks from RSS server");
       JobConf readerJobConf = getRemoteConf();
+      RssConf rssConf = RssMRConfig.toRssConf(rssJobConf);
       boolean expectedTaskIdsBitmapFilterEnable = serverInfoList.size() > 1;
       CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
           appId, 0, reduceId.getTaskID().getId(), storageType, basePath, indexReadLimit, readBufferSize,
           partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, serverInfoList,
-          readerJobConf, new MRIdHelper(), expectedTaskIdsBitmapFilterEnable);
+          readerJobConf, new MRIdHelper(BlockIdLayoutConfig.from(rssConf)), expectedTaskIdsBitmapFilterEnable);
       ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
       RssFetcher fetcher = new RssFetcher(mrJobConf, reduceId, taskStatus, merger, copyPhase, reporter, metrics,
-          shuffleReadClient, blockIdBitmap.getLongCardinality(), RssMRConfig.toRssConf(rssJobConf));
+          shuffleReadClient, blockIdBitmap.getLongCardinality(), rssConf);
       fetcher.fetchAllRssBlocks();
       LOG.info("In reduce: " + reduceId
           + ", Rss MR client fetches blocks from RSS server successfully");

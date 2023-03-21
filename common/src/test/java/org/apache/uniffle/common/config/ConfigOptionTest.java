@@ -17,7 +17,9 @@
 
 package org.apache.uniffle.common.config;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import com.google.common.collect.Lists;
@@ -59,6 +61,35 @@ public class ConfigOptionTest {
   enum TestType {
     TYPE_1,
     TYPE_2,
+  }
+
+  @Test
+  public void testMapType() {
+    final ConfigOption<Map<String, String>> mapConfigOption = ConfigOptions
+        .key("rss.map")
+        .mapType()
+        .noDefaultValue()
+        .withDescription("");
+
+    RssBaseConf conf = new RssBaseConf();
+    // case1: no default value
+    Map<String, String> map = conf.get(mapConfigOption);
+    assertNull(map);
+
+    // case2: set configs with map
+    map = new HashMap<>();
+    map.put("a", "a1");
+    map.put("b", "b1");
+    conf.set(mapConfigOption, map);
+    assertEquals(map, conf.get(mapConfigOption));
+
+    // case3: set configs with string
+    conf = new RssBaseConf();
+    conf.setString(mapConfigOption.key(), "a:a1,b:b1");
+    map = conf.get(mapConfigOption);
+    assertEquals(2, map.size());
+    assertEquals("a1", map.get("a"));
+    assertEquals("b1", map.get("b"));
   }
 
   @Test

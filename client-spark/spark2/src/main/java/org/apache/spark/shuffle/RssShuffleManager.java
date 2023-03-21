@@ -58,6 +58,7 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
@@ -88,6 +89,7 @@ public class RssShuffleManager implements ShuffleManager {
   private final boolean dataReplicaSkipEnabled;
   private final int dataTransferPoolSize;
   private final int dataCommitPoolSize;
+  private final BlockIdLayoutConfig blockIdLayoutConfig;
   private Set<String> failedTaskIds = Sets.newConcurrentHashSet();
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
@@ -159,6 +161,7 @@ public class RssShuffleManager implements ShuffleManager {
     this.dataReplicaRead = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_READ);
     this.dataTransferPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE);
     this.dataReplicaSkipEnabled = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_SKIP_ENABLED);
+    this.blockIdLayoutConfig = BlockIdLayoutConfig.from(RssSparkConfig.toRssConf(sparkConf));
     LOG.info("Check quorum config ["
         + dataReplica + ":" + dataReplicaWrite + ":" + dataReplicaRead + ":" + dataReplicaSkipEnabled + "]");
     RssUtils.checkQuorumSetting(dataReplica, dataReplicaWrite, dataReplicaRead);
@@ -332,7 +335,8 @@ public class RssShuffleManager implements ShuffleManager {
               shuffleId,
               entry.getValue(),
               remoteStorage,
-              ShuffleDataDistributionType.NORMAL
+              ShuffleDataDistributionType.NORMAL,
+              blockIdLayoutConfig
           );
         });
     LOG.info("Finish register shuffleId[" + shuffleId + "] with " + (System.currentTimeMillis() - start) + " ms");

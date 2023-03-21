@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.compression.Codec;
@@ -93,6 +94,7 @@ public class SortWriteBufferManager<K, V> {
   private final ExecutorService sendExecutorService;
   private final RssConf rssConf;
   private final Codec codec;
+  private final BlockIdLayoutConfig blockIdLayoutConfig;
 
   public SortWriteBufferManager(
       long maxMemSize,
@@ -146,6 +148,7 @@ public class SortWriteBufferManager<K, V> {
         ThreadUtils.getThreadFactory("send-thread-%d"));
     this.rssConf = rssConf;
     this.codec = Codec.newInstance(rssConf);
+    this.blockIdLayoutConfig = BlockIdLayoutConfig.from(rssConf);
   }
 
   // todo: Single Buffer should also have its size limit
@@ -315,7 +318,9 @@ public class SortWriteBufferManager<K, V> {
     final byte[] compressed = codec.compress(data);
     final long crc32 = ChecksumUtils.getCrc32(compressed);
     compressTime += System.currentTimeMillis() - start;
-    final long blockId = RssMRUtils.getBlockId(partitionId, taskAttemptId, getNextSeqNo(partitionId));
+    final long blockId = RssMRUtils.getBlockId(
+        blockIdLayoutConfig, partitionId, taskAttemptId, getNextSeqNo(partitionId)
+    );
     uncompressedDataLen += data.length;
     // add memory to indicate bytes which will be sent to shuffle server
     inSendListBytes.addAndGet(wb.getDataLength());

@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.response.SendShuffleDataResult;
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
@@ -47,7 +48,8 @@ public interface ShuffleWriteClient {
       int shuffleId,
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorage,
-      ShuffleDataDistributionType dataDistributionType);
+      ShuffleDataDistributionType dataDistributionType,
+      BlockIdLayoutConfig blockIdLayoutConfig);
 
   boolean sendCommit(Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);
 

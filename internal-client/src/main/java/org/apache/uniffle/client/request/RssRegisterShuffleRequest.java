@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
@@ -33,6 +34,7 @@ public class RssRegisterShuffleRequest {
   private RemoteStorageInfo remoteStorageInfo;
   private String user;
   private ShuffleDataDistributionType dataDistributionType;
+  private BlockIdLayoutConfig blockIdLayoutConfig;
 
   public RssRegisterShuffleRequest(
       String appId,
@@ -40,13 +42,15 @@ public class RssRegisterShuffleRequest {
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorageInfo,
       String user,
-      ShuffleDataDistributionType dataDistributionType) {
+      ShuffleDataDistributionType dataDistributionType,
+      BlockIdLayoutConfig blockIdLayoutConfig) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionRanges = partitionRanges;
     this.remoteStorageInfo = remoteStorageInfo;
     this.user = user;
     this.dataDistributionType = dataDistributionType;
+    this.blockIdLayoutConfig = blockIdLayoutConfig;
   }
 
   public RssRegisterShuffleRequest(
@@ -59,7 +63,8 @@ public class RssRegisterShuffleRequest {
         partitionRanges,
         new RemoteStorageInfo(remoteStoragePath),
         StringUtils.EMPTY,
-        ShuffleDataDistributionType.NORMAL
+        ShuffleDataDistributionType.NORMAL,
+        BlockIdLayoutConfig.from()
     );
   }
 
@@ -85,5 +90,9 @@ public class RssRegisterShuffleRequest {
 
   public ShuffleDataDistributionType getDataDistributionType() {
     return dataDistributionType;
+  }
+
+  public BlockIdLayoutConfig getBlockIdLayoutConfig() {
+    return blockIdLayoutConfig;
   }
 }

@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -48,6 +49,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
@@ -244,21 +246,35 @@ public class RssUtils {
   }
 
   public static Map<Integer, Roaring64NavigableMap> generatePartitionToBitmap(
-      Roaring64NavigableMap shuffleBitmap, int startPartition, int endPartition) {
+      BlockIdLayoutConfig blockIdLayoutConfig,
+      Roaring64NavigableMap shuffleBitmap,
+      int startPartition,
+      int endPartition) {
     Map<Integer, Roaring64NavigableMap> result = Maps.newHashMap();
     for (int partitionId = startPartition; partitionId < endPartition; partitionId++) {
       result.putIfAbsent(partitionId, Roaring64NavigableMap.bitmapOf());
     }
     Iterator<Long> it = shuffleBitmap.iterator();
-    long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;
+    long mask = (1L << blockIdLayoutConfig.getPartitionIdLength()) - 1;
     while (it.hasNext()) {
       Long blockId = it.next();
-      int partitionId = Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask);
+      int partitionId = Math.toIntExact((blockId >> blockIdLayoutConfig.getTaskAttemptIdLength()) & mask);
       if (partitionId >= startPartition && partitionId < endPartition) {
         result.get(partitionId).add(blockId);
       }
     }
     return result;
+  }
+
+  @VisibleForTesting
+  public static Map<Integer, Roaring64NavigableMap> generatePartitionToBitmap(
+      Roaring64NavigableMap shuffleBitmap, int startPartition, int endPartition) {
+    return generatePartitionToBitmap(
+        BlockIdLayoutConfig.from(),
+        shuffleBitmap,
+        startPartition,
+        endPartition
+    );
   }
 
   public static Map<ShuffleServerInfo, Set<Integer>> generateServerToPartitions(

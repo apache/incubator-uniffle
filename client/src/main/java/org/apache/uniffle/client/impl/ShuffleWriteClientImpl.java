@@ -77,6 +77,7 @@ import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -407,7 +408,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int shuffleId,
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorage,
-      ShuffleDataDistributionType dataDistributionType) {
+      ShuffleDataDistributionType dataDistributionType,
+      BlockIdLayoutConfig blockIdLayoutConfig) {
     String user = null;
     try {
       user = UserGroupInformation.getCurrentUser().getShortUserName();
@@ -417,7 +419,10 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     LOG.info("User: {}", user);
 
     RssRegisterShuffleRequest request =
-        new RssRegisterShuffleRequest(appId, shuffleId, partitionRanges, remoteStorage, user, dataDistributionType);
+        new RssRegisterShuffleRequest(
+            appId, shuffleId, partitionRanges, remoteStorage,
+            user, dataDistributionType, blockIdLayoutConfig
+        );
     RssRegisterShuffleResponse response = getShuffleServerClient(shuffleServerInfo).registerShuffle(request);
 
     String msg = "Error happened when registerShuffle with appId[" + appId + "], shuffleId[" + shuffleId

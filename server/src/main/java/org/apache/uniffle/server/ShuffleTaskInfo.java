@@ -30,6 +30,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 
 /**
@@ -53,6 +54,7 @@ public class ShuffleTaskInfo {
   private AtomicReference<String> user;
 
   private AtomicReference<ShuffleDataDistributionType> dataDistType;
+  private AtomicReference<BlockIdLayoutConfig> blockIdLayoutConfig;
 
   private AtomicLong totalDataSize = new AtomicLong(0);
   /**
@@ -111,6 +113,10 @@ public class ShuffleTaskInfo {
     this.dataDistType.set(dataDistType);
   }
 
+  public void setBlockIdLayoutConfig(BlockIdLayoutConfig config) {
+    this.blockIdLayoutConfig.set(config);
+  }
+
   public ShuffleDataDistributionType getDataDistType() {
     return dataDistType.get();
   }
@@ -137,6 +143,10 @@ public class ShuffleTaskInfo {
       return 0L;
     }
     return size;
+  }
+
+  public BlockIdLayoutConfig getBlockIdLayoutConfig() {
+    return blockIdLayoutConfig.get();
   }
 
   public boolean hasHugePartition() {

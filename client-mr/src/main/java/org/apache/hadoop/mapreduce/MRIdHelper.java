@@ -17,9 +17,14 @@
 
 package org.apache.hadoop.mapreduce;
 
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.util.IdHelper;
 
-public class MRIdHelper implements IdHelper {
+public class MRIdHelper extends IdHelper {
+
+  public MRIdHelper(BlockIdLayoutConfig config) {
+    super(config);
+  }
 
   @Override
   public long getTaskAttemptId(long blockId) {

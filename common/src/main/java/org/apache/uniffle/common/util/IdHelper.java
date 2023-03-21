@@ -17,7 +17,14 @@
 
 package org.apache.uniffle.common.util;
 
-public interface IdHelper {
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 
-  long getTaskAttemptId(long blockId);
+public abstract class IdHelper {
+  protected BlockIdLayoutConfig blockIdLayoutConfig;
+
+  public IdHelper(BlockIdLayoutConfig config) {
+    this.blockIdLayoutConfig = config;
+  }
+
+  public abstract long getTaskAttemptId(long blockId);
 }

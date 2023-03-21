@@ -66,6 +66,7 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
@@ -102,6 +103,7 @@ public class RssShuffleManager implements ShuffleManager {
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
   private final ShuffleDataDistributionType dataDistributionType;
+  private final BlockIdLayoutConfig blockIdLayoutConfig;
   private String user;
   private String uuid;
   private Set<String> failedTaskIds = Sets.newConcurrentHashSet();
@@ -181,6 +183,7 @@ public class RssShuffleManager implements ShuffleManager {
     this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
     this.dynamicConfEnabled = sparkConf.get(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED);
     this.dataDistributionType = getDataDistributionType(sparkConf);
+    this.blockIdLayoutConfig = BlockIdLayoutConfig.from(RssSparkConfig.toRssConf(sparkConf));
     long retryIntervalMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);
     int heartBeatThreadNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
     this.dataTransferPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE);
@@ -249,6 +252,7 @@ public class RssShuffleManager implements ShuffleManager {
     this.sparkConf = conf;
     this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
     this.dataDistributionType = RssSparkConfig.toRssConf(sparkConf).get(RssClientConf.DATA_DISTRIBUTION_TYPE);
+    this.blockIdLayoutConfig = BlockIdLayoutConfig.from(RssSparkConfig.toRssConf(sparkConf));
     this.heartbeatInterval = sparkConf.get(RssSparkConfig.RSS_HEARTBEAT_INTERVAL);
     this.heartbeatTimeout = sparkConf.getLong(RssSparkConfig.RSS_HEARTBEAT_TIMEOUT.key(), heartbeatInterval / 2);
     this.dataReplica = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA);
@@ -359,7 +363,12 @@ public class RssShuffleManager implements ShuffleManager {
                 assignmentTags,
                 requiredShuffleServerNumber,
                 estimateTaskConcurrency);
-        registerShuffleServers(id.get(), shuffleId, response.getServerToPartitionRanges(), remoteStorage);
+        registerShuffleServers(
+            id.get(),
+            shuffleId,
+            response.getServerToPartitionRanges(),
+            remoteStorage
+        );
         return response.getPartitionToServers();
       }, retryInterval, retryTimes);
     } catch (Throwable throwable) {
@@ -518,6 +527,7 @@ public class RssShuffleManager implements ShuffleManager {
     Configuration readerHadoopConf = RssSparkShuffleUtils.getRemoteStorageHadoopConf(
         sparkConf, shuffleRemoteStorageInfo);
 
+    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     return new RssShuffleReader<K, C>(
         startPartition,
         endPartition,
@@ -531,10 +541,12 @@ public class RssShuffleManager implements ShuffleManager {
         storageType,
         (int) readBufferSize,
         partitionNum,
-        RssUtils.generatePartitionToBitmap(blockIdBitmap, startPartition, endPartition),
+        RssUtils.generatePartitionToBitmap(
+            BlockIdLayoutConfig.from(rssConf), blockIdBitmap, startPartition, endPartition
+        ),
         taskIdBitmap,
         readMetrics,
-        RssSparkConfig.toRssConf(sparkConf),
+        rssConf,
         dataDistributionType
     );
   }
@@ -699,7 +711,8 @@ public class RssShuffleManager implements ShuffleManager {
               shuffleId,
               entry.getValue(),
               remoteStorage,
-              dataDistributionType
+              dataDistributionType,
+              blockIdLayoutConfig
           );
         });
     LOG.info("Finish register shuffleId[" + shuffleId + "] with " + (System.currentTimeMillis() - start) + " ms");

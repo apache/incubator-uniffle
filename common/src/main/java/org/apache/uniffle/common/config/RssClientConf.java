@@ -17,6 +17,9 @@
 
 package org.apache.uniffle.common.config;
 
+import java.util.Map;
+
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.compression.Codec;
 
@@ -43,4 +46,11 @@ public class RssClientConf {
       .defaultValue(ShuffleDataDistributionType.NORMAL)
       .withDescription("The type of partition shuffle data distribution, including normal and local_order. "
           + "The default value is normal. This config is only valid in Spark3.x");
+
+  public static final ConfigOption<Map<String, String>> BLOCKID_LAYOUT = ConfigOptions
+      .key("rss.client.blockId.layout")
+      .mapType()
+      .checkValue(BlockIdLayoutConfig::validate, "")
+      .noDefaultValue()
+      .withDescription("");
 }

@@ -42,7 +42,9 @@ import org.apache.commons.collections.CollectionUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.jvm.hotspot.opto.Block;
 
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
@@ -176,7 +178,8 @@ public class ShuffleTaskManager {
         partitionRanges,
         remoteStorageInfo,
         user,
-        ShuffleDataDistributionType.NORMAL
+        ShuffleDataDistributionType.NORMAL,
+        BlockIdLayoutConfig.from()
     );
   }
 
@@ -186,10 +189,12 @@ public class ShuffleTaskManager {
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorageInfo,
       String user,
-      ShuffleDataDistributionType dataDistType) {
+      ShuffleDataDistributionType dataDistType,
+      BlockIdLayoutConfig blockIdLayoutConfig) {
     refreshAppId(appId);
     shuffleTaskInfos.get(appId).setUser(user);
     shuffleTaskInfos.get(appId).setDataDistType(dataDistType);
+    shuffleTaskInfos.get(appId).setBlockIdLayoutConfig(blockIdLayoutConfig);
     partitionsToBlockIds.putIfAbsent(appId, Maps.newConcurrentMap());
     for (PartitionRange partitionRange : partitionRanges) {
       shuffleBufferManager.registerBuffer(appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
@@ -428,26 +433,41 @@ public class ShuffleTaskManager {
     }
 
     Roaring64NavigableMap res = Roaring64NavigableMap.bitmapOf();
+    BlockIdLayoutConfig config = shuffleTaskInfos.get(appId).getBlockIdLayoutConfig();
     for (Map.Entry<Integer, Set<Integer>> entry : bitmapIndexToPartitions.entrySet()) {
       Set<Integer> requestPartitions = entry.getValue();
       Roaring64NavigableMap bitmap = blockIds[entry.getKey()];
-      getBlockIdsByPartitionId(requestPartitions, bitmap, res);
+      getBlockIdsByPartitionId(config, requestPartitions, bitmap, res);
     }
     return RssUtils.serializeBitMap(res);
   }
 
 
   // filter the specific partition blockId in the bitmap to the resultBitmap
-  protected Roaring64NavigableMap getBlockIdsByPartitionId(Set<Integer> requestPartitions,
+  protected Roaring64NavigableMap getBlockIdsByPartitionId(
+      BlockIdLayoutConfig config, Set<Integer> requestPartitions,
       Roaring64NavigableMap bitmap, Roaring64NavigableMap resultBitmap) {
-    final long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;
+    int partitionIdLength = config.getPartitionIdLength();
+    final long mask = (1L << partitionIdLength) - 1;
     bitmap.forEach(blockId -> {
-      int partitionId = Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask);
+      int partitionId = Math.toIntExact((blockId >> config.getTaskAttemptIdLength()) & mask);
       if (requestPartitions.contains(partitionId)) {
         resultBitmap.addLong(blockId);
       }
     });
     return resultBitmap;
+  }
+
+  @VisibleForTesting
+  protected Roaring64NavigableMap getBlockIdsByPartitionId(
+      Set<Integer> requestPartitions,
+      Roaring64NavigableMap bitmap, Roaring64NavigableMap resultBitmap) {
+    return getBlockIdsByPartitionId(
+      BlockIdLayoutConfig.from(),
+      requestPartitions,
+      bitmap,
+      resultBitmap
+    );
   }
 
   public ShuffleDataResult getInMemoryShuffleData(

@@ -17,10 +17,16 @@
 
 package org.apache.uniffle.client.util;
 
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.IdHelper;
 
-public class DefaultIdHelper implements IdHelper {
+public class DefaultIdHelper extends IdHelper {
+
+  public DefaultIdHelper(BlockIdLayoutConfig config) {
+    super(config);
+  }
+
   @Override
   public long getTaskAttemptId(long blockId) {
     return blockId & Constants.MAX_TASK_ATTEMPT_ID;
