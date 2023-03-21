@@ -30,6 +30,14 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
+/**
+ * The {@link PooledHdfsShuffleWriteHandler} is a wrapper of underlying multiple
+ * {@link HdfsShuffleWriteHandler} to support concurrency control of writing single
+ * partition to multi files.
+ *
+ * By leveraging {@link LinkedBlockingDeque}, it will always write the same file when
+ * no race condition, which is good for reducing file numbers for HDFS.
+ */
 public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(PooledHdfsShuffleWriteHandler.class);
 
