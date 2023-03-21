@@ -30,6 +30,7 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.exception.RssFetchFailedException;
 
 public class LocalFileClientReadHandler extends DataSkippableReadHandler {
   private static final Logger LOG = LoggerFactory.getLogger(
@@ -88,8 +89,10 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
         appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
     try {
       shuffleIndexResult = shuffleServerClient.getShuffleIndex(request).getShuffleIndexResult();
+    } catch (RssFetchFailedException e) {
+      throw e;
     } catch (Exception e) {
-      throw new RssException("Failed to read shuffle index for appId[" + appId + "], shuffleId["
+      throw new RssFetchFailedException("Failed to read shuffle index for appId[" + appId + "], shuffleId["
         + shuffleId + "], partitionId[" + partitionId + "]", e);
     }
     return shuffleIndexResult;

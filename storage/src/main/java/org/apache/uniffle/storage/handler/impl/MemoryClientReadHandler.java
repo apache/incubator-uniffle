@@ -28,7 +28,7 @@ import org.apache.uniffle.client.request.RssGetInMemoryShuffleDataRequest;
 import org.apache.uniffle.client.response.RssGetInMemoryShuffleDataResponse;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
-import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.util.Constants;
 
 
@@ -71,9 +71,11 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
       RssGetInMemoryShuffleDataResponse response =
           shuffleServerClient.getInMemoryShuffleData(request);
       result = new ShuffleDataResult(response.getData(), response.getBufferSegments());
+    } catch (RssFetchFailedException e) {
+      throw e;
     } catch (Exception e) {
       // todo: fault tolerance solution should be added
-      throw new RssException("Failed to read in memory shuffle data with "
+      throw new RssFetchFailedException("Failed to read in memory shuffle data with "
           + shuffleServerClient.getClientInfo() + " due to " + e);
     }
 

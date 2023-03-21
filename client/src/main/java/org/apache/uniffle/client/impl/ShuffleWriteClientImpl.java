@@ -85,6 +85,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ThreadUtils;
 
@@ -584,7 +585,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       }
     }
     if (!isSuccessful) {
-      throw new RssException("Get shuffle result is failed for appId["
+      throw new RssFetchFailedException("Get shuffle result is failed for appId["
           + appId + "], shuffleId[" + shuffleId + "]");
     }
     return blockIdBitmap;
@@ -625,7 +626,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
     boolean isSuccessful = partitionReadSuccess.entrySet().stream().allMatch(x -> x.getValue() >= replicaRead);
     if (!isSuccessful) {
-      throw new RssException("Get shuffle result is failed for appId[" + appId + "], shuffleId[" + shuffleId + "]");
+      throw new RssFetchFailedException(
+          "Get shuffle result is failed for appId[" + appId + "], shuffleId[" + shuffleId + "]");
     }
     return blockIdBitmap;
   }

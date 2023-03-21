@@ -36,7 +36,7 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.IdHelper;
 import org.apache.uniffle.common.util.RssUtils;
@@ -201,7 +201,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
             clientReadHandler.updateConsumedBlockInfo(bs, true);
             continue;
           } else {
-            throw new RssException(errMsg);
+            throw new RssFetchFailedException(errMsg);
           }
         }
 
