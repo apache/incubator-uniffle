@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server.netty;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -32,6 +33,7 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import org.apache.uniffle.common.rpc.ServerInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +42,7 @@ import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.netty.decoder.StreamServerInitDecoder;
 
-public class StreamServer {
+public class StreamServer implements ServerInterface {
 
   private static final Logger LOG = LoggerFactory.getLogger(StreamServer.class);
 
@@ -103,27 +105,37 @@ public class StreamServer {
     return serverBootstrap;
   }
 
-  public void start() {
+  @Override
+  public void start() throws IOException {
+    int port = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
+    try {
+      startOnPort(port);
+    }catch (Exception e){
+      ExitUtils.terminate(1, "Fail to start stream server", e, LOG);
+    }
+  }
+
+  @Override
+  public void startOnPort(int port) throws Exception {
     Supplier<ChannelHandler[]> streamHandlers = () -> new ChannelHandler[]{
-        new StreamServerInitDecoder()
+            new StreamServerInitDecoder()
     };
     ServerBootstrap serverBootstrap = bootstrapChannel(shuffleBossGroup, shuffleWorkerGroup,
-        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_BACKLOG),
-        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_TIMEOUT),
-        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_SEND_BUF),
-        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_RECEIVE_BUF),
-        streamHandlers);
+            shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_BACKLOG),
+            shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_TIMEOUT),
+            shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_SEND_BUF),
+            shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_RECEIVE_BUF),
+            streamHandlers);
 
     // Bind the ports and save the results so that the channels can be closed later.
     // If the second bind fails, the first one gets cleaned up in the shutdown.
-    int port = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
     try {
       channelFuture =  serverBootstrap.bind(port);
       channelFuture.syncUninterruptibly();
       LOG.info("bind localAddress is " + channelFuture.channel().localAddress());
       LOG.info("Start stream server successfully with port " + port);
     } catch (Exception e) {
-      ExitUtils.terminate(1, "Fail to start stream server", e, LOG);
+      throw e;
     }
   }
 
@@ -138,5 +150,10 @@ public class StreamServer {
       shuffleBossGroup = null;
       shuffleWorkerGroup = null;
     }
+  }
+
+  @Override
+  public void blockUntilShutdown() throws InterruptedException {
+
   }
 }
