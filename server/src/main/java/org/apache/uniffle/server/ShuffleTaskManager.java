@@ -42,7 +42,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.jvm.hotspot.opto.Block;
 
 import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.PartitionRange;
@@ -55,7 +54,6 @@ import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;

@@ -17,8 +17,10 @@
 
 package org.apache.uniffle.client.request;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.common.BlockIdLayoutConfig;
@@ -35,6 +37,25 @@ public class RssRegisterShuffleRequest {
   private String user;
   private ShuffleDataDistributionType dataDistributionType;
   private BlockIdLayoutConfig blockIdLayoutConfig;
+
+  @VisibleForTesting
+  public RssRegisterShuffleRequest(
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      RemoteStorageInfo remoteStorageInfo,
+      String user,
+      ShuffleDataDistributionType dataDistributionType) {
+    this(
+        appId,
+        shuffleId,
+        partitionRanges,
+        remoteStorageInfo,
+        user,
+        dataDistributionType,
+        BlockIdLayoutConfig.from()
+    );
+  }
 
   public RssRegisterShuffleRequest(
       String appId,

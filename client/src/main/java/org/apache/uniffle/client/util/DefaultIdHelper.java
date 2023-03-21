@@ -17,11 +17,18 @@
 
 package org.apache.uniffle.client.util;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.IdHelper;
 
 public class DefaultIdHelper extends IdHelper {
+
+  @VisibleForTesting
+  public DefaultIdHelper() {
+    this(BlockIdLayoutConfig.from());
+  }
 
   public DefaultIdHelper(BlockIdLayoutConfig config) {
     super(config);

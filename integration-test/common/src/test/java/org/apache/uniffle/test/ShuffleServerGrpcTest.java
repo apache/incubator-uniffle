@@ -52,6 +52,7 @@ import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
@@ -116,7 +117,8 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
         0,
         Lists.newArrayList(new PartitionRange(0, 1)),
         new RemoteStorageInfo(""),
-        ShuffleDataDistributionType.NORMAL
+        ShuffleDataDistributionType.NORMAL,
+        BlockIdLayoutConfig.from()
     );
     shuffleWriteClient.registerApplicationInfo("application_clearResourceTest1", 500L, "user");
     shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest1", 500L);

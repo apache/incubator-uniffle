@@ -401,6 +401,25 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     return successfulCommit.get() == shuffleServerInfoSet.size();
   }
 
+  @VisibleForTesting
+  public void registerShuffle(
+      ShuffleServerInfo shuffleServerInfo,
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      RemoteStorageInfo remoteStorage,
+      ShuffleDataDistributionType dataDistributionType) {
+      this.registerShuffle(
+          shuffleServerInfo,
+          appId,
+          shuffleId,
+          partitionRanges,
+          remoteStorage,
+          dataDistributionType,
+          BlockIdLayoutConfig.from()
+      );
+  }
+
   @Override
   public void registerShuffle(
       ShuffleServerInfo shuffleServerInfo,
