@@ -516,42 +516,37 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   }
 
   @Test
-  public void processPendingEventsTest(@TempDir File tempDir) {
-    try {
-      shuffleServerConf.set(RssBaseConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.toString());
-      shuffleServerConf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
-      shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
-      shuffleServerConf.set(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 5L);
-      StorageManager storageManager =
-          StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
-      ShuffleFlushManager manager =
-          new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", mockShuffleServer, storageManager);
-      ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(1, "1", 1, 1, 1, 100, null, null, null);
-      assertEquals(0, manager.getPendingEventsSize());
-      manager.addPendingEvents(event);
-      Thread.sleep(1000);
-      assertEquals(0, manager.getPendingEventsSize());
-      do {
-        Thread.sleep(1 * 1000);
-      } while (manager.getEventNumInFlush() != 0);
+  public void processPendingEventsTest(@TempDir File tempDir) throws Exception {
+    shuffleServerConf.set(RssBaseConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.toString());
+    shuffleServerConf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
+    shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
+    shuffleServerConf.set(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 5L);
+    StorageManager storageManager =
+        StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
+    ShuffleFlushManager manager =
+        new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", mockShuffleServer, storageManager);
+    ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(1, "1", 1, 1, 1, 100, null, null, null);
+    assertEquals(0, manager.getPendingEventsSize());
+    manager.addPendingEvents(event);
+    Thread.sleep(1000);
+    assertEquals(0, manager.getPendingEventsSize());
+    do {
+      Thread.sleep(1 * 1000);
+    } while (manager.getEventNumInFlush() != 0);
 
-      List<ShufflePartitionedBlock> blocks = Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, null));
-      ShuffleDataFlushEvent bigEvent = new ShuffleDataFlushEvent(1, "1", 1, 1, 1, 100, blocks, null, null);
-      bigEvent.setUnderStorage(storageManager.selectStorage(event));
-      storageManager.updateWriteMetrics(bigEvent, 0);
+    List<ShufflePartitionedBlock> blocks = Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, null));
+    ShuffleDataFlushEvent bigEvent = new ShuffleDataFlushEvent(1, "1", 1, 1, 1, 100, blocks, null, null);
+    bigEvent.setUnderStorage(storageManager.selectStorage(event));
+    storageManager.updateWriteMetrics(bigEvent, 0);
 
-      manager.addPendingEvents(event);
-      manager.addPendingEvents(event);
-      manager.addPendingEvents(event);
-      Thread.sleep(1000);
-      assertTrue(2 <= manager.getPendingEventsSize());
-      int eventNum = (int) ShuffleServerMetrics.counterTotalDroppedEventNum.get();
-      Thread.sleep(6 * 1000);
-      assertEquals(eventNum + 3, (int) ShuffleServerMetrics.counterTotalDroppedEventNum.get());
-      assertEquals(0, manager.getPendingEventsSize());
-    } catch (Exception e) {
-      e.printStackTrace();
-      fail();
-    }
+    manager.addPendingEvents(event);
+    manager.addPendingEvents(event);
+    manager.addPendingEvents(event);
+    Thread.sleep(1000);
+    assertTrue(2 <= manager.getPendingEventsSize());
+    int eventNum = (int) ShuffleServerMetrics.counterTotalDroppedEventNum.get();
+    Thread.sleep(6 * 1000);
+    assertEquals(eventNum + 3, (int) ShuffleServerMetrics.counterTotalDroppedEventNum.get());
+    assertEquals(0, manager.getPendingEventsSize());
   }
 }

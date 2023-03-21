@@ -45,43 +45,37 @@ public class ShuffleServerTest {
   private File tempDir;
 
   @Test
-  public void startTest() {
+  public void startTest() throws Exception {
+    ShuffleServerConf serverConf = createShuffleServerConf();
+    ShuffleServer ss1 = new ShuffleServer(serverConf);
+    ss1.start();
+    ExitUtils.disableSystemExit();
+    ShuffleServer ss2 = new ShuffleServer(serverConf);
+    String expectMessage = "Fail to start jetty http server";
+    final int expectStatus = 1;
     try {
-      ShuffleServerConf serverConf = createShuffleServerConf();
-      ShuffleServer ss1 = new ShuffleServer(serverConf);
-      ss1.start();
-      ExitUtils.disableSystemExit();
-      ShuffleServer ss2 = new ShuffleServer(serverConf);
-      String expectMessage = "Fail to start jetty http server";
-      final int expectStatus = 1;
-      try {
-        ss2.start();
-      } catch (Exception e) {
-        assertEquals(expectMessage, e.getMessage());
-        assertEquals(expectStatus, ((ExitException) e).getStatus());
-      }
-
-      serverConf.setInteger("rss.jetty.http.port", 9529);
-      ss2 = new ShuffleServer(serverConf);
-      expectMessage = "Fail to start grpc server";
-      try {
-        ss2.start();
-      } catch (Exception e) {
-        assertEquals(expectMessage, e.getMessage());
-        assertEquals(expectStatus, ((ExitException) e).getStatus());
-      }
-      ss1.stopServer();
-
-      final Thread t = new Thread(null, () -> {
-        throw new AssertionError("TestUncaughtException");
-      }, "testThread");
-      t.start();
-      t.join();
+      ss2.start();
     } catch (Exception e) {
-      e.printStackTrace();
-      fail();
+      assertEquals(expectMessage, e.getMessage());
+      assertEquals(expectStatus, ((ExitException) e).getStatus());
     }
 
+    serverConf.setInteger("rss.jetty.http.port", 9529);
+    ss2 = new ShuffleServer(serverConf);
+    expectMessage = "Fail to start grpc server";
+    try {
+      ss2.start();
+    } catch (Exception e) {
+      assertEquals(expectMessage, e.getMessage());
+      assertEquals(expectStatus, ((ExitException) e).getStatus());
+    }
+    ss1.stopServer();
+
+    final Thread t = new Thread(null, () -> {
+      throw new AssertionError("TestUncaughtException");
+    }, "testThread");
+    t.start();
+    t.join();
   }
 
   @ParameterizedTest
