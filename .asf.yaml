@@ -24,6 +24,7 @@ github:
     - shuffle
     - remote-shuffle-service
     - rss
+    - tez
   features:
     # Enable wiki for documentation
     wiki: true
