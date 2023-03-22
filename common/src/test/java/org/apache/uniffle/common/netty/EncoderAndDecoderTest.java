@@ -38,7 +38,6 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import org.apache.uniffle.common.netty.protocol.NettyProtocolTestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,6 +45,7 @@ import org.junit.jupiter.api.Test;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.netty.protocol.NettyProtocolTestUtils;
 import org.apache.uniffle.common.netty.protocol.RpcResponse;
 import org.apache.uniffle.common.netty.protocol.SendShuffleDataRequest;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -78,7 +78,7 @@ public class EncoderAndDecoderTest {
         sendShuffleDataRequest.getPartitionToBlocks().values().stream().flatMap(Collection::stream)
             .forEach(shuffleBlockInfo -> shuffleBlockInfo.getData().release());
         sendShuffleDataRequest.getPartitionToBlocks().values().stream().flatMap(Collection::stream)
-            .forEach(shuffleBlockInfo -> assertEquals(0,shuffleBlockInfo .getData().refCnt()));
+            .forEach(shuffleBlockInfo -> assertEquals(0,shuffleBlockInfo.getData().refCnt()));
         RpcResponse rpcResponse = new RpcResponse(REQUEST_ID, STATUS_CODE, EXPECTED_MESSAGE);
         ctx.writeAndFlush(rpcResponse);
       } else {
