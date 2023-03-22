@@ -38,7 +38,6 @@ public class NettyProtocolTestUtils {
                && blockInfo1.getShuffleServerInfos().equals(blockInfo2.getShuffleServerInfos());
   }
 
-
   private static boolean compareBlockList(List<ShuffleBlockInfo> list1, List<ShuffleBlockInfo> list2) {
     if (list1 == null || list2 == null || list1.size() != list2.size()) {
       return false;
@@ -53,13 +52,13 @@ public class NettyProtocolTestUtils {
 
   private static boolean comparePartitionToBlockList(Map<Integer, List<ShuffleBlockInfo>> m1,
       Map<Integer, List<ShuffleBlockInfo>> m2) {
+    if (m1 == null || m2 == null || m1.size() != m2.size()) {
+      return false;
+    }
     Iterator<Map.Entry<Integer, List<ShuffleBlockInfo>>> iter1 = m1.entrySet().iterator();
     while (iter1.hasNext()) {
       Map.Entry<Integer, List<ShuffleBlockInfo>> entry1 = iter1.next();
-      List<ShuffleBlockInfo> m1value = entry1.getValue() == null ? null : entry1.getValue();
-      List<ShuffleBlockInfo> m2value = m2.get(entry1.getKey()) == null ? null : m2.get(entry1.getKey());
-
-      if (!compareBlockList(m1value, m2value)) {
+      if (!compareBlockList(entry1.getValue(), m2.get(entry1.getKey()))) {
         return false;
       }
     }
