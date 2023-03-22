@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.util.Constants;
@@ -114,7 +115,7 @@ public class HdfsStorageManager extends SingleStorageManager {
 
   @Override
   public Checker getStorageChecker() {
-    throw new RuntimeException("Not support storage checker");
+    throw new RssException("Not support storage checker");
   }
 
   @Override

@@ -53,6 +53,7 @@ import org.apache.uniffle.client.request.RssDecommissionRequest;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.InvalidRequestException;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
@@ -289,7 +290,7 @@ public class SimpleClusterManager implements ClusterManager {
       return clientCache.get(serverNode,
               () -> new ShuffleServerInternalGrpcClient(serverNode.getIp(), serverNode.getGrpcPort()));
     } catch (ExecutionException e) {
-      throw new RuntimeException(e);
+      throw new RssException(e);
     }
   }
 

@@ -32,6 +32,7 @@ import org.roaringbitmap.RoaringBitmap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.storage.StorageMedia;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
@@ -74,7 +75,7 @@ public class LocalStorage extends AbstractStorage {
       this.mountPoint =  store.name();
     } catch (IOException ioe) {
       LOG.warn("Init base directory " + basePath + " fail, the disk should be corrupted", ioe);
-      throw new RuntimeException(ioe);
+      throw new RssException(ioe);
     }
     if (capacity < 0L) {
       long totalSpace = baseFolder.getTotalSpace();

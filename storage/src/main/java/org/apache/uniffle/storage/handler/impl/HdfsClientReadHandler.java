@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -109,7 +110,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
     try {
       fs = HadoopFilesystemProvider.getFilesystem(baseFolder, hadoopConf);
     } catch (Exception ioe) {
-      throw new RuntimeException("Can't get FileSystem for " + baseFolder);
+      throw new RssException("Can't get FileSystem for " + baseFolder);
     }
 
     FileStatus[] indexFiles = null;

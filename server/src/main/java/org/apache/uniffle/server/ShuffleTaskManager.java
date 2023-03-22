@@ -52,6 +52,7 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
@@ -237,7 +238,7 @@ public class ShuffleTaskManager {
     synchronized (lock) {
       long commitTimeout = conf.get(ShuffleServerConf.SERVER_COMMIT_TIMEOUT);
       if (System.currentTimeMillis() - start > commitTimeout) {
-        throw new RuntimeException("Shuffle data commit timeout for " + commitTimeout + " ms");
+        throw new RssException("Shuffle data commit timeout for " + commitTimeout + " ms");
       }
       synchronized (cachedBlockIds) {
         cloneBlockIds = RssUtils.cloneBitMap(cachedBlockIds);
@@ -258,7 +259,7 @@ public class ShuffleTaskManager {
         }
         Thread.sleep(checkInterval);
         if (System.currentTimeMillis() - start > commitTimeout) {
-          throw new RuntimeException("Shuffle data commit timeout for " + commitTimeout + " ms");
+          throw new RssException("Shuffle data commit timeout for " + commitTimeout + " ms");
         }
         LOG.info("Checking commit result for appId[" + appId + "], shuffleId[" + shuffleId
             + "], expect committed[" + expectedCommitted
@@ -277,7 +278,7 @@ public class ShuffleTaskManager {
     refreshAppId(appId);
     Map<Integer, Roaring64NavigableMap[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
     if (shuffleIdToPartitions == null) {
-      throw new RuntimeException("appId[" + appId  + "] is expired!");
+      throw new RssException("appId[" + appId  + "] is expired!");
     }
     if (!shuffleIdToPartitions.containsKey(shuffleId)) {
       Roaring64NavigableMap[] blockIds = new Roaring64NavigableMap[bitmapNum];

@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.coordinator.ClusterManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.ServerNode;
@@ -74,7 +75,7 @@ public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrate
       int estimateTaskConcurrency) {
 
     if (partitionNumPerRange != 1) {
-      throw new RuntimeException("PartitionNumPerRange must be one");
+      throw new RssException("PartitionNumPerRange must be one");
     }
 
     SortedMap<PartitionRange, List<ServerNode>> assignments;
@@ -109,7 +110,7 @@ public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrate
       });
 
       if (nodes.isEmpty() || nodes.size() < replica) {
-        throw new RuntimeException("There isn't enough shuffle servers");
+        throw new RssException("There isn't enough shuffle servers");
       }
 
       final int assignmentMaxNum = clusterManager.getShuffleNodesMax();

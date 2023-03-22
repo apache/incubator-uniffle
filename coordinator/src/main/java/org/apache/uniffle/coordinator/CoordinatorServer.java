@@ -26,6 +26,7 @@ import picocli.CommandLine;
 import org.apache.uniffle.common.Arguments;
 import org.apache.uniffle.common.config.ReconfigurableBase;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
 import org.apache.uniffle.common.metrics.MetricReporter;
@@ -147,7 +148,7 @@ public class CoordinatorServer extends ReconfigurableBase {
   private void initialization() throws Exception {
     String ip = RssUtils.getHostIp();
     if (ip == null) {
-      throw new RuntimeException("Couldn't acquire host Ip");
+      throw new RssException("Couldn't acquire host Ip");
     }
     int port = coordinatorConf.getInteger(CoordinatorConf.RPC_SERVER_PORT);
     id = ip + "-" + port;

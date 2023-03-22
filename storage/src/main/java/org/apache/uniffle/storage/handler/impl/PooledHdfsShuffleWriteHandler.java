@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
@@ -88,7 +89,7 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
         );
       }
     } catch (Exception e) {
-      throw new RuntimeException("Errors on initializing Hdfs writer handler.", e);
+      throw new RssException("Errors on initializing Hdfs writer handler.", e);
     }
   }
 

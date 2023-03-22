@@ -374,7 +374,7 @@ public class RssShuffleManager implements ShuffleManager {
           writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle,
           (Function<String, Boolean>) this::markFailedTask);
     } else {
-      throw new RuntimeException("Unexpected ShuffleHandle:" + handle.getClass().getName());
+      throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
   }
 
@@ -423,7 +423,7 @@ public class RssShuffleManager implements ShuffleManager {
           storageType, (int) readBufferSize, partitionNumPerRange, partitionNum,
           blockIdBitmap, taskIdBitmap, RssSparkConfig.toRssConf(sparkConf));
     } else {
-      throw new RuntimeException("Unexpected ShuffleHandle:" + handle.getClass().getName());
+      throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
   }
 
@@ -455,7 +455,7 @@ public class RssShuffleManager implements ShuffleManager {
 
   @Override
   public ShuffleBlockResolver shuffleBlockResolver() {
-    throw new RuntimeException("RssShuffleManager.shuffleBlockResolver is not implemented");
+    throw new RssException("RssShuffleManager.shuffleBlockResolver is not implemented");
   }
 
   public EventLoop<AddBlockEvent> getEventLoop() {
@@ -482,7 +482,7 @@ public class RssShuffleManager implements ShuffleManager {
       if (topologyInfo.isDefined()) {
         taskIdBitmap.addLong(Long.parseLong(tuple2._1().topologyInfo().get()));
       } else {
-        throw new RuntimeException("Can't get expected taskAttemptId");
+        throw new RssException("Can't get expected taskAttemptId");
       }
     }
     LOG.info("Got result from MapStatus for expected tasks " + taskIdBitmap.getLongCardinality());

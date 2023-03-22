@@ -515,7 +515,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
           response = new RssGetShuffleResultResponse(StatusCode.SUCCESS,
               rpcResponse.getSerializedBitmap().toByteArray());
         } catch (Exception e) {
-          throw new RuntimeException(e);
+          throw new RssException(e);
         }
         break;
       default:
@@ -547,7 +547,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
           response = new RssGetShuffleResultResponse(StatusCode.SUCCESS,
               rpcResponse.getSerializedBitmap().toByteArray());
         } catch (Exception e) {
-          throw new RuntimeException(e);
+          throw new RssException(e);
         }
         break;
       default:

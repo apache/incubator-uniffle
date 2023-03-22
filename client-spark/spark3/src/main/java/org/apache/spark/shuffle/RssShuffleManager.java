@@ -385,7 +385,7 @@ public class RssShuffleManager implements ShuffleManager {
       TaskContext context,
       ShuffleWriteMetricsReporter metrics) {
     if (!(handle instanceof RssShuffleHandle)) {
-      throw new RuntimeException("Unexpected ShuffleHandle:" + handle.getClass().getName());
+      throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
     RssShuffleHandle<K, V, ?> rssHandle = (RssShuffleHandle<K, V, ?>) handle;
     // todo: this implement is tricky, we should refactor it
@@ -479,7 +479,7 @@ public class RssShuffleManager implements ShuffleManager {
       ShuffleReadMetricsReporter metrics,
       Roaring64NavigableMap taskIdBitmap) {
     if (!(handle instanceof RssShuffleHandle)) {
-      throw new RuntimeException("Unexpected ShuffleHandle:" + handle.getClass().getName());
+      throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
     final String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
     final int indexReadLimit = sparkConf.get(RssSparkConfig.RSS_INDEX_READ_LIMIT);
@@ -591,14 +591,14 @@ public class RssShuffleManager implements ShuffleManager {
                       startPartition,
                       endPartition);
         } catch (Exception e) {
-          throw new RuntimeException(e);
+          throw new RssException(e);
         }
       }
     }
     while (mapStatusIter.hasNext()) {
       Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>> tuple2 = mapStatusIter.next();
       if (!tuple2._1().topologyInfo().isDefined()) {
-        throw new RuntimeException("Can't get expected taskAttemptId");
+        throw new RssException("Can't get expected taskAttemptId");
       }
       taskIdBitmap.add(Long.parseLong(tuple2._1().topologyInfo().get()));
     }
@@ -627,12 +627,12 @@ public class RssShuffleManager implements ShuffleManager {
                   startPartition,
                   endPartition);
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw new RssException(e);
     }
     while (mapStatusIter.hasNext()) {
       Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>> tuple2 = mapStatusIter.next();
       if (!tuple2._1().topologyInfo().isDefined()) {
-        throw new RuntimeException("Can't get expected taskAttemptId");
+        throw new RssException("Can't get expected taskAttemptId");
       }
       taskIdBitmap.add(Long.parseLong(tuple2._1().topologyInfo().get()));
     }
@@ -653,7 +653,7 @@ public class RssShuffleManager implements ShuffleManager {
 
   @Override
   public ShuffleBlockResolver shuffleBlockResolver() {
-    throw new RuntimeException("RssShuffleManager.shuffleBlockResolver is not implemented");
+    throw new RssException("RssShuffleManager.shuffleBlockResolver is not implemented");
   }
 
   @Override

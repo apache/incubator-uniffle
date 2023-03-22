@@ -38,6 +38,7 @@ import org.apache.uniffle.common.Arguments;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.exception.InvalidRequestException;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
 import org.apache.uniffle.common.metrics.MetricReporter;
@@ -191,7 +192,7 @@ public class ShuffleServer {
     }
     ip = RssUtils.getHostIp();
     if (ip == null) {
-      throw new RuntimeException("Couldn't acquire host Ip");
+      throw new RssException("Couldn't acquire host Ip");
     }
     grpcPort = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);

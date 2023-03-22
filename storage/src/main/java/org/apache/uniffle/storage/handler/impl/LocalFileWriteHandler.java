@@ -71,7 +71,7 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
       int shuffleId,
       int startPartition) {
     if (storageBasePaths == null || storageBasePaths.length == 0) {
-      throw new RuntimeException("Base path can't be empty, please check rss.storage.localFile.basePaths");
+      throw new RssException("Base path can't be empty, please check rss.storage.localFile.basePaths");
     }
     int index = ShuffleStorageUtils.getStorageIndex(
         storageBasePaths.length,

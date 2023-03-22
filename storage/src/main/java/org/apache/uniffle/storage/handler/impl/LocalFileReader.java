@@ -26,6 +26,7 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.storage.api.FileReader;
 
 public class LocalFileReader implements FileReader, Closeable {
@@ -49,7 +50,7 @@ public class LocalFileReader implements FileReader, Closeable {
       while (targetSkip > 0) {
         long realSkip = dataInputStream.skip(targetSkip);
         if (realSkip == -1) {
-          throw new RuntimeException("Unexpected EOF when skip bytes");
+          throw new RssException("Unexpected EOF when skip bytes");
         }
         targetSkip -= realSkip;
         if (targetSkip > 0) {
