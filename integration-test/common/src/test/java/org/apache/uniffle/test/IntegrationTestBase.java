@@ -72,7 +72,7 @@ public abstract class IntegrationTestBase extends HdfsTestBase {
   }
 
   @BeforeEach
-  public void createClient() {
+  public void cleanupClient() {
     ShuffleServerClientFactory.getInstance().cleanupCache();
   }
 
