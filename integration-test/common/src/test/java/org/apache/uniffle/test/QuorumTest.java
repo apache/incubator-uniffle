@@ -18,8 +18,6 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.util.List;
 import java.util.Map;
 
@@ -816,14 +814,5 @@ public class QuorumTest extends ShuffleReadWriteBase {
       csb = readClient.readShuffleBlockData();
     }
     assertTrue(blockIdBitmap.equals(matched));
-  }
-
-  private boolean isPortAvailable(int port) {
-    try (Socket socket = new Socket()) {
-      socket.connect(new InetSocketAddress("127.0.0.1", port), 500);
-      return true;
-    } catch (Exception e) {
-      return false;
-    }
   }
 }
