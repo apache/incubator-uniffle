@@ -409,15 +409,15 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorage,
       ShuffleDataDistributionType dataDistributionType) {
-      this.registerShuffle(
-          shuffleServerInfo,
-          appId,
-          shuffleId,
-          partitionRanges,
-          remoteStorage,
-          dataDistributionType,
-          BlockIdLayoutConfig.from()
-      );
+    this.registerShuffle(
+        shuffleServerInfo,
+        appId,
+        shuffleId,
+        partitionRanges,
+        remoteStorage,
+        dataDistributionType,
+        BlockIdLayoutConfig.from()
+    );
   }
 
   @Override
