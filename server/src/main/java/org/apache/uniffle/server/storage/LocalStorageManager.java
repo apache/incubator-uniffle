@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.UnionKey;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageMedia;
 import org.apache.uniffle.common.storage.StorageStatus;
@@ -141,7 +142,7 @@ public class LocalStorageManager extends SingleStorageManager {
     int failedCount = storageBasePaths.size() - successCount.get();
     long maxFailedNumber = conf.getLong(LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER);
     if (failedCount > maxFailedNumber || successCount.get() == 0) {
-      throw new RuntimeException(
+      throw new RssException(
           String.format("Initialize %s local storage(s) failed, "
               + "specified local storage paths size: %s, the conf of %s size: %s",
               failedCount, localStorageArray.length, LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER.key(), maxFailedNumber)

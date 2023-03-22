@@ -38,6 +38,7 @@ import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ThreadUtils;
@@ -71,13 +72,13 @@ public class AccessCandidatesChecker extends AbstractAccessChecker {
     if (!fileSystem.isFile(path)) {
       String msg = String.format("Fail to init AccessCandidatesChecker, %s is not a file.", path.toUri());
       LOG.error(msg);
-      throw new RuntimeException(msg);
+      throw new RssException(msg);
     }
     updateAccessCandidatesInternal();
     if (candidates.get() == null || candidates.get().isEmpty()) {
       String msg = "Candidates must be non-empty and can be loaded successfully at coordinator startup.";
       LOG.error(msg);
-      throw new RuntimeException(msg);
+      throw new RssException(msg);
     }
     LOG.debug("Load candidates: {}", String.join(";", candidates.get()));
 

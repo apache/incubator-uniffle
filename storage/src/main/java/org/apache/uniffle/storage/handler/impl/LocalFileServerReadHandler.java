@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.exception.FileNotFoundException;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
@@ -99,7 +100,7 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
 
     if (indexFiles != null && indexFiles.length > 0) {
       if (indexFiles.length != 1) {
-        throw new RuntimeException("More index file than expected: " + indexFiles.length);
+        throw new RssException("More index file than expected: " + indexFiles.length);
       }
       String fileNamePrefix = getFileNamePrefix(indexFiles[0].getName());
       indexFileName = fullShufflePath + "/" + ShuffleStorageUtils.generateIndexFileName(fileNamePrefix);

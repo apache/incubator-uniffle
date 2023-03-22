@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.metrics.AbstractMetricReporter;
 import org.apache.uniffle.common.util.ThreadUtils;
 
@@ -52,13 +53,13 @@ public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter 
     if (pushGateway == null) {
       String address = conf.getString(PUSHGATEWAY_ADDR, null);
       if (StringUtils.isEmpty(address)) {
-        throw new RuntimeException(PUSHGATEWAY_ADDR + " should not be empty!");
+        throw new RssException(PUSHGATEWAY_ADDR + " should not be empty!");
       }
       pushGateway = new PushGateway(address);
     }
     String jobName = conf.getString(JOB_NAME, null);
     if (StringUtils.isEmpty(jobName)) {
-      throw new RuntimeException(JOB_NAME + " should not be empty!");
+      throw new RssException(JOB_NAME + " should not be empty!");
     }
     Map<String, String> groupingKey = parseGroupingKey(conf.getString(GROUPING_KEY, ""));
     groupingKey.put("instance", instanceId);

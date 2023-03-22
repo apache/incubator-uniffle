@@ -24,6 +24,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.handler.impl.HdfsShuffleWriteHandler;
@@ -115,13 +116,13 @@ public class HdfsStorage extends AbstractStorage {
         );
       }
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw new RssException(e);
     }
   }
 
   @Override
   protected ServerReadHandler newReadHandler(CreateShuffleReadHandlerRequest request) {
-    throw new RuntimeException("Hdfs storage don't support to read from sever");
+    throw new RssException("Hdfs storage don't support to read from sever");
   }
 
   @Override

@@ -287,7 +287,7 @@ public class RssMRAppMaster extends MRAppMaster {
 
       String jobDirStr = conf.get(MRJobConfig.MAPREDUCE_JOB_DIR);
       if (jobDirStr == null) {
-        throw new RuntimeException("jobDir is empty");
+        throw new RssException("jobDir is empty");
       }
     }
     try {
@@ -375,7 +375,7 @@ public class RssMRAppMaster extends MRAppMaster {
       conf.set(MRJobConfig.CACHE_FILES_SIZES, sizes == null ? String.valueOf(size) : size + "," + sizes);
     } catch (InterruptedException | IOException e) {
       LOG.error("Upload extra conf exception", e);
-      throw new RuntimeException("Upload extra conf exception ", e);
+      throw new RssException("Upload extra conf exception ", e);
     }
   }
 
