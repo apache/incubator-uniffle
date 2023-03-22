@@ -17,128 +17,71 @@
 
 package org.apache.uniffle.common.netty.protocol;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import io.netty.buffer.ByteBuf;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
-import org.apache.uniffle.common.ShuffleServerInfo;
 
 public class NettyProtocolTestUtils {
 
-  static class SendShuffleDataRequestTest extends SendShuffleDataRequest {
-    SendShuffleDataRequestTest(long requestId, String appId, int shuffleId, long requireId,
-        Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks, long timestamp) {
-      super(requestId, appId, shuffleId, requireId, partitionToBlocks, timestamp);
-    }
+  private static boolean compareShuffleBlockInfo(ShuffleBlockInfo blockInfo1, ShuffleBlockInfo blockInfo2) {
+    return blockInfo1.getPartitionId() == blockInfo2.getPartitionId()
+               && blockInfo1.getBlockId() == blockInfo2.getBlockId()
+               && blockInfo1.getLength() == blockInfo2.getLength()
+               && blockInfo1.getShuffleId() == blockInfo2.getShuffleId()
+               && blockInfo1.getCrc() == blockInfo2.getCrc()
+               && blockInfo1.getTaskAttemptId() == blockInfo2.getTaskAttemptId()
+               && blockInfo1.getUncompressLength() == blockInfo2.getUncompressLength()
+               && blockInfo1.getFreeMemory() == blockInfo2.getFreeMemory()
+               && blockInfo1.getData().equals(blockInfo2.getData())
+               && blockInfo1.getShuffleServerInfos().equals(blockInfo2.getShuffleServerInfos());
+  }
 
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
+
+  private static boolean compareBlockList(List<ShuffleBlockInfo> list1, List<ShuffleBlockInfo> list2) {
+    if (list1 == null || list2 == null || list1.size() != list2.size()) {
+      return false;
+    }
+    for (int i = 0; i < list1.size(); i++) {
+      if (!compareShuffleBlockInfo(list1.get(i), list2.get(i))) {
         return false;
       }
-      SendShuffleDataRequestTest that = (SendShuffleDataRequestTest) o;
-      Map<Integer, List<ShuffleBlockInfoTest>> map1 = Maps.newHashMap();
-      Map<Integer, List<ShuffleBlockInfoTest>> map2 = Maps.newHashMap();
-      for (Map.Entry<Integer, List<ShuffleBlockInfo>> entry : this.getPartitionToBlocks().entrySet()) {
-        map1.put(entry.getKey(), toShuffleBlockInfoTestList(entry.getValue()));
-      }
-      for (Map.Entry<Integer, List<ShuffleBlockInfo>> entry : that.getPartitionToBlocks().entrySet()) {
-        map2.put(entry.getKey(), toShuffleBlockInfoTestList(entry.getValue()));
-      }
-      return this.requestId == that.requestId
-                 && this.getShuffleId() == that.getShuffleId()
-                 && this.getRequireId() == that.getRequireId()
-                 && this.getTimestamp() == that.getTimestamp()
-                 && this.getAppId().equals(that.getAppId())
-                 && map1.equals(map2);
     }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(requestId, this.getAppId(), this.getShuffleId(), this.getRequireId(),
-          this.getPartitionToBlocks(), this.getTimestamp());
-    }
+    return true;
   }
 
-  static class ShuffleBlockInfoTest extends ShuffleBlockInfo {
-    ShuffleBlockInfoTest(int shuffleId, int partitionId, long blockId, int length, long crc,
-        ByteBuf data, List<ShuffleServerInfo> shuffleServerInfos, int uncompressLength,
-        long freeMemory, long taskAttemptId) {
-      super(shuffleId, partitionId, blockId, length, crc, data, shuffleServerInfos, uncompressLength,
-          freeMemory, taskAttemptId);
-    }
+  private static boolean comparePartitionToBlockList(Map<Integer, List<ShuffleBlockInfo>> m1,
+      Map<Integer, List<ShuffleBlockInfo>> m2) {
+    Iterator<Map.Entry<Integer, List<ShuffleBlockInfo>>> iter1 = m1.entrySet().iterator();
+    while (iter1.hasNext()) {
+      Map.Entry<Integer, List<ShuffleBlockInfo>> entry1 = iter1.next();
+      List<ShuffleBlockInfo> m1value = entry1.getValue() == null ? null : entry1.getValue();
+      List<ShuffleBlockInfo> m2value = m2.get(entry1.getKey()) == null ? null : m2.get(entry1.getKey());
 
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
+      if (!compareBlockList(m1value, m2value)) {
         return false;
       }
-      ShuffleBlockInfoTest that = (ShuffleBlockInfoTest) o;
-      return this.getPartitionId() == that.getPartitionId()
-                 && this.getBlockId() == that.getBlockId()
-                 && this.getLength() == that.getLength()
-                 && this.getShuffleId() == that.getShuffleId()
-                 && this.getCrc() == that.getCrc()
-                 && this.getTaskAttemptId() == that.getTaskAttemptId()
-                 && this.getUncompressLength() == that.getUncompressLength()
-                 && this.getFreeMemory() == that.getFreeMemory()
-                 && this.getData().equals(that.getData())
-                 && this.getShuffleServerInfos().equals(that.getShuffleServerInfos());
     }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(this.getPartitionId(), this.getBlockId(), this.getLength(), this.getShuffleId(),
-          this.getCrc(), this.getTaskAttemptId(), this.getData(), this.getShuffleServerInfos(),
-          this.getUncompressLength(), this.getFreeMemory());
-    }
-  }
-
-  private static SendShuffleDataRequestTest toSendShuffleDataRequestTest(
-      SendShuffleDataRequest sendShuffleDataRequest) {
-    return new SendShuffleDataRequestTest(sendShuffleDataRequest.requestId,
-        sendShuffleDataRequest.getAppId(),
-        sendShuffleDataRequest.getShuffleId(),
-        sendShuffleDataRequest.getRequireId(),
-        sendShuffleDataRequest.getPartitionToBlocks(),
-        sendShuffleDataRequest.getTimestamp());
-  }
-
-  private static List<ShuffleBlockInfoTest> toShuffleBlockInfoTestList(
-      List<ShuffleBlockInfo> shuffleBlockInfoList) {
-    List<ShuffleBlockInfoTest> res = Lists.newArrayList();
-    for (ShuffleBlockInfo shuffleBlockInfo : shuffleBlockInfoList) {
-      res.add(toShuffleBlockInfoTest(shuffleBlockInfo));
-    }
-    return res;
-  }
-
-  private static ShuffleBlockInfoTest toShuffleBlockInfoTest(ShuffleBlockInfo shuffleBlockInfo) {
-    return new ShuffleBlockInfoTest(shuffleBlockInfo.getShuffleId(),
-        shuffleBlockInfo.getPartitionId(),
-        shuffleBlockInfo.getBlockId(),
-        shuffleBlockInfo.getLength(),
-        shuffleBlockInfo.getCrc(),
-        shuffleBlockInfo.getData(),
-        shuffleBlockInfo.getShuffleServerInfos(),
-        shuffleBlockInfo.getUncompressLength(),
-        shuffleBlockInfo.getFreeMemory(),
-        shuffleBlockInfo.getTaskAttemptId());
+    return true;
   }
 
   public static boolean compareSendShuffleDataRequest(SendShuffleDataRequest req1,
       SendShuffleDataRequest req2) {
-    return toSendShuffleDataRequestTest(req1).equals(toSendShuffleDataRequestTest(req2));
+    if (req1 == req2) {
+      return true;
+    }
+    if (req1 == null || req2 == null) {
+      return false;
+    }
+    boolean isEqual = req1.requestId == req2.requestId
+               && req1.getShuffleId() == req2.getShuffleId()
+               && req1.getRequireId() == req2.getRequireId()
+               && req1.getTimestamp() == req2.getTimestamp()
+               && req1.getAppId().equals(req2.getAppId());
+    if (!isEqual) {
+      return false;
+    }
+    return comparePartitionToBlockList(req1.getPartitionToBlocks(), req2.getPartitionToBlocks());
   }
 }
