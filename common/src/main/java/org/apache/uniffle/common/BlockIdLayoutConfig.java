@@ -136,7 +136,7 @@ public class BlockIdLayoutConfig {
       long atomicInt) {
     long maxSeqId = (1 << config.getSequenceIdLength()) - 1;
     long maxPartitionId = (1 << config.getPartitionIdLength()) - 1;
-    long maxTaskAttemptId = (1 << config.getTaskAttemptIdLength() ) - 1;
+    long maxTaskAttemptId = (1 << config.getTaskAttemptIdLength()) - 1;
 
     if (atomicInt < 0 || atomicInt > maxSeqId) {
       throw new IllegalArgumentException("Can't support sequence[" + atomicInt
