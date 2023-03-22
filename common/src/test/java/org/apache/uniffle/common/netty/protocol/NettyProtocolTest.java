@@ -42,12 +42,14 @@ public class NettyProtocolTest {
         new ShuffleServerInfo("bbb", 2));
     List<ShuffleBlockInfo> shuffleBlockInfoList1 =
         Arrays.asList(new ShuffleBlockInfo(1, 1, 1, 10, 123,
-                Unpooled.wrappedBuffer(data), shuffleServerInfoList, 5, 0, 1),
-            new ShuffleBlockInfo(1, 1, 1, 10, 123, Unpooled.wrappedBuffer(data), shuffleServerInfoList, 5, 0, 1));
+                Unpooled.wrappedBuffer(data).retain(), shuffleServerInfoList, 5, 0, 1),
+            new ShuffleBlockInfo(1, 1, 1, 10, 123,
+                Unpooled.wrappedBuffer(data).retain(), shuffleServerInfoList, 5, 0, 1));
     List<ShuffleBlockInfo> shuffleBlockInfoList2 =
         Arrays.asList(new ShuffleBlockInfo(1, 2, 1, 10, 123,
-                Unpooled.wrappedBuffer(data), shuffleServerInfoList, 5, 0, 1),
-            new ShuffleBlockInfo(1, 1, 2, 10, 123, Unpooled.wrappedBuffer(data), shuffleServerInfoList, 5, 0, 1));
+                Unpooled.wrappedBuffer(data).retain(), shuffleServerInfoList, 5, 0, 1),
+            new ShuffleBlockInfo(1, 1, 2, 10, 123,
+                Unpooled.wrappedBuffer(data).retain(), shuffleServerInfoList, 5, 0, 1));
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
     partitionToBlocks.put(1, shuffleBlockInfoList1);
     partitionToBlocks.put(2, shuffleBlockInfoList2);
@@ -59,9 +61,16 @@ public class NettyProtocolTest {
     sendShuffleDataRequest.encode(byteBuf);
     assertEquals(byteBuf.readableBytes(), encodeLength);
     SendShuffleDataRequest sendShuffleDataRequest1 = sendShuffleDataRequest.decode(byteBuf);
-    assertTrue(sendShuffleDataRequest.equals(sendShuffleDataRequest1));
+    assertTrue(NettyProtocolTestUtils.compareSendShuffleDataRequest(sendShuffleDataRequest, sendShuffleDataRequest1));
     assertEquals(encodeLength, sendShuffleDataRequest1.encodedLength());
     byteBuf.release();
+    for (ShuffleBlockInfo shuffleBlockInfo : sendShuffleDataRequest1.getPartitionToBlocks().get(1)) {
+      shuffleBlockInfo.getData().release();
+    }
+    for (ShuffleBlockInfo shuffleBlockInfo : sendShuffleDataRequest1.getPartitionToBlocks().get(2)) {
+      shuffleBlockInfo.getData().release();
+    }
+    assertEquals(0, byteBuf.refCnt());
   }
 
   @Test

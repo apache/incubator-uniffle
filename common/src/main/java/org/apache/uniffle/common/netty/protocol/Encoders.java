@@ -40,7 +40,9 @@ public class Encoders {
     byteBuf.writeInt(shuffleBlockInfo.getShuffleId());
     byteBuf.writeLong(shuffleBlockInfo.getCrc());
     byteBuf.writeLong(shuffleBlockInfo.getTaskAttemptId());
+    // todo: avoid copy
     ByteBufUtils.copyByteBuf(shuffleBlockInfo.getData(), byteBuf);
+    shuffleBlockInfo.getData().release();
     List<ShuffleServerInfo> shuffleServerInfoList = shuffleBlockInfo.getShuffleServerInfos();
     byteBuf.writeInt(shuffleServerInfoList.size());
     for (ShuffleServerInfo shuffleServerInfo : shuffleServerInfoList) {

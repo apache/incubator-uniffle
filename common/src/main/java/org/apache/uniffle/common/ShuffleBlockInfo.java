@@ -18,7 +18,6 @@
 package org.apache.uniffle.common;
 
 import java.util.List;
-import java.util.Objects;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -125,32 +124,5 @@ public class ShuffleBlockInfo {
     }
 
     return sb.toString();
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    ShuffleBlockInfo that = (ShuffleBlockInfo) o;
-    return partitionId == that.partitionId
-        && blockId == that.blockId
-        && length == that.length
-        && shuffleId == that.shuffleId
-        && crc == that.crc
-        && taskAttemptId == that.taskAttemptId
-        && uncompressLength == that.uncompressLength
-        && freeMemory == that.freeMemory
-        && data.equals(that.data)
-        && shuffleServerInfos.equals(that.shuffleServerInfos);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(partitionId, blockId, length, shuffleId, crc,
-        taskAttemptId, data, shuffleServerInfos, uncompressLength, freeMemory);
   }
 }

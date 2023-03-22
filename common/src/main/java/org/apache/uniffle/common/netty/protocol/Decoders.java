@@ -21,7 +21,6 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -43,8 +42,7 @@ public class Decoders {
     int shuffleId = byteBuf.readInt();
     long crc = byteBuf.readLong();
     long taskAttemptId = byteBuf.readLong();
-    // todo: we can readSlice here, but it needs to be released manually after use, or it will cause a memory leak
-    byte[] data = ByteBufUtils.readByteArray(byteBuf);
+    ByteBuf data = ByteBufUtils.readSlice(byteBuf);
     int lengthOfShuffleServers = byteBuf.readInt();
     List<ShuffleServerInfo> serverInfos = Lists.newArrayList();
     for (int k = 0; k < lengthOfShuffleServers; k++) {
@@ -53,6 +51,6 @@ public class Decoders {
     int uncompressLength = byteBuf.readInt();
     long freeMemory = byteBuf.readLong();
     return new ShuffleBlockInfo(shuffleId, partId, blockId,
-        length, crc, Unpooled.wrappedBuffer(data), serverInfos, uncompressLength, freeMemory, taskAttemptId);
+        length, crc, data, serverInfos, uncompressLength, freeMemory, taskAttemptId);
   }
 }

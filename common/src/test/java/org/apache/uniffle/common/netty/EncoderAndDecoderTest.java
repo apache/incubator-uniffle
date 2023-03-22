@@ -18,6 +18,7 @@
 package org.apache.uniffle.common.netty;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +38,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import org.apache.uniffle.common.netty.protocol.NettyProtocolTestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,7 +74,11 @@ public class EncoderAndDecoderTest {
         assertEquals(EXPECTED_MESSAGE, rpcResponse.getRetMessage());
       } else if (msg instanceof SendShuffleDataRequest) {
         SendShuffleDataRequest sendShuffleDataRequest = (SendShuffleDataRequest) msg;
-        assertTrue(sendShuffleDataRequest.equals(DATA_REQUEST));
+        assertTrue(NettyProtocolTestUtils.compareSendShuffleDataRequest(sendShuffleDataRequest, DATA_REQUEST));
+        sendShuffleDataRequest.getPartitionToBlocks().values().stream().flatMap(Collection::stream)
+            .forEach(shuffleBlockInfo -> shuffleBlockInfo.getData().release());
+        sendShuffleDataRequest.getPartitionToBlocks().values().stream().flatMap(Collection::stream)
+            .forEach(shuffleBlockInfo -> assertEquals(0,shuffleBlockInfo .getData().refCnt()));
         RpcResponse rpcResponse = new RpcResponse(REQUEST_ID, STATUS_CODE, EXPECTED_MESSAGE);
         ctx.writeAndFlush(rpcResponse);
       } else {
@@ -112,6 +118,8 @@ public class EncoderAndDecoderTest {
     Thread.sleep(200);
     channelRef.get().writeAndFlush(DATA_REQUEST);
     channelRef.get().closeFuture().await(3L, TimeUnit.SECONDS);
+    DATA_REQUEST.getPartitionToBlocks().values().stream().flatMap(Collection::stream)
+        .forEach(shuffleBlockInfo -> shuffleBlockInfo.getData().release());
   }
 
   private static SendShuffleDataRequest generateShuffleDataRequest() {
@@ -121,12 +129,14 @@ public class EncoderAndDecoderTest {
         new ShuffleServerInfo("bbb", 2));
     List<ShuffleBlockInfo> shuffleBlockInfoList1 =
         Arrays.asList(new ShuffleBlockInfo(1, 1, 1, 10, 123,
-                Unpooled.wrappedBuffer(data), shuffleServerInfoList, 5, 0, 1),
-            new ShuffleBlockInfo(1, 1, 1, 10, 123, Unpooled.wrappedBuffer(data), shuffleServerInfoList, 5, 0, 1));
+                Unpooled.wrappedBuffer(data).retain(), shuffleServerInfoList, 5, 0, 1),
+            new ShuffleBlockInfo(1, 1, 1, 10, 123,
+                Unpooled.wrappedBuffer(data).retain(), shuffleServerInfoList, 5, 0, 1));
     List<ShuffleBlockInfo> shuffleBlockInfoList2 =
         Arrays.asList(new ShuffleBlockInfo(1, 2, 1, 10, 123,
-                Unpooled.wrappedBuffer(data), shuffleServerInfoList, 5, 0, 1),
-            new ShuffleBlockInfo(1, 1, 2, 10, 123, Unpooled.wrappedBuffer(data), shuffleServerInfoList, 5, 0, 1));
+                Unpooled.wrappedBuffer(data).retain(), shuffleServerInfoList, 5, 0, 1),
+            new ShuffleBlockInfo(1, 1, 2, 10, 123,
+                Unpooled.wrappedBuffer(data).retain(), shuffleServerInfoList, 5, 0, 1));
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
     partitionToBlocks.put(1, shuffleBlockInfoList1);
     partitionToBlocks.put(2, shuffleBlockInfoList2);
