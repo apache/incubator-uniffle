@@ -22,7 +22,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -55,7 +54,6 @@ import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -446,10 +444,6 @@ public class QuorumTest extends ShuffleReadWriteBase {
   @Test
   public void case4() throws Exception {
     String testAppId = "case4";
-    /** We must wait until server1 finish start, because {@link #case3} will restart server1. */
-    await().timeout(10, TimeUnit.SECONDS).until(
-        () -> isPortAvailable(SHUFFLE_SERVER_PORT + 1));
-    Thread.sleep(1000);
     registerShuffleServer(testAppId, 3, 2, 2, true);
     // when 1 server is timeout, the sending multiple blocks should success
     enableTimeout((MockedShuffleServer)shuffleServers.get(2), 500);

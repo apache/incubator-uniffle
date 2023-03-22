@@ -26,7 +26,9 @@ import java.util.Map;
 
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 
+import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
@@ -67,6 +69,11 @@ public abstract class IntegrationTestBase extends HdfsTestBase {
     for (ShuffleServer shuffleServer : shuffleServers) {
       shuffleServer.start();
     }
+  }
+
+  @BeforeEach
+  public void createClient() {
+    ShuffleServerClientFactory.getInstance().cleanupCache();
   }
 
   @AfterAll
