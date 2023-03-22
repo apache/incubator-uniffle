@@ -73,6 +73,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.BlockIdLayoutConfig;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
@@ -228,7 +229,8 @@ public class RssMRAppMaster extends MRAppMaster {
               0,
               entry.getValue(),
               remoteStorage,
-              ShuffleDataDistributionType.NORMAL
+              ShuffleDataDistributionType.NORMAL,
+              BlockIdLayoutConfig.from(RssMRConfig.toRssConf(conf))
           ));
           LOG.info("Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
           return shuffleAssignments;

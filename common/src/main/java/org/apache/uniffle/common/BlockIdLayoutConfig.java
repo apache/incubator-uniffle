@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.uniffle.common;
 
 import java.util.Map;
@@ -49,31 +66,6 @@ public class BlockIdLayoutConfig {
         + '}';
   }
 
-  private static BlockIdLayoutConfig from(Map<String, String> blockIdLayoutMap) {
-    String partitionIdRawVal = blockIdLayoutMap.get(PARTITION_ID_LENGTH);
-    if (partitionIdRawVal == null) {
-      throw new IllegalArgumentException(PARTITION_ID_LENGTH + " must be configured.");
-    }
-    String taskAttemptIdRawVal = blockIdLayoutMap.get(TASK_ATTEMPT_ID_LENGTH);
-    if (taskAttemptIdRawVal == null) {
-      throw new IllegalArgumentException(TASK_ATTEMPT_ID_LENGTH + " must be configured.");
-    }
-    String sequenceIdRawVal = blockIdLayoutMap.get(SEQUENCE_ID_LENGTH);
-    if (sequenceIdRawVal == null) {
-      throw new IllegalArgumentException(SEQUENCE_ID_LENGTH + " must be configured.");
-    }
-
-    int partitionIdLength = Integer.valueOf(partitionIdRawVal);
-    int taskAttemptId = Integer.valueOf(taskAttemptIdRawVal);
-    int seqId = Integer.valueOf(sequenceIdRawVal);
-
-    if (partitionIdLength + taskAttemptId + seqId != BLOCK_ID_LENGTH) {
-      throw new IllegalArgumentException("The sum of all parts' length should be " + BLOCK_ID_LENGTH);
-    }
-
-    return new BlockIdLayoutConfig(partitionIdLength, taskAttemptId, seqId);
-  }
-
   public static boolean validate(Map<String, String> blockIdLayoutMap) {
     try {
       from(blockIdLayoutMap);
@@ -105,6 +97,31 @@ public class BlockIdLayoutConfig {
       throw new IllegalArgumentException("The sum of all parts' length should be " + BLOCK_ID_LENGTH);
     }
     return new BlockIdLayoutConfig(partitionIdLength, taskAttemptIdLength, sequenceIdLength);
+  }
+
+  private static BlockIdLayoutConfig from(Map<String, String> blockIdLayoutMap) {
+    String partitionIdRawVal = blockIdLayoutMap.get(PARTITION_ID_LENGTH);
+    if (partitionIdRawVal == null) {
+      throw new IllegalArgumentException(PARTITION_ID_LENGTH + " must be configured.");
+    }
+    String taskAttemptIdRawVal = blockIdLayoutMap.get(TASK_ATTEMPT_ID_LENGTH);
+    if (taskAttemptIdRawVal == null) {
+      throw new IllegalArgumentException(TASK_ATTEMPT_ID_LENGTH + " must be configured.");
+    }
+    String sequenceIdRawVal = blockIdLayoutMap.get(SEQUENCE_ID_LENGTH);
+    if (sequenceIdRawVal == null) {
+      throw new IllegalArgumentException(SEQUENCE_ID_LENGTH + " must be configured.");
+    }
+
+    int partitionIdLength = Integer.valueOf(partitionIdRawVal);
+    int taskAttemptId = Integer.valueOf(taskAttemptIdRawVal);
+    int seqId = Integer.valueOf(sequenceIdRawVal);
+
+    if (partitionIdLength + taskAttemptId + seqId != BLOCK_ID_LENGTH) {
+      throw new IllegalArgumentException("The sum of all parts' length should be " + BLOCK_ID_LENGTH);
+    }
+
+    return new BlockIdLayoutConfig(partitionIdLength, taskAttemptId, seqId);
   }
 
   // BlockId is long and composed of partitionId, executorId and AtomicInteger.

@@ -20,7 +20,6 @@ package org.apache.uniffle.client.util;
 import com.google.common.annotations.VisibleForTesting;
 
 import org.apache.uniffle.common.BlockIdLayoutConfig;
-import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.IdHelper;
 
 public class DefaultIdHelper extends IdHelper {
@@ -36,6 +35,6 @@ public class DefaultIdHelper extends IdHelper {
 
   @Override
   public long getTaskAttemptId(long blockId) {
-    return blockId & Constants.MAX_TASK_ATTEMPT_ID;
+    return blockId & ((1 << blockIdLayoutConfig.getTaskAttemptIdLength()) - 1);
   }
 }
