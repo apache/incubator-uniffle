@@ -20,10 +20,15 @@ package org.apache.uniffle.test;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 
+import org.apache.uniffle.common.config.RssClientConf;
+
 public class WordCountWithBlockIdTest extends WordCountTest {
 
   @Override
   protected void updateRssConfiguration(Configuration jobConf) {
-    jobConf.set(MRJobConfig.MR_PREFIX, "partitionIdLength:24,taskAttemptIdLength:20,sequenceIdLength:19");
+    jobConf.set(
+        MRJobConfig.MR_PREFIX + RssClientConf.BLOCKID_LAYOUT.key(),
+        "partitionIdLength:24,taskAttemptIdLength:20,sequenceIdLength:19"
+    );
   }
 }
