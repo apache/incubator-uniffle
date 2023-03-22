@@ -22,7 +22,7 @@ import org.apache.uniffle.common.BlockIdLayoutConfig;
 public abstract class IdHelper {
   protected BlockIdLayoutConfig blockIdLayoutConfig;
 
-  public IdHelper(BlockIdLayoutConfig config) {
+  protected IdHelper(BlockIdLayoutConfig config) {
     this.blockIdLayoutConfig = config;
   }
 

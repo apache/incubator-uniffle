@@ -113,9 +113,9 @@ public class BlockIdLayoutConfig {
       throw new IllegalArgumentException(SEQUENCE_ID_LENGTH + " must be configured.");
     }
 
-    int partitionIdLength = Integer.valueOf(partitionIdRawVal);
-    int taskAttemptId = Integer.valueOf(taskAttemptIdRawVal);
-    int seqId = Integer.valueOf(sequenceIdRawVal);
+    int partitionIdLength = Integer.parseInt(partitionIdRawVal);
+    int taskAttemptId = Integer.parseInt(taskAttemptIdRawVal);
+    int seqId = Integer.parseInt(sequenceIdRawVal);
 
     if (partitionIdLength + taskAttemptId + seqId != BLOCK_ID_LENGTH) {
       throw new IllegalArgumentException("The sum of all parts' length should be " + BLOCK_ID_LENGTH);

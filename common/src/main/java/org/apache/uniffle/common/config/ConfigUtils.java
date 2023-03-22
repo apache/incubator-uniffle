@@ -84,7 +84,7 @@ public class ConfigUtils {
       if (o == null) {
         throw new NullPointerException();
       }
-      String rawValues = StringUtils.trim(o.toString());
+      String rawValues = StringUtils.trim((String) o);
       String[] listOfRawProperties = StringUtils.split(rawValues, ',');
       return Arrays.stream(listOfRawProperties)
           .map(s -> StringUtils.split(s, ':'))
