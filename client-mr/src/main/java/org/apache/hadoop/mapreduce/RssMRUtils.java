@@ -208,7 +208,7 @@ public class RssMRUtils {
   }
 
   public static long getTaskAttemptId(BlockIdLayoutConfig config, long blockId) {
-    long maxTaskAttemptId = (1 << config.getTaskAttemptIdLength() ) - 1;
+    long maxTaskAttemptId = (1 << config.getTaskAttemptIdLength()) - 1;
     long mapId = blockId & maxTaskAttemptId;
     long attemptId = (blockId >> (config.getTaskAttemptIdLength() + config.getPartitionIdLength()))
         & MAX_ATTEMPT_ID;

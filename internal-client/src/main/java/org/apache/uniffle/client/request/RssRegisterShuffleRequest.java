@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.client.request;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
