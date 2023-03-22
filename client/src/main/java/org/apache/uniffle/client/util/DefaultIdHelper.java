@@ -35,6 +35,6 @@ public class DefaultIdHelper extends IdHelper {
 
   @Override
   public long getTaskAttemptId(long blockId) {
-    return blockId & ((1 << blockIdLayoutConfig.getTaskAttemptIdLength()) - 1);
+    return blockId & ((1 << getBlockIdLayoutConfig().getTaskAttemptIdLength()) - 1);
   }
 }

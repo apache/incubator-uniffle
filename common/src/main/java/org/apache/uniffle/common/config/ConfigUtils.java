@@ -92,7 +92,7 @@ public class ConfigUtils {
               pair -> {
                 if (pair.length != 2) {
                   throw new IllegalArgumentException(
-                      "Could not parse pair in the map " + pair);
+                      "Could not parse pair in the map " + Arrays.toString(pair));
                 }
               })
           .collect(Collectors.toMap(a -> a[0], a -> a[1]));

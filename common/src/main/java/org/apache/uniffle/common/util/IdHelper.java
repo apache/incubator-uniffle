@@ -20,11 +20,15 @@ package org.apache.uniffle.common.util;
 import org.apache.uniffle.common.BlockIdLayoutConfig;
 
 public abstract class IdHelper {
-  protected BlockIdLayoutConfig blockIdLayoutConfig;
+  private BlockIdLayoutConfig blockIdLayoutConfig;
 
   protected IdHelper(BlockIdLayoutConfig config) {
     this.blockIdLayoutConfig = config;
   }
 
   public abstract long getTaskAttemptId(long blockId);
+
+  public BlockIdLayoutConfig getBlockIdLayoutConfig() {
+    return blockIdLayoutConfig;
+  }
 }
