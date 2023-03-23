@@ -18,6 +18,7 @@
 package org.apache.uniffle.common.netty;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
@@ -26,6 +27,14 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.netty.protocol.Message;
 
+/**
+ * Encoder used by the server side to encode server-to-client responses.
+ * This encoder is stateless so it is safe to be shared by multiple threads.
+ * The content of encode consists of two parts, header and message body.
+ * The encoded binary stream contains encodeLength (4 bytes), messageType (1 byte)
+ * and messageBody (encodeLength bytes).
+ */
+@ChannelHandler.Sharable
 public class MessageEncoder extends ChannelOutboundHandlerAdapter {
 
   private static final Logger LOG = LoggerFactory.getLogger(MessageEncoder.class);

@@ -52,16 +52,15 @@ public class Encoders {
     byteBuf.writeLong(shuffleBlockInfo.getFreeMemory());
   }
 
-
   public static int encodeLengthOfShuffleServerInfo(ShuffleServerInfo shuffleServerInfo) {
     return ByteBufUtils.encodedLength(shuffleServerInfo.getId())
-               + ByteBufUtils.encodedLength(shuffleServerInfo.getHost())
-               + 2 * Integer.BYTES;
+        + ByteBufUtils.encodedLength(shuffleServerInfo.getHost())
+        + 2 * Integer.BYTES;
   }
 
   public static int encodeLengthOfShuffleBlockInfo(ShuffleBlockInfo shuffleBlockInfo) {
-    int encodeLength = 4 * Long.BYTES + 4 * Integer.BYTES + ByteBufUtils.encodedLength(shuffleBlockInfo.getData())
-                           + Integer.BYTES;
+    int encodeLength = 4 * Long.BYTES + 4 * Integer.BYTES
+        + ByteBufUtils.encodedLength(shuffleBlockInfo.getData()) + Integer.BYTES;
     for (ShuffleServerInfo shuffleServerInfo : shuffleBlockInfo.getShuffleServerInfos()) {
       encodeLength += encodeLengthOfShuffleServerInfo(shuffleServerInfo);
     }

@@ -27,15 +27,15 @@ public class NettyProtocolTestUtils {
 
   private static boolean compareShuffleBlockInfo(ShuffleBlockInfo blockInfo1, ShuffleBlockInfo blockInfo2) {
     return blockInfo1.getPartitionId() == blockInfo2.getPartitionId()
-               && blockInfo1.getBlockId() == blockInfo2.getBlockId()
-               && blockInfo1.getLength() == blockInfo2.getLength()
-               && blockInfo1.getShuffleId() == blockInfo2.getShuffleId()
-               && blockInfo1.getCrc() == blockInfo2.getCrc()
-               && blockInfo1.getTaskAttemptId() == blockInfo2.getTaskAttemptId()
-               && blockInfo1.getUncompressLength() == blockInfo2.getUncompressLength()
-               && blockInfo1.getFreeMemory() == blockInfo2.getFreeMemory()
-               && blockInfo1.getData().equals(blockInfo2.getData())
-               && blockInfo1.getShuffleServerInfos().equals(blockInfo2.getShuffleServerInfos());
+        && blockInfo1.getBlockId() == blockInfo2.getBlockId()
+        && blockInfo1.getLength() == blockInfo2.getLength()
+        && blockInfo1.getShuffleId() == blockInfo2.getShuffleId()
+        && blockInfo1.getCrc() == blockInfo2.getCrc()
+        && blockInfo1.getTaskAttemptId() == blockInfo2.getTaskAttemptId()
+        && blockInfo1.getUncompressLength() == blockInfo2.getUncompressLength()
+        && blockInfo1.getFreeMemory() == blockInfo2.getFreeMemory()
+        && blockInfo1.getData().equals(blockInfo2.getData())
+        && blockInfo1.getShuffleServerInfos().equals(blockInfo2.getShuffleServerInfos());
   }
 
   private static boolean compareBlockList(List<ShuffleBlockInfo> list1, List<ShuffleBlockInfo> list2) {
@@ -74,10 +74,10 @@ public class NettyProtocolTestUtils {
       return false;
     }
     boolean isEqual = req1.requestId == req2.requestId
-               && req1.getShuffleId() == req2.getShuffleId()
-               && req1.getRequireId() == req2.getRequireId()
-               && req1.getTimestamp() == req2.getTimestamp()
-               && req1.getAppId().equals(req2.getAppId());
+        && req1.getShuffleId() == req2.getShuffleId()
+        && req1.getRequireId() == req2.getRequireId()
+        && req1.getTimestamp() == req2.getTimestamp()
+        && req1.getAppId().equals(req2.getAppId());
     if (!isEqual) {
       return false;
     }
