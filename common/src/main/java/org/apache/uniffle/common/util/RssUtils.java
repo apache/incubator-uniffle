@@ -26,9 +26,21 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
-import java.net.*;
+import java.net.BindException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Random;
+import java.util.Set;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -46,7 +58,6 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.ServerInterface;
 
-import static org.apache.uniffle.common.config.RssBaseConf.*;
 
 public class RssUtils {
 
@@ -156,7 +167,7 @@ public class RssUtils {
       throw new IllegalArgumentException(String.format("Bad service %s on port (%s)", serviceName, servicePort));
     }
     int actualPort = servicePort;
-    int maxRetries = conf.get(SERVER_PORT_MAX_RETRIES);
+    int maxRetries = conf.get(RssBaseConf.SERVER_PORT_MAX_RETRIES);
     for (int i = 0; i < maxRetries; i++) {
       try {
         if (servicePort == 0) {
@@ -167,10 +178,10 @@ public class RssUtils {
         service.startOnPort(actualPort);
         return actualPort;
       } catch (Exception e) {
-        if(isServerPortBindCollision(e)){
+        if (isServerPortBindCollision(e)) {
           LOGGER.warn(String.format("%s:Service %s failed after %s retries (on a random free port (%s))!",
-                  e.getMessage(), serviceName, i + 1, actualPort));
-        }else{
+              e.getMessage(), serviceName, i + 1, actualPort));
+        } else {
           throw new RuntimeException(e);
         }
       }
@@ -188,7 +199,8 @@ public class RssUtils {
       }
       return isServerPortBindCollision(e.getCause());
     } else if (e instanceof MultiException) {
-      return !((MultiException) e).getThrowables().stream().noneMatch((Throwable throwable) -> isServerPortBindCollision(throwable));
+      return !((MultiException) e).getThrowables().stream()
+          .noneMatch((Throwable throwable) -> isServerPortBindCollision(throwable));
     } else if (e instanceof Errors.NativeIoException) {
       return (e.getMessage() != null && e.getMessage().startsWith("bind() failed: "))
               || isServerPortBindCollision(e.getCause());
@@ -198,8 +210,8 @@ public class RssUtils {
   }
 
   public static int findRandomTcpPort(RssBaseConf baseConf) {
-    int portRangeMin = baseConf.getInteger(RSS_RANDOM_PORT_MIN);
-    int portRangeMax =  baseConf.getInteger(RSS_RANDOM_PORT_MAX);
+    int portRangeMin = baseConf.getInteger(RssBaseConf.RSS_RANDOM_PORT_MIN);
+    int portRangeMax =  baseConf.getInteger(RssBaseConf.RSS_RANDOM_PORT_MAX);
     int portRange = portRangeMax - portRangeMin;
     Random random = new Random(System.nanoTime());
     return  portRangeMin + random.nextInt(portRange + 1);

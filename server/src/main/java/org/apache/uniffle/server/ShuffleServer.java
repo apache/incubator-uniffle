@@ -128,7 +128,8 @@ public class ShuffleServer {
     jettyServer.start();
     server.start();
     if (nettyServerEnabled) {
-      streamServer.start();
+      nettyPort = RssUtils.startServiceOnPort(streamServer,
+          Constants.NETTY_STREAM_SERVICE_NAME, nettyPort, shuffleServerConf);
     }
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -194,7 +195,8 @@ public class ShuffleServer {
     }
     grpcPort = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
-    if (nettyPort > 0) {
+    if (nettyPort >= 0) {
+      // when nettyPort is zero,actual netty port will be changed,but id can't be change.
       id = ip + "-" + grpcPort + "-" + nettyPort;
     } else {
       id = ip + "-" + grpcPort;

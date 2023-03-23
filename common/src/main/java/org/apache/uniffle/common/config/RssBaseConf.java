@@ -36,12 +36,6 @@ public class RssBaseConf extends RssConf {
       .defaultValue("GRPC")
       .withDescription("Shuffle server type, default is grpc");
 
-  public static final ConfigOption<Integer> SERVER_PORT_MAX_RETRIES = ConfigOptions
-      .key("rss.port.maxRetries")
-      .intType()
-      .defaultValue(16)
-      .withDescription("start server service max retry");
-
   public static final ConfigOption<Integer> RPC_SERVER_PORT = ConfigOptions
       .key("rss.rpc.server.port")
       .intType()
@@ -229,6 +223,12 @@ public class RssBaseConf extends RssConf {
       .intType()
       .defaultValue(65535)
       .withDescription("Max value for random for range");
+
+  public static final ConfigOption<Integer> SERVER_PORT_MAX_RETRIES = ConfigOptions
+      .key("rss.port.max.retry")
+      .intType()
+      .defaultValue(16)
+      .withDescription("start server service max retry");
 
   public boolean loadCommonConf(Map<String, String> properties) {
     if (properties == null) {

@@ -18,7 +18,11 @@
 package org.apache.uniffle.common.util;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -26,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import javax.net.ServerSocketFactory;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -37,8 +42,6 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.rpc.ServerInterface;
-
-import javax.net.ServerSocketFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -301,8 +304,8 @@ public class RssUtilsTest {
     @Override
     public void startOnPort(int port) throws IOException {
       serverSocket = ServerSocketFactory.getDefault().createServerSocket(
-              port, 1, InetAddress.getByName("localhost"));
-      new Thread(()->{
+          port, 1, InetAddress.getByName("localhost"));
+      new Thread(() -> {
         Socket accept;
         try {
           accept = serverSocket.accept();
@@ -315,12 +318,13 @@ public class RssUtilsTest {
 
     @Override
     public void stop() throws InterruptedException {
-        if(serverSocket != null && !serverSocket.isClosed()){
-          try {
-            serverSocket.close();
-          } catch (IOException e) {
-          }
+      if (serverSocket != null && !serverSocket.isClosed()) {
+        try {
+          serverSocket.close();
+        } catch (IOException e) {
+          //e.printStackTrace();
         }
+      }
     }
 
     @Override

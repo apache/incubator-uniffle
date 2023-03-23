@@ -33,10 +33,10 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import org.apache.uniffle.common.rpc.ServerInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.rpc.ServerInterface;
 import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -110,7 +110,7 @@ public class StreamServer implements ServerInterface {
     int port = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
     try {
       startOnPort(port);
-    }catch (Exception e){
+    } catch (Exception e) {
       ExitUtils.terminate(1, "Fail to start stream server", e, LOG);
     }
   }
@@ -118,7 +118,7 @@ public class StreamServer implements ServerInterface {
   @Override
   public void startOnPort(int port) throws Exception {
     Supplier<ChannelHandler[]> streamHandlers = () -> new ChannelHandler[]{
-            new StreamServerInitDecoder()
+        new StreamServerInitDecoder()
     };
     ServerBootstrap serverBootstrap = bootstrapChannel(shuffleBossGroup, shuffleWorkerGroup,
             shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_BACKLOG),

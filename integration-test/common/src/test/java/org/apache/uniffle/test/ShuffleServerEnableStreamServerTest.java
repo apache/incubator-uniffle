@@ -1,0 +1,53 @@
+package org.apache.uniffle.test;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.server.ShuffleServer;
+import org.apache.uniffle.server.ShuffleServerConf;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class ShuffleServerEnableStreamServerTest extends CoordinatorTestBase {
+  @BeforeAll
+  public static void setupServers() throws Exception {
+    CoordinatorConf coordinatorConf = getCoordinatorConf();
+    coordinatorConf.set(RssBaseConf.RPC_METRICS_ENABLED, true);
+    coordinatorConf.setString(CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY.key(), "BASIC");
+    coordinatorConf.setLong("rss.coordinator.app.expired", 2000);
+    coordinatorConf.setLong("rss.coordinator.server.heartbeat.timeout", 3000);
+    createCoordinatorServer(coordinatorConf);
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    shuffleServerConf.setInteger("rss.server.netty.port", 0);
+    shuffleServerConf.setInteger("rss.random.port.min", 30000);
+    shuffleServerConf.setInteger("rss.random.port.max", 40000);
+    createShuffleServer(shuffleServerConf);
+    shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 1);
+    shuffleServerConf.setInteger("rss.jetty.http.port", 18081);
+    createShuffleServer(shuffleServerConf);
+    startServers();
+  }
+
+  @Test
+  public void startStreamServerOnRandomPort() throws Exception {
+    CoordinatorTestUtils.waitForRegister(coordinatorClient, 2);
+    Thread.sleep(5000);
+    int actualPort = shuffleServers.get(0).getNettyPort();
+    assertTrue(actualPort >= 30000 && actualPort < 40000);
+    actualPort = shuffleServers.get(1).getNettyPort();
+    assertTrue(actualPort >= 30000 && actualPort <= 40000);
+
+    int maxRetries = 100;
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    shuffleServerConf.setInteger("rss.server.netty.port", actualPort);
+    shuffleServerConf.setInteger("rss.jetty.http.port", 18082);
+    shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 2);
+    shuffleServerConf.setInteger("rss.port.max.retry", maxRetries);
+    ShuffleServer ss = new ShuffleServer(shuffleServerConf);
+    ss.start();
+    assertTrue(ss.getNettyPort() > actualPort && actualPort <= actualPort + maxRetries);
+  }
+
+}
