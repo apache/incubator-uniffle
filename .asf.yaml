@@ -33,7 +33,6 @@ github:
     # Enable projects for project management boards
     projects: true
   collaborators:
-    - smallzhongfeng
     - leixm
     - wangao1236
   enabled_merge_buttons:
