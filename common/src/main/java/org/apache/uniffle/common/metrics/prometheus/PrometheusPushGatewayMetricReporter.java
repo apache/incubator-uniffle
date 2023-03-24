@@ -63,8 +63,8 @@ public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter 
     Map<String, String> groupingKey = parseGroupingKey(conf.getString(GROUPING_KEY, ""));
     groupingKey.put("instance", instanceId);
     int reportInterval = conf.getInteger(REPORT_INTEVAL, 10);
-    scheduledExecutorService = Executors.newScheduledThreadPool(1,
-        ThreadUtils.getThreadFactory("PrometheusPushGatewayMetricReporter-%d"));
+    scheduledExecutorService =
+        ThreadUtils.newDaemonSingleThreadScheduledExecutor("PrometheusPushGatewayMetricReporter");
     scheduledExecutorService.scheduleWithFixedDelay(() -> {
       for (CollectorRegistry registry : registryList) {
         try {

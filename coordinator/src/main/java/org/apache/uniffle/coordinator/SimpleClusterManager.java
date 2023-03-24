@@ -85,8 +85,8 @@ public class SimpleClusterManager implements ClusterManager {
     this.shuffleNodesMax = conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
     this.heartbeatTimeout = conf.getLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT);
     // the thread for checking if shuffle server report heartbeat in time
-    scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("SimpleClusterManager-%d"));
+    scheduledExecutorService =
+        ThreadUtils.newDaemonSingleThreadScheduledExecutor("SimpleClusterManager");
 
     this.startupSilentPeriodEnabled = conf.get(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_ENABLED);
     this.startupSilentPeriodDurationMs = conf.get(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_DURATION);
@@ -101,8 +101,8 @@ public class SimpleClusterManager implements ClusterManager {
     if (!StringUtils.isEmpty(excludeNodesPath)) {
       this.hadoopFileSystem = HadoopFilesystemProvider.getFilesystem(new Path(excludeNodesPath), hadoopConf);
       long updateNodesInterval = conf.getLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL);
-      checkNodesExecutorService = Executors.newSingleThreadScheduledExecutor(
-          ThreadUtils.getThreadFactory("UpdateExcludeNodes-%d"));
+      checkNodesExecutorService =
+          ThreadUtils.newDaemonSingleThreadScheduledExecutor("UpdateExcludeNodes");
       checkNodesExecutorService.scheduleAtFixedRate(
           () -> updateExcludeNodes(excludeNodesPath), updateNodesInterval, updateNodesInterval, TimeUnit.MILLISECONDS);
     }

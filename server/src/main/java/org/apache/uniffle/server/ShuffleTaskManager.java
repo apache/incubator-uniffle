@@ -112,24 +112,24 @@ public class ShuffleTaskManager {
     this.leakShuffleDataCheckInterval = conf.getLong(ShuffleServerConf.SERVER_LEAK_SHUFFLE_DATA_CHECK_INTERVAL);
     this.triggerFlushInterval = conf.getLong(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL);
     // the thread for checking application status
-    this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("checkResource-%d"));
+    this.scheduledExecutorService =
+        ThreadUtils.newDaemonSingleThreadScheduledExecutor("checkResource");
     scheduledExecutorService.scheduleAtFixedRate(
         this::preAllocatedBufferCheck, preAllocationExpired / 2,
         preAllocationExpired / 2, TimeUnit.MILLISECONDS);
-    this.expiredAppCleanupExecutorService = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("expiredAppCleaner"));
+    this.expiredAppCleanupExecutorService =
+        ThreadUtils.newDaemonSingleThreadScheduledExecutor("expiredAppCleaner");
     expiredAppCleanupExecutorService.scheduleAtFixedRate(
         this::checkResourceStatus, appExpiredWithoutHB / 2,
         appExpiredWithoutHB / 2, TimeUnit.MILLISECONDS);
-    this.leakShuffleDataCheckExecutorService = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("leakShuffleDataChecker"));
+    this.leakShuffleDataCheckExecutorService =
+        ThreadUtils.newDaemonSingleThreadScheduledExecutor("leakShuffleDataChecker");
     leakShuffleDataCheckExecutorService.scheduleAtFixedRate(
         this::checkLeakShuffleData, leakShuffleDataCheckInterval,
             leakShuffleDataCheckInterval, TimeUnit.MILLISECONDS);
     if (triggerFlushInterval > 0) {
-      triggerFlushExecutorService = Executors.newSingleThreadScheduledExecutor(
-          ThreadUtils.getThreadFactory("triggerShuffleBufferManagerFlush"));
+      triggerFlushExecutorService =
+          ThreadUtils.newDaemonSingleThreadScheduledExecutor("triggerShuffleBufferManagerFlush");
       triggerFlushExecutorService.scheduleWithFixedDelay(
               this::triggerFlush, triggerFlushInterval / 2,
           triggerFlushInterval, TimeUnit.MILLISECONDS);

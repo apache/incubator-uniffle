@@ -312,8 +312,7 @@ public class ShuffleServer {
     serverStatus = ServerStatus.DECOMMISSIONING;
     LOG.info("Shuffle Server is decommissioning.");
     if (executorService == null) {
-      executorService = Executors.newSingleThreadExecutor(
-          ThreadUtils.getThreadFactory("shuffle-server-decommission-%d"));
+      executorService = ThreadUtils.newDaemonSingleThreadExecutor("shuffle-server-decommission");
     }
     decommissionFuture = executorService.submit(this::waitDecommissionFinish);
   }

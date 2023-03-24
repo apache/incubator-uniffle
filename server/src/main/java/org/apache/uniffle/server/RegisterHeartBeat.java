@@ -49,8 +49,8 @@ public class RegisterHeartBeat {
   private final ShuffleServer shuffleServer;
   private final String coordinatorQuorum;
   private final List<CoordinatorClient> coordinatorClients;
-  private final ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(
-      ThreadUtils.getThreadFactory("startHeartBeat-%d"));
+  private final ScheduledExecutorService service =
+      ThreadUtils.newDaemonSingleThreadScheduledExecutor("startHeartBeat");
   private final ExecutorService heartBeatExecutorService;
   private long heartBeatTimeout;
 
@@ -64,9 +64,8 @@ public class RegisterHeartBeat {
         new CoordinatorClientFactory(conf.get(ShuffleServerConf.RSS_CLIENT_TYPE));
     this.coordinatorClients = factory.createCoordinatorClient(this.coordinatorQuorum);
     this.shuffleServer = shuffleServer;
-    this.heartBeatExecutorService = Executors.newFixedThreadPool(
-        conf.getInteger(ShuffleServerConf.SERVER_HEARTBEAT_THREAD_NUM),
-        ThreadUtils.getThreadFactory("sendHeartBeat-%d"));
+    this.heartBeatExecutorService = ThreadUtils.newDaemonFixedThreadPool(
+        conf.getInteger(ShuffleServerConf.SERVER_HEARTBEAT_THREAD_NUM), "sendHeartBeat");
   }
 
   public void startHeartBeat() {

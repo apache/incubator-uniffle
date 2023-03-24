@@ -70,8 +70,8 @@ public class QuotaManager {
         LOG.error("Cannot init remoteFS on path : " + quotaFilePath, e);
       }
       // Threads that update the number of submitted applications
-      ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-          ThreadUtils.getThreadFactory("UpdateDefaultApp-%d"));
+      ScheduledExecutorService scheduledExecutorService =
+          ThreadUtils.newDaemonSingleThreadScheduledExecutor("UpdateDefaultApp");
       scheduledExecutorService.scheduleAtFixedRate(
           this::detectUserResource, 0, updateTime / 2, TimeUnit.MILLISECONDS);
       LOG.info("QuotaManager initialized successfully.");

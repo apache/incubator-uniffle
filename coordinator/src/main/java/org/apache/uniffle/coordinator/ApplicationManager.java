@@ -95,13 +95,11 @@ public class ApplicationManager implements Closeable {
       }
     }
     // the thread for checking application status
-    checkAppScheduler = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("ApplicationManager-%d"));
+    checkAppScheduler = ThreadUtils.newDaemonSingleThreadScheduledExecutor("ApplicationManager");
     checkAppScheduler.scheduleAtFixedRate(
         this::statusCheck, expired / 2, expired / 2, TimeUnit.MILLISECONDS);
     // the thread for checking if the storage is normal
-    detectStorageScheduler = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("detectStoragesScheduler-%d"));
+    detectStorageScheduler = ThreadUtils.newDaemonSingleThreadScheduledExecutor("detectStoragesScheduler");
     // should init later than the refreshRemoteStorage init
     detectStorageScheduler.scheduleAtFixedRate(selectStorageStrategy::detectStorage, 1000,
         conf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME), TimeUnit.MILLISECONDS);

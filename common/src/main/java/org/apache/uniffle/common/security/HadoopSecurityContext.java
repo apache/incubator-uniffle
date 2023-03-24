@@ -67,9 +67,7 @@ public class HadoopSecurityContext implements SecurityContext {
     LOGGER.info("Got Kerberos ticket, keytab [{}], principal [{}], user [{}]",
         keytabFile, principal, loginUgi.getShortUserName());
 
-    refreshScheduledExecutor = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("Kerberos-refresh-%d")
-    );
+    refreshScheduledExecutor = ThreadUtils.newDaemonSingleThreadScheduledExecutor("Kerberos-refresh");
     refreshScheduledExecutor.scheduleAtFixedRate(
         this::authRefresh,
         refreshIntervalSec,

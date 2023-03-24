@@ -75,8 +75,7 @@ public class ClientConfManager implements Closeable {
     LOG.info("Load client conf from " + pathStr + " successfully");
 
     int updateIntervalS = conf.getInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC);
-    updateClientConfSES = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("ClientConfManager-%d"));
+    updateClientConfSES = ThreadUtils.newDaemonSingleThreadScheduledExecutor("ClientConfManager");
     updateClientConfSES.scheduleAtFixedRate(
         this::updateClientConf, 0, updateIntervalS, TimeUnit.SECONDS);
   }
