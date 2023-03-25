@@ -63,7 +63,7 @@ public class DefaultStorageMediaProvider implements StorageMediaProvider {
         File baseFile = new File(baseDir);
         FileStore store = getFileStore(baseFile.toPath());
         if (store == null) {
-          throw new IOException("Can't get file for path:" + baseFile.getAbsolutePath());
+          throw new IOException("Can't get FileStore for path:" + baseFile.getAbsolutePath());
         }
         String deviceName = getDeviceName(store.name());
         File blockFile = new File(String.format(BLOCK_PATH_FORMAT, deviceName));
