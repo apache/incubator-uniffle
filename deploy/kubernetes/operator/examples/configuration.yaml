@@ -42,11 +42,8 @@ data:
     log4j.appender.RollingAppender.layout=org.apache.log4j.PatternLayout
     log4j.appender.RollingAppender.layout.ConversionPattern=[%p] %d %t %c{1} %M - %m%n
   server.conf: |-
-    rss.coordinator.quorum rss-coordinator-rss-demo-0:19997,rss-coordinator-rss-demo-1:19997
-    rss.jetty.http.port 19996
     rss.rpc.executor.size 500
     rss.rpc.message.max.size 1073741824
-    rss.rpc.server.port 19997
     rss.server.app.expired.withoutHeartbeat 120000
     rss.server.buffer.capacity 60g
     rss.server.commit.timeout 600000
@@ -70,5 +67,4 @@ data:
     rss.server.read.buffer.capacity 5g
     rss.server.shuffle.expired.timeout.ms 120000
     rss.server.write.retry.max 2
-    rss.storage.basePath /data1/rssdata,/data10/rssdata,/data11/rssdata,/data12/rssdata,/data2/rssdata,/data3/rssdata,/data4/rssdata,/data5/rssdata,/data6/rssdata,/data7/rssdata,/data8/rssdata,/data9/rssdata
     rss.storage.type MEMORY_LOCALFILE
