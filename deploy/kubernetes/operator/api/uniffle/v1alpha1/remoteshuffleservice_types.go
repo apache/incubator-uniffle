@@ -59,6 +59,9 @@ type RemoteShuffleServiceSpec struct {
 
 	// ConfigMapName indicates configMap name stores configurations of coordinators and shuffle servers.
 	ConfigMapName string `json:"configMapName"`
+
+	// +optional
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
 }
 
 // CoordinatorConfig records configuration used to generate workload of coordination.

@@ -91,8 +91,9 @@ func GenerateSts(rss *unifflev1alpha1.RemoteShuffleService) *appsv1.StatefulSet 
 				Key:    "node-role.kubernetes.io/master",
 			},
 		},
-		Volumes:      rss.Spec.ShuffleServer.Volumes,
-		NodeSelector: rss.Spec.ShuffleServer.NodeSelector,
+		Volumes:          rss.Spec.ShuffleServer.Volumes,
+		NodeSelector:     rss.Spec.ShuffleServer.NodeSelector,
+		ImagePullSecrets: rss.Spec.ImagePullSecrets,
 	}
 	configurationVolume := corev1.Volume{
 		Name: controllerconstants.ConfigurationVolumeName,

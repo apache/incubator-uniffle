@@ -184,8 +184,9 @@ func GenerateDeploy(rss *unifflev1alpha1.RemoteShuffleService, index int) *appsv
 				Key:    "node-role.kubernetes.io/master",
 			},
 		},
-		Volumes:      rss.Spec.Coordinator.Volumes,
-		NodeSelector: rss.Spec.Coordinator.NodeSelector,
+		Volumes:          rss.Spec.Coordinator.Volumes,
+		NodeSelector:     rss.Spec.Coordinator.NodeSelector,
+		ImagePullSecrets: rss.Spec.ImagePullSecrets,
 	}
 	configurationVolume := corev1.Volume{
 		Name: controllerconstants.ConfigurationVolumeName,
