@@ -89,6 +89,7 @@ func GenerateSts(rss *unifflev1alpha1.RemoteShuffleService) *appsv1.StatefulSet 
 		Volumes:            rss.Spec.ShuffleServer.Volumes,
 		NodeSelector:       rss.Spec.ShuffleServer.NodeSelector,
 		Affinity:           rss.Spec.ShuffleServer.Affinity,
+		ImagePullSecrets: rss.Spec.ImagePullSecrets,
 	}
 
 	configurationVolume := corev1.Volume{
