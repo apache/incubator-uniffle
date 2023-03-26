@@ -23,6 +23,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
@@ -60,7 +61,10 @@ public class DefaultStorageMediaProvider implements StorageMediaProvider {
       // `/sys/block/sdx/queue/rotational`.
       try {
         File baseFile = new File(baseDir);
-        FileStore store = Files.getFileStore(baseFile.toPath());
+        FileStore store = getFileStore(baseFile.toPath());
+        if (store == null) {
+          throw new IOException("Can't get FileStore for path:" + baseFile.getAbsolutePath());
+        }
         String deviceName = getDeviceName(store.name());
         File blockFile = new File(String.format(BLOCK_PATH_FORMAT, deviceName));
         if (blockFile.exists()) {
@@ -81,6 +85,17 @@ public class DefaultStorageMediaProvider implements StorageMediaProvider {
     }
     logger.info("Default storage type provider returns HDD by default");
     return StorageMedia.HDD;
+  }
+
+  @VisibleForTesting
+  FileStore getFileStore(Path path) throws IOException {
+    while (!Files.exists(path)) {
+      path = path.getParent();
+      if (path == null) {
+        return null;
+      }
+    }
+    return Files.getFileStore(path);
   }
 
   @VisibleForTesting
