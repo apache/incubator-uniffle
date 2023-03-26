@@ -61,7 +61,7 @@ type RemoteShuffleServiceSpec struct {
 	ConfigMapName string `json:"configMapName"`
 
 	// +optional
-	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 }
 
 // CoordinatorConfig records configuration used to generate workload of coordination.
