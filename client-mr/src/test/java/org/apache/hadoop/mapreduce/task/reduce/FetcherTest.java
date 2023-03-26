@@ -360,7 +360,7 @@ public class FetcherTest {
         shuffleBlockInfoList.forEach(block -> {
           ByteBuffer uncompressedBuffer = ByteBuffer.allocate(block.getUncompressLength());
           codec.decompress(
-              ByteBuffer.wrap(block.getData()),
+              block.getData().nioBuffer(),
               block.getUncompressLength(),
               uncompressedBuffer,
               0

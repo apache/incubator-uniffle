@@ -320,7 +320,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
               .setLength(sbi.getLength())
               .setTaskAttemptId(sbi.getTaskAttemptId())
               .setUncompressLength(sbi.getUncompressLength())
-              .setData(ByteString.copyFrom(sbi.getData()))
+              .setData(UnsafeByteOperations.unsafeWrap(sbi.getData().nioBuffer()))
               .build());
           size += sbi.getSize();
           blockNum++;
