@@ -19,6 +19,7 @@ package org.apache.uniffle.common.config;
 
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.compression.Codec;
+import org.apache.uniffle.common.netty.IOMode;
 
 import static org.apache.uniffle.common.compression.Codec.Type.LZ4;
 
@@ -43,4 +44,55 @@ public class RssClientConf {
       .defaultValue(ShuffleDataDistributionType.NORMAL)
       .withDescription("The type of partition shuffle data distribution, including normal and local_order. "
           + "The default value is normal. This config is only valid in Spark3.x");
+
+  public static final ConfigOption<Integer> NETTY_IO_CONNECT_TIMEOUT_MS = ConfigOptions
+      .key("rss.client.netty.io.connect.timeout.ms")
+      .intType()
+      .defaultValue(10 * 1000)
+      .withDescription("netty connect to server time out mills");
+
+  public static final ConfigOption<IOMode> NETTY_IO_MODE = ConfigOptions
+      .key("rss.client.netty.io.mode")
+      .enumType(IOMode.class)
+      .defaultValue(IOMode.NIO)
+      .withDescription("Netty EventLoopGroup backend, available options: NIO, EPOLL.");
+
+  public static final ConfigOption<Integer> NETTY_IO_CONNECTION_TIMEOUT_MS = ConfigOptions
+      .key("rss.client.netty.client.connection.timeout.ms")
+      .intType()
+      .defaultValue(10 * 60 * 1000)
+      .withDescription("connection active timeout");
+
+  public static final ConfigOption<Integer> NETTY_CLIENT_THREADS = ConfigOptions
+      .key("rss.client.netty.client.threads")
+      .intType()
+      .defaultValue(0)
+      .withDescription("Number of threads used in the client thread pool.");
+
+  public static final ConfigOption<Boolean> NETWORK_CLIENT_PREFER_DIRECT_BUFS = ConfigOptions
+      .key("rss.client.netty.client.prefer.direct.bufs")
+      .booleanType()
+      .defaultValue(true)
+      .withDescription("If true, we will prefer allocating off-heap byte buffers within Netty.");
+
+  public static final ConfigOption<Integer> NETTY_CLIENT_NUM_CONNECTIONS_PER_PEER = ConfigOptions
+      .key("rss.client.netty.client.connections.per.peer")
+      .intType()
+      .defaultValue(2)
+      .withDescription("Number of concurrent connections between two nodes.");
+
+  public static final ConfigOption<Integer> NETTY_CLIENT_RECEIVE_BUFFER = ConfigOptions
+      .key("rss.client.netty.client.receive.buffer")
+      .intType()
+      .defaultValue(0)
+      .withDescription("Receive buffer size (SO_RCVBUF). Note: the optimal size for receive buffer and send buffer "
+          + "should be latency * network_bandwidth. Assuming latency = 1ms, network_bandwidth = 10Gbps "
+          + "buffer size should be ~ 1.25MB.");
+
+  public static final ConfigOption<Integer> NETTY_CLIENT_SEND_BUFFER = ConfigOptions
+      .key("rss.client.netty.client.send.buffer")
+      .intType()
+      .defaultValue(0)
+      .withDescription("Send buffer size (SO_SNDBUF).");
+
 }
