@@ -44,20 +44,15 @@ public class TransportContext {
   public TransportResponseHandler initializePipeline(
       SocketChannel channel, ChannelInboundHandlerAdapter decoder) {
     try {
-      try {
-        TransportResponseHandler responseHandler = new TransportResponseHandler(channel);
-        channel
-            .pipeline()
-            .addLast("encoder", ENCODER) // out
-            .addLast("decoder", decoder) // in
-            .addLast(
-                "idleStateHandler", new IdleStateHandler(0, 0, transportConf.connectionTimeoutMs() / 1000))
-            .addLast("responseHandler", responseHandler);
-        return responseHandler;
-      } catch (RuntimeException e) {
-        logger.error("Error while initializing Netty pipeline", e);
-        throw e;
-      }
+      TransportResponseHandler responseHandler = new TransportResponseHandler(channel);
+      channel
+          .pipeline()
+          .addLast("encoder", ENCODER) // out
+          .addLast("decoder", decoder) // in
+          .addLast(
+              "idleStateHandler", new IdleStateHandler(0, 0, transportConf.connectionTimeoutMs() / 1000))
+          .addLast("responseHandler", responseHandler);
+      return responseHandler;
     } catch (RuntimeException e) {
       logger.error("Error while initializing Netty pipeline", e);
       throw e;
