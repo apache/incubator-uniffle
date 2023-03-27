@@ -25,12 +25,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.Sets;
-import org.apache.uniffle.common.util.JavaUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleDataDistributionType;
+import org.apache.uniffle.common.util.JavaUtils;
 
 /**
  * ShuffleTaskInfo contains the information of submitting the shuffle,

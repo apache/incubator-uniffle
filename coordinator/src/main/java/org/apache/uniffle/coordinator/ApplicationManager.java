@@ -33,12 +33,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.uniffle.common.util.JavaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;

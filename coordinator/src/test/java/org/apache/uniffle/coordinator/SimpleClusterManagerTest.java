@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.uniffle.common.util.JavaUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ServerStatus;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
 import static org.awaitility.Awaitility.await;

@@ -41,7 +41,6 @@ import org.apache.spark.shuffle.RssShuffleManager;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.TestUtils;
 import org.apache.spark.util.EventLoop;
-import org.apache.uniffle.common.util.JavaUtils;
 import org.junit.jupiter.api.Test;
 import scala.Product2;
 import scala.Tuple2;
@@ -51,6 +50,7 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -25,12 +25,12 @@ import java.util.Set;
 import java.util.SortedMap;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.uniffle.common.util.JavaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.coordinator.ClusterManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.ServerNode;

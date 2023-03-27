@@ -38,7 +38,6 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.serializer.Serializer;
 import org.apache.hadoop.mapreduce.RssMRUtils;
-import org.apache.uniffle.common.util.JavaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +49,7 @@ import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ChecksumUtils;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public class SortWriteBufferManager<K, V> {

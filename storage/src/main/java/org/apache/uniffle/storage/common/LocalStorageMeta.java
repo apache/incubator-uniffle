@@ -28,10 +28,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.uniffle.common.util.JavaUtils;
 import org.roaringbitmap.RoaringBitmap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.uniffle.common.util.JavaUtils;
 
 /**
  *  Metadata has three dimensions from top to down including disk, shuffle, partition.

@@ -30,8 +30,9 @@ import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.io.serializer.Deserializer;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.io.serializer.Serializer;
-import org.apache.uniffle.common.util.JavaUtils;
 import org.junit.jupiter.api.Test;
+
+import org.apache.uniffle.common.util.JavaUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

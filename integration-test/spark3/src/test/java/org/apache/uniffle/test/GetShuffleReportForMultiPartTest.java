@@ -41,12 +41,12 @@ import org.apache.spark.sql.execution.adaptive.AdaptiveSparkPlanExec;
 import org.apache.spark.sql.execution.joins.SortMergeJoinExec;
 import org.apache.spark.sql.functions;
 import org.apache.spark.sql.internal.SQLConf;
-import org.apache.uniffle.common.util.JavaUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.MockedGrpcServer;
 import org.apache.uniffle.server.MockedShuffleServerGrpcService;
