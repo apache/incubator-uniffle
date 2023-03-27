@@ -20,13 +20,13 @@ package org.apache.uniffle.coordinator.metric;
 import java.util.Map;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.common.metrics.MetricsManager;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 
 public class CoordinatorMetrics {
@@ -54,7 +54,7 @@ public class CoordinatorMetrics {
   public static Counter counterTotalCandidatesDeniedRequest;
   public static Counter counterTotalQuotaDeniedRequest;
   public static Counter counterTotalLoadDeniedRequest;
-  public static final Map<String, Gauge> GAUGE_USED_REMOTE_STORAGE = Maps.newConcurrentMap();
+  public static final Map<String, Gauge> GAUGE_USED_REMOTE_STORAGE = JavaUtils.newConcurrentMap();
 
   private static MetricsManager metricsManager;
   private static boolean isRegister = false;

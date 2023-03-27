@@ -32,7 +32,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -75,6 +74,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
@@ -97,7 +97,7 @@ public class RssShuffleManager implements ShuffleManager {
   private ShuffleWriteClient shuffleWriteClient;
   private final Map<String, Set<Long>> taskToSuccessBlockIds;
   private final Map<String, Set<Long>> taskToFailedBlockIds;
-  private Map<String, WriteBufferManager> taskToBufferManager = Maps.newConcurrentMap();
+  private Map<String, WriteBufferManager> taskToBufferManager = JavaUtils.newConcurrentMap();
   private ScheduledExecutorService heartBeatScheduledExecutorService;
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
@@ -210,8 +210,8 @@ public class RssShuffleManager implements ShuffleManager {
     // shuffle cluster, we don't need shuffle data locality
     sparkConf.set("spark.shuffle.reduceLocality.enabled", "false");
     LOG.info("Disable shuffle data locality in RssShuffleManager.");
-    taskToSuccessBlockIds = Maps.newConcurrentMap();
-    taskToFailedBlockIds = Maps.newConcurrentMap();
+    taskToSuccessBlockIds = JavaUtils.newConcurrentMap();
+    taskToFailedBlockIds = JavaUtils.newConcurrentMap();
     // for non-driver executor, start a thread for sending shuffle data to shuffle server
     LOG.info("RSS data send thread is starting");
     eventLoop = defaultEventLoop;

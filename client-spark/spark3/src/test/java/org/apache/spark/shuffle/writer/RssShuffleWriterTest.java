@@ -50,6 +50,7 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -78,8 +79,8 @@ public class RssShuffleWriterTest {
         .set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "127.0.0.1:12345,127.0.0.1:12346");
     // init SparkContext
     final SparkContext sc = SparkContext.getOrCreate(conf);
-    Map<String, Set<Long>> failBlocks = Maps.newConcurrentMap();
-    Map<String, Set<Long>> successBlocks = Maps.newConcurrentMap();
+    Map<String, Set<Long>> failBlocks = JavaUtils.newConcurrentMap();
+    Map<String, Set<Long>> successBlocks = JavaUtils.newConcurrentMap();
     Serializer kryoSerializer = new KryoSerializer(conf);
     RssShuffleManager manager = TestUtils.createShuffleManager(
         conf,
@@ -150,7 +151,7 @@ public class RssShuffleWriterTest {
     // init SparkContext
     List<ShuffleBlockInfo> shuffleBlockInfos = Lists.newArrayList();
     final SparkContext sc = SparkContext.getOrCreate(conf);
-    Map<String, Set<Long>> successBlockIds = Maps.newConcurrentMap();
+    Map<String, Set<Long>> successBlockIds = JavaUtils.newConcurrentMap();
     EventLoop<AddBlockEvent> testLoop = new EventLoop<AddBlockEvent>("test") {
       @Override
       public void onReceive(AddBlockEvent event) {
@@ -172,7 +173,7 @@ public class RssShuffleWriterTest {
         false,
         testLoop,
         successBlockIds,
-        Maps.newConcurrentMap());
+        JavaUtils.newConcurrentMap());
     Serializer kryoSerializer = new KryoSerializer(conf);
     Partitioner mockPartitioner = mock(Partitioner.class);
     final ShuffleWriteClient mockShuffleWriteClient = mock(ShuffleWriteClient.class);
@@ -287,8 +288,8 @@ public class RssShuffleWriterTest {
         sparkConf,
         false,
         eventLoop,
-        Maps.newConcurrentMap(),
-        Maps.newConcurrentMap()));
+        JavaUtils.newConcurrentMap(),
+        JavaUtils.newConcurrentMap()));
 
     RssShuffleHandle<String, String, String> mockHandle = mock(RssShuffleHandle.class);
     when(mockHandle.getDependency()).thenReturn(mockDependency);

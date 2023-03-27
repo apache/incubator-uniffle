@@ -49,6 +49,7 @@ import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ChecksumUtils;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public class SortWriteBufferManager<K, V> {
@@ -56,7 +57,7 @@ public class SortWriteBufferManager<K, V> {
   private static final Logger LOG = LoggerFactory.getLogger(SortWriteBufferManager.class);
 
   private final long maxMemSize;
-  private final Map<Integer, SortWriteBuffer<K, V>> buffers = Maps.newConcurrentMap();
+  private final Map<Integer, SortWriteBuffer<K, V>> buffers = JavaUtils.newConcurrentMap();
   private final Map<Integer, Integer> partitionToSeqNo = Maps.newHashMap();
   private final Counters.Counter mapOutputByteCounter;
   private final Counters.Counter mapOutputRecordCounter;
@@ -83,7 +84,7 @@ public class SortWriteBufferManager<K, V> {
   private final long sendCheckInterval;
   private final Set<Long> allBlockIds = Sets.newConcurrentHashSet();
   private final int bitmapSplitNum;
-  private final Map<Integer, List<Long>> partitionToBlocks = Maps.newConcurrentMap();
+  private final Map<Integer, List<Long>> partitionToBlocks = JavaUtils.newConcurrentMap();
   private final long maxSegmentSize;
   private final boolean isMemoryShuffleEnabled;
   private final int numMaps;

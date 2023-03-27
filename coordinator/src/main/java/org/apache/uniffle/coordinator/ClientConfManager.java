@@ -26,7 +26,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.google.common.collect.Maps;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -39,12 +38,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public class ClientConfManager implements Closeable {
   private static final Logger LOG = LoggerFactory.getLogger(ClientConfManager.class);
 
-  private Map<String, String> clientConf = Maps.newConcurrentMap();
+  private Map<String, String> clientConf = JavaUtils.newConcurrentMap();
   private final AtomicLong lastCandidatesUpdateMS = new AtomicLong(0L);
   private Path path;
   private ScheduledExecutorService updateClientConfSES = null;
@@ -100,7 +100,7 @@ public class ClientConfManager implements Closeable {
   }
 
   private void updateClientConfInternal() {
-    Map<String, String> newClientConf = Maps.newConcurrentMap();
+    Map<String, String> newClientConf = JavaUtils.newConcurrentMap();
     String content = loadClientConfContent();
     if (StringUtils.isEmpty(content)) {
       clientConf = newClientConf;

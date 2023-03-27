@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterEach;
@@ -39,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ServerStatus;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
 import static org.awaitility.Awaitility.await;
@@ -136,11 +136,11 @@ public class SimpleClusterManagerTest {
     try (SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration())) {
 
       ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-          10, nettyTags, true, ServerStatus.ACTIVE, Maps.newConcurrentMap(), 1);
+          10, nettyTags, true, ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
       ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-          10, nettyTags, true, ServerStatus.ACTIVE, Maps.newConcurrentMap(), 1);
+          10, nettyTags, true, ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
       ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-          11, nettyTags, true, ServerStatus.ACTIVE, Maps.newConcurrentMap(), 1);
+          11, nettyTags, true, ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
       ServerNode sn4 = new ServerNode("sn4", "ip", 0, 100L, 50L, 20,
           11, grpcTags, true);
       clusterManager.add(sn1);
@@ -162,10 +162,10 @@ public class SimpleClusterManagerTest {
 
       // tag changes
       sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-          10, Sets.newHashSet("new_tag"), true, ServerStatus.ACTIVE, Maps.newConcurrentMap(), 1);
+          10, Sets.newHashSet("new_tag"), true, ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
       sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
           10, Sets.newHashSet("test", "new_tag"),
-          true, ServerStatus.ACTIVE, Maps.newConcurrentMap(), 1);
+          true, ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
       sn4 = new ServerNode("sn4", "ip", 0, 100L, 51L, 20,
           10, grpcTags, true);
       clusterManager.add(sn1);

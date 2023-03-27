@@ -23,7 +23,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BytesWritable;
@@ -42,6 +41,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.JavaUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -54,7 +54,7 @@ public class SortWriteBufferManagerTest {
     JobConf jobConf = new JobConf(new Configuration());
     SerializationFactory serializationFactory = new SerializationFactory(jobConf);
     MockShuffleWriteClient client = new MockShuffleWriteClient();
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newConcurrentMap();
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = JavaUtils.newConcurrentMap();
     Set<Long> successBlocks = Sets.newConcurrentHashSet();
     Set<Long> failedBlocks = Sets.newConcurrentHashSet();
     Counters.Counter mapOutputByteCounter = new Counters.Counter();
@@ -154,7 +154,7 @@ public class SortWriteBufferManagerTest {
     SerializationFactory serializationFactory = new SerializationFactory(jobConf);
     MockShuffleWriteClient client = new MockShuffleWriteClient();
     client.setMode(2);
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newConcurrentMap();
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = JavaUtils.newConcurrentMap();
     Set<Long> successBlocks = Sets.newConcurrentHashSet();
     Set<Long> failedBlocks = Sets.newConcurrentHashSet();
     Counters.Counter mapOutputByteCounter = new Counters.Counter();
@@ -203,7 +203,7 @@ public class SortWriteBufferManagerTest {
     SerializationFactory serializationFactory = new SerializationFactory(jobConf);
     MockShuffleWriteClient client = new MockShuffleWriteClient();
     client.setMode(2);
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newConcurrentMap();
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = JavaUtils.newConcurrentMap();
     Set<Long> successBlocks = Sets.newConcurrentHashSet();
     Set<Long> failedBlocks = Sets.newConcurrentHashSet();
     Counters.Counter mapOutputByteCounter = new Counters.Counter();

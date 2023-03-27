@@ -25,7 +25,6 @@ import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +35,7 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleFlushManager;
 
@@ -55,7 +55,7 @@ public class ShuffleBuffer {
     this.capacity = capacity;
     this.size = 0;
     this.blocks = new LinkedList<>();
-    this.inFlushBlockMap = Maps.newConcurrentMap();
+    this.inFlushBlockMap = JavaUtils.newConcurrentMap();
   }
 
   public long append(ShufflePartitionedData data) {

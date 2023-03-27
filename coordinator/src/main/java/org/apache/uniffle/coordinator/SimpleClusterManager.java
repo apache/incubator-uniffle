@@ -37,7 +37,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -55,6 +54,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
@@ -62,11 +62,11 @@ public class SimpleClusterManager implements ClusterManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(SimpleClusterManager.class);
 
-  private final Map<String, ServerNode> servers = Maps.newConcurrentMap();
+  private final Map<String, ServerNode> servers = JavaUtils.newConcurrentMap();
   private final Cache<ServerNode, ShuffleServerInternalGrpcClient> clientCache;
   private Set<String> excludeNodes = Sets.newConcurrentHashSet();
   // tag -> nodes
-  private Map<String, Set<ServerNode>> tagToNodes = Maps.newConcurrentMap();
+  private Map<String, Set<ServerNode>> tagToNodes = JavaUtils.newConcurrentMap();
   private AtomicLong excludeLastModify = new AtomicLong(0L);
   private long heartbeatTimeout;
   private volatile int shuffleNodesMax;

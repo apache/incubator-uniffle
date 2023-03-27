@@ -51,6 +51,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageMedia;
 import org.apache.uniffle.common.storage.StorageStatus;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.LocalStorageChecker;
@@ -90,7 +91,7 @@ public class LocalStorageManager extends SingleStorageManager {
     if (CollectionUtils.isEmpty(storageBasePaths)) {
       throw new IllegalArgumentException("Base path dirs must not be empty");
     }
-    this.partitionsOfStorage = Maps.newConcurrentMap();
+    this.partitionsOfStorage = JavaUtils.newConcurrentMap();
     long capacity = conf.getSizeAsBytes(ShuffleServerConf.DISK_CAPACITY);
     double ratio = conf.getDouble(ShuffleServerConf.DISK_CAPACITY_RATIO);
     double highWaterMarkOfWrite = conf.get(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE);

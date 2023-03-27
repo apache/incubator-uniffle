@@ -19,7 +19,11 @@ package org.apache.uniffle.common.util;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
+import org.apache.commons.lang3.JavaVersion;
+import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +38,29 @@ public class JavaUtils {
       }
     } catch (IOException e) {
       logger.error("IOException should not have been thrown.", e);
+    }
+  }
+
+  public static <K, V> ConcurrentHashMap<K, V> newConcurrentMap() {
+    if (SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_9)) {
+      return new ConcurrentHashMap();
+    } else {
+      return new ConcurrentHashMapForJDK8();
+    }
+  }
+
+  /**
+   * For JDK8, there is bug for ConcurrentHashMap#computeIfAbsent, checking the key existence to
+   * speed up. See details in issue #519
+   */
+  private static class ConcurrentHashMapForJDK8<K, V> extends ConcurrentHashMap<K, V> {
+    @Override
+    public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+      V result;
+      if (null == (result = get(key))) {
+        result = super.computeIfAbsent(key, mappingFunction);
+      }
+      return result;
     }
   }
 }

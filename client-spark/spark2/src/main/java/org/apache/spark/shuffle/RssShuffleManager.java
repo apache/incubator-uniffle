@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
@@ -65,6 +64,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
@@ -79,9 +79,9 @@ public class RssShuffleManager implements ShuffleManager {
   private String appId = "";
   private String clientType;
   private ShuffleWriteClient shuffleWriteClient;
-  private Map<String, Set<Long>> taskToSuccessBlockIds = Maps.newConcurrentMap();
-  private Map<String, Set<Long>> taskToFailedBlockIds = Maps.newConcurrentMap();
-  private Map<String, WriteBufferManager> taskToBufferManager = Maps.newConcurrentMap();
+  private Map<String, Set<Long>> taskToSuccessBlockIds = JavaUtils.newConcurrentMap();
+  private Map<String, Set<Long>> taskToFailedBlockIds = JavaUtils.newConcurrentMap();
+  private Map<String, WriteBufferManager> taskToBufferManager = JavaUtils.newConcurrentMap();
   private final int dataReplica;
   private final int dataReplicaWrite;
   private final int dataReplicaRead;
