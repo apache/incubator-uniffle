@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -312,7 +311,7 @@ public class ShuffleServer {
     serverStatus = ServerStatus.DECOMMISSIONING;
     LOG.info("Shuffle Server is decommissioning.");
     if (executorService == null) {
-      executorService = ThreadUtils.newDaemonSingleThreadExecutor("shuffle-server-decommission");
+      executorService = ThreadUtils.getDaemonSingleThreadExecutor("shuffle-server-decommission");
     }
     decommissionFuture = executorService.submit(this::waitDecommissionFinish);
   }

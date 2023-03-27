@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -95,11 +94,11 @@ public class ApplicationManager implements Closeable {
       }
     }
     // the thread for checking application status
-    checkAppScheduler = ThreadUtils.newDaemonSingleThreadScheduledExecutor("ApplicationManager");
+    checkAppScheduler = ThreadUtils.getDaemonSingleThreadScheduledExecutor("ApplicationManager");
     checkAppScheduler.scheduleAtFixedRate(
         this::statusCheck, expired / 2, expired / 2, TimeUnit.MILLISECONDS);
     // the thread for checking if the storage is normal
-    detectStorageScheduler = ThreadUtils.newDaemonSingleThreadScheduledExecutor("detectStoragesScheduler");
+    detectStorageScheduler = ThreadUtils.getDaemonSingleThreadScheduledExecutor("detectStoragesScheduler");
     // should init later than the refreshRemoteStorage init
     detectStorageScheduler.scheduleAtFixedRate(selectStorageStrategy::detectStorage, 1000,
         conf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME), TimeUnit.MILLISECONDS);

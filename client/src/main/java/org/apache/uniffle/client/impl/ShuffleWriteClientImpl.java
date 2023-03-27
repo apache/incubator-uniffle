@@ -127,8 +127,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
     this.coordinatorClientFactory = new CoordinatorClientFactory(ClientType.valueOf(clientType));
-    this.heartBeatExecutorService = ThreadUtils.newDaemonFixedThreadPool(heartBeatThreadNum,
-        "client-heartbeat");
+    this.heartBeatExecutorService = ThreadUtils.getDaemonFixedThreadPool(heartBeatThreadNum, "client-heartbeat");
     this.replica = replica;
     this.replicaWrite = replicaWrite;
     this.replicaRead = replicaRead;
@@ -751,8 +750,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     ExecutorService executorService = null;
     try {
       executorService =
-          ThreadUtils.newDaemonFixedThreadPool(
-              Math.min(unregisterThreadPoolSize, shuffleServerInfos.size()), "unregister-shuffle-%d");
+          ThreadUtils.getDaemonFixedThreadPool(
+              Math.min(unregisterThreadPoolSize, shuffleServerInfos.size()), "unregister-shuffle");
       List<Future<Void>> futures = executorService.invokeAll(callableList, unregisterRequestTimeSec, TimeUnit.SECONDS);
       for (Future<Void> future : futures) {
         if (!future.isDone()) {

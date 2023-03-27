@@ -45,7 +45,7 @@ public class ThreadUtils {
    * @param factoryName Prefix name of each thread from this threadPool
    * @return ScheduledExecutorService
    */
-  public static ScheduledExecutorService newDaemonSingleThreadScheduledExecutor(String factoryName) {
+  public static ScheduledExecutorService getDaemonSingleThreadScheduledExecutor(String factoryName) {
     ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1, getThreadFactory(factoryName));
     executor.setRemoveOnCancelPolicy(true);
     return executor;
@@ -57,21 +57,21 @@ public class ThreadUtils {
    * @param factoryName Prefix name of each thread from this threadPool
    * @return ExecutorService
    */
-  public static ExecutorService newDaemonFixedThreadPool(int threadNum, String factoryName) {
+  public static ExecutorService getDaemonFixedThreadPool(int threadNum, String factoryName) {
     return Executors.newFixedThreadPool(threadNum, getThreadFactory(factoryName));
   }
 
   /**
    * Encapsulation of the newSingleThreadExecutor
    */
-  public static ExecutorService newDaemonSingleThreadExecutor(String factoryName) {
+  public static ExecutorService getDaemonSingleThreadExecutor(String factoryName) {
     return Executors.newSingleThreadExecutor(getThreadFactory(factoryName));
   }
 
   /**
    * Encapsulation of the newCachedThreadPool
    */
-  public static ExecutorService newDaemonCachedThreadPool(String factoryName) {
+  public static ExecutorService getDaemonCachedThreadPool(String factoryName) {
     return Executors.newCachedThreadPool(getThreadFactory(factoryName));
   }
 }

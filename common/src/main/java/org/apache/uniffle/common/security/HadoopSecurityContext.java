@@ -20,7 +20,6 @@ package org.apache.uniffle.common.security;
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -67,7 +66,7 @@ public class HadoopSecurityContext implements SecurityContext {
     LOGGER.info("Got Kerberos ticket, keytab [{}], principal [{}], user [{}]",
         keytabFile, principal, loginUgi.getShortUserName());
 
-    refreshScheduledExecutor = ThreadUtils.newDaemonSingleThreadScheduledExecutor("Kerberos-refresh");
+    refreshScheduledExecutor = ThreadUtils.getDaemonSingleThreadScheduledExecutor("Kerberos-refresh");
     refreshScheduledExecutor.scheduleAtFixedRate(
         this::authRefresh,
         refreshIntervalSec,
