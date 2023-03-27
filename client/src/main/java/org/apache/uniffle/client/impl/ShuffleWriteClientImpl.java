@@ -40,6 +40,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,7 +99,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private long retryIntervalMax;
   private List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
   //appId -> shuffleId -> servers
-  private Map<String, Map<Integer, Set<ShuffleServerInfo>>> shuffleServerInfoMap = Maps.newConcurrentMap();
+  private Map<String, Map<Integer, Set<ShuffleServerInfo>>> shuffleServerInfoMap = JavaUtils.newConcurrentMap();
   private CoordinatorClientFactory coordinatorClientFactory;
   private ExecutorService heartBeatExecutorService;
   private int replica;
@@ -803,7 +804,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   void addShuffleServer(String appId, int shuffleId, ShuffleServerInfo serverInfo) {
     Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
     if (appServerMap == null) {
-      appServerMap = Maps.newConcurrentMap();
+      appServerMap = JavaUtils.newConcurrentMap();
       shuffleServerInfoMap.put(appId, appServerMap);
     }
     Set<ShuffleServerInfo> shuffleServerInfos = appServerMap.get(shuffleId);

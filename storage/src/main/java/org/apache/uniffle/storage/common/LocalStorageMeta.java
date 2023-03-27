@@ -28,7 +28,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.roaringbitmap.RoaringBitmap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +44,7 @@ public class LocalStorageMeta {
 
   private static final Logger LOG = LoggerFactory.getLogger(LocalStorageMeta.class);
   private final AtomicLong size = new AtomicLong(0L);
-  private final Map<String, ShuffleMeta> shuffleMetaMap = Maps.newConcurrentMap();
+  private final Map<String, ShuffleMeta> shuffleMetaMap = JavaUtils.newConcurrentMap();
 
   // todo: add ut
   public List<String> getSortedShuffleKeys(boolean checkRead, int hint) {

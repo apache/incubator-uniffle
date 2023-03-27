@@ -29,11 +29,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,13 +47,13 @@ import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
  */
 public class QuotaManager {
   private static final Logger LOG = LoggerFactory.getLogger(QuotaManager.class);
-  private final Map<String, Map<String, Long>> currentUserAndApp = Maps.newConcurrentMap();
-  private final Map<String, String> appIdToUser = Maps.newConcurrentMap();
+  private final Map<String, Map<String, Long>> currentUserAndApp = JavaUtils.newConcurrentMap();
+  private final Map<String, String> appIdToUser = JavaUtils.newConcurrentMap();
   private final String quotaFilePath;
   private final Integer quotaAppNum;
   private FileSystem hadoopFileSystem;
   private final AtomicLong quotaFileLastModify = new AtomicLong(0L);
-  private final Map<String, Integer> defaultUserApps = Maps.newConcurrentMap();
+  private final Map<String, Integer> defaultUserApps = JavaUtils.newConcurrentMap();
 
   public QuotaManager(CoordinatorConf conf) {
     this.quotaFilePath = conf.get(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH);
@@ -117,7 +117,7 @@ public class QuotaManager {
   }
 
   public boolean checkQuota(String user, String uuid) {
-    Map<String, Long> appAndTimes = currentUserAndApp.computeIfAbsent(user, x -> Maps.newConcurrentMap());
+    Map<String, Long> appAndTimes = currentUserAndApp.computeIfAbsent(user, x -> JavaUtils.newConcurrentMap());
     Integer defaultAppNum = defaultUserApps.getOrDefault(user, quotaAppNum);
     synchronized (this) {
       int currentAppNum = appAndTimes.size();

@@ -32,6 +32,7 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.TreeRangeMap;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +76,7 @@ public class ShuffleBufferManager {
   // appId -> shuffleId -> partitionId -> ShuffleBuffer to avoid too many appId
   protected Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool;
   // appId -> shuffleId -> shuffle size in buffer
-  protected Map<String, Map<Integer, AtomicLong>> shuffleSizeMap = Maps.newConcurrentMap();
+  protected Map<String, Map<Integer, AtomicLong>> shuffleSizeMap = JavaUtils.newConcurrentMap();
 
   public ShuffleBufferManager(ShuffleServerConf conf, ShuffleFlushManager shuffleFlushManager) {
     long heapSize = Runtime.getRuntime().maxMemory();
@@ -109,7 +110,7 @@ public class ShuffleBufferManager {
   }
 
   public StatusCode registerBuffer(String appId, int shuffleId, int startPartition, int endPartition) {
-    bufferPool.putIfAbsent(appId, Maps.newConcurrentMap());
+    bufferPool.putIfAbsent(appId, JavaUtils.newConcurrentMap());
     Map<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers = bufferPool.get(appId);
     shuffleIdToBuffers.putIfAbsent(shuffleId, TreeRangeMap.create());
     RangeMap<Integer, ShuffleBuffer> bufferRangeMap = shuffleIdToBuffers.get(shuffleId);
@@ -162,7 +163,7 @@ public class ShuffleBufferManager {
   }
 
   private void updateShuffleSize(String appId, int shuffleId, long size) {
-    shuffleSizeMap.putIfAbsent(appId, Maps.newConcurrentMap());
+    shuffleSizeMap.putIfAbsent(appId, JavaUtils.newConcurrentMap());
     Map<Integer, AtomicLong> shuffleIdToSize = shuffleSizeMap.get(appId);
     shuffleIdToSize.putIfAbsent(shuffleId, new AtomicLong(0));
     shuffleIdToSize.get(shuffleId).addAndGet(size);

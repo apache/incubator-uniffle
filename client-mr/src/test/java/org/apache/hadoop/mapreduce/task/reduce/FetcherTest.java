@@ -28,7 +28,6 @@ import java.util.TreeMap;
 import java.util.function.Supplier;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -57,6 +56,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.util.Progress;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -247,7 +247,7 @@ public class FetcherTest {
     SerializationFactory serializationFactory = new SerializationFactory(jobConf);
     MockShuffleWriteClient client = new MockShuffleWriteClient();
     client.setMode(2);
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newConcurrentMap();
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = JavaUtils.newConcurrentMap();
     Set<Long> successBlocks = Sets.newConcurrentHashSet();
     Set<Long> failedBlocks = Sets.newConcurrentHashSet();
     Counters.Counter mapOutputByteCounter = new Counters.Counter();

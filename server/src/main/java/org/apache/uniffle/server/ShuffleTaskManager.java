@@ -39,6 +39,7 @@ import com.google.common.collect.Queues;
 import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,8 +93,8 @@ public class ShuffleTaskManager {
   // but when get blockId, performance will degrade a little which can be optimized by client configuration
   private Map<String, Map<Integer, Roaring64NavigableMap[]>> partitionsToBlockIds;
   private final ShuffleBufferManager shuffleBufferManager;
-  private Map<String, ShuffleTaskInfo> shuffleTaskInfos = Maps.newConcurrentMap();
-  private Map<Long, PreAllocatedBufferInfo> requireBufferIds = Maps.newConcurrentMap();
+  private Map<String, ShuffleTaskInfo> shuffleTaskInfos = JavaUtils.newConcurrentMap();
+  private Map<Long, PreAllocatedBufferInfo> requireBufferIds = JavaUtils.newConcurrentMap();
   private Runnable clearResourceThread;
   private BlockingQueue<PurgeEvent> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
 
@@ -104,7 +105,7 @@ public class ShuffleTaskManager {
       StorageManager storageManager) {
     this.conf = conf;
     this.shuffleFlushManager = shuffleFlushManager;
-    this.partitionsToBlockIds = Maps.newConcurrentMap();
+    this.partitionsToBlockIds = JavaUtils.newConcurrentMap();
     this.shuffleBufferManager = shuffleBufferManager;
     this.storageManager = storageManager;
     this.appExpiredWithoutHB = conf.getLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT);
@@ -191,7 +192,7 @@ public class ShuffleTaskManager {
     refreshAppId(appId);
     shuffleTaskInfos.get(appId).setUser(user);
     shuffleTaskInfos.get(appId).setDataDistType(dataDistType);
-    partitionsToBlockIds.putIfAbsent(appId, Maps.newConcurrentMap());
+    partitionsToBlockIds.putIfAbsent(appId, JavaUtils.newConcurrentMap());
     for (PartitionRange partitionRange : partitionRanges) {
       shuffleBufferManager.registerBuffer(appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
     }

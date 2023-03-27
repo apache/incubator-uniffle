@@ -22,9 +22,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.grpc.stub.StreamObserver;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +36,7 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
   private static final Logger LOG = LoggerFactory.getLogger(MockedShuffleServerGrpcService.class);
 
   // appId -> shuffleId -> partitionRequestNum
-  private Map<String, Map<Integer, AtomicInteger>> appToPartitionRequest = Maps.newConcurrentMap();
+  private Map<String, Map<Integer, AtomicInteger>> appToPartitionRequest = JavaUtils.newConcurrentMap();
 
   private long mockedTimeout = -1L;
 
@@ -98,7 +98,7 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
     if (recordGetShuffleResult) {
       List<Integer> requestPartitions = request.getPartitionsList();
       Map<Integer, AtomicInteger> shuffleIdToPartitionRequestNum = appToPartitionRequest.computeIfAbsent(
-          request.getAppId(), x -> Maps.newConcurrentMap());
+          request.getAppId(), x -> JavaUtils.newConcurrentMap());
       AtomicInteger partitionRequestNum = shuffleIdToPartitionRequestNum.computeIfAbsent(
           request.getShuffleId(), x -> new AtomicInteger(0));
       partitionRequestNum.addAndGet(requestPartitions.size());

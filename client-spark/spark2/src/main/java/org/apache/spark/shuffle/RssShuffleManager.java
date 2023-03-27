@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
@@ -46,6 +45,7 @@ import org.apache.spark.shuffle.writer.WriteBufferManager;
 import org.apache.spark.storage.BlockId;
 import org.apache.spark.storage.BlockManagerId;
 import org.apache.spark.util.EventLoop;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,9 +79,9 @@ public class RssShuffleManager implements ShuffleManager {
   private String appId = "";
   private String clientType;
   private ShuffleWriteClient shuffleWriteClient;
-  private Map<String, Set<Long>> taskToSuccessBlockIds = Maps.newConcurrentMap();
-  private Map<String, Set<Long>> taskToFailedBlockIds = Maps.newConcurrentMap();
-  private Map<String, WriteBufferManager> taskToBufferManager = Maps.newConcurrentMap();
+  private Map<String, Set<Long>> taskToSuccessBlockIds = JavaUtils.newConcurrentMap();
+  private Map<String, Set<Long>> taskToFailedBlockIds = JavaUtils.newConcurrentMap();
+  private Map<String, WriteBufferManager> taskToBufferManager = JavaUtils.newConcurrentMap();
   private final int dataReplica;
   private final int dataReplicaWrite;
   private final int dataReplicaRead;

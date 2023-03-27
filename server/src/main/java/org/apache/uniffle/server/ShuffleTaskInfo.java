@@ -24,8 +24,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,13 +68,13 @@ public class ShuffleTaskInfo {
   public ShuffleTaskInfo(String appId) {
     this.appId = appId;
     this.currentTimes = System.currentTimeMillis();
-    this.commitCounts = Maps.newConcurrentMap();
-    this.commitLocks = Maps.newConcurrentMap();
-    this.cachedBlockIds = Maps.newConcurrentMap();
+    this.commitCounts = JavaUtils.newConcurrentMap();
+    this.commitLocks = JavaUtils.newConcurrentMap();
+    this.cachedBlockIds = JavaUtils.newConcurrentMap();
     this.user = new AtomicReference<>();
     this.dataDistType = new AtomicReference<>();
-    this.partitionDataSizes = Maps.newConcurrentMap();
-    this.hugePartitionTags = Maps.newConcurrentMap();
+    this.partitionDataSizes = JavaUtils.newConcurrentMap();
+    this.hugePartitionTags = JavaUtils.newConcurrentMap();
     this.existHugePartition = new AtomicBoolean(false);
   }
 
@@ -117,7 +117,7 @@ public class ShuffleTaskInfo {
 
   public long addPartitionDataSize(int shuffleId, int partitionId, long delta) {
     totalDataSize.addAndGet(delta);
-    partitionDataSizes.computeIfAbsent(shuffleId, key -> Maps.newConcurrentMap());
+    partitionDataSizes.computeIfAbsent(shuffleId, key -> JavaUtils.newConcurrentMap());
     Map<Integer, Long> partitions = partitionDataSizes.get(shuffleId);
     partitions.putIfAbsent(partitionId, 0L);
     return partitions.computeIfPresent(partitionId, (k, v) -> v + delta);

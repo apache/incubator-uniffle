@@ -41,6 +41,7 @@ import org.apache.spark.sql.execution.adaptive.AdaptiveSparkPlanExec;
 import org.apache.spark.sql.execution.joins.SortMergeJoinExec;
 import org.apache.spark.sql.functions;
 import org.apache.spark.sql.internal.SQLConf;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -201,7 +202,7 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
   public static class RssShuffleManagerWrapper extends RssShuffleManager {
 
     // shuffleId -> partShouldRequestNum
-    Map<Integer, AtomicInteger> shuffleToPartShouldRequestNum = Maps.newConcurrentMap();
+    Map<Integer, AtomicInteger> shuffleToPartShouldRequestNum = JavaUtils.newConcurrentMap();
 
     public RssShuffleManagerWrapper(SparkConf conf, boolean isDriver) {
       super(conf, isDriver);

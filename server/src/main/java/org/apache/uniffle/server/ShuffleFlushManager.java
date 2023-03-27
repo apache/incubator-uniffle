@@ -28,11 +28,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +62,7 @@ public class ShuffleFlushManager {
   private final ShuffleServerConf shuffleServerConf;
   private Configuration hadoopConf;
   // appId -> shuffleId -> committed shuffle blockIds
-  private Map<String, Map<Integer, Roaring64NavigableMap>> committedBlockIds = Maps.newConcurrentMap();
+  private Map<String, Map<Integer, Roaring64NavigableMap>> committedBlockIds = JavaUtils.newConcurrentMap();
   private final int retryMax;
 
   private final StorageManager storageManager;
@@ -265,7 +265,7 @@ public class ShuffleFlushManager {
       return;
     }
     if (!committedBlockIds.containsKey(appId)) {
-      committedBlockIds.putIfAbsent(appId, Maps.newConcurrentMap());
+      committedBlockIds.putIfAbsent(appId, JavaUtils.newConcurrentMap());
     }
     Map<Integer, Roaring64NavigableMap> shuffleToBlockIds = committedBlockIds.get(appId);
     shuffleToBlockIds.putIfAbsent(shuffleId, Roaring64NavigableMap.bitmapOf());

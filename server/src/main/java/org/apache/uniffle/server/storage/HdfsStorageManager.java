@@ -28,6 +28,7 @@ import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,8 +57,8 @@ public class HdfsStorageManager extends SingleStorageManager {
   private static final Logger LOG = LoggerFactory.getLogger(HdfsStorageManager.class);
 
   private final Configuration hadoopConf;
-  private Map<String, HdfsStorage> appIdToStorages = Maps.newConcurrentMap();
-  private Map<String, HdfsStorage> pathToStorages = Maps.newConcurrentMap();
+  private Map<String, HdfsStorage> appIdToStorages = JavaUtils.newConcurrentMap();
+  private Map<String, HdfsStorage> pathToStorages = JavaUtils.newConcurrentMap();
 
   HdfsStorageManager(ShuffleServerConf conf) {
     super(conf);

@@ -38,6 +38,7 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.serializer.Serializer;
 import org.apache.hadoop.mapreduce.RssMRUtils;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +57,7 @@ public class SortWriteBufferManager<K, V> {
   private static final Logger LOG = LoggerFactory.getLogger(SortWriteBufferManager.class);
 
   private final long maxMemSize;
-  private final Map<Integer, SortWriteBuffer<K, V>> buffers = Maps.newConcurrentMap();
+  private final Map<Integer, SortWriteBuffer<K, V>> buffers = JavaUtils.newConcurrentMap();
   private final Map<Integer, Integer> partitionToSeqNo = Maps.newHashMap();
   private final Counters.Counter mapOutputByteCounter;
   private final Counters.Counter mapOutputRecordCounter;
@@ -83,7 +84,7 @@ public class SortWriteBufferManager<K, V> {
   private final long sendCheckInterval;
   private final Set<Long> allBlockIds = Sets.newConcurrentHashSet();
   private final int bitmapSplitNum;
-  private final Map<Integer, List<Long>> partitionToBlocks = Maps.newConcurrentMap();
+  private final Map<Integer, List<Long>> partitionToBlocks = JavaUtils.newConcurrentMap();
   private final long maxSegmentSize;
   private final boolean isMemoryShuffleEnabled;
   private final int numMaps;
