@@ -107,7 +107,7 @@ public class EncoderAndDecoderTest {
         new ChannelInitializer<SocketChannel>() {
           @Override
           public void initChannel(SocketChannel ch) {
-            ch.pipeline().addLast("ClientEncoder", new MessageEncoder())
+            ch.pipeline().addLast("ClientEncoder", MessageEncoder.INSTANCE)
                 .addLast("ClientDecoder", new TransportFrameDecoder())
                 .addLast("ClientResponseHandler", new MockResponseHandler());
             channelRef.set(ch);
@@ -152,7 +152,7 @@ public class EncoderAndDecoderTest {
     serverBootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
       @Override
       public void initChannel(final SocketChannel ch) {
-        ch.pipeline().addLast("ServerEncoder", new MessageEncoder())
+        ch.pipeline().addLast("ServerEncoder", MessageEncoder.INSTANCE)
             .addLast("ServerDecoder", new TransportFrameDecoder())
             .addLast("ServerResponseHandler", new MockResponseHandler());
       }
