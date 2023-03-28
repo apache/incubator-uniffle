@@ -128,6 +128,11 @@ var (
 			},
 		},
 	}
+	testImagePullSecrets = []corev1.LocalObjectReference{
+		{
+			Name: "default-secret",
+		},
+	}
 )
 
 func buildRssWithLabels() *uniffleapi.RemoteShuffleService {
@@ -163,6 +168,12 @@ func withCustomTolerations(tolerations []corev1.Toleration) *uniffleapi.RemoteSh
 func withCustomAffinity(affinity *corev1.Affinity) *uniffleapi.RemoteShuffleService {
 	rss := utils.BuildRSSWithDefaultValue()
 	rss.Spec.Coordinator.Affinity = affinity
+	return rss
+}
+
+func withCustomImagePullSecrets(imagePullSecrets []corev1.LocalObjectReference) *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.ImagePullSecrets = imagePullSecrets
 	return rss
 }
 
@@ -434,6 +445,20 @@ func TestGenerateDeploy(t *testing.T) {
 					}
 				}
 				return false, fmt.Errorf("generated deploy should include affinity: %v", testAffinity)
+			},
+		},
+		{
+			name: "set custom imagePullSecrets",
+			rss:  withCustomImagePullSecrets(testImagePullSecrets),
+			IsValidDeploy: func(deploy *appsv1.Deployment, rss *uniffleapi.RemoteShuffleService) (bool, error) {
+				if deploy.Spec.Template.Spec.ImagePullSecrets != nil {
+					deploy.Spec.Template.Spec.ImagePullSecrets = rss.Spec.ImagePullSecrets
+					equal := reflect.DeepEqual(deploy.Spec.Template.Spec.ImagePullSecrets, testImagePullSecrets)
+					if equal {
+						return true, nil
+					}
+				}
+				return false, fmt.Errorf("generated deploy should include imagePullSecrets: %v", testImagePullSecrets)
 			},
 		},
 	} {
