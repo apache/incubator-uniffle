@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -35,8 +34,10 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.exception.InvalidRequestException;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
 import org.apache.uniffle.common.metrics.MetricReporter;
@@ -190,7 +191,7 @@ public class ShuffleServer {
     }
     ip = RssUtils.getHostIp();
     if (ip == null) {
-      throw new RuntimeException("Couldn't acquire host Ip");
+      throw new RssException("Couldn't acquire host Ip");
     }
     grpcPort = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
@@ -248,7 +249,16 @@ public class ShuffleServer {
     if (CollectionUtils.isNotEmpty(configuredTags)) {
       tags.addAll(configuredTags);
     }
+    tagServer();
     LOG.info("Server tags: {}", tags);
+  }
+
+  private void tagServer() {
+    if (nettyServerEnabled) {
+      tags.add(ClientType.GRPC_NETTY.name());
+    } else {
+      tags.add(ClientType.GRPC.name());
+    }
   }
 
   private void registerMetrics() throws Exception {
@@ -312,8 +322,7 @@ public class ShuffleServer {
     serverStatus = ServerStatus.DECOMMISSIONING;
     LOG.info("Shuffle Server is decommissioning.");
     if (executorService == null) {
-      executorService = Executors.newSingleThreadExecutor(
-          ThreadUtils.getThreadFactory("shuffle-server-decommission-%d"));
+      executorService = ThreadUtils.getDaemonSingleThreadExecutor("shuffle-server-decommission");
     }
     decommissionFuture = executorService.submit(this::waitDecommissionFinish);
   }

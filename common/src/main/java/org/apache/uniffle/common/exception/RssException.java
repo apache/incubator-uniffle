@@ -15,13 +15,16 @@
  * limitations under the License.
  */
 
-
 package org.apache.uniffle.common.exception;
 
 public class RssException extends RuntimeException {
 
   public RssException(String message) {
     super(message);
+  }
+
+  public RssException(Throwable e) {
+    super(e);
   }
 
   public RssException(String message, Throwable e) {

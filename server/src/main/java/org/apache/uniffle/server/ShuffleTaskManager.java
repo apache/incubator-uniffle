@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -52,8 +51,10 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
@@ -91,8 +92,8 @@ public class ShuffleTaskManager {
   // but when get blockId, performance will degrade a little which can be optimized by client configuration
   private Map<String, Map<Integer, Roaring64NavigableMap[]>> partitionsToBlockIds;
   private final ShuffleBufferManager shuffleBufferManager;
-  private Map<String, ShuffleTaskInfo> shuffleTaskInfos = Maps.newConcurrentMap();
-  private Map<Long, PreAllocatedBufferInfo> requireBufferIds = Maps.newConcurrentMap();
+  private Map<String, ShuffleTaskInfo> shuffleTaskInfos = JavaUtils.newConcurrentMap();
+  private Map<Long, PreAllocatedBufferInfo> requireBufferIds = JavaUtils.newConcurrentMap();
   private Runnable clearResourceThread;
   private BlockingQueue<PurgeEvent> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
 
@@ -103,7 +104,7 @@ public class ShuffleTaskManager {
       StorageManager storageManager) {
     this.conf = conf;
     this.shuffleFlushManager = shuffleFlushManager;
-    this.partitionsToBlockIds = Maps.newConcurrentMap();
+    this.partitionsToBlockIds = JavaUtils.newConcurrentMap();
     this.shuffleBufferManager = shuffleBufferManager;
     this.storageManager = storageManager;
     this.appExpiredWithoutHB = conf.getLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT);
@@ -112,24 +113,24 @@ public class ShuffleTaskManager {
     this.leakShuffleDataCheckInterval = conf.getLong(ShuffleServerConf.SERVER_LEAK_SHUFFLE_DATA_CHECK_INTERVAL);
     this.triggerFlushInterval = conf.getLong(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL);
     // the thread for checking application status
-    this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("checkResource-%d"));
+    this.scheduledExecutorService =
+        ThreadUtils.getDaemonSingleThreadScheduledExecutor("checkResource");
     scheduledExecutorService.scheduleAtFixedRate(
         this::preAllocatedBufferCheck, preAllocationExpired / 2,
         preAllocationExpired / 2, TimeUnit.MILLISECONDS);
-    this.expiredAppCleanupExecutorService = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("expiredAppCleaner"));
+    this.expiredAppCleanupExecutorService =
+        ThreadUtils.getDaemonSingleThreadScheduledExecutor("expiredAppCleaner");
     expiredAppCleanupExecutorService.scheduleAtFixedRate(
         this::checkResourceStatus, appExpiredWithoutHB / 2,
         appExpiredWithoutHB / 2, TimeUnit.MILLISECONDS);
-    this.leakShuffleDataCheckExecutorService = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("leakShuffleDataChecker"));
+    this.leakShuffleDataCheckExecutorService =
+        ThreadUtils.getDaemonSingleThreadScheduledExecutor("leakShuffleDataChecker");
     leakShuffleDataCheckExecutorService.scheduleAtFixedRate(
         this::checkLeakShuffleData, leakShuffleDataCheckInterval,
             leakShuffleDataCheckInterval, TimeUnit.MILLISECONDS);
     if (triggerFlushInterval > 0) {
-      triggerFlushExecutorService = Executors.newSingleThreadScheduledExecutor(
-          ThreadUtils.getThreadFactory("triggerShuffleBufferManagerFlush"));
+      triggerFlushExecutorService =
+          ThreadUtils.getDaemonSingleThreadScheduledExecutor("triggerShuffleBufferManagerFlush");
       triggerFlushExecutorService.scheduleWithFixedDelay(
               this::triggerFlush, triggerFlushInterval / 2,
           triggerFlushInterval, TimeUnit.MILLISECONDS);
@@ -190,7 +191,7 @@ public class ShuffleTaskManager {
     refreshAppId(appId);
     shuffleTaskInfos.get(appId).setUser(user);
     shuffleTaskInfos.get(appId).setDataDistType(dataDistType);
-    partitionsToBlockIds.putIfAbsent(appId, Maps.newConcurrentMap());
+    partitionsToBlockIds.putIfAbsent(appId, JavaUtils.newConcurrentMap());
     for (PartitionRange partitionRange : partitionRanges) {
       shuffleBufferManager.registerBuffer(appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
     }
@@ -237,7 +238,7 @@ public class ShuffleTaskManager {
     synchronized (lock) {
       long commitTimeout = conf.get(ShuffleServerConf.SERVER_COMMIT_TIMEOUT);
       if (System.currentTimeMillis() - start > commitTimeout) {
-        throw new RuntimeException("Shuffle data commit timeout for " + commitTimeout + " ms");
+        throw new RssException("Shuffle data commit timeout for " + commitTimeout + " ms");
       }
       synchronized (cachedBlockIds) {
         cloneBlockIds = RssUtils.cloneBitMap(cachedBlockIds);
@@ -258,7 +259,7 @@ public class ShuffleTaskManager {
         }
         Thread.sleep(checkInterval);
         if (System.currentTimeMillis() - start > commitTimeout) {
-          throw new RuntimeException("Shuffle data commit timeout for " + commitTimeout + " ms");
+          throw new RssException("Shuffle data commit timeout for " + commitTimeout + " ms");
         }
         LOG.info("Checking commit result for appId[" + appId + "], shuffleId[" + shuffleId
             + "], expect committed[" + expectedCommitted
@@ -277,7 +278,7 @@ public class ShuffleTaskManager {
     refreshAppId(appId);
     Map<Integer, Roaring64NavigableMap[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
     if (shuffleIdToPartitions == null) {
-      throw new RuntimeException("appId[" + appId  + "] is expired!");
+      throw new RssException("appId[" + appId  + "] is expired!");
     }
     if (!shuffleIdToPartitions.containsKey(shuffleId)) {
       Roaring64NavigableMap[] blockIds = new Roaring64NavigableMap[bitmapNum];

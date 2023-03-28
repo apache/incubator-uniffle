@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
@@ -60,7 +61,7 @@ public class MultiStorageManager implements StorageManager {
           coldStorageManager
       );
     } catch (Exception e) {
-      throw new RuntimeException("Errors on loading selector manager.", e);
+      throw new RssException("Errors on loading selector manager.", e);
     }
 
     long cacheTimeout = conf.getLong(ShuffleServerConf.STORAGEMANAGER_CACHE_TIMEOUT);

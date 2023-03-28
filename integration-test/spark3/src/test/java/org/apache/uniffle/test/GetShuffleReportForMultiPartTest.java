@@ -46,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.MockedGrpcServer;
 import org.apache.uniffle.server.MockedShuffleServerGrpcService;
@@ -201,7 +202,7 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
   public static class RssShuffleManagerWrapper extends RssShuffleManager {
 
     // shuffleId -> partShouldRequestNum
-    Map<Integer, AtomicInteger> shuffleToPartShouldRequestNum = Maps.newConcurrentMap();
+    Map<Integer, AtomicInteger> shuffleToPartShouldRequestNum = JavaUtils.newConcurrentMap();
 
     public RssShuffleManagerWrapper(SparkConf conf, boolean isDriver) {
       super(conf, isDriver);

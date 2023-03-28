@@ -33,6 +33,7 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.storage.handler.ClientReadHandlerMetric;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
 
@@ -98,8 +99,12 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
     ShuffleDataResult shuffleDataResult;
     try {
       shuffleDataResult = handler.readShuffleData();
+    } catch (RssFetchFailedException e) {
+      Throwable cause = e.getCause();
+      String message = "Failed to read shuffle data from " + currentTier.name() + "handler, error: " + e.getMessage();
+      throw new RssFetchFailedException(message, cause);
     } catch (Exception e) {
-      throw new RssException("Failed to read shuffle data from " + currentTier.name() + " handler", e);
+      throw new RssFetchFailedException("Failed to read shuffle data from " + currentTier.name() + " handler", e);
     }
     // when is no data for current handler, and the upmostLevel is not reached,
     // then try next one if there has

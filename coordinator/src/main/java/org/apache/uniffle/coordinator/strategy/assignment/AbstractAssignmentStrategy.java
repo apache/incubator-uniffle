@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.SortedMap;
 
 import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.coordinator.strategy.host.BasicHostAssignmentStrategy;
@@ -53,7 +54,7 @@ public abstract class AbstractAssignmentStrategy implements AssignmentStrategy {
     } else if (selectPartitionStrategyName == SelectPartitionStrategyName.CONTINUOUS) {
       selectPartitionStrategy = new ContinuousSelectPartitionStrategy();
     } else {
-      throw new RuntimeException("Unsupported partition assignment strategy:" + selectPartitionStrategyName);
+      throw new RssException("Unsupported partition assignment strategy:" + selectPartitionStrategyName);
     }
   }
 
@@ -66,7 +67,7 @@ public abstract class AbstractAssignmentStrategy implements AssignmentStrategy {
     } else if (hostAssignmentStrategyName == HostAssignmentStrategyName.NONE) {
       hostAssignmentStrategy = new BasicHostAssignmentStrategy();
     } else {
-      throw new RuntimeException("Unsupported partition assignment strategy:" + hostAssignmentStrategyName);
+      throw new RssException("Unsupported partition assignment strategy:" + hostAssignmentStrategyName);
     }
   }
 

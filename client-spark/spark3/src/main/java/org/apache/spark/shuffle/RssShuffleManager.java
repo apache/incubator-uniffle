@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +31,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -75,6 +73,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
@@ -97,7 +96,7 @@ public class RssShuffleManager implements ShuffleManager {
   private ShuffleWriteClient shuffleWriteClient;
   private final Map<String, Set<Long>> taskToSuccessBlockIds;
   private final Map<String, Set<Long>> taskToFailedBlockIds;
-  private Map<String, WriteBufferManager> taskToBufferManager = Maps.newConcurrentMap();
+  private Map<String, WriteBufferManager> taskToBufferManager = JavaUtils.newConcurrentMap();
   private ScheduledExecutorService heartBeatScheduledExecutorService;
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
@@ -210,8 +209,8 @@ public class RssShuffleManager implements ShuffleManager {
     // shuffle cluster, we don't need shuffle data locality
     sparkConf.set("spark.shuffle.reduceLocality.enabled", "false");
     LOG.info("Disable shuffle data locality in RssShuffleManager.");
-    taskToSuccessBlockIds = Maps.newConcurrentMap();
-    taskToFailedBlockIds = Maps.newConcurrentMap();
+    taskToSuccessBlockIds = JavaUtils.newConcurrentMap();
+    taskToFailedBlockIds = JavaUtils.newConcurrentMap();
     // for non-driver executor, start a thread for sending shuffle data to shuffle server
     LOG.info("RSS data send thread is starting");
     eventLoop = defaultEventLoop;
@@ -220,10 +219,10 @@ public class RssShuffleManager implements ShuffleManager {
     int keepAliveTime = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE);
     threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize * 2, keepAliveTime, TimeUnit.SECONDS,
         Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
-        ThreadUtils.getThreadFactory("SendData-%d"));
+        ThreadUtils.getThreadFactory("SendData"));
     if (isDriver) {
-      heartBeatScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-          ThreadUtils.getThreadFactory("rss-heartbeat-%d"));
+      heartBeatScheduledExecutorService =
+          ThreadUtils.getDaemonSingleThreadScheduledExecutor("rss-heartbeat");
     }
   }
 
@@ -339,6 +338,8 @@ public class RssShuffleManager implements ShuffleManager {
         id.get(), defaultRemoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
 
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
+    ClientUtils.validateClientType(clientType);
+    assignmentTags.add(clientType);
 
     int requiredShuffleServerNumber = RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf);
 
@@ -383,7 +384,7 @@ public class RssShuffleManager implements ShuffleManager {
       TaskContext context,
       ShuffleWriteMetricsReporter metrics) {
     if (!(handle instanceof RssShuffleHandle)) {
-      throw new RuntimeException("Unexpected ShuffleHandle:" + handle.getClass().getName());
+      throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
     RssShuffleHandle<K, V, ?> rssHandle = (RssShuffleHandle<K, V, ?>) handle;
     // todo: this implement is tricky, we should refactor it
@@ -477,7 +478,7 @@ public class RssShuffleManager implements ShuffleManager {
       ShuffleReadMetricsReporter metrics,
       Roaring64NavigableMap taskIdBitmap) {
     if (!(handle instanceof RssShuffleHandle)) {
-      throw new RuntimeException("Unexpected ShuffleHandle:" + handle.getClass().getName());
+      throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
     final String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
     final int indexReadLimit = sparkConf.get(RssSparkConfig.RSS_INDEX_READ_LIMIT);
@@ -589,14 +590,14 @@ public class RssShuffleManager implements ShuffleManager {
                       startPartition,
                       endPartition);
         } catch (Exception e) {
-          throw new RuntimeException(e);
+          throw new RssException(e);
         }
       }
     }
     while (mapStatusIter.hasNext()) {
       Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>> tuple2 = mapStatusIter.next();
       if (!tuple2._1().topologyInfo().isDefined()) {
-        throw new RuntimeException("Can't get expected taskAttemptId");
+        throw new RssException("Can't get expected taskAttemptId");
       }
       taskIdBitmap.add(Long.parseLong(tuple2._1().topologyInfo().get()));
     }
@@ -625,12 +626,12 @@ public class RssShuffleManager implements ShuffleManager {
                   startPartition,
                   endPartition);
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw new RssException(e);
     }
     while (mapStatusIter.hasNext()) {
       Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>> tuple2 = mapStatusIter.next();
       if (!tuple2._1().topologyInfo().isDefined()) {
-        throw new RuntimeException("Can't get expected taskAttemptId");
+        throw new RssException("Can't get expected taskAttemptId");
       }
       taskIdBitmap.add(Long.parseLong(tuple2._1().topologyInfo().get()));
     }
@@ -651,7 +652,7 @@ public class RssShuffleManager implements ShuffleManager {
 
   @Override
   public ShuffleBlockResolver shuffleBlockResolver() {
-    throw new RuntimeException("RssShuffleManager.shuffleBlockResolver is not implemented");
+    throw new RssException("RssShuffleManager.shuffleBlockResolver is not implemented");
   }
 
   @Override

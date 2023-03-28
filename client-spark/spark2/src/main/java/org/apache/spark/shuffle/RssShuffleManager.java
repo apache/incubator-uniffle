@@ -21,14 +21,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
@@ -65,6 +63,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
@@ -79,9 +78,9 @@ public class RssShuffleManager implements ShuffleManager {
   private String appId = "";
   private String clientType;
   private ShuffleWriteClient shuffleWriteClient;
-  private Map<String, Set<Long>> taskToSuccessBlockIds = Maps.newConcurrentMap();
-  private Map<String, Set<Long>> taskToFailedBlockIds = Maps.newConcurrentMap();
-  private Map<String, WriteBufferManager> taskToBufferManager = Maps.newConcurrentMap();
+  private Map<String, Set<Long>> taskToSuccessBlockIds = JavaUtils.newConcurrentMap();
+  private Map<String, Set<Long>> taskToFailedBlockIds = JavaUtils.newConcurrentMap();
+  private Map<String, WriteBufferManager> taskToBufferManager = JavaUtils.newConcurrentMap();
   private final int dataReplica;
   private final int dataReplicaWrite;
   private final int dataReplicaRead;
@@ -201,11 +200,11 @@ public class RssShuffleManager implements ShuffleManager {
       int keepAliveTime = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE);
       threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize * 2, keepAliveTime, TimeUnit.SECONDS,
           Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
-          ThreadUtils.getThreadFactory("SendData-%d"));
+          ThreadUtils.getThreadFactory("SendData"));
 
       if (isDriver) {
-        heartBeatScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-            ThreadUtils.getThreadFactory("rss-heartbeat-%d"));
+        heartBeatScheduledExecutorService =
+            ThreadUtils.getDaemonSingleThreadScheduledExecutor("rss-heartbeat");
       }
     }
   }
@@ -263,12 +262,15 @@ public class RssShuffleManager implements ShuffleManager {
 
     // get all register info according to coordinator's response
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
+    ClientUtils.validateClientType(clientType);
+    assignmentTags.add(clientType);
 
     int requiredShuffleServerNumber = RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf);
 
     // retryInterval must bigger than `rss.server.heartbeat.timeout`, or maybe it will return the same result
     long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL);
     int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES);
+
     Map<Integer, List<ShuffleServerInfo>> partitionToServers;
     try {
       partitionToServers = RetryUtils.retry(() -> {
@@ -371,7 +373,7 @@ public class RssShuffleManager implements ShuffleManager {
           writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle,
           (Function<String, Boolean>) this::markFailedTask);
     } else {
-      throw new RuntimeException("Unexpected ShuffleHandle:" + handle.getClass().getName());
+      throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
   }
 
@@ -420,7 +422,7 @@ public class RssShuffleManager implements ShuffleManager {
           storageType, (int) readBufferSize, partitionNumPerRange, partitionNum,
           blockIdBitmap, taskIdBitmap, RssSparkConfig.toRssConf(sparkConf));
     } else {
-      throw new RuntimeException("Unexpected ShuffleHandle:" + handle.getClass().getName());
+      throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
   }
 
@@ -452,7 +454,7 @@ public class RssShuffleManager implements ShuffleManager {
 
   @Override
   public ShuffleBlockResolver shuffleBlockResolver() {
-    throw new RuntimeException("RssShuffleManager.shuffleBlockResolver is not implemented");
+    throw new RssException("RssShuffleManager.shuffleBlockResolver is not implemented");
   }
 
   public EventLoop<AddBlockEvent> getEventLoop() {
@@ -479,7 +481,7 @@ public class RssShuffleManager implements ShuffleManager {
       if (topologyInfo.isDefined()) {
         taskIdBitmap.addLong(Long.parseLong(tuple2._1().topologyInfo().get()));
       } else {
-        throw new RuntimeException("Can't get expected taskAttemptId");
+        throw new RssException("Can't get expected taskAttemptId");
       }
     }
     LOG.info("Got result from MapStatus for expected tasks " + taskIdBitmap.getLongCardinality());

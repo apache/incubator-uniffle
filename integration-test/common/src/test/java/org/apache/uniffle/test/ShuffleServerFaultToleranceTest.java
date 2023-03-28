@@ -42,6 +42,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.server.MockedShuffleServer;
@@ -119,7 +120,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     expectedData.clear();
     blocks.forEach((block) -> {
-      expectedData.put(block.getBlockId(), block.getData());
+      expectedData.put(block.getBlockId(), ByteBufUtils.readBytes(block.getData()));
     });
     ShuffleDataResult sdr = clientReadHandler.readShuffleData();
     TestUtils.validateResult(expectedData, sdr);
@@ -148,7 +149,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
         ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
     sdr = clientReadHandler.readShuffleData();
     blocks2.forEach((block) -> {
-      expectedData.put(block.getBlockId(), block.getData());
+      expectedData.put(block.getBlockId(), ByteBufUtils.readBytes(block.getData()));
     });
     TestUtils.validateResult(expectedData, sdr);
     for (BufferSegment bs : sdr.getBufferSegments()) {
@@ -166,7 +167,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
         expectBlockIds, dataMap, mockSSI);
     expectedData.clear();
     blocks3.forEach((block) -> {
-      expectedData.put(block.getBlockId(), block.getData());
+      expectedData.put(block.getBlockId(), ByteBufUtils.readBytes(block.getData()));
     });
     rssdr = getRssSendShuffleDataRequest(testAppId, shuffleId, partitionId, blocks3);
     shuffleServerClients.get(1).sendShuffleData(rssdr);

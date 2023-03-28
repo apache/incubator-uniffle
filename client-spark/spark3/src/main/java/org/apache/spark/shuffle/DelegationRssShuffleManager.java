@@ -225,7 +225,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
           context,
           metrics);
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw new RssException(e);
     }
     return reader;
   }
@@ -258,7 +258,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
           context,
           metrics);
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw new RssException(e);
     }
     return reader;
   }

@@ -17,8 +17,6 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
-import java.io.IOException;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +37,7 @@ public class KerberizedHdfsShuffleReadHandlerTest extends KerberizedHdfsBase {
   }
 
   @Test
-  public void test() throws IOException {
+  public void test() throws Exception {
     HdfsShuffleReadHandlerTest.createAndRunCases(
         kerberizedHdfs.getSchemeAndAuthorityPrefix(),
         kerberizedHdfs.getConf(),

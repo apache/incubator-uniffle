@@ -18,12 +18,16 @@
 package org.apache.uniffle.client.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.util.StorageType;
@@ -120,6 +124,13 @@ public class ClientUtils {
             || (StorageType.HDFS.name()).equals(storageType))) {
       throw new IllegalArgumentException("LOCALFILE or HDFS storage type should be used in test mode only, "
               + "because of the poor performance of these two types.");
+    }
+  }
+
+  public static void validateClientType(String clientType) {
+    Set<String> types = Arrays.stream(ClientType.values()).map(Enum::name).collect(Collectors.toSet());
+    if (!types.contains(clientType)) {
+      throw new IllegalArgumentException(String.format("The value of %s should be one of %s", clientType, types));
     }
   }
 }

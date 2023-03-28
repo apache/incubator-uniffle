@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Random;
 
-import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.WritableComparator;
@@ -32,6 +31,8 @@ import org.apache.hadoop.io.serializer.Deserializer;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.io.serializer.Serializer;
 import org.junit.jupiter.api.Test;
+
+import org.apache.uniffle.common.util.JavaUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -88,14 +89,14 @@ public class SortWriteBufferTest {
     key = new BytesWritable(keyStr.getBytes());
     keySerializer.serialize(key);
     byte[] valueBytes = new byte[200];
-    Map<String, BytesWritable> valueMap = Maps.newConcurrentMap();
+    Map<String, BytesWritable> valueMap = JavaUtils.newConcurrentMap();
     Random random = new Random();
     random.nextBytes(valueBytes);
     value = new BytesWritable(valueBytes);
     valueMap.putIfAbsent(keyStr, value);
     valSerializer.serialize(value);
     recordLength = buffer.addRecord(key, value);
-    Map<String, Long> recordLenMap = Maps.newConcurrentMap();
+    Map<String, Long> recordLenMap = JavaUtils.newConcurrentMap();
     recordLenMap.putIfAbsent(keyStr, recordLength);
 
     keyStr = "key1";

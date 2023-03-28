@@ -112,7 +112,7 @@ public class RssUtils {
     String ip = System.getenv("RSS_IP");
     if (ip != null) {
       if (!InetAddresses.isInetAddress(ip)) {
-        throw new RuntimeException("Environment RSS_IP: " + ip + " is wrong format");
+        throw new RssException("Environment RSS_IP: " + ip + " is wrong format");
       }
       return ip;
     }
@@ -159,7 +159,7 @@ public class RssUtils {
   public static byte[] serializeBitMap(Roaring64NavigableMap bitmap) throws IOException {
     long size = bitmap.serializedSizeInBytes();
     if (size > Integer.MAX_VALUE) {
-      throw new RuntimeException("Unsupported serialized size of bitmap: " + size);
+      throw new RssException("Unsupported serialized size of bitmap: " + size);
     }
     ByteArrayOutputStream arrayOutputStream = new ByteArrayOutputStream((int) size);
     DataOutputStream dataOutputStream = new DataOutputStream(arrayOutputStream);
@@ -194,7 +194,7 @@ public class RssUtils {
   @SuppressWarnings("unchecked")
   public static <T> List<T> loadExtensions(Class<T> extClass, List<String> classes, Object obj) {
     if (classes == null || classes.isEmpty()) {
-      throw new RuntimeException("Empty classes");
+      throw new RssException("Empty classes");
     }
 
     List<T> extensions = Lists.newArrayList();
@@ -203,7 +203,7 @@ public class RssUtils {
       try {
         Class<?> klass = Class.forName(name);
         if (!extClass.isAssignableFrom(klass)) {
-          throw new RuntimeException(name + " is not subclass of " + extClass.getName());
+          throw new RssException(name + " is not subclass of " + extClass.getName());
         }
 
         Constructor<?> constructor;
@@ -218,7 +218,7 @@ public class RssUtils {
         extensions.add(instance);
       } catch (Exception e) {
         LOGGER.error("Fail to new instance using default constructor.", e);
-        throw new RuntimeException(e);
+        throw new RssException(e);
       }
     }
     return extensions;
@@ -226,10 +226,10 @@ public class RssUtils {
 
   public static void checkQuorumSetting(int replica, int replicaWrite, int replicaRead) {
     if (replica < 1 || replicaWrite > replica || replicaRead > replica) {
-      throw new RuntimeException("Replica config is invalid, recommend replica.write + replica.read > replica");
+      throw new RssException("Replica config is invalid, recommend replica.write + replica.read > replica");
     }
     if (replicaWrite + replicaRead <= replica) {
-      throw new RuntimeException("Replica config is unsafe, recommend replica.write + replica.read > replica");
+      throw new RssException("Replica config is unsafe, recommend replica.write + replica.read > replica");
     }
   }
 

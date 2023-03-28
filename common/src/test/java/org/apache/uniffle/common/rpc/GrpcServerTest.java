@@ -53,7 +53,7 @@ public class GrpcServerTest {
         100,
         TimeUnit.MINUTES,
         Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
-        ThreadUtils.getThreadFactory("Grpc-%d"),
+        ThreadUtils.getThreadFactory("Grpc"),
         grpcMetrics
     );
 
