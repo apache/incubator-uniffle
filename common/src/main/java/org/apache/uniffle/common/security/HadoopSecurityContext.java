@@ -127,7 +127,7 @@ public class HadoopSecurityContext implements SecurityContext {
 
   // Only for tests
   @VisibleForTesting
-  public Map<String, UserGroupInformation> getProxyUserUgiPool() {
+  Map<String, UserGroupInformation> getProxyUserUgiPool() {
     return proxyUserUgiPool;
   }
 
