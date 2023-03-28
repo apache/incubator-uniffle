@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -117,6 +118,12 @@ public class HadoopSecurityContext implements SecurityContext {
 
   private <T> T executeWithUgiWrapper(UserGroupInformation ugi, Callable<T> callable) throws Exception {
     return ugi.doAs((PrivilegedExceptionAction<T>) callable::call);
+  }
+
+  // Only for tests
+  @VisibleForTesting
+  public Map<String, UserGroupInformation> getProxyUserUgiPool() {
+    return proxyUserUgiPool;
   }
 
   @Override
