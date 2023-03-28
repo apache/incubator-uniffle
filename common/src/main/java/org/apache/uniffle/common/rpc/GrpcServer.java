@@ -64,7 +64,7 @@ public class GrpcServer implements ServerInterface {
         10,
         TimeUnit.MINUTES,
         Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
-        ThreadUtils.getThreadFactory("Grpc-%d"),
+        ThreadUtils.getThreadFactory("Grpc"),
         grpcMetrics
     );
 

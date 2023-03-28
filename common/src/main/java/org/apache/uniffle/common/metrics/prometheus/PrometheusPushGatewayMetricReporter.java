@@ -19,7 +19,6 @@ package org.apache.uniffle.common.metrics.prometheus;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -64,8 +63,8 @@ public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter 
     Map<String, String> groupingKey = parseGroupingKey(conf.getString(GROUPING_KEY, ""));
     groupingKey.put("instance", instanceId);
     int reportInterval = conf.getInteger(REPORT_INTEVAL, 10);
-    scheduledExecutorService = Executors.newScheduledThreadPool(1,
-        ThreadUtils.getThreadFactory("PrometheusPushGatewayMetricReporter-%d"));
+    scheduledExecutorService =
+        ThreadUtils.getDaemonSingleThreadScheduledExecutor("PrometheusPushGatewayMetricReporter");
     scheduledExecutorService.scheduleWithFixedDelay(() -> {
       for (CollectorRegistry registry : registryList) {
         try {

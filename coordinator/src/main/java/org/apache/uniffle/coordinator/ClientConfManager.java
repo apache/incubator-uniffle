@@ -21,7 +21,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -75,8 +74,7 @@ public class ClientConfManager implements Closeable {
     LOG.info("Load client conf from " + pathStr + " successfully");
 
     int updateIntervalS = conf.getInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC);
-    updateClientConfSES = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("ClientConfManager-%d"));
+    updateClientConfSES = ThreadUtils.getDaemonSingleThreadScheduledExecutor("ClientConfManager");
     updateClientConfSES.scheduleAtFixedRate(
         this::updateClientConf, 0, updateIntervalS, TimeUnit.SECONDS);
   }

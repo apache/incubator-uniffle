@@ -30,7 +30,6 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -53,6 +52,7 @@ import org.apache.uniffle.common.storage.StorageMedia;
 import org.apache.uniffle.common.storage.StorageStatus;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.LocalStorageChecker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
@@ -108,7 +108,7 @@ public class LocalStorageManager extends SingleStorageManager {
       provider.init(conf);
       typeProviders.add(provider);
     }
-    ExecutorService executorService = Executors.newCachedThreadPool();
+    ExecutorService executorService = ThreadUtils.getDaemonCachedThreadPool("LocalStorage-check");
     LocalStorage[] localStorageArray = new LocalStorage[storageBasePaths.size()];
     for (int i = 0; i < storageBasePaths.size(); i++) {
       final int idx = i;

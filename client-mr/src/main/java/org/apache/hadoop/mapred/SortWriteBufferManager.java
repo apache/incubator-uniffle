@@ -142,9 +142,7 @@ public class SortWriteBufferManager<K, V> {
     this.isMemoryShuffleEnabled = isMemoryShuffleEnabled;
     this.sendThreshold = sendThreshold;
     this.maxBufferSize = maxBufferSize;
-    this.sendExecutorService  = Executors.newFixedThreadPool(
-        sendThreadNum,
-        ThreadUtils.getThreadFactory("send-thread-%d"));
+    this.sendExecutorService  = ThreadUtils.getDaemonFixedThreadPool(sendThreadNum, "send-thread");
     this.rssConf = rssConf;
     this.codec = Codec.newInstance(rssConf);
   }

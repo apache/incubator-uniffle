@@ -23,7 +23,6 @@ import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -70,8 +69,8 @@ public class QuotaManager {
         LOG.error("Cannot init remoteFS on path : " + quotaFilePath, e);
       }
       // Threads that update the number of submitted applications
-      ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-          ThreadUtils.getThreadFactory("UpdateDefaultApp-%d"));
+      ScheduledExecutorService scheduledExecutorService =
+          ThreadUtils.getDaemonSingleThreadScheduledExecutor("UpdateDefaultApp");
       scheduledExecutorService.scheduleAtFixedRate(
           this::detectUserResource, 0, updateTime / 2, TimeUnit.MILLISECONDS);
       LOG.info("QuotaManager initialized successfully.");

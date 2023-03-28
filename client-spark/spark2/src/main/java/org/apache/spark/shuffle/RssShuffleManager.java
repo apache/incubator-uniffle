@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -201,11 +200,11 @@ public class RssShuffleManager implements ShuffleManager {
       int keepAliveTime = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE);
       threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize * 2, keepAliveTime, TimeUnit.SECONDS,
           Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
-          ThreadUtils.getThreadFactory("SendData-%d"));
+          ThreadUtils.getThreadFactory("SendData"));
 
       if (isDriver) {
-        heartBeatScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-            ThreadUtils.getThreadFactory("rss-heartbeat-%d"));
+        heartBeatScheduledExecutorService =
+            ThreadUtils.getDaemonSingleThreadScheduledExecutor("rss-heartbeat");
       }
     }
   }

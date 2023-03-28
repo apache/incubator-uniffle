@@ -20,7 +20,6 @@ package org.apache.uniffle.coordinator.access.checker;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -83,8 +82,8 @@ public class AccessCandidatesChecker extends AbstractAccessChecker {
     LOG.debug("Load candidates: {}", String.join(";", candidates.get()));
 
     int updateIntervalS = conf.getInteger(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC);
-    updateAccessCandidatesSES = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("UpdateAccessCandidates-%d"));
+    updateAccessCandidatesSES =
+        ThreadUtils.getDaemonSingleThreadScheduledExecutor("UpdateAccessCandidates");
     updateAccessCandidatesSES.scheduleAtFixedRate(
         this::updateAccessCandidates, 0, updateIntervalS, TimeUnit.SECONDS);
   }
