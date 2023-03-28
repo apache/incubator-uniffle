@@ -38,6 +38,8 @@ public interface RssShuffleManagerBase {
    */
   int getPartitionNum(int shuffleId);
 
+  int getNumMapTasks(int shuffleId);
+
   /**
    * Unregister all the map output on the driver side, so the whole stage could be re-computed.
    * @param shuffleId the shuffle id to unregister

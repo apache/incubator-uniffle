@@ -161,6 +161,7 @@ public class RssShuffleManager extends AbstractRssShuffleManagerBase implements 
   };
 
   private final Map<Integer, Integer> shuffleIdToPartitionNum = Maps.newConcurrentMap();
+  private final Map<Integer, Integer> shuffleIdToNumMapTasks = Maps.newConcurrentMap();
   private GrpcServer shuffleManagerServer;
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
@@ -339,6 +340,7 @@ public class RssShuffleManager extends AbstractRssShuffleManagerBase implements 
 
     if (dependency.partitioner().numPartitions() == 0) {
       shuffleIdToPartitionNum.putIfAbsent(shuffleId, 0);
+      shuffleIdToNumMapTasks.putIfAbsent(shuffleId, dependency.rdd().partitions().length);
       LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum is 0, "
           + "return the empty RssShuffleHandle directly");
       Broadcast<ShuffleHandleInfo> hdlInfoBd = RssSparkShuffleUtils.broadcastShuffleHdlInfo(
@@ -386,11 +388,12 @@ public class RssShuffleManager extends AbstractRssShuffleManagerBase implements 
     }
     startHeartbeat();
 
+    shuffleIdToPartitionNum.putIfAbsent(shuffleId, dependency.partitioner().numPartitions());
+    shuffleIdToNumMapTasks.putIfAbsent(shuffleId, dependency.rdd().partitions().length);
     Broadcast<ShuffleHandleInfo> hdlInfoBd = RssSparkShuffleUtils.broadcastShuffleHdlInfo(
         RssSparkShuffleUtils.getActiveSparkContext(), shuffleId, partitionToServers, remoteStorage);
     LOG.info("RegisterShuffle with ShuffleId[" + shuffleId + "], partitionNum[" + partitionToServers.size()
         + "], shuffleServerForResult: " + partitionToServers);
-    shuffleIdToPartitionNum.putIfAbsent(shuffleId, dependency.partitioner().numPartitions());
     return new RssShuffleHandle<>(shuffleId,
         id.get(),
         dependency.rdd().getNumPartitions(),
@@ -809,6 +812,11 @@ public class RssShuffleManager extends AbstractRssShuffleManagerBase implements 
   @Override
   public int getPartitionNum(int shuffleId) {
     return shuffleIdToPartitionNum.getOrDefault(shuffleId, 0);
+  }
+
+  @Override
+  public int getNumMapTasks(int shuffleId) {
+    return shuffleIdToNumMapTasks.getOrDefault(shuffleId, 0);
   }
 
   static class ReadMetrics extends ShuffleReadMetrics {

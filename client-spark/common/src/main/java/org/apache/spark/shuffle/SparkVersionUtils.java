@@ -21,17 +21,23 @@ import org.apache.spark.package$;
 import org.apache.spark.util.VersionUtils;
 
 public class SparkVersionUtils {
-  public static String sparkVersion = package$.MODULE$.SPARK_VERSION();
-  public static int majorVersion = -1;
-  public static int minorVersion = -1;
+  public final static String sparkVersion = package$.MODULE$.SPARK_VERSION();
+  public final static int majorVersion;
+  public final static int minorVersion;
 
   static {
+    int _majorVersion;
+    int _minorVersion;
     try {
-      majorVersion =  VersionUtils.majorVersion(sparkVersion);
-      minorVersion = VersionUtils.minorVersion(sparkVersion);
+      _majorVersion = VersionUtils.majorVersion(sparkVersion);
+      _minorVersion = VersionUtils.minorVersion(sparkVersion);
     } catch (Exception e) {
       // ignore, just in case some wild spark version is passed.
+      _majorVersion = -1;
+      _minorVersion = -1;
     }
+    majorVersion = _majorVersion;
+    minorVersion = _minorVersion;
   }
 
 

@@ -19,8 +19,8 @@ package org.apache.uniffle.shuffle.manager;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.spark.MapOutputTracker;
 import org.apache.spark.MapOutputTrackerMaster;
@@ -35,41 +35,55 @@ public abstract class AbstractRssShuffleManagerBase implements RssShuffleManager
   private static final Logger LOG = LoggerFactory.getLogger(AbstractRssShuffleManagerBase.class);
   private AtomicBoolean isInitialized = new AtomicBoolean(false);
   private Method unregisterAllMapOutputMethod;
+  private Method registerShuffleMethod;
 
   @Override
   public void unregisterAllMapOutput(int shuffleId) throws SparkException {
     if (!RssFeatureMatrix.isStageRecomputeSupported()) {
       return;
     }
+    MapOutputTrackerMaster tracker = getMapOutputTrackerMaster();
     if (isInitialized.compareAndSet(false, true)) {
-      unregisterAllMapOutputMethod = getUnregisterAllMapOutputMethod();
+      unregisterAllMapOutputMethod = getUnregisterAllMapOutputMethod(tracker);
+      registerShuffleMethod = getRegisterShuffleMethod(tracker);
     }
     if (unregisterAllMapOutputMethod != null) {
       try {
-        unregisterAllMapOutputMethod.invoke(getMapOutputTrackerMaster(), shuffleId);
+        unregisterAllMapOutputMethod.invoke(tracker, shuffleId);
       } catch (InvocationTargetException | IllegalAccessException e) {
         throw new SparkException("Invoke unregisterAllMapOutput method failed", e);
       }
     } else {
-      defaultUnregisterAllMapOutput(shuffleId, getPartitionNum(shuffleId));
+      int numMaps = getNumMapTasks(shuffleId);
+      int numReduces = getPartitionNum(shuffleId);
+      defaultUnregisterAllMapOutput(tracker, registerShuffleMethod, shuffleId, numMaps, numReduces);
     }
   }
 
-  private static void defaultUnregisterAllMapOutput(int shuffleId, int partitionNum) throws SparkException {
-    MapOutputTrackerMaster tracker = getMapOutputTrackerMaster();
-    if (tracker != null) {
+  private static void defaultUnregisterAllMapOutput(MapOutputTrackerMaster tracker, Method registerShuffle,
+      int shuffleId, int numMaps, int numReduces) throws SparkException {
+    if (tracker != null && registerShuffle != null) {
       tracker.unregisterShuffle(shuffleId);
       // re-register this shuffle id into map output tracker
-      tracker.registerShuffle(shuffleId, partitionNum);
+      try {
+        if (SparkVersionUtils.majorVersion > 3
+            || (SparkVersionUtils.isSpark3() && SparkVersionUtils.minorVersion >= 2)) {
+          registerShuffle.invoke(tracker, shuffleId, numMaps, numReduces);
+        } else {
+          registerShuffle.invoke(tracker, shuffleId, numMaps);
+        }
+      } catch (InvocationTargetException | IllegalAccessException e) {
+        throw new SparkException("Invoke registerShuffle method failed", e);
+      }
       tracker.incrementEpoch();
     } else {
       throw new SparkException("default unregisterAllMapOutput should only be called on the driver side");
     }
   }
 
-  private static Method getUnregisterAllMapOutputMethod() {
-    if (getMapOutputTrackerMaster() != null) {
-      Class<? extends MapOutputTrackerMaster> klass = getMapOutputTrackerMaster().getClass();
+  private static Method getUnregisterAllMapOutputMethod(MapOutputTrackerMaster tracker) {
+    if (tracker != null) {
+      Class<? extends MapOutputTrackerMaster> klass = tracker.getClass();
       Method m = null;
       try {
         if (SparkVersionUtils.isSpark2() && SparkVersionUtils.minorVersion <= 3) {
@@ -88,6 +102,29 @@ public abstract class AbstractRssShuffleManagerBase implements RssShuffleManager
         }
       } catch (NoSuchMethodException e) {
         LOG.warn("Got no such method error when get unregisterAllMapOutput method for spark version({})",
+            SparkVersionUtils.sparkVersion);
+      }
+      return m;
+    } else {
+      return null;
+    }
+  }
+
+  private static Method getRegisterShuffleMethod(MapOutputTrackerMaster tracker) {
+    if (tracker != null) {
+      Class<? extends MapOutputTrackerMaster> klass = tracker.getClass();
+      Method m = null;
+      try {
+        if (SparkVersionUtils.majorVersion > 3
+            || (SparkVersionUtils.isSpark3() && SparkVersionUtils.minorVersion >= 2)) {
+          // for spark >= 3.2, the register shuffle method is changed to signature:
+          //   registerShuffle(shuffleId, numMapTasks, numReduceTasks);
+          m = klass.getDeclaredMethod("registerShuffle", int.class, int.class, int.class);
+        } else {
+          m = klass.getDeclaredMethod("registerShuffle", int.class, int.class);
+        }
+      } catch (NoSuchMethodException e) {
+        LOG.warn("Got no such method error when get registerShuffle method for spark version({})",
             SparkVersionUtils.sparkVersion);
       }
       return m;
