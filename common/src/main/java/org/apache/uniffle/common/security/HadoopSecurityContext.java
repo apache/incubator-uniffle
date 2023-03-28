@@ -41,6 +41,11 @@ public class HadoopSecurityContext implements SecurityContext {
 
   private UserGroupInformation loginUgi;
   private ScheduledExecutorService refreshScheduledExecutor;
+
+  // The cache of proxy user ugi is to avoid creating the different cache keys of
+  // Hadoop filesystem for the same user, scheme and authority, this will cache too
+  // much unnecessary filesystem instances in memory and then cause memory leak.
+  // See details in issue #706
   private Map<String, UserGroupInformation> proxyUserUgiPool;
 
   public HadoopSecurityContext(

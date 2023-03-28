@@ -71,9 +71,9 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
 
       // case3: run by the proxy user
       Path pathWithAlexUser = new Path("/alex/HadoopSecurityContextTest");
-      AtomicReference<UserGroupInformation> ugi$1 = new AtomicReference<>();
+      AtomicReference<UserGroupInformation> ugi1 = new AtomicReference<>();
       context.runSecured("alex", (Callable<Void>) () -> {
-        ugi$1.set(UserGroupInformation.getCurrentUser());
+        ugi1.set(UserGroupInformation.getCurrentUser());
         kerberizedHdfs.getFileSystem().mkdirs(pathWithAlexUser);
         return null;
       });
@@ -82,13 +82,13 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
 
       // case4: run by the proxy user again, it will always return the same
       // ugi.
-      AtomicReference<UserGroupInformation> ugi$2 = new AtomicReference<>();
+      AtomicReference<UserGroupInformation> ugi2 = new AtomicReference<>();
       context.runSecured("alex", (Callable<Void>) () -> {
-        ugi$2.set(UserGroupInformation.getCurrentUser());
+        ugi2.set(UserGroupInformation.getCurrentUser());
         return null;
       });
-      assertEquals(ugi$1.get(), ugi$2.get());
-      assertEquals(ugi$1.get(), context.getProxyUserUgiPool().get("alex"));
+      assertEquals(ugi1.get(), ugi2.get());
+      assertEquals(ugi1.get(), context.getProxyUserUgiPool().get("alex"));
     }
   }
 
