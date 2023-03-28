@@ -19,11 +19,13 @@ package org.apache.uniffle.common.security;
 
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -38,6 +40,7 @@ public class HadoopSecurityContext implements SecurityContext {
 
   private UserGroupInformation loginUgi;
   private ScheduledExecutorService refreshScheduledExecutor;
+  private Map<String, UserGroupInformation> proxyUserUgiPool;
 
   public HadoopSecurityContext(
       String krb5ConfPath,
@@ -75,6 +78,7 @@ public class HadoopSecurityContext implements SecurityContext {
         refreshIntervalSec,
         refreshIntervalSec,
         TimeUnit.SECONDS);
+    proxyUserUgiPool = Maps.newConcurrentMap();
   }
 
   private void authRefresh() {
@@ -94,8 +98,10 @@ public class HadoopSecurityContext implements SecurityContext {
 
     // Run with the proxy user.
     if (!user.equals(loginUgi.getShortUserName())) {
+      UserGroupInformation proxyUserUgi =
+          proxyUserUgiPool.computeIfAbsent(user, x -> UserGroupInformation.createProxyUser(x, loginUgi));
       return executeWithUgiWrapper(
-          UserGroupInformation.createProxyUser(user, loginUgi),
+          proxyUserUgi,
           securedCallable
       );
     }
@@ -117,6 +123,10 @@ public class HadoopSecurityContext implements SecurityContext {
   public void close() throws IOException {
     if (refreshScheduledExecutor != null) {
       refreshScheduledExecutor.shutdown();
+    }
+    if (proxyUserUgiPool != null) {
+      proxyUserUgiPool.clear();
+      proxyUserUgiPool = null;
     }
   }
 }
