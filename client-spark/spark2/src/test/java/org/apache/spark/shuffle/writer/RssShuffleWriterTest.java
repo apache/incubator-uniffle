@@ -21,6 +21,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
@@ -38,7 +40,6 @@ import org.apache.spark.serializer.Serializer;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.RssShuffleManager;
 import org.apache.spark.shuffle.RssSparkConfig;
-import org.apache.spark.util.EventLoop;
 import org.junit.jupiter.api.Test;
 import scala.Product2;
 import scala.Tuple2;
@@ -51,7 +52,6 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -126,9 +126,34 @@ public class RssShuffleWriterTest {
     manager.clearTaskMeta(taskId);
     assertTrue(manager.getSuccessBlockIds(taskId).isEmpty());
     assertTrue(manager.getFailedBlockIds(taskId).isEmpty());
-    assertNull(manager.getTaskToBufferManager().get(taskId));
 
     sc.stop();
+  }
+
+  static class FakedDataPusher extends DataPusher {
+    private final Function<AddBlockEvent, CompletableFuture<Long>> sendFunc;
+
+    FakedDataPusher(Function<AddBlockEvent, CompletableFuture<Long>> sendFunc) {
+      this(null, null, null, null, 1, 1, sendFunc);
+    }
+
+    private FakedDataPusher(
+        ShuffleWriteClient shuffleWriteClient,
+        Map<String, Set<Long>> taskToSuccessBlockIds,
+        Map<String, Set<Long>> taskToFailedBlockIds,
+        Set<String> failedTaskIds,
+        int threadPoolSize,
+        int threadKeepAliveTime,
+        Function<AddBlockEvent, CompletableFuture<Long>> sendFunc) {
+      super(shuffleWriteClient, taskToSuccessBlockIds, taskToFailedBlockIds, failedTaskIds, threadPoolSize,
+          threadKeepAliveTime);
+      this.sendFunc = sendFunc;
+    }
+
+    @Override
+    public CompletableFuture<Long> send(AddBlockEvent event) {
+      return sendFunc.apply(event);
+    }
   }
 
   @Test
@@ -149,21 +174,15 @@ public class RssShuffleWriterTest {
     RssShuffleManager manager = new RssShuffleManager(conf, false);
     List<ShuffleBlockInfo> shuffleBlockInfos = Lists.newArrayList();
 
-    manager.setEventLoop(new EventLoop<AddBlockEvent>("test") {
-      @Override
-      public void onReceive(AddBlockEvent event) {
-        assertEquals("taskId", event.getTaskId());
-        shuffleBlockInfos.addAll(event.getShuffleDataInfoList());
-        Set<Long> blockIds = event.getShuffleDataInfoList().parallelStream()
-            .map(sdi -> sdi.getBlockId()).collect(Collectors.toSet());
-        manager.addSuccessBlockIds(event.getTaskId(), blockIds);
-      }
-
-      @Override
-      public void onError(Throwable e) {
-      }
+    DataPusher dataPusher = new FakedDataPusher(event -> {
+      assertEquals("taskId", event.getTaskId());
+      shuffleBlockInfos.addAll(event.getShuffleDataInfoList());
+      Set<Long> blockIds = event.getShuffleDataInfoList().parallelStream()
+          .map(sdi -> sdi.getBlockId()).collect(Collectors.toSet());
+      manager.addSuccessBlockIds(event.getTaskId(), blockIds);
+      return CompletableFuture.completedFuture(0L);
     });
-    manager.getEventLoop().start();
+    manager.setDataPusher(dataPusher);
 
     Partitioner mockPartitioner = mock(Partitioner.class);
     ShuffleDependency<String, String, String> mockDependency = mock(ShuffleDependency.class);
@@ -200,8 +219,8 @@ public class RssShuffleWriterTest {
     ShuffleWriteMetrics shuffleWriteMetrics = new ShuffleWriteMetrics();
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
     WriteBufferManager bufferManager = new WriteBufferManager(
-        0, 0, bufferOptions, kryoSerializer,
-        partitionToServers, mockTaskMemoryManager, shuffleWriteMetrics, new RssConf());
+        0, "taskId", 0, bufferOptions, kryoSerializer,
+        partitionToServers, mockTaskMemoryManager, shuffleWriteMetrics, new RssConf(), null);
     WriteBufferManager bufferManagerSpy = spy(bufferManager);
     doReturn(1000000L).when(bufferManagerSpy).acquireMemory(anyLong());
 
@@ -253,37 +272,46 @@ public class RssShuffleWriterTest {
 
   @Test
   public void postBlockEventTest() throws Exception {
-    final WriteBufferManager mockBufferManager = mock(WriteBufferManager.class);
     final ShuffleWriteMetrics mockMetrics = mock(ShuffleWriteMetrics.class);
     ShuffleDependency<String, String, String> mockDependency = mock(ShuffleDependency.class);
     Partitioner mockPartitioner = mock(Partitioner.class);
-    final RssShuffleManager mockShuffleManager = mock(RssShuffleManager.class);
     when(mockDependency.partitioner()).thenReturn(mockPartitioner);
     when(mockPartitioner.numPartitions()).thenReturn(2);
     List<AddBlockEvent> events = Lists.newArrayList();
 
-    EventLoop<AddBlockEvent> eventLoop = new EventLoop<AddBlockEvent>("test") {
-      @Override
-      public void onReceive(AddBlockEvent event) {
-        events.add(event);
-      }
+    SparkConf conf = new SparkConf();
+    conf.setAppName("postBlockEventTest").setMaster("local[2]")
+        .set(RssSparkConfig.RSS_TEST_FLAG.key(), "true")
+        .set(RssSparkConfig.RSS_TEST_MODE_ENABLE.key(), "true")
+        .set(RssSparkConfig.RSS_WRITER_BUFFER_SIZE.key(), "32")
+        .set(RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE.key(), "32")
+        .set(RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE.key(), "64")
+        .set(RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.key(), "128")
+        .set(RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key(), "1000")
+        .set(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name())
+        .set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "127.0.0.1:12345,127.0.0.1:12346")
+        .set(RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMITATION.key(), "64")
+        .set(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
 
-      @Override
-      public void onError(Throwable e) {
-      }
-    };
-    eventLoop.start();
+    TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
+    BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
+    WriteBufferManager bufferManager = new WriteBufferManager(
+        0, 0, bufferOptions, new KryoSerializer(conf),
+        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(), RssSparkConfig.toRssConf(conf));
 
-    when(mockShuffleManager.getEventLoop()).thenReturn(eventLoop);
+    RssShuffleManager manager = new RssShuffleManager(conf, false);
+    DataPusher dataPusher = new FakedDataPusher(event -> {
+      events.add(event);
+      return CompletableFuture.completedFuture(0L);
+    });
+    manager.setDataPusher(dataPusher);
+
     RssShuffleHandle<String, String, String> mockHandle = mock(RssShuffleHandle.class);
     when(mockHandle.getDependency()).thenReturn(mockDependency);
     ShuffleWriteClient mockWriteClient = mock(ShuffleWriteClient.class);
-    SparkConf conf = new SparkConf();
-    conf.set(RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMIT.key(), "64")
-        .set(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
 
     RssShuffleWriter<String, String, String> writer = new RssShuffleWriter<>("appId", 0, "taskId", 1L,
-        mockBufferManager, mockMetrics, mockShuffleManager, conf, mockWriteClient, mockHandle);
+        bufferManager, mockMetrics, manager, conf, mockWriteClient, mockHandle);
     List<ShuffleBlockInfo> shuffleBlockInfoList = createShuffleBlockList(1, 31);
     writer.postBlockEvent(shuffleBlockInfoList);
     Thread.sleep(500);
