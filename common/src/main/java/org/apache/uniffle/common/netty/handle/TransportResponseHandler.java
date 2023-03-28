@@ -29,8 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.netty.client.RpcResponseCallback;
 import org.apache.uniffle.common.netty.protocol.RpcResponse;
-
-
+import org.apache.uniffle.common.util.NettyUtils;
 
 
 public class TransportResponseHandler extends ChannelInboundHandlerAdapter {
@@ -48,8 +47,13 @@ public class TransportResponseHandler extends ChannelInboundHandlerAdapter {
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
     if (msg instanceof RpcResponse) {
       RpcResponse responseMessage = (RpcResponse) msg;
-      RpcResponseCallback listener = outstandingRpcRequests.get(0L);
-      listener.onSuccess(responseMessage);
+      RpcResponseCallback listener = outstandingRpcRequests.get(responseMessage.getRequestId());
+      if (listener == null) {
+        logger.warn("Ignoring response from {} since it is not outstanding",
+            NettyUtils.getRemoteAddress(channel));
+      } else {
+        listener.onSuccess(responseMessage);
+      }
     } else {
       throw new RssException("receive unexpected message!");
     }
