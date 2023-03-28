@@ -241,7 +241,7 @@ public class TransportClientFactory implements Closeable {
     }
     connectionPool.clear();
 
-    // SPARK-19147
+    
     if (workerGroup != null && !workerGroup.isShuttingDown()) {
       workerGroup.shutdownGracefully();
     }
