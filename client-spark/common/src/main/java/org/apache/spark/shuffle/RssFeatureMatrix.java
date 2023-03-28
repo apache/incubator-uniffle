@@ -25,6 +25,6 @@ public class RssFeatureMatrix {
     // Fortunately, starting from Spark 2.3 (or maybe even Spark 2.2), it is possible to create a FetchFailedException
     // and wrap it into a runtime exception. Spark will consider this exception as a FetchFailedException.
     // Therefore, the stage re-computation feature is only enabled for Spark versions larger than or equal to 2.3.
-    return SparkVersionUtils.isSpark3() || (SparkVersionUtils.isSpark2() && SparkVersionUtils.minorVersion >= 3);
+    return SparkVersionUtils.isSpark3() || (SparkVersionUtils.isSpark2() && SparkVersionUtils.MINOR_VERSION >= 3);
   }
 }

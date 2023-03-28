@@ -66,8 +66,8 @@ public abstract class AbstractRssShuffleManagerBase implements RssShuffleManager
       tracker.unregisterShuffle(shuffleId);
       // re-register this shuffle id into map output tracker
       try {
-        if (SparkVersionUtils.majorVersion > 3
-            || (SparkVersionUtils.isSpark3() && SparkVersionUtils.minorVersion >= 2)) {
+        if (SparkVersionUtils.MAJOR_VERSION > 3
+            || (SparkVersionUtils.isSpark3() && SparkVersionUtils.MINOR_VERSION >= 2)) {
           registerShuffle.invoke(tracker, shuffleId, numMaps, numReduces);
         } else {
           registerShuffle.invoke(tracker, shuffleId, numMaps);
@@ -86,23 +86,23 @@ public abstract class AbstractRssShuffleManagerBase implements RssShuffleManager
       Class<? extends MapOutputTrackerMaster> klass = tracker.getClass();
       Method m = null;
       try {
-        if (SparkVersionUtils.isSpark2() && SparkVersionUtils.minorVersion <= 3) {
+        if (SparkVersionUtils.isSpark2() && SparkVersionUtils.MINOR_VERSION <= 3) {
           // for spark version less than 2.3, there's no unregisterAllMapOutput support
           LOG.warn("Spark version <= 2.3, fallback to default method");
         } else if (SparkVersionUtils.isSpark2()) {
           // this method is added in Spark 2.4+
           m = klass.getDeclaredMethod("unregisterAllMapOutput", int.class);
-        } else if (SparkVersionUtils.isSpark3() && SparkVersionUtils.minorVersion <= 1) {
+        } else if (SparkVersionUtils.isSpark3() && SparkVersionUtils.MINOR_VERSION <= 1) {
           // spark 3.1 will have unregisterAllMapOutput method
           m = klass.getDeclaredMethod("unregisterAllMapOutput", int.class);
         } else if (SparkVersionUtils.isSpark3()) {
           m = klass.getDeclaredMethod("unregisterAllMapAndMergeOutput", int.class);
         } else {
-          LOG.warn("Unknown spark version({}), fallback to default method", SparkVersionUtils.sparkVersion);
+          LOG.warn("Unknown spark version({}), fallback to default method", SparkVersionUtils.SPARK_VERSION);
         }
       } catch (NoSuchMethodException e) {
         LOG.warn("Got no such method error when get unregisterAllMapOutput method for spark version({})",
-            SparkVersionUtils.sparkVersion);
+            SparkVersionUtils.SPARK_VERSION);
       }
       return m;
     } else {
@@ -115,8 +115,8 @@ public abstract class AbstractRssShuffleManagerBase implements RssShuffleManager
       Class<? extends MapOutputTrackerMaster> klass = tracker.getClass();
       Method m = null;
       try {
-        if (SparkVersionUtils.majorVersion > 3
-            || (SparkVersionUtils.isSpark3() && SparkVersionUtils.minorVersion >= 2)) {
+        if (SparkVersionUtils.MAJOR_VERSION > 3
+            || (SparkVersionUtils.isSpark3() && SparkVersionUtils.MINOR_VERSION >= 2)) {
           // for spark >= 3.2, the register shuffle method is changed to signature:
           //   registerShuffle(shuffleId, numMapTasks, numReduceTasks);
           m = klass.getDeclaredMethod("registerShuffle", int.class, int.class, int.class);
@@ -125,7 +125,7 @@ public abstract class AbstractRssShuffleManagerBase implements RssShuffleManager
         }
       } catch (NoSuchMethodException e) {
         LOG.warn("Got no such method error when get registerShuffle method for spark version({})",
-            SparkVersionUtils.sparkVersion);
+            SparkVersionUtils.SPARK_VERSION);
       }
       return m;
     } else {
