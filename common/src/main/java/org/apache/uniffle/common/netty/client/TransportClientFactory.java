@@ -39,8 +39,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.netty.IOMode;
+import org.apache.uniffle.common.netty.TransportFrameDecoder;
 import org.apache.uniffle.common.netty.handle.TransportResponseHandler;
-import org.apache.uniffle.common.netty.protocol.MessageDecoder;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.NettyUtils;
 
@@ -97,7 +97,7 @@ public class TransportClientFactory implements Closeable {
 
   public TransportClient createClient(String remoteHost, int remotePort, int partitionId)
       throws IOException, InterruptedException {
-    return createClient(remoteHost, remotePort, partitionId, new MessageDecoder());
+    return createClient(remoteHost, remotePort, partitionId, new TransportFrameDecoder());
   }
 
   public TransportClient createClient(

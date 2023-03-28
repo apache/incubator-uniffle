@@ -39,6 +39,11 @@ public class MessageEncoder extends ChannelOutboundHandlerAdapter {
 
   private static final Logger LOG = LoggerFactory.getLogger(MessageEncoder.class);
 
+  public static final MessageEncoder INSTANCE = new MessageEncoder();
+
+  private MessageEncoder() {
+  }
+
   @Override
   public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
     // todo: support zero copy

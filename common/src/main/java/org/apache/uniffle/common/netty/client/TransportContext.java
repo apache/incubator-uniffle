@@ -23,8 +23,8 @@ import io.netty.handler.timeout.IdleStateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.netty.MessageEncoder;
 import org.apache.uniffle.common.netty.handle.TransportResponseHandler;
-import org.apache.uniffle.common.netty.protocol.MessageEncoder;
 
 public class TransportContext {
   private static final Logger logger = LoggerFactory.getLogger(TransportContext.class);
