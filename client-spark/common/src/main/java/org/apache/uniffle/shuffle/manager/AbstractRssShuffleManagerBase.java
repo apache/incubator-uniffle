@@ -19,6 +19,7 @@ package org.apache.uniffle.shuffle.manager;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Optional;
 
 import org.apache.spark.MapOutputTracker;
@@ -32,12 +33,16 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AbstractRssShuffleManagerBase implements RssShuffleManagerBase {
   private static final Logger LOG = LoggerFactory.getLogger(AbstractRssShuffleManagerBase.class);
-  private static final Method unregisterAllMapOutputMethod = getUnregisterAllMapOutputMethod();
+  private AtomicBoolean isInitialized = new AtomicBoolean(false);
+  private Method unregisterAllMapOutputMethod;
 
   @Override
   public void unregisterAllMapOutput(int shuffleId) throws SparkException {
     if (!RssFeatureMatrix.isStageRecomputeSupported()) {
       return;
+    }
+    if (isInitialized.compareAndSet(false, true)) {
+      unregisterAllMapOutputMethod = getUnregisterAllMapOutputMethod();
     }
     if (unregisterAllMapOutputMethod != null) {
       try {
@@ -63,7 +68,7 @@ public abstract class AbstractRssShuffleManagerBase implements RssShuffleManager
   }
 
   private static Method getUnregisterAllMapOutputMethod() {
-    if (getMapOutputTrackerMaster() == null) {
+    if (getMapOutputTrackerMaster() != null) {
       Class<? extends MapOutputTrackerMaster> klass = getMapOutputTrackerMaster().getClass();
       Method m = null;
       try {
