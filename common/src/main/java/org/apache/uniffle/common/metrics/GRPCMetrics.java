@@ -176,4 +176,8 @@ public abstract class GRPCMetrics {
   public Map<String, Summary> getProcessTimeSummaryMap() {
     return processTimeSummaryMap;
   }
+
+  public static GRPCMetrics getDummyGRPCMetrics() {
+    return new DummyGRPCMetrics();
+  }
 }

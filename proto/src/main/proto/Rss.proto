@@ -489,3 +489,26 @@ message CancelDecommissionResponse {
   StatusCode status = 1;
   string retMsg = 2;
 }
+// ShuffleManager service lives inside of compute-engine's application master, which handles rss shuffle specific logic
+// per application.
+service ShuffleManager {
+  rpc reportShuffleFetchFailure (ReportShuffleFetchFailureRequest) returns (ReportShuffleFetchFailureResponse);
+}
+
+message ReportShuffleFetchFailureRequest {
+  // appId normally should be omitted, it's used to avoid wrongly request issued from remaining executors of another
+  // app which accidentally has the same shuffle manager port with this app.
+  string appId = 1;
+  int32 shuffleId = 2;
+  int32 stageAttemptId = 3;
+  int32 partitionId = 4;
+  string exception = 5;
+  // todo: report ShuffleServerId if needed
+  // ShuffleServerId serverId = 6;
+}
+
+message ReportShuffleFetchFailureResponse {
+  StatusCode status = 1;
+  bool reSubmitWholeStage = 2;
+  string msg = 3;
+}
