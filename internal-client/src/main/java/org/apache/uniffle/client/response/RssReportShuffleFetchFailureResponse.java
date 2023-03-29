@@ -43,7 +43,7 @@ public class RssReportShuffleFetchFailureResponse extends ClientResponse {
 
   public static RssReportShuffleFetchFailureResponse fromProto(ReportShuffleFetchFailureResponse response) {
     return new RssReportShuffleFetchFailureResponse(
-        // todo: add fromProto for StatusCode
+        // todo: [issue#780] add fromProto for StatusCode issue
         StatusCode.valueOf(response.getStatus().name()),
         response.getMsg(),
         response.getReSubmitWholeStage()
