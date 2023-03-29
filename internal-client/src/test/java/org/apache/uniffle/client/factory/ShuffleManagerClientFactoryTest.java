@@ -17,27 +17,24 @@
 
 package org.apache.uniffle.client.factory;
 
-import org.apache.uniffle.client.impl.grpc.ShuffleManagerGrpcClient;
+import org.junit.jupiter.api.Test;
+
+import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.common.ClientType;
 
-public class ShuffleManagerClientFactory {
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-  private static class LazyHolder {
-    private static final ShuffleManagerClientFactory INSTANCE = new ShuffleManagerClientFactory();
-  }
+class ShuffleManagerClientFactoryTest {
 
-  public static ShuffleManagerClientFactory getInstance() {
-    return LazyHolder.INSTANCE;
-  }
-
-  private ShuffleManagerClientFactory() {
-  }
-
-  public ShuffleManagerGrpcClient createShuffleManagerClient(ClientType clientType, String host, int port) {
-    if (clientType.equals(ClientType.GRPC)) {
-      return new ShuffleManagerGrpcClient(host, port);
-    } else {
-      throw new UnsupportedOperationException("Unsupported client type " + clientType);
-    }
+  @Test
+  void createShuffleManagerClient() {
+    ShuffleManagerClientFactory factory = ShuffleManagerClientFactory.getInstance();
+    assertNotNull(factory);
+    // only grpc type is supported currently
+    ShuffleManagerClient c = factory.createShuffleManagerClient(ClientType.GRPC, "localhost", 1234);
+    assertNotNull(c);
+    assertThrows(UnsupportedOperationException.class,
+        () -> factory.createShuffleManagerClient(ClientType.GRPC_NETTY, "localhost", 1234));
   }
 }

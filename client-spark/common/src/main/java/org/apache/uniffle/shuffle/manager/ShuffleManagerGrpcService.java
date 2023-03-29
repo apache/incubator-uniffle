@@ -22,17 +22,17 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
-import com.google.common.collect.Maps;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.ShuffleManagerGrpc.ShuffleManagerImplBase;
 
 public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleManagerGrpcService.class);
-  private final Map<Integer, RssShuffleStatus> shuffleStatus = Maps.newConcurrentMap();
+  private final Map<Integer, RssShuffleStatus> shuffleStatus = JavaUtils.newConcurrentMap();
   private final RssShuffleManagerInterface shuffleManager;
 
   public ShuffleManagerGrpcService(RssShuffleManagerInterface shuffleManager) {

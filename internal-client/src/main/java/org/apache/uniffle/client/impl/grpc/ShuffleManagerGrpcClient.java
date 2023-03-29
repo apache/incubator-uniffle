@@ -26,7 +26,8 @@ import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.proto.RssProtos;
+import org.apache.uniffle.proto.RssProtos.ReportShuffleFetchFailureRequest;
+import org.apache.uniffle.proto.RssProtos.ReportShuffleFetchFailureResponse;
 import org.apache.uniffle.proto.ShuffleManagerGrpc;
 
 public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManagerClient {
@@ -59,20 +60,14 @@ public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManag
 
   @Override
   public RssReportShuffleFetchFailureResponse reportShuffleFetchFailure(RssReportShuffleFetchFailureRequest request) {
-    RssProtos.ReportShuffleFetchFailureRequest protoRequest = request.toProto();
-    int retryNum = 0;
-    while (retryNum <= maxRetryAttempts) {
-      try {
-        RssProtos.ReportShuffleFetchFailureResponse response =
-            getBlockingStub().reportShuffleFetchFailure(protoRequest);
-        return RssReportShuffleFetchFailureResponse.fromProto(response);
-      } catch (Exception e) {
-        LOG.warn("Report shuffle fetch failure to host:port[{}:{}] failed, retrying, current retry time: {}",
-            host, port, retryNum);
-        // todo: handle connect failure only.
-        retryNum++;
-      }
+    ReportShuffleFetchFailureRequest protoRequest = request.toProto();
+    try {
+      ReportShuffleFetchFailureResponse response = getBlockingStub().reportShuffleFetchFailure(protoRequest);
+      return RssReportShuffleFetchFailureResponse.fromProto(response);
+    } catch (Exception e) {
+      String msg = "Report shuffle fetch failure to host:port[" + host + ":" + port + "] failed";
+      LOG.warn(msg, e);
+      throw new RssException(msg, e);
     }
-    throw new RssException("Report shuffle fetch failure to host[" + host + "], port[" + port + "] failed");
   }
 }

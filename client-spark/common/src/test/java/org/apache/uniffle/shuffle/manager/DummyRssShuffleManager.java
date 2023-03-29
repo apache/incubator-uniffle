@@ -15,29 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client.factory;
+package org.apache.uniffle.shuffle.manager;
 
-import org.apache.uniffle.client.impl.grpc.ShuffleManagerGrpcClient;
-import org.apache.uniffle.common.ClientType;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
-public class ShuffleManagerClientFactory {
+public class DummyRssShuffleManager implements RssShuffleManagerInterface {
+  public Set<Integer> unregisteredShuffleIds = new LinkedHashSet<>();
 
-  private static class LazyHolder {
-    private static final ShuffleManagerClientFactory INSTANCE = new ShuffleManagerClientFactory();
+  @Override
+  public String getAppId() {
+    return "testAppId";
   }
 
-  public static ShuffleManagerClientFactory getInstance() {
-    return LazyHolder.INSTANCE;
+  @Override
+  public int getMaxFetchFailures() {
+    return 2;
   }
 
-  private ShuffleManagerClientFactory() {
+  @Override
+  public int getPartitionNum(int shuffleId) {
+    return 16;
   }
 
-  public ShuffleManagerGrpcClient createShuffleManagerClient(ClientType clientType, String host, int port) {
-    if (clientType.equals(ClientType.GRPC)) {
-      return new ShuffleManagerGrpcClient(host, port);
-    } else {
-      throw new UnsupportedOperationException("Unsupported client type " + clientType);
-    }
+  @Override
+  public int getNumMaps(int shuffleId) {
+    return 8;
+  }
+
+  @Override
+  public void unregisterAllMapOutput(int shuffleId) {
+    unregisteredShuffleIds.add(shuffleId);
   }
 }

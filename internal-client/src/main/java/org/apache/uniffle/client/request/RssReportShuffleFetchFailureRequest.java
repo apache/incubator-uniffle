@@ -31,8 +31,7 @@ public class RssReportShuffleFetchFailureRequest {
       int shuffleId,
       int stageAttemptId,
       int partitionId,
-      String exception,
-      String serverId) {
+      String exception) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.stageAttemptId = stageAttemptId;
@@ -42,12 +41,14 @@ public class RssReportShuffleFetchFailureRequest {
 
   public ReportShuffleFetchFailureRequest toProto() {
     ReportShuffleFetchFailureRequest.Builder builder = ReportShuffleFetchFailureRequest.newBuilder();
-    return builder.setAppId(appId)
+    builder.setAppId(appId)
         .setShuffleId(shuffleId)
         .setStageAttemptId(stageAttemptId)
-        .setPartitionId(partitionId)
-        .setException(exception)
-        .build();
+        .setPartitionId(partitionId);
+    if (exception != null) {
+      builder.setException(exception);
+    }
+    return builder.build();
   }
 
 }
