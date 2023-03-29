@@ -297,7 +297,7 @@ public class WriteBufferManager extends MemoryConsumer {
       shuffleBlockInfosPerEvent.add(sbi);
       // split shuffle data according to the size
       if (totalSize > sendSizeLimit) {
-        LOG.info("Build event with " + shuffleBlockInfosPerEvent.size()
+        LOG.debug("Build event with " + shuffleBlockInfosPerEvent.size()
             + " blocks and " + totalSize + " bytes");
         // Use final temporary variables for closures
         final long _memoryUsed = memoryUsed;
@@ -310,7 +310,7 @@ public class WriteBufferManager extends MemoryConsumer {
       }
     }
     if (!shuffleBlockInfosPerEvent.isEmpty()) {
-      LOG.info("Build event with " + shuffleBlockInfosPerEvent.size()
+      LOG.debug("Build event with " + shuffleBlockInfosPerEvent.size()
           + " blocks and " + totalSize + " bytes");
       // Use final temporary variables for closures
       final long _memoryUsed = memoryUsed;

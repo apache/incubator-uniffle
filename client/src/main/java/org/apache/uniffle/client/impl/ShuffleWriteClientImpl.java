@@ -415,7 +415,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     } catch (Exception e) {
       LOG.error("Error on getting user from ugi.", e);
     }
-    LOG.info("User: {}", user);
 
     RssRegisterShuffleRequest request =
         new RssRegisterShuffleRequest(appId, shuffleId, partitionRanges, remoteStorage, user, dataDistributionType);
