@@ -85,12 +85,12 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
         ugi2.set(UserGroupInformation.getCurrentUser());
         return null;
       });
-      assertEquals(ugi1.get(), ugi2.get());
-      assertEquals(ugi1.get(), context.getProxyUserUgiPool().get("alex"));
+      assertTrue(ugi1.get() == ugi2.get());
+      assertTrue(ugi1.get() == context.getProxyUserUgiPool().get("alex"));
 
       FileSystem fileSystem1 = context.runSecured("alex", () -> FileSystem.get(kerberizedHdfs.getConf()));
       FileSystem fileSystem2 = context.runSecured("alex", () -> FileSystem.get(kerberizedHdfs.getConf()));
-      assertEquals(fileSystem1, fileSystem2);
+      assertTrue(fileSystem1 == fileSystem2);
     }
   }
 
