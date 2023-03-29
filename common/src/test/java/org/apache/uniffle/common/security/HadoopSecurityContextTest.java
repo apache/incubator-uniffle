@@ -18,10 +18,13 @@
 package org.apache.uniffle.common.security;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -66,13 +69,28 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
 
       // case3: run by the proxy user
       Path pathWithAlexUser = new Path("/alex/HadoopSecurityContextTest");
+      AtomicReference<UserGroupInformation> ugi1 = new AtomicReference<>();
       context.runSecured("alex", (Callable<Void>) () -> {
+        ugi1.set(UserGroupInformation.getCurrentUser());
         kerberizedHdfs.getFileSystem().mkdirs(pathWithAlexUser);
         return null;
       });
       fileStatus = kerberizedHdfs.getFileSystem().getFileStatus(pathWithAlexUser);
       assertEquals("alex", fileStatus.getOwner());
 
+      // case4: run by the proxy user again, it will always return the same
+      // ugi and filesystem instance.
+      AtomicReference<UserGroupInformation> ugi2 = new AtomicReference<>();
+      context.runSecured("alex", (Callable<Void>) () -> {
+        ugi2.set(UserGroupInformation.getCurrentUser());
+        return null;
+      });
+      assertTrue(ugi1.get() == ugi2.get());
+      assertTrue(ugi1.get() == context.getProxyUserUgiPool().get("alex"));
+
+      FileSystem fileSystem1 = context.runSecured("alex", () -> FileSystem.get(kerberizedHdfs.getConf()));
+      FileSystem fileSystem2 = context.runSecured("alex", () -> FileSystem.get(kerberizedHdfs.getConf()));
+      assertTrue(fileSystem1 == fileSystem2);
     }
   }
 
