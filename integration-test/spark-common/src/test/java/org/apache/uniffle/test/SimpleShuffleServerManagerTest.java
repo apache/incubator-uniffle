@@ -27,7 +27,7 @@ import org.apache.uniffle.shuffle.manager.RssShuffleManagerInterface;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SimpleShuffleServerManagerE2ETest extends ShuffleServerManagerTestBase {
+public class SimpleShuffleServerManagerTest extends ShuffleServerManagerTestBase {
 
   @Test
   public void testClientAndServerConnections() {

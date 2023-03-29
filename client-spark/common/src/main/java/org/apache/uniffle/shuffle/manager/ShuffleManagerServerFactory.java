@@ -37,7 +37,7 @@ public class ShuffleManagerServerFactory {
     if (type.equals(ServerType.GRPC.name())) {
       return GrpcServer.Builder.newBuilder()
           .conf(conf)
-          .grpcMetrics(GRPCMetrics.getDummyGRPCMetrics())
+          .grpcMetrics(GRPCMetrics.getEmptyGRPCMetrics())
           .addService(new ShuffleManagerGrpcService(shuffleManager))
           .build();
     } else {

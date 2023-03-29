@@ -17,7 +17,7 @@
 
 package org.apache.uniffle.common.metrics;
 
-public class DummyGRPCMetrics extends GRPCMetrics {
+public class EmptyGRPCMetrics extends GRPCMetrics {
   @Override
   public void registerMetrics() {
   }

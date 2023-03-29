@@ -42,7 +42,7 @@ public class GrpcServerTest {
 
   @Test
   public void testGrpcExecutorPool() throws Exception {
-    GRPCMetrics grpcMetrics = GRPCMetrics.getDummyGRPCMetrics();
+    GRPCMetrics grpcMetrics = GRPCMetrics.getEmptyGRPCMetrics();
     grpcMetrics.register(new CollectorRegistry(true));
     GrpcServer.GrpcThreadPoolExecutor executor = new GrpcServer.GrpcThreadPoolExecutor(
         2,
@@ -87,7 +87,7 @@ public class GrpcServerTest {
 
   @Test
   public void testRandomPort() throws Exception {
-    GRPCMetrics grpcMetrics = GRPCMetrics.getDummyGRPCMetrics();
+    GRPCMetrics grpcMetrics = GRPCMetrics.getEmptyGRPCMetrics();
     grpcMetrics.register(new CollectorRegistry(true));
     RssBaseConf conf = new RssBaseConf();
     conf.set(RPC_SERVER_PORT, 0);
