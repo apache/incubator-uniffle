@@ -110,11 +110,7 @@ public class TransportClientFactory implements Closeable {
         InetSocketAddress.createUnresolved(remoteHost, remotePort);
 
     // Create the ClientPool if we don't have it yet.
-    ClientPool clientPool = connectionPool.get(unresolvedAddress);
-    if (clientPool == null) {
-      connectionPool.putIfAbsent(unresolvedAddress, new ClientPool(numConnectionsPerPeer));
-      clientPool = connectionPool.get(unresolvedAddress);
-    }
+    ClientPool clientPool = connectionPool.computeIfAbsent(unresolvedAddress, x -> new ClientPool(numConnectionsPerPeer));
 
     int clientIndex =
         partitionId < 0 ? rand.nextInt(numConnectionsPerPeer) : partitionId % numConnectionsPerPeer;
