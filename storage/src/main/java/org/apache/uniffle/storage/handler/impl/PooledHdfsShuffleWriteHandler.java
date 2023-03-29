@@ -50,7 +50,7 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
   @VisibleForTesting
   public PooledHdfsShuffleWriteHandler(LinkedBlockingDeque<ShuffleWriteHandler> queue) {
     this.queue = queue;
-    this.maxConcurrency =  queue.size();
+    this.maxConcurrency = queue.size();
     this.basePath = StringUtils.EMPTY;
   }
 
