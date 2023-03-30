@@ -207,6 +207,8 @@ public class ConfigUtils {
 
   public static final Function<Long, Boolean> NON_NEGATIVE_LONG_VALIDATOR = value -> value >= 0;
 
+  public static final Function<Integer, Boolean> SERVER_PORT_VALIDATOR = value -> ((value == -1 || value == 0)
+                                                                                || (value >= 1024 && value <= 65535));
   public static final Function<Long, Boolean> POSITIVE_INTEGER_VALIDATOR =
       value -> value > 0L && value <= Integer.MAX_VALUE;
 
