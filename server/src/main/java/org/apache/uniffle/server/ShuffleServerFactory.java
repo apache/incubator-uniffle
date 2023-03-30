@@ -18,6 +18,7 @@
 package org.apache.uniffle.server;
 
 import org.apache.uniffle.common.rpc.GrpcServer;
+import org.apache.uniffle.common.rpc.RPCServerType;
 import org.apache.uniffle.common.rpc.ServerInterface;
 
 public class ShuffleServerFactory {
@@ -31,8 +32,8 @@ public class ShuffleServerFactory {
   }
 
   public ServerInterface getServer() {
-    String type = conf.getString(ShuffleServerConf.RPC_SERVER_TYPE);
-    if (type.equals(ServerType.GRPC.name())) {
+    RPCServerType type = conf.get(ShuffleServerConf.RPC_SERVER_TYPE);
+    if (type == RPCServerType.GRPC) {
       return GrpcServer.Builder.newBuilder()
           .conf(conf)
           .grpcMetrics(shuffleServer.getGrpcMetrics())
@@ -53,7 +54,4 @@ public class ShuffleServerFactory {
     return conf;
   }
 
-  enum ServerType {
-    GRPC
-  }
 }

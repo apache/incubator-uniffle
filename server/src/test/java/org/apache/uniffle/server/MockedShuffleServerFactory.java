@@ -20,6 +20,7 @@ package org.apache.uniffle.server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.rpc.RPCServerType;
 import org.apache.uniffle.common.rpc.ServerInterface;
 
 public class MockedShuffleServerFactory extends ShuffleServerFactory {
@@ -33,8 +34,8 @@ public class MockedShuffleServerFactory extends ShuffleServerFactory {
   public ServerInterface getServer() {
     ShuffleServerConf conf = getConf();
     ShuffleServer shuffleServer = getShuffleServer();
-    String type = conf.getString(ShuffleServerConf.RPC_SERVER_TYPE);
-    if (type.equals(ServerType.GRPC.name())) {
+    RPCServerType type = conf.get(ShuffleServerConf.RPC_SERVER_TYPE);
+    if (type == RPCServerType.GRPC) {
       return new MockedGrpcServer(conf, new MockedShuffleServerGrpcService(shuffleServer),
         shuffleServer.getGrpcMetrics());
     } else {

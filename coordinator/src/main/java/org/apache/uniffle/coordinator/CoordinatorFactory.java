@@ -18,6 +18,7 @@
 package org.apache.uniffle.coordinator;
 
 import org.apache.uniffle.common.rpc.GrpcServer;
+import org.apache.uniffle.common.rpc.RPCServerType;
 import org.apache.uniffle.common.rpc.ServerInterface;
 
 public class CoordinatorFactory {
@@ -31,8 +32,8 @@ public class CoordinatorFactory {
   }
 
   public ServerInterface getServer() {
-    String type = conf.getString(CoordinatorConf.RPC_SERVER_TYPE);
-    if (type.equals(ServerType.GRPC.name())) {
+    RPCServerType type = conf.get(CoordinatorConf.RPC_SERVER_TYPE);
+    if (type == RPCServerType.GRPC) {
       return GrpcServer.Builder.newBuilder()
           .conf(conf)
           .grpcMetrics(coordinatorServer.getGrpcMetrics())
@@ -40,9 +41,5 @@ public class CoordinatorFactory {
     } else {
       throw new UnsupportedOperationException("Unsupported server type " + type);
     }
-  }
-
-  enum ServerType {
-    GRPC
   }
 }
