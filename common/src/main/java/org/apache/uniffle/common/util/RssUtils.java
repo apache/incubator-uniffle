@@ -182,7 +182,7 @@ public class RssUtils {
           LOGGER.warn(String.format("%s:Service %s failed after %s retries (on a random free port (%s))!",
               e.getMessage(), serviceName, i + 1, actualPort));
         } else {
-          throw new RuntimeException(e);
+          throw new RssException(String.format("Failed to start service %s on port %s", serviceName, servicePort), e);
         }
       }
     }
