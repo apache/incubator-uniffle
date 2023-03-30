@@ -34,7 +34,7 @@ public class ShuffleManagerServerFactory {
 
   public GrpcServer getServer() {
     String type = conf.getString(RssBaseConf.RPC_SERVER_TYPE);
-    if (type.equals(ServerType.GRPC.name())) {
+    if (ServerType.GRPC.name().equals(type)) {
       return GrpcServer.Builder.newBuilder()
           .conf(conf)
           .grpcMetrics(GRPCMetrics.getEmptyGRPCMetrics())
