@@ -18,62 +18,63 @@
 package org.apache.uniffle.storage.handler;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class ClientReadHandlerMetric {
-  private long readBlockNum = 0L;
-  private long readLength = 0L;
-  private long readUncompressLength = 0L;
+  private AtomicLong readBlockNum = new AtomicLong();
+  private AtomicLong readLength = new AtomicLong();
+  private AtomicLong readUncompressLength = new AtomicLong();
 
-  private long skippedReadBlockNum = 0L;
-  private long skippedReadLength = 0L;
-  private long skippedReadUncompressLength = 0L;
+  private AtomicLong skippedReadBlockNum = new AtomicLong();
+  private AtomicLong skippedReadLength = new AtomicLong();
+  private AtomicLong skippedReadUncompressLength = new AtomicLong();
 
   public long getReadBlockNum() {
-    return readBlockNum;
+    return readBlockNum.get();
   }
 
   public void incReadBlockNum() {
-    this.readBlockNum++;
+    this.readBlockNum.incrementAndGet();
   }
 
   public long getReadLength() {
-    return readLength;
+    return readLength.get();
   }
 
   public void incReadLength(long readLength) {
-    this.readLength += readLength;
+    this.readLength.addAndGet(readLength);
   }
 
   public long getReadUncompressLength() {
-    return readUncompressLength;
+    return readUncompressLength.get();
   }
 
   public void incReadUncompressLength(long readUncompressLength) {
-    this.readUncompressLength += readUncompressLength;
+    this.readUncompressLength.addAndGet(readUncompressLength);
   }
 
   public long getSkippedReadBlockNum() {
-    return skippedReadBlockNum;
+    return skippedReadBlockNum.get();
   }
 
   public void incSkippedReadBlockNum() {
-    this.skippedReadBlockNum++;
+    this.skippedReadBlockNum.incrementAndGet();
   }
 
   public long getSkippedReadLength() {
-    return skippedReadLength;
+    return skippedReadLength.get();
   }
 
   public void incSkippedReadLength(long skippedReadLength) {
-    this.skippedReadLength += skippedReadLength;
+    this.skippedReadLength.addAndGet(skippedReadLength);
   }
 
   public long getSkippedReadUncompressLength() {
-    return skippedReadUncompressLength;
+    return skippedReadUncompressLength.get();
   }
 
   public void incSkippedReadUncompressLength(long skippedReadUncompressLength) {
-    this.skippedReadUncompressLength += skippedReadUncompressLength;
+    this.skippedReadUncompressLength.addAndGet(skippedReadUncompressLength);
   }
   
   @Override
@@ -85,17 +86,17 @@ public class ClientReadHandlerMetric {
       return false;
     }
     ClientReadHandlerMetric that = (ClientReadHandlerMetric) o;
-    return readBlockNum == that.getReadBlockNum() 
-        && readLength == that.getReadLength() 
-        && readUncompressLength == that.getReadUncompressLength() 
-        && skippedReadBlockNum == that.getSkippedReadBlockNum() 
-        && skippedReadLength == that.getSkippedReadLength() 
-        && skippedReadUncompressLength == that.getSkippedReadUncompressLength();
+    return readBlockNum.get() == that.getReadBlockNum()
+        && readLength.get() == that.getReadLength()
+        && readUncompressLength.get() == that.getReadUncompressLength()
+        && skippedReadBlockNum.get() == that.getSkippedReadBlockNum()
+        && skippedReadLength.get() == that.getSkippedReadLength()
+        && skippedReadUncompressLength.get() == that.getSkippedReadUncompressLength();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(readBlockNum, readLength, readUncompressLength,
-        skippedReadBlockNum, skippedReadLength, skippedReadUncompressLength);
+    return Objects.hash(readBlockNum.get(), readLength.get(), readUncompressLength.get(),
+        skippedReadBlockNum.get(), skippedReadLength.get(), skippedReadUncompressLength.get());
   }
 }

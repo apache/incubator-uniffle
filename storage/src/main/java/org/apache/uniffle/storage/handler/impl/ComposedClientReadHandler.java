@@ -61,7 +61,7 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   private final Map<Tier, Supplier<ClientReadHandler>> supplierMap = new EnumMap<>(Tier.class);
   private final Map<Tier, ClientReadHandler> handlerMap = JavaUtils.newConcurrentMap();
 
-  private final Map<Tier, ClientReadHandlerMetric> metricsMap = new EnumMap<>(Tier.class);
+  private final Map<Tier, ClientReadHandlerMetric> metricsMap = JavaUtils.newConcurrentMap();
   private volatile Tier currentTier = Tier.VALUES[0]; // == Tier.HOT
   private final int numTiers;
 
