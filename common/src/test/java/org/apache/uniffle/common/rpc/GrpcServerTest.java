@@ -26,26 +26,23 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.proto.ShuffleManagerGrpc;
 
+import static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_PORT;
 import static org.apache.uniffle.common.metrics.GRPCMetrics.GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY;
 import static org.apache.uniffle.common.metrics.GRPCMetrics.GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GrpcServerTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(GrpcServerTest.class);
 
-  static class MockedGRPCMetrics extends GRPCMetrics {
-    @Override
-    public void registerMetrics() {
-      // ignore
-    }
-  }
-
   @Test
   public void testGrpcExecutorPool() throws Exception {
-    GRPCMetrics grpcMetrics = new MockedGRPCMetrics();
+    GRPCMetrics grpcMetrics = GRPCMetrics.getEmptyGRPCMetrics();
     grpcMetrics.register(new CollectorRegistry(true));
     GrpcServer.GrpcThreadPoolExecutor executor = new GrpcServer.GrpcThreadPoolExecutor(
         2,
@@ -87,4 +84,20 @@ public class GrpcServerTest {
 
     executor.shutdown();
   }
+
+  @Test
+  public void testRandomPort() throws Exception {
+    GRPCMetrics grpcMetrics = GRPCMetrics.getEmptyGRPCMetrics();
+    grpcMetrics.register(new CollectorRegistry(true));
+    RssBaseConf conf = new RssBaseConf();
+    conf.set(RPC_SERVER_PORT, 0);
+    GrpcServer server = GrpcServer.Builder.newBuilder()
+        .conf(conf)
+        .grpcMetrics(grpcMetrics)
+        .addService(new ShuffleManagerGrpc.ShuffleManagerImplBase(){})
+        .build();
+    server.start();
+    assertTrue(server.getPort() > 0);
+  }
+
 }
