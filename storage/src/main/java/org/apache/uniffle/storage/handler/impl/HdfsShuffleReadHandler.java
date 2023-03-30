@@ -164,10 +164,6 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
     return new HdfsFileReader(path, hadoopConf);
   }
 
-  public List<ShuffleDataSegment> getShuffleDataSegments() {
-    return shuffleDataSegments;
-  }
-
   public String getFilePrefix() {
     return filePrefix;
   }

@@ -18,8 +18,9 @@
 package org.apache.uniffle.storage.handler.impl;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-import com.google.common.collect.Lists;
+import com.google.common.annotations.VisibleForTesting;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,19 +29,37 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
+import org.apache.uniffle.common.segment.SegmentSplitter;
 import org.apache.uniffle.common.segment.SegmentSplitterFactory;
 
 public abstract class DataSkippableReadHandler extends AbstractClientReadHandler {
   private static final Logger LOG = LoggerFactory.getLogger(DataSkippableReadHandler.class);
 
-  protected List<ShuffleDataSegment> shuffleDataSegments = Lists.newArrayList();
-  protected int segmentIndex = 0;
+  private volatile int segmentSize = 0;
+  private volatile ConcurrentLinkedQueue<ShuffleDataSegment> shuffleDataSegmentsQueue;
 
   protected Roaring64NavigableMap expectBlockIds;
   protected Roaring64NavigableMap processBlockIds;
 
-  protected ShuffleDataDistributionType distributionType;
-  protected Roaring64NavigableMap expectTaskIds;
+  private SegmentSplitter segmentSplitter;
+
+  @VisibleForTesting
+  DataSkippableReadHandler(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int readBufferSize,
+      Roaring64NavigableMap expectBlockIds,
+      Roaring64NavigableMap processBlockIds,
+      SegmentSplitter segmentSplitter) {
+    this.appId = appId;
+    this.shuffleId = shuffleId;
+    this.partitionId = partitionId;
+    this.readBufferSize = readBufferSize;
+    this.expectBlockIds = expectBlockIds;
+    this.processBlockIds = processBlockIds;
+    this.segmentSplitter = segmentSplitter;
+  }
 
   public DataSkippableReadHandler(
       String appId,
@@ -51,38 +70,45 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
       Roaring64NavigableMap processBlockIds,
       ShuffleDataDistributionType distributionType,
       Roaring64NavigableMap expectTaskIds) {
-    this.appId = appId;
-    this.shuffleId = shuffleId;
-    this.partitionId = partitionId;
-    this.readBufferSize = readBufferSize;
-    this.expectBlockIds = expectBlockIds;
-    this.processBlockIds = processBlockIds;
-    this.distributionType = distributionType;
-    this.expectTaskIds = expectTaskIds;
+    this(
+        appId,
+        shuffleId,
+        partitionId,
+        readBufferSize,
+        expectBlockIds,
+        processBlockIds,
+        SegmentSplitterFactory
+            .getInstance()
+            .get(distributionType, expectTaskIds, readBufferSize)
+    );
   }
 
   protected abstract ShuffleIndexResult readShuffleIndex();
 
   protected abstract ShuffleDataResult readShuffleData(ShuffleDataSegment segment);
 
+  // Thread safe
   public ShuffleDataResult readShuffleData() {
-    if (shuffleDataSegments.isEmpty()) {
-      ShuffleIndexResult shuffleIndexResult = readShuffleIndex();
-      if (shuffleIndexResult == null || shuffleIndexResult.isEmpty()) {
-        return null;
+    if (shuffleDataSegmentsQueue == null) {
+      synchronized (this) {
+        if (shuffleDataSegmentsQueue == null) {
+          ShuffleIndexResult shuffleIndexResult = readShuffleIndex();
+          if (shuffleIndexResult == null || shuffleIndexResult.isEmpty()) {
+            return null;
+          }
+          List<ShuffleDataSegment> shuffleDataSegments = segmentSplitter.split(shuffleIndexResult);
+          segmentSize = shuffleDataSegments.size();
+          final ConcurrentLinkedQueue queue = new ConcurrentLinkedQueue();
+          queue.addAll(shuffleDataSegments);
+          shuffleDataSegmentsQueue = queue;
+        }
       }
-
-      shuffleDataSegments =
-          SegmentSplitterFactory
-              .getInstance()
-              .get(distributionType, expectTaskIds, readBufferSize)
-              .split(shuffleIndexResult);
     }
 
     // We should skip unexpected and processed segments when handler is read
     ShuffleDataResult result = null;
-    while (segmentIndex < shuffleDataSegments.size()) {
-      ShuffleDataSegment segment = shuffleDataSegments.get(segmentIndex);
+    ShuffleDataSegment segment;
+    while ((segment = shuffleDataSegmentsQueue.poll()) != null) {
       Roaring64NavigableMap blocksOfSegment = Roaring64NavigableMap.bitmapOf();
       segment.getBufferSegments().forEach(block -> blocksOfSegment.addLong(block.getBlockId()));
       // skip unexpected blockIds
@@ -93,12 +119,16 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
         blocksOfSegment.xor(processBlockIds);
         if (!blocksOfSegment.isEmpty()) {
           result = readShuffleData(segment);
-          segmentIndex++;
-          break;
+          return result;
         }
       }
-      segmentIndex++;
     }
     return result;
+  }
+
+  // Only for tests.
+  @VisibleForTesting
+  public int getShuffleDataSegmentsSize() {
+    return segmentSize;
   }
 }

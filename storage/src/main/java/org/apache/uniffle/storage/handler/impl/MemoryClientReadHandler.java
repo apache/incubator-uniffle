@@ -54,8 +54,9 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
     this.expectTaskIds = expectTaskIds;
   }
 
+  // todo: make thread safe
   @Override
-  public ShuffleDataResult readShuffleData() {
+  public synchronized ShuffleDataResult readShuffleData() {
     ShuffleDataResult result = null;
 
     RssGetInMemoryShuffleDataRequest request = new RssGetInMemoryShuffleDataRequest(

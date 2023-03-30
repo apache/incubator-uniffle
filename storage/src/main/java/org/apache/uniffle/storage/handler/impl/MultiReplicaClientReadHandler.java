@@ -53,7 +53,7 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
   }
 
   @Override
-  public ShuffleDataResult readShuffleData() {
+  public synchronized ShuffleDataResult readShuffleData() {
     ClientReadHandler handler;
     ShuffleDataResult result = null;
     do {

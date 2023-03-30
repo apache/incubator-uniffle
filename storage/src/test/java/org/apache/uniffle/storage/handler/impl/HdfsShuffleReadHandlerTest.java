@@ -92,7 +92,7 @@ public class HdfsShuffleReadHandlerTest extends HdfsTestBase {
     assertNull(handler.readShuffleData());
     assertEquals(
         total,
-        handler.getShuffleDataSegments().size());
+        handler.getShuffleDataSegmentsSize());
     assertEquals(expectTotalBlockNum, totalBlockNum);
     assertEquals(expectedData.keySet(), actualBlockIds);
   }
@@ -162,7 +162,7 @@ public class HdfsShuffleReadHandlerTest extends HdfsTestBase {
     assertNull(handler.readShuffleData());
     assertEquals(
         total,
-        handler.getShuffleDataSegments().size());
+        handler.getShuffleDataSegmentsSize());
     // The last block cannot be read, only the index is generated
     assertEquals(expectTotalBlockNum - 1, totalBlockNum);
     assertEquals(expectedData.keySet(), actualBlockIds);
