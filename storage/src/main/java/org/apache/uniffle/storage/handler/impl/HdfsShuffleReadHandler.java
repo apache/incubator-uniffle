@@ -18,7 +18,6 @@
 package org.apache.uniffle.storage.handler.impl;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
