@@ -66,6 +66,7 @@ public class ComposedClientReadHandlerTest extends ClientHandlerTestBase {
       latch.countDown();
     }));
     latch.await();
+    executorService.shutdownNow();
     assertNull(composedClientReadHandler.readShuffleData());
     assertEquals(100, hotHandler.blockIds.size());
     assertEquals(100, coldHandler.blockIds.size());
