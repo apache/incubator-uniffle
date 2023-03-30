@@ -121,11 +121,11 @@ public class StreamServer implements ServerInterface {
         new StreamServerInitDecoder()
     };
     ServerBootstrap serverBootstrap = bootstrapChannel(shuffleBossGroup, shuffleWorkerGroup,
-            shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_BACKLOG),
-            shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_TIMEOUT),
-            shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_SEND_BUF),
-            shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_RECEIVE_BUF),
-            streamHandlers);
+        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_BACKLOG),
+        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_TIMEOUT),
+        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_SEND_BUF),
+        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_RECEIVE_BUF),
+        streamHandlers);
 
     // Bind the ports and save the results so that the channels can be closed later.
     // If the second bind fails, the first one gets cleaned up in the shutdown.
