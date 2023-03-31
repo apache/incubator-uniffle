@@ -165,8 +165,9 @@ public class GrpcServer implements ServerInterface {
   }
 
   @Override
-  public void startOnPort(int port) throws IOException {
-    throw new RuntimeException("GRpcServer not implement now");
+  public void startOnPort(int port) {
+    ExitUtils.terminate(1, "Fail to start grpc server",
+        new RuntimeException("GRpcServer not implement now"), LOG);
   }
 
   public void stop() throws InterruptedException {

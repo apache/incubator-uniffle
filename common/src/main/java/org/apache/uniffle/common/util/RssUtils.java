@@ -39,8 +39,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -213,8 +213,7 @@ public class RssUtils {
     int portRangeMin = baseConf.getInteger(RssBaseConf.RSS_RANDOM_PORT_MIN);
     int portRangeMax =  baseConf.getInteger(RssBaseConf.RSS_RANDOM_PORT_MAX);
     int portRange = portRangeMax - portRangeMin;
-    Random random = new Random(System.nanoTime());
-    return  portRangeMin + random.nextInt(portRange + 1);
+    return  portRangeMin + ThreadLocalRandom.current().nextInt(portRange + 1);
   }
 
   public static byte[] serializeBitMap(Roaring64NavigableMap bitmap) throws IOException {
