@@ -21,11 +21,11 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.google.common.base.Preconditions;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
@@ -80,9 +80,9 @@ public class TransportClientFactory implements Closeable {
   private PooledByteBufAllocator pooledAllocator;
 
   public TransportClientFactory(TransportContext context) {
-    this.context = Preconditions.checkNotNull(context);
+    this.context = Objects.requireNonNull(context);
     this.conf = context.getConf();
-    this.connectionPool = new ConcurrentHashMap<>();
+    this.connectionPool = JavaUtils.newConcurrentMap();
     this.numConnectionsPerPeer = conf.numConnectionsPerPeer();
     this.rand = new Random();
 
@@ -110,11 +110,8 @@ public class TransportClientFactory implements Closeable {
         InetSocketAddress.createUnresolved(remoteHost, remotePort);
 
     // Create the ClientPool if we don't have it yet.
-    ClientPool clientPool = connectionPool.get(unresolvedAddress);
-    if (clientPool == null) {
-      connectionPool.putIfAbsent(unresolvedAddress, new ClientPool(numConnectionsPerPeer));
-      clientPool = connectionPool.get(unresolvedAddress);
-    }
+    ClientPool clientPool = connectionPool.computeIfAbsent(unresolvedAddress,
+        key -> new ClientPool(numConnectionsPerPeer));
 
     int clientIndex =
         partitionId < 0 ? rand.nextInt(numConnectionsPerPeer) : partitionId % numConnectionsPerPeer;

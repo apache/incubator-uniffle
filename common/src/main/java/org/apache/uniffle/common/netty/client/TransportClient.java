@@ -20,10 +20,10 @@ package org.apache.uniffle.common.netty.client;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.google.common.base.Preconditions;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.concurrent.Future;
@@ -46,8 +46,8 @@ public class TransportClient implements Closeable {
   private static final AtomicLong counter = new AtomicLong();
 
   public TransportClient(Channel channel, TransportResponseHandler handler) {
-    this.channel = Preconditions.checkNotNull(channel);
-    this.handler = Preconditions.checkNotNull(handler);
+    this.channel = Objects.requireNonNull(channel);
+    this.handler = Objects.requireNonNull(handler);
     this.timedOut = false;
   }
 
