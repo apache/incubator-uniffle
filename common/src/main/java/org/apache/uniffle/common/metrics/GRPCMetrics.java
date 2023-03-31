@@ -19,13 +19,13 @@ package org.apache.uniffle.common.metrics;
 
 import java.util.Map;
 
-import com.google.common.collect.Maps;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Summary;
 
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.JavaUtils;
 
 public abstract class GRPCMetrics {
   // Grpc server internal executor metrics
@@ -39,10 +39,10 @@ public abstract class GRPCMetrics {
   private static final String GRPC_TOTAL = "grpc_total";
 
   private boolean isRegistered = false;
-  protected Map<String, Counter> counterMap = Maps.newConcurrentMap();
-  protected Map<String, Gauge> gaugeMap = Maps.newConcurrentMap();
-  protected Map<String, Summary> transportTimeSummaryMap = Maps.newConcurrentMap();
-  protected Map<String, Summary> processTimeSummaryMap = Maps.newConcurrentMap();
+  protected Map<String, Counter> counterMap = JavaUtils.newConcurrentMap();
+  protected Map<String, Gauge> gaugeMap = JavaUtils.newConcurrentMap();
+  protected Map<String, Summary> transportTimeSummaryMap = JavaUtils.newConcurrentMap();
+  protected Map<String, Summary> processTimeSummaryMap = JavaUtils.newConcurrentMap();
   private Gauge gaugeGrpcOpen;
   private Counter counterGrpcTotal;
   protected MetricsManager metricsManager;
@@ -175,5 +175,9 @@ public abstract class GRPCMetrics {
 
   public Map<String, Summary> getProcessTimeSummaryMap() {
     return processTimeSummaryMap;
+  }
+
+  public static GRPCMetrics getEmptyGRPCMetrics() {
+    return new EmptyGRPCMetrics();
   }
 }

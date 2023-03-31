@@ -79,6 +79,12 @@
     </dependency>
     <dependency>
       <groupId>org.apache.uniffle</groupId>
+      <artifactId>rss-client-spark-common</artifactId>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.uniffle</groupId>
       <artifactId>rss-client-spark${client.type}</artifactId>
       <scope>test</scope>
     </dependency>

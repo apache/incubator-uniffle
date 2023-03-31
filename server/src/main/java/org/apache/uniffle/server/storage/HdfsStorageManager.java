@@ -32,9 +32,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
@@ -55,8 +57,8 @@ public class HdfsStorageManager extends SingleStorageManager {
   private static final Logger LOG = LoggerFactory.getLogger(HdfsStorageManager.class);
 
   private final Configuration hadoopConf;
-  private Map<String, HdfsStorage> appIdToStorages = Maps.newConcurrentMap();
-  private Map<String, HdfsStorage> pathToStorages = Maps.newConcurrentMap();
+  private Map<String, HdfsStorage> appIdToStorages = JavaUtils.newConcurrentMap();
+  private Map<String, HdfsStorage> pathToStorages = JavaUtils.newConcurrentMap();
 
   HdfsStorageManager(ShuffleServerConf conf) {
     super(conf);
@@ -114,7 +116,7 @@ public class HdfsStorageManager extends SingleStorageManager {
 
   @Override
   public Checker getStorageChecker() {
-    throw new RuntimeException("Not support storage checker");
+    throw new RssException("Not support storage checker");
   }
 
   @Override

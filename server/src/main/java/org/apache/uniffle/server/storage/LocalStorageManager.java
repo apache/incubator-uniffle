@@ -30,7 +30,6 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -47,10 +46,13 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.UnionKey;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageMedia;
 import org.apache.uniffle.common.storage.StorageStatus;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.LocalStorageChecker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
@@ -89,7 +91,7 @@ public class LocalStorageManager extends SingleStorageManager {
     if (CollectionUtils.isEmpty(storageBasePaths)) {
       throw new IllegalArgumentException("Base path dirs must not be empty");
     }
-    this.partitionsOfStorage = Maps.newConcurrentMap();
+    this.partitionsOfStorage = JavaUtils.newConcurrentMap();
     long capacity = conf.getSizeAsBytes(ShuffleServerConf.DISK_CAPACITY);
     double ratio = conf.getDouble(ShuffleServerConf.DISK_CAPACITY_RATIO);
     double highWaterMarkOfWrite = conf.get(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE);
@@ -106,7 +108,7 @@ public class LocalStorageManager extends SingleStorageManager {
       provider.init(conf);
       typeProviders.add(provider);
     }
-    ExecutorService executorService = Executors.newCachedThreadPool();
+    ExecutorService executorService = ThreadUtils.getDaemonCachedThreadPool("LocalStorage-check");
     LocalStorage[] localStorageArray = new LocalStorage[storageBasePaths.size()];
     for (int i = 0; i < storageBasePaths.size(); i++) {
       final int idx = i;
@@ -141,7 +143,7 @@ public class LocalStorageManager extends SingleStorageManager {
     int failedCount = storageBasePaths.size() - successCount.get();
     long maxFailedNumber = conf.getLong(LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER);
     if (failedCount > maxFailedNumber || successCount.get() == 0) {
-      throw new RuntimeException(
+      throw new RssException(
           String.format("Initialize %s local storage(s) failed, "
               + "specified local storage paths size: %s, the conf of %s size: %s",
               failedCount, localStorageArray.length, LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER.key(), maxFailedNumber)

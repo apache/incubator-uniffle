@@ -39,6 +39,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
@@ -121,17 +122,17 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // start to read data, one block data for every call
     ShuffleDataResult sdr  = memoryClientReadHandler.readShuffleData();
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    expectedData.put(blocks.get(0).getBlockId(), blocks.get(0).getData());
+    expectedData.put(blocks.get(0).getBlockId(), ByteBufUtils.readBytes(blocks.get(0).getData()));
     validateResult(expectedData, sdr);
 
     sdr = memoryClientReadHandler.readShuffleData();
     expectedData.clear();
-    expectedData.put(blocks.get(1).getBlockId(), blocks.get(1).getData());
+    expectedData.put(blocks.get(1).getBlockId(), ByteBufUtils.readBytes(blocks.get(1).getData()));
     validateResult(expectedData, sdr);
 
     sdr = memoryClientReadHandler.readShuffleData();
     expectedData.clear();
-    expectedData.put(blocks.get(2).getBlockId(), blocks.get(2).getData());
+    expectedData.put(blocks.get(2).getBlockId(), ByteBufUtils.readBytes(blocks.get(2).getData()));
     validateResult(expectedData, sdr);
 
     // no data in cache, empty return
@@ -155,8 +156,8 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // read from memory with ComposedClientReadHandler
     sdr  = composedClientReadHandler.readShuffleData();
     expectedData.clear();
-    expectedData.put(blocks.get(0).getBlockId(), blocks.get(0).getData());
-    expectedData.put(blocks.get(1).getBlockId(), blocks.get(1).getData());
+    expectedData.put(blocks.get(0).getBlockId(), ByteBufUtils.readBytes(blocks.get(0).getData()));
+    expectedData.put(blocks.get(1).getBlockId(), ByteBufUtils.readBytes(blocks.get(1).getData()));
     validateResult(expectedData, sdr);
 
     // send data to shuffle server, flush should happen
@@ -192,21 +193,21 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // when segment filter is introduced, there is no need to read duplicated data
     sdr = composedClientReadHandler.readShuffleData();
     expectedData.clear();
-    expectedData.put(blocks.get(2).getBlockId(), blocks.get(2).getData());
-    expectedData.put(blocks2.get(0).getBlockId(), blocks2.get(0).getData());
+    expectedData.put(blocks.get(2).getBlockId(), ByteBufUtils.readBytes(blocks.get(2).getData()));
+    expectedData.put(blocks2.get(0).getBlockId(), ByteBufUtils.readBytes(blocks2.get(0).getData()));
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks.get(2).getBlockId());
     processBlockIds.addLong(blocks2.get(0).getBlockId());
 
     sdr  = composedClientReadHandler.readShuffleData();
     expectedData.clear();
-    expectedData.put(blocks2.get(1).getBlockId(), blocks2.get(1).getData());
+    expectedData.put(blocks2.get(1).getBlockId(), ByteBufUtils.readBytes(blocks2.get(1).getData()));
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks2.get(1).getBlockId());
 
     sdr  = composedClientReadHandler.readShuffleData();
     expectedData.clear();
-    expectedData.put(blocks2.get(2).getBlockId(), blocks2.get(2).getData());
+    expectedData.put(blocks2.get(2).getBlockId(), ByteBufUtils.readBytes(blocks2.get(2).getData()));
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks2.get(2).getBlockId());
 
@@ -256,7 +257,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // start to read data, one block data for every call
     ShuffleDataResult sdr  = memoryClientReadHandler.readShuffleData();
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    expectedData.put(blocks.get(0).getBlockId(), blocks.get(0).getData());
+    expectedData.put(blocks.get(0).getBlockId(), ByteBufUtils.readBytes(blocks.get(0).getData()));
     validateResult(expectedData, sdr);
     // read by different reader, the first block should be skipped.
     exceptTaskIds.removeLong(blocks.get(0).getTaskAttemptId());
@@ -264,17 +265,17 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
         testAppId, shuffleId, partitionId, 20, shuffleServerClient, exceptTaskIds);
     sdr = memoryClientReadHandler2.readShuffleData();
     expectedData.clear();
-    expectedData.put(blocks.get(1).getBlockId(), blocks.get(1).getData());
+    expectedData.put(blocks.get(1).getBlockId(), ByteBufUtils.readBytes(blocks.get(1).getData()));
     validateResult(expectedData, sdr);
 
     sdr = memoryClientReadHandler.readShuffleData();
     expectedData.clear();
-    expectedData.put(blocks.get(1).getBlockId(), blocks.get(1).getData());
+    expectedData.put(blocks.get(1).getBlockId(), ByteBufUtils.readBytes(blocks.get(1).getData()));
     validateResult(expectedData, sdr);
 
     sdr = memoryClientReadHandler2.readShuffleData();
     expectedData.clear();
-    expectedData.put(blocks.get(2).getBlockId(), blocks.get(2).getData());
+    expectedData.put(blocks.get(2).getBlockId(), ByteBufUtils.readBytes(blocks.get(2).getData()));
     validateResult(expectedData, sdr);
     // no data in cache, empty return
     sdr = memoryClientReadHandler2.readShuffleData();
@@ -321,9 +322,9 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
         new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT), handlers);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     expectedData.clear();
-    expectedData.put(blocks.get(0).getBlockId(), blocks.get(0).getData());
-    expectedData.put(blocks.get(1).getBlockId(), blocks.get(1).getData());
-    expectedData.put(blocks.get(2).getBlockId(), blocks.get(1).getData());
+    expectedData.put(blocks.get(0).getBlockId(), ByteBufUtils.readBytes(blocks.get(0).getData()));
+    expectedData.put(blocks.get(1).getBlockId(), ByteBufUtils.readBytes(blocks.get(1).getData()));
+    expectedData.put(blocks.get(2).getBlockId(), ByteBufUtils.readBytes(blocks.get(1).getData()));
     ShuffleDataResult sdr  = composedClientReadHandler.readShuffleData();
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks.get(0).getBlockId());
@@ -360,8 +361,8 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // notice: the 1-th segment is skipped, because it is processed
     sdr  = composedClientReadHandler.readShuffleData();
     expectedData.clear();
-    expectedData.put(blocks2.get(0).getBlockId(), blocks2.get(0).getData());
-    expectedData.put(blocks2.get(1).getBlockId(), blocks2.get(1).getData());
+    expectedData.put(blocks2.get(0).getBlockId(), ByteBufUtils.readBytes(blocks2.get(0).getData()));
+    expectedData.put(blocks2.get(1).getBlockId(), ByteBufUtils.readBytes(blocks2.get(1).getData()));
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks2.get(0).getBlockId());
     processBlockIds.addLong(blocks2.get(1).getBlockId());
@@ -369,7 +370,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // read the 3-th segment from localFile
     sdr  = composedClientReadHandler.readShuffleData();
     expectedData.clear();
-    expectedData.put(blocks2.get(2).getBlockId(), blocks2.get(2).getData());
+    expectedData.put(blocks2.get(2).getBlockId(), ByteBufUtils.readBytes(blocks2.get(2).getData()));
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks2.get(2).getBlockId());
 

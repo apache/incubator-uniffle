@@ -21,12 +21,10 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.google.common.collect.Maps;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -39,12 +37,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public class ClientConfManager implements Closeable {
   private static final Logger LOG = LoggerFactory.getLogger(ClientConfManager.class);
 
-  private Map<String, String> clientConf = Maps.newConcurrentMap();
+  private Map<String, String> clientConf = JavaUtils.newConcurrentMap();
   private final AtomicLong lastCandidatesUpdateMS = new AtomicLong(0L);
   private Path path;
   private ScheduledExecutorService updateClientConfSES = null;
@@ -75,8 +74,7 @@ public class ClientConfManager implements Closeable {
     LOG.info("Load client conf from " + pathStr + " successfully");
 
     int updateIntervalS = conf.getInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC);
-    updateClientConfSES = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("ClientConfManager-%d"));
+    updateClientConfSES = ThreadUtils.getDaemonSingleThreadScheduledExecutor("ClientConfManager");
     updateClientConfSES.scheduleAtFixedRate(
         this::updateClientConf, 0, updateIntervalS, TimeUnit.SECONDS);
   }
@@ -100,7 +98,7 @@ public class ClientConfManager implements Closeable {
   }
 
   private void updateClientConfInternal() {
-    Map<String, String> newClientConf = Maps.newConcurrentMap();
+    Map<String, String> newClientConf = JavaUtils.newConcurrentMap();
     String content = loadClientConfContent();
     if (StringUtils.isEmpty(content)) {
       clientConf = newClientConf;

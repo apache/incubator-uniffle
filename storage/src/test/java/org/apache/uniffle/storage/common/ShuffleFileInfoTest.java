@@ -23,26 +23,20 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleFileInfoTest {
 
   @Test
-  public void test() {
-    try {
-      ShuffleFileInfo shuffleFileInfo = new ShuffleFileInfo();
-      shuffleFileInfo.getDataFiles().add(File.createTempFile("dummy-data-file", ".data"));
-      shuffleFileInfo.setKey("key");
-      assertFalse(shuffleFileInfo.isValid());
+  public void test() throws Exception {
+    ShuffleFileInfo shuffleFileInfo = new ShuffleFileInfo();
+    shuffleFileInfo.getDataFiles().add(File.createTempFile("dummy-data-file", ".data"));
+    shuffleFileInfo.setKey("key");
+    assertFalse(shuffleFileInfo.isValid());
 
-      shuffleFileInfo.getIndexFiles().add(File.createTempFile("dummy-data-file", ".index"));
-      shuffleFileInfo.getPartitions().add(12);
-      shuffleFileInfo.setSize(1024 * 1024 * 32);
-      assertTrue(shuffleFileInfo.isValid());
-      assertFalse(shuffleFileInfo.shouldCombine(32));
-    } catch (Exception e) {
-      e.printStackTrace();
-      fail(e.getMessage());
-    }
+    shuffleFileInfo.getIndexFiles().add(File.createTempFile("dummy-data-file", ".index"));
+    shuffleFileInfo.getPartitions().add(12);
+    shuffleFileInfo.setSize(1024 * 1024 * 32);
+    assertTrue(shuffleFileInfo.isValid());
+    assertFalse(shuffleFileInfo.shouldCombine(32));
   }
 }

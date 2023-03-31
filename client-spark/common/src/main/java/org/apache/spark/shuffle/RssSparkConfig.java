@@ -28,10 +28,25 @@ import scala.Tuple2;
 import scala.runtime.AbstractFunction1;
 
 import org.apache.uniffle.client.util.RssClientConfig;
+import org.apache.uniffle.common.config.ConfigOption;
+import org.apache.uniffle.common.config.ConfigOptions;
 import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.config.RssConf;
 
 public class RssSparkConfig {
+
+  public static final ConfigOption<Long> RSS_CLIENT_SEND_SIZE_LIMITATION = ConfigOptions
+      .key("rss.client.send.size.limit")
+      .longType()
+      .defaultValue(1024 * 1024 * 16L)
+      .withDescription("The max data size sent to shuffle server");
+
+  public static final ConfigOption<Integer> RSS_MEMORY_SPILL_TIMEOUT = ConfigOptions
+      .key("rss.client.memory.spill.timeout.sec")
+      .intType()
+      .defaultValue(1)
+      .withDescription("The timeout of spilling data to remote shuffle server, "
+          + "which will be triggered by Spark TaskMemoryManager. Unit is sec, default value is 1");
 
   public static final String SPARK_RSS_CONFIG_PREFIX = "spark.";
 
@@ -114,11 +129,6 @@ public class RssSparkConfig {
   public static final ConfigEntry<Integer> RSS_CLIENT_HEARTBEAT_THREAD_NUM = createIntegerBuilder(
       new ConfigBuilder("spark.rss.client.heartBeat.threadNum"))
       .createWithDefault(4);
-
-  public static final ConfigEntry<String> RSS_CLIENT_SEND_SIZE_LIMIT = createStringBuilder(
-      new ConfigBuilder("spark.rss.client.send.size.limit")
-          .doc("The max data size sent to shuffle server"))
-      .createWithDefault("16m");
 
   public static final ConfigEntry<Integer> RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE = createIntegerBuilder(
       new ConfigBuilder("spark.rss.client.unregister.thread.pool.size"))

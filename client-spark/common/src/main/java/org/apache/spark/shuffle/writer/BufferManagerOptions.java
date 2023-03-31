@@ -22,6 +22,8 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
+
 public class BufferManagerOptions {
 
   private static final Logger LOG = LoggerFactory.getLogger(BufferManagerOptions.class);
@@ -55,11 +57,11 @@ public class BufferManagerOptions {
 
   private void checkBufferSize() {
     if (bufferSize < 0) {
-      throw new RuntimeException("Unexpected value of " + RssSparkConfig.RSS_WRITER_BUFFER_SIZE.key()
+      throw new RssException("Unexpected value of " + RssSparkConfig.RSS_WRITER_BUFFER_SIZE.key()
           + "=" + bufferSize);
     }
     if (bufferSpillThreshold < 0) {
-      throw new RuntimeException("Unexpected value of " + RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.key()
+      throw new RssException("Unexpected value of " + RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.key()
           + "=" + bufferSpillThreshold);
     }
     if (bufferSegmentSize > bufferSize) {

@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.impl.DataFileSegment;
@@ -160,7 +161,7 @@ public class ShuffleStorageUtils {
         return getShuffleDataPath(appId, shuffleId, start, end);
       }
     }
-    throw new RuntimeException("Can't generate ShuffleData Path for appId[" + appId + "], shuffleId["
+    throw new RssException("Can't generate ShuffleData Path for appId[" + appId + "], shuffleId["
         + shuffleId + "], partitionId[" + partitionId + "], partitionNumPerRange[" + partitionNumPerRange
         + "], partitionNum[" + partitionNum + "]");
   }

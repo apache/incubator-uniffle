@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
@@ -130,7 +131,7 @@ public class HdfsShuffleWriteHandler implements ShuffleWriteHandler {
       } catch (IOException e) {
         LOG.warn("Write failed with " + shuffleBlocks.size() + " blocks for " + fileNamePrefix + "_" + failTimes, e);
         failTimes++;
-        throw new RuntimeException(e);
+        throw new RssException(e);
       }
     } finally {
       writeLock.unlock();

@@ -22,6 +22,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 
@@ -47,7 +48,7 @@ public abstract class AbstractStorageManagerFallbackStrategy {
       }
     }
     if (nextIdx == -1) {
-      throw new RuntimeException("Current StorageManager is not in candidates");
+      throw new RssException("Current StorageManager is not in candidates");
     }
     for (int i = 0; i < candidates.length - 1; i++) {
       StorageManager storageManager = candidates[(i + nextIdx) % candidates.length];

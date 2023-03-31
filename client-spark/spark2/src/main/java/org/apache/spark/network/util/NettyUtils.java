@@ -34,6 +34,8 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.SystemPropertyUtil;
 
+import org.apache.uniffle.common.exception.RssException;
+
 /** copy from spark, In order to override the createPooledByteBufAllocator method,
  * the property DEFAULT_TINY_CACHE_SIZE does not exist in netty>4.1.47. */
 public class NettyUtils {
@@ -131,7 +133,7 @@ public class NettyUtils {
       f.setAccessible(true);
       return f.getInt(null);
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw new RssException(e);
     }
   }
 }

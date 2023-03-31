@@ -61,7 +61,7 @@ public class ShuffleHandlerFactory {
 
   public ClientReadHandler createShuffleReadHandler(CreateShuffleReadHandlerRequest request) {
     if (CollectionUtils.isEmpty(request.getShuffleServerInfoList())) {
-      throw new RuntimeException("Shuffle servers should not be empty!");
+      throw new RssException("Shuffle servers should not be empty!");
     }
     if (request.getShuffleServerInfoList().size() > 1) {
       List<ClientReadHandler> handlers = Lists.newArrayList();

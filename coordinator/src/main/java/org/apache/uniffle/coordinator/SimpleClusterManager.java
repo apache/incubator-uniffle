@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -37,7 +36,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -53,7 +51,9 @@ import org.apache.uniffle.client.request.RssDecommissionRequest;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.InvalidRequestException;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
@@ -61,11 +61,11 @@ public class SimpleClusterManager implements ClusterManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(SimpleClusterManager.class);
 
-  private final Map<String, ServerNode> servers = Maps.newConcurrentMap();
+  private final Map<String, ServerNode> servers = JavaUtils.newConcurrentMap();
   private final Cache<ServerNode, ShuffleServerInternalGrpcClient> clientCache;
   private Set<String> excludeNodes = Sets.newConcurrentHashSet();
   // tag -> nodes
-  private Map<String, Set<ServerNode>> tagToNodes = Maps.newConcurrentMap();
+  private Map<String, Set<ServerNode>> tagToNodes = JavaUtils.newConcurrentMap();
   private AtomicLong excludeLastModify = new AtomicLong(0L);
   private long heartbeatTimeout;
   private volatile int shuffleNodesMax;
@@ -85,8 +85,8 @@ public class SimpleClusterManager implements ClusterManager {
     this.shuffleNodesMax = conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
     this.heartbeatTimeout = conf.getLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT);
     // the thread for checking if shuffle server report heartbeat in time
-    scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("SimpleClusterManager-%d"));
+    scheduledExecutorService =
+        ThreadUtils.getDaemonSingleThreadScheduledExecutor("SimpleClusterManager");
 
     this.startupSilentPeriodEnabled = conf.get(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_ENABLED);
     this.startupSilentPeriodDurationMs = conf.get(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_DURATION);
@@ -101,8 +101,8 @@ public class SimpleClusterManager implements ClusterManager {
     if (!StringUtils.isEmpty(excludeNodesPath)) {
       this.hadoopFileSystem = HadoopFilesystemProvider.getFilesystem(new Path(excludeNodesPath), hadoopConf);
       long updateNodesInterval = conf.getLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL);
-      checkNodesExecutorService = Executors.newSingleThreadScheduledExecutor(
-          ThreadUtils.getThreadFactory("UpdateExcludeNodes-%d"));
+      checkNodesExecutorService =
+          ThreadUtils.getDaemonSingleThreadScheduledExecutor("UpdateExcludeNodes");
       checkNodesExecutorService.scheduleAtFixedRate(
           () -> updateExcludeNodes(excludeNodesPath), updateNodesInterval, updateNodesInterval, TimeUnit.MILLISECONDS);
     }
@@ -289,7 +289,7 @@ public class SimpleClusterManager implements ClusterManager {
       return clientCache.get(serverNode,
               () -> new ShuffleServerInternalGrpcClient(serverNode.getIp(), serverNode.getGrpcPort()));
     } catch (ExecutionException e) {
-      throw new RuntimeException(e);
+      throw new RssException(e);
     }
   }
 

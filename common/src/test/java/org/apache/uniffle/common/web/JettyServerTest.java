@@ -32,7 +32,6 @@ import org.apache.uniffle.common.util.ExitUtils.ExitException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class JettyServerTest {
 
@@ -60,33 +59,27 @@ public class JettyServerTest {
 
   @Test
   public void jettyServerStartTest() throws Exception {
+    RssBaseConf conf = new RssBaseConf();
+    conf.setString("rss.jetty.http.port", "9527");
+    JettyServer jettyServer1 = new JettyServer(conf);
+    JettyServer jettyServer2 = new JettyServer(conf);
+    jettyServer1.start();
+
+    ExitUtils.disableSystemExit();
+    final String expectMessage = "Fail to start jetty http server";
+    final int expectStatus = 1;
     try {
-      RssBaseConf conf = new RssBaseConf();
-      conf.setString("rss.jetty.http.port", "9527");
-      JettyServer jettyServer1 = new JettyServer(conf);
-      JettyServer jettyServer2 = new JettyServer(conf);
-      jettyServer1.start();
-
-      ExitUtils.disableSystemExit();
-      final String expectMessage = "Fail to start jetty http server";
-      final int expectStatus = 1;
-      try {
-        jettyServer2.start();
-      } catch (Exception e) {
-        assertEquals(expectMessage, e.getMessage());
-        assertEquals(expectStatus, ((ExitException) e).getStatus());
-      }
-
-      final Thread t = new Thread(null, () -> {
-        throw new AssertionError("TestUncaughtException");
-      }, "testThread");
-      t.start();
-      t.join();
+      jettyServer2.start();
     } catch (Exception e) {
-      e.printStackTrace();
-      fail();
+      assertEquals(expectMessage, e.getMessage());
+      assertEquals(expectStatus, ((ExitException) e).getStatus());
     }
 
+    final Thread t = new Thread(null, () -> {
+      throw new AssertionError("TestUncaughtException");
+    }, "testThread");
+    t.start();
+    t.join();
   }
 
 }

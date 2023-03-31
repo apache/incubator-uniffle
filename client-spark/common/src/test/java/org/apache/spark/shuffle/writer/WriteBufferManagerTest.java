@@ -17,7 +17,11 @@
 
 package org.apache.spark.shuffle.writer;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import com.google.common.collect.Maps;
 import org.apache.commons.lang.reflect.FieldUtils;
@@ -27,6 +31,7 @@ import org.apache.spark.memory.TaskMemoryManager;
 import org.apache.spark.serializer.KryoSerializer;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.shuffle.RssSparkConfig;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -194,5 +199,79 @@ public class WriteBufferManagerTest {
     // seqNo = 1, partitionId = 1, taskId = 0
     sbi = wbm.createShuffleBlock(1, mockWriterBuffer);
     assertEquals(35184374185984L, sbi.getBlockId());
+  }
+
+  @Test
+  public void buildBlockEventsTest() {
+    SparkConf conf = getConf();
+    conf.set("spark.rss.client.send.size.limit", "30");
+
+    TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
+
+    BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
+    WriteBufferManager wbm = new WriteBufferManager(
+        0, 0, bufferOptions, new KryoSerializer(conf),
+        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(), RssSparkConfig.toRssConf(conf));
+
+    // every block: length=4, memoryUsed=12
+    ShuffleBlockInfo info1 = new ShuffleBlockInfo(1, 1, 1, 4, 1, new byte[1], null, 1, 12, 1);
+    ShuffleBlockInfo info2 = new ShuffleBlockInfo(1, 1, 1, 4, 1, new byte[1], null, 1, 12, 1);
+    ShuffleBlockInfo info3 = new ShuffleBlockInfo(1, 1, 1, 4, 1, new byte[1], null, 1, 12, 1);
+    List<AddBlockEvent> events = wbm.buildBlockEvents(Arrays.asList(info1, info2, info3));
+    assertEquals(3, events.size());
+  }
+
+  @Test
+  public void spillTest() {
+    SparkConf conf = getConf();
+    conf.set("spark.rss.client.send.size.limit", "1000");
+    TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
+    BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
+
+    Function<AddBlockEvent, CompletableFuture<Long>> spillFunc = event -> {
+      event.getProcessedCallbackChain().stream().forEach(x -> x.run());
+      return CompletableFuture.completedFuture(
+          event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum()
+      );
+    };
+
+    WriteBufferManager wbm = new WriteBufferManager(
+        0, "taskId_spillTest", 0, bufferOptions, new KryoSerializer(conf),
+        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(),
+        RssSparkConfig.toRssConf(conf), spillFunc);
+    WriteBufferManager spyManager = spy(wbm);
+    doReturn(512L).when(spyManager).acquireMemory(anyLong());
+
+    String testKey = "Key";
+    String testValue = "Value";
+    spyManager.addRecord(0, testKey, testValue);
+    spyManager.addRecord(1, testKey, testValue);
+
+    // case1. all events are flushed within normal time.
+    long releasedSize = spyManager.spill(1000, mock(WriteBufferManager.class));
+    assertEquals(64, releasedSize);
+
+    // case2. partial events are not flushed within normal time.
+    // when calling spill func, 2 events should be spilled. But
+    // only event will be finished in the expected time.
+    spyManager.setSendSizeLimit(30);
+    spyManager.addRecord(0, testKey, testValue);
+    spyManager.addRecord(1, testKey, testValue);
+    spyManager.setSpillFunc(event -> CompletableFuture.supplyAsync(() -> {
+      int partitionId = event.getShuffleDataInfoList().get(0).getPartitionId();
+      if (partitionId == 1) {
+        try {
+          Thread.sleep(2000);
+        } catch (InterruptedException interruptedException) {
+          // ignore.
+        }
+      }
+      event.getProcessedCallbackChain().stream().forEach(x -> x.run());
+      return event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum();
+    }));
+    releasedSize = spyManager.spill(1000, mock(WriteBufferManager.class));
+    assertEquals(32, releasedSize);
+    assertEquals(32, spyManager.getUsedBytes());
+    Awaitility.await().timeout(3, TimeUnit.SECONDS).until(() -> spyManager.getUsedBytes() == 0);
   }
 }

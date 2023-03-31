@@ -19,7 +19,6 @@ package org.apache.uniffle.common.metrics.prometheus;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -31,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.metrics.AbstractMetricReporter;
 import org.apache.uniffle.common.util.ThreadUtils;
 
@@ -52,19 +52,19 @@ public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter 
     if (pushGateway == null) {
       String address = conf.getString(PUSHGATEWAY_ADDR, null);
       if (StringUtils.isEmpty(address)) {
-        throw new RuntimeException(PUSHGATEWAY_ADDR + " should not be empty!");
+        throw new RssException(PUSHGATEWAY_ADDR + " should not be empty!");
       }
       pushGateway = new PushGateway(address);
     }
     String jobName = conf.getString(JOB_NAME, null);
     if (StringUtils.isEmpty(jobName)) {
-      throw new RuntimeException(JOB_NAME + " should not be empty!");
+      throw new RssException(JOB_NAME + " should not be empty!");
     }
     Map<String, String> groupingKey = parseGroupingKey(conf.getString(GROUPING_KEY, ""));
     groupingKey.put("instance", instanceId);
     int reportInterval = conf.getInteger(REPORT_INTEVAL, 10);
-    scheduledExecutorService = Executors.newScheduledThreadPool(1,
-        ThreadUtils.getThreadFactory("PrometheusPushGatewayMetricReporter-%d"));
+    scheduledExecutorService =
+        ThreadUtils.getDaemonSingleThreadScheduledExecutor("PrometheusPushGatewayMetricReporter");
     scheduledExecutorService.scheduleWithFixedDelay(() -> {
       for (CollectorRegistry registry : registryList) {
         try {

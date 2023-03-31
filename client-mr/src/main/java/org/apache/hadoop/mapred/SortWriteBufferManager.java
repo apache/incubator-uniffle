@@ -49,6 +49,7 @@ import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ChecksumUtils;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public class SortWriteBufferManager<K, V> {
@@ -56,7 +57,7 @@ public class SortWriteBufferManager<K, V> {
   private static final Logger LOG = LoggerFactory.getLogger(SortWriteBufferManager.class);
 
   private final long maxMemSize;
-  private final Map<Integer, SortWriteBuffer<K, V>> buffers = Maps.newConcurrentMap();
+  private final Map<Integer, SortWriteBuffer<K, V>> buffers = JavaUtils.newConcurrentMap();
   private final Map<Integer, Integer> partitionToSeqNo = Maps.newHashMap();
   private final Counters.Counter mapOutputByteCounter;
   private final Counters.Counter mapOutputRecordCounter;
@@ -83,7 +84,7 @@ public class SortWriteBufferManager<K, V> {
   private final long sendCheckInterval;
   private final Set<Long> allBlockIds = Sets.newConcurrentHashSet();
   private final int bitmapSplitNum;
-  private final Map<Integer, List<Long>> partitionToBlocks = Maps.newConcurrentMap();
+  private final Map<Integer, List<Long>> partitionToBlocks = JavaUtils.newConcurrentMap();
   private final long maxSegmentSize;
   private final boolean isMemoryShuffleEnabled;
   private final int numMaps;
@@ -141,9 +142,7 @@ public class SortWriteBufferManager<K, V> {
     this.isMemoryShuffleEnabled = isMemoryShuffleEnabled;
     this.sendThreshold = sendThreshold;
     this.maxBufferSize = maxBufferSize;
-    this.sendExecutorService  = Executors.newFixedThreadPool(
-        sendThreadNum,
-        ThreadUtils.getThreadFactory("send-thread-%d"));
+    this.sendExecutorService  = ThreadUtils.getDaemonFixedThreadPool(sendThreadNum, "send-thread");
     this.rssConf = rssConf;
     this.codec = Codec.newInstance(rssConf);
   }
@@ -350,7 +349,7 @@ public class SortWriteBufferManager<K, V> {
     } catch (InterruptedException ie) {
       LOG.warn("Ignore the InterruptedException which should be caused by internal killed");
     } catch (Exception e) {
-      throw new RuntimeException("Exception happened when get commit status", e);
+      throw new RssException("Exception happened when get commit status", e);
     } finally {
       executor.shutdown();
     }

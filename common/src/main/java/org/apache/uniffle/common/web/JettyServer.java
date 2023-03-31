@@ -89,7 +89,7 @@ public class JettyServer {
     int maxPoolSize = conf.getInteger(RssBaseConf.JETTY_MAX_POOL_SIZE);
     ExecutorThreadPool pool = new ExecutorThreadPool(
         new ThreadPoolExecutor(corePoolSize, maxPoolSize, 60L, TimeUnit.SECONDS,
-            new LinkedBlockingQueue<>(), ThreadUtils.getThreadFactory("Jetty-%d")));
+            new LinkedBlockingQueue<>(), ThreadUtils.getThreadFactory("Jetty")));
     return pool;
   }
 

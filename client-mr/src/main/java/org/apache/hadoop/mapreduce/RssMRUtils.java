@@ -170,22 +170,22 @@ public class RssMRUtils {
   public static long getBlockId(long partitionId, long taskAttemptId, int nextSeqNo) {
     long attemptId = taskAttemptId >> (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH);
     if (attemptId < 0 || attemptId > MAX_ATTEMPT_ID) {
-      throw new RuntimeException("Can't support attemptId [" + attemptId
+      throw new RssException("Can't support attemptId [" + attemptId
           + "], the max value should be " + MAX_ATTEMPT_ID);
     }
     long  atomicInt = (nextSeqNo << MAX_ATTEMPT_LENGTH) + attemptId;
     if (atomicInt < 0 || atomicInt > Constants.MAX_SEQUENCE_NO) {
-      throw new RuntimeException("Can't support sequence [" + atomicInt
+      throw new RssException("Can't support sequence [" + atomicInt
           + "], the max value should be " + Constants.MAX_SEQUENCE_NO);
     }
     if (partitionId < 0 || partitionId > Constants.MAX_PARTITION_ID) {
-      throw new RuntimeException("Can't support partitionId["
+      throw new RssException("Can't support partitionId["
           + partitionId + "], the max value should be " + Constants.MAX_PARTITION_ID);
     }
     long taskId = taskAttemptId - (attemptId
         << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH));
     if (taskId < 0 ||  taskId > Constants.MAX_TASK_ATTEMPT_ID) {
-      throw new RuntimeException("Can't support taskId["
+      throw new RssException("Can't support taskId["
           + taskId + "], the max value should be " + Constants.MAX_TASK_ATTEMPT_ID);
     }
     return (atomicInt << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
