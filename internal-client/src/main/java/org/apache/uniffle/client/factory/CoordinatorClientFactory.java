@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
 import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.common.exception.RssException;
 
 public class CoordinatorClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorClientFactory.class);
@@ -53,7 +54,7 @@ public class CoordinatorClientFactory {
     if (coordinatorList.length == 0) {
       String msg = "Invalid " + coordinators;
       LOG.error(msg);
-      throw new RuntimeException(msg);
+      throw new RssException(msg);
     }
 
     for (String coordinator: coordinatorList) {
@@ -61,7 +62,7 @@ public class CoordinatorClientFactory {
       if (ipPort.length != 2) {
         String msg = "Invalid coordinator format " + Arrays.toString(ipPort);
         LOG.error(msg);
-        throw new RuntimeException(msg);
+        throw new RssException(msg);
       }
 
       String host = ipPort[0];

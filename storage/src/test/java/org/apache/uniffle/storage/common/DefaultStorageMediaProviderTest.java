@@ -17,11 +17,16 @@
 
 package org.apache.uniffle.storage.common;
 
+import java.io.File;
+import java.nio.file.FileStore;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.common.storage.StorageMedia;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class DefaultStorageMediaProviderTest {
   @Test
@@ -46,5 +51,12 @@ public class DefaultStorageMediaProviderTest {
     assertEquals("rootfs", DefaultStorageMediaProvider.getDeviceName("rootfs"));
     assertEquals("sda", DefaultStorageMediaProvider.getDeviceName("/dev/sda1"));
     assertEquals("cl-home", DefaultStorageMediaProvider.getDeviceName("/dev/mapper/cl-home"));
+  }
+
+  @Test
+  public void getGetFileStore(@TempDir File tempDir) throws Exception {
+    DefaultStorageMediaProvider provider = new DefaultStorageMediaProvider();
+    FileStore fileStore = provider.getFileStore(new File(tempDir, "/q/w").toPath());
+    assertNotNull(fileStore);
   }
 }

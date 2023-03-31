@@ -20,8 +20,8 @@ package org.apache.uniffle.storage.common;
 import java.util.Map;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
 
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
@@ -31,16 +31,16 @@ import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 public abstract class AbstractStorage implements Storage {
 
-  private Map<String, Map<String, ShuffleWriteHandler>> writerHandlers = Maps.newConcurrentMap();
-  private Map<String, Map<String, CreateShuffleWriteHandlerRequest>> requests = Maps.newConcurrentMap();
-  private Map<String, Map<String, ServerReadHandler>> readerHandlers = Maps.newConcurrentMap();
+  private Map<String, Map<String, ShuffleWriteHandler>> writerHandlers = JavaUtils.newConcurrentMap();
+  private Map<String, Map<String, CreateShuffleWriteHandlerRequest>> requests = JavaUtils.newConcurrentMap();
+  private Map<String, Map<String, ServerReadHandler>> readerHandlers = JavaUtils.newConcurrentMap();
 
   abstract ShuffleWriteHandler newWriteHandler(CreateShuffleWriteHandlerRequest request);
 
   @Override
   public ShuffleWriteHandler getOrCreateWriteHandler(CreateShuffleWriteHandlerRequest request) {
-    writerHandlers.computeIfAbsent(request.getAppId(), key -> Maps.newConcurrentMap());
-    requests.computeIfAbsent(request.getAppId(), key -> Maps.newConcurrentMap());
+    writerHandlers.computeIfAbsent(request.getAppId(), key -> JavaUtils.newConcurrentMap());
+    requests.computeIfAbsent(request.getAppId(), key -> JavaUtils.newConcurrentMap());
     Map<String, ShuffleWriteHandler> map = writerHandlers.get(request.getAppId());
     String partitionKey = RssUtils.generatePartitionKey(
         request.getAppId(),
@@ -55,7 +55,7 @@ public abstract class AbstractStorage implements Storage {
 
   @Override
   public ServerReadHandler getOrCreateReadHandler(CreateShuffleReadHandlerRequest request) {
-    readerHandlers.computeIfAbsent(request.getAppId(), key -> Maps.newConcurrentMap());
+    readerHandlers.computeIfAbsent(request.getAppId(), key -> JavaUtils.newConcurrentMap());
     Map<String, ServerReadHandler> map = readerHandlers.get(request.getAppId());
     int[] range = ShuffleStorageUtils.getPartitionRange(
         request.getPartitionId(),

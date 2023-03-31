@@ -18,7 +18,6 @@
 package org.apache.uniffle.common.config;
 
 import java.io.File;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -41,8 +40,7 @@ public abstract class ReconfigurableBase implements Reconfigurable {
 
   public ReconfigurableBase(RssConf rssConf) {
     this.rssConf = rssConf;
-    scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("ReconfigurableThread-%d"));
+    scheduledExecutorService = ThreadUtils.getDaemonSingleThreadScheduledExecutor("ReconfigurableThread");
     checkIntervalSec = rssConf.getLong(RssBaseConf.RSS_RECONFIGURE_INTERVAL_SEC);
   }
 

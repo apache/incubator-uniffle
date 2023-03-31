@@ -27,6 +27,10 @@ public class ByteBufUtils {
     return 4 + s.getBytes(StandardCharsets.UTF_8).length;
   }
 
+  public static int encodedLength(ByteBuf buf) {
+    return 4 + buf.readableBytes();
+  }
+
   public static final void writeLengthAndString(ByteBuf buf, String str) {
     if (str == null) {
       buf.writeInt(-1);
@@ -49,9 +53,28 @@ public class ByteBufUtils {
     return new String(bytes, StandardCharsets.UTF_8);
   }
 
+  public static final void copyByteBuf(ByteBuf from, ByteBuf to) {
+    to.writeInt(from.readableBytes());
+    to.writeBytes(from);
+    from.resetReaderIndex();
+  }
+
+  public static final byte[] readByteArray(ByteBuf byteBuf) {
+    int length = byteBuf.readInt();
+    byte[] data = new byte[length];
+    byteBuf.readBytes(data);
+    return data;
+  }
+
+  public static final ByteBuf readSlice(ByteBuf from) {
+    int length = from.readInt();
+    return from.retain().readSlice(length);
+  }
+
   public static final byte[] readBytes(ByteBuf buf) {
     byte[] bytes = new byte[buf.readableBytes()];
     buf.readBytes(bytes);
+    buf.resetReaderIndex();
     return bytes;
   }
 }

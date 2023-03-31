@@ -20,6 +20,8 @@ package org.apache.uniffle.common.security;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
+
 public class SecurityContextFactory {
   private static final Logger LOGGER = LoggerFactory.getLogger(SecurityContextFactory.class);
 
@@ -50,7 +52,7 @@ public class SecurityContextFactory {
 
   public SecurityContext getSecurityContext() {
     if (securityContext == null) {
-      throw new RuntimeException("No initialized security context.");
+      throw new RssException("No initialized security context.");
     }
     return securityContext;
   }

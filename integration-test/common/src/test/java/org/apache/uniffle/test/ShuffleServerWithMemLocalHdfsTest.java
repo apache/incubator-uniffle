@@ -39,6 +39,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
@@ -142,9 +143,9 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
         ssi, handlers);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     expectedData.clear();
-    expectedData.put(blocks.get(0).getBlockId(), blocks.get(0).getData());
-    expectedData.put(blocks.get(1).getBlockId(), blocks.get(1).getData());
-    expectedData.put(blocks.get(2).getBlockId(), blocks.get(1).getData());
+    expectedData.put(blocks.get(0).getBlockId(), ByteBufUtils.readBytes(blocks.get(0).getData()));
+    expectedData.put(blocks.get(1).getBlockId(), ByteBufUtils.readBytes(blocks.get(1).getData()));
+    expectedData.put(blocks.get(2).getBlockId(), ByteBufUtils.readBytes(blocks.get(1).getData()));
     ShuffleDataResult sdr  = composedClientReadHandler.readShuffleData();
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks.get(0).getBlockId());
@@ -169,8 +170,8 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     // notice: the 1-th segment is skipped, because it is processed
     sdr  = composedClientReadHandler.readShuffleData();
     expectedData.clear();
-    expectedData.put(blocks2.get(0).getBlockId(), blocks2.get(0).getData());
-    expectedData.put(blocks2.get(1).getBlockId(), blocks2.get(1).getData());
+    expectedData.put(blocks2.get(0).getBlockId(), ByteBufUtils.readBytes(blocks2.get(0).getData()));
+    expectedData.put(blocks2.get(1).getBlockId(), ByteBufUtils.readBytes(blocks2.get(1).getData()));
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks2.get(0).getBlockId());
     processBlockIds.addLong(blocks2.get(1).getBlockId());
@@ -179,7 +180,7 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     // read the 3-th segment from localFile
     sdr  = composedClientReadHandler.readShuffleData();
     expectedData.clear();
-    expectedData.put(blocks2.get(2).getBlockId(), blocks2.get(2).getData());
+    expectedData.put(blocks2.get(2).getBlockId(), ByteBufUtils.readBytes(blocks2.get(2).getData()));
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks2.get(2).getBlockId());
     sdr.getBufferSegments().forEach(bs -> composedClientReadHandler.updateConsumedBlockInfo(bs, checkSkippedMetrics));
@@ -200,8 +201,8 @@ public class ShuffleServerWithMemLocalHdfsTest extends ShuffleReadWriteBase {
     // read the 4-th segment from HDFS
     sdr  = composedClientReadHandler.readShuffleData();
     expectedData.clear();
-    expectedData.put(blocks3.get(0).getBlockId(), blocks3.get(0).getData());
-    expectedData.put(blocks3.get(1).getBlockId(), blocks3.get(1).getData());
+    expectedData.put(blocks3.get(0).getBlockId(), ByteBufUtils.readBytes(blocks3.get(0).getData()));
+    expectedData.put(blocks3.get(1).getBlockId(), ByteBufUtils.readBytes(blocks3.get(1).getData()));
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks3.get(0).getBlockId());
     processBlockIds.addLong(blocks3.get(1).getBlockId());

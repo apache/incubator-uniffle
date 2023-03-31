@@ -20,13 +20,13 @@ package org.apache.uniffle.server;
 import java.util.Map;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.common.metrics.MetricsManager;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.common.LocalStorage;
 
@@ -158,10 +158,10 @@ public class ShuffleServerMetrics {
 
   public static synchronized void register(CollectorRegistry collectorRegistry) {
     if (!isRegister) {
-      counterRemoteStorageTotalWrite = Maps.newConcurrentMap();
-      counterRemoteStorageRetryWrite = Maps.newConcurrentMap();
-      counterRemoteStorageFailedWrite = Maps.newConcurrentMap();
-      counterRemoteStorageSuccessWrite = Maps.newConcurrentMap();
+      counterRemoteStorageTotalWrite = JavaUtils.newConcurrentMap();
+      counterRemoteStorageRetryWrite = JavaUtils.newConcurrentMap();
+      counterRemoteStorageFailedWrite = JavaUtils.newConcurrentMap();
+      counterRemoteStorageSuccessWrite = JavaUtils.newConcurrentMap();
       metricsManager = new MetricsManager(collectorRegistry);
       isRegister = true;
       setUpMetrics();

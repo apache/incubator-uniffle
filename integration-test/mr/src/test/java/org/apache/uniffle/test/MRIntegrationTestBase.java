@@ -44,6 +44,8 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
+import org.apache.uniffle.common.ClientType;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -165,6 +167,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     jobConf.set(MRJobConfig.MAPREDUCE_APPLICATION_CLASSPATH,
         "$PWD/rss.jar/" + localFile.getName() + "," + MRJobConfig.DEFAULT_MAPREDUCE_APPLICATION_CLASSPATH);
     jobConf.set(RssMRConfig.RSS_COORDINATOR_QUORUM, COORDINATOR_QUORUM);
+    jobConf.set(RssMRConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
     updateRssConfiguration(jobConf);
     runMRApp(jobConf, getTestTool(), getTestArgs());
 

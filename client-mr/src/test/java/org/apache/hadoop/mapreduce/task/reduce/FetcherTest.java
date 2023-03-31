@@ -28,7 +28,6 @@ import java.util.TreeMap;
 import java.util.function.Supplier;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -74,6 +73,7 @@ import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.compression.Lz4Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.JavaUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -247,7 +247,7 @@ public class FetcherTest {
     SerializationFactory serializationFactory = new SerializationFactory(jobConf);
     MockShuffleWriteClient client = new MockShuffleWriteClient();
     client.setMode(2);
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newConcurrentMap();
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = JavaUtils.newConcurrentMap();
     Set<Long> successBlocks = Sets.newConcurrentHashSet();
     Set<Long> failedBlocks = Sets.newConcurrentHashSet();
     Counters.Counter mapOutputByteCounter = new Counters.Counter();
@@ -360,7 +360,7 @@ public class FetcherTest {
         shuffleBlockInfoList.forEach(block -> {
           ByteBuffer uncompressedBuffer = ByteBuffer.allocate(block.getUncompressLength());
           codec.decompress(
-              ByteBuffer.wrap(block.getData()),
+              block.getData().nioBuffer(),
               block.getUncompressLength(),
               uncompressedBuffer,
               0

@@ -49,6 +49,7 @@ public class GrpcServer implements ServerInterface {
 
   private final Server server;
   private final int port;
+  private int listenPort;
   private final ExecutorService pool;
 
   protected GrpcServer(
@@ -64,7 +65,7 @@ public class GrpcServer implements ServerInterface {
         10,
         TimeUnit.MINUTES,
         Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
-        ThreadUtils.getThreadFactory("Grpc-%d"),
+        ThreadUtils.getThreadFactory("Grpc"),
         grpcMetrics
     );
 
@@ -157,10 +158,11 @@ public class GrpcServer implements ServerInterface {
   public int start() throws IOException {
     try {
       server.start();
+      listenPort = server.getPort();
     } catch (IOException e) {
       ExitUtils.terminate(1, "Fail to start grpc server", e, LOG);
     }
-    LOG.info("Grpc server started, listening on {}.", port);
+    LOG.info("Grpc server started, configured port: {}, listening on {}.", port, listenPort);
     return port;
   }
 
@@ -184,6 +186,10 @@ public class GrpcServer implements ServerInterface {
     if (server != null) {
       server.awaitTermination();
     }
+  }
+
+  public int getPort() {
+    return port <= 0 ? listenPort : port;
   }
 
 }

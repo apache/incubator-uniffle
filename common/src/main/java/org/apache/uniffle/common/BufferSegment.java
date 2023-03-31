@@ -19,6 +19,8 @@ package org.apache.uniffle.common;
 
 import java.util.Objects;
 
+import org.apache.uniffle.common.exception.RssException;
+
 public class BufferSegment {
 
   private long blockId;
@@ -64,7 +66,7 @@ public class BufferSegment {
 
   public int getOffset() {
     if (offset > Integer.MAX_VALUE) {
-      throw new RuntimeException("Unsupported offset[" + offset + "] for BufferSegment");
+      throw new RssException("Unsupported offset[" + offset + "] for BufferSegment");
     }
     return (int) offset;
   }

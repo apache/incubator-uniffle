@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -38,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
@@ -60,21 +60,21 @@ public class ApplicationManager implements Closeable {
   private final Map<String, RemoteStorageInfo> appIdToRemoteStorageInfo;
   // store remote path -> application count for assignment strategy
   private final Map<String, RankValue> remoteStoragePathRankValue;
-  private final Map<String, String> remoteStorageToHost = Maps.newConcurrentMap();
+  private final Map<String, String> remoteStorageToHost = JavaUtils.newConcurrentMap();
   private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
   private final ScheduledExecutorService detectStorageScheduler;
   private final ScheduledExecutorService checkAppScheduler;
-  private Map<String, Map<String, Long>> currentUserAndApp = Maps.newConcurrentMap();
-  private Map<String, String> appIdToUser = Maps.newConcurrentMap();
+  private Map<String, Map<String, Long>> currentUserAndApp = JavaUtils.newConcurrentMap();
+  private Map<String, String> appIdToUser = JavaUtils.newConcurrentMap();
   private QuotaManager quotaManager;
   // it's only for test case to check if status check has problem
   private boolean hasErrorInStatusCheck = false;
 
   public ApplicationManager(CoordinatorConf conf) {
     storageStrategy = conf.get(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY);
-    appIdToRemoteStorageInfo = Maps.newConcurrentMap();
-    remoteStoragePathRankValue = Maps.newConcurrentMap();
-    availableRemoteStorageInfo = Maps.newConcurrentMap();
+    appIdToRemoteStorageInfo = JavaUtils.newConcurrentMap();
+    remoteStoragePathRankValue = JavaUtils.newConcurrentMap();
+    availableRemoteStorageInfo = JavaUtils.newConcurrentMap();
     if (StrategyName.IO_SAMPLE == storageStrategy) {
       selectStorageStrategy = new LowestIOSampleCostSelectStorageStrategy(remoteStoragePathRankValue,
           appIdToRemoteStorageInfo, availableRemoteStorageInfo, conf);
@@ -95,13 +95,11 @@ public class ApplicationManager implements Closeable {
       }
     }
     // the thread for checking application status
-    checkAppScheduler = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("ApplicationManager-%d"));
+    checkAppScheduler = ThreadUtils.getDaemonSingleThreadScheduledExecutor("ApplicationManager");
     checkAppScheduler.scheduleAtFixedRate(
         this::statusCheck, expired / 2, expired / 2, TimeUnit.MILLISECONDS);
     // the thread for checking if the storage is normal
-    detectStorageScheduler = Executors.newSingleThreadScheduledExecutor(
-        ThreadUtils.getThreadFactory("detectStoragesScheduler-%d"));
+    detectStorageScheduler = ThreadUtils.getDaemonSingleThreadScheduledExecutor("detectStoragesScheduler");
     // should init later than the refreshRemoteStorage init
     detectStorageScheduler.scheduleAtFixedRate(selectStorageStrategy::detectStorage, 1000,
         conf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME), TimeUnit.MILLISECONDS);
@@ -110,7 +108,7 @@ public class ApplicationManager implements Closeable {
   public void registerApplicationInfo(String appId, String user) {
     // using computeIfAbsent is just for MR and spark which is used RssShuffleManager as implementation class
     // in such case by default, there is no currentUserAndApp, so a unified user implementation named "user" is used.
-    Map<String, Long> appAndTime = currentUserAndApp.computeIfAbsent(user, x -> Maps.newConcurrentMap());
+    Map<String, Long> appAndTime = currentUserAndApp.computeIfAbsent(user, x -> JavaUtils.newConcurrentMap());
     appIdToUser.put(appId, user);
     if (!appAndTime.containsKey(appId)) {
       CoordinatorMetrics.counterTotalAppNum.inc();

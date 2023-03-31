@@ -62,6 +62,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
@@ -319,7 +320,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
               .setLength(sbi.getLength())
               .setTaskAttemptId(sbi.getTaskAttemptId())
               .setUncompressLength(sbi.getUncompressLength())
-              .setData(ByteString.copyFrom(sbi.getData()))
+              .setData(UnsafeByteOperations.unsafeWrap(sbi.getData().nioBuffer()))
               .build());
           size += sbi.getSize();
           blockNum++;
@@ -514,7 +515,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
           response = new RssGetShuffleResultResponse(StatusCode.SUCCESS,
               rpcResponse.getSerializedBitmap().toByteArray());
         } catch (Exception e) {
-          throw new RuntimeException(e);
+          throw new RssException(e);
         }
         break;
       default:
@@ -522,7 +523,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             + " for [appId=" + request.getAppId() + ", shuffleId=" + request.getShuffleId()
             + ", errorMsg:" + rpcResponse.getRetMsg();
         LOG.error(msg);
-        throw new RssException(msg);
+        throw new RssFetchFailedException(msg);
     }
 
     return response;
@@ -546,7 +547,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
           response = new RssGetShuffleResultResponse(StatusCode.SUCCESS,
               rpcResponse.getSerializedBitmap().toByteArray());
         } catch (Exception e) {
-          throw new RuntimeException(e);
+          throw new RssException(e);
         }
         break;
       default:
@@ -554,7 +555,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             + " for [appId=" + request.getAppId() + ", shuffleId=" + request.getShuffleId()
             + ", errorMsg:" + rpcResponse.getRetMsg();
         LOG.error(msg);
-        throw new RssException(msg);
+        throw new RssFetchFailedException(msg);
     }
 
     return response;
@@ -593,7 +594,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         String msg = "Can't get shuffle data from " + host + ":" + port
             + " for " + requestInfo + ", errorMsg:" + rpcResponse.getRetMsg();
         LOG.error(msg);
-        throw new RssException(msg);
+        throw new RssFetchFailedException(msg);
     }
     return response;
   }
@@ -628,7 +629,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         String msg = "Can't get shuffle index from " + host + ":" + port
             + " for " + requestInfo + ", errorMsg:" + rpcResponse.getRetMsg();
         LOG.error(msg);
-        throw new RssException(msg);
+        throw new RssFetchFailedException(msg);
     }
     return response;
   }
@@ -677,7 +678,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         String msg = "Can't get shuffle in memory data from " + host + ":" + port
             + " for " + requestInfo + ", errorMsg:" + rpcResponse.getRetMsg();
         LOG.error(msg);
-        throw new RssException(msg);
+        throw new RssFetchFailedException(msg);
     }
     return response;
   }

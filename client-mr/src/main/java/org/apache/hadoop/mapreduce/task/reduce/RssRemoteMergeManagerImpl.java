@@ -149,7 +149,7 @@ public class RssRemoteMergeManagerImpl<K, V> extends MergeManagerImpl<K, V> {
           remoteConf
       );
     } catch (Exception e) {
-      throw new RuntimeException("Cannot init remoteFS on path:" + basePath);
+      throw new RssException("Cannot init remoteFS on path:" + basePath);
     }
 
     this.basePath = basePath;

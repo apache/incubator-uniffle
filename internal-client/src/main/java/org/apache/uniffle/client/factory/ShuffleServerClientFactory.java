@@ -19,19 +19,18 @@ package org.apache.uniffle.client.factory;
 
 import java.util.Map;
 
-import com.google.common.collect.Maps;
-
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.JavaUtils;
 
 public class ShuffleServerClientFactory {
 
   private Map<String, Map<ShuffleServerInfo, ShuffleServerClient>> clients;
 
   private ShuffleServerClientFactory() {
-    clients = Maps.newConcurrentMap();
+    clients = JavaUtils.newConcurrentMap();
   }
 
   private static class LazyHolder {
@@ -52,7 +51,7 @@ public class ShuffleServerClientFactory {
 
   public synchronized ShuffleServerClient getShuffleServerClient(
       String clientType, ShuffleServerInfo shuffleServerInfo) {
-    clients.putIfAbsent(clientType, Maps.newConcurrentMap());
+    clients.putIfAbsent(clientType, JavaUtils.newConcurrentMap());
     Map<ShuffleServerInfo, ShuffleServerClient> serverToClients = clients.get(clientType);
     if (serverToClients.get(shuffleServerInfo) == null) {
       serverToClients.put(shuffleServerInfo, createShuffleServerClient(clientType, shuffleServerInfo));
@@ -63,6 +62,6 @@ public class ShuffleServerClientFactory {
   // Only for tests
   public synchronized void cleanupCache() {
     clients.values().stream().flatMap(x -> x.values().stream()).forEach(ShuffleServerClient::close);
-    this.clients = Maps.newConcurrentMap();
+    this.clients = JavaUtils.newConcurrentMap();
   }
 }

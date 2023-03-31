@@ -130,6 +130,9 @@ public class RssMRAppMaster extends MRAppMaster {
         assignmentTags.addAll(Arrays.asList(rawTags.split(",")));
       }
       assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
+      String clientType = conf.get(RssMRConfig.RSS_CLIENT_TYPE);
+      ClientUtils.validateClientType(clientType);
+      assignmentTags.add(clientType);
 
       final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
           new ThreadFactory() {
@@ -284,7 +287,7 @@ public class RssMRAppMaster extends MRAppMaster {
 
       String jobDirStr = conf.get(MRJobConfig.MAPREDUCE_JOB_DIR);
       if (jobDirStr == null) {
-        throw new RuntimeException("jobDir is empty");
+        throw new RssException("jobDir is empty");
       }
     }
     try {
@@ -372,7 +375,7 @@ public class RssMRAppMaster extends MRAppMaster {
       conf.set(MRJobConfig.CACHE_FILES_SIZES, sizes == null ? String.valueOf(size) : size + "," + sizes);
     } catch (InterruptedException | IOException e) {
       LOG.error("Upload extra conf exception", e);
-      throw new RuntimeException("Upload extra conf exception ", e);
+      throw new RssException("Upload extra conf exception ", e);
     }
   }
 

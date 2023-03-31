@@ -85,7 +85,9 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public class ShuffleWriteClientImpl implements ShuffleWriteClient {
@@ -97,7 +99,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private long retryIntervalMax;
   private List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
   //appId -> shuffleId -> servers
-  private Map<String, Map<Integer, Set<ShuffleServerInfo>>> shuffleServerInfoMap = Maps.newConcurrentMap();
+  private Map<String, Map<Integer, Set<ShuffleServerInfo>>> shuffleServerInfoMap = JavaUtils.newConcurrentMap();
   private CoordinatorClientFactory coordinatorClientFactory;
   private ExecutorService heartBeatExecutorService;
   private int replica;
@@ -127,8 +129,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
     this.coordinatorClientFactory = new CoordinatorClientFactory(ClientType.valueOf(clientType));
-    this.heartBeatExecutorService = Executors.newFixedThreadPool(heartBeatThreadNum,
-        ThreadUtils.getThreadFactory("client-heartbeat-%d"));
+    this.heartBeatExecutorService = ThreadUtils.getDaemonFixedThreadPool(heartBeatThreadNum, "client-heartbeat");
     this.replica = replica;
     this.replicaWrite = replicaWrite;
     this.replicaRead = replicaRead;
@@ -414,7 +415,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     } catch (Exception e) {
       LOG.error("Error on getting user from ugi.", e);
     }
-    LOG.info("User: {}", user);
 
     RssRegisterShuffleRequest request =
         new RssRegisterShuffleRequest(appId, shuffleId, partitionRanges, remoteStorage, user, dataDistributionType);
@@ -584,7 +584,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       }
     }
     if (!isSuccessful) {
-      throw new RssException("Get shuffle result is failed for appId["
+      throw new RssFetchFailedException("Get shuffle result is failed for appId["
           + appId + "], shuffleId[" + shuffleId + "]");
     }
     return blockIdBitmap;
@@ -625,7 +625,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
     boolean isSuccessful = partitionReadSuccess.entrySet().stream().allMatch(x -> x.getValue() >= replicaRead);
     if (!isSuccessful) {
-      throw new RssException("Get shuffle result is failed for appId[" + appId + "], shuffleId[" + shuffleId + "]");
+      throw new RssFetchFailedException(
+          "Get shuffle result is failed for appId[" + appId + "], shuffleId[" + shuffleId + "]");
     }
     return blockIdBitmap;
   }
@@ -751,10 +752,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     ExecutorService executorService = null;
     try {
       executorService =
-          Executors.newFixedThreadPool(
-              Math.min(unregisterThreadPoolSize, shuffleServerInfos.size()),
-              ThreadUtils.getThreadFactory("unregister-shuffle-%d")
-          );
+          ThreadUtils.getDaemonFixedThreadPool(
+              Math.min(unregisterThreadPoolSize, shuffleServerInfos.size()), "unregister-shuffle");
       List<Future<Void>> futures = executorService.invokeAll(callableList, unregisterRequestTimeSec, TimeUnit.SECONDS);
       for (Future<Void> future : futures) {
         if (!future.isDone()) {
@@ -801,7 +800,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   void addShuffleServer(String appId, int shuffleId, ShuffleServerInfo serverInfo) {
     Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
     if (appServerMap == null) {
-      appServerMap = Maps.newConcurrentMap();
+      appServerMap = JavaUtils.newConcurrentMap();
       shuffleServerInfoMap.put(appId, appServerMap);
     }
     Set<ShuffleServerInfo> shuffleServerInfos = appServerMap.get(shuffleId);
