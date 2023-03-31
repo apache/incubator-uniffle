@@ -18,20 +18,24 @@
 package org.apache.spark.shuffle;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.deploy.SparkHadoopUtil;
+import org.apache.spark.storage.BlockManagerId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Option;
 import scala.reflect.ClassTag;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
@@ -225,5 +229,56 @@ public class RssSparkShuffleUtils {
       Map<Integer, List<ShuffleServerInfo>> partitionToServers, RemoteStorageInfo storageInfo) {
     ShuffleHandleInfo handleInfo = new ShuffleHandleInfo(shuffleId, partitionToServers, storageInfo);
     return sc.broadcast(handleInfo, SHUFFLE_HANDLER_INFO_CLASS_TAG);
+  }
+
+  @SuppressFBWarnings("THROWS_METHOD_THROWS_RUNTIMEEXCEPTION")
+  private static <T> T instantiateFetchFailedException(
+      BlockManagerId dummy, int shuffleId, int mapIndex, int reduceId, Throwable cause) {
+    String className = FetchFailedException.class.getName();
+    T instance;
+    Class<?> klass;
+    try {
+      klass = Class.forName(className);
+    } catch (ClassNotFoundException e) {
+      // ever happens;
+      throw new RuntimeException(e);
+    }
+    try {
+      instance = (T) klass
+          .getConstructor(dummy.getClass(), Integer.TYPE, Long.TYPE, Integer.TYPE, Integer.TYPE, Throwable.class)
+          .newInstance(dummy, shuffleId, (long) mapIndex, mapIndex, reduceId, cause);
+    } catch (NoSuchMethodException | IllegalAccessException
+        | IllegalArgumentException | InstantiationException
+        | InvocationTargetException e) { // anything goes wrong, fallback to the another constructor.
+      try {
+        instance = (T) klass
+            .getConstructor(dummy.getClass(), Integer.TYPE, Integer.TYPE, Integer.TYPE, Throwable.class)
+            .newInstance(dummy, shuffleId, mapIndex, reduceId, cause);
+      } catch (Exception ae) {
+        LOG.error("Fail to new instance.", ae);
+        throw new RuntimeException(ae);
+      }
+    }
+    return instance;
+  }
+
+  public static FetchFailedException createFetchFailedException(
+      int shuffleId, int mapIndex, int reduceId, Throwable cause) {
+    final String dummyHost = "dummy_host";
+    final int dummyPort = 9999;
+    BlockManagerId dummy = BlockManagerId.apply("exec-dummy", dummyHost, dummyPort, Option.empty());
+    // if no cause
+    cause = cause == null ? new Throwable("No cause") : cause;
+    return instantiateFetchFailedException(dummy, shuffleId, mapIndex, reduceId, cause);
+  }
+
+  public static boolean isStageResubmitSupported() {
+    // Stage re-computation requires the ShuffleMapTask to throw a FetchFailedException, which would be produced by the
+    // shuffle data reader iterator. However, the shuffle reader iterator interface is defined in Scala, which doesn't
+    // have checked exceptions. This makes it hard to throw a FetchFailedException on the Java side.
+    // Fortunately, starting from Spark 2.3 (or maybe even Spark 2.2), it is possible to create a FetchFailedException
+    // and wrap it into a runtime exception. Spark will consider this exception as a FetchFailedException.
+    // Therefore, the stage re-computation feature is only enabled for Spark versions larger than or equal to 2.3.
+    return SparkVersionUtils.isSpark3() || (SparkVersionUtils.isSpark2() && SparkVersionUtils.MINOR_VERSION >= 3);
   }
 }

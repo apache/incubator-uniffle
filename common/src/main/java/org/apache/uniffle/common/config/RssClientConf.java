@@ -95,4 +95,11 @@ public class RssClientConf {
       .defaultValue(0)
       .withDescription("Send buffer size (SO_SNDBUF).");
 
+
+  // this is reversed for internal settings, and should never set by user.
+  public static final ConfigOption<Integer> SHUFFLE_MANAGER_GRPC_PORT = ConfigOptions
+      .key("rss.shuffle.manager.grpc.port")
+      .intType()
+      .noDefaultValue()
+      .withDescription("internal configuration to indicate which port is actually bind for shuffle manager service.");
 }

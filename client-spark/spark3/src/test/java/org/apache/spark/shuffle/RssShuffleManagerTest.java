@@ -21,12 +21,18 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.sql.internal.SQLConf;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_SHUFFLE_MANAGER_GRPC_PORT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RssShuffleManagerTest {
+public class RssShuffleManagerTest extends RssShuffleManagerTestBase {
   private static final String SPARK_ADAPTIVE_EXECUTION_ENABLED_KEY = "spark.sql.adaptive.enabled";
 
   @Test
@@ -83,4 +89,40 @@ public class RssShuffleManagerTest {
       );
     }
   }
+
+  @Test
+  public void testCreateShuffleManagerServer() {
+    setupMockedRssShuffleUtils(StatusCode.SUCCESS);
+
+    SparkConf conf = new SparkConf();
+    conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.key(), "false");
+    conf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "m1:8001,m2:8002");
+    conf.set("spark.rss.storage.type", StorageType.LOCALFILE.name());
+    conf.set(RssSparkConfig.RSS_TEST_MODE_ENABLE, true);
+    // enable stage recompute
+    conf.set("spark." + RssClientConfig.RSS_RESUBMIT_STAGE, "true");
+
+    RssShuffleManager shuffleManager = new RssShuffleManager(conf, true);
+
+    assertTrue(conf.get(RSS_SHUFFLE_MANAGER_GRPC_PORT) > 0);
+  }
+
+  @Test
+  public void testRssShuffleManagerInterface() throws Exception {
+    setupMockedRssShuffleUtils(StatusCode.SUCCESS);
+
+    SparkConf conf = new SparkConf();
+    conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.key(), "false");
+    conf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "m1:8001,m2:8002");
+    conf.set("spark.rss.storage.type", StorageType.LOCALFILE.name());
+    conf.set(RssSparkConfig.RSS_TEST_MODE_ENABLE, true);
+
+    conf.set("spark.task.maxFailures", "3");
+    RssShuffleManager shuffleManager = new RssShuffleManager(conf, true);
+    assertEquals(shuffleManager.getMaxFetchFailures(), 2);
+    // by default, the appId is null
+    assertNull(shuffleManager.getAppId());
+
+  }
+
 }

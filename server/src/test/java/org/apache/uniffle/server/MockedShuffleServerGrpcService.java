@@ -42,6 +42,9 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
 
   private boolean recordGetShuffleResult = false;
 
+  private long numOfFailedReadRequest = 0;
+  private AtomicInteger failedReadRequest = new AtomicInteger(0);
+
   public void enableMockedTimeout(long timeout) {
     mockedTimeout = timeout;
   }
@@ -52,6 +55,15 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
 
   public void disableMockedTimeout() {
     mockedTimeout = -1;
+  }
+
+  public void enableFirstNReadRequestToFail(int n) {
+    numOfFailedReadRequest = n;
+  }
+
+  public void resetFirstNReadRequestToFail() {
+    numOfFailedReadRequest = 0;
+    failedReadRequest.set(0);
   }
 
   public MockedShuffleServerGrpcService(ShuffleServer shuffleServer) {
@@ -109,4 +121,19 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
   public Map<String, Map<Integer, AtomicInteger>> getShuffleIdToPartitionRequest() {
     return appToPartitionRequest;
   }
+
+  @Override
+  public void getMemoryShuffleData(RssProtos.GetMemoryShuffleDataRequest request,
+                                   StreamObserver<RssProtos.GetMemoryShuffleDataResponse> responseObserver) {
+    if (numOfFailedReadRequest > 0) {
+      int currentFailedReadRequest = failedReadRequest.getAndIncrement();
+      if (currentFailedReadRequest < numOfFailedReadRequest) {
+        LOG.info("This request is failed as mocked failure, current/firstN: {}/{}",
+            currentFailedReadRequest, numOfFailedReadRequest);
+        throw new RuntimeException("This request is failed as mocked failure");
+      }
+    }
+    super.getMemoryShuffleData(request, responseObserver);
+  }
+
 }
