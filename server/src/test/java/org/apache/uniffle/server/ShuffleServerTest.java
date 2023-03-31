@@ -144,6 +144,7 @@ public class ShuffleServerTest {
     ExitUtils.disableSystemExit();
     serverConf.set(ShuffleServerConf.RPC_SERVER_PORT, 19997);
     serverConf.set(ShuffleServerConf.JETTY_HTTP_PORT, 19996);
+    serverConf.set(ShuffleServerConf.SERVER_PORT_MAX_RETRIES, 1);
     ShuffleServer ss2 = new ShuffleServer(serverConf);
     String expectMessage = "Fail to start stream server";
     final int expectStatus = 1;

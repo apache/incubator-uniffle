@@ -128,8 +128,7 @@ public class ShuffleServer {
     jettyServer.start();
     server.start();
     if (nettyServerEnabled) {
-      nettyPort = RssUtils.startServiceOnPort(streamServer,
-          Constants.NETTY_STREAM_SERVICE_NAME, nettyPort, shuffleServerConf);
+      nettyPort = streamServer.start();
     }
 
     Runtime.getRuntime().addShutdownHook(new Thread() {

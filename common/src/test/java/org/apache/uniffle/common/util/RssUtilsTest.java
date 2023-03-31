@@ -297,8 +297,9 @@ public class RssUtilsTest {
     ServerSocket serverSocket;
 
     @Override
-    public void start() throws IOException {
+    public int start() throws IOException {
       // not implement
+      return -1;
     }
 
     @Override

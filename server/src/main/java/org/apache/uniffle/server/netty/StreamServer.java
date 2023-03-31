@@ -37,7 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.rpc.ServerInterface;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ExitUtils;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.netty.decoder.StreamServerInitDecoder;
@@ -106,13 +108,15 @@ public class StreamServer implements ServerInterface {
   }
 
   @Override
-  public void start() throws IOException {
+  public int start() throws IOException {
     int port = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
     try {
-      startOnPort(port);
+      port = RssUtils.startServiceOnPort(this,
+          Constants.NETTY_STREAM_SERVICE_NAME, port, shuffleServerConf);
     } catch (Exception e) {
       ExitUtils.terminate(1, "Fail to start stream server", e, LOG);
     }
+    return port;
   }
 
   @Override

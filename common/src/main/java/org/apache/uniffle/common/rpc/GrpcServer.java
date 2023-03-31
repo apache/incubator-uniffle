@@ -154,13 +154,14 @@ public class GrpcServer implements ServerInterface {
     }
   }
 
-  public void start() throws IOException {
+  public int start() throws IOException {
     try {
       server.start();
     } catch (IOException e) {
       ExitUtils.terminate(1, "Fail to start grpc server", e, LOG);
     }
     LOG.info("Grpc server started, listening on {}.", port);
+    return port;
   }
 
   @Override

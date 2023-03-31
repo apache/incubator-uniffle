@@ -21,7 +21,7 @@ import java.io.IOException;
 
 public interface ServerInterface {
 
-  void start() throws IOException;
+  int start() throws IOException;
 
   void startOnPort(int port) throws Exception;
 
