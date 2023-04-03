@@ -65,6 +65,7 @@ public class ShuffleServerEnableStreamServerTest extends CoordinatorTestBase {
     ShuffleServer ss = new ShuffleServer(shuffleServerConf);
     ss.start();
     assertTrue(ss.getNettyPort() > actualPort && actualPort <= actualPort + maxRetries);
+    ss.stopServer();
   }
 
 }
