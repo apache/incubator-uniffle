@@ -148,7 +148,7 @@ public class RssUtilsTest {
       if (mockServer != null) {
         mockServer.stop();
       }
-      if(toStartSockServer != null){
+      if (toStartSockServer != null) {
         toStartSockServer.stop();
       }
     }
