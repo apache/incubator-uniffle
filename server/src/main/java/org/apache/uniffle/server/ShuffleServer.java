@@ -132,7 +132,6 @@ public class ShuffleServer {
     }
 
     if (nettyPort > 0) {
-      // when nettyPort is zero,actual netty port will be changed,but id can't be change.
       id = ip + "-" + grpcPort + "-" + nettyPort;
     } else {
       id = ip + "-" + grpcPort;
