@@ -117,7 +117,7 @@ public class QuotaManager {
 
   public boolean checkQuota(String user, String uuid) {
     Map<String, Long> appAndTimes = currentUserAndApp.computeIfAbsent(user, x -> JavaUtils.newConcurrentMap());
-    Integer defaultAppNum = defaultUserApps.getOrDefault(user, quotaAppNum);
+    Integer defaultAppNum = defaultUserApps.computeIfAbsent(user, x -> quotaAppNum);
     synchronized (this) {
       int currentAppNum = appAndTimes.size();
       if (currentAppNum >= defaultAppNum) {
