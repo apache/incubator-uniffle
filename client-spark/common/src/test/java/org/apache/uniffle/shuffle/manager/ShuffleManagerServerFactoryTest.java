@@ -35,7 +35,7 @@ public class ShuffleManagerServerFactoryTest {
     factory.getServer();
 
     // other types should raise an exception
-    conf.set(RssBaseConf.RPC_SERVER_TYPE, RPCServerType.GRPC_NETTY);
+    conf.set(RssBaseConf.RPC_SERVER_TYPE, RPCServerType.NETTY);
     factory = new ShuffleManagerServerFactory(null, conf);
     assertThrows(UnsupportedOperationException.class, factory::getServer);
   }

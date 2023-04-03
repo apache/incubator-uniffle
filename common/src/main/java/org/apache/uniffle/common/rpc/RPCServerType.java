@@ -19,5 +19,6 @@ package org.apache.uniffle.common.rpc;
 
 public enum RPCServerType {
   GRPC,
-  GRPC_NETTY
+  // netty is supposed to be supported in the near feature.
+  NETTY,
 }
