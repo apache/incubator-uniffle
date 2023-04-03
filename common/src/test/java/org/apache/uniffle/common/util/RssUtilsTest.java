@@ -105,7 +105,9 @@ public class RssUtilsTest {
       int actualPort = RssUtils.startServiceOnPort(mockServer, "MockServer", port, rssBaseConf);
       assertTrue(actualPort >= 30000 && actualPort < 39999 + rssBaseConf.get(RssBaseConf.SERVER_PORT_MAX_RETRIES));
     } finally {
-      mockServer.stop();
+      if (mockServer != null) {
+        mockServer.stop();
+      }
     }
     // error port test
     try {
@@ -122,7 +124,9 @@ public class RssUtilsTest {
       int actualPort = RssUtils.startServiceOnPort(mockServer, "MockServer", port, rssBaseConf);
       assertTrue(actualPort >= port && actualPort < port + rssBaseConf.get(RssBaseConf.SERVER_PORT_MAX_RETRIES));
     } finally {
-      mockServer.stop();
+      if (mockServer != null) {
+        mockServer.stop();
+      }
     }
 
     // bind exception
@@ -134,11 +138,19 @@ public class RssUtilsTest {
       rssBaseConf.set(RssBaseConf.SERVER_PORT_MAX_RETRIES, 10);
       int actualPort2 = RssUtils.startServiceOnPort(toStartSockServer, "MockServer", actualPort1, rssBaseConf);
       assertTrue(actualPort1 < actualPort2);
+      toStartSockServer.stop();
       rssBaseConf.set(RssBaseConf.SERVER_PORT_MAX_RETRIES, 0);
       RssUtils.startServiceOnPort(toStartSockServer, "MockServer", actualPort1, rssBaseConf);
       assertFalse(false);
     } catch (RuntimeException e) {
       assertTrue(e.getMessage().startsWith("Failed to start service"));
+    } finally {
+      if (mockServer != null) {
+        mockServer.stop();
+      }
+      if(toStartSockServer != null){
+        toStartSockServer.stop();
+      }
     }
 
   }
