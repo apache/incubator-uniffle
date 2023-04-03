@@ -155,7 +155,7 @@ public class GrpcServer implements ServerInterface {
     }
   }
 
-  public void start() throws IOException {
+  public int start() throws IOException {
     try {
       server.start();
       listenPort = server.getPort();
@@ -163,6 +163,13 @@ public class GrpcServer implements ServerInterface {
       ExitUtils.terminate(1, "Fail to start grpc server", e, LOG);
     }
     LOG.info("Grpc server started, configured port: {}, listening on {}.", port, listenPort);
+    return port;
+  }
+
+  @Override
+  public void startOnPort(int port) {
+    ExitUtils.terminate(1, "Fail to start grpc server",
+        new RuntimeException("GRpcServer not implement now"), LOG);
   }
 
   public void stop() throws InterruptedException {

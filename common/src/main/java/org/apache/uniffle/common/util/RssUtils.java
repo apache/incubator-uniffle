@@ -26,6 +26,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
+import java.net.BindException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InterfaceAddress;
@@ -39,11 +40,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.net.InetAddresses;
+import io.netty.channel.unix.Errors;
+import org.eclipse.jetty.util.MultiException;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +56,8 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.rpc.ServerInterface;
+
 
 public class RssUtils {
 
@@ -154,6 +160,60 @@ public class RssUtils {
       }
     }
     return siteLocalAddress;
+  }
+
+  public static int startServiceOnPort(ServerInterface service, String serviceName, int servicePort, RssBaseConf conf) {
+    if (servicePort < 0 || servicePort > 65535) {
+      throw new IllegalArgumentException(String.format("Bad service %s on port (%s)", serviceName, servicePort));
+    }
+    int actualPort = servicePort;
+    int maxRetries = conf.get(RssBaseConf.SERVER_PORT_MAX_RETRIES);
+    for (int i = 0; i < maxRetries; i++) {
+      try {
+        if (servicePort == 0) {
+          actualPort = findRandomTcpPort(conf);
+        } else {
+          actualPort += i;
+        }
+        service.startOnPort(actualPort);
+        return actualPort;
+      } catch (Exception e) {
+        if (isServerPortBindCollision(e)) {
+          LOGGER.warn(String.format("%s:Service %s failed after %s retries (on a random free port (%s))!",
+              e.getMessage(), serviceName, i + 1, actualPort));
+        } else {
+          throw new RssException(String.format("Failed to start service %s on port %s", serviceName, servicePort), e);
+        }
+      }
+    }
+    throw new RssException(String.format("Failed to start service %s on port %s", serviceName, servicePort));
+  }
+
+  /**
+   * check whether the exception is caused by an address-port collision when binding.
+   */
+  public static boolean isServerPortBindCollision(Throwable e) {
+    if (e instanceof BindException) {
+      if (e.getMessage() != null) {
+        return true;
+      }
+      return isServerPortBindCollision(e.getCause());
+    } else if (e instanceof MultiException) {
+      return !((MultiException) e).getThrowables().stream()
+          .noneMatch((Throwable throwable) -> isServerPortBindCollision(throwable));
+    } else if (e instanceof Errors.NativeIoException) {
+      return (e.getMessage() != null && e.getMessage().startsWith("bind() failed: "))
+              || isServerPortBindCollision(e.getCause());
+    } else {
+      return false;
+    }
+  }
+
+  public static int findRandomTcpPort(RssBaseConf baseConf) {
+    int portRangeMin = baseConf.getInteger(RssBaseConf.RSS_RANDOM_PORT_MIN);
+    int portRangeMax =  baseConf.getInteger(RssBaseConf.RSS_RANDOM_PORT_MAX);
+    int portRange = portRangeMax - portRangeMin;
+    return  portRangeMin + ThreadLocalRandom.current().nextInt(portRange + 1);
   }
 
   public static byte[] serializeBitMap(Roaring64NavigableMap bitmap) throws IOException {

@@ -17,9 +17,12 @@
 
 package org.apache.uniffle.common.util;
 
+import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import javax.net.ServerSocketFactory;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -37,6 +41,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.rpc.ServerInterface;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -86,6 +91,70 @@ public class RssUtilsTest {
       fail(e.getMessage());
     }
   }
+
+  @Test
+  public void testStartServiceOnPort() throws InterruptedException {
+    RssBaseConf rssBaseConf = new RssBaseConf();
+    rssBaseConf.set(RssBaseConf.SERVER_PORT_MAX_RETRIES, 100);
+    rssBaseConf.set(RssBaseConf.RSS_RANDOM_PORT_MIN, 30000);
+    rssBaseConf.set(RssBaseConf.RSS_RANDOM_PORT_MAX, 39999);
+    // zero port to get random port
+    MockServer mockServer = new MockServer();
+    int port = 0;
+    try {
+      int actualPort = RssUtils.startServiceOnPort(mockServer, "MockServer", port, rssBaseConf);
+      assertTrue(actualPort >= 30000 && actualPort < 39999 + rssBaseConf.get(RssBaseConf.SERVER_PORT_MAX_RETRIES));
+    } finally {
+      if (mockServer != null) {
+        mockServer.stop();
+      }
+    }
+    // error port test
+    try {
+      port = -1;
+      RssUtils.startServiceOnPort(mockServer, "MockServer", port, rssBaseConf);
+    } catch (RuntimeException e) {
+      assertTrue(e.toString().startsWith("java.lang.IllegalArgumentException: Bad service"));
+    }
+    // a specific port to start
+    try {
+      mockServer = new MockServer();
+      port = 10000;
+      rssBaseConf.set(RssBaseConf.SERVER_PORT_MAX_RETRIES, 100);
+      int actualPort = RssUtils.startServiceOnPort(mockServer, "MockServer", port, rssBaseConf);
+      assertTrue(actualPort >= port && actualPort < port + rssBaseConf.get(RssBaseConf.SERVER_PORT_MAX_RETRIES));
+    } finally {
+      if (mockServer != null) {
+        mockServer.stop();
+      }
+    }
+
+    // bind exception
+    MockServer toStartSockServer = new MockServer();
+    try {
+      mockServer = new MockServer();
+      port = 10000;
+      int actualPort1 = RssUtils.startServiceOnPort(mockServer, "MockServer", port, rssBaseConf);
+      rssBaseConf.set(RssBaseConf.SERVER_PORT_MAX_RETRIES, 10);
+      int actualPort2 = RssUtils.startServiceOnPort(toStartSockServer, "MockServer", actualPort1, rssBaseConf);
+      assertTrue(actualPort1 < actualPort2);
+      toStartSockServer.stop();
+      rssBaseConf.set(RssBaseConf.SERVER_PORT_MAX_RETRIES, 0);
+      RssUtils.startServiceOnPort(toStartSockServer, "MockServer", actualPort1, rssBaseConf);
+      assertFalse(false);
+    } catch (RuntimeException e) {
+      assertTrue(e.getMessage().startsWith("Failed to start service"));
+    } finally {
+      if (mockServer != null) {
+        mockServer.stop();
+      }
+      if (toStartSockServer != null) {
+        toStartSockServer.stop();
+      }
+    }
+
+  }
+
 
   @Test
   public void testSerializeBitmap() throws Exception {
@@ -232,6 +301,48 @@ public class RssUtilsTest {
 
     public String get() {
       return s;
+    }
+  }
+
+  public static class MockServer implements ServerInterface {
+
+    ServerSocket serverSocket;
+
+    @Override
+    public int start() throws IOException {
+      // not implement
+      return -1;
+    }
+
+    @Override
+    public void startOnPort(int port) throws IOException {
+      serverSocket = ServerSocketFactory.getDefault().createServerSocket(
+          port, 1, InetAddress.getByName("localhost"));
+      new Thread(() -> {
+        Socket accept;
+        try {
+          accept = serverSocket.accept();
+          accept.close();
+        } catch (IOException e) {
+          //e.printStackTrace();
+        }
+      }).start();
+    }
+
+    @Override
+    public void stop() throws InterruptedException {
+      if (serverSocket != null && !serverSocket.isClosed()) {
+        try {
+          serverSocket.close();
+        } catch (IOException e) {
+          //e.printStackTrace();
+        }
+      }
+    }
+
+    @Override
+    public void blockUntilShutdown() throws InterruptedException {
+      // not implement
     }
   }
 

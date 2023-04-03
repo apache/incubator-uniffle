@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server.netty;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -35,12 +36,15 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.rpc.ServerInterface;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ExitUtils;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.netty.decoder.StreamServerInitDecoder;
 
-public class StreamServer {
+public class StreamServer implements ServerInterface {
 
   private static final Logger LOG = LoggerFactory.getLogger(StreamServer.class);
 
@@ -103,7 +107,20 @@ public class StreamServer {
     return serverBootstrap;
   }
 
-  public void start() {
+  @Override
+  public int start() throws IOException {
+    int port = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
+    try {
+      port = RssUtils.startServiceOnPort(this,
+          Constants.NETTY_STREAM_SERVICE_NAME, port, shuffleServerConf);
+    } catch (Exception e) {
+      ExitUtils.terminate(1, "Fail to start stream server", e, LOG);
+    }
+    return port;
+  }
+
+  @Override
+  public void startOnPort(int port) throws Exception {
     Supplier<ChannelHandler[]> streamHandlers = () -> new ChannelHandler[]{
         new StreamServerInitDecoder()
     };
@@ -116,14 +133,13 @@ public class StreamServer {
 
     // Bind the ports and save the results so that the channels can be closed later.
     // If the second bind fails, the first one gets cleaned up in the shutdown.
-    int port = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
     try {
       channelFuture =  serverBootstrap.bind(port);
       channelFuture.syncUninterruptibly();
       LOG.info("bind localAddress is " + channelFuture.channel().localAddress());
       LOG.info("Start stream server successfully with port " + port);
     } catch (Exception e) {
-      ExitUtils.terminate(1, "Fail to start stream server", e, LOG);
+      throw e;
     }
   }
 
@@ -138,5 +154,10 @@ public class StreamServer {
       shuffleBossGroup = null;
       shuffleWorkerGroup = null;
     }
+  }
+
+  @Override
+  public void blockUntilShutdown() throws InterruptedException {
+
   }
 }
