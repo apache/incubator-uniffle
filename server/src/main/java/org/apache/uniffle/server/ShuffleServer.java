@@ -125,12 +125,20 @@ public class ShuffleServer {
   }
 
   public void start() throws Exception {
-    registerHeartBeat.startHeartBeat();
     jettyServer.start();
     server.start();
     if (nettyServerEnabled) {
       nettyPort = streamServer.start();
     }
+
+    if (nettyPort > 0) {
+      // when nettyPort is zero,actual netty port will be changed,but id can't be change.
+      id = ip + "-" + grpcPort + "-" + nettyPort;
+    } else {
+      id = ip + "-" + grpcPort;
+    }
+
+    registerHeartBeat.startHeartBeat();
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
@@ -195,12 +203,7 @@ public class ShuffleServer {
     }
     grpcPort = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
-    if (nettyPort >= 0) {
-      // when nettyPort is zero,actual netty port will be changed,but id can't be change.
-      id = ip + "-" + grpcPort + "-" + nettyPort;
-    } else {
-      id = ip + "-" + grpcPort;
-    }
+
     LOG.info("Start to initialize server {}", id);
     jettyServer = new JettyServer(shuffleServerConf);
     registerMetrics();
