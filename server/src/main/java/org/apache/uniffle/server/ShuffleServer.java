@@ -131,14 +131,15 @@ public class ShuffleServer {
       nettyPort = streamServer.start();
     }
 
-    if (nettyPort > 0) {
+    if (nettyServerEnabled) {
       id = ip + "-" + grpcPort + "-" + nettyPort;
     } else {
       id = ip + "-" + grpcPort;
     }
+    shuffleServerConf.setString(ShuffleServerConf.SHUFFLE_SERVER_ID, id);
+    LOG.info("Start to initialize server {}", id);
 
     registerHeartBeat.startHeartBeat();
-
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {
@@ -203,7 +204,6 @@ public class ShuffleServer {
     grpcPort = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
 
-    LOG.info("Start to initialize server {}", id);
     jettyServer = new JettyServer(shuffleServerConf);
     registerMetrics();
 
@@ -230,7 +230,7 @@ public class ShuffleServer {
     }
 
     registerHeartBeat = new RegisterHeartBeat(this);
-    shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, id, this, storageManager);
+    shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, this, storageManager);
     shuffleBufferManager = new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager);
     shuffleTaskManager = new ShuffleTaskManager(shuffleServerConf, shuffleFlushManager,
         shuffleBufferManager, storageManager);

@@ -31,6 +31,7 @@ import org.apache.uniffle.common.util.RssUtils;
 public class ShuffleServerConf extends RssBaseConf {
 
   public static final String PREFIX_HADOOP_CONF = "rss.server.hadoop";
+  public static final String SHUFFLE_SERVER_ID = "rss.server.id";
 
   public static final ConfigOption<Long> SERVER_BUFFER_CAPACITY = ConfigOptions
       .key("rss.server.buffer.capacity")
