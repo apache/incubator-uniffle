@@ -17,8 +17,10 @@
 
 package org.apache.uniffle.common.rpc;
 
-public enum RPCServerType {
+/**
+ * This should sync/match with how ClientType changes
+ */
+public enum ServerType {
   GRPC,
-  // netty is supposed to be supported in the near feature.
-  NETTY,
+  GRPC_NETTY,
 }

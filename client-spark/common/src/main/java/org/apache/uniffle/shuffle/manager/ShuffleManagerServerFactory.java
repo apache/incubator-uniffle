@@ -21,7 +21,7 @@ import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.rpc.GrpcServer;
-import org.apache.uniffle.common.rpc.RPCServerType;
+import org.apache.uniffle.common.rpc.ServerType;
 
 public class ShuffleManagerServerFactory {
   private final RssShuffleManagerInterface shuffleManager;
@@ -34,8 +34,8 @@ public class ShuffleManagerServerFactory {
   }
 
   public GrpcServer getServer() {
-    RPCServerType type = conf.get(RssBaseConf.RPC_SERVER_TYPE);
-    if (type == RPCServerType.GRPC) {
+    ServerType type = conf.get(RssBaseConf.RPC_SERVER_TYPE);
+    if (type == ServerType.GRPC) {
       return GrpcServer.Builder.newBuilder()
           .conf(conf)
           .grpcMetrics(GRPCMetrics.getEmptyGRPCMetrics())

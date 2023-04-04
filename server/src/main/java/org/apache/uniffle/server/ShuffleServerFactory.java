@@ -18,7 +18,7 @@
 package org.apache.uniffle.server;
 
 import org.apache.uniffle.common.rpc.GrpcServer;
-import org.apache.uniffle.common.rpc.RPCServerType;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.ServerInterface;
 
 public class ShuffleServerFactory {
@@ -32,8 +32,10 @@ public class ShuffleServerFactory {
   }
 
   public ServerInterface getServer() {
-    RPCServerType type = conf.get(ShuffleServerConf.RPC_SERVER_TYPE);
-    if (type == RPCServerType.GRPC) {
+    ServerType type = conf.get(ShuffleServerConf.RPC_SERVER_TYPE);
+    // supports both grpc and grpc_netty, so coordinator and shuffle server could have unified
+    // configuration
+    if (type == ServerType.GRPC || type == ServerType.GRPC_NETTY) {
       return GrpcServer.Builder.newBuilder()
           .conf(conf)
           .grpcMetrics(shuffleServer.getGrpcMetrics())

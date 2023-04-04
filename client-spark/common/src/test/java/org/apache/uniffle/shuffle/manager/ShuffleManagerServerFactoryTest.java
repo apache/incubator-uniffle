@@ -20,7 +20,7 @@ package org.apache.uniffle.shuffle.manager;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.config.RssBaseConf;
-import org.apache.uniffle.common.rpc.RPCServerType;
+import org.apache.uniffle.common.rpc.ServerType;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -29,13 +29,13 @@ public class ShuffleManagerServerFactoryTest {
   public void testShuffleManagerServerType() {
     // add code to generate tests that check the server type
     RssBaseConf conf = new RssBaseConf();
-    conf.set(RssBaseConf.RPC_SERVER_TYPE, RPCServerType.GRPC);
+    conf.set(RssBaseConf.RPC_SERVER_TYPE, ServerType.GRPC);
     ShuffleManagerServerFactory factory = new ShuffleManagerServerFactory(null, conf);
     // this should execute normally;
     factory.getServer();
 
     // other types should raise an exception
-    conf.set(RssBaseConf.RPC_SERVER_TYPE, RPCServerType.NETTY);
+    conf.set(RssBaseConf.RPC_SERVER_TYPE, ServerType.GRPC_NETTY);
     factory = new ShuffleManagerServerFactory(null, conf);
     assertThrows(UnsupportedOperationException.class, factory::getServer);
   }
