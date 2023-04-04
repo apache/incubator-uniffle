@@ -35,7 +35,7 @@ public class ShuffleServerConfTest {
   public void defaultConfTest() {
     ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
     assertFalse(shuffleServerConf.loadConfFromFile(null));
-    assertEquals("GRPC", shuffleServerConf.getString(ShuffleServerConf.RPC_SERVER_TYPE));
+    assertEquals("GRPC", shuffleServerConf.get(ShuffleServerConf.RPC_SERVER_TYPE).name());
     assertEquals(256, shuffleServerConf.getInteger(ShuffleServerConf.JETTY_CORE_POOL_SIZE));
     assertEquals(0, shuffleServerConf.getLong(ShuffleServerConf.SERVER_SHUFFLE_FLUSH_THRESHOLD));
   }
@@ -62,7 +62,7 @@ public class ShuffleServerConfTest {
     assertEquals(2, shuffleServerConf.getLong(ShuffleServerConf.SERVER_BUFFER_CAPACITY));
     assertEquals("value1", shuffleServerConf.getString("rss.server.hadoop.a.b", ""));
     assertEquals("", shuffleServerConf.getString("rss.server.had.a.b", ""));
-    assertEquals("GRPC", shuffleServerConf.getString(ShuffleServerConf.RPC_SERVER_TYPE));
+    assertEquals("GRPC", shuffleServerConf.get(ShuffleServerConf.RPC_SERVER_TYPE).name());
   }
 
   @Test

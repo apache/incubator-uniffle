@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.rpc.ServerInterface;
+import org.apache.uniffle.common.rpc.ServerType;
 
 public class MockedShuffleServerFactory extends ShuffleServerFactory {
   private static final Logger LOG = LoggerFactory.getLogger(MockedShuffleServerFactory.class);
@@ -33,8 +34,8 @@ public class MockedShuffleServerFactory extends ShuffleServerFactory {
   public ServerInterface getServer() {
     ShuffleServerConf conf = getConf();
     ShuffleServer shuffleServer = getShuffleServer();
-    String type = conf.getString(ShuffleServerConf.RPC_SERVER_TYPE);
-    if (type.equals(ServerType.GRPC.name())) {
+    ServerType type = conf.get(ShuffleServerConf.RPC_SERVER_TYPE);
+    if (type == ServerType.GRPC) {
       return new MockedGrpcServer(conf, new MockedShuffleServerGrpcService(shuffleServer),
         shuffleServer.getGrpcMetrics());
     } else {

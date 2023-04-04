@@ -19,6 +19,7 @@ package org.apache.uniffle.coordinator;
 
 import org.apache.uniffle.common.rpc.GrpcServer;
 import org.apache.uniffle.common.rpc.ServerInterface;
+import org.apache.uniffle.common.rpc.ServerType;
 
 public class CoordinatorFactory {
 
@@ -31,8 +32,11 @@ public class CoordinatorFactory {
   }
 
   public ServerInterface getServer() {
-    String type = conf.getString(CoordinatorConf.RPC_SERVER_TYPE);
-    if (type.equals(ServerType.GRPC.name())) {
+    ServerType type = conf.get(CoordinatorConf.RPC_SERVER_TYPE);
+    // Coordinator currently only has grpc support. However, we should support create grpc server
+    // even if the server type is GRPC_NETTY. Otherwise, we cannot use a unified configuration
+    // to start both coordinator and shuffle server
+    if (type == ServerType.GRPC || type == ServerType.GRPC_NETTY) {
       return GrpcServer.Builder.newBuilder()
           .conf(conf)
           .grpcMetrics(coordinatorServer.getGrpcMetrics())
@@ -40,9 +44,5 @@ public class CoordinatorFactory {
     } else {
       throw new UnsupportedOperationException("Unsupported server type " + type);
     }
-  }
-
-  enum ServerType {
-    GRPC
   }
 }

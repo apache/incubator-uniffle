@@ -33,7 +33,7 @@ public class CoordinatorConfTest {
 
     // test base conf
     assertEquals(9527, conf.getInteger(CoordinatorConf.RPC_SERVER_PORT));
-    assertEquals("testRpc", conf.getString(CoordinatorConf.RPC_SERVER_TYPE));
+    assertEquals("GRPC", conf.get(CoordinatorConf.RPC_SERVER_TYPE).name());
     assertEquals(9526, conf.getInteger(CoordinatorConf.JETTY_HTTP_PORT));
 
     // test coordinator specific conf
