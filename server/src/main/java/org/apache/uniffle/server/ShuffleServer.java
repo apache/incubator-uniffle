@@ -138,6 +138,7 @@ public class ShuffleServer {
     }
     shuffleServerConf.setString(ShuffleServerConf.SHUFFLE_SERVER_ID, id);
     LOG.info("Start to initialize server {}", id);
+    registerMetrics();
 
     registerHeartBeat.startHeartBeat();
     Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -205,7 +206,6 @@ public class ShuffleServer {
     nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
 
     jettyServer = new JettyServer(shuffleServerConf);
-    registerMetrics();
 
     SecurityConfig securityConfig = null;
     if (shuffleServerConf.getBoolean(RSS_SECURITY_HADOOP_KERBEROS_ENABLE)) {
