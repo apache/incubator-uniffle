@@ -304,6 +304,7 @@ public class ShuffleServer {
       metricReporter.addCollectorRegistry(JvmMetrics.getCollectorRegistry());
     }
   }
+
   /**
    * Await termination on the main thread since the grpc library uses daemon threads.
    */
