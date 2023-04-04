@@ -138,7 +138,7 @@ public class ShuffleServer {
     }
     shuffleServerConf.setString(ShuffleServerConf.SHUFFLE_SERVER_ID, id);
     LOG.info("Start to initialize server {}", id);
-    registerMetrics();
+    initMetricsReporter();
 
     registerHeartBeat.startHeartBeat();
     Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -206,6 +206,7 @@ public class ShuffleServer {
     nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
 
     jettyServer = new JettyServer(shuffleServerConf);
+    registerMetrics();
 
     SecurityConfig securityConfig = null;
     if (shuffleServerConf.getBoolean(RSS_SECURITY_HADOOP_KERBEROS_ENABLE)) {
@@ -293,7 +294,9 @@ public class ShuffleServer {
     jettyServer.addServlet(
         new CommonMetricsServlet(JvmMetrics.getCollectorRegistry(), true),
         "/prometheus/metrics/jvm");
+  }
 
+  private void initMetricsReporter() {
     metricReporter = MetricReporterFactory.getMetricReporter(shuffleServerConf, id);
     if (metricReporter != null) {
       metricReporter.addCollectorRegistry(ShuffleServerMetrics.getCollectorRegistry());
@@ -301,7 +304,6 @@ public class ShuffleServer {
       metricReporter.addCollectorRegistry(JvmMetrics.getCollectorRegistry());
     }
   }
-
   /**
    * Await termination on the main thread since the grpc library uses daemon threads.
    */
