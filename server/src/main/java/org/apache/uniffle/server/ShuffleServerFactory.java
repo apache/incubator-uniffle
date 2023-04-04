@@ -18,8 +18,8 @@
 package org.apache.uniffle.server;
 
 import org.apache.uniffle.common.rpc.GrpcServer;
-import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.ServerInterface;
+import org.apache.uniffle.common.rpc.ServerType;
 
 public class ShuffleServerFactory {
 

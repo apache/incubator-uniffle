@@ -20,8 +20,8 @@ package org.apache.uniffle.server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.ServerInterface;
+import org.apache.uniffle.common.rpc.ServerType;
 
 public class MockedShuffleServerFactory extends ShuffleServerFactory {
   private static final Logger LOG = LoggerFactory.getLogger(MockedShuffleServerFactory.class);
