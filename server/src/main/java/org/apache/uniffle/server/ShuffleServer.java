@@ -265,7 +265,7 @@ public class ShuffleServer {
     }
   }
 
-  private void registerMetrics() throws Exception {
+  private void registerMetrics() {
     LOG.info("Register metrics");
     CollectorRegistry shuffleServerCollectorRegistry = new CollectorRegistry(true);
     ShuffleServerMetrics.register(shuffleServerCollectorRegistry);
@@ -296,7 +296,7 @@ public class ShuffleServer {
         "/prometheus/metrics/jvm");
   }
 
-  private void initMetricsReporter() {
+  private void initMetricsReporter() throws Exception {
     metricReporter = MetricReporterFactory.getMetricReporter(shuffleServerConf, id);
     if (metricReporter != null) {
       metricReporter.addCollectorRegistry(ShuffleServerMetrics.getCollectorRegistry());
