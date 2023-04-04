@@ -59,7 +59,7 @@ func (i *inspector) validateDeletingShuffleServer(ar *admissionv1.AdmissionRevie
 		}
 		return util.AdmissionReviewFailed(ar, err)
 	}
-	// we can only delete shuffle server pods when rss is in upgrading phase.
+	// we can only delete shuffle server pods when rss is in upgrading phase or pod is in failed status.
 	if rss.Status.Phase != unifflev1alpha1.RSSUpgrading && rss.Status.Phase != unifflev1alpha1.RSSTerminating &&
 		pod.Status.Phase != corev1.PodFailed {
 		message := fmt.Sprintf("can not delete the shuffle server pod (%v) directly, status:(%v)",
