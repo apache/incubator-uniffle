@@ -137,7 +137,7 @@ public class ShuffleServer {
       id = ip + "-" + grpcPort;
     }
     shuffleServerConf.setString(ShuffleServerConf.SHUFFLE_SERVER_ID, id);
-    LOG.info("Start to initialize server {}", id);
+    LOG.info("Start to shuffle server with id {}", id);
     initMetricsReporter();
 
     registerHeartBeat.startHeartBeat();
