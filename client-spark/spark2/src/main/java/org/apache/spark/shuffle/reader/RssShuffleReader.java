@@ -194,14 +194,14 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         && rssConf.getInteger(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT, 0) > 0) {
       String driver = rssConf.getString("driver.host", "");
       int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
-      ShuffleFetchFailedWrapper wrapper = ShuffleFetchFailedWrapper.newWrapper()
-          .appId(appId)
-          .shuffleId(shuffleId)
-          .partitionId(startPartition)
-          .stageAttemptId(context.stageAttemptNumber())
-          .reportServerHost(driver)
-          .port(port);
-      resultIter = wrapper.wrap(resultIter);
+      resultIter = RssFetchFailedIterator.newBuilder()
+                       .appId(appId)
+                       .shuffleId(shuffleId)
+                       .partitionId(startPartition)
+                       .stageAttemptId(context.stageAttemptNumber())
+                       .reportServerHost(driver)
+                       .port(port)
+                       .build(resultIter);
     }
     return resultIter;
   }

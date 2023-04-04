@@ -27,11 +27,14 @@ import org.apache.spark.MapOutputTrackerMaster;
 import org.apache.spark.SparkEnv;
 import org.apache.spark.SparkException;
 import org.apache.spark.shuffle.RssSparkShuffleUtils;
+import org.apache.spark.shuffle.ShuffleManager;
 import org.apache.spark.shuffle.SparkVersionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class RssShuffleManagerBase implements RssShuffleManagerInterface {
+import org.apache.uniffle.common.exception.RssException;
+
+public abstract class RssShuffleManagerBase implements RssShuffleManagerInterface, ShuffleManager {
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleManagerBase.class);
   private AtomicBoolean isInitialized = new AtomicBoolean(false);
   private Method unregisterAllMapOutputMethod;
@@ -51,7 +54,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
       try {
         unregisterAllMapOutputMethod.invoke(tracker, shuffleId);
       } catch (InvocationTargetException | IllegalAccessException e) {
-        throw new SparkException("Invoke unregisterAllMapOutput method failed", e);
+        throw new RssException("Invoke unregisterAllMapOutput method failed", e);
       }
     } else {
       int numMaps = getNumMaps(shuffleId);
@@ -73,7 +76,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
           registerShuffle.invoke(tracker, shuffleId, numMaps);
         }
       } catch (InvocationTargetException | IllegalAccessException e) {
-        throw new SparkException("Invoke registerShuffle method failed", e);
+        throw new RssException("Invoke registerShuffle method failed", e);
       }
       tracker.incrementEpoch();
     } else {

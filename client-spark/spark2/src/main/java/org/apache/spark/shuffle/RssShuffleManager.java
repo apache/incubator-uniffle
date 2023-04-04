@@ -75,7 +75,7 @@ import org.apache.uniffle.shuffle.manager.ShuffleManagerServerFactory;
 
 import static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_PORT;
 
-public class RssShuffleManager extends RssShuffleManagerBase implements ShuffleManager {
+public class RssShuffleManager extends RssShuffleManagerBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleManager.class);
   private final long heartbeatInterval;

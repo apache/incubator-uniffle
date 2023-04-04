@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
@@ -231,7 +230,6 @@ public class RssSparkShuffleUtils {
     return sc.broadcast(handleInfo, SHUFFLE_HANDLER_INFO_CLASS_TAG);
   }
 
-  @SuppressFBWarnings("THROWS_METHOD_THROWS_RUNTIMEEXCEPTION")
   private static <T> T instantiateFetchFailedException(
       BlockManagerId dummy, int shuffleId, int mapIndex, int reduceId, Throwable cause) {
     String className = FetchFailedException.class.getName();
@@ -241,7 +239,7 @@ public class RssSparkShuffleUtils {
       klass = Class.forName(className);
     } catch (ClassNotFoundException e) {
       // ever happens;
-      throw new RuntimeException(e);
+      throw new RssException(e);
     }
     try {
       instance = (T) klass
@@ -256,7 +254,7 @@ public class RssSparkShuffleUtils {
             .newInstance(dummy, shuffleId, mapIndex, reduceId, cause);
       } catch (Exception ae) {
         LOG.error("Fail to new instance.", ae);
-        throw new RuntimeException(ae);
+        throw new RssException(ae);
       }
     }
     return instance;
