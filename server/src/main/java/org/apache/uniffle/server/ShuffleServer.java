@@ -125,16 +125,22 @@ public class ShuffleServer {
   }
 
   public void start() throws Exception {
-    registerHeartBeat.startHeartBeat();
     jettyServer.start();
     server.start();
-    if (metricReporter != null) {
-      metricReporter.start();
-    }
     if (nettyServerEnabled) {
       nettyPort = streamServer.start();
     }
 
+    if (nettyServerEnabled) {
+      id = ip + "-" + grpcPort + "-" + nettyPort;
+    } else {
+      id = ip + "-" + grpcPort;
+    }
+    shuffleServerConf.setString(ShuffleServerConf.SHUFFLE_SERVER_ID, id);
+    LOG.info("Start to shuffle server with id {}", id);
+    initMetricsReporter();
+
+    registerHeartBeat.startHeartBeat();
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {
@@ -198,13 +204,7 @@ public class ShuffleServer {
     }
     grpcPort = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
-    if (nettyPort >= 0) {
-      // when nettyPort is zero,actual netty port will be changed,but id can't be change.
-      id = ip + "-" + grpcPort + "-" + nettyPort;
-    } else {
-      id = ip + "-" + grpcPort;
-    }
-    LOG.info("Start to initialize server {}", id);
+
     jettyServer = new JettyServer(shuffleServerConf);
     registerMetrics();
 
@@ -231,7 +231,7 @@ public class ShuffleServer {
     }
 
     registerHeartBeat = new RegisterHeartBeat(this);
-    shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, id, this, storageManager);
+    shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, this, storageManager);
     shuffleBufferManager = new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager);
     shuffleTaskManager = new ShuffleTaskManager(shuffleServerConf, shuffleFlushManager,
         shuffleBufferManager, storageManager);
@@ -265,7 +265,7 @@ public class ShuffleServer {
     }
   }
 
-  private void registerMetrics() throws Exception {
+  private void registerMetrics() {
     LOG.info("Register metrics");
     CollectorRegistry shuffleServerCollectorRegistry = new CollectorRegistry(true);
     ShuffleServerMetrics.register(shuffleServerCollectorRegistry);
@@ -294,12 +294,15 @@ public class ShuffleServer {
     jettyServer.addServlet(
         new CommonMetricsServlet(JvmMetrics.getCollectorRegistry(), true),
         "/prometheus/metrics/jvm");
+  }
 
+  private void initMetricsReporter() throws Exception {
     metricReporter = MetricReporterFactory.getMetricReporter(shuffleServerConf, id);
     if (metricReporter != null) {
       metricReporter.addCollectorRegistry(ShuffleServerMetrics.getCollectorRegistry());
       metricReporter.addCollectorRegistry(grpcMetrics.getCollectorRegistry());
       metricReporter.addCollectorRegistry(JvmMetrics.getCollectorRegistry());
+      metricReporter.start();
     }
   }
 
