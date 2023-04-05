@@ -127,9 +127,6 @@ public class ShuffleServer {
   public void start() throws Exception {
     jettyServer.start();
     server.start();
-    if (metricReporter != null) {
-      metricReporter.start();
-    }
     if (nettyServerEnabled) {
       nettyPort = streamServer.start();
     }
@@ -305,6 +302,7 @@ public class ShuffleServer {
       metricReporter.addCollectorRegistry(ShuffleServerMetrics.getCollectorRegistry());
       metricReporter.addCollectorRegistry(grpcMetrics.getCollectorRegistry());
       metricReporter.addCollectorRegistry(JvmMetrics.getCollectorRegistry());
+      metricReporter.start();
     }
   }
 
