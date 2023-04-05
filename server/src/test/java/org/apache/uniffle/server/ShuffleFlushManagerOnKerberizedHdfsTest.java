@@ -111,7 +111,7 @@ public class ShuffleFlushManagerOnKerberizedHdfsTest extends KerberizedHdfsBase 
     storageManager.registerRemoteStorage(appId1, remoteStorage);
     storageManager.registerRemoteStorage(appId2, remoteStorage);
     ShuffleFlushManager manager =
-        new ShuffleFlushManager(shuffleServerConf, mockShuffleServer, storageManager);
+        new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", mockShuffleServer, storageManager);
     ShuffleDataFlushEvent event1 =
         createShuffleDataFlushEvent(appId1, 1, 0, 1, null);
     manager.addToFlushQueue(event1);

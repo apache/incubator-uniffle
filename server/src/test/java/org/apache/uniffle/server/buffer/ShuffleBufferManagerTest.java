@@ -391,7 +391,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
     StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(conf);
     ShuffleFlushManager shuffleFlushManager = new ShuffleFlushManager(conf,
-        mockShuffleServer, storageManager);
+        "serverId", mockShuffleServer, storageManager);
     shuffleBufferManager = new ShuffleBufferManager(conf, shuffleFlushManager);
 
     when(mockShuffleServer
@@ -464,7 +464,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
     StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(shuffleConf);
     ShuffleFlushManager shuffleFlushManager =
-        new ShuffleFlushManager(shuffleConf, mockShuffleServer, storageManager);
+        new ShuffleFlushManager(shuffleConf, "serverId", mockShuffleServer, storageManager);
     shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager);
     ShuffleTaskManager shuffleTaskManager =
         new ShuffleTaskManager(shuffleConf, shuffleFlushManager, shuffleBufferManager, storageManager);
@@ -528,7 +528,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
     StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(shuffleConf);
     ShuffleFlushManager shuffleFlushManager =
-            new ShuffleFlushManager(shuffleConf, mockShuffleServer, storageManager);
+            new ShuffleFlushManager(shuffleConf, "serverId", mockShuffleServer, storageManager);
     shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager);
 
     when(mockShuffleServer

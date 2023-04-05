@@ -56,6 +56,7 @@ public class ShuffleFlushManager {
   protected final BlockingQueue<ShuffleDataFlushEvent> flushQueue = Queues.newLinkedBlockingQueue();
   private final Executor threadPoolExecutor;
   private final List<String> storageBasePaths;
+  private final String shuffleServerId;
   private final String storageType;
   private final int storageDataReplica;
   private final ShuffleServerConf shuffleServerConf;
@@ -70,8 +71,9 @@ public class ShuffleFlushManager {
   private int processPendingEventIndex = 0;
   private final int maxConcurrencyOfSingleOnePartition;
 
-  public ShuffleFlushManager(ShuffleServerConf shuffleServerConf, ShuffleServer shuffleServer,
+  public ShuffleFlushManager(ShuffleServerConf shuffleServerConf, String shuffleServerId, ShuffleServer shuffleServer,
                              StorageManager storageManager) {
+    this.shuffleServerId = shuffleServerId;
     this.shuffleServer = shuffleServer;
     this.shuffleServerConf = shuffleServerConf;
     this.storageManager = storageManager;
@@ -217,7 +219,7 @@ public class ShuffleFlushManager {
             event.getStartPartition(),
             event.getEndPartition(),
             storageBasePaths.toArray(new String[storageBasePaths.size()]),
-            getShuffleServerId(),
+            shuffleServerId,
             hadoopConf,
             storageDataReplica,
             user,
@@ -257,11 +259,7 @@ public class ShuffleFlushManager {
       }
     }
   }
-
-  private String getShuffleServerId() {
-    return shuffleServerConf.getString(ShuffleServerConf.SHUFFLE_SERVER_ID, "shuffleServerId");
-  }
-
+  
   private void updateCommittedBlockIds(String appId, int shuffleId, List<ShufflePartitionedBlock> blocks) {
     if (blocks == null || blocks.size() == 0) {
       return;
