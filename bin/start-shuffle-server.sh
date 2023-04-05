@@ -73,6 +73,7 @@ JVM_ARGS=" -server \
           -Xmx${XMX_SIZE} \
           -Xms${XMX_SIZE} \
           ${MAX_DIRECT_MEMORY_OPTS} \
+          -XX:+IgnoreUnrecognizedVMOptions \
           -XX:+UseG1GC \
           -XX:MaxGCPauseMillis=200 \
           -XX:ParallelGCThreads=20 \
@@ -86,6 +87,7 @@ JVM_ARGS=" -server \
           -XX:+PrintGCDateStamps \
           -XX:+PrintGCTimeStamps \
           -XX:+PrintGCDetails \
+          -Xlog:gc:tags,time,uptime,level \
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 
 ARGS=""
