@@ -18,10 +18,12 @@
 package org.apache.uniffle.common.config;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 
@@ -598,6 +600,23 @@ public class RssConf implements Cloneable {
 
   private Optional<Object> getRawValueFromOption(ConfigOption<?> configOption) {
     return getRawValue(configOption.key());
+  }
+
+  public boolean loadConf(Map<String, String> properties, List<ConfigOption<Object>> configOptions) {
+    if (properties == null || configOptions == null) {
+      return false;
+    }
+    Map<String, ConfigOption<Object>> configOptionMap =
+        configOptions.stream().collect(Collectors.toMap(c -> c.key().toLowerCase(), c -> c));
+    properties.forEach((k, v) -> {
+      ConfigOption<Object> config = configOptionMap.get(k.toLowerCase());
+      if (config == null) {
+        setString(k, v);
+      } else {
+        set(config, ConfigUtils.convertValue(v, config.getClazz()));
+      }
+    });
+    return true;
   }
 
   @Override

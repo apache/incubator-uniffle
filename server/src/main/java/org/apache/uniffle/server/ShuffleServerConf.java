@@ -18,7 +18,6 @@
 package org.apache.uniffle.server;
 
 import java.util.List;
-import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 
@@ -26,7 +25,6 @@ import org.apache.uniffle.common.config.ConfigOption;
 import org.apache.uniffle.common.config.ConfigOptions;
 import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.config.RssBaseConf;
-import org.apache.uniffle.common.util.RssUtils;
 
 public class ShuffleServerConf extends RssBaseConf {
 
@@ -484,28 +482,6 @@ public class ShuffleServerConf extends RssBaseConf {
   }
 
   public boolean loadConfFromFile(String fileName) {
-    Map<String, String> properties = RssUtils.getPropertiesFromFile(fileName);
-
-    if (properties == null) {
-      return false;
-    }
-
-    loadCommonConf(properties);
-
-    List<ConfigOption<Object>> configOptions = ConfigUtils.getAllConfigOptions(ShuffleServerConf.class);
-
-    properties.forEach((k, v) -> {
-      configOptions.forEach(config -> {
-        if (config.key().equalsIgnoreCase(k)) {
-          set(config, ConfigUtils.convertValue(v, config.getClazz()));
-        }
-      });
-
-      if (k.startsWith(PREFIX_HADOOP_CONF)) {
-        setString(k, v);
-      }
-    });
-
-    return true;
+    return loadConfFromFile(fileName, ConfigUtils.getAllConfigOptions(ShuffleServerConf.class));
   }
 }

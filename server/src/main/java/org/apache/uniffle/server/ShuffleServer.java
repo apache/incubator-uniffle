@@ -128,6 +128,9 @@ public class ShuffleServer {
     registerHeartBeat.startHeartBeat();
     jettyServer.start();
     server.start();
+    if (metricReporter != null) {
+      metricReporter.start();
+    }
     if (nettyServerEnabled) {
       nettyPort = streamServer.start();
     }
