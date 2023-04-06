@@ -20,13 +20,14 @@ package inspector
 import (
 	"testing"
 
-	uniffleapi "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/api/uniffle/v1alpha1"
-	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/constants"
-	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/webhook/config"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
+	
+	uniffleapi "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/api/uniffle/v1alpha1"
+	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/constants"
+	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/webhook/config"
 )
 
 // TestDeletingShuffleServer tests delete shuffle server in rss-webhook.
