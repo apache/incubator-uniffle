@@ -238,12 +238,12 @@ public class RssBaseConf extends RssConf {
     if (properties == null) {
       return false;
     }
-    return loadCommonConf(properties) && loadConf(properties, configOptions);
+    return loadCommonConf(properties) && loadConf(properties, configOptions, true);
   }
 
   public boolean loadCommonConf(Map<String, String> properties) {
     List<ConfigOption<Object>> configOptions = ConfigUtils.getAllConfigOptions(RssBaseConf.class);
-    return loadConf(properties, configOptions);
+    return loadConf(properties, configOptions, false);
   }
 
 }
