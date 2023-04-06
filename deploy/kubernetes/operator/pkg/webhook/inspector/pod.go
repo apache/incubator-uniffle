@@ -60,8 +60,7 @@ func (i *inspector) validateDeletingShuffleServer(ar *admissionv1.AdmissionRevie
 		return util.AdmissionReviewFailed(ar, err)
 	}
 	// we can only delete shuffle server pods when rss is in upgrading phase or pod is in failed status.
-	if rss.Status.Phase != unifflev1alpha1.RSSUpgrading && rss.Status.Phase != unifflev1alpha1.RSSTerminating &&
-		pod.Status.Phase != corev1.PodFailed {
+	if !i.ifShuffleServerCanBeDeleted(rss, pod) {
 		message := fmt.Sprintf("can not delete the shuffle server pod (%v) directly, status:(%v)",
 			utils.UniqueName(pod), pod.Status.Phase)
 		klog.V(4).Info(message)
@@ -98,6 +97,14 @@ func (i *inspector) validateDeletingShuffleServer(ar *admissionv1.AdmissionRevie
 	}
 	message := "there are some apps still running in shuffle server: " + utils.GetShuffleServerNode(pod)
 	return util.AdmissionReviewForbidden(ar, message)
+}
+
+func (i *inspector) ifShuffleServerCanBeDeleted(rss *unifflev1alpha1.RemoteShuffleService, pod *corev1.Pod) bool {
+	if rss.Status.Phase != unifflev1alpha1.RSSUpgrading && rss.Status.Phase != unifflev1alpha1.RSSTerminating &&
+		pod.Status.Phase != corev1.PodFailed {
+		return false
+	}
+	return true
 }
 
 // updateTargetKeysAndExcludeNodes updates targetKeys field in status of rss and exclude nodes in
