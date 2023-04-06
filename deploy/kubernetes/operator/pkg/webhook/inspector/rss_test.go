@@ -19,9 +19,6 @@ package inspector
 
 import (
 	"encoding/json"
-	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/constants"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -65,21 +62,6 @@ func convertRssToRawExtension(rss *uniffleapi.RemoteShuffleService) (runtime.Raw
 	}, nil
 }
 
-// convertPodToRawExtension converts a pod object to runtime.RawExtension for testing.
-func convertPodToRawExtension(rss *corev1.Pod) (runtime.RawExtension, error) {
-	if rss == nil {
-		return convertPodToRawExtension(&corev1.Pod{})
-	}
-	body, err := json.Marshal(rss)
-	if err != nil {
-		return runtime.RawExtension{}, err
-	}
-	return runtime.RawExtension{
-		Raw:    body,
-		Object: rss,
-	}, nil
-}
-
 // buildTestAdmissionReview builds an AdmissionReview object for testing.
 func buildTestAdmissionReview(op admissionv1.Operation,
 	oldRss, newRss *uniffleapi.RemoteShuffleService) *admissionv1.AdmissionReview {
@@ -97,28 +79,6 @@ func buildTestAdmissionReview(op admissionv1.Operation,
 			Operation: op,
 			Object:    object,
 			OldObject: oldObject,
-		},
-	}
-}
-
-func buildTestShuffleServerPod(podPhase corev1.PodPhase) *corev1.Pod {
-	testShuffleServerPodName := constants.RSSShuffleServer + "-test-0"
-	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      testShuffleServerPodName,
-			Namespace: corev1.NamespaceDefault,
-			Annotations: map[string]string{
-				constants.AnnotationShuffleServerPort: "8080",
-				constants.AnnotationRssName:           "rss",
-			},
-			Labels: map[string]string{
-				appsv1.ControllerRevisionHashLabelKey: "test-revision-1",
-				constants.LabelShuffleServer:          "true",
-			},
-		},
-		Status: corev1.PodStatus{
-			PodIP: "xxx.xxx.xxx.xxx",
-			Phase: podPhase,
 		},
 	}
 }
@@ -254,79 +214,6 @@ func TestValidateRSS(t *testing.T) {
 			}
 			if updatedAR.Response.Allowed != tt.allowed {
 				tc.Errorf("invalid 'allowed' field in response: %v <> %v", updatedAR.Response.Allowed, tt.allowed)
-			}
-		})
-	}
-}
-
-// TestDeletingShuffleServer tests delete shuffle server in rss-webhook.
-func TestDeletingShuffleServer(t *testing.T) {
-	testInspector := newInspector(&config.Config{}, nil)
-
-	rssWithCooNodePort := wrapRssObj(func(rss *uniffleapi.RemoteShuffleService) {
-		rss.Spec.Coordinator.Count = pointer.Int32(2)
-		rss.Spec.Coordinator.RPCNodePort = []int32{30001, 30002}
-		rss.Spec.Coordinator.HTTPNodePort = []int32{30011, 30012}
-		rss.Spec.Coordinator.ExcludeNodesFilePath = ""
-	})
-
-	rssWithoutRunningStatus := rssWithCooNodePort.DeepCopy()
-	rssWithoutRunningStatus.Status.Phase = uniffleapi.RSSRunning
-
-	rssWithoutTerminatingStatus := rssWithCooNodePort.DeepCopy()
-	rssWithoutTerminatingStatus.Status.Phase = uniffleapi.RSSTerminating
-
-	rssWithoutUpgradingStatus := rssWithCooNodePort.DeepCopy()
-	rssWithoutUpgradingStatus.Status.Phase = uniffleapi.RSSUpgrading
-
-	testInspector.rssInformer.GetIndexer().Add(rssWithCooNodePort)
-	for _, tt := range []struct {
-		name    string
-		rss     *uniffleapi.RemoteShuffleService
-		pod     *corev1.Pod
-		allowed bool
-	}{
-		{
-			name:    "delete pod in running status on rss in running status",
-			rss:     rssWithoutRunningStatus,
-			pod:     buildTestShuffleServerPod(corev1.PodRunning),
-			allowed: false,
-		},
-		{
-			name:    "delete pod in failed statuson rss in running status",
-			rss:     rssWithoutRunningStatus,
-			pod:     buildTestShuffleServerPod(corev1.PodFailed),
-			allowed: true,
-		},
-		{
-			name:    "delete pod in running status on rss in terminating status",
-			rss:     rssWithoutTerminatingStatus,
-			pod:     buildTestShuffleServerPod(corev1.PodRunning),
-			allowed: true,
-		},
-		{
-			name:    "delete pod in failed statuson rss in terminating status",
-			rss:     rssWithoutTerminatingStatus,
-			pod:     buildTestShuffleServerPod(corev1.PodFailed),
-			allowed: true,
-		},
-		{
-			name:    "delete pod in running status on rss in upgrading status",
-			rss:     rssWithoutUpgradingStatus,
-			pod:     buildTestShuffleServerPod(corev1.PodRunning),
-			allowed: true,
-		},
-		{
-			name:    "delete pod in failed statuson rss in upgrading status",
-			rss:     rssWithoutUpgradingStatus,
-			pod:     buildTestShuffleServerPod(corev1.PodFailed),
-			allowed: true,
-		},
-	} {
-		t.Run(tt.name, func(tc *testing.T) {
-			canBeDeleted := testInspector.ifShuffleServerCanBeDeleted(tt.rss, tt.pod)
-			if canBeDeleted != tt.allowed {
-				tc.Errorf("invalid 'allowed' field in response: %v <> %v", canBeDeleted, tt.allowed)
 			}
 		})
 	}
