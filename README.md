@@ -67,7 +67,7 @@ The shuffle data is stored with index file and data file. Data file has all bloc
 ## Supported Spark Version
 Currently supports Spark 2.3.x, Spark 2.4.x, Spark 3.0.x, Spark 3.1.x, Spark 3.2.x, Spark 3.3.x
 
-Note: To support dynamic allocation, the patch(which is included in client-spark/patch folder) should be applied to Spark
+Note: To support dynamic allocation, the patch(which is included in patch/spark folder) should be applied to Spark
 
 ## Supported MapReduce Version
 Currently supports the MapReduce framework of Hadoop 2.8.5
@@ -212,7 +212,7 @@ rss-xxx.tgz will be generated for deployment
 ### Support Spark dynamic allocation
 
 To support spark dynamic allocation with Uniffle, spark code should be updated.
-There are 3 patches for spark (2.4.6/3.1.2/3.2.1) in spark-patches folder for reference.
+There are 3 patches for spark (2.4.6/3.1.2/3.2.1) in patch/spark folder for reference.
 
 After apply the patch and rebuild spark, add following configuration in spark conf to enable dynamic allocation:
   ```
