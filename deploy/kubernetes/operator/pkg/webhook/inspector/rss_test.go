@@ -101,27 +101,6 @@ func buildTestAdmissionReview(op admissionv1.Operation,
 	}
 }
 
-// buildPodTestAdmissionReview builds an AdmissionReview object for pod testing.
-func buildPodTestAdmissionReview(op admissionv1.Operation,
-	oldPod, newPod *corev1.Pod) *admissionv1.AdmissionReview {
-	oldObject, err := convertPodToRawExtension(oldPod)
-	if err != nil {
-		panic(err)
-	}
-	var object runtime.RawExtension
-	object, err = convertPodToRawExtension(newPod)
-	if err != nil {
-		panic(err)
-	}
-	return &admissionv1.AdmissionReview{
-		Request: &admissionv1.AdmissionRequest{
-			Operation: op,
-			Object:    object,
-			OldObject: oldObject,
-		},
-	}
-}
-
 func buildTestShuffleServerPod(podPhase corev1.PodPhase) *corev1.Pod {
 	testShuffleServerPodName := constants.RSSShuffleServer + "-test-0"
 	return &corev1.Pod{
