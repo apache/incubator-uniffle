@@ -56,7 +56,6 @@ echo "class path is $CLASSPATH"
 JVM_ARGS=" -server \
           -Xmx${XMX_SIZE:-8g} \
           -Xms${XMX_SIZE:-8g} \
-          -XX:+IgnoreUnrecognizedVMOptions \
           -XX:+UseG1GC \
           -XX:MaxGCPauseMillis=200 \
           -XX:ParallelGCThreads=20 \
@@ -67,8 +66,10 @@ JVM_ARGS=" -server \
           -XX:+PrintGCDateStamps \
           -XX:+PrintGCTimeStamps \
           -XX:+PrintGCDetails \
-          -Xlog:gc:tags,time,uptime,level \
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
+
+JAVA11_EXTRA_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
+          -Xlog:gc:tags,time,uptime,level"
 
 ARGS=""
 
@@ -79,7 +80,7 @@ else
   exit 1
 fi
 
-$RUNNER $ARGS $JVM_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$COORDINATOR_CONF_FILE" $@ &> $OUT_PATH &
+$RUNNER $ARGS $JVM_ARGS $JAVA11_EXTRA_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$COORDINATOR_CONF_FILE" $@ &> $OUT_PATH &
 
 get_pid_file_name coordinator
 echo $! >${RSS_PID_DIR}/${pid_file}
