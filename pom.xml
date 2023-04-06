@@ -1577,6 +1577,13 @@
           </dependency>
           <dependency>
             <groupId>org.apache.uniffle</groupId>
+            <artifactId>shuffle-server</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
             <artifactId>rss-integration-spark-common-test</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
