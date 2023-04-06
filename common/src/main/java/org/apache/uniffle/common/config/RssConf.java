@@ -606,13 +606,13 @@ public class RssConf implements Cloneable {
    * loadConf
    * @param properties all config items in configration file
    * @param configOptions the config items defined in base config class
-   * @param includeMissKey if include the keys which not defined in base config class
+   * @param includeMissingKey if include the keys which not defined in base config class
    * @return true if load successfully, otherwise false
    */
   public boolean loadConf(
       Map<String, String> properties,
       List<ConfigOption<Object>> configOptions,
-      boolean includeMissKey) {
+      boolean includeMissingKey) {
     if (properties == null || configOptions == null) {
       return false;
     }
@@ -622,7 +622,7 @@ public class RssConf implements Cloneable {
       ConfigOption<Object> config = configOptionMap.get(k.toLowerCase());
       if (config == null) {
         // if the key is not defined in configOptions, set it as a string value
-        if (includeMissKey) {
+        if (includeMissingKey) {
           setString(k, v);
         }
       } else {
