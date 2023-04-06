@@ -24,7 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
-	
+
 	uniffleapi "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/api/uniffle/v1alpha1"
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/constants"
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/webhook/config"
