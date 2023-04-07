@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.common.util.RssUtils;
 
 public class RssBaseConf extends RssConf {
 
@@ -212,21 +213,35 @@ public class RssBaseConf extends RssConf {
       .defaultValue(5L)
       .withDescription("Reconfigure check interval.");
 
-  public boolean loadCommonConf(Map<String, String> properties) {
-    if (properties == null) {
+  public static final ConfigOption<Integer> RSS_RANDOM_PORT_MIN = ConfigOptions
+      .key("rss.random.port.min")
+      .intType()
+      .defaultValue(40000)
+      .withDescription("Min value for random for range");
+
+  public static final ConfigOption<Integer> RSS_RANDOM_PORT_MAX = ConfigOptions
+      .key("rss.random.port.max")
+      .intType()
+      .defaultValue(65535)
+      .withDescription("Max value for random for range");
+
+  public static final ConfigOption<Integer> SERVER_PORT_MAX_RETRIES = ConfigOptions
+      .key("rss.port.max.retry")
+      .intType()
+      .defaultValue(16)
+      .withDescription("start server service max retry");
+      
+  public boolean loadConfFromFile(String fileName, List<ConfigOption<Object>> configOptions) {
+    Map<String, String> properties = RssUtils.getPropertiesFromFile(fileName);
+   if (properties == null) {
       return false;
     }
+    return loadCommonConf(properties) && loadConf(properties, configOptions, true);
+  }
 
+  public boolean loadCommonConf(Map<String, String> properties) {
     List<ConfigOption<Object>> configOptions = ConfigUtils.getAllConfigOptions(RssBaseConf.class);
-    properties.forEach((k, v) -> {
-      configOptions.forEach(config -> {
-        if (config.key().equalsIgnoreCase(k)) {
-          set(config, ConfigUtils.convertValue(v, config.getClazz()));
-        }
-      });
-    });
-
-    return true;
+    return loadConf(properties, configOptions, false);
   }
 
 }
