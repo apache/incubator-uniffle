@@ -88,6 +88,9 @@ JVM_ARGS=" -server \
           -XX:+PrintGCDetails \
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 
+JAVA11_EXTRA_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
+          -Xlog:gc:tags,time,uptime,level"
+
 ARGS=""
 
 if [ -f ${LOG_CONF_FILE} ]; then
@@ -97,7 +100,7 @@ else
   exit 1
 fi
 
-$RUNNER $ARGS $JVM_ARGS $JAVA_LIB_PATH -cp $CLASSPATH $MAIN_CLASS --conf "$SHUFFLE_SERVER_CONF_FILE" $@ &> $OUT_PATH &
+$RUNNER $ARGS $JVM_ARGS $JAVA11_EXTRA_ARGS $JAVA_LIB_PATH -cp $CLASSPATH $MAIN_CLASS --conf "$SHUFFLE_SERVER_CONF_FILE" $@ &> $OUT_PATH &
 
 get_pid_file_name shuffle-server
 echo $! >${RSS_PID_DIR}/${pid_file}
