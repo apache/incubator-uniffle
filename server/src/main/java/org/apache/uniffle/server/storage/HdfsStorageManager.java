@@ -131,8 +131,6 @@ public class HdfsStorageManager extends SingleStorageManager {
         }
       }
       HdfsStorage hdfsStorage = new HdfsStorage(remoteStorage, remoteStorageHadoopConf);
-      String storageHost = hdfsStorage.getStorageHost();
-      ShuffleServerMetrics.addDynamicCounterForRemoteStorage(storageHost);
       return hdfsStorage;
     });
     appIdToStorages.computeIfAbsent(appId, key -> pathToStorages.get(remoteStorage));

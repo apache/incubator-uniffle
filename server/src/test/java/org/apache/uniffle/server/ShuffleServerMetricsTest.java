@@ -37,6 +37,7 @@ import org.apache.uniffle.common.metrics.TestUtils;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -85,32 +86,32 @@ public class ShuffleServerMetricsTest {
 
   @Test
   public void testServerMetrics() throws Exception {
+    ShuffleServerMetrics.counterRemoteStorageFailedWrite.labels(STORAGE_HOST).inc(0);
+    ShuffleServerMetrics.counterRemoteStorageSuccessWrite.labels(STORAGE_HOST).inc(0);
+    ShuffleServerMetrics.counterRemoteStorageTotalWrite.labels(STORAGE_HOST).inc(0);
+    ShuffleServerMetrics.counterRemoteStorageRetryWrite.labels(STORAGE_HOST).inc(0);
     String content = TestUtils.httpGet(SERVER_METRICS_URL);
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
     JsonNode metricsNode = actualObj.get("metrics");
-
     List<String> expectedMetricNames = Lists.newArrayList(
-        ShuffleServerMetrics.STORAGE_TOTAL_WRITE_REMOTE_PREFIX + STORAGE_HOST,
-        ShuffleServerMetrics.STORAGE_SUCCESS_WRITE_REMOTE_PREFIX + STORAGE_HOST,
-        ShuffleServerMetrics.STORAGE_FAILED_WRITE_REMOTE_PREFIX + STORAGE_HOST,
-        ShuffleServerMetrics.STORAGE_RETRY_WRITE_REMOTE_PREFIX + STORAGE_HOST);
+        ShuffleServerMetrics.STORAGE_TOTAL_WRITE_REMOTE,
+        ShuffleServerMetrics.STORAGE_SUCCESS_WRITE_REMOTE,
+        ShuffleServerMetrics.STORAGE_FAILED_WRITE_REMOTE,
+        ShuffleServerMetrics.STORAGE_RETRY_WRITE_REMOTE);
     for (String expectMetricName : expectedMetricNames) {
-      validateMetrics(metricsNode, expectMetricName);
+      validateMetrics(mapper, metricsNode, expectMetricName, STORAGE_HOST);
     }
-
-    // for duplicate register, IllegalArgumentException shouldn't be thrown
-    String hostName = "duplicateHost";
-    ShuffleServerMetrics.addDynamicCounterForRemoteStorage(hostName);
-    ShuffleServerMetrics.addDynamicCounterForRemoteStorage(hostName);
   }
 
-  private void validateMetrics(JsonNode metricsNode, String expectedMetricName) {
+  private void validateMetrics(ObjectMapper mapper, JsonNode metricsNode, String expectedMetricName, String... labels) {
     boolean bingo = false;
     for (int i = 0; i < metricsNode.size(); i++) {
       JsonNode metricsName = metricsNode.get(i).get("name");
       if (expectedMetricName.equals(metricsName.textValue())) {
+        List<String> labelValues = mapper.convertValue(metricsNode.get(i).get("labelValues"), ArrayList.class);
+        assertArrayEquals(labels, labelValues.toArray(new String[0]));
         bingo = true;
         break;
       }
@@ -133,14 +134,14 @@ public class ShuffleServerMetricsTest {
 
     // test for remote storage
     ShuffleServerMetrics.incStorageRetryCounter(STORAGE_HOST);
-    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.get(STORAGE_HOST).get(), 0.5);
-    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageRetryWrite.get(STORAGE_HOST).get(), 0.5);
+    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.labels(STORAGE_HOST).get(), 0.5);
+    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageRetryWrite.labels(STORAGE_HOST).get(), 0.5);
     ShuffleServerMetrics.incStorageSuccessCounter(STORAGE_HOST);
-    assertEquals(2.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.get(STORAGE_HOST).get(), 0.5);
-    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageSuccessWrite.get(STORAGE_HOST).get(), 0.5);
+    assertEquals(2.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.labels(STORAGE_HOST).get(), 0.5);
+    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageSuccessWrite.labels(STORAGE_HOST).get(), 0.5);
     ShuffleServerMetrics.incStorageFailedCounter(STORAGE_HOST);
-    assertEquals(3.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.get(STORAGE_HOST).get(), 0.5);
-    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageFailedWrite.get(STORAGE_HOST).get(), 0.5);
+    assertEquals(3.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.labels(STORAGE_HOST).get(), 0.5);
+    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageFailedWrite.labels(STORAGE_HOST).get(), 0.5);
   }
 
   @Test
