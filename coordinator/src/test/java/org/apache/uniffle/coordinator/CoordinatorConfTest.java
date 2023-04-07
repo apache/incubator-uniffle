@@ -46,6 +46,8 @@ public class CoordinatorConfTest {
     assertEquals(256, conf.getInteger(CoordinatorConf.JETTY_CORE_POOL_SIZE));
     assertEquals(60 * 1000, conf.getLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL));
 
+    // test custom keys defined in plugins
+    assertEquals("v1", conf.getString("plugin.custom.key", null));
   }
 
 }

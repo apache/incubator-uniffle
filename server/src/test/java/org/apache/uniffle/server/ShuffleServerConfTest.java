@@ -61,8 +61,10 @@ public class ShuffleServerConfTest {
     assertFalse(shuffleServerConf.loadConfFromFile("/var/tmp/null"));
     assertEquals(2, shuffleServerConf.getLong(ShuffleServerConf.SERVER_BUFFER_CAPACITY));
     assertEquals("value1", shuffleServerConf.getString("rss.server.hadoop.a.b", ""));
-    assertEquals("", shuffleServerConf.getString("rss.server.had.a.b", ""));
+    assertEquals("value2", shuffleServerConf.getString("rss.server.had.a.b", ""));
     assertEquals("GRPC", shuffleServerConf.get(ShuffleServerConf.RPC_SERVER_TYPE).name());
+    assertEquals("v1", shuffleServerConf.getString("plugin.custom.key", null));
+
   }
 
   @Test
