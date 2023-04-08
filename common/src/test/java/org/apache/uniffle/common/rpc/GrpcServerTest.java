@@ -71,7 +71,7 @@ public class GrpcServerTest {
       });
     }
 
-    Thread.sleep(150);
+    Thread.sleep(120);
     double activeThreads = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY).get();
     assertEquals(2, activeThreads);
     double queueSize = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY).get();
