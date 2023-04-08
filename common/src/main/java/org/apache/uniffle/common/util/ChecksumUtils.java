@@ -40,14 +40,19 @@ public class ChecksumUtils {
     return crc32.getValue();
   }
 
-  // you may need to flip at first
   public static long getCrc32(ByteBuffer byteBuffer) {
-    if (byteBuffer.hasArray()) {
-      return getCrc32(byteBuffer.array(), byteBuffer.arrayOffset() + byteBuffer.position(), byteBuffer.remaining());
-    } else {
-      byte[] byteArray = new byte[byteBuffer.remaining()];
-      byteBuffer.get(byteArray);
-      return getCrc32(byteArray);
+    return getCrc32(byteBuffer, byteBuffer.position(), byteBuffer.limit() - byteBuffer.position());
+  }
+
+  public static long getCrc32(ByteBuffer byteBuffer, int offset, int length) {
+    CRC32 crc32 = new CRC32();
+    byteBuffer.position(offset);
+    for (int i = 0; i < length; ) {
+      int len = Math.min(LENGTH_PER_CRC, length -i);
+      byteBuffer.limit(byteBuffer.position() + len);
+      crc32.update(byteBuffer);
+      i += len;
     }
+    return crc32.getValue();
   }
 }
