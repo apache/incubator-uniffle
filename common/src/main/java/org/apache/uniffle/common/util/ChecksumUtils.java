@@ -48,7 +48,7 @@ public class ChecksumUtils {
     CRC32 crc32 = new CRC32();
     byteBuffer.position(offset);
     for (int i = 0; i < length; ) {
-      int len = Math.min(LENGTH_PER_CRC, length -i);
+      int len = Math.min(LENGTH_PER_CRC, length - i);
       byteBuffer.limit(byteBuffer.position() + len);
       crc32.update(byteBuffer);
       i += len;
