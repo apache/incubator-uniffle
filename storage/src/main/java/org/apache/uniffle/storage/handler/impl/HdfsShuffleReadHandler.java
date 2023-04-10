@@ -115,7 +115,7 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       return null;
     }
 
-    ShuffleDataResult shuffleDataResult = new ShuffleDataResult(data, shuffleDataSegment.getBufferSegments());
+    ShuffleDataResult shuffleDataResult = new ShuffleDataResult(shuffleDataSegment.getBufferSegments(), data);
     if (shuffleDataResult.isEmpty()) {
       LOG.warn("Shuffle data is empty, expected length {}, data length {}, segment {} in file {}.data",
           expectedLength, length, shuffleDataSegment, filePrefix);

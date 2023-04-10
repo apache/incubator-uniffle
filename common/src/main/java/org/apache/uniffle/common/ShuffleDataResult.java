@@ -35,17 +35,17 @@ public class ShuffleDataResult {
     this(data, Lists.newArrayList());
   }
 
-  public ShuffleDataResult(ByteBuffer data, List<BufferSegment> bufferSegments) {
+  public ShuffleDataResult(List<BufferSegment> bufferSegments, ByteBuffer data) {
     this.data = data;
     this.bufferSegments = bufferSegments;
   }
 
   public ShuffleDataResult(byte[] data, List<BufferSegment> bufferSegments) {
-    this(data != null ? ByteBuffer.wrap(data) : null, bufferSegments);
+    this(bufferSegments, data != null ? ByteBuffer.wrap(data) : null);
   }
 
   public byte[] getData() {
-    return (data == null || data.isDirect()) ? null : data.array();
+    return data == null ? null : data.array();
   }
 
   public ByteBuffer getDataBuffer() {
