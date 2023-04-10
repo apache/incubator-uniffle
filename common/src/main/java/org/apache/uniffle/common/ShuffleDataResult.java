@@ -45,7 +45,16 @@ public class ShuffleDataResult {
   }
 
   public byte[] getData() {
-    return data == null ? null : data.array();
+    if (data == null) {
+      return null;
+    }
+    if (data.hasArray()) {
+      return data.array();
+    } else {
+      byte[] byteArray = new byte[data.remaining()];
+      data.get(byteArray);
+      return byteArray;
+    }
   }
 
   public ByteBuffer getDataBuffer() {
