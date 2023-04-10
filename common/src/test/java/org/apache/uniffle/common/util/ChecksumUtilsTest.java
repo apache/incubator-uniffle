@@ -97,11 +97,15 @@ public class ChecksumUtilsTest {
     Random random = new Random();
     random.nextBytes(data);
     long expectCrc = ChecksumUtils.getCrc32(data);
+    ByteBuffer originBuffer = ByteBuffer.allocateDirect(length);
+    originBuffer.put(data);
+    originBuffer.flip();
     assertEquals(expectCrc, ChecksumUtils.getCrc32(ByteBuffer.wrap(data)));
     ByteBuffer directBuffer = ByteBuffer.allocateDirect(length);
     directBuffer.put(data);
     directBuffer.flip();
     assertEquals(expectCrc, ChecksumUtils.getCrc32(directBuffer));
+    assertEquals(originBuffer, directBuffer);
     int offset = random.nextInt(15);
     ByteBuffer directOffsetBuffer = ByteBuffer.allocateDirect(length + offset);
     byte[] dataOffset = new byte[offset];
