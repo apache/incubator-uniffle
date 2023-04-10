@@ -36,7 +36,7 @@ public class ShuffleDataResult {
   }
 
   public ShuffleDataResult(byte[] data, List<BufferSegment> bufferSegments) {
-    this.data = ByteBuffer.wrap(data);
+    this.data = data != null ? ByteBuffer.wrap(data) : null;
     this.bufferSegments = bufferSegments;
   }
 
