@@ -76,7 +76,6 @@ public class ChecksumUtilsTest {
     buffer.flip();
     long expectedChecksum = ChecksumUtils.getCrc32(data);
     assertEquals(expectedChecksum, ChecksumUtils.getCrc32(buffer));
-    assertEquals(length, buffer.position());
 
     // test heap ByteBuffer
     path = Paths.get(file.getAbsolutePath());
@@ -88,5 +87,30 @@ public class ChecksumUtilsTest {
     buffer.flip();
     assertEquals(expectedChecksum, ChecksumUtils.getCrc32(buffer));
 
+  }
+
+  @Test
+  public void crc32ByteBufferTest() throws Exception {
+    int length = 32 * 1024 * 1024;
+    byte[] data = new byte[length];
+    Random random = new Random();
+    random.nextBytes(data);
+    long expectCrc = ChecksumUtils.getCrc32(data);
+    ByteBuffer originBuffer = ByteBuffer.allocateDirect(length);
+    originBuffer.put(data);
+    originBuffer.flip();
+    assertEquals(expectCrc, ChecksumUtils.getCrc32(ByteBuffer.wrap(data)));
+    ByteBuffer directBuffer = ByteBuffer.allocateDirect(length);
+    directBuffer.put(data);
+    directBuffer.flip();
+    assertEquals(expectCrc, ChecksumUtils.getCrc32(directBuffer));
+    assertEquals(originBuffer, directBuffer);
+    int offset = random.nextInt(15);
+    ByteBuffer directOffsetBuffer = ByteBuffer.allocateDirect(length + offset);
+    byte[] dataOffset = new byte[offset];
+    random.nextBytes(dataOffset);
+    directOffsetBuffer.put(dataOffset);
+    directOffsetBuffer.put(data);
+    assertEquals(expectCrc, ChecksumUtils.getCrc32(directOffsetBuffer, offset, length));
   }
 }

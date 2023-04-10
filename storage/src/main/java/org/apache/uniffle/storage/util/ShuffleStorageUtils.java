@@ -56,15 +56,6 @@ public class ShuffleStorageUtils {
     return fileNamePrefix + Constants.SHUFFLE_INDEX_FILE_SUFFIX;
   }
 
-  public static String generateAbsoluteFilePrefix(String base, String key, int partition, String id) {
-    return String.join(
-        HDFS_PATH_SEPARATOR,
-        base,
-        key,
-        String.join(HDFS_DIRNAME_SEPARATOR, String.valueOf(partition), String.valueOf(partition)),
-        id);
-  }
-
   public static List<DataFileSegment> mergeSegments(
       String path, List<FileBasedShuffleSegment> segments, int readBufferSize) {
     List<DataFileSegment> dataFileSegments = Lists.newArrayList();
@@ -205,10 +196,6 @@ public class ShuffleStorageUtils {
   // index file header is $PartitionNum | [($PartitionId | $PartitionFileLength | $PartitionDataFileLength), ] | $CRC
   public static long getIndexFileHeaderLen(int partitionNum) {
     return 4 + (4 + 8 + 8) * (long) partitionNum + 8;
-  }
-
-  public static int getHeaderCrcLen() {
-    return 8;
   }
 
   public static long uploadFile(File file, HdfsFileWriter writer, int bufferSize) throws IOException {
