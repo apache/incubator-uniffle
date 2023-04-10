@@ -120,14 +120,6 @@ public class ShuffleStorageUtils {
         String.join(HDFS_DIRNAME_SEPARATOR, String.valueOf(start), String.valueOf(end)));
   }
 
-  public static String getUploadShuffleDataPath(String appId, int shuffleId, int partitionId) {
-    return String.join(
-        HDFS_PATH_SEPARATOR,
-        appId,
-        String.valueOf(shuffleId),
-        String.valueOf(partitionId));
-  }
-
   public static String getCombineDataPath(String appId, int shuffleId) {
     return String.join(
         HDFS_PATH_SEPARATOR,
@@ -193,10 +185,6 @@ public class ShuffleStorageUtils {
     }
   }
 
-  // index file header is $PartitionNum | [($PartitionId | $PartitionFileLength | $PartitionDataFileLength), ] | $CRC
-  public static long getIndexFileHeaderLen(int partitionNum) {
-    return 4 + (4 + 8 + 8) * (long) partitionNum + 8;
-  }
 
   public static long uploadFile(File file, HdfsFileWriter writer, int bufferSize) throws IOException {
     try (FileInputStream inputStream = new FileInputStream(file)) {

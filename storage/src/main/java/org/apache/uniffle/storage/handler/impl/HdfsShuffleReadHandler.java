@@ -168,7 +168,4 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
     return shuffleDataSegments;
   }
 
-  public String getFilePrefix() {
-    return filePrefix;
-  }
 }

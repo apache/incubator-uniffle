@@ -19,6 +19,7 @@ package org.apache.uniffle.storage.handler.impl;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -77,6 +78,34 @@ public class HdfsFileReader implements FileReader, Closeable {
       LOG.error("Fail to read all data from {}", path, e);
       return new byte[0];
     }
+  }
+
+  @Override
+  public ByteBuffer readByteBuffer(long offset, int length) {
+    try {
+      fsDataInputStream.seek(offset);
+      ByteBuffer buffer = ByteBuffer.allocateDirect(length);
+      readFully(buffer);
+      buffer.flip();
+      return buffer;
+    } catch (Exception e) {
+      LOG.warn("Can't read buffer data for path:" + path + " with offset[" + offset + "], length[" + length + "]", e);
+      return ByteBuffer.allocateDirect(0);
+    }
+  }
+
+  private void readFully(ByteBuffer buffer) throws IOException {
+    while (buffer.hasRemaining()) {
+      int result = fsDataInputStream.read(buffer);
+      if (result < 0) {
+        return;
+      }
+    }
+  }
+
+  @Override
+  public ByteBuffer readByteBuffer() {
+    return null;
   }
 
   public long getOffset() throws IOException {

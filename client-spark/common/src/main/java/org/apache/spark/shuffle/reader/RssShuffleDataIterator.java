@@ -28,6 +28,7 @@ import org.apache.spark.serializer.DeserializationStream;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.serializer.SerializerInstance;
 import org.apache.spark.shuffle.RssSparkConfig;
+import org.apache.uniffle.common.util.RssUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Product2;
@@ -73,9 +74,9 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
     this.codec = compress ? Codec.newInstance(rssConf) : null;
   }
 
-  public Iterator<Tuple2<Object, Object>> createKVIterator(ByteBuffer data, int size) {
+  public Iterator<Tuple2<Object, Object>> createKVIterator(ByteBuffer data) {
     clearDeserializationStream();
-    byteBufInputStream = new ByteBufInputStream(Unpooled.wrappedBuffer(data.array(), data.position(), size), true);
+    byteBufInputStream = new ByteBufInputStream(Unpooled.wrappedBuffer(data), codec != null);
     deserializationStream = serializerInstance.deserializeStream(byteBufInputStream);
     return deserializationStream.asKeyValueIterator();
   }
@@ -108,10 +109,10 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       long fetchDuration = System.currentTimeMillis() - startFetch;
       shuffleReadMetrics.incFetchWaitTime(fetchDuration);
       if (rawData != null) {
-        int uncompressedLen = uncompress(rawBlock, rawData);
+        uncompress(rawBlock, rawData);
         // create new iterator for shuffle data
         long startSerialization = System.currentTimeMillis();
-        recordsIterator = createKVIterator(uncompressedData, uncompressedLen);
+        recordsIterator = createKVIterator(uncompressedData);
         long serializationDuration = System.currentTimeMillis() - startSerialization;
         readTime += fetchDuration;
         serializeTime += serializationDuration;
@@ -137,11 +138,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
 
     int uncompressedLen = rawBlock.getUncompressLength();
     if (codec != null) {
-      if (uncompressedData == null || uncompressedData.capacity() < uncompressedLen) {
-        // todo: support off-heap bytebuffer
-        uncompressedData = ByteBuffer.allocate(uncompressedLen);
-      }
-      uncompressedData.clear();
+      uncompressedData = ByteBuffer.allocateDirect(uncompressedLen);
       long startDecompress = System.currentTimeMillis();
       codec.decompress(rawData, uncompressedLen, uncompressedData, 0);
       unCompressedBytesLength += uncompressedLen;

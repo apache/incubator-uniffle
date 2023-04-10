@@ -17,9 +17,15 @@
 
 package org.apache.uniffle.storage.api;
 
+import java.nio.ByteBuffer;
+
 public interface FileReader {
 
   byte[] read(long offset, int length);
 
   byte[] read();
+
+  ByteBuffer readByteBuffer(long offset, int length);
+
+  ByteBuffer readByteBuffer();
 }

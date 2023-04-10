@@ -17,13 +17,14 @@
 
 package org.apache.uniffle.common;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import com.google.common.collect.Lists;
 
 public class ShuffleDataResult {
 
-  private final byte[] data;
+  private final ByteBuffer data;
   private final List<BufferSegment> bufferSegments;
 
   public ShuffleDataResult() {
@@ -35,11 +36,15 @@ public class ShuffleDataResult {
   }
 
   public ShuffleDataResult(byte[] data, List<BufferSegment> bufferSegments) {
-    this.data = data;
+    this.data = ByteBuffer.wrap(data);
     this.bufferSegments = bufferSegments;
   }
 
   public byte[] getData() {
+    return data.array();
+  }
+
+  public ByteBuffer getDataBuffer() {
     return data;
   }
 
@@ -48,7 +53,7 @@ public class ShuffleDataResult {
   }
 
   public boolean isEmpty() {
-    return bufferSegments == null || bufferSegments.isEmpty() || data == null || data.length == 0;
+    return bufferSegments == null || bufferSegments.isEmpty() || data == null || data.capacity() == 0;
   }
 
 }

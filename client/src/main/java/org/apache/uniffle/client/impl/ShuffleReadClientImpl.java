@@ -50,7 +50,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private final List<ShuffleServerInfo> shuffleServerInfoList;
   private int shuffleId;
   private int partitionId;
-  private byte[] readBuffer;
+  private ByteBuffer readBuffer;
   private Roaring64NavigableMap blockIdBitmap;
   private Roaring64NavigableMap taskIdBitmap;
   private Roaring64NavigableMap pendingBlockIds;
@@ -219,8 +219,10 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     }
 
     if (bs != null) {
-      return new CompressedShuffleBlock(ByteBuffer.wrap(readBuffer,
-          bs.getOffset(), bs.getLength()), bs.getUncompressLength());
+      ByteBuffer compressedBuffer = readBuffer.duplicate();
+      compressedBuffer.position(bs.getOffset());
+      compressedBuffer.limit(bs.getOffset() + bs.getLength());
+      return new CompressedShuffleBlock(compressedBuffer, bs.getUncompressLength());
     }
     // current segment hasn't data, try next segment
     return readShuffleBlockData();
@@ -238,8 +240,14 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     if (sdr == null) {
       return 0;
     }
-    readBuffer = sdr.getData();
-    if (readBuffer == null || readBuffer.length == 0) {
+    if (readBuffer != null) {
+      boolean isReleased = RssUtils.releaseByteBuffer(readBuffer);
+      if (!isReleased) {
+        LOG.warn("release read byte buffer fail, it shouldn't happen frequently");
+      }
+    }
+    readBuffer = sdr.getDataBuffer();
+    if (readBuffer == null || readBuffer.capacity() == 0) {
       return 0;
     }
     bufferSegmentQueue.addAll(sdr.getBufferSegments());
@@ -253,6 +261,12 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   @Override
   public void close() {
+    if (readBuffer != null) {
+      boolean isReleased = RssUtils.releaseByteBuffer(readBuffer);
+      if (!isReleased) {
+        LOG.warn("release read byte buffer fail when the read client is closed");
+      }
+    }
     if (clientReadHandler != null) {
       clientReadHandler.close();
     }
