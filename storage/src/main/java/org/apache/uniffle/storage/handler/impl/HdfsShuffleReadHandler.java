@@ -18,6 +18,7 @@
 package org.apache.uniffle.storage.handler.impl;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
@@ -106,17 +107,18 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       return null;
     }
 
-    byte[] data = readShuffleData(shuffleDataSegment.getOffset(), expectedLength);
-    if (data.length == 0) {
+    ByteBuffer data = readShuffleDataByteBuffer(shuffleDataSegment.getOffset(), expectedLength);
+    int length = data.limit() - data.position();
+    if (length == 0) {
       LOG.warn("Fail to read expected[{}] data, actual[{}] and segment is {} from file {}.data",
-          expectedLength, data.length, shuffleDataSegment, filePrefix);
+          expectedLength, length, shuffleDataSegment, filePrefix);
       return null;
     }
 
     ShuffleDataResult shuffleDataResult = new ShuffleDataResult(data, shuffleDataSegment.getBufferSegments());
     if (shuffleDataResult.isEmpty()) {
       LOG.warn("Shuffle data is empty, expected length {}, data length {}, segment {} in file {}.data",
-          expectedLength, data.length, shuffleDataSegment, filePrefix);
+          expectedLength, length, shuffleDataSegment, filePrefix);
       return null;
     }
 
@@ -129,6 +131,17 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       LOG.warn("Fail to read expected[{}] data, actual[{}] from file {}.data",
           expectedLength, data.length, filePrefix);
       return new byte[0];
+    }
+    return data;
+  }
+
+  private ByteBuffer readShuffleDataByteBuffer(long offset, int expectedLength) {
+    ByteBuffer data = dataReader.readByteBuffer(offset, expectedLength);
+    int length = data.limit() - data.position();
+    if (length != expectedLength) {
+      LOG.warn("Fail to read byte buffer expected[{}] data, actual[{}] from file {}.data",
+          expectedLength, length, filePrefix);
+      return ByteBuffer.allocateDirect(0);
     }
     return data;
   }
