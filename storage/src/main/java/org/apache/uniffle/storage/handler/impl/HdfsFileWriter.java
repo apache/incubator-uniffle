@@ -103,30 +103,6 @@ public class HdfsFileWriter implements FileWriter, Closeable {
     fsDataOutputStream.writeLong(segment.getTaskAttemptId());
   }
 
-  // index file header is PartitionNum | [(PartitionId | PartitionFileLength | PartitionDataFileLength), ] | CRC
-  public void writeHeader(List<Integer> partitionList,
-      List<Long> indexFileSizeList,
-      List<Long> dataFileSizeList) throws IOException {
-    ByteBuffer headerContentBuf = ByteBuffer.allocate(
-        (int)ShuffleStorageUtils.getIndexFileHeaderLen(partitionList.size()) - ShuffleStorageUtils.getHeaderCrcLen());
-    fsDataOutputStream.writeInt(partitionList.size());
-    headerContentBuf.putInt(partitionList.size());
-    for (int i = 0; i < partitionList.size(); i++) {
-      fsDataOutputStream.writeInt(partitionList.get(i));
-      fsDataOutputStream.writeLong(indexFileSizeList.get(i));
-      fsDataOutputStream.writeLong(dataFileSizeList.get(i));
-      headerContentBuf.putInt(partitionList.get(i));
-      headerContentBuf.putLong(indexFileSizeList.get(i));
-      headerContentBuf.putLong(dataFileSizeList.get(i));
-    }
-    headerContentBuf.flip();
-    fsDataOutputStream.writeLong(ChecksumUtils.getCrc32(headerContentBuf));
-    long len = ShuffleStorageUtils.getIndexFileHeaderLen(partitionList.size());
-    if (fsDataOutputStream.getPos() != len) {
-      throw new IOException("Fail to write index header");
-    }
-  }
-
   public long nextOffset() {
     return nextOffset;
   }

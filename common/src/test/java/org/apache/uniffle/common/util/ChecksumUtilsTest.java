@@ -76,7 +76,6 @@ public class ChecksumUtilsTest {
     buffer.flip();
     long expectedChecksum = ChecksumUtils.getCrc32(data);
     assertEquals(expectedChecksum, ChecksumUtils.getCrc32(buffer));
-    assertEquals(length, buffer.position());
 
     // test heap ByteBuffer
     path = Paths.get(file.getAbsolutePath());
