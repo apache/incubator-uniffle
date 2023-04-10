@@ -75,6 +75,8 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
 
   public Iterator<Tuple2<Object, Object>> createKVIterator(ByteBuffer data) {
     clearDeserializationStream();
+    // Uncompressed data is released in this class, Compressed data is release in the class ShuffleReadClientImpl
+    // So if codec is null, we don't release the data when the stream is closed
     byteBufInputStream = new ByteBufInputStream(Unpooled.wrappedBuffer(data), codec != null);
     deserializationStream = serializerInstance.deserializeStream(byteBufInputStream);
     return deserializationStream.asKeyValueIterator();
