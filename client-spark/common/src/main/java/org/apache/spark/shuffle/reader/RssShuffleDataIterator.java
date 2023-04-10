@@ -28,7 +28,6 @@ import org.apache.spark.serializer.DeserializationStream;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.serializer.SerializerInstance;
 import org.apache.spark.shuffle.RssSparkConfig;
-import org.apache.uniffle.common.util.RssUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Product2;

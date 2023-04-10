@@ -94,15 +94,6 @@ public class HdfsFileReader implements FileReader, Closeable {
     }
   }
 
-  private void readFully(ByteBuffer buffer) throws IOException {
-    while (buffer.hasRemaining()) {
-      int result = fsDataInputStream.read(buffer);
-      if (result < 0) {
-        return;
-      }
-    }
-  }
-
   @Override
   public ByteBuffer readByteBuffer() {
     return null;
@@ -116,6 +107,15 @@ public class HdfsFileReader implements FileReader, Closeable {
   public synchronized void close() throws IOException {
     if (fsDataInputStream != null) {
       fsDataInputStream.close();
+    }
+  }
+
+  private void readFully(ByteBuffer buffer) throws IOException {
+    while (buffer.hasRemaining()) {
+      int result = fsDataInputStream.read(buffer);
+      if (result < 0) {
+        return;
+      }
     }
   }
 
