@@ -17,20 +17,12 @@
 
 package org.apache.spark.shuffle;
 
-import java.util.List;
 import java.util.NoSuchElementException;
 
-import com.google.common.collect.Lists;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.sort.SortShuffleManager;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
-import org.apache.uniffle.client.api.CoordinatorClient;
-import org.apache.uniffle.client.response.RssAccessClusterResponse;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.common.rpc.StatusCode.ACCESS_DENIED;
@@ -38,32 +30,12 @@ import static org.apache.uniffle.common.rpc.StatusCode.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
-public class DelegationRssShuffleManagerTest {
-  private static MockedStatic<RssSparkShuffleUtils> mockedStaticRssShuffleUtils;
-
-  @BeforeAll
-  public static void setUp() {
-    mockedStaticRssShuffleUtils = mockStatic(RssSparkShuffleUtils.class, Mockito.CALLS_REAL_METHODS);
-  }
-
-  @AfterAll
-  public static void tearDown() {
-    mockedStaticRssShuffleUtils.close();
-  }
+public class DelegationRssShuffleManagerTest extends RssShuffleManagerTestBase {
 
   @Test
   public void testCreateInDriverDenied() throws Exception {
-    CoordinatorClient mockCoordinatorClient = mock(CoordinatorClient.class);
-    when(mockCoordinatorClient.accessCluster(any())).thenReturn(new RssAccessClusterResponse(ACCESS_DENIED, ""));
-    List<CoordinatorClient> coordinatorClients = Lists.newArrayList();
-    coordinatorClients.add(mockCoordinatorClient);
-    mockedStaticRssShuffleUtils.when(() ->
-      RssSparkShuffleUtils.createCoordinatorClients(any())).thenReturn(coordinatorClients);
+    setupMockedRssShuffleUtils(ACCESS_DENIED);
     SparkConf conf = new SparkConf();
     conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.key(), "false");
     assertCreateSortShuffleManager(conf);
@@ -71,13 +43,7 @@ public class DelegationRssShuffleManagerTest {
 
   @Test
   public void testCreateInDriver() throws Exception {
-    CoordinatorClient mockCoordinatorClient = mock(CoordinatorClient.class);
-    when(mockCoordinatorClient.accessCluster(any())).thenReturn(
-        new RssAccessClusterResponse(SUCCESS, ""));
-    List<CoordinatorClient> coordinatorClients = Lists.newArrayList();
-    coordinatorClients.add(mockCoordinatorClient);
-    mockedStaticRssShuffleUtils.when(() ->
-      RssSparkShuffleUtils.createCoordinatorClients(any())).thenReturn(coordinatorClients);
+    setupMockedRssShuffleUtils(SUCCESS);
 
     SparkConf conf = new SparkConf();
     assertCreateSortShuffleManager(conf);
@@ -91,8 +57,6 @@ public class DelegationRssShuffleManagerTest {
 
     conf = new SparkConf();
     conf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "m1:8001,m2:8002");
-    when(mockCoordinatorClient.accessCluster(any())).thenReturn(
-        new RssAccessClusterResponse(SUCCESS, ""));
     assertCreateSortShuffleManager(conf);
   }
 
@@ -108,12 +72,7 @@ public class DelegationRssShuffleManagerTest {
 
   @Test
   public void testCreateFallback() throws Exception {
-    CoordinatorClient mockCoordinatorClient = mock(CoordinatorClient.class);
-    when(mockCoordinatorClient.accessCluster(any())).thenReturn(new RssAccessClusterResponse(SUCCESS, ""));
-    List<CoordinatorClient> coordinatorClients = Lists.newArrayList();
-    coordinatorClients.add(mockCoordinatorClient);
-    mockedStaticRssShuffleUtils.when(() ->
-      RssSparkShuffleUtils.createCoordinatorClients(any())).thenReturn(coordinatorClients);
+    setupMockedRssShuffleUtils(SUCCESS);
 
     SparkConf conf = new SparkConf();
     conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.key(), "false");
@@ -137,15 +96,7 @@ public class DelegationRssShuffleManagerTest {
 
   @Test
   public void testTryAccessCluster() throws Exception {
-    CoordinatorClient mockDeniedCoordinatorClient = mock(CoordinatorClient.class);
-    when(mockDeniedCoordinatorClient.accessCluster(any()))
-        .thenReturn(new RssAccessClusterResponse(ACCESS_DENIED, ""))
-        .thenReturn(new RssAccessClusterResponse(ACCESS_DENIED, ""))
-        .thenReturn(new RssAccessClusterResponse(SUCCESS, ""));
-    List<CoordinatorClient> coordinatorClients = Lists.newArrayList();
-    coordinatorClients.add(mockDeniedCoordinatorClient);
-    mockedStaticRssShuffleUtils.when(() ->
-        RssSparkShuffleUtils.createCoordinatorClients(any())).thenReturn(coordinatorClients);
+    setupMockedRssShuffleUtils(SUCCESS);
     SparkConf conf = new SparkConf();
     conf.set(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS, 3000L);
     conf.set(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_TIMES, 3);
@@ -156,15 +107,7 @@ public class DelegationRssShuffleManagerTest {
     conf.set(RssSparkConfig.RSS_TEST_MODE_ENABLE, true);
     assertCreateRssShuffleManager(conf);
 
-    CoordinatorClient mockCoordinatorClient = mock(CoordinatorClient.class);
-    when(mockCoordinatorClient.accessCluster(any()))
-        .thenReturn(new RssAccessClusterResponse(ACCESS_DENIED, ""))
-        .thenReturn(new RssAccessClusterResponse(ACCESS_DENIED, ""))
-        .thenReturn(new RssAccessClusterResponse(ACCESS_DENIED, ""));
-    List<CoordinatorClient> secondCoordinatorClients = Lists.newArrayList();
-    secondCoordinatorClients.add(mockCoordinatorClient);
-    mockedStaticRssShuffleUtils.when(() ->
-        RssSparkShuffleUtils.createCoordinatorClients(any())).thenReturn(secondCoordinatorClients);
+    setupMockedRssShuffleUtils(ACCESS_DENIED);
     SparkConf secondConf = new SparkConf();
     secondConf.set(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS, 3000L);
     secondConf.set(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_TIMES, 3);

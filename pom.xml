@@ -634,6 +634,13 @@
         <artifactId>snappy-java</artifactId>
         <version>${snappy-java.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.uniffle</groupId>
+        <artifactId>shuffle-server</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 

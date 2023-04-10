@@ -33,13 +33,24 @@ public class ShuffleManagerServerFactory {
     this.conf.addAll(conf);
   }
 
+  public ShuffleManagerGrpcService getService() {
+    return new ShuffleManagerGrpcService(shuffleManager);
+  }
+
   public GrpcServer getServer() {
+    return getServer(null);
+  }
+
+  public GrpcServer getServer(ShuffleManagerGrpcService service) {
     ServerType type = conf.get(RssBaseConf.RPC_SERVER_TYPE);
     if (type == ServerType.GRPC) {
+      if (service == null) {
+        service = new ShuffleManagerGrpcService(shuffleManager);
+      }
       return GrpcServer.Builder.newBuilder()
           .conf(conf)
           .grpcMetrics(GRPCMetrics.getEmptyGRPCMetrics())
-          .addService(new ShuffleManagerGrpcService(shuffleManager))
+          .addService(service)
           .build();
     } else {
       throw new UnsupportedOperationException("Unsupported server type " + type);

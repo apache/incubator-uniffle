@@ -45,7 +45,9 @@ import scala.runtime.BoxedUnit;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
+import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 
 public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
@@ -185,6 +187,21 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 
     if (!(resultIter instanceof InterruptibleIterator)) {
       resultIter = new InterruptibleIterator<>(context, resultIter);
+    }
+
+    // stage re-compute and shuffle manager server port are both set
+    if (rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
+        && rssConf.getInteger(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT, 0) > 0) {
+      String driver = rssConf.getString("driver.host", "");
+      int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
+      resultIter = RssFetchFailedIterator.newBuilder()
+                       .appId(appId)
+                       .shuffleId(shuffleId)
+                       .partitionId(startPartition)
+                       .stageAttemptId(context.stageAttemptNumber())
+                       .reportServerHost(driver)
+                       .port(port)
+                       .build(resultIter);
     }
     return resultIter;
   }
