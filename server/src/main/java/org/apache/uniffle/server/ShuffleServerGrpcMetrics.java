@@ -70,67 +70,71 @@ public class ShuffleServerGrpcMetrics extends GRPCMetrics {
   private static final String GRPC_GET_MEMORY_SHUFFLE_DATA_PROCESS_LATENCY =
       "grpc_get_memory_shuffle_data_process_latency";
 
+  public ShuffleServerGrpcMetrics(String tags) {
+    super(tags);
+  }
+
   @Override
   public void registerMetrics() {
     gaugeMap.putIfAbsent(REGISTER_SHUFFLE_METHOD,
-        metricsManager.addGauge(GRPC_REGISTERED_SHUFFLE));
+        addGauge(GRPC_REGISTERED_SHUFFLE).labels(tags));
     gaugeMap.putIfAbsent(SEND_SHUFFLE_DATA_METHOD,
-        metricsManager.addGauge(GRPC_SEND_SHUFFLE_DATA));
+        addGauge(GRPC_SEND_SHUFFLE_DATA).labels(tags));
     gaugeMap.putIfAbsent(COMMIT_SHUFFLE_TASK_METHOD,
-        metricsManager.addGauge(GRPC_COMMIT_SHUFFLE_TASK));
+        addGauge(GRPC_COMMIT_SHUFFLE_TASK).labels(tags));
     gaugeMap.putIfAbsent(FINISH_SHUFFLE_METHOD,
-        metricsManager.addGauge(GRPC_FINISH_SHUFFLE));
+        addGauge(GRPC_FINISH_SHUFFLE).labels(tags));
     gaugeMap.putIfAbsent(REQUIRE_BUFFER_METHOD,
-        metricsManager.addGauge(GRPC_REQUIRE_BUFFER));
+        addGauge(GRPC_REQUIRE_BUFFER).labels(tags));
     gaugeMap.putIfAbsent(APP_HEARTBEAT_METHOD,
-        metricsManager.addGauge(GRPC_APP_HEARTBEAT));
+        addGauge(GRPC_APP_HEARTBEAT).labels(tags));
     gaugeMap.putIfAbsent(REPORT_SHUFFLE_RESULT_METHOD,
-        metricsManager.addGauge(GRPC_REPORT_SHUFFLE_RESULT));
+        addGauge(GRPC_REPORT_SHUFFLE_RESULT).labels(tags));
     gaugeMap.putIfAbsent(GET_SHUFFLE_RESULT_METHOD,
-        metricsManager.addGauge(GRPC_GET_SHUFFLE_RESULT));
+        addGauge(GRPC_GET_SHUFFLE_RESULT).labels(tags));
     gaugeMap.putIfAbsent(GET_SHUFFLE_DATA_METHOD,
-        metricsManager.addGauge(GRPC_GET_SHUFFLE_DATA));
+        addGauge(GRPC_GET_SHUFFLE_DATA).labels(tags));
     gaugeMap.putIfAbsent(GET_MEMORY_SHUFFLE_DATA_METHOD,
-        metricsManager.addGauge(GRPC_GET_MEMORY_SHUFFLE_DATA));
+        addGauge(GRPC_GET_MEMORY_SHUFFLE_DATA).labels(tags));
     gaugeMap.putIfAbsent(GET_SHUFFLE_INDEX_METHOD,
-        metricsManager.addGauge(GRPC_GET_SHUFFLE_INDEX));
+        addGauge(GRPC_GET_SHUFFLE_INDEX).labels(tags));
 
     counterMap.putIfAbsent(REGISTER_SHUFFLE_METHOD,
-        metricsManager.addCounter(GRPC_REGISTERED_SHUFFLE_TOTAL));
+        addCounter(GRPC_REGISTERED_SHUFFLE_TOTAL).labels(tags));
     counterMap.putIfAbsent(SEND_SHUFFLE_DATA_METHOD,
-        metricsManager.addCounter(GRPC_SEND_SHUFFLE_DATA_TOTAL));
+        addCounter(GRPC_SEND_SHUFFLE_DATA_TOTAL).labels(tags));
     counterMap.putIfAbsent(COMMIT_SHUFFLE_TASK_METHOD,
-        metricsManager.addCounter(GRPC_COMMIT_SHUFFLE_TASK_TOTAL));
+        addCounter(GRPC_COMMIT_SHUFFLE_TASK_TOTAL).labels(tags));
     counterMap.putIfAbsent(FINISH_SHUFFLE_METHOD,
-        metricsManager.addCounter(GRPC_FINISH_SHUFFLE_TOTAL));
+        addCounter(GRPC_FINISH_SHUFFLE_TOTAL).labels(tags));
     counterMap.putIfAbsent(REQUIRE_BUFFER_METHOD,
-        metricsManager.addCounter(GRPC_REQUIRE_BUFFER_TOTAL));
+        addCounter(GRPC_REQUIRE_BUFFER_TOTAL).labels(tags));
     counterMap.putIfAbsent(APP_HEARTBEAT_METHOD,
-        metricsManager.addCounter(GRPC_APP_HEARTBEAT_TOTAL));
+        addCounter(GRPC_APP_HEARTBEAT_TOTAL).labels(tags));
     counterMap.putIfAbsent(REPORT_SHUFFLE_RESULT_METHOD,
-        metricsManager.addCounter(GRPC_REPORT_SHUFFLE_RESULT_TOTAL));
+        addCounter(GRPC_REPORT_SHUFFLE_RESULT_TOTAL).labels(tags));
     counterMap.putIfAbsent(GET_SHUFFLE_RESULT_METHOD,
-        metricsManager.addCounter(GRPC_GET_SHUFFLE_RESULT_TOTAL));
+        addCounter(GRPC_GET_SHUFFLE_RESULT_TOTAL).labels(tags));
     counterMap.putIfAbsent(GET_SHUFFLE_DATA_METHOD,
-        metricsManager.addCounter(GRPC_GET_SHUFFLE_DATA_TOTAL));
+        addCounter(GRPC_GET_SHUFFLE_DATA_TOTAL).labels(tags));
     counterMap.putIfAbsent(GET_MEMORY_SHUFFLE_DATA_METHOD,
-        metricsManager.addCounter(GRPC_GET_MEMORY_SHUFFLE_DATA_TOTAL));
+        addCounter(GRPC_GET_MEMORY_SHUFFLE_DATA_TOTAL).labels(tags));
     counterMap.putIfAbsent(GET_SHUFFLE_INDEX_METHOD,
-        metricsManager.addCounter(GRPC_GET_SHUFFLE_INDEX_TOTAL));
+        addCounter(GRPC_GET_SHUFFLE_INDEX_TOTAL).labels(tags));
 
     transportTimeSummaryMap.putIfAbsent(SEND_SHUFFLE_DATA_METHOD,
-        metricsManager.addSummary(GRPC_SEND_SHUFFLE_DATA_TRANSPORT_LATENCY));
+        addSummary(GRPC_SEND_SHUFFLE_DATA_TRANSPORT_LATENCY).labels(tags));
     transportTimeSummaryMap.putIfAbsent(GET_SHUFFLE_DATA_METHOD,
-        metricsManager.addSummary(GRPC_GET_SHUFFLE_DATA_TRANSPORT_LATENCY));
+        addSummary(GRPC_GET_SHUFFLE_DATA_TRANSPORT_LATENCY).labels(tags));
     transportTimeSummaryMap.putIfAbsent(GET_MEMORY_SHUFFLE_DATA_METHOD,
-        metricsManager.addSummary(GRPC_GET_MEMORY_SHUFFLE_DATA_TRANSPORT_LATENCY));
+        addSummary(GRPC_GET_MEMORY_SHUFFLE_DATA_TRANSPORT_LATENCY).labels(tags));
 
     processTimeSummaryMap.putIfAbsent(SEND_SHUFFLE_DATA_METHOD,
-        metricsManager.addSummary(GRPC_SEND_SHUFFLE_DATA_PROCESS_LATENCY));
+        addSummary(GRPC_SEND_SHUFFLE_DATA_PROCESS_LATENCY).labels(tags));
     processTimeSummaryMap.putIfAbsent(GET_SHUFFLE_DATA_METHOD,
-        metricsManager.addSummary(GRPC_GET_SHUFFLE_DATA_PROCESS_LATENCY));
+        addSummary(GRPC_GET_SHUFFLE_DATA_PROCESS_LATENCY).labels(tags));
     processTimeSummaryMap.putIfAbsent(GET_MEMORY_SHUFFLE_DATA_METHOD,
-        metricsManager.addSummary(GRPC_GET_MEMORY_SHUFFLE_DATA_PROCESS_LATENCY));
+        addSummary(GRPC_GET_MEMORY_SHUFFLE_DATA_PROCESS_LATENCY).labels(tags));
   }
 
 }

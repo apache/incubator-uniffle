@@ -75,4 +75,12 @@ public class MetricsManager {
     }
     return builder.register(collectorRegistry);
   }
+
+  public Summary addSummary(String name, String... labels) {
+    Summary.Builder builder = Summary.build().name(name).labelNames(labels).help("Summary " + name);
+    for (int i = 0; i < QUANTILES.length; i++) {
+      builder = builder.quantile(QUANTILES[i], QUANTILE_ERROR);
+    }
+    return builder.register(collectorRegistry);
+  }
 }

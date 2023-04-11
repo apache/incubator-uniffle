@@ -18,6 +18,7 @@
 package org.apache.uniffle.coordinator.metric;
 
 import org.apache.uniffle.common.metrics.GRPCMetrics;
+import org.apache.uniffle.common.util.Constants;
 
 public class CoordinatorGrpcMetrics extends GRPCMetrics {
 
@@ -31,15 +32,15 @@ public class CoordinatorGrpcMetrics extends GRPCMetrics {
   private static final String GRPC_HEARTBEAT_TOTAL =
       "grpc_heartbeat_total";
 
+  public CoordinatorGrpcMetrics() {
+    super(Constants.COORDINATOR_TAG);
+  }
+
   @Override
   public void registerMetrics() {
-    gaugeMap.putIfAbsent(HEARTBEAT_METHOD,
-        metricsManager.addGauge(GRPC_HEARTBEAT));
-    gaugeMap.putIfAbsent(GET_SHUFFLE_ASSIGNMENTS_METHOD,
-        metricsManager.addGauge(GRPC_GET_SHUFFLE_ASSIGNMENTS));
-    counterMap.putIfAbsent(HEARTBEAT_METHOD,
-        metricsManager.addCounter(GRPC_HEARTBEAT_TOTAL));
-    counterMap.putIfAbsent(GET_SHUFFLE_ASSIGNMENTS_METHOD,
-        metricsManager.addCounter(GRPC_GET_SHUFFLE_ASSIGNMENTS_TOTAL));
+    gaugeMap.putIfAbsent(HEARTBEAT_METHOD, addGauge(GRPC_HEARTBEAT).labels(tags));
+    gaugeMap.putIfAbsent(GET_SHUFFLE_ASSIGNMENTS_METHOD, addGauge(GRPC_GET_SHUFFLE_ASSIGNMENTS).labels(tags));
+    counterMap.putIfAbsent(HEARTBEAT_METHOD, addCounter(GRPC_HEARTBEAT_TOTAL).labels(tags));
+    counterMap.putIfAbsent(GET_SHUFFLE_ASSIGNMENTS_METHOD, addCounter(GRPC_GET_SHUFFLE_ASSIGNMENTS_TOTAL).labels(tags));
   }
 }

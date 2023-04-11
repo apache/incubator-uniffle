@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.metrics.TestUtils;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -86,10 +87,14 @@ public class ShuffleServerMetricsTest {
 
   @Test
   public void testServerMetrics() throws Exception {
-    ShuffleServerMetrics.counterRemoteStorageFailedWrite.labels(STORAGE_HOST).inc(0);
-    ShuffleServerMetrics.counterRemoteStorageSuccessWrite.labels(STORAGE_HOST).inc(0);
-    ShuffleServerMetrics.counterRemoteStorageTotalWrite.labels(STORAGE_HOST).inc(0);
-    ShuffleServerMetrics.counterRemoteStorageRetryWrite.labels(STORAGE_HOST).inc(0);
+    ShuffleServerMetrics.counterRemoteStorageFailedWrite
+        .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST).inc(0);
+    ShuffleServerMetrics.counterRemoteStorageSuccessWrite
+        .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST).inc(0);
+    ShuffleServerMetrics.counterRemoteStorageTotalWrite
+        .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST).inc(0);
+    ShuffleServerMetrics.counterRemoteStorageRetryWrite
+        .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST).inc(0);
     String content = TestUtils.httpGet(SERVER_METRICS_URL);
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
@@ -101,7 +106,7 @@ public class ShuffleServerMetricsTest {
         ShuffleServerMetrics.STORAGE_FAILED_WRITE_REMOTE,
         ShuffleServerMetrics.STORAGE_RETRY_WRITE_REMOTE);
     for (String expectMetricName : expectedMetricNames) {
-      validateMetrics(mapper, metricsNode, expectMetricName, STORAGE_HOST);
+      validateMetrics(mapper, metricsNode, expectMetricName, Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST);
     }
   }
 
@@ -134,14 +139,20 @@ public class ShuffleServerMetricsTest {
 
     // test for remote storage
     ShuffleServerMetrics.incStorageRetryCounter(STORAGE_HOST);
-    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.labels(STORAGE_HOST).get(), 0.5);
-    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageRetryWrite.labels(STORAGE_HOST).get(), 0.5);
+    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite
+        .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST).get(), 0.5);
+    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageRetryWrite
+        .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST).get(), 0.5);
     ShuffleServerMetrics.incStorageSuccessCounter(STORAGE_HOST);
-    assertEquals(2.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.labels(STORAGE_HOST).get(), 0.5);
-    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageSuccessWrite.labels(STORAGE_HOST).get(), 0.5);
+    assertEquals(2.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite
+        .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST).get(), 0.5);
+    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageSuccessWrite
+        .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST).get(), 0.5);
     ShuffleServerMetrics.incStorageFailedCounter(STORAGE_HOST);
-    assertEquals(3.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite.labels(STORAGE_HOST).get(), 0.5);
-    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageFailedWrite.labels(STORAGE_HOST).get(), 0.5);
+    assertEquals(3.0, ShuffleServerMetrics.counterRemoteStorageTotalWrite
+        .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST).get(), 0.5);
+    assertEquals(1.0, ShuffleServerMetrics.counterRemoteStorageFailedWrite
+        .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST).get(), 0.5);
   }
 
   @Test

@@ -268,8 +268,9 @@ public class ShuffleServer {
   private void registerMetrics() {
     LOG.info("Register metrics");
     CollectorRegistry shuffleServerCollectorRegistry = new CollectorRegistry(true);
-    ShuffleServerMetrics.register(shuffleServerCollectorRegistry);
-    grpcMetrics = new ShuffleServerGrpcMetrics();
+    String tags = coverToString();
+    ShuffleServerMetrics.register(shuffleServerCollectorRegistry, tags);
+    grpcMetrics = new ShuffleServerGrpcMetrics(tags);
     grpcMetrics.register(new CollectorRegistry(true));
     CollectorRegistry jvmCollectorRegistry = new CollectorRegistry(true);
     boolean verbose = shuffleServerConf.getBoolean(ShuffleServerConf.RSS_JVM_METRICS_VERBOSE_ENABLE);
@@ -472,5 +473,19 @@ public class ShuffleServer {
 
   public int getNettyPort() {
     return nettyPort;
+  }
+
+  public String coverToString() {
+    List<String> tags = shuffleServerConf.get(ShuffleServerConf.TAGS);
+    StringBuilder sb = new StringBuilder();
+    sb.append(Constants.SHUFFLE_SERVER_VERSION);
+    if (tags == null || tags.size() == 0) {
+      return sb.toString();
+    }
+    for (String tag : tags) {
+      sb.append("_");
+      sb.append(tag);
+    }
+    return sb.toString();
   }
 }
