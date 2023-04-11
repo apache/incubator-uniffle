@@ -50,12 +50,11 @@ public class ShuffleDataResult {
     }
     if (data.hasArray()) {
       return data.array();
-    } else {
-      ByteBuffer dataBuffer = data.duplicate();
-      byte[] byteArray = new byte[dataBuffer.remaining()];
-      dataBuffer.get(byteArray);
-      return byteArray;
     }
+    ByteBuffer dataBuffer = data.duplicate();
+    byte[] byteArray = new byte[dataBuffer.remaining()];
+    dataBuffer.get(byteArray);
+    return byteArray;
   }
 
   public ByteBuffer getDataBuffer() {
