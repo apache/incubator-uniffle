@@ -76,9 +76,12 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
 
   public Iterator<Tuple2<Object, Object>> createKVIterator(ByteBuffer data) {
     clearDeserializationStream();
-    // Unpooled.wrapperBuffer will return a ByteBuf, but this ByteBuf won't release direct memory
-    // because this UnpooledDirectByteBuf's doFree is false when it is constructed.
-    byteBufInputStream = new ByteBufInputStream(Unpooled.wrappedBuffer(data), false);
+    // Unpooled.wrapperBuffer will return a ByteBuf, but this ByteBuf won't release direct/heap memory
+    // when the ByteBuf is released. This is because the UnpooledDirectByteBuf's doFree is false 
+    // when it is constructed from user provided ByteBuffer. 
+    // The `releaseOnClose` parameter doesn't take effect, we would release the data ByteBuffer 
+    // manually. 
+    byteBufInputStream = new ByteBufInputStream(Unpooled.wrappedBuffer(data), true);
     deserializationStream = serializerInstance.deserializeStream(byteBufInputStream);
     return deserializationStream.asKeyValueIterator();
   }
