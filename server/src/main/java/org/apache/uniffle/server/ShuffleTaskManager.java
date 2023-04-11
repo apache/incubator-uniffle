@@ -69,6 +69,8 @@ import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
+
 public class ShuffleTaskManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleTaskManager.class);
@@ -177,7 +179,8 @@ public class ShuffleTaskManager {
         partitionRanges,
         remoteStorageInfo,
         user,
-        ShuffleDataDistributionType.NORMAL
+        ShuffleDataDistributionType.NORMAL,
+        -1
     );
   }
 
@@ -187,10 +190,15 @@ public class ShuffleTaskManager {
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorageInfo,
       String user,
-      ShuffleDataDistributionType dataDistType) {
+      ShuffleDataDistributionType dataDistType,
+      int maxConcurrencyPerPartitionToWrite) {
     refreshAppId(appId);
-    shuffleTaskInfos.get(appId).setUser(user);
-    shuffleTaskInfos.get(appId).setDataDistType(dataDistType);
+    ShuffleTaskInfo taskInfo = shuffleTaskInfos.get(appId);
+    taskInfo.setUser(user);
+    taskInfo.setDataDistType(dataDistType);
+    taskInfo.setMaxConcurrencyPerPartitionToWrite(
+        getMaxConcurrencyWriting(maxConcurrencyPerPartitionToWrite, conf)
+    );
     partitionsToBlockIds.putIfAbsent(appId, JavaUtils.newConcurrentMap());
     for (PartitionRange partitionRange : partitionRanges) {
       shuffleBufferManager.registerBuffer(appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
@@ -199,6 +207,13 @@ public class ShuffleTaskManager {
       storageManager.registerRemoteStorage(appId, remoteStorageInfo);
     }
     return StatusCode.SUCCESS;
+  }
+
+  private int getMaxConcurrencyWriting(int maxConcurrencyPerPartitionToWrite, ShuffleServerConf conf) {
+    if (maxConcurrencyPerPartitionToWrite > 0) {
+      return maxConcurrencyPerPartitionToWrite;
+    }
+    return conf.get(SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION);
   }
 
   public StatusCode cacheShuffleData(

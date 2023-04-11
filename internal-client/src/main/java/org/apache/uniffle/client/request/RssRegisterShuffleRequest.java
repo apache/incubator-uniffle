@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
+import org.apache.uniffle.common.config.RssClientConf;
 
 public class RssRegisterShuffleRequest {
 
@@ -33,6 +34,24 @@ public class RssRegisterShuffleRequest {
   private RemoteStorageInfo remoteStorageInfo;
   private String user;
   private ShuffleDataDistributionType dataDistributionType;
+  private int maxConcurrencyPerPartitionToWrite;
+
+  public RssRegisterShuffleRequest(
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      RemoteStorageInfo remoteStorageInfo,
+      String user,
+      ShuffleDataDistributionType dataDistributionType,
+      int maxConcurrencyPerPartitionToWrite) {
+    this.appId = appId;
+    this.shuffleId = shuffleId;
+    this.partitionRanges = partitionRanges;
+    this.remoteStorageInfo = remoteStorageInfo;
+    this.user = user;
+    this.dataDistributionType = dataDistributionType;
+    this.maxConcurrencyPerPartitionToWrite = maxConcurrencyPerPartitionToWrite;
+  }
 
   public RssRegisterShuffleRequest(
       String appId,
@@ -41,12 +60,15 @@ public class RssRegisterShuffleRequest {
       RemoteStorageInfo remoteStorageInfo,
       String user,
       ShuffleDataDistributionType dataDistributionType) {
-    this.appId = appId;
-    this.shuffleId = shuffleId;
-    this.partitionRanges = partitionRanges;
-    this.remoteStorageInfo = remoteStorageInfo;
-    this.user = user;
-    this.dataDistributionType = dataDistributionType;
+    this(
+        appId,
+        shuffleId,
+        partitionRanges,
+        remoteStorageInfo,
+        user,
+        dataDistributionType,
+        RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue()
+    );
   }
 
   public RssRegisterShuffleRequest(
@@ -59,7 +81,8 @@ public class RssRegisterShuffleRequest {
         partitionRanges,
         new RemoteStorageInfo(remoteStoragePath),
         StringUtils.EMPTY,
-        ShuffleDataDistributionType.NORMAL
+        ShuffleDataDistributionType.NORMAL,
+        RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue()
     );
   }
 
@@ -85,5 +108,9 @@ public class RssRegisterShuffleRequest {
 
   public ShuffleDataDistributionType getDataDistributionType() {
     return dataDistributionType;
+  }
+
+  public int getMaxConcurrencyPerPartitionToWrite() {
+    return maxConcurrencyPerPartitionToWrite;
   }
 }

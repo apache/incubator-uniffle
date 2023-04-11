@@ -64,6 +64,7 @@ public class ShuffleTaskInfo {
    */
   private final Map<Integer, Set<Integer>> hugePartitionTags;
   private final AtomicBoolean existHugePartition;
+  private final AtomicInteger maxConcurrencyPerPartitionToWrite = new AtomicInteger(1);
 
   public ShuffleTaskInfo(String appId) {
     this.appId = appId;
@@ -109,6 +110,14 @@ public class ShuffleTaskInfo {
   public void setDataDistType(
       ShuffleDataDistributionType dataDistType) {
     this.dataDistType.set(dataDistType);
+  }
+
+  public int getMaxConcurrencyPerPartitionToWrite() {
+    return maxConcurrencyPerPartitionToWrite.get();
+  }
+
+  public void setMaxConcurrencyPerPartitionToWrite(int maxConcurrencyPerPartitionToWrite) {
+    this.maxConcurrencyPerPartitionToWrite.set(maxConcurrencyPerPartitionToWrite);
   }
 
   public ShuffleDataDistributionType getDataDistType() {

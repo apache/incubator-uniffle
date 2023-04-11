@@ -68,7 +68,6 @@ public class ShuffleFlushManager {
   private final BlockingQueue<PendingShuffleFlushEvent> pendingEvents = Queues.newLinkedBlockingQueue();
   private final long pendingEventTimeoutSec;
   private int processPendingEventIndex = 0;
-  private final int maxConcurrencyOfSingleOnePartition;
 
   public ShuffleFlushManager(ShuffleServerConf shuffleServerConf, ShuffleServer shuffleServer,
                              StorageManager storageManager) {
@@ -79,8 +78,6 @@ public class ShuffleFlushManager {
     retryMax = shuffleServerConf.getInteger(ShuffleServerConf.SERVER_WRITE_RETRY_MAX);
     storageType = shuffleServerConf.get(RssBaseConf.RSS_STORAGE_TYPE);
     storageDataReplica = shuffleServerConf.get(RssBaseConf.RSS_STORAGE_DATA_REPLICA);
-    this.maxConcurrencyOfSingleOnePartition =
-        shuffleServerConf.get(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION);
 
     storageBasePaths = RssUtils.getConfiguredLocalDirs(shuffleServerConf);
     pendingEventTimeoutSec = shuffleServerConf.getLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC);
@@ -210,6 +207,7 @@ public class ShuffleFlushManager {
             shuffleServer.getShuffleTaskManager().getUserByAppId(event.getAppId()),
             StringUtils.EMPTY
         );
+        int maxConcurrencyPerPartitionToWrite = getMaxConcurrencyPerPartitionWrite(event);
         CreateShuffleWriteHandlerRequest request = new CreateShuffleWriteHandlerRequest(
             storageType,
             event.getAppId(),
@@ -221,7 +219,7 @@ public class ShuffleFlushManager {
             hadoopConf,
             storageDataReplica,
             user,
-            maxConcurrencyOfSingleOnePartition);
+            maxConcurrencyPerPartitionToWrite);
         ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
         writeSuccess = storageManager.write(storage, handler, event);
         if (writeSuccess) {
@@ -256,6 +254,15 @@ public class ShuffleFlushManager {
         LOG.error("Flush to file for {} failed in {} ms and release {} bytes", event, duration, event.getSize());
       }
     }
+  }
+
+  private int getMaxConcurrencyPerPartitionWrite(ShuffleDataFlushEvent event) {
+    ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(event.getAppId());
+    if (taskInfo == null) {
+      LOG.warn("Should not happen that shuffle task info of {} is null.", event.getAppId());
+      return 1;
+    }
+    return taskInfo.getMaxConcurrencyPerPartitionToWrite();
   }
 
   private String getShuffleServerId() {
