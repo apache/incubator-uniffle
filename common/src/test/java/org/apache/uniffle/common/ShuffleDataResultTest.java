@@ -30,9 +30,10 @@ public class ShuffleDataResultTest {
   @Test
   public void testEmpty() {
     List<BufferSegment> segments = Collections.singletonList(new BufferSegment(1, 2, 3, 4, 5, 6));
+    byte[] bytes = null;
     assertTrue(new ShuffleDataResult().isEmpty());
     assertTrue(new ShuffleDataResult(new byte[1]).isEmpty());
-    assertTrue(new ShuffleDataResult(null, segments).isEmpty());
+    assertTrue(new ShuffleDataResult(bytes, segments).isEmpty());
     assertTrue(new ShuffleDataResult(new byte[0], segments).isEmpty());
     assertTrue(new ShuffleDataResult(new byte[1], null).isEmpty());
     assertTrue(new ShuffleDataResult(new byte[1], Collections.emptyList()).isEmpty());

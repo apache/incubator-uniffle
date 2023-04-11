@@ -47,8 +47,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.net.InetAddresses;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.unix.Errors;
+import io.netty.util.internal.PlatformDependent;
 import org.eclipse.jetty.util.MultiException;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -367,7 +367,10 @@ public class RssUtils {
     }
   }
 
-  public static boolean releaseByteBuffer(ByteBuffer byteBuffer) {
-    return Unpooled.wrappedBuffer(byteBuffer).release();
+  public static void releaseByteBuffer(ByteBuffer byteBuffer) {
+    if (!byteBuffer.isDirect()) {
+      return;
+    }
+    PlatformDependent.freeDirectBuffer(byteBuffer);
   }
 }

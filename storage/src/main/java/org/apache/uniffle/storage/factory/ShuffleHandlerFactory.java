@@ -163,8 +163,8 @@ public class ShuffleHandlerFactory {
         request.getHadoopConf(),
         request.getDistributionType(),
         request.getExpectTaskIds(),
-        ssi.getId()
-    );
+        ssi.getId(),
+        request.isOffHeapEnable());
   }
 
   public ShuffleDeleteHandler createShuffleDeleteHandler(CreateShuffleDeleteHandlerRequest request) {

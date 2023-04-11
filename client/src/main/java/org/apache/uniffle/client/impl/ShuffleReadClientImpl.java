@@ -78,7 +78,8 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       Configuration hadoopConf,
       IdHelper idHelper,
       ShuffleDataDistributionType dataDistributionType,
-      boolean expectedTaskIdsBitmapFilterEnable) {
+      boolean expectedTaskIdsBitmapFilterEnable,
+      boolean offHeapEnable) {
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.blockIdBitmap = blockIdBitmap;
@@ -105,6 +106,9 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setExpectTaskIds(taskIdBitmap);
     if (expectedTaskIdsBitmapFilterEnable) {
       request.useExpectedTaskIdsBitmapFilter();
+    }
+    if (offHeapEnable) {
+      request.useOffHeap();
     }
 
     List<Long> removeBlockIds = Lists.newArrayList();
@@ -142,7 +146,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     this(storageType, appId, shuffleId, partitionId, indexReadLimit,
         partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
         blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf,
-        idHelper, ShuffleDataDistributionType.NORMAL, false);
+        idHelper, ShuffleDataDistributionType.NORMAL, false, false);
   }
 
   @Override
@@ -241,10 +245,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       return 0;
     }
     if (readBuffer != null) {
-      boolean isReleased = RssUtils.releaseByteBuffer(readBuffer);
-      if (!isReleased) {
-        LOG.warn("release read byte buffer fail, it shouldn't happen frequently");
-      }
+      RssUtils.releaseByteBuffer(readBuffer);
     }
     readBuffer = sdr.getDataBuffer();
     if (readBuffer == null || readBuffer.capacity() == 0) {
@@ -262,10 +263,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   @Override
   public void close() {
     if (readBuffer != null) {
-      boolean isReleased = RssUtils.releaseByteBuffer(readBuffer);
-      if (!isReleased) {
-        LOG.warn("release read byte buffer fail when the read client is closed");
-      }
+      RssUtils.releaseByteBuffer(readBuffer);
     }
     if (clientReadHandler != null) {
       clientReadHandler.close();

@@ -44,6 +44,7 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
   protected final String filePrefix;
   protected final HdfsFileReader indexReader;
   protected final HdfsFileReader dataReader;
+  protected final boolean useOffHeap;
 
   public HdfsShuffleReadHandler(
       String appId,
@@ -55,12 +56,14 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       Roaring64NavigableMap processBlockIds,
       Configuration conf,
       ShuffleDataDistributionType distributionType,
-      Roaring64NavigableMap expectTaskIds) throws Exception {
+      Roaring64NavigableMap expectTaskIds,
+      boolean useOffHeap) throws Exception {
     super(appId, shuffleId, partitionId, readBufferSize, expectBlockIds, processBlockIds,
         distributionType, expectTaskIds);
     this.filePrefix = filePrefix;
     this.indexReader = createHdfsReader(ShuffleStorageUtils.generateIndexFileName(filePrefix), conf);
     this.dataReader = createHdfsReader(ShuffleStorageUtils.generateDataFileName(filePrefix), conf);
+    this.useOffHeap = useOffHeap;
   }
 
   // Only for test
@@ -74,7 +77,7 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       Roaring64NavigableMap processBlockIds,
       Configuration conf) throws Exception {
     this(appId, shuffleId, partitionId, filePrefix, readBufferSize, expectBlockIds,
-        processBlockIds, conf, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf());
+        processBlockIds, conf, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf(), false);
   }
 
   @Override
@@ -107,7 +110,12 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       return null;
     }
 
-    ByteBuffer data = readShuffleDataByteBuffer(shuffleDataSegment.getOffset(), expectedLength);
+    ByteBuffer data;
+    if (useOffHeap) {
+      data = readShuffleDataByteBuffer(shuffleDataSegment.getOffset(), expectedLength);
+    } else {
+      data = ByteBuffer.wrap(readShuffleData(shuffleDataSegment.getOffset(), expectedLength));
+    }
     int length = data.limit() - data.position();
     if (length == 0) {
       LOG.warn("Fail to read expected[{}] data, actual[{}] and segment is {} from file {}.data",
@@ -115,7 +123,7 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       return null;
     }
 
-    ShuffleDataResult shuffleDataResult = new ShuffleDataResult(shuffleDataSegment.getBufferSegments(), data);
+    ShuffleDataResult shuffleDataResult = new ShuffleDataResult(data, shuffleDataSegment.getBufferSegments());
     if (shuffleDataResult.isEmpty()) {
       LOG.warn("Shuffle data is empty, expected length {}, data length {}, segment {} in file {}.data",
           expectedLength, length, shuffleDataSegment, filePrefix);

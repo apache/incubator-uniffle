@@ -230,6 +230,11 @@ public class RssSparkConfig {
               + "whether this conf is set or not"))
       .createWithDefault("");
 
+  public static final ConfigEntry<Boolean> RSS_CLIENT_USE_OFF_HEAP_MEMORY = createBooleanBuilder(
+      new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConf.USE_OFF_HEAP_MEMORY.key())
+        .doc(RssClientConf.USE_OFF_HEAP_MEMORY.description()))
+      .createWithDefault(RssClientConf.USE_OFF_HEAP_MEMORY.defaultValue());
+
   public static final ConfigEntry<Integer> RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER = createIntegerBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER))
       .createWithDefault(RssClientConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER_DEFAULT_VALUE);

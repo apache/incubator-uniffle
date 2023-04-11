@@ -20,6 +20,7 @@ package org.apache.uniffle.test;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Random;
 
 import com.google.common.collect.Maps;
 import org.apache.spark.SparkConf;
@@ -38,6 +39,9 @@ public class RepartitionWithHdfsMultiStorageRssTest extends RepartitionTest {
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
     dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE_HDFS.name());
+    Random random = new Random();
+    boolean useOffHeap = random.nextInt() % 2 == 0;
+    dynamicConf.put(RssSparkConfig.RSS_CLIENT_USE_OFF_HEAP_MEMORY.key(), String.valueOf(useOffHeap));
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
 

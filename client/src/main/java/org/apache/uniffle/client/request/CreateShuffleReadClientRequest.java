@@ -45,6 +45,7 @@ public class CreateShuffleReadClientRequest {
   private IdHelper idHelper;
   private ShuffleDataDistributionType shuffleDataDistributionType = ShuffleDataDistributionType.NORMAL;
   private boolean expectedTaskIdsBitmapFilterEnable = false;
+  private boolean offHeapEnable = false;
 
   public CreateShuffleReadClientRequest(
       String appId,
@@ -61,31 +62,13 @@ public class CreateShuffleReadClientRequest {
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
       ShuffleDataDistributionType dataDistributionType,
-      boolean expectedTaskIdsBitmapFilterEnable) {
+      boolean expectedTaskIdsBitmapFilterEnable,
+      boolean offHeapEnable) {
     this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
         hadoopConf, new DefaultIdHelper(), expectedTaskIdsBitmapFilterEnable);
     this.shuffleDataDistributionType = dataDistributionType;
-  }
-
-  public CreateShuffleReadClientRequest(
-      String appId,
-      int shuffleId,
-      int partitionId,
-      String storageType,
-      String basePath,
-      int indexReadLimit,
-      int readBufferSize,
-      int partitionNumPerRange,
-      int partitionNum,
-      Roaring64NavigableMap blockIdBitmap,
-      Roaring64NavigableMap taskIdBitmap,
-      List<ShuffleServerInfo> shuffleServerInfoList,
-      Configuration hadoopConf,
-      boolean expectedTaskIdsBitmapFilterEnable) {
-    this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
-        partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
-        hadoopConf, new DefaultIdHelper(), expectedTaskIdsBitmapFilterEnable);
+    this.offHeapEnable = offHeapEnable;
   }
 
   public CreateShuffleReadClientRequest(
@@ -183,5 +166,9 @@ public class CreateShuffleReadClientRequest {
 
   public boolean isExpectedTaskIdsBitmapFilterEnable() {
     return expectedTaskIdsBitmapFilterEnable;
+  }
+
+  public boolean isOffHeapEnable() {
+    return offHeapEnable;
   }
 }

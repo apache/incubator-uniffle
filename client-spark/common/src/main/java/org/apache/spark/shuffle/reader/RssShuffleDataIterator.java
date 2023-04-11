@@ -28,6 +28,7 @@ import org.apache.spark.serializer.DeserializationStream;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.serializer.SerializerInstance;
 import org.apache.spark.shuffle.RssSparkConfig;
+import org.apache.uniffle.common.util.RssUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Product2;
@@ -75,9 +76,9 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
 
   public Iterator<Tuple2<Object, Object>> createKVIterator(ByteBuffer data) {
     clearDeserializationStream();
-    // Uncompressed data is released in this class, Compressed data is release in the class ShuffleReadClientImpl
-    // So if codec is null, we don't release the data when the stream is closed
-    byteBufInputStream = new ByteBufInputStream(Unpooled.wrappedBuffer(data), codec != null);
+    // Unpooled.wrapperBuffer will return a ByteBuf, but this ByteBuf won't release direct memory
+    // because this UnpooledDirectByteBuf's doFree is false when it is constructed.
+    byteBufInputStream = new ByteBufInputStream(Unpooled.wrappedBuffer(data), false);
     deserializationStream = serializerInstance.deserializeStream(byteBufInputStream);
     return deserializationStream.asKeyValueIterator();
   }
@@ -89,6 +90,11 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       } catch (IOException e) {
         LOG.warn("Can't close ByteBufInputStream, memory may be leaked.");
       }
+    }
+    // Uncompressed data is released in this class, Compressed data is release in the class ShuffleReadClientImpl
+    // So if codec is null, we don't release the data when the stream is closed
+    if (codec != null) {
+      RssUtils.releaseByteBuffer(uncompressedData);
     }
     if (deserializationStream != null) {
       deserializationStream.close();
