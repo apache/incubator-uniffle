@@ -368,7 +368,7 @@ public class RssUtils {
   }
 
   public static void releaseByteBuffer(ByteBuffer byteBuffer) {
-    if (!byteBuffer.isDirect()) {
+    if (byteBuffer== null || !byteBuffer.isDirect()) {
       return;
     }
     PlatformDependent.freeDirectBuffer(byteBuffer);

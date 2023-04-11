@@ -32,7 +32,6 @@ import org.apache.spark.util.CompletionIterator;
 import org.apache.spark.util.CompletionIterator$;
 import org.apache.spark.util.TaskCompletionListener;
 import org.apache.spark.util.collection.ExternalSorter;
-import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
