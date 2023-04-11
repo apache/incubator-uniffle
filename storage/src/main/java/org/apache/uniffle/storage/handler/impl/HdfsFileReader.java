@@ -26,6 +26,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.uniffle.common.exception.RssException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +97,16 @@ public class HdfsFileReader implements FileReader, Closeable {
 
   @Override
   public ByteBuffer readByteBuffer() {
-    return null;
+    try {
+      long length = fileSystem.getFileStatus(path).getLen();
+      if (length > Integer.MAX_VALUE) {
+        throw new RssException("File length is too long");
+      }
+      return readByteBuffer(0, (int) length);
+    } catch (Exception e) {
+      LOG.warn("Can't read buffer data for path:" + path, e);
+      return ByteBuffer.allocateDirect(0);
+    }
   }
 
   public long getOffset() throws IOException {
