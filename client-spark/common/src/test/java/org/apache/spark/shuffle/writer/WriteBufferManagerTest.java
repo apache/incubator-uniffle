@@ -17,11 +17,15 @@
 
 package org.apache.spark.shuffle.writer;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 import com.google.common.collect.Maps;
 import org.apache.commons.lang.reflect.FieldUtils;
@@ -34,6 +38,8 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
 
@@ -182,7 +188,7 @@ public class WriteBufferManagerTest {
     SparkConf conf = getConf();
     WriteBufferManager wbm = createManager(conf);
     WriterBuffer mockWriterBuffer = mock(WriterBuffer.class);
-    when(mockWriterBuffer.getData()).thenReturn(new byte[]{});
+    when(mockWriterBuffer.finalizeAndGetData()).thenReturn(new byte[]{});
     when(mockWriterBuffer.getMemoryUsed()).thenReturn(0);
     ShuffleBlockInfo sbi = wbm.createShuffleBlock(0, mockWriterBuffer);
     // seqNo = 0, partitionId = 0, taskId = 0
@@ -219,6 +225,58 @@ public class WriteBufferManagerTest {
     ShuffleBlockInfo info3 = new ShuffleBlockInfo(1, 1, 1, 4, 1, new byte[1], null, 1, 12, 1);
     List<AddBlockEvent> events = wbm.buildBlockEvents(Arrays.asList(info1, info2, info3));
     assertEquals(3, events.size());
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = { 31, 63, 100000 })
+  public void concurrentAddAndSpill(long spillSize) {
+    SparkConf conf = getConf();
+    conf.set("spark.rss.client.send.size.limit", "1000");
+    conf.set("spark.rss.writer.buffer.spill.size", String.valueOf(spillSize));
+    TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
+    BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
+
+    AtomicLong processedSize = new AtomicLong();
+    Function<AddBlockEvent, CompletableFuture<Long>> spillFunc = event -> {
+      event.getProcessedCallbackChain().stream().forEach(x -> x.run());
+      long size = event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum();
+      processedSize.getAndAdd(size);
+      return CompletableFuture.completedFuture(size);
+    };
+
+    WriteBufferManager wbm = new WriteBufferManager(
+        0, "taskId_spillTest", 0, bufferOptions, new KryoSerializer(conf),
+        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(),
+        RssSparkConfig.toRssConf(conf), spillFunc);
+    WriteBufferManager spyManager = spy(wbm);
+    doReturn(512L).when(spyManager).acquireMemory(anyLong());
+
+    AtomicLong expectedSize = new AtomicLong(0L);
+    final String testKey = "Key";
+    final String testValue = "Value";
+    AtomicBoolean produceFinished = new AtomicBoolean(false);
+    AtomicBoolean spillFinished = new AtomicBoolean(false);
+
+    new Thread(() -> {
+      IntStream.range(0, 1000).forEach(x -> {
+        List<ShuffleBlockInfo> blockInfos = spyManager.addRecord(x, testKey, testValue);
+        blockInfos.stream().forEach(blockInfo -> processedSize.addAndGet(blockInfo.getFreeMemory()));
+        expectedSize.addAndGet(32);
+      });
+      produceFinished.set(true);
+    }).start();
+
+
+    new Thread(() -> {
+      while (!produceFinished.get()) {
+        spyManager.spill(100000, mock(WriteBufferManager.class));
+      }
+      spyManager.spill(100000, mock(WriteBufferManager.class));
+      spillFinished.set(true);
+    }).start();
+
+    Awaitility.await().timeout(Duration.ofSeconds(5)).until(() -> spillFinished.get() == true);
+    assertEquals(expectedSize.get(), processedSize.get());
   }
 
   @Test

@@ -19,9 +19,12 @@ package org.apache.spark.shuffle.writer;
 
 import java.util.List;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.uniffle.common.exception.RssException;
 
 public class WriterBuffer {
 
@@ -34,11 +37,17 @@ public class WriterBuffer {
   private int dataLength = 0;
   private int memoryUsed = 0;
 
+  private volatile boolean aborted = false;
+
   public WriterBuffer(int bufferSize) {
     this.bufferSize = bufferSize;
   }
 
   public void addRecord(byte[] recordBuffer, int length) {
+    if (aborted) {
+      throw new RssException("Illegal operation of adding record to a cleared buffer.");
+    }
+
     if (askForMemory(length)) {
       // buffer has data already, add buffer to list
       if (nextOffset > 0) {
@@ -63,10 +72,20 @@ public class WriterBuffer {
   }
 
   public boolean askForMemory(long length) {
+    if (aborted) {
+      throw new RssException("Illegal operation of requesting memory from buffer.");
+    }
     return buffer == null || nextOffset + length > bufferSize;
   }
 
-  public byte[] getData() {
+  public byte[] finalizeAndGetData() {
+    aborted = true;
+    return getData();
+  }
+
+  // for tests
+  @VisibleForTesting
+  protected byte[] getData() {
     byte[] data = new byte[dataLength];
     int offset = 0;
     long start = System.currentTimeMillis();
