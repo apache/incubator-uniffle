@@ -66,9 +66,8 @@ public class CreateShuffleReadClientRequest {
       boolean offHeapEnable) {
     this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
-        hadoopConf, new DefaultIdHelper(), expectedTaskIdsBitmapFilterEnable);
+        hadoopConf, new DefaultIdHelper(), expectedTaskIdsBitmapFilterEnable, offHeapEnable);
     this.shuffleDataDistributionType = dataDistributionType;
-    this.offHeapEnable = offHeapEnable;
   }
 
   public CreateShuffleReadClientRequest(
@@ -86,7 +85,8 @@ public class CreateShuffleReadClientRequest {
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
       IdHelper idHelper,
-      boolean expectedTaskIdsBitmapFilterEnable) {
+      boolean expectedTaskIdsBitmapFilterEnable,
+      boolean offHeapEnable) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -102,6 +102,28 @@ public class CreateShuffleReadClientRequest {
     this.hadoopConf = hadoopConf;
     this.idHelper = idHelper;
     this.expectedTaskIdsBitmapFilterEnable = expectedTaskIdsBitmapFilterEnable;
+    this.offHeapEnable = offHeapEnable;
+  }
+
+  public CreateShuffleReadClientRequest(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      String storageType,
+      String basePath,
+      int indexReadLimit,
+      int readBufferSize,
+      int partitionNumPerRange,
+      int partitionNum,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap taskIdBitmap,
+      List<ShuffleServerInfo> shuffleServerInfoList,
+      Configuration hadoopConf,
+      boolean expectedTaskIdsBitmapFilterEnable,
+      boolean offHeapEnable) {
+    this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
+        partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
+        hadoopConf, new DefaultIdHelper(), expectedTaskIdsBitmapFilterEnable, offHeapEnable);
   }
 
   public String getAppId() {
