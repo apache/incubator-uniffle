@@ -17,16 +17,10 @@
 
 package org.apache.spark.shuffle.writer;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import com.clearspring.analytics.util.Lists;
 import com.google.common.annotations.VisibleForTesting;
@@ -67,7 +61,6 @@ public class WriteBufferManager extends MemoryConsumer {
   private Map<Integer, Integer> partitionToSeqNo = Maps.newHashMap();
   private long askExecutorMemory;
   private int shuffleId;
-  private String taskId;
   private long taskAttemptId;
   private SerializerInstance instance;
   private ShuffleWriteMetrics shuffleWriteMetrics;
@@ -88,9 +81,6 @@ public class WriteBufferManager extends MemoryConsumer {
   private long requireMemoryInterval;
   private int requireMemoryRetryMax;
   private Codec codec;
-  private Function<AddBlockEvent, CompletableFuture<Long>> spillFunc;
-  private long sendSizeLimit;
-  private int memorySpillTimeoutSec;
 
   public WriteBufferManager(
       int shuffleId,
@@ -101,38 +91,12 @@ public class WriteBufferManager extends MemoryConsumer {
       TaskMemoryManager taskMemoryManager,
       ShuffleWriteMetrics shuffleWriteMetrics,
       RssConf rssConf) {
-    this(
-        shuffleId,
-        null,
-        taskAttemptId,
-        bufferManagerOptions,
-        serializer,
-        partitionToServers,
-        taskMemoryManager,
-        shuffleWriteMetrics,
-        rssConf,
-        null
-    );
-  }
-
-  public WriteBufferManager(
-      int shuffleId,
-      String taskId,
-      long taskAttemptId,
-      BufferManagerOptions bufferManagerOptions,
-      Serializer serializer,
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
-      TaskMemoryManager taskMemoryManager,
-      ShuffleWriteMetrics shuffleWriteMetrics,
-      RssConf rssConf,
-      Function<AddBlockEvent, CompletableFuture<Long>> spillFunc) {
     super(taskMemoryManager, taskMemoryManager.pageSizeBytes(), MemoryMode.ON_HEAP);
     this.bufferSize = bufferManagerOptions.getBufferSize();
     this.spillSize = bufferManagerOptions.getBufferSpillThreshold();
     this.instance = serializer.newInstance();
     this.buffers = Maps.newHashMap();
     this.shuffleId = shuffleId;
-    this.taskId = taskId;
     this.taskAttemptId = taskAttemptId;
     this.partitionToServers = partitionToServers;
     this.shuffleWriteMetrics = shuffleWriteMetrics;
@@ -147,9 +111,6 @@ public class WriteBufferManager extends MemoryConsumer {
             .substring(RssSparkConfig.SPARK_RSS_CONFIG_PREFIX.length()),
         RssSparkConfig.SPARK_SHUFFLE_COMPRESS_DEFAULT);
     this.codec = compress ? Codec.newInstance(rssConf) : null;
-    this.spillFunc = spillFunc;
-    this.sendSizeLimit = rssConf.get(RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMITATION);
-    this.memorySpillTimeoutSec = rssConf.get(RssSparkConfig.RSS_MEMORY_SPILL_TIMEOUT);
   }
 
   public List<ShuffleBlockInfo> addRecord(int partitionId, Object key, Object value) {
@@ -204,7 +165,7 @@ public class WriteBufferManager extends MemoryConsumer {
   }
 
   // transform all [partition, records] to [partition, ShuffleBlockInfo] and clear cache
-  public synchronized List<ShuffleBlockInfo> clear() {
+  public List<ShuffleBlockInfo> clear() {
     List<ShuffleBlockInfo> result = Lists.newArrayList();
     long dataSize = 0;
     long memoryUsed = 0;
@@ -286,64 +247,10 @@ public class WriteBufferManager extends MemoryConsumer {
     }
   }
 
-  public List<AddBlockEvent> buildBlockEvents(List<ShuffleBlockInfo> shuffleBlockInfoList) {
-    long totalSize = 0;
-    long memoryUsed = 0;
-    List<AddBlockEvent> events = new ArrayList<>();
-    List<ShuffleBlockInfo> shuffleBlockInfosPerEvent = Lists.newArrayList();
-    for (ShuffleBlockInfo sbi : shuffleBlockInfoList) {
-      totalSize += sbi.getSize();
-      memoryUsed += sbi.getFreeMemory();
-      shuffleBlockInfosPerEvent.add(sbi);
-      // split shuffle data according to the size
-      if (totalSize > sendSizeLimit) {
-        LOG.debug("Build event with " + shuffleBlockInfosPerEvent.size()
-            + " blocks and " + totalSize + " bytes");
-        // Use final temporary variables for closures
-        final long _memoryUsed = memoryUsed;
-        events.add(
-            new AddBlockEvent(taskId, shuffleBlockInfosPerEvent, () -> freeAllocatedMemory(_memoryUsed))
-        );
-        shuffleBlockInfosPerEvent = Lists.newArrayList();
-        totalSize = 0;
-        memoryUsed = 0;
-      }
-    }
-    if (!shuffleBlockInfosPerEvent.isEmpty()) {
-      LOG.debug("Build event with " + shuffleBlockInfosPerEvent.size()
-          + " blocks and " + totalSize + " bytes");
-      // Use final temporary variables for closures
-      final long _memoryUsed = memoryUsed;
-      events.add(
-          new AddBlockEvent(taskId, shuffleBlockInfosPerEvent, () -> freeAllocatedMemory(_memoryUsed))
-      );
-    }
-    return events;
-  }
-
   @Override
   public long spill(long size, MemoryConsumer trigger) {
-    List<AddBlockEvent> events = buildBlockEvents(clear());
-    List<CompletableFuture<Long>> futures = events.stream().map(x -> spillFunc.apply(x)).collect(Collectors.toList());
-    CompletableFuture<Void> allOfFutures =
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
-    try {
-      allOfFutures.get(memorySpillTimeoutSec, TimeUnit.SECONDS);
-    } catch (TimeoutException timeoutException) {
-      // A best effort strategy to wait.
-      // If timeout exception occurs, the underlying tasks won't be cancelled.
-    } finally {
-      long releasedSize = futures.stream().filter(x -> x.isDone()).mapToLong(x -> {
-        try {
-          return x.get();
-        } catch (Exception e) {
-          return 0;
-        }
-      }).sum();
-      LOG.info("[taskId: {}] Spill triggered by memory consumer of {}, released memory size: {}",
-          taskId, trigger.getClass().getSimpleName(), releasedSize);
-      return releasedSize;
-    }
+    // there is no spill for such situation
+    return 0;
   }
 
   @VisibleForTesting
@@ -399,21 +306,5 @@ public class WriteBufferManager extends MemoryConsumer {
         + serializeTime + "], compressTime[" + compressTime + "], estimateTime["
         + estimateTime + "], requireMemoryTime[" + requireMemoryTime
         + "], uncompressedDataLen[" + uncompressedDataLen + "]";
-  }
-
-  @VisibleForTesting
-  public void setTaskId(String taskId) {
-    this.taskId = taskId;
-  }
-
-  @VisibleForTesting
-  public void setSpillFunc(
-      Function<AddBlockEvent, CompletableFuture<Long>> spillFunc) {
-    this.spillFunc = spillFunc;
-  }
-
-  @VisibleForTesting
-  public void setSendSizeLimit(long sendSizeLimit) {
-    this.sendSizeLimit = sendSizeLimit;
   }
 }

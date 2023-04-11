@@ -17,18 +17,18 @@
 
 package org.apache.spark.shuffle;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.ShuffleDependency;
@@ -40,11 +40,11 @@ import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.shuffle.reader.RssShuffleReader;
 import org.apache.spark.shuffle.writer.AddBlockEvent;
 import org.apache.spark.shuffle.writer.BufferManagerOptions;
-import org.apache.spark.shuffle.writer.DataPusher;
 import org.apache.spark.shuffle.writer.RssShuffleWriter;
 import org.apache.spark.shuffle.writer.WriteBufferManager;
 import org.apache.spark.storage.BlockId;
 import org.apache.spark.storage.BlockManagerId;
+import org.apache.spark.util.EventLoop;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,11 +55,13 @@ import scala.collection.Seq;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
+import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
+import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
@@ -87,6 +89,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private ShuffleWriteClient shuffleWriteClient;
   private Map<String, Set<Long>> taskToSuccessBlockIds = JavaUtils.newConcurrentMap();
   private Map<String, Set<Long>> taskToFailedBlockIds = JavaUtils.newConcurrentMap();
+  private Map<String, WriteBufferManager> taskToBufferManager = JavaUtils.newConcurrentMap();
   private final int dataReplica;
   private final int dataReplicaWrite;
   private final int dataReplicaRead;
@@ -98,7 +101,58 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private boolean dynamicConfEnabled = false;
   private final String user;
   private final String uuid;
-  private DataPusher dataPusher;
+  private ThreadPoolExecutor threadPoolExecutor;
+  private EventLoop<AddBlockEvent> eventLoop = new EventLoop<AddBlockEvent>("ShuffleDataQueue") {
+
+    @Override
+    public void onReceive(AddBlockEvent event) {
+      threadPoolExecutor.execute(() -> sendShuffleData(event.getTaskId(), event.getShuffleDataInfoList()));
+    }
+
+    private void sendShuffleData(String taskId, List<ShuffleBlockInfo> shuffleDataInfoList) {
+      try {
+        SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(
+            appId,
+            shuffleDataInfoList,
+            () -> !isValidTask(taskId)
+        );
+        putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
+        putBlockId(taskToFailedBlockIds, taskId, result.getFailedBlockIds());
+      } finally {
+        // data is already send, release the memory to executor
+        long releaseSize = 0;
+        for (ShuffleBlockInfo sbi : shuffleDataInfoList) {
+          releaseSize += sbi.getFreeMemory();
+        }
+        WriteBufferManager bufferManager = taskToBufferManager.get(taskId);
+        if (bufferManager != null) {
+          bufferManager.freeAllocatedMemory(releaseSize);
+        }
+        LOG.debug("Finish send data and release " + releaseSize + " bytes");
+      }
+    }
+
+    private synchronized void putBlockId(
+        Map<String, Set<Long>> taskToBlockIds,
+        String taskAttemptId,
+        Set<Long> blockIds) {
+      if (blockIds == null) {
+        return;
+      }
+      if (taskToBlockIds.get(taskAttemptId) == null) {
+        taskToBlockIds.put(taskAttemptId, Sets.newConcurrentHashSet());
+      }
+      taskToBlockIds.get(taskAttemptId).addAll(blockIds);
+    }
+
+    @Override
+    public void onError(Throwable throwable) {
+    }
+
+    @Override
+    public void onStart() {
+    }
+  };
 
   private final Map<Integer, Integer> shuffleIdToPartitionNum = Maps.newConcurrentMap();
   private final Map<Integer, Integer> shuffleIdToNumMapTasks = Maps.newConcurrentMap();
@@ -153,6 +207,15 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     sparkConf.set("spark.shuffle.reduceLocality.enabled", "false");
     LOG.info("Disable shuffle data locality in RssShuffleManager.");
     if (!sparkConf.getBoolean(RssSparkConfig.RSS_TEST_FLAG.key(), false)) {
+      // for non-driver executor, start a thread for sending shuffle data to shuffle server
+      LOG.info("RSS data send thread is starting");
+      eventLoop.start();
+      int poolSize = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_SIZE);
+      int keepAliveTime = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE);
+      threadPoolExecutor = new ThreadPoolExecutor(poolSize, poolSize * 2, keepAliveTime, TimeUnit.SECONDS,
+          Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
+          ThreadUtils.getThreadFactory("SendData"));
+
       if (isDriver) {
         heartBeatScheduledExecutorService =
             ThreadUtils.getDaemonSingleThreadScheduledExecutor("rss-heartbeat");
@@ -175,18 +238,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           }
         }
       }
-      // for non-driver executor, start a thread for sending shuffle data to shuffle server
-      LOG.info("RSS data pusher is starting...");
-      int poolSize = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_SIZE);
-      int keepAliveTime = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE);
-      this.dataPusher = new DataPusher(
-          shuffleWriteClient,
-          taskToSuccessBlockIds,
-          taskToFailedBlockIds,
-          failedTaskIds,
-          poolSize,
-          keepAliveTime
-      );
     }
   }
 
@@ -217,7 +268,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     // will be called many times depend on how many shuffle stage
     if ("".equals(appId)) {
       appId = SparkEnv.get().conf().getAppId() + "_" + uuid;
-      dataPusher.setRssAppId(appId);
       LOG.info("Generate application id used in rss: " + appId);
     }
 
@@ -330,13 +380,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     shuffleWriteClient.registerCoordinators(coordinators);
   }
 
-  public CompletableFuture<Long> sendData(AddBlockEvent event) {
-    if (dataPusher != null && event != null) {
-      return dataPusher.send(event);
-    }
-    return new CompletableFuture<>();
-  }
-
   // This method is called in Spark executor,
   // getting information from Spark driver via the ShuffleHandle.
   @Override
@@ -345,7 +388,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     if (handle instanceof RssShuffleHandle) {
       RssShuffleHandle<K, V, ?> rssHandle = (RssShuffleHandle<K, V, ?>) handle;
       appId = rssHandle.getAppId();
-      dataPusher.setRssAppId(appId);
 
       int shuffleId = rssHandle.getShuffleId();
       String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
@@ -353,16 +395,15 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       ShuffleWriteMetrics writeMetrics = context.taskMetrics().shuffleWriteMetrics();
       WriteBufferManager bufferManager = new WriteBufferManager(
           shuffleId,
-          taskId,
           context.taskAttemptId(),
           bufferOptions,
           rssHandle.getDependency().serializer(),
           rssHandle.getPartitionToServers(),
           context.taskMemoryManager(),
           writeMetrics,
-          RssSparkConfig.toRssConf(sparkConf),
-          this::sendData
+          RssSparkConfig.toRssConf(sparkConf)
       );
+      taskToBufferManager.put(taskId, bufferManager);
 
       return new RssShuffleWriter<>(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(), bufferManager,
           writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle,
@@ -448,19 +489,22 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     if (heartBeatScheduledExecutorService != null) {
       heartBeatScheduledExecutorService.shutdownNow();
     }
-    if (dataPusher != null) {
-      try {
-        dataPusher.close();
-      } catch (IOException e) {
-        LOG.warn("Errors on closing data pusher", e);
-      }
-    }
+    threadPoolExecutor.shutdownNow();
     shuffleWriteClient.close();
   }
 
   @Override
   public ShuffleBlockResolver shuffleBlockResolver() {
     throw new RssException("RssShuffleManager.shuffleBlockResolver is not implemented");
+  }
+
+  public EventLoop<AddBlockEvent> getEventLoop() {
+    return eventLoop;
+  }
+
+  @VisibleForTesting
+  public void setEventLoop(EventLoop<AddBlockEvent> eventLoop) {
+    this.eventLoop = eventLoop;
   }
 
   // when speculation enable, duplicate data will be sent and reported to shuffle server,
@@ -517,9 +561,15 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     taskToSuccessBlockIds.get(taskId).addAll(blockIds);
   }
 
+  @VisibleForTesting
+  public Map<String, WriteBufferManager> getTaskToBufferManager() {
+    return taskToBufferManager;
+  }
+
   public void clearTaskMeta(String taskId) {
     taskToSuccessBlockIds.remove(taskId);
     taskToFailedBlockIds.remove(taskId);
+    taskToBufferManager.remove(taskId);
   }
 
   @VisibleForTesting
@@ -540,14 +590,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
   public boolean isValidTask(String taskId) {
     return !failedTaskIds.contains(taskId);
-  }
-
-  public DataPusher getDataPusher() {
-    return dataPusher;
-  }
-
-  public void setDataPusher(DataPusher dataPusher) {
-    this.dataPusher = dataPusher;
   }
 
   /**
