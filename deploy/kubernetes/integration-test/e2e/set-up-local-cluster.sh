@@ -141,6 +141,7 @@ if [ "$STEP_BUILD_NEW_OPERATOR" == "true" ]; then
   echo "--->>>try to apply rss-operator in cluster"
   kubectl apply -f rss-controller.yaml
   kubectl apply -f rss-webhook.yaml
+  kubectl apply -f template/metrics-server.yaml
   echo "--->>>wait some time for rss-operator to be ready"
   sleep 60
 fi

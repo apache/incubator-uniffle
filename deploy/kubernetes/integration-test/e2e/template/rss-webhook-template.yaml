@@ -48,8 +48,14 @@ rules:
   - apiGroups: [ "" ]
     resources: [ "events" ]
     verbs: [ "list", "watch", "create", "update", "patch" ]
-  - apiGroups: [ "node.k8s.io"]
+  - apiGroups: [ "node.k8s.io" ]
     resources: [ "runtimeclasses" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "autoscaling" ]
+    resources: [ "horizontalpodautoscalers" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "apps" ]
+    resources: [ "statefulsets" ]
     verbs: [ "get", "list", "watch" ]
 ---
 kind: ClusterRoleBinding
@@ -108,8 +114,8 @@ spec:
           command:
             - "./webhook"
           args:
-           - "--ignore-rss=false"
-           - "--v=4"
+            - "--ignore-rss=false"
+            - "--v=4"
           ports:
             - containerPort: 9876
               protocol: TCP

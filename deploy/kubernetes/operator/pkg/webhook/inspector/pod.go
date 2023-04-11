@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	admissionv1 "k8s.io/api/admission/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +32,7 @@ import (
 	"k8s.io/klog/v2"
 
 	unifflev1alpha1 "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/api/uniffle/v1alpha1"
+	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/controller/sync/shuffleserver"
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/utils"
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/webhook/util"
 )
@@ -100,8 +102,33 @@ func (i *inspector) validateDeletingShuffleServer(ar *admissionv1.AdmissionRevie
 }
 
 func (i *inspector) ifShuffleServerCanBeDeleted(rss *unifflev1alpha1.RemoteShuffleService, pod *corev1.Pod) bool {
-	if rss.Status.Phase != unifflev1alpha1.RSSUpgrading && rss.Status.Phase != unifflev1alpha1.RSSTerminating &&
-		pod.Status.Phase != corev1.PodFailed {
+	if rss.Spec.ShuffleServer.Autoscaler.Enable {
+		shuffleServerName := shuffleserver.GenerateName(rss)
+		hpa, err := i.hpaLister.HorizontalPodAutoscalers(rss.Namespace).Get(shuffleServerName)
+		if err != nil {
+			klog.Errorf("failed to get hpa when hpa is enabled: %v", err)
+			return false
+		}
+		var sts *appsv1.StatefulSet
+		sts, err = i.stsLister.StatefulSets(rss.Namespace).Get(shuffleServerName)
+		if err != nil {
+			klog.Errorf("failed to get sts when hpa is enabled: %v", err)
+			return false
+		}
+		// In this case, we have enabled HPA and HPA triggers the StatefulSet shrink, so we should allow deletion.
+		if *sts.Spec.Replicas == hpa.Status.DesiredReplicas && *sts.Spec.Replicas < sts.Status.Replicas {
+			return true
+		}
+	}
+	// At this moment, the Pod has not been scheduled and can be deleted.
+	if pod.Status.Phase == corev1.PodPending && len(pod.Spec.NodeName) == 0 {
+		return true
+	}
+	// At this moment, the Pod has stopped and can be deleted.
+	if pod.Status.Phase == corev1.PodFailed || pod.Status.Phase == corev1.PodSucceeded {
+		return true
+	}
+	if rss.Status.Phase != unifflev1alpha1.RSSUpgrading && rss.Status.Phase != unifflev1alpha1.RSSTerminating {
 		return false
 	}
 	return true

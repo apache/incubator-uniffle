@@ -18,6 +18,7 @@
 package v1alpha1
 
 import (
+	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -168,9 +169,65 @@ type CommonConfig struct {
 	// ConfigDir records the directory where the configuration of coordinators or shuffle servers resides.
 	ConfigDir string `json:"configDir"`
 
-	// Parameters holds the optional parameters used by coordinators or shuffle servers .
-	// optional
+	// Parameters holds the optional parameters used by coordinators or shuffle servers.
+	// +optional
 	Parameters map[string]string `json:"parameters,omitempty"`
+
+	// Autoscaler defines desired functionality of HPA object to be generated.
+	// +optional
+	Autoscaler RSSAutoscaler `json:"autoscaler,omitempty"`
+}
+
+// RSSAutoscaler describes the desired functionality of the HPA object to be generated,
+// which automatically manages the replica count of any resource implementing the scale
+// subresource based on the metrics specified.
+type RSSAutoscaler struct {
+	// Enable indicates whether we need to generate an HPA object.
+	Enable bool `json:"enable"`
+	// HPASpec allows users to configure HPA objects to achieve automatic scaling.
+	// This field is very similar to autoscalingv2.HorizontalPodAutoscalerSpec, but
+	// in autoscalingv2.HorizontalPodAutoscalerSpec, ScaleTargetRef is a required
+	// field, while the rss object does not require users to specify this field.
+	// Therefore, we have redefined a HorizontalPodAutoscalerSpec, removing the
+	// ScaleTargetRef field in autoscalingv2.HorizontalPodAutoscalerSpec.
+	// +optional
+	HPASpec HorizontalPodAutoscalerSpec `json:"hpaSpec,omitempty"`
+}
+
+// HorizontalPodAutoscalerSpec is very similar to autoscalingv2.HorizontalPodAutoscalerSpec,
+// but in autoscalingv2.HorizontalPodAutoscalerSpec, ScaleTargetRef is a required field,
+// while the rss object does not require users to specify this field. Therefore, we have
+// redefined a HorizontalPodAutoscalerSpec, removing the ScaleTargetRef field in
+// autoscalingv2.HorizontalPodAutoscalerSpec.
+type HorizontalPodAutoscalerSpec struct {
+	// +kubebuilder:default:=1
+	// minReplicas is the lower limit for the number of replicas to which the autoscaler
+	// can scale down.  It defaults to 1 pod.  minReplicas is allowed to be 0 if the
+	// alpha feature gate HPAScaleToZero is enabled and at least one Object or External
+	// metric is configured.  Scaling is active as long as at least one metric value is
+	// available.
+	// +optional
+	MinReplicas *int32 `json:"minReplicas,omitempty"`
+
+	// maxReplicas is the upper limit for the number of replicas to which the autoscaler can scale up.
+	// It cannot be less that minReplicas.
+	MaxReplicas int32 `json:"maxReplicas"`
+	// metrics contains the specifications for which to use to calculate the
+	// desired replica count (the maximum replica count across all metrics will
+	// be used).  The desired replica count is calculated multiplying the
+	// ratio between the target value and the current value by the current
+	// number of pods.  Ergo, metrics used must decrease as the pod count is
+	// increased, and vice-versa.  See the individual metric source types for
+	// more information about how each type of metric must respond.
+	// If not set, the default metric will be set to 80% average CPU utilization.
+	// +optional
+	Metrics []autoscalingv2.MetricSpec `json:"metrics,omitempty"`
+
+	// behavior configures the scaling behavior of the target
+	// in both Up and Down directions (scaleUp and scaleDown fields respectively).
+	// If not set, the default HPAScalingRules for scale up and scale down are used.
+	// +optional
+	Behavior *autoscalingv2.HorizontalPodAutoscalerBehavior `json:"behavior,omitempty"`
 }
 
 // RSSPodSpec defines the desired state of coordinators or shuffle servers' pods.

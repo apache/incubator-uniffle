@@ -25,6 +25,8 @@ import (
 
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	appslisters "k8s.io/client-go/listers/apps/v1"
+	auotscalinglisters "k8s.io/client-go/listers/autoscaling/v2beta2"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -55,18 +57,24 @@ func NewInspector(cfg *config.Config, tlsConfig *tls.Config) Inspector {
 func newInspector(cfg *config.Config, tlsConfig *tls.Config) *inspector {
 	rssInformerFactory := externalversions.NewSharedInformerFactory(cfg.RSSClient, 0)
 	cmInformerFactory := utils.BuildCoordinatorInformerFactory(cfg.KubeClient)
+	shuffleInformerFactory := utils.BuildShuffleServerInformerFactory(cfg.KubeClient)
 	i := &inspector{
-		ignoreLastApps:     cfg.IgnoreLastApps,
-		ignoreRSS:          cfg.IgnoreRSS,
-		tlsConfig:          tlsConfig,
-		kubeClient:         cfg.KubeClient,
-		rssClient:          cfg.RSSClient,
-		rssInformerFactory: rssInformerFactory,
-		rssInformer:        rssInformerFactory.Uniffle().V1alpha1().RemoteShuffleServices().Informer(),
-		rssLister:          rssInformerFactory.Uniffle().V1alpha1().RemoteShuffleServices().Lister(),
-		cmInformerFactory:  cmInformerFactory,
-		cmInformer:         cmInformerFactory.Core().V1().ConfigMaps().Informer(),
-		cmLister:           cmInformerFactory.Core().V1().ConfigMaps().Lister(),
+		ignoreLastApps:               cfg.IgnoreLastApps,
+		ignoreRSS:                    cfg.IgnoreRSS,
+		tlsConfig:                    tlsConfig,
+		kubeClient:                   cfg.KubeClient,
+		rssClient:                    cfg.RSSClient,
+		rssInformerFactory:           rssInformerFactory,
+		rssInformer:                  rssInformerFactory.Uniffle().V1alpha1().RemoteShuffleServices().Informer(),
+		rssLister:                    rssInformerFactory.Uniffle().V1alpha1().RemoteShuffleServices().Lister(),
+		cmInformerFactory:            cmInformerFactory,
+		cmInformer:                   cmInformerFactory.Core().V1().ConfigMaps().Informer(),
+		cmLister:                     cmInformerFactory.Core().V1().ConfigMaps().Lister(),
+		shuffleServerInformerFactory: shuffleInformerFactory,
+		hpaInformer:                  shuffleInformerFactory.Autoscaling().V2beta2().HorizontalPodAutoscalers().Informer(),
+		hpaLister:                    shuffleInformerFactory.Autoscaling().V2beta2().HorizontalPodAutoscalers().Lister(),
+		stsInformer:                  shuffleInformerFactory.Apps().V1().StatefulSets().Informer(),
+		stsLister:                    shuffleInformerFactory.Apps().V1().StatefulSets().Lister(),
 	}
 
 	// register handler functions for admission webhook server.
@@ -88,31 +96,45 @@ func newInspector(cfg *config.Config, tlsConfig *tls.Config) *inspector {
 
 // inspector implements the Inspector interface.
 type inspector struct {
-	ignoreLastApps     bool
-	ignoreRSS          bool
-	tlsConfig          *tls.Config
-	server             *http.Server
-	kubeClient         kubernetes.Interface
-	rssClient          versioned.Interface
-	rssInformerFactory externalversions.SharedInformerFactory
-	rssInformer        cache.SharedIndexInformer
-	rssLister          v1alpha1.RemoteShuffleServiceLister
-	cmInformerFactory  informers.SharedInformerFactory
-	cmInformer         cache.SharedIndexInformer
-	cmLister           corelisters.ConfigMapLister
+	ignoreLastApps               bool
+	ignoreRSS                    bool
+	tlsConfig                    *tls.Config
+	server                       *http.Server
+	kubeClient                   kubernetes.Interface
+	rssClient                    versioned.Interface
+	rssInformerFactory           externalversions.SharedInformerFactory
+	rssInformer                  cache.SharedIndexInformer
+	rssLister                    v1alpha1.RemoteShuffleServiceLister
+	cmInformerFactory            informers.SharedInformerFactory
+	cmInformer                   cache.SharedIndexInformer
+	cmLister                     corelisters.ConfigMapLister
+	shuffleServerInformerFactory informers.SharedInformerFactory
+	hpaInformer                  cache.SharedIndexInformer
+	hpaLister                    auotscalinglisters.HorizontalPodAutoscalerLister
+	stsInformer                  cache.SharedIndexInformer
+	stsLister                    appslisters.StatefulSetLister
 }
 
 // Start starts the Inspector.
 func (i *inspector) Start(ctx context.Context) error {
-	i.rssInformerFactory.Start(ctx.Done())
-	i.cmInformerFactory.Start(ctx.Done())
-	if !cache.WaitForCacheSync(ctx.Done(), i.rssInformer.HasSynced, i.cmInformer.HasSynced) {
-		return fmt.Errorf("wait for cache synced failed")
+	if err := i.startInformerFactories(ctx); err != nil {
+		return err
 	}
-	klog.V(2).Info("inspector started")
 	// set up the http server for listening pods and rss objects' validating and mutating requests.
 	if err := i.server.ListenAndServeTLS("", ""); err != nil {
 		return fmt.Errorf("listen error: %v", err)
+	}
+	klog.V(2).Info("inspector started")
+	return nil
+}
+
+func (i *inspector) startInformerFactories(ctx context.Context) error {
+	i.rssInformerFactory.Start(ctx.Done())
+	i.cmInformerFactory.Start(ctx.Done())
+	i.shuffleServerInformerFactory.Start(ctx.Done())
+	if !cache.WaitForCacheSync(ctx.Done(), i.rssInformer.HasSynced, i.cmInformer.HasSynced,
+		i.hpaInformer.HasSynced, i.stsInformer.HasSynced) {
+		return fmt.Errorf("wait for cache synced failed")
 	}
 	return nil
 }
