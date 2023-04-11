@@ -35,13 +35,13 @@ import org.apache.uniffle.storage.util.StorageType;
 public class RepartitionWithHdfsMultiStorageRssTest extends RepartitionTest {
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
-    CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
     dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE_HDFS.name());
     Random random = new Random();
     boolean useOffHeap = random.nextInt() % 2 == 0;
     dynamicConf.put(RssSparkConfig.RSS_CLIENT_USE_OFF_HEAP_MEMORY.key(), String.valueOf(useOffHeap));
+    CoordinatorConf coordinatorConf = getCoordinatorConf();
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
 
