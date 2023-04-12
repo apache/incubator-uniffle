@@ -152,6 +152,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
         uncompressedData = rawData.isDirect()
             ? ByteBuffer.allocateDirect(uncompressedLen) : ByteBuffer.allocate(uncompressedLen);
       }
+      uncompressedData.clear();
       long startDecompress = System.currentTimeMillis();
       codec.decompress(rawData, uncompressedLen, uncompressedData, 0);
       unCompressedBytesLength += uncompressedLen;
