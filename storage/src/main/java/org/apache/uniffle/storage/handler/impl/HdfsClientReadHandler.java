@@ -54,7 +54,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
   private int readHandlerIndex;
   private ShuffleDataDistributionType distributionType;
   private Roaring64NavigableMap expectTaskIds;
-  private boolean useOffHeap = false;
+  private boolean offHeapEnable = false;
 
   public HdfsClientReadHandler(
       String appId,
@@ -71,7 +71,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       ShuffleDataDistributionType distributionType,
       Roaring64NavigableMap expectTaskIds,
       String shuffleServerId,
-      boolean useOffHeap) {
+      boolean offHeapEnable) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -86,7 +86,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
     this.distributionType = distributionType;
     this.expectTaskIds = expectTaskIds;
     this.shuffleServerId = shuffleServerId;
-    this.useOffHeap = useOffHeap;
+    this.offHeapEnable = offHeapEnable;
   }
 
   // Only for test
@@ -142,7 +142,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
           HdfsShuffleReadHandler handler = new HdfsShuffleReadHandler(
               appId, shuffleId, partitionId, filePrefix,
               readBufferSize, expectBlockIds, processBlockIds, hadoopConf,
-              distributionType, expectTaskIds, useOffHeap);
+              distributionType, expectTaskIds, offHeapEnable);
           readHandlers.add(handler);
         } catch (Exception e) {
           LOG.warn("Can't create ShuffleReaderHandler for " + filePrefix, e);

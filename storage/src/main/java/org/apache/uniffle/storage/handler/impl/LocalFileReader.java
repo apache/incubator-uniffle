@@ -78,12 +78,12 @@ public class LocalFileReader implements FileReader, Closeable {
   }
 
   @Override
-  public ByteBuffer readByteBuffer(long offset, int length) {
+  public ByteBuffer readAsByteBuffer(long offset, int length) {
     throw new UnsupportedOperationException("Local file reader don't support off heap read now");
   }
 
   @Override
-  public ByteBuffer readByteBuffer() {
+  public ByteBuffer readAsByteBuffer() {
     throw new UnsupportedOperationException("Local file reader don't support off heap read now");
   }
 

@@ -29,7 +29,6 @@ import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.storage.api.FileReader;
 
@@ -82,7 +81,7 @@ public class HdfsFileReader implements FileReader, Closeable {
   }
 
   @Override
-  public ByteBuffer readByteBuffer(long offset, int length) {
+  public ByteBuffer readAsByteBuffer(long offset, int length) {
     try {
       fsDataInputStream.seek(offset);
       ByteBuffer buffer = ByteBuffer.allocateDirect(length);
@@ -96,13 +95,14 @@ public class HdfsFileReader implements FileReader, Closeable {
   }
 
   @Override
-  public ByteBuffer readByteBuffer() {
+  public ByteBuffer readAsByteBuffer() {
     try {
-      long length = fileSystem.getFileStatus(path).getLen();
+      long length = getFileLen();
       if (length > Integer.MAX_VALUE) {
-        throw new RssException("File length is too long");
+        LOG.warn("File " + path + "length is too long");
+        return ByteBuffer.allocateDirect(0);
       }
-      return readByteBuffer(0, (int) length);
+      return readAsByteBuffer(fsDataInputStream.getPos(), (int) length);
     } catch (Exception e) {
       LOG.warn("Can't read buffer data for path:" + path, e);
       return ByteBuffer.allocateDirect(0);

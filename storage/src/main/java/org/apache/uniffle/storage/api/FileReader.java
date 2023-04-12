@@ -25,7 +25,7 @@ public interface FileReader {
 
   byte[] read();
 
-  ByteBuffer readByteBuffer(long offset, int length);
+  ByteBuffer readAsByteBuffer(long offset, int length);
 
-  ByteBuffer readByteBuffer();
+  ByteBuffer readAsByteBuffer();
 }

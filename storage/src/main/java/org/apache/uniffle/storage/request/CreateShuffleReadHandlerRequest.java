@@ -201,7 +201,7 @@ public class CreateShuffleReadHandlerRequest {
     this.offHeapEnable = true;
   }
 
-  public boolean isOffHeapEnable() {
+  public boolean isOffHeapEnabled() {
     return offHeapEnable;
   }
 }

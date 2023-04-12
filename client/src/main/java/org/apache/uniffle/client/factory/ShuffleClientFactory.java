@@ -88,7 +88,7 @@ public class ShuffleClientFactory {
         request.getIdHelper(),
         request.getShuffleDataDistributionType(),
         request.isExpectedTaskIdsBitmapFilterEnable(),
-        request.isOffHeapEnable()
+        request.isOffHeapEnabled()
     );
   }
 }

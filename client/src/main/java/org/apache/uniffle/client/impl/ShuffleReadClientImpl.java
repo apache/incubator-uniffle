@@ -108,7 +108,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       request.useExpectedTaskIdsBitmapFilter();
     }
     if (offHeapEnable) {
-      request.useOffHeap();
+      request.enableOffHeap();
     }
 
     List<Long> removeBlockIds = Lists.newArrayList();

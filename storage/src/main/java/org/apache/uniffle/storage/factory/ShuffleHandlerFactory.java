@@ -164,7 +164,7 @@ public class ShuffleHandlerFactory {
         request.getDistributionType(),
         request.getExpectTaskIds(),
         ssi.getId(),
-        request.isOffHeapEnable());
+        request.isOffHeapEnabled());
   }
 
   public ShuffleDeleteHandler createShuffleDeleteHandler(CreateShuffleDeleteHandlerRequest request) {

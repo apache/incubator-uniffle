@@ -190,7 +190,7 @@ public class CreateShuffleReadClientRequest {
     return expectedTaskIdsBitmapFilterEnable;
   }
 
-  public boolean isOffHeapEnable() {
+  public boolean isOffHeapEnabled() {
     return offHeapEnable;
   }
 }
