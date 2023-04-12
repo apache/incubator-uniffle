@@ -197,7 +197,7 @@ public class CreateShuffleReadHandlerRequest {
     this.idHelper = idHelper;
   }
 
-  public void useOffHeap() {
+  public void enableOffHeap() {
     this.offHeapEnable = true;
   }
 
