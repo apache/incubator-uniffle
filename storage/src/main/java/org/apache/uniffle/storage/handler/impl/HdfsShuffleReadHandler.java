@@ -44,7 +44,7 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
   protected final String filePrefix;
   protected final HdfsFileReader indexReader;
   protected final HdfsFileReader dataReader;
-  protected final boolean offHeapEnable;
+  protected final boolean offHeapEnabled;
 
   public HdfsShuffleReadHandler(
       String appId,
@@ -57,13 +57,13 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       Configuration conf,
       ShuffleDataDistributionType distributionType,
       Roaring64NavigableMap expectTaskIds,
-      boolean offHeapEnable) throws Exception {
+      boolean offHeapEnabled) throws Exception {
     super(appId, shuffleId, partitionId, readBufferSize, expectBlockIds, processBlockIds,
         distributionType, expectTaskIds);
     this.filePrefix = filePrefix;
     this.indexReader = createHdfsReader(ShuffleStorageUtils.generateIndexFileName(filePrefix), conf);
     this.dataReader = createHdfsReader(ShuffleStorageUtils.generateDataFileName(filePrefix), conf);
-    this.offHeapEnable = offHeapEnable;
+    this.offHeapEnabled = offHeapEnabled;
   }
 
   // Only for test
@@ -111,7 +111,7 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
     }
 
     ByteBuffer data;
-    if (offHeapEnable) {
+    if (offHeapEnabled) {
       data = readShuffleDataByteBuffer(shuffleDataSegment.getOffset(), expectedLength);
     } else {
       data = ByteBuffer.wrap(readShuffleData(shuffleDataSegment.getOffset(), expectedLength));
