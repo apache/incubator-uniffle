@@ -483,7 +483,7 @@ public class ShuffleServer {
       return sb.toString();
     }
     for (String tag : tags) {
-      sb.append("_");
+      sb.append(",");
       sb.append(tag);
     }
     return sb.toString();
