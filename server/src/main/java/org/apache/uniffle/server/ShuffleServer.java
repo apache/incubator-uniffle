@@ -126,7 +126,7 @@ public class ShuffleServer {
 
   public void start() throws Exception {
     jettyServer.start();
-    server.start();
+    grpcPort = server.start();
     if (nettyServerEnabled) {
       nettyPort = streamServer.start();
     }

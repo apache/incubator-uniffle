@@ -204,6 +204,9 @@ public class RssUtils {
     } else if (e instanceof Errors.NativeIoException) {
       return (e.getMessage() != null && e.getMessage().startsWith("bind() failed: "))
               || isServerPortBindCollision(e.getCause());
+    } else if (e instanceof IOException) {
+      return (e.getMessage() != null && e.getMessage().startsWith("Failed to bind to address"))
+          || isServerPortBindCollision(e.getCause());
     } else {
       return false;
     }
