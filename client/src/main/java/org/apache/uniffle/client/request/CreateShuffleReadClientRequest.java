@@ -45,7 +45,7 @@ public class CreateShuffleReadClientRequest {
   private IdHelper idHelper;
   private ShuffleDataDistributionType shuffleDataDistributionType = ShuffleDataDistributionType.NORMAL;
   private boolean expectedTaskIdsBitmapFilterEnable = false;
-  private boolean offHeapEnable = false;
+  private boolean offHeapEnabled = false;
 
   public CreateShuffleReadClientRequest(
       String appId,
@@ -63,10 +63,10 @@ public class CreateShuffleReadClientRequest {
       Configuration hadoopConf,
       ShuffleDataDistributionType dataDistributionType,
       boolean expectedTaskIdsBitmapFilterEnable,
-      boolean offHeapEnable) {
+      boolean offHeapEnabled) {
     this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
-        hadoopConf, new DefaultIdHelper(), expectedTaskIdsBitmapFilterEnable, offHeapEnable);
+        hadoopConf, new DefaultIdHelper(), expectedTaskIdsBitmapFilterEnable, offHeapEnabled);
     this.shuffleDataDistributionType = dataDistributionType;
   }
 
@@ -86,7 +86,7 @@ public class CreateShuffleReadClientRequest {
       Configuration hadoopConf,
       IdHelper idHelper,
       boolean expectedTaskIdsBitmapFilterEnable,
-      boolean offHeapEnable) {
+      boolean offHeapEnabled) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -102,7 +102,7 @@ public class CreateShuffleReadClientRequest {
     this.hadoopConf = hadoopConf;
     this.idHelper = idHelper;
     this.expectedTaskIdsBitmapFilterEnable = expectedTaskIdsBitmapFilterEnable;
-    this.offHeapEnable = offHeapEnable;
+    this.offHeapEnabled = offHeapEnabled;
   }
 
   public CreateShuffleReadClientRequest(
@@ -120,10 +120,10 @@ public class CreateShuffleReadClientRequest {
       List<ShuffleServerInfo> shuffleServerInfoList,
       Configuration hadoopConf,
       boolean expectedTaskIdsBitmapFilterEnable,
-      boolean offHeapEnable) {
+      boolean offHeapEnabled) {
     this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
-        hadoopConf, new DefaultIdHelper(), expectedTaskIdsBitmapFilterEnable, offHeapEnable);
+        hadoopConf, new DefaultIdHelper(), expectedTaskIdsBitmapFilterEnable, offHeapEnabled);
   }
 
   public String getAppId() {
@@ -191,6 +191,6 @@ public class CreateShuffleReadClientRequest {
   }
 
   public boolean isOffHeapEnabled() {
-    return offHeapEnable;
+    return offHeapEnabled;
   }
 }
