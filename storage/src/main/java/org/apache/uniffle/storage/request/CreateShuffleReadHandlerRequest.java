@@ -46,7 +46,7 @@ public class CreateShuffleReadHandlerRequest {
   private ShuffleDataDistributionType distributionType;
   private Roaring64NavigableMap expectTaskIds;
   private boolean expectedTaskIdsBitmapFilterEnable;
-  private boolean offHeapEnable;
+  private boolean offHeapEnabled;
 
   private IdHelper idHelper;
 
@@ -198,10 +198,10 @@ public class CreateShuffleReadHandlerRequest {
   }
 
   public void enableOffHeap() {
-    this.offHeapEnable = true;
+    this.offHeapEnabled = true;
   }
 
   public boolean isOffHeapEnabled() {
-    return offHeapEnable;
+    return offHeapEnabled;
   }
 }
