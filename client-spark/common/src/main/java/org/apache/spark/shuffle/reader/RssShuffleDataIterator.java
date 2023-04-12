@@ -94,11 +94,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
         LOG.warn("Can't close ByteBufInputStream, memory may be leaked.");
       }
     }
-    // Uncompressed data is released in this class, Compressed data is release in the class ShuffleReadClientImpl
-    // So if codec is null, we don't release the data when the stream is closed
-    if (codec != null) {
-      RssUtils.releaseByteBuffer(uncompressedData);
-    }
+
     if (deserializationStream != null) {
       deserializationStream.close();
     }
@@ -149,8 +145,13 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
     int uncompressedLen = rawBlock.getUncompressLength();
     if (codec != null) {
       // todo: when we have netty data transportation, we will only use off heap memory.
-      uncompressedData = rawData.isDirect()
-          ? ByteBuffer.allocateDirect(uncompressedLen) : ByteBuffer.allocate(uncompressedLen);
+      if (uncompressedData == null || uncompressedData.capacity() < uncompressedLen) {
+        if (uncompressedData != null) {
+          RssUtils.releaseByteBuffer(uncompressedData);
+        }
+        uncompressedData = rawData.isDirect()
+            ? ByteBuffer.allocateDirect(uncompressedLen) : ByteBuffer.allocate(uncompressedLen);
+      }
       long startDecompress = System.currentTimeMillis();
       codec.decompress(rawData, uncompressedLen, uncompressedData, 0);
       unCompressedBytesLength += uncompressedLen;
@@ -170,6 +171,11 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
 
   public BoxedUnit cleanup() {
     clearDeserializationStream();
+    // Uncompressed data is released in this class, Compressed data is release in the class ShuffleReadClientImpl
+    // So if codec is null, we don't release the data when the stream is closed
+    if (codec != null) {
+      RssUtils.releaseByteBuffer(uncompressedData);
+    }
     if (shuffleReadClient != null) {
       shuffleReadClient.close();
     }
