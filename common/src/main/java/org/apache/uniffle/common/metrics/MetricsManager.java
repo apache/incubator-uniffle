@@ -23,6 +23,8 @@ import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Summary;
 
+import org.apache.uniffle.common.util.Constants;
+
 public class MetricsManager {
   private CollectorRegistry collectorRegistry;
   private static final double[] QUANTILES = {0.50, 0.75, 0.90, 0.95, 0.99};
@@ -52,12 +54,20 @@ public class MetricsManager {
     return Counter.build().name(name).labelNames(labels).help(help).register(collectorRegistry);
   }
 
+  public Counter addCounterWithTags(String name) {
+    return addCounter(name, Constants.SHUFFLE_SERVER_TAGS);
+  }
+
   public Gauge addGauge(String name, String... labels) {
     return addGauge(name, "Gauge " + name, labels);
   }
 
   public Gauge addGauge(String name, String help, String[] labels) {
     return Gauge.build().name(name).labelNames(labels).help(help).register(collectorRegistry);
+  }
+
+  public Gauge addGaugeWithTags(String name) {
+    return addGauge(name, Constants.SHUFFLE_SERVER_TAGS);
   }
 
   public Histogram addHistogram(String name, double[] buckets, String... labels) {
@@ -76,8 +86,9 @@ public class MetricsManager {
     return builder.register(collectorRegistry);
   }
 
-  public Summary addSummary(String name, String... labels) {
-    Summary.Builder builder = Summary.build().name(name).labelNames(labels).help("Summary " + name);
+  public Summary addSummaryWithTags(String name) {
+    Summary.Builder builder =
+        Summary.build().name(name).labelNames(Constants.SHUFFLE_SERVER_TAGS).help("Summary " + name);
     for (int i = 0; i < QUANTILES.length; i++) {
       builder = builder.quantile(QUANTILES[i], QUANTILE_ERROR);
     }

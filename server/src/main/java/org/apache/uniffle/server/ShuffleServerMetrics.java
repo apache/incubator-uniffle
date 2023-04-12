@@ -283,10 +283,10 @@ public class ShuffleServerMetrics {
   }
 
   private static Counter addCounter(String grpcTotal) {
-    return metricsManager.addCounter(grpcTotal, Constants.SHUFFLE_SERVER_TAGS);
+    return metricsManager.addCounterWithTags(grpcTotal);
   }
 
   private static Gauge addGauge(String name) {
-    return metricsManager.addGauge(name, Constants.SHUFFLE_SERVER_TAGS);
+    return metricsManager.addGaugeWithTags(name);
   }
 }
