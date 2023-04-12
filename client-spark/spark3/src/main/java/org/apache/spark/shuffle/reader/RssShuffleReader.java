@@ -20,6 +20,16 @@ package org.apache.spark.shuffle.reader;
 import java.util.List;
 import java.util.Map;
 
+import scala.Function0;
+import scala.Function1;
+import scala.Option;
+import scala.Product2;
+import scala.collection.AbstractIterator;
+import scala.collection.Iterator;
+import scala.runtime.AbstractFunction0;
+import scala.runtime.AbstractFunction1;
+import scala.runtime.BoxedUnit;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
@@ -36,15 +46,6 @@ import org.apache.spark.util.collection.ExternalSorter;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Function0;
-import scala.Function1;
-import scala.Option;
-import scala.Product2;
-import scala.collection.AbstractIterator;
-import scala.collection.Iterator;
-import scala.runtime.AbstractFunction0;
-import scala.runtime.AbstractFunction1;
-import scala.runtime.BoxedUnit;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;

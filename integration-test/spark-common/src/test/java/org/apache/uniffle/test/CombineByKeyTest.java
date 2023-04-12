@@ -19,11 +19,12 @@ package org.apache.uniffle.test;
 
 import java.util.Map;
 
+import scala.Tuple2;
+
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.Test;
-import scala.Tuple2;
 
 public class CombineByKeyTest extends SimpleTestBase {
 

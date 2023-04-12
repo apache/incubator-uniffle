@@ -19,13 +19,14 @@ package org.apache.spark.shuffle;
 
 import java.util.Set;
 
+import scala.Tuple2;
+import scala.runtime.AbstractFunction1;
+
 import com.google.common.collect.ImmutableSet;
 import org.apache.spark.SparkConf;
 import org.apache.spark.internal.config.ConfigBuilder;
 import org.apache.spark.internal.config.ConfigEntry;
 import org.apache.spark.internal.config.TypedConfigBuilder;
-import scala.Tuple2;
-import scala.runtime.AbstractFunction1;
 
 import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.config.ConfigOption;

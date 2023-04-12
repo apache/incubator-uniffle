@@ -23,6 +23,11 @@ import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import scala.Option;
+import scala.Tuple2;
+import scala.collection.Seq;
+import scala.collection.immutable.Map;
+
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -47,10 +52,6 @@ import org.apache.spark.util.AccumulatorV2;
 import org.apache.spark.util.TaskCompletionListener;
 import org.apache.spark.util.TaskFailureListener;
 import org.junit.jupiter.api.Test;
-import scala.Option;
-import scala.Tuple2;
-import scala.collection.Seq;
-import scala.collection.immutable.Map;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.Constants;

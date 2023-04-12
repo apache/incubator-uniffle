@@ -270,14 +270,13 @@
         -->
         <module name="OverloadMethodsDeclarationOrder"/>
         <module name="VariableDeclarationUsageDistance"/>
-        <module name="CustomImportOrder">
-             <!-- new add -->
-            <property name="sortImportsInGroupAlphabetically" value="true"/>
-            <property name="specialImportsRegExp" value="^org\.apache\.uniffle"/>
-            <property name="standardPackageRegExp" value="^java\.|^javax\."/>
-            <property name="separateLineBetweenGroups" value="true"/>
-            <property name="customImportOrderRules" value="STANDARD_JAVA_PACKAGE###THIRD_PARTY_PACKAGE###SPECIAL_IMPORTS###STATIC"/>
-            <property name="tokens" value="IMPORT, STATIC_IMPORT, PACKAGE_DEF"/>
+        <module name="ImportOrder">
+            <property name="groups" value="/^javax?\./,scala,/(?!org\.apache\.uniffle\.)/,/org\.apache\.uniffle\./"/>
+            <property name="ordered" value="true"/>
+            <property name="separated" value="true"/>
+            <property name="separatedStaticGroups" value="true"/>
+            <property name="option" value="bottom"/>
+            <property name="sortStaticImportsAlphabetically" value="true"/>
         </module>
         <module name="MethodParamPad">
             <property name="tokens"

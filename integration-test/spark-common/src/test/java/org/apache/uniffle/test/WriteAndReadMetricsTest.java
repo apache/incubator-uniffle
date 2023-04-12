@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import scala.collection.Seq;
+
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -30,7 +32,6 @@ import org.apache.spark.sql.functions;
 import org.apache.spark.status.AppStatusStore;
 import org.apache.spark.status.api.v1.StageData;
 import org.junit.jupiter.api.Test;
-import scala.collection.Seq;
 
 public class WriteAndReadMetricsTest extends SimpleTestBase {
 

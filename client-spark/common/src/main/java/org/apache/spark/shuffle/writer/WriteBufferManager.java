@@ -28,6 +28,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import scala.reflect.ClassTag$;
+import scala.reflect.ManifestFactory$;
+
 import com.clearspring.analytics.util.Lists;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -41,8 +44,6 @@ import org.apache.spark.serializer.SerializerInstance;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.reflect.ClassTag$;
-import scala.reflect.ManifestFactory$;
 
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ShuffleBlockInfo;
