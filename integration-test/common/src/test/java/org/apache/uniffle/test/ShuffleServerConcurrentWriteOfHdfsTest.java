@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -75,14 +76,14 @@ public class ShuffleServerConcurrentWriteOfHdfsTest extends ShuffleServerWithHdf
   private static Stream<Arguments> clientConcurrencyAndExpectedProvider() {
     return Stream.of(
         Arguments.of(-1, MAX_CONCURRENCY),
-        Arguments.of(4, 4)
+        Arguments.of(MAX_CONCURRENCY + 1, MAX_CONCURRENCY + 1)
     );
   }
 
   @ParameterizedTest
   @MethodSource("clientConcurrencyAndExpectedProvider")
   public void testConcurrentWrite2Hdfs(int clientSpecifiedConcurrency, int expectedConcurrency) throws Exception {
-    String appId = "testConcurrentWrite2Hdfs";
+    String appId = "testConcurrentWrite2Hdfs_" + new Random().nextInt();
     String dataBasePath = HDFS_URI + "rss/test";
     RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest(
         appId,
