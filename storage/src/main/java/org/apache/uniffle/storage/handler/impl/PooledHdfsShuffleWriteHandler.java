@@ -19,7 +19,6 @@ package org.apache.uniffle.storage.handler.impl;
 
 import java.util.List;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -48,7 +47,7 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
   private final int maxConcurrency;
   private final String basePath;
   private Function<Integer, ShuffleWriteHandler> createWriterFunc;
-  private AtomicInteger initializedHandlerCnt = new AtomicInteger(0);
+  private volatile int initializedHandlerCnt = 0;
 
   // Only for tests
   @VisibleForTesting
@@ -105,12 +104,10 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
 
   @Override
   public void write(List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
-    if (queue.isEmpty() && initializedHandlerCnt.get() < maxConcurrency) {
+    if (queue.isEmpty() && initializedHandlerCnt < maxConcurrency) {
       synchronized (queue) {
-        if (initializedHandlerCnt.get() < maxConcurrency) {
-          queue.add(
-              createWriterFunc.apply(initializedHandlerCnt.getAndIncrement())
-          );
+        if (initializedHandlerCnt < maxConcurrency) {
+          queue.add(createWriterFunc.apply(initializedHandlerCnt++));
         }
       }
     }
@@ -130,6 +127,6 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
 
   @VisibleForTesting
   protected int getInitializedHandlerCnt() {
-    return initializedHandlerCnt.get();
+    return initializedHandlerCnt;
   }
 }
