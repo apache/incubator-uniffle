@@ -57,7 +57,7 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       Configuration conf,
       ShuffleDataDistributionType distributionType,
       Roaring64NavigableMap expectTaskIds,
-      boolean useOffHeap) throws Exception {
+      boolean offHeapEnabled) throws Exception {
     super(appId, shuffleId, partitionId, readBufferSize, expectBlockIds, processBlockIds,
         distributionType, expectTaskIds);
     this.filePrefix = filePrefix;
