@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 
+import scala.Tuple2;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -33,7 +35,6 @@ import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Tuple2;
 
 public abstract class RepartitionTest extends SparkIntegrationTestBase {
 

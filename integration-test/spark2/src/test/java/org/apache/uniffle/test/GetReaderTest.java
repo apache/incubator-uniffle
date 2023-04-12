@@ -22,6 +22,8 @@ import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
+import scala.Tuple2;
+
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -37,7 +39,6 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.reader.RssShuffleReader;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.Test;
-import scala.Tuple2;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.util.Constants;

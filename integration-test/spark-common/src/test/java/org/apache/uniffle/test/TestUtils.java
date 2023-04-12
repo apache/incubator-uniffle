@@ -20,13 +20,14 @@ package org.apache.uniffle.test;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import scala.Tuple2;
+
 import com.google.common.collect.Lists;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
-import scala.Tuple2;
 
 public class TestUtils {
   private TestUtils() {

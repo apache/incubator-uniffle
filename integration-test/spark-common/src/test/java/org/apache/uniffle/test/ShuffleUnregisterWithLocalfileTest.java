@@ -20,6 +20,8 @@ package org.apache.uniffle.test;
 import java.io.File;
 import java.util.Map;
 
+import scala.Tuple2;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.spark.SparkConf;
@@ -29,7 +31,6 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import scala.Tuple2;
 
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.coordinator.CoordinatorConf;

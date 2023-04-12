@@ -20,6 +20,12 @@ package org.apache.spark.shuffle.reader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import scala.Product2;
+import scala.Tuple2;
+import scala.collection.AbstractIterator;
+import scala.collection.Iterator;
+import scala.runtime.BoxedUnit;
+
 import com.google.common.annotations.VisibleForTesting;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
@@ -30,11 +36,6 @@ import org.apache.spark.serializer.SerializerInstance;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Product2;
-import scala.Tuple2;
-import scala.collection.AbstractIterator;
-import scala.collection.Iterator;
-import scala.runtime.BoxedUnit;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;

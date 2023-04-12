@@ -20,13 +20,14 @@ package org.apache.spark.shuffle.reader;
 import java.io.IOException;
 import java.util.Objects;
 
+import scala.Product2;
+import scala.collection.AbstractIterator;
+import scala.collection.Iterator;
+
 import org.apache.spark.shuffle.FetchFailedException;
 import org.apache.spark.shuffle.RssSparkShuffleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Product2;
-import scala.collection.AbstractIterator;
-import scala.collection.Iterator;
 
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.factory.ShuffleManagerClientFactory;

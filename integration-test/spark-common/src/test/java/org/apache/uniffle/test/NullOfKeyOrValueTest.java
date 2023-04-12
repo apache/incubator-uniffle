@@ -19,12 +19,13 @@ package org.apache.uniffle.test;
 
 import java.util.Map;
 
+import scala.Tuple2;
+
 import com.google.common.collect.Lists;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.Test;
-import scala.Tuple2;
 
 /**
  * This class is to test whether the RSS keep consistent with the vanilla spark shuffle when
