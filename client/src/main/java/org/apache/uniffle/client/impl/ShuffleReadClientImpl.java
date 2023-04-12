@@ -79,7 +79,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       IdHelper idHelper,
       ShuffleDataDistributionType dataDistributionType,
       boolean expectedTaskIdsBitmapFilterEnable,
-      boolean offHeapEnable) {
+      boolean offHeapEnabled) {
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.blockIdBitmap = blockIdBitmap;
@@ -107,7 +107,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     if (expectedTaskIdsBitmapFilterEnable) {
       request.useExpectedTaskIdsBitmapFilter();
     }
-    if (offHeapEnable) {
+    if (offHeapEnabled) {
       request.enableOffHeap();
     }
 
