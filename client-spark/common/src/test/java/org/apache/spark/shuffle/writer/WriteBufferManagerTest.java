@@ -188,7 +188,7 @@ public class WriteBufferManagerTest {
     SparkConf conf = getConf();
     WriteBufferManager wbm = createManager(conf);
     WriterBuffer mockWriterBuffer = mock(WriterBuffer.class);
-    when(mockWriterBuffer.finalizeAndGetData()).thenReturn(new byte[]{});
+    when(mockWriterBuffer.getData()).thenReturn(new byte[]{});
     when(mockWriterBuffer.getMemoryUsed()).thenReturn(0);
     ShuffleBlockInfo sbi = wbm.createShuffleBlock(0, mockWriterBuffer);
     // seqNo = 0, partitionId = 0, taskId = 0

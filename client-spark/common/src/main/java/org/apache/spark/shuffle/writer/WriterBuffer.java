@@ -26,13 +26,13 @@ import org.slf4j.LoggerFactory;
 public class WriterBuffer {
 
   private static final Logger LOG = LoggerFactory.getLogger(WriterBuffer.class);
-  private long copyTime = 0;
-  private byte[] buffer;
-  private int bufferSize;
-  private int nextOffset = 0;
+  private volatile long copyTime = 0;
+  private volatile byte[] buffer;
+  private volatile int bufferSize;
+  private volatile int nextOffset = 0;
   private List<WrappedBuffer> buffers = Lists.newArrayList();
-  private int dataLength = 0;
-  private int memoryUsed = 0;
+  private volatile int dataLength = 0;
+  private volatile int memoryUsed = 0;
 
   public WriterBuffer(int bufferSize) {
     this.bufferSize = bufferSize;

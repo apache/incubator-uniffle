@@ -229,7 +229,7 @@ public class WriteBufferManager extends MemoryConsumer {
 
   // transform records to shuffleBlock
   protected ShuffleBlockInfo createShuffleBlock(int partitionId, WriterBuffer wb) {
-    byte[] data = wb.finalizeAndGetData();
+    byte[] data = wb.getData();
     final int uncompressLength = data.length;
     byte[] compressed = data;
     if (codec != null) {
