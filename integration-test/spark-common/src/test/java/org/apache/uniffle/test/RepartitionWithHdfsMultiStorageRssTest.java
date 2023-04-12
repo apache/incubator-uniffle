@@ -48,7 +48,7 @@ public class RepartitionWithHdfsMultiStorageRssTest extends RepartitionTest {
     //  the test case use too long time.
     boolean useOffHeap = random.nextInt() % 2 == 0;
     LOG.info("use off heap: " + useOffHeap);
-    dynamicConf.put(RssSparkConfig.RSS_CLIENT_USE_OFF_HEAP_MEMORY.key(), String.valueOf(useOffHeap));
+    dynamicConf.put(RssSparkConfig.RSS_CLIENT_OFF_HEAP_MEMORY_ENABLE.key(), String.valueOf(useOffHeap));
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
