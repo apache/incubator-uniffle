@@ -144,7 +144,6 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
 
     int uncompressedLen = rawBlock.getUncompressLength();
     if (codec != null) {
-      // todo: when we have netty data transportation, we will only use off heap memory.
       if (uncompressedData == null || uncompressedData.capacity() < uncompressedLen) {
         if (uncompressedData != null) {
           RssUtils.releaseByteBuffer(uncompressedData);
