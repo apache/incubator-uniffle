@@ -75,6 +75,7 @@ import org.apache.uniffle.shuffle.manager.ShuffleManagerGrpcService;
 import org.apache.uniffle.shuffle.manager.ShuffleManagerServerFactory;
 
 import static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_PORT;
+import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE;
 
 public class RssShuffleManager extends RssShuffleManagerBase {
 
@@ -100,6 +101,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final String user;
   private final String uuid;
   private DataPusher dataPusher;
+  private final int maxConcurrencyPerPartitionToWrite;
 
   private final Map<Integer, Integer> shuffleIdToPartitionNum = Maps.newConcurrentMap();
   private final Map<Integer, Integer> shuffleIdToNumMapTasks = Maps.newConcurrentMap();
@@ -119,6 +121,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.dataReplicaRead = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_READ);
     this.dataTransferPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE);
     this.dataReplicaSkipEnabled = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_SKIP_ENABLED);
+    this.maxConcurrencyPerPartitionToWrite =
+        RssSparkConfig.toRssConf(sparkConf).get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
     LOG.info("Check quorum config ["
         + dataReplica + ":" + dataReplicaWrite + ":" + dataReplicaRead + ":" + dataReplicaSkipEnabled + "]");
     RssUtils.checkQuorumSetting(dataReplica, dataReplicaWrite, dataReplicaRead);
@@ -318,7 +322,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               shuffleId,
               entry.getValue(),
               remoteStorage,
-              ShuffleDataDistributionType.NORMAL
+              ShuffleDataDistributionType.NORMAL,
+              maxConcurrencyPerPartitionToWrite
           );
         });
     LOG.info("Finish register shuffleId[" + shuffleId + "] with " + (System.currentTimeMillis() - start) + " ms");

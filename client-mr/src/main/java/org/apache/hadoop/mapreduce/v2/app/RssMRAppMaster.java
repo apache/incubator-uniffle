@@ -83,6 +83,8 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE;
+
 public class RssMRAppMaster extends MRAppMaster {
 
   private final String rssNmHost;
@@ -228,7 +230,8 @@ public class RssMRAppMaster extends MRAppMaster {
               0,
               entry.getValue(),
               remoteStorage,
-              ShuffleDataDistributionType.NORMAL
+              ShuffleDataDistributionType.NORMAL,
+              RssMRConfig.toRssConf(conf).get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE)
           ));
           LOG.info("Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
           return shuffleAssignments;

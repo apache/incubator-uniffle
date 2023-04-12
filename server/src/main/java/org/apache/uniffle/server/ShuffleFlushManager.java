@@ -48,6 +48,8 @@ import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
+
 public class ShuffleFlushManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleFlushManager.class);
@@ -258,9 +260,10 @@ public class ShuffleFlushManager {
 
   private int getMaxConcurrencyPerPartitionWrite(ShuffleDataFlushEvent event) {
     ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(event.getAppId());
+    // For some tests.
     if (taskInfo == null) {
       LOG.warn("Should not happen that shuffle task info of {} is null.", event.getAppId());
-      return 1;
+      return shuffleServerConf.get(SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION);
     }
     return taskInfo.getMaxConcurrencyPerPartitionToWrite();
   }
