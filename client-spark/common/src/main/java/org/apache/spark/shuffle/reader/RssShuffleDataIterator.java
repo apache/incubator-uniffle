@@ -145,9 +145,6 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
 
     int uncompressedLen = rawBlock.getUncompressLength();
     if (codec != null) {
-      if (uncompressedData != null) {
-        LOG.warn("UncompressedData: " + uncompressedLen + " Capacity: " + uncompressedData.capacity());
-      }
       if (uncompressedData == null || uncompressedData.capacity() < uncompressedLen) {
         if (uncompressedData != null) {
           RssUtils.releaseByteBuffer(uncompressedData);
@@ -161,12 +158,12 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       unCompressedBytesLength += uncompressedLen;
       long decompressDuration = System.currentTimeMillis() - startDecompress;
       decompressTime += decompressDuration;
+      // ByteBuffer's limit may not uncompressDataLength after using compress method.
+      // So we need set limit here.
+      uncompressedData.limit(uncompressedData.position() + uncompressedLen);
     } else {
       uncompressedData = rawData;
     }
-    // ByteBuffer's limit may not uncompressDataLength after using compress method.
-    // So we need set limit here.
-    uncompressedData.limit(uncompressedData.position() + uncompressedLen);
     return uncompressedLen;
   }
 

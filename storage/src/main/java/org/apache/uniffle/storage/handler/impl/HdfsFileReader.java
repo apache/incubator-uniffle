@@ -98,7 +98,7 @@ public class HdfsFileReader implements FileReader, Closeable {
   public ByteBuffer readAsByteBuffer() {
     try {
       long length = getFileLen();
-      if (length > Integer.MAX_VALUE) {
+      if (length - fsDataInputStream.getPos() > Integer.MAX_VALUE) {
         LOG.warn("File " + path + "length is too long");
         return ByteBuffer.allocateDirect(0);
       }
