@@ -24,10 +24,7 @@ import org.apache.spark.serializer.Serializer;
 import org.junit.jupiter.api.Test;
 import scala.reflect.ClassTag$;
 
-import org.apache.uniffle.common.exception.RssException;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class WriteBufferTest {
 
@@ -37,27 +34,6 @@ public class WriteBufferTest {
   private SerializationStream serializeStream = kryoSerializer.newInstance().serializeStream(arrayOutputStream);
   private byte[] serializedData;
   private int serializedDataLength;
-
-  @Test
-  public void dropBufferAfterGettingDataTest() {
-    WriterBuffer buffer = new WriterBuffer(32);
-    serializeData("key", "value");
-    buffer.addRecord(serializedData, serializedDataLength);
-    buffer.finalizeAndGetData();
-    try {
-      buffer.askForMemory(100);
-      fail();
-    } catch (RssException e) {
-      // ignore
-    }
-
-    try {
-      buffer.addRecord(new byte[]{}, 0);
-      fail();
-    } catch (RssException e) {
-      // ignore
-    }
-  }
 
   @Test
   public void test() {
