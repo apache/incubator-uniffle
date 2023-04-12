@@ -22,6 +22,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import scala.Product2;
+import scala.collection.Iterator;
+import scala.reflect.ClassTag$;
+
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -29,9 +33,6 @@ import org.apache.spark.serializer.SerializationStream;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.serializer.SerializerInstance;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
-import scala.Product2;
-import scala.collection.Iterator;
-import scala.reflect.ClassTag$;
 
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ShufflePartitionedBlock;

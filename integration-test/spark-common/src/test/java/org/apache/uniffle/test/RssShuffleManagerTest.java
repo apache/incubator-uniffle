@@ -21,6 +21,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import scala.Option;
+
 import com.google.common.collect.Maps;
 import org.apache.spark.MapOutputTrackerMaster;
 import org.apache.spark.SparkConf;
@@ -31,7 +33,6 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import scala.Option;
 
 import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.coordinator.CoordinatorConf;

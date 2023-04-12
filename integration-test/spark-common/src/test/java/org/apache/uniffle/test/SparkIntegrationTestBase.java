@@ -20,13 +20,14 @@ package org.apache.uniffle.test;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import scala.Option;
+
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Option;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

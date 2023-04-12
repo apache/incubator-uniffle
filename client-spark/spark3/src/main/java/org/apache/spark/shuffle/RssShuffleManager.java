@@ -30,6 +30,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import scala.Tuple2;
+import scala.Tuple3;
+import scala.collection.Iterator;
+import scala.collection.Seq;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -55,10 +60,6 @@ import org.apache.spark.storage.BlockManagerId;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Tuple2;
-import scala.Tuple3;
-import scala.collection.Iterator;
-import scala.collection.Seq;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;

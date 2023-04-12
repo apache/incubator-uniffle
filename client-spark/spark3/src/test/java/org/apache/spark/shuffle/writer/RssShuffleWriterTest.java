@@ -26,6 +26,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import scala.Product2;
+import scala.Tuple2;
+import scala.collection.mutable.MutableList;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -44,9 +48,6 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.TestUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import scala.Product2;
-import scala.Tuple2;
-import scala.collection.mutable.MutableList;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.common.ShuffleBlockInfo;

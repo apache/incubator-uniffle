@@ -21,6 +21,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+import scala.collection.JavaConverters;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.spark.SparkConf;
@@ -31,7 +33,6 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.internal.SQLConf;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import scala.collection.JavaConverters;
 
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
