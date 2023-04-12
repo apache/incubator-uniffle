@@ -80,8 +80,9 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
     // when the ByteBuf is released. This is because the UnpooledDirectByteBuf's doFree is false 
     // when it is constructed from user provided ByteBuffer. 
     // The `releaseOnClose` parameter doesn't take effect, we would release the data ByteBuffer 
-    // manually. 
-    byteBufInputStream = new ByteBufInputStream(Unpooled.wrappedBuffer(data), true);
+    // manually.
+    byteBufInputStream = new ByteBufInputStream(Unpooled.wrappedBuffer(data).
+        slice(data.position(), data.limit()), true);
     deserializationStream = serializerInstance.deserializeStream(byteBufInputStream);
     return deserializationStream.asKeyValueIterator();
   }
@@ -144,6 +145,9 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
 
     int uncompressedLen = rawBlock.getUncompressLength();
     if (codec != null) {
+      if (uncompressedData != null) {
+        LOG.warn("UncompressedData: " + uncompressedLen + " Capacity: " + uncompressedData.capacity());
+      }
       if (uncompressedData == null || uncompressedData.capacity() < uncompressedLen) {
         if (uncompressedData != null) {
           RssUtils.releaseByteBuffer(uncompressedData);
@@ -160,6 +164,9 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
     } else {
       uncompressedData = rawData;
     }
+    // ByteBuffer's limit may not uncompressDataLength after using compress method.
+    // So we need set limit here.
+    uncompressedData.limit(uncompressedLen);
     return uncompressedLen;
   }
 
