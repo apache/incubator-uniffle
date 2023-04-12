@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -34,7 +33,6 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class PooledHdfsShuffleWriteHandlerTest {
 
@@ -84,7 +82,7 @@ public class PooledHdfsShuffleWriteHandlerTest {
     );
 
     // case1: no race condition
-    for (int i = 0; i < 10; i ++) {
+    for (int i = 0; i < 10; i++) {
       handler.write(Collections.emptyList());
       assertEquals(1, initializedList.size());
     }
@@ -92,7 +90,7 @@ public class PooledHdfsShuffleWriteHandlerTest {
     // case2: initialized by multi threads
     invokedList.clear();
     CountDownLatch latch = new CountDownLatch(100);
-    for (int i = 0; i < 100; i ++) {
+    for (int i = 0; i < 100; i++) {
       new Thread(() -> {
         try {
           handler.write(Collections.emptyList());
