@@ -81,8 +81,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
     // when it is constructed from user provided ByteBuffer. 
     // The `releaseOnClose` parameter doesn't take effect, we would release the data ByteBuffer 
     // manually.
-    byteBufInputStream = new ByteBufInputStream(Unpooled.wrappedBuffer(data).
-        slice(data.position(), data.limit()), true);
+    byteBufInputStream = new ByteBufInputStream(Unpooled.wrappedBuffer(data), true);
     deserializationStream = serializerInstance.deserializeStream(byteBufInputStream);
     return deserializationStream.asKeyValueIterator();
   }
