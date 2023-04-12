@@ -50,7 +50,7 @@ public class RssClientConf {
       .intType()
       .defaultValue(0)
       .withDescription("The max concurrency for single partition to write, the value is the max file number "
-          + "for one partition, remote shuffle server should respect this. Default value is -1, the ");
+          + "for one partition, remote shuffle server should respect this.");
 
   public static final ConfigOption<Integer> NETTY_IO_CONNECT_TIMEOUT_MS = ConfigOptions
       .key("rss.client.netty.io.connect.timeout.ms")
