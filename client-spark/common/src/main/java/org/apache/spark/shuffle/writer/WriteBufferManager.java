@@ -77,7 +77,7 @@ public class WriteBufferManager extends MemoryConsumer {
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
   private int serializerBufferSize;
   private int bufferSegmentSize;
-  private volatile long copyTime = 0;
+  private AtomicLong copyTime = new AtomicLong(0);
   private long serializeTime = 0;
   private long compressTime = 0;
   private long writeTime = 0;
@@ -183,7 +183,7 @@ public class WriteBufferManager extends MemoryConsumer {
         wb.addRecord(serializedData, serializedDataLength);
         if (wb.getMemoryUsed() > bufferSize) {
           result.add(createShuffleBlock(partitionId, wb));
-          copyTime += wb.getCopyTime();
+          copyTime.addAndGet(wb.getCopyTime());
           buffers.remove(partitionId);
           LOG.debug("Single buffer is full for shuffleId[" + shuffleId
               + "] partition[" + partitionId + "] with memoryUsed[" + wb.getMemoryUsed()
@@ -218,7 +218,7 @@ public class WriteBufferManager extends MemoryConsumer {
         dataSize += wb.getDataLength();
         memoryUsed += wb.getMemoryUsed();
         result.add(createShuffleBlock(entry.getKey(), wb));
-        copyTime += wb.getCopyTime();
+        copyTime.addAndGet(wb.getCopyTime());
       }
       LOG.info("Flush total buffer for shuffleId[" + shuffleId + "] with allocated["
           + allocatedBytes + "], dataSize[" + dataSize + "], memoryUsed[" + memoryUsed + "]");

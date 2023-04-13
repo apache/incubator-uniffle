@@ -18,6 +18,9 @@
 package org.apache.spark.shuffle.writer;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -26,48 +29,48 @@ import org.slf4j.LoggerFactory;
 public class WriterBuffer {
 
   private static final Logger LOG = LoggerFactory.getLogger(WriterBuffer.class);
-  private volatile long copyTime = 0;
-  private volatile byte[] buffer;
-  private volatile int bufferSize;
-  private volatile int nextOffset = 0;
+  private AtomicLong copyTime = new AtomicLong(0);
+  private AtomicReference<byte[]> buffer = new AtomicReference<>();
+  private final AtomicInteger bufferSize;
+  private AtomicInteger nextOffset = new AtomicInteger(0);
   private List<WrappedBuffer> buffers = Lists.newArrayList();
-  private volatile int dataLength = 0;
-  private volatile int memoryUsed = 0;
+  private AtomicInteger dataLength = new AtomicInteger();
+  private AtomicInteger memoryUsed = new AtomicInteger();
 
   public WriterBuffer(int bufferSize) {
-    this.bufferSize = bufferSize;
+    this.bufferSize = new AtomicInteger(bufferSize);
   }
 
   public void addRecord(byte[] recordBuffer, int length) {
     if (askForMemory(length)) {
       // buffer has data already, add buffer to list
-      if (nextOffset > 0) {
-        buffers.add(new WrappedBuffer(buffer, nextOffset));
-        nextOffset = 0;
+      if (nextOffset.get() > 0) {
+        buffers.add(new WrappedBuffer(buffer.get(), nextOffset.get()));
+        nextOffset.set(0);
       }
-      int newBufferSize = Math.max(length, bufferSize);
-      buffer = new byte[newBufferSize];
-      memoryUsed += newBufferSize;
+      int newBufferSize = Math.max(length, bufferSize.get());
+      buffer.set(new byte[newBufferSize]);
+      memoryUsed.addAndGet(newBufferSize);
     }
 
     try {
-      System.arraycopy(recordBuffer, 0, buffer, nextOffset, length);
+      System.arraycopy(recordBuffer, 0, buffer, nextOffset.get(), length);
     } catch (Exception e) {
       LOG.error("Unexpected exception for System.arraycopy, length[" + length + "], nextOffset["
           + nextOffset + "], bufferSize[" + bufferSize + "]");
       throw e;
     }
 
-    nextOffset += length;
-    dataLength += length;
+    nextOffset.addAndGet(length);
+    dataLength.addAndGet(length);
   }
 
   public boolean askForMemory(long length) {
-    return buffer == null || nextOffset + length > bufferSize;
+    return buffer == null || nextOffset.get() + length > bufferSize.get();
   }
 
   public byte[] getData() {
-    byte[] data = new byte[dataLength];
+    byte[] data = new byte[dataLength.get()];
     int offset = 0;
     long start = System.currentTimeMillis();
     for (WrappedBuffer wrappedBuffer : buffers) {
@@ -75,21 +78,21 @@ public class WriterBuffer {
       offset += wrappedBuffer.getSize();
     }
     // nextOffset is the length of current buffer used
-    System.arraycopy(buffer, 0, data, offset, nextOffset);
-    copyTime += System.currentTimeMillis() - start;
+    System.arraycopy(buffer, 0, data, offset, nextOffset.get());
+    copyTime.addAndGet(System.currentTimeMillis() - start);
     return data;
   }
 
   public int getDataLength() {
-    return dataLength;
+    return dataLength.get();
   }
 
   public long getCopyTime() {
-    return copyTime;
+    return copyTime.get();
   }
 
   public int getMemoryUsed() {
-    return memoryUsed;
+    return memoryUsed.get();
   }
 
   private static final class WrappedBuffer {
