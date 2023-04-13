@@ -105,7 +105,7 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
   @Override
   public void write(List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
     if (queue.isEmpty() && initializedHandlerCnt < maxConcurrency) {
-      synchronized (queue) {
+      synchronized (this) {
         if (initializedHandlerCnt < maxConcurrency) {
           queue.add(createWriterFunc.apply(initializedHandlerCnt++));
         }
