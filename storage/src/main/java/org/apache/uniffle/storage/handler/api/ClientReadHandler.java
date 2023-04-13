@@ -22,6 +22,7 @@ import org.apache.uniffle.common.ShuffleDataResult;
 
 public interface ClientReadHandler {
 
+  // thread safe
   ShuffleDataResult readShuffleData();
 
   void close();

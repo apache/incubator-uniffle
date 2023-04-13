@@ -34,6 +34,7 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.storage.handler.ClientReadHandlerMetric;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
 
@@ -58,9 +59,10 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
 
   private final ShuffleServerInfo serverInfo;
   private final Map<Tier, Supplier<ClientReadHandler>> supplierMap = new EnumMap<>(Tier.class);
-  private final Map<Tier, ClientReadHandler> handlerMap = new EnumMap<>(Tier.class);
-  private final Map<Tier, ClientReadHandlerMetric> metricsMap = new EnumMap<>(Tier.class);
-  private Tier currentTier = Tier.VALUES[0]; // == Tier.HOT
+  private final Map<Tier, ClientReadHandler> handlerMap = JavaUtils.newConcurrentMap();
+
+  private final Map<Tier, ClientReadHandlerMetric> metricsMap = JavaUtils.newConcurrentMap();
+  private volatile Tier currentTier = Tier.VALUES[0]; // == Tier.HOT
   private final int numTiers;
 
   {
@@ -89,30 +91,36 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
     }
   }
 
+  // thread safe
   @Override
   public ShuffleDataResult readShuffleData() {
-    ClientReadHandler handler = handlerMap.computeIfAbsent(currentTier,
+    final Tier tier = currentTier;
+    final ClientReadHandler handler = handlerMap.computeIfAbsent(tier,
         key -> supplierMap.getOrDefault(key, () -> null).get());
     if (handler == null) {
-      throw new RssException("Unexpected null when getting " + currentTier.name() + " handler");
+      throw new RssException("Unexpected null when getting " + tier.name() + " handler");
     }
     ShuffleDataResult shuffleDataResult;
     try {
       shuffleDataResult = handler.readShuffleData();
     } catch (RssFetchFailedException e) {
       Throwable cause = e.getCause();
-      String message = "Failed to read shuffle data from " + currentTier.name() + "handler, error: " + e.getMessage();
+      String message = "Failed to read shuffle data from " + tier.name() + "handler, error: " + e.getMessage();
       throw new RssFetchFailedException(message, cause);
     } catch (Exception e) {
-      throw new RssFetchFailedException("Failed to read shuffle data from " + currentTier.name() + " handler", e);
+      throw new RssFetchFailedException("Failed to read shuffle data from " + tier.name() + " handler", e);
     }
     // when is no data for current handler, and the upmostLevel is not reached,
     // then try next one if there has
-    if (shuffleDataResult == null || shuffleDataResult.isEmpty()) {
-      if (currentTier.ordinal() + 1 < numTiers) {
-        currentTier = currentTier.next();
-      } else {
-        return null;
+    if ((shuffleDataResult == null || shuffleDataResult.isEmpty()) && tier == currentTier) {
+      synchronized (this) {
+        if (tier == currentTier) {
+          if (tier.ordinal() + 1 < numTiers) {
+            currentTier = currentTier.next();
+          } else {
+            return null;
+          }
+        }
       }
       return readShuffleData();
     }

@@ -18,7 +18,6 @@
 package org.apache.uniffle.storage.handler.impl;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -162,10 +161,6 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       String fileName, Configuration hadoopConf) throws Exception {
     Path path = new Path(fileName);
     return new HdfsFileReader(path, hadoopConf);
-  }
-
-  public List<ShuffleDataSegment> getShuffleDataSegments() {
-    return shuffleDataSegments;
   }
 
   public String getFilePrefix() {

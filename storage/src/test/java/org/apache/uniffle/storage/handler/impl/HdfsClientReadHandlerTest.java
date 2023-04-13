@@ -125,7 +125,7 @@ public class HdfsClientReadHandlerTest extends HdfsTestBase {
         total,
         handler.getHdfsShuffleFileReadHandlers()
             .stream()
-            .mapToInt(i -> i.getShuffleDataSegments().size())
+            .mapToInt(i -> i.getShuffleDataSegmentsSize())
             .sum());
     assertEquals(expectTotalBlockNum, totalBlockNum);
     assertEquals(expectedData.keySet(), actualBlockIds);
