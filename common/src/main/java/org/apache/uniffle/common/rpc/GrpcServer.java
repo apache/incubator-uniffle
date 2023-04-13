@@ -40,24 +40,32 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ExitUtils;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public class GrpcServer implements ServerInterface {
 
   private static final Logger LOG = LoggerFactory.getLogger(GrpcServer.class);
 
-  private final Server server;
+  private Server server;
   private final int port;
   private int listenPort;
   private final ExecutorService pool;
+  private List<Pair<BindableService, List<ServerInterceptor>>> servicesWithInterceptors;
+  private GRPCMetrics grpcMetrics;
+  private RssBaseConf rssConf;
 
   protected GrpcServer(
       RssBaseConf conf,
       List<Pair<BindableService, List<ServerInterceptor>>> servicesWithInterceptors,
       GRPCMetrics grpcMetrics) {
-    this.port = conf.getInteger(RssBaseConf.RPC_SERVER_PORT);
-    long maxInboundMessageSize = conf.getLong(RssBaseConf.RPC_MESSAGE_MAX_SIZE);
+    this.rssConf = conf;
+    this.port = rssConf.getInteger(RssBaseConf.RPC_SERVER_PORT);
+    this.servicesWithInterceptors = servicesWithInterceptors;
+    this.grpcMetrics = grpcMetrics;
+
     int rpcExecutorSize = conf.getInteger(RssBaseConf.RPC_EXECUTOR_SIZE);
     pool = new GrpcThreadPoolExecutor(
         rpcExecutorSize,
@@ -68,12 +76,15 @@ public class GrpcServer implements ServerInterface {
         ThreadUtils.getThreadFactory("Grpc"),
         grpcMetrics
     );
+  }
 
-    boolean isMetricsEnabled = conf.getBoolean(RssBaseConf.RPC_METRICS_ENABLED);
+  private Server buildGrpcServer(int serverPort) {
+    boolean isMetricsEnabled = rssConf.getBoolean(RssBaseConf.RPC_METRICS_ENABLED);
+    long maxInboundMessageSize = rssConf.getLong(RssBaseConf.RPC_MESSAGE_MAX_SIZE);
     ServerBuilder<?> builder = ServerBuilder
-        .forPort(port)
+        .forPort(serverPort)
         .executor(pool)
-        .maxInboundMessageSize((int)maxInboundMessageSize);
+        .maxInboundMessageSize((int) maxInboundMessageSize);
     if (isMetricsEnabled) {
       builder.addTransportFilter(new MonitoringServerTransportFilter(grpcMetrics));
     }
@@ -88,7 +99,7 @@ public class GrpcServer implements ServerInterface {
       }
       builder.addService(ServerInterceptors.intercept(serviceWithInterceptors.getLeft(), interceptors));
     });
-    this.server = builder.build();
+    return builder.build();
   }
 
   public static class Builder {
@@ -155,21 +166,27 @@ public class GrpcServer implements ServerInterface {
     }
   }
 
+  @Override
   public int start() throws IOException {
     try {
-      server.start();
-      listenPort = server.getPort();
-    } catch (IOException e) {
-      ExitUtils.terminate(1, "Fail to start grpc server", e, LOG);
+      this.listenPort = RssUtils.startServiceOnPort(this,
+          Constants.GRPC_SERVICE_NAME, port, rssConf);
+    } catch (Exception e) {
+      ExitUtils.terminate(1, "Fail to start grpc server on conf port:" + port, e, LOG);
     }
-    LOG.info("Grpc server started, configured port: {}, listening on {}.", port, listenPort);
-    return port;
+    return listenPort;
   }
 
   @Override
-  public void startOnPort(int port) {
-    ExitUtils.terminate(1, "Fail to start grpc server",
-        new RuntimeException("GRpcServer not implement now"), LOG);
+  public void startOnPort(int startPort) throws Exception {
+    this.server = buildGrpcServer(startPort);
+    try {
+      server.start();
+      listenPort = server.getPort();
+    } catch (Exception e) {
+      throw e;
+    }
+    LOG.info("Grpc server started, configured port: {}, listening on {}.", port, listenPort);
   }
 
   public void stop() throws InterruptedException {
@@ -189,7 +206,7 @@ public class GrpcServer implements ServerInterface {
   }
 
   public int getPort() {
-    return port <= 0 ? listenPort : port;
+    return listenPort;
   }
 
 }
