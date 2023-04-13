@@ -54,7 +54,7 @@ public class WriterBuffer {
     }
 
     try {
-      System.arraycopy(recordBuffer, 0, buffer, nextOffset.get(), length);
+      System.arraycopy(recordBuffer, 0, buffer.get(), nextOffset.get(), length);
     } catch (Exception e) {
       LOG.error("Unexpected exception for System.arraycopy, length[" + length + "], nextOffset["
           + nextOffset + "], bufferSize[" + bufferSize + "]");
@@ -66,7 +66,7 @@ public class WriterBuffer {
   }
 
   public boolean askForMemory(long length) {
-    return buffer == null || nextOffset.get() + length > bufferSize.get();
+    return buffer.get() == null || nextOffset.get() + length > bufferSize.get();
   }
 
   public byte[] getData() {
@@ -78,7 +78,7 @@ public class WriterBuffer {
       offset += wrappedBuffer.getSize();
     }
     // nextOffset is the length of current buffer used
-    System.arraycopy(buffer, 0, data, offset, nextOffset.get());
+    System.arraycopy(buffer.get(), 0, data, offset, nextOffset.get());
     copyTime.addAndGet(System.currentTimeMillis() - start);
     return data;
   }
