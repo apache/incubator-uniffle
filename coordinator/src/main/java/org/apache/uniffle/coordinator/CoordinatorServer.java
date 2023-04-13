@@ -101,6 +101,9 @@ public class CoordinatorServer extends ReconfigurableBase {
     startReconfigureThread();
     jettyServer.start();
     server.start();
+    if (metricReporter != null) {
+      metricReporter.start();
+    }
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override

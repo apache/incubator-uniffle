@@ -68,7 +68,7 @@ public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter 
     scheduledExecutorService.scheduleWithFixedDelay(() -> {
       for (CollectorRegistry registry : registryList) {
         try {
-          pushGateway.push(registry, jobName, groupingKey);
+          pushGateway.pushAdd(registry, jobName, groupingKey);
         } catch (Throwable e) {
           LOG.error("Failed to send metrics to push gateway.", e);
         }

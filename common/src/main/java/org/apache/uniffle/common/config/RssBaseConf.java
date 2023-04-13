@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.common.util.RssUtils;
 
 public class RssBaseConf extends RssConf {
 
@@ -212,21 +213,17 @@ public class RssBaseConf extends RssConf {
       .defaultValue(5L)
       .withDescription("Reconfigure check interval.");
 
-  public boolean loadCommonConf(Map<String, String> properties) {
+  public boolean loadConfFromFile(String fileName, List<ConfigOption<Object>> configOptions) {
+    Map<String, String> properties = RssUtils.getPropertiesFromFile(fileName);
     if (properties == null) {
       return false;
     }
+    return loadCommonConf(properties) && loadConf(properties, configOptions, true);
+  }
 
+  public boolean loadCommonConf(Map<String, String> properties) {
     List<ConfigOption<Object>> configOptions = ConfigUtils.getAllConfigOptions(RssBaseConf.class);
-    properties.forEach((k, v) -> {
-      configOptions.forEach(config -> {
-        if (config.key().equalsIgnoreCase(k)) {
-          set(config, ConfigUtils.convertValue(v, config.getClazz()));
-        }
-      });
-    });
-
-    return true;
+    return loadConf(properties, configOptions, false);
   }
 
 }

@@ -17,23 +17,26 @@
 
 package org.apache.uniffle.common.metrics;
 
-import java.lang.reflect.Constructor;
-
-import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.metrics.prometheus.PrometheusPushGatewayMetricReporter;
 
-public class MetricReporterFactory {
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-  public static MetricReporter getMetricReporter(RssConf conf, String instanceId) throws Exception {
-    String name = conf.get(RssBaseConf.RSS_METRICS_REPORTER_CLASS);
-    if (StringUtils.isEmpty(name)) {
-      return null;
-    }
-    Class<?> klass = Class.forName(name);
-    Constructor<?> constructor;
-    constructor = klass.getConstructor(RssConf.class, String.class);
-    return (AbstractMetricReporter) constructor.newInstance(conf, instanceId);
+public class MetricReporterFactoryTest {
+
+  @Test
+  public void testGetMetricReporter() throws Exception {
+    CustomRssConf conf = new CustomRssConf();
+    conf.set(RssBaseConf.RSS_METRICS_REPORTER_CLASS,
+        PrometheusPushGatewayMetricReporter.class.getCanonicalName());
+    MetricReporter metricReporter = MetricReporterFactory.getMetricReporter(conf, "1");
+    assertTrue(metricReporter instanceof PrometheusPushGatewayMetricReporter);
+  }
+
+  class CustomRssConf extends RssConf {
+
   }
 }
