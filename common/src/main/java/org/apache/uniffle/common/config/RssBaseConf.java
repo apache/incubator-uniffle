@@ -213,24 +213,6 @@ public class RssBaseConf extends RssConf {
       .defaultValue(5L)
       .withDescription("Reconfigure check interval.");
 
-  public static final ConfigOption<Integer> RSS_RANDOM_PORT_MIN = ConfigOptions
-      .key("rss.random.port.min")
-      .intType()
-      .defaultValue(40000)
-      .withDescription("Min value for random for range");
-
-  public static final ConfigOption<Integer> RSS_RANDOM_PORT_MAX = ConfigOptions
-      .key("rss.random.port.max")
-      .intType()
-      .defaultValue(65535)
-      .withDescription("Max value for random for range");
-
-  public static final ConfigOption<Integer> SERVER_PORT_MAX_RETRIES = ConfigOptions
-      .key("rss.port.max.retry")
-      .intType()
-      .defaultValue(16)
-      .withDescription("start server service max retry");
-      
   public boolean loadConfFromFile(String fileName, List<ConfigOption<Object>> configOptions) {
     Map<String, String> properties = RssUtils.getPropertiesFromFile(fileName);
     if (properties == null) {
