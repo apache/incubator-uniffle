@@ -17,13 +17,14 @@
 
 package org.apache.uniffle.common;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import com.google.common.collect.Lists;
 
 public class ShuffleDataResult {
 
-  private final byte[] data;
+  private final ByteBuffer data;
   private final List<BufferSegment> bufferSegments;
 
   public ShuffleDataResult() {
@@ -34,12 +35,29 @@ public class ShuffleDataResult {
     this(data, Lists.newArrayList());
   }
 
-  public ShuffleDataResult(byte[] data, List<BufferSegment> bufferSegments) {
+  public ShuffleDataResult(ByteBuffer data, List<BufferSegment> bufferSegments) {
     this.data = data;
     this.bufferSegments = bufferSegments;
   }
 
+  public ShuffleDataResult(byte[] data, List<BufferSegment> bufferSegments) {
+    this(data != null ? ByteBuffer.wrap(data) : null, bufferSegments);
+  }
+
   public byte[] getData() {
+    if (data == null) {
+      return null;
+    }
+    if (data.hasArray()) {
+      return data.array();
+    }
+    ByteBuffer dataBuffer = data.duplicate();
+    byte[] byteArray = new byte[dataBuffer.remaining()];
+    dataBuffer.get(byteArray);
+    return byteArray;
+  }
+
+  public ByteBuffer getDataBuffer() {
     return data;
   }
 
@@ -48,7 +66,7 @@ public class ShuffleDataResult {
   }
 
   public boolean isEmpty() {
-    return bufferSegments == null || bufferSegments.isEmpty() || data == null || data.length == 0;
+    return bufferSegments == null || bufferSegments.isEmpty() || data == null || data.capacity() == 0;
   }
 
 }

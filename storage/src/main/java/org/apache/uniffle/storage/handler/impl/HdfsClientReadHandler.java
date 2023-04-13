@@ -54,6 +54,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
   private int readHandlerIndex;
   private ShuffleDataDistributionType distributionType;
   private Roaring64NavigableMap expectTaskIds;
+  private boolean offHeapEnable = false;
 
   public HdfsClientReadHandler(
       String appId,
@@ -69,7 +70,8 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       Configuration hadoopConf,
       ShuffleDataDistributionType distributionType,
       Roaring64NavigableMap expectTaskIds,
-      String shuffleServerId) {
+      String shuffleServerId,
+      boolean offHeapEnable) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
@@ -84,6 +86,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
     this.distributionType = distributionType;
     this.expectTaskIds = expectTaskIds;
     this.shuffleServerId = shuffleServerId;
+    this.offHeapEnable = offHeapEnable;
   }
 
   // Only for test
@@ -101,7 +104,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
       Configuration hadoopConf) {
     this(appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange, partitionNum, readBufferSize,
         expectBlockIds, processBlockIds, storageBasePath, hadoopConf, ShuffleDataDistributionType.NORMAL,
-        Roaring64NavigableMap.bitmapOf(), null);
+        Roaring64NavigableMap.bitmapOf(), null, false);
   }
 
   protected void init(String fullShufflePath) {
@@ -139,7 +142,7 @@ public class HdfsClientReadHandler extends AbstractClientReadHandler {
           HdfsShuffleReadHandler handler = new HdfsShuffleReadHandler(
               appId, shuffleId, partitionId, filePrefix,
               readBufferSize, expectBlockIds, processBlockIds, hadoopConf,
-              distributionType, expectTaskIds);
+              distributionType, expectTaskIds, offHeapEnable);
           readHandlers.add(handler);
         } catch (Exception e) {
           LOG.warn("Can't create ShuffleReaderHandler for " + filePrefix, e);

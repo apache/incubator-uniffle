@@ -41,6 +41,7 @@ import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.RssUtils;
 
 public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C>> {
 
@@ -74,9 +75,14 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
     this.codec = compress ? Codec.newInstance(rssConf) : null;
   }
 
-  public Iterator<Tuple2<Object, Object>> createKVIterator(ByteBuffer data, int size) {
+  public Iterator<Tuple2<Object, Object>> createKVIterator(ByteBuffer data) {
     clearDeserializationStream();
-    byteBufInputStream = new ByteBufInputStream(Unpooled.wrappedBuffer(data.array(), data.position(), size), true);
+    // Unpooled.wrapperBuffer will return a ByteBuf, but this ByteBuf won't release direct/heap memory
+    // when the ByteBuf is released. This is because the UnpooledDirectByteBuf's doFree is false 
+    // when it is constructed from user provided ByteBuffer. 
+    // The `releaseOnClose` parameter doesn't take effect, we would release the data ByteBuffer 
+    // manually.
+    byteBufInputStream = new ByteBufInputStream(Unpooled.wrappedBuffer(data), true);
     deserializationStream = serializerInstance.deserializeStream(byteBufInputStream);
     return deserializationStream.asKeyValueIterator();
   }
@@ -89,6 +95,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
         LOG.warn("Can't close ByteBufInputStream, memory may be leaked.");
       }
     }
+
     if (deserializationStream != null) {
       deserializationStream.close();
     }
@@ -109,10 +116,10 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       long fetchDuration = System.currentTimeMillis() - startFetch;
       shuffleReadMetrics.incFetchWaitTime(fetchDuration);
       if (rawData != null) {
-        int uncompressedLen = uncompress(rawBlock, rawData);
+        uncompress(rawBlock, rawData);
         // create new iterator for shuffle data
         long startSerialization = System.currentTimeMillis();
-        recordsIterator = createKVIterator(uncompressedData, uncompressedLen);
+        recordsIterator = createKVIterator(uncompressedData);
         long serializationDuration = System.currentTimeMillis() - startSerialization;
         readTime += fetchDuration;
         serializeTime += serializationDuration;
@@ -139,8 +146,11 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
     int uncompressedLen = rawBlock.getUncompressLength();
     if (codec != null) {
       if (uncompressedData == null || uncompressedData.capacity() < uncompressedLen) {
-        // todo: support off-heap bytebuffer
-        uncompressedData = ByteBuffer.allocate(uncompressedLen);
+        if (uncompressedData != null) {
+          RssUtils.releaseByteBuffer(uncompressedData);
+        }
+        uncompressedData = rawData.isDirect()
+            ? ByteBuffer.allocateDirect(uncompressedLen) : ByteBuffer.allocate(uncompressedLen);
       }
       uncompressedData.clear();
       long startDecompress = System.currentTimeMillis();
@@ -148,6 +158,9 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       unCompressedBytesLength += uncompressedLen;
       long decompressDuration = System.currentTimeMillis() - startDecompress;
       decompressTime += decompressDuration;
+      // uncompressedData's limit is not updated by `codec.decompress`, however this information is used
+      // by `createKVIterator`. Update limit here.
+      uncompressedData.limit(uncompressedData.position() + uncompressedLen);
     } else {
       uncompressedData = rawData;
     }
@@ -162,6 +175,11 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
 
   public BoxedUnit cleanup() {
     clearDeserializationStream();
+    // Uncompressed data is released in this class, Compressed data is release in the class ShuffleReadClientImpl
+    // So if codec is null, we don't release the data when the stream is closed
+    if (codec != null) {
+      RssUtils.releaseByteBuffer(uncompressedData);
+    }
     if (shuffleReadClient != null) {
       shuffleReadClient.close();
     }

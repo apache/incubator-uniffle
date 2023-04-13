@@ -18,6 +18,7 @@
 package org.apache.uniffle.storage.handler.impl;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
@@ -43,6 +44,7 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
   protected final String filePrefix;
   protected final HdfsFileReader indexReader;
   protected final HdfsFileReader dataReader;
+  protected final boolean offHeapEnabled;
 
   public HdfsShuffleReadHandler(
       String appId,
@@ -54,12 +56,14 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       Roaring64NavigableMap processBlockIds,
       Configuration conf,
       ShuffleDataDistributionType distributionType,
-      Roaring64NavigableMap expectTaskIds) throws Exception {
+      Roaring64NavigableMap expectTaskIds,
+      boolean offHeapEnabled) throws Exception {
     super(appId, shuffleId, partitionId, readBufferSize, expectBlockIds, processBlockIds,
         distributionType, expectTaskIds);
     this.filePrefix = filePrefix;
     this.indexReader = createHdfsReader(ShuffleStorageUtils.generateIndexFileName(filePrefix), conf);
     this.dataReader = createHdfsReader(ShuffleStorageUtils.generateDataFileName(filePrefix), conf);
+    this.offHeapEnabled = offHeapEnabled;
   }
 
   // Only for test
@@ -73,7 +77,7 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       Roaring64NavigableMap processBlockIds,
       Configuration conf) throws Exception {
     this(appId, shuffleId, partitionId, filePrefix, readBufferSize, expectBlockIds,
-        processBlockIds, conf, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf());
+        processBlockIds, conf, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf(), false);
   }
 
   @Override
@@ -106,17 +110,23 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       return null;
     }
 
-    byte[] data = readShuffleData(shuffleDataSegment.getOffset(), expectedLength);
-    if (data.length == 0) {
+    ByteBuffer data;
+    if (offHeapEnabled) {
+      data = readShuffleDataByteBuffer(shuffleDataSegment.getOffset(), expectedLength);
+    } else {
+      data = ByteBuffer.wrap(readShuffleData(shuffleDataSegment.getOffset(), expectedLength));
+    }
+    int length = data.limit() - data.position();
+    if (length == 0) {
       LOG.warn("Fail to read expected[{}] data, actual[{}] and segment is {} from file {}.data",
-          expectedLength, data.length, shuffleDataSegment, filePrefix);
+          expectedLength, length, shuffleDataSegment, filePrefix);
       return null;
     }
 
     ShuffleDataResult shuffleDataResult = new ShuffleDataResult(data, shuffleDataSegment.getBufferSegments());
     if (shuffleDataResult.isEmpty()) {
       LOG.warn("Shuffle data is empty, expected length {}, data length {}, segment {} in file {}.data",
-          expectedLength, data.length, shuffleDataSegment, filePrefix);
+          expectedLength, length, shuffleDataSegment, filePrefix);
       return null;
     }
 
@@ -129,6 +139,17 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       LOG.warn("Fail to read expected[{}] data, actual[{}] from file {}.data",
           expectedLength, data.length, filePrefix);
       return new byte[0];
+    }
+    return data;
+  }
+
+  private ByteBuffer readShuffleDataByteBuffer(long offset, int expectedLength) {
+    ByteBuffer data = dataReader.readAsByteBuffer(offset, expectedLength);
+    int length = data.limit() - data.position();
+    if (length != expectedLength) {
+      LOG.warn("Fail to read byte buffer expected[{}] data, actual[{}] from file {}.data",
+          expectedLength, length, filePrefix);
+      return ByteBuffer.allocateDirect(0);
     }
     return data;
   }
@@ -168,7 +189,4 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
     return shuffleDataSegments;
   }
 
-  public String getFilePrefix() {
-    return filePrefix;
-  }
 }

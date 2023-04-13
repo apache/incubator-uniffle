@@ -102,4 +102,10 @@ public class RssClientConf {
       .intType()
       .noDefaultValue()
       .withDescription("internal configuration to indicate which port is actually bind for shuffle manager service.");
+
+  public static final ConfigOption<Boolean> OFF_HEAP_MEMORY_ENABLE = ConfigOptions
+      .key("rss.client.off.heap.memory.enable")
+      .booleanType()
+      .defaultValue(false)
+      .withDescription("Client can use off heap memory");
 }

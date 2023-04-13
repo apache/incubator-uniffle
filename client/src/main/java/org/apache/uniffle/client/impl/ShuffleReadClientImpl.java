@@ -50,7 +50,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private final List<ShuffleServerInfo> shuffleServerInfoList;
   private int shuffleId;
   private int partitionId;
-  private byte[] readBuffer;
+  private ByteBuffer readBuffer;
   private Roaring64NavigableMap blockIdBitmap;
   private Roaring64NavigableMap taskIdBitmap;
   private Roaring64NavigableMap pendingBlockIds;
@@ -78,7 +78,8 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       Configuration hadoopConf,
       IdHelper idHelper,
       ShuffleDataDistributionType dataDistributionType,
-      boolean expectedTaskIdsBitmapFilterEnable) {
+      boolean expectedTaskIdsBitmapFilterEnable,
+      boolean offHeapEnabled) {
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.blockIdBitmap = blockIdBitmap;
@@ -105,6 +106,9 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setExpectTaskIds(taskIdBitmap);
     if (expectedTaskIdsBitmapFilterEnable) {
       request.useExpectedTaskIdsBitmapFilter();
+    }
+    if (offHeapEnabled) {
+      request.enableOffHeap();
     }
 
     List<Long> removeBlockIds = Lists.newArrayList();
@@ -142,7 +146,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     this(storageType, appId, shuffleId, partitionId, indexReadLimit,
         partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
         blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf,
-        idHelper, ShuffleDataDistributionType.NORMAL, false);
+        idHelper, ShuffleDataDistributionType.NORMAL, false, false);
   }
 
   @Override
@@ -219,8 +223,10 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     }
 
     if (bs != null) {
-      return new CompressedShuffleBlock(ByteBuffer.wrap(readBuffer,
-          bs.getOffset(), bs.getLength()), bs.getUncompressLength());
+      ByteBuffer compressedBuffer = readBuffer.duplicate();
+      compressedBuffer.position(bs.getOffset());
+      compressedBuffer.limit(bs.getOffset() + bs.getLength());
+      return new CompressedShuffleBlock(compressedBuffer, bs.getUncompressLength());
     }
     // current segment hasn't data, try next segment
     return readShuffleBlockData();
@@ -238,8 +244,11 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     if (sdr == null) {
       return 0;
     }
-    readBuffer = sdr.getData();
-    if (readBuffer == null || readBuffer.length == 0) {
+    if (readBuffer != null) {
+      RssUtils.releaseByteBuffer(readBuffer);
+    }
+    readBuffer = sdr.getDataBuffer();
+    if (readBuffer == null || readBuffer.capacity() == 0) {
       return 0;
     }
     bufferSegmentQueue.addAll(sdr.getBufferSegments());
@@ -253,6 +262,9 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   @Override
   public void close() {
+    if (readBuffer != null) {
+      RssUtils.releaseByteBuffer(readBuffer);
+    }
     if (clientReadHandler != null) {
       clientReadHandler.close();
     }

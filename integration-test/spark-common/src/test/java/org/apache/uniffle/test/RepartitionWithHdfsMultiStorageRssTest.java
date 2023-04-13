@@ -20,24 +20,36 @@ package org.apache.uniffle.test;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Random;
 
 import com.google.common.collect.Maps;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
 public class RepartitionWithHdfsMultiStorageRssTest extends RepartitionTest {
+
+  private static final Logger LOG = LoggerFactory.getLogger(RepartitionWithHdfsMultiStorageRssTest.class);
+
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
-    CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
     dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE_HDFS.name());
+    Random random = new Random();
+    // todo: we should use parameterized test to modify here when we could solve the issue that
+    //  the test case use too long time.
+    boolean useOffHeap = random.nextInt() % 2 == 0;
+    LOG.info("use off heap: " + useOffHeap);
+    dynamicConf.put(RssSparkConfig.RSS_CLIENT_OFF_HEAP_MEMORY_ENABLE.key(), String.valueOf(useOffHeap));
+    CoordinatorConf coordinatorConf = getCoordinatorConf();
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
 

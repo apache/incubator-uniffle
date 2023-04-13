@@ -31,6 +31,7 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -47,6 +48,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.net.InetAddresses;
 import io.netty.channel.unix.Errors;
+import io.netty.util.internal.PlatformDependent;
 import org.eclipse.jetty.util.MultiException;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -366,5 +368,12 @@ public class RssUtils {
     } else {
       return conf.get(RssBaseConf.RSS_STORAGE_BASE_PATH);
     }
+  }
+
+  public static void releaseByteBuffer(ByteBuffer byteBuffer) {
+    if (byteBuffer == null || !byteBuffer.isDirect()) {
+      return;
+    }
+    PlatformDependent.freeDirectBuffer(byteBuffer);
   }
 }

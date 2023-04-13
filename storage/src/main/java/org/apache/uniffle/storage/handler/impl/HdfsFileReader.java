@@ -19,6 +19,7 @@ package org.apache.uniffle.storage.handler.impl;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -79,6 +80,35 @@ public class HdfsFileReader implements FileReader, Closeable {
     }
   }
 
+  @Override
+  public ByteBuffer readAsByteBuffer(long offset, int length) {
+    try {
+      fsDataInputStream.seek(offset);
+      ByteBuffer buffer = ByteBuffer.allocateDirect(length);
+      readFully(buffer);
+      buffer.flip();
+      return buffer;
+    } catch (Exception e) {
+      LOG.warn("Can't read buffer data for path:" + path + " with offset[" + offset + "], length[" + length + "]", e);
+      return ByteBuffer.allocateDirect(0);
+    }
+  }
+
+  @Override
+  public ByteBuffer readAsByteBuffer() {
+    try {
+      long length = getFileLen();
+      if (length - fsDataInputStream.getPos() > Integer.MAX_VALUE) {
+        LOG.warn("File " + path + "length is too long");
+        return ByteBuffer.allocateDirect(0);
+      }
+      return readAsByteBuffer(fsDataInputStream.getPos(), (int) length);
+    } catch (Exception e) {
+      LOG.warn("Can't read buffer data for path:" + path, e);
+      return ByteBuffer.allocateDirect(0);
+    }
+  }
+
   public long getOffset() throws IOException {
     return fsDataInputStream.getPos();
   }
@@ -87,6 +117,15 @@ public class HdfsFileReader implements FileReader, Closeable {
   public synchronized void close() throws IOException {
     if (fsDataInputStream != null) {
       fsDataInputStream.close();
+    }
+  }
+
+  private void readFully(ByteBuffer buffer) throws IOException {
+    while (buffer.hasRemaining()) {
+      int result = fsDataInputStream.read(buffer);
+      if (result < 0) {
+        return;
+      }
     }
   }
 

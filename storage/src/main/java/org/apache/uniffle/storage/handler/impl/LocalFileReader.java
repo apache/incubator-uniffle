@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -74,6 +75,16 @@ public class LocalFileReader implements FileReader, Closeable {
       LOG.error("Fail to read all data from {}", path, e);
       return new byte[0];
     }
+  }
+
+  @Override
+  public ByteBuffer readAsByteBuffer(long offset, int length) {
+    throw new UnsupportedOperationException("Local file reader don't support off heap read now");
+  }
+
+  @Override
+  public ByteBuffer readAsByteBuffer() {
+    throw new UnsupportedOperationException("Local file reader don't support off heap read now");
   }
 
   @Override
