@@ -186,12 +186,12 @@ public abstract class GRPCMetrics {
     return new EmptyGRPCMetrics(Constants.SHUFFLE_SERVER_VERSION);
   }
 
-  protected Summary.Child addSummary(String grpcSendShuffleDataTransportLatency) {
-    return metricsManager.addLabeledSummary(grpcSendShuffleDataTransportLatency);
+  protected Summary.Child addSummary(String name) {
+    return metricsManager.addLabeledSummary(name);
   }
 
-  protected Counter.Child addCounter(String grpcTotal) {
-    return metricsManager.addLabeledCounter(grpcTotal);
+  protected Counter.Child addCounter(String name) {
+    return metricsManager.addLabeledCounter(name);
   }
 
   protected Gauge.Child addGauge(String name) {
