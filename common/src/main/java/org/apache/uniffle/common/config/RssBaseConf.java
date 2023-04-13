@@ -233,7 +233,7 @@ public class RssBaseConf extends RssConf {
       
   public boolean loadConfFromFile(String fileName, List<ConfigOption<Object>> configOptions) {
     Map<String, String> properties = RssUtils.getPropertiesFromFile(fileName);
-   if (properties == null) {
+    if (properties == null) {
       return false;
     }
     return loadCommonConf(properties) && loadConf(properties, configOptions, true);
