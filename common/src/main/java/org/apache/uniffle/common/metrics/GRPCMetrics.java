@@ -19,6 +19,7 @@ package org.apache.uniffle.common.metrics;
 
 import java.util.Map;
 
+import com.google.common.collect.Maps;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
@@ -56,7 +57,9 @@ public abstract class GRPCMetrics {
 
   public void register(CollectorRegistry collectorRegistry) {
     if (!isRegistered) {
-      metricsManager = new MetricsManager(collectorRegistry);
+      Map<String, String> labels = Maps.newHashMap();
+      labels.put(Constants.METRICS_TAG_LABEL_NAME, tags);
+      metricsManager = new MetricsManager(collectorRegistry, labels);
       registerGeneralMetrics();
       registerMetrics();
       isRegistered = true;
@@ -64,16 +67,16 @@ public abstract class GRPCMetrics {
   }
 
   private void registerGeneralMetrics() {
-    gaugeGrpcOpen = metricsManager.addGaugeWithTags(GRPC_OPEN).labels(tags);
-    counterGrpcTotal = metricsManager.addCounterWithTags(GRPC_TOTAL).labels(tags);
+    gaugeGrpcOpen = metricsManager.addLabeledGauge(GRPC_OPEN);
+    counterGrpcTotal = metricsManager.addLabeledCounter(GRPC_TOTAL);
     gaugeMap.putIfAbsent(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY,
-        metricsManager.addGaugeWithTags(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS).labels(tags)
+        metricsManager.addLabeledGauge(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS)
     );
     gaugeMap.putIfAbsent(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY,
-        metricsManager.addGaugeWithTags(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE).labels(tags)
+        metricsManager.addLabeledGauge(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE)
     );
     gaugeMap.putIfAbsent(GRPC_SERVER_CONNECTION_NUMBER_KEY,
-        metricsManager.addGaugeWithTags(GRPC_SERVER_CONNECTION_NUMBER).labels(tags)
+        metricsManager.addLabeledGauge(GRPC_SERVER_CONNECTION_NUMBER)
     );
   }
 
@@ -183,15 +186,15 @@ public abstract class GRPCMetrics {
     return new EmptyGRPCMetrics(Constants.SHUFFLE_SERVER_VERSION);
   }
 
-  protected Summary addSummary(String grpcSendShuffleDataTransportLatency) {
-    return metricsManager.addSummaryWithTags(grpcSendShuffleDataTransportLatency);
+  protected Summary.Child addSummary(String grpcSendShuffleDataTransportLatency) {
+    return metricsManager.addLabeledSummary(grpcSendShuffleDataTransportLatency);
   }
 
-  protected Counter addCounter(String grpcTotal) {
-    return metricsManager.addCounterWithTags(grpcTotal);
+  protected Counter.Child addCounter(String grpcTotal) {
+    return metricsManager.addLabeledCounter(grpcTotal);
   }
 
-  protected Gauge addGauge(String name) {
-    return metricsManager.addGaugeWithTags(name);
+  protected Gauge.Child addGauge(String name) {
+    return metricsManager.addLabeledGauge(name);
   }
 }

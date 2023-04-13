@@ -28,6 +28,8 @@ import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Gauge;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.common.util.Constants;
+
 import static io.prometheus.client.Collector.MetricFamilySamples;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,9 +40,10 @@ public class MetricsManagerTest {
   public void testMetricsManager() {
     MetricsManager metricsManager = new MetricsManager();
     assertEquals(CollectorRegistry.defaultRegistry, metricsManager.getCollectorRegistry());
-
+    Map<String, String> labels = new HashMap<>();
+    labels.put(Constants.METRICS_TAG_LABEL_NAME, Constants.SHUFFLE_SERVER_VERSION);
     CollectorRegistry expectedRegistry = new CollectorRegistry();
-    metricsManager = new MetricsManager(expectedRegistry);
+    metricsManager = new MetricsManager(expectedRegistry, labels);
     assertEquals(expectedRegistry, metricsManager.getCollectorRegistry());
 
     String expectedName1 = "counter";

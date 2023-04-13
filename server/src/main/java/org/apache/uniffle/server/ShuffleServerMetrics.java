@@ -17,7 +17,10 @@
 
 package org.apache.uniffle.server;
 
+import java.util.Map;
+
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Maps;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
@@ -158,7 +161,9 @@ public class ShuffleServerMetrics {
   public static synchronized void register(CollectorRegistry collectorRegistry, String tags) {
     if (!isRegister) {
       ShuffleServerMetrics.tags = tags;
-      metricsManager = new MetricsManager(collectorRegistry);
+      Map<String, String> labels = Maps.newHashMap();
+      labels.put(Constants.METRICS_TAG_LABEL_NAME, ShuffleServerMetrics.tags);
+      metricsManager = new MetricsManager(collectorRegistry, labels);
       isRegister = true;
       setUpMetrics();
     }
@@ -216,77 +221,77 @@ public class ShuffleServerMetrics {
   }
 
   private static void setUpMetrics() {
-    counterTotalReceivedDataSize = addCounter(TOTAL_RECEIVED_DATA).labels(tags);
-    counterTotalWriteDataSize = addCounter(TOTAL_WRITE_DATA).labels(tags);
-    counterTotalWriteBlockSize = addCounter(TOTAL_WRITE_BLOCK).labels(tags);
-    counterTotalWriteTime = addCounter(TOTAL_WRITE_TIME).labels(tags);
-    counterWriteException = addCounter(TOTAL_WRITE_EXCEPTION).labels(tags);
-    counterWriteSlow = addCounter(TOTAL_WRITE_SLOW).labels(tags);
-    counterWriteTotal = addCounter(TOTAL_WRITE_NUM).labels(tags);
-    counterEventSizeThresholdLevel1 = addCounter(EVENT_SIZE_THRESHOLD_LEVEL1).labels(tags);
-    counterEventSizeThresholdLevel2 = addCounter(EVENT_SIZE_THRESHOLD_LEVEL2).labels(tags);
-    counterEventSizeThresholdLevel3 = addCounter(EVENT_SIZE_THRESHOLD_LEVEL3).labels(tags);
-    counterEventSizeThresholdLevel4 = addCounter(EVENT_SIZE_THRESHOLD_LEVEL4).labels(tags);
-    counterTotalReadDataSize = addCounter(TOTAL_READ_DATA).labels(tags);
-    counterTotalReadLocalDataFileSize = addCounter(TOTAL_READ_LOCAL_DATA_FILE).labels(tags);
-    counterTotalReadLocalIndexFileSize = addCounter(TOTAL_READ_LOCAL_INDEX_FILE).labels(tags);
-    counterTotalReadMemoryDataSize = addCounter(TOTAL_READ_MEMORY_DATA).labels(tags);
-    counterTotalReadTime = addCounter(TOTAL_READ_TIME).labels(tags);
-    counterTotalDroppedEventNum = addCounter(TOTAL_DROPPED_EVENT_NUM).labels(tags);
-    counterTotalFailedWrittenEventNum = addCounter(TOTAL_FAILED_WRITTEN_EVENT_NUM).labels(tags);
-    counterTotalHdfsWriteDataSize = addCounter(TOTAL_HDFS_WRITE_DATA).labels(tags);
-    counterTotalLocalFileWriteDataSize = addCounter(TOTAL_LOCALFILE_WRITE_DATA).labels(tags);
-    counterTotalRequireBufferFailed = addCounter(TOTAL_REQUIRE_BUFFER_FAILED).labels(tags);
+    counterTotalReceivedDataSize = addCounter(TOTAL_RECEIVED_DATA);
+    counterTotalWriteDataSize = addCounter(TOTAL_WRITE_DATA);
+    counterTotalWriteBlockSize = addCounter(TOTAL_WRITE_BLOCK);
+    counterTotalWriteTime = addCounter(TOTAL_WRITE_TIME);
+    counterWriteException = addCounter(TOTAL_WRITE_EXCEPTION);
+    counterWriteSlow = addCounter(TOTAL_WRITE_SLOW);
+    counterWriteTotal = addCounter(TOTAL_WRITE_NUM);
+    counterEventSizeThresholdLevel1 = addCounter(EVENT_SIZE_THRESHOLD_LEVEL1);
+    counterEventSizeThresholdLevel2 = addCounter(EVENT_SIZE_THRESHOLD_LEVEL2);
+    counterEventSizeThresholdLevel3 = addCounter(EVENT_SIZE_THRESHOLD_LEVEL3);
+    counterEventSizeThresholdLevel4 = addCounter(EVENT_SIZE_THRESHOLD_LEVEL4);
+    counterTotalReadDataSize = addCounter(TOTAL_READ_DATA);
+    counterTotalReadLocalDataFileSize = addCounter(TOTAL_READ_LOCAL_DATA_FILE);
+    counterTotalReadLocalIndexFileSize = addCounter(TOTAL_READ_LOCAL_INDEX_FILE);
+    counterTotalReadMemoryDataSize = addCounter(TOTAL_READ_MEMORY_DATA);
+    counterTotalReadTime = addCounter(TOTAL_READ_TIME);
+    counterTotalDroppedEventNum = addCounter(TOTAL_DROPPED_EVENT_NUM);
+    counterTotalFailedWrittenEventNum = addCounter(TOTAL_FAILED_WRITTEN_EVENT_NUM);
+    counterTotalHdfsWriteDataSize = addCounter(TOTAL_HDFS_WRITE_DATA);
+    counterTotalLocalFileWriteDataSize = addCounter(TOTAL_LOCALFILE_WRITE_DATA);
+    counterTotalRequireBufferFailed = addCounter(TOTAL_REQUIRE_BUFFER_FAILED);
     counterTotalRequireBufferFailedForRegularPartition =
-        addCounter(TOTAL_REQUIRE_BUFFER_FAILED_FOR_REGULAR_PARTITION).labels(tags);
+        addCounter(TOTAL_REQUIRE_BUFFER_FAILED_FOR_REGULAR_PARTITION);
     counterTotalRequireBufferFailedForHugePartition =
-        addCounter(TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION).labels(tags);
-    counterLocalStorageTotalWrite = addCounter(STORAGE_TOTAL_WRITE_LOCAL).labels(tags);
-    counterLocalStorageRetryWrite = addCounter(STORAGE_RETRY_WRITE_LOCAL).labels(tags);
-    counterLocalStorageFailedWrite = addCounter(STORAGE_FAILED_WRITE_LOCAL).labels(tags);
-    counterLocalStorageSuccessWrite = addCounter(STORAGE_SUCCESS_WRITE_LOCAL).labels(tags);
+        addCounter(TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION);
+    counterLocalStorageTotalWrite = addCounter(STORAGE_TOTAL_WRITE_LOCAL);
+    counterLocalStorageRetryWrite = addCounter(STORAGE_RETRY_WRITE_LOCAL);
+    counterLocalStorageFailedWrite = addCounter(STORAGE_FAILED_WRITE_LOCAL);
+    counterLocalStorageSuccessWrite = addCounter(STORAGE_SUCCESS_WRITE_LOCAL);
     counterRemoteStorageTotalWrite = metricsManager.addCounter(
-        STORAGE_TOTAL_WRITE_REMOTE, Constants.SHUFFLE_SERVER_TAGS, STORAGE_HOST_LABEL);
+        STORAGE_TOTAL_WRITE_REMOTE, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
     counterRemoteStorageRetryWrite = metricsManager.addCounter(
-        STORAGE_RETRY_WRITE_REMOTE, Constants.SHUFFLE_SERVER_TAGS, STORAGE_HOST_LABEL);
+        STORAGE_RETRY_WRITE_REMOTE, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
     counterRemoteStorageFailedWrite = metricsManager.addCounter(
-        STORAGE_FAILED_WRITE_REMOTE, Constants.SHUFFLE_SERVER_TAGS, STORAGE_HOST_LABEL);
+        STORAGE_FAILED_WRITE_REMOTE, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
     counterRemoteStorageSuccessWrite = metricsManager.addCounter(
-        STORAGE_SUCCESS_WRITE_REMOTE, Constants.SHUFFLE_SERVER_TAGS, STORAGE_HOST_LABEL);
-    counterTotalRequireReadMemoryNum = addCounter(TOTAL_REQUIRE_READ_MEMORY).labels(tags);
-    counterTotalRequireReadMemoryRetryNum = addCounter(TOTAL_REQUIRE_READ_MEMORY_RETRY).labels(tags);
-    counterTotalRequireReadMemoryFailedNum = addCounter(TOTAL_REQUIRE_READ_MEMORY_FAILED).labels(tags);
+        STORAGE_SUCCESS_WRITE_REMOTE, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
+    counterTotalRequireReadMemoryNum = addCounter(TOTAL_REQUIRE_READ_MEMORY);
+    counterTotalRequireReadMemoryRetryNum = addCounter(TOTAL_REQUIRE_READ_MEMORY_RETRY);
+    counterTotalRequireReadMemoryFailedNum = addCounter(TOTAL_REQUIRE_READ_MEMORY_FAILED);
 
-    counterTotalAppNum = addCounter(TOTAL_APP_NUM).labels(tags);
-    counterTotalAppWithHugePartitionNum = addCounter(TOTAL_APP_WITH_HUGE_PARTITION_NUM).labels(tags);
-    counterTotalPartitionNum = addCounter(TOTAL_PARTITION_NUM).labels(tags);
-    counterTotalHugePartitionNum = addCounter(TOTAL_HUGE_PARTITION_NUM).labels(tags);
+    counterTotalAppNum = addCounter(TOTAL_APP_NUM);
+    counterTotalAppWithHugePartitionNum = addCounter(TOTAL_APP_WITH_HUGE_PARTITION_NUM);
+    counterTotalPartitionNum = addCounter(TOTAL_PARTITION_NUM);
+    counterTotalHugePartitionNum = addCounter(TOTAL_HUGE_PARTITION_NUM);
 
-    gaugeLocalStorageTotalDirsNum = addGauge(LOCAL_STORAGE_TOTAL_DIRS_NUM).labels(tags);
-    gaugeLocalStorageCorruptedDirsNum = addGauge(LOCAL_STORAGE_CORRUPTED_DIRS_NUM).labels(tags);
-    gaugeLocalStorageTotalSpace = addGauge(LOCAL_STORAGE_TOTAL_SPACE).labels(tags);
-    gaugeLocalStorageUsedSpace = addGauge(LOCAL_STORAGE_USED_SPACE).labels(tags);
-    gaugeLocalStorageUsedSpaceRatio = addGauge(LOCAL_STORAGE_USED_SPACE_RATIO).labels(tags);
+    gaugeLocalStorageTotalDirsNum = addGauge(LOCAL_STORAGE_TOTAL_DIRS_NUM);
+    gaugeLocalStorageCorruptedDirsNum = addGauge(LOCAL_STORAGE_CORRUPTED_DIRS_NUM);
+    gaugeLocalStorageTotalSpace = addGauge(LOCAL_STORAGE_TOTAL_SPACE);
+    gaugeLocalStorageUsedSpace = addGauge(LOCAL_STORAGE_USED_SPACE);
+    gaugeLocalStorageUsedSpaceRatio = addGauge(LOCAL_STORAGE_USED_SPACE_RATIO);
 
-    gaugeIsHealthy = addGauge(IS_HEALTHY).labels(tags);
-    gaugeAllocatedBufferSize = addGauge(ALLOCATED_BUFFER_SIZE).labels(tags);
-    gaugeInFlushBufferSize = addGauge(IN_FLUSH_BUFFER_SIZE).labels(tags);
-    gaugeUsedBufferSize = addGauge(USED_BUFFER_SIZE).labels(tags);
-    gaugeReadBufferUsedSize = addGauge(READ_USED_BUFFER_SIZE).labels(tags);
-    gaugeWriteHandler = addGauge(TOTAL_WRITE_HANDLER).labels(tags);
-    gaugeEventQueueSize = addGauge(EVENT_QUEUE_SIZE).labels(tags);
-    gaugeAppNum = addGauge(APP_NUM_WITH_NODE).labels(tags);
-    gaugeTotalPartitionNum = addGauge(PARTITION_NUM_WITH_NODE).labels(tags);
+    gaugeIsHealthy = addGauge(IS_HEALTHY);
+    gaugeAllocatedBufferSize = addGauge(ALLOCATED_BUFFER_SIZE);
+    gaugeInFlushBufferSize = addGauge(IN_FLUSH_BUFFER_SIZE);
+    gaugeUsedBufferSize = addGauge(USED_BUFFER_SIZE);
+    gaugeReadBufferUsedSize = addGauge(READ_USED_BUFFER_SIZE);
+    gaugeWriteHandler = addGauge(TOTAL_WRITE_HANDLER);
+    gaugeEventQueueSize = addGauge(EVENT_QUEUE_SIZE);
+    gaugeAppNum = addGauge(APP_NUM_WITH_NODE);
+    gaugeTotalPartitionNum = addGauge(PARTITION_NUM_WITH_NODE);
 
-    gaugeHugePartitionNum = addGauge(HUGE_PARTITION_NUM).labels(tags);
-    gaugeAppWithHugePartitionNum = addGauge(APP_WITH_HUGE_PARTITION_NUM).labels(tags);
+    gaugeHugePartitionNum = addGauge(HUGE_PARTITION_NUM);
+    gaugeAppWithHugePartitionNum = addGauge(APP_WITH_HUGE_PARTITION_NUM);
   }
 
-  private static Counter addCounter(String grpcTotal) {
-    return metricsManager.addCounterWithTags(grpcTotal);
+  private static Counter.Child addCounter(String grpcTotal) {
+    return metricsManager.addLabeledCounter(grpcTotal);
   }
 
-  private static Gauge addGauge(String name) {
-    return metricsManager.addGaugeWithTags(name);
+  private static Gauge.Child addGauge(String name) {
+    return metricsManager.addLabeledGauge(name);
   }
 }
