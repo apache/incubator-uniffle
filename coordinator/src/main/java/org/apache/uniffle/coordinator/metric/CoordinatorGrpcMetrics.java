@@ -38,9 +38,10 @@ public class CoordinatorGrpcMetrics extends GRPCMetrics {
 
   @Override
   public void registerMetrics() {
-    gaugeMap.putIfAbsent(HEARTBEAT_METHOD, addGauge(GRPC_HEARTBEAT));
-    gaugeMap.putIfAbsent(GET_SHUFFLE_ASSIGNMENTS_METHOD, addGauge(GRPC_GET_SHUFFLE_ASSIGNMENTS));
-    counterMap.putIfAbsent(HEARTBEAT_METHOD, addCounter(GRPC_HEARTBEAT_TOTAL));
-    counterMap.putIfAbsent(GET_SHUFFLE_ASSIGNMENTS_METHOD, addCounter(GRPC_GET_SHUFFLE_ASSIGNMENTS_TOTAL));
+    gaugeMap.putIfAbsent(HEARTBEAT_METHOD, metricsManager.addLabeledGauge(GRPC_HEARTBEAT));
+    gaugeMap.putIfAbsent(GET_SHUFFLE_ASSIGNMENTS_METHOD, metricsManager.addLabeledGauge(GRPC_GET_SHUFFLE_ASSIGNMENTS));
+    counterMap.putIfAbsent(HEARTBEAT_METHOD, metricsManager.addLabeledCounter(GRPC_HEARTBEAT_TOTAL));
+    counterMap.putIfAbsent(GET_SHUFFLE_ASSIGNMENTS_METHOD,
+        metricsManager.addLabeledCounter(GRPC_GET_SHUFFLE_ASSIGNMENTS_TOTAL));
   }
 }

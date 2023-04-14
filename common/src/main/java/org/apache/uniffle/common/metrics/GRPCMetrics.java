@@ -185,16 +185,4 @@ public abstract class GRPCMetrics {
   public static GRPCMetrics getEmptyGRPCMetrics() {
     return new EmptyGRPCMetrics(Constants.SHUFFLE_SERVER_VERSION);
   }
-
-  protected Summary.Child addSummary(String name) {
-    return metricsManager.addLabeledSummary(name);
-  }
-
-  protected Counter.Child addCounter(String name) {
-    return metricsManager.addLabeledCounter(name);
-  }
-
-  protected Gauge.Child addGauge(String name) {
-    return metricsManager.addLabeledGauge(name);
-  }
 }
