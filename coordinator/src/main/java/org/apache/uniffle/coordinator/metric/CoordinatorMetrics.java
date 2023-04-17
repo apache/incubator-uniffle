@@ -20,12 +20,14 @@ package org.apache.uniffle.coordinator.metric;
 import java.util.Map;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Maps;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.common.metrics.MetricsManager;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 
@@ -61,7 +63,9 @@ public class CoordinatorMetrics {
 
   public static synchronized void register(CollectorRegistry collectorRegistry) {
     if (!isRegister) {
-      metricsManager = new MetricsManager(collectorRegistry);
+      Map<String, String> labels = Maps.newHashMap();
+      labels.put(Constants.METRICS_TAG_LABEL_NAME, Constants.COORDINATOR_TAG);
+      metricsManager = new MetricsManager(collectorRegistry, labels);
       isRegister = true;
       setUpMetrics();
     }
