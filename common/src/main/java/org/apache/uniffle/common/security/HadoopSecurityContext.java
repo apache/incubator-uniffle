@@ -19,19 +19,16 @@ package org.apache.uniffle.common.security;
 
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public class HadoopSecurityContext implements SecurityContext {
@@ -40,12 +37,6 @@ public class HadoopSecurityContext implements SecurityContext {
 
   private UserGroupInformation loginUgi;
   private ScheduledExecutorService refreshScheduledExecutor;
-
-  // The purpose of the proxy user ugi cache is to prevent the creation of
-  // multiple cache keys for the same user, scheme, and authority in the Hadoop filesystem.
-  // Without this cache, large amounts of unnecessary filesystem instances could be stored in memory,
-  // leading to potential memory leaks. For more information on this issue, refer to #706.
-  private Map<String, UserGroupInformation> proxyUserUgiPool;
 
   public HadoopSecurityContext(
       String krb5ConfPath,
@@ -81,7 +72,6 @@ public class HadoopSecurityContext implements SecurityContext {
         refreshIntervalSec,
         refreshIntervalSec,
         TimeUnit.SECONDS);
-    proxyUserUgiPool = JavaUtils.newConcurrentMap();
   }
 
   private void authRefresh() {
@@ -101,10 +91,8 @@ public class HadoopSecurityContext implements SecurityContext {
 
     // Run with the proxy user.
     if (!user.equals(loginUgi.getShortUserName())) {
-      UserGroupInformation proxyUserUgi =
-          proxyUserUgiPool.computeIfAbsent(user, x -> UserGroupInformation.createProxyUser(x, loginUgi));
       return executeWithUgiWrapper(
-          proxyUserUgi,
+          UserGroupInformation.createProxyUser(user, loginUgi),
           securedCallable
       );
     }
@@ -122,20 +110,10 @@ public class HadoopSecurityContext implements SecurityContext {
     return ugi.doAs((PrivilegedExceptionAction<T>) callable::call);
   }
 
-  // Only for tests
-  @VisibleForTesting
-  Map<String, UserGroupInformation> getProxyUserUgiPool() {
-    return proxyUserUgiPool;
-  }
-
   @Override
   public void close() throws IOException {
     if (refreshScheduledExecutor != null) {
       refreshScheduledExecutor.shutdown();
-    }
-    if (proxyUserUgiPool != null) {
-      proxyUserUgiPool.clear();
-      proxyUserUgiPool = null;
     }
   }
 }
