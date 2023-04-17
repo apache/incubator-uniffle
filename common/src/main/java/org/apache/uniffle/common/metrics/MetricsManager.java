@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.common.metrics;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
@@ -43,11 +44,9 @@ public class MetricsManager {
     } else {
       this.collectorRegistry = collectorRegistry;
     }
-    this.defaultLabelNames = defaultLabels.entrySet().stream()
-        .map(Map.Entry::getKey)
-        .toArray(String[]::new);
-    this.defaultLabelValues = defaultLabels.entrySet().stream()
-        .map(Map.Entry::getValue)
+    this.defaultLabelNames = defaultLabels.keySet().toArray(new String[0]);
+    this.defaultLabelValues = Arrays.stream(defaultLabelNames)
+        .map(defaultLabels::get)
         .toArray(String[]::new);
   }
 
