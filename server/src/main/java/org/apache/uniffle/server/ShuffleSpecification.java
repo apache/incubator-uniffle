@@ -20,13 +20,8 @@ package org.apache.uniffle.server;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 
 public class ShuffleSpecification {
-  private final int maxConcurrencyPerPartitionToWrite;
-  private final ShuffleDataDistributionType distributionType;
-
-  private ShuffleSpecification(ShuffleDataDistributionType type, int maxConcurrencyPerPartitionToWrite) {
-    this.maxConcurrencyPerPartitionToWrite = maxConcurrencyPerPartitionToWrite;
-    this.distributionType = type;
-  }
+  private int maxConcurrencyPerPartitionToWrite;
+  private ShuffleDataDistributionType distributionType;
 
   public int getMaxConcurrencyPerPartitionToWrite() {
     return maxConcurrencyPerPartitionToWrite;
@@ -36,7 +31,29 @@ public class ShuffleSpecification {
     return distributionType;
   }
 
-  public static ShuffleSpecification from(ShuffleDataDistributionType type, int maxConcurrencyPerPartitionToWrite) {
-    return new ShuffleSpecification(type, maxConcurrencyPerPartitionToWrite);
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+    private ShuffleSpecification specification;
+
+    private Builder() {
+      this.specification = new ShuffleSpecification();
+    }
+
+    public Builder maxConcurrencyPerPartitionToWrite(int maxConcurrencyPerPartitionToWrite) {
+      this.specification.maxConcurrencyPerPartitionToWrite = maxConcurrencyPerPartitionToWrite;
+      return this;
+    }
+
+    public Builder dataDistributionType(ShuffleDataDistributionType distributionType) {
+      this.specification.distributionType = distributionType;
+      return this;
+    }
+
+    public ShuffleSpecification build() {
+      return specification;
+    }
   }
 }

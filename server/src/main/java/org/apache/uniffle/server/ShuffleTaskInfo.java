@@ -117,7 +117,11 @@ public class ShuffleTaskInfo {
     if (specification == null) {
       synchronized (this) {
         if (specification == null) {
-          specification = ShuffleSpecification.from(type, maxConcurrency);
+          specification = ShuffleSpecification
+              .builder()
+              .maxConcurrencyPerPartitionToWrite(maxConcurrency)
+              .dataDistributionType(type)
+              .build();
         }
       }
     }
