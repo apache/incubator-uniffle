@@ -51,4 +51,6 @@ COPY hadoopconfig/ /data/rssadmin/hadoop/etc/hadoop
 
 ENV RSS_VERSION ${RSS_VERSION}
 ENV HADOOP_VERSION ${HADOOP_VERSION}
+
+WORKDIR /data/rssadmin
 CMD ["bash", "/data/rssadmin/rss/bin/start.sh"]
