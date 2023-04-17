@@ -20,6 +20,7 @@ package org.apache.uniffle.storage.handler.impl;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -46,11 +47,64 @@ public class PooledHdfsShuffleWriteHandlerTest {
       this.execution = runnable;
     }
 
+    FakedShuffleWriteHandler(List<Integer> initializedList, List<Integer> invokedList, int index, Runnable runnable) {
+      initializedList.add(index);
+      this.invokedList = invokedList;
+      this.index = index;
+      this.execution = runnable;
+    }
+
     @Override
     public void write(List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
       execution.run();
       invokedList.add(index);
     }
+  }
+
+  @Test
+  public void lazyInitializeWriterHandlerTest() throws Exception {
+    int maxConcurrency = 5;
+    LinkedBlockingDeque deque = new LinkedBlockingDeque(maxConcurrency);
+
+    CopyOnWriteArrayList<Integer> invokedList = new CopyOnWriteArrayList<>();
+    CopyOnWriteArrayList<Integer> initializedList = new CopyOnWriteArrayList<>();
+
+    PooledHdfsShuffleWriteHandler handler = new PooledHdfsShuffleWriteHandler(
+        deque,
+        maxConcurrency,
+        index -> new FakedShuffleWriteHandler(initializedList, invokedList, index, () -> {
+          try {
+            Thread.sleep(10);
+          } catch (Exception e) {
+            // ignore
+          }
+        })
+    );
+
+    // case1: no race condition
+    for (int i = 0; i < 10; i++) {
+      handler.write(Collections.emptyList());
+      assertEquals(1, initializedList.size());
+    }
+
+    // case2: initialized by multi threads
+    invokedList.clear();
+    CountDownLatch latch = new CountDownLatch(100);
+    for (int i = 0; i < 100; i++) {
+      new Thread(() -> {
+        try {
+          handler.write(Collections.emptyList());
+        } catch (Exception e) {
+          // ignore
+        } finally {
+          latch.countDown();
+        }
+      }).start();
+    }
+    latch.await();
+    assertEquals(100, invokedList.size());
+    assertEquals(5, initializedList.size());
+    assertEquals(5, handler.getInitializedHandlerCnt());
   }
 
   @Test
