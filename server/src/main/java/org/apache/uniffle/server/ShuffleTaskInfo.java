@@ -115,7 +115,7 @@ public class ShuffleTaskInfo {
 
   public void setSpecification(ShuffleDataDistributionType type, int maxConcurrency) {
     if (specification == null) {
-      synchronized (specification) {
+      synchronized (this) {
         if (specification == null) {
           specification = ShuffleSpecification.from(type, maxConcurrency);
         }
