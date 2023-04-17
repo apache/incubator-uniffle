@@ -43,8 +43,12 @@ public class MetricsManager {
     } else {
       this.collectorRegistry = collectorRegistry;
     }
-    this.defaultLabelNames = defaultLabels.keySet().toArray(new String[0]);
-    this.defaultLabelValues = defaultLabels.values().toArray(new String[0]);
+    this.defaultLabelNames = defaultLabels.entrySet().stream()
+        .map(Map.Entry::getKey)
+        .toArray(String[]::new);
+    this.defaultLabelValues = defaultLabels.entrySet().stream()
+        .map(Map.Entry::getValue)
+        .toArray(String[]::new);
   }
 
   public CollectorRegistry getCollectorRegistry() {
