@@ -340,6 +340,12 @@ public class ShuffleServerConf extends RssBaseConf {
       .withDescription("The max concurrency of single partition writer, the data partition file number is "
           + "equal to this value. Default value is 1.");
 
+  public static final ConfigOption<Integer> CLIENT_MAX_CONCURRENCY_LIMITATION_OF_ONE_PARTITION = ConfigOptions
+      .key("rss.server.client.max.concurrency.limit.per-partition.write")
+      .intType()
+      .defaultValue(Integer.MAX_VALUE)
+      .withDescription("The limit for max concurrency specified by client.");
+
   public static final ConfigOption<Long> SERVER_TRIGGER_FLUSH_CHECK_INTERVAL = ConfigOptions
       .key("rss.server.shuffleBufferManager.trigger.flush.interval")
       .longType()

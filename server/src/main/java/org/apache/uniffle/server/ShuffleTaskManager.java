@@ -69,6 +69,7 @@ import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
+import static org.apache.uniffle.server.ShuffleServerConf.CLIENT_MAX_CONCURRENCY_LIMITATION_OF_ONE_PARTITION;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
 
 public class ShuffleTaskManager {
@@ -211,9 +212,10 @@ public class ShuffleTaskManager {
     return StatusCode.SUCCESS;
   }
 
-  private int getMaxConcurrencyWriting(int maxConcurrencyPerPartitionToWrite, ShuffleServerConf conf) {
+  @VisibleForTesting
+  protected static int getMaxConcurrencyWriting(int maxConcurrencyPerPartitionToWrite, ShuffleServerConf conf) {
     if (maxConcurrencyPerPartitionToWrite > 0) {
-      return maxConcurrencyPerPartitionToWrite;
+      return Math.min(maxConcurrencyPerPartitionToWrite, conf.get(CLIENT_MAX_CONCURRENCY_LIMITATION_OF_ONE_PARTITION));
     }
     return conf.get(SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION);
   }

@@ -64,6 +64,8 @@ import org.apache.uniffle.storage.handler.impl.HdfsClientReadHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.uniffle.server.ShuffleServerConf.CLIENT_MAX_CONCURRENCY_LIMITATION_OF_ONE_PARTITION;
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -1025,5 +1027,30 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
       }
     }
     assertEquals(blocks.size(), matchNum);
+  }
+
+  @Test
+  public void testGetMaxConcurrencyWriting() {
+    ShuffleServerConf conf = new ShuffleServerConf();
+    conf.set(SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, 10);
+    conf.set(CLIENT_MAX_CONCURRENCY_LIMITATION_OF_ONE_PARTITION, 30);
+
+    // case1: client max concurrency is <= 0
+    assertEquals(
+        10,
+        ShuffleTaskManager.getMaxConcurrencyWriting(-1, conf)
+    );
+
+    // case2: client max concurrency is 24
+    assertEquals(
+        24,
+        ShuffleTaskManager.getMaxConcurrencyWriting(24, conf)
+    );
+
+    // case3: client max concurrency exceed 30
+    assertEquals(
+        30,
+        ShuffleTaskManager.getMaxConcurrencyWriting(40, conf)
+    );
   }
 }
