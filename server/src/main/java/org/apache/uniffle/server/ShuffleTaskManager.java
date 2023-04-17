@@ -193,12 +193,14 @@ public class ShuffleTaskManager {
       ShuffleDataDistributionType dataDistType,
       int maxConcurrencyPerPartitionToWrite) {
     refreshAppId(appId);
+
     ShuffleTaskInfo taskInfo = shuffleTaskInfos.get(appId);
     taskInfo.setUser(user);
-    taskInfo.setDataDistType(dataDistType);
-    taskInfo.setMaxConcurrencyPerPartitionToWrite(
+    taskInfo.setSpecification(
+        dataDistType,
         getMaxConcurrencyWriting(maxConcurrencyPerPartitionToWrite, conf)
     );
+
     partitionsToBlockIds.putIfAbsent(appId, JavaUtils.newConcurrentMap());
     for (PartitionRange partitionRange : partitionRanges) {
       shuffleBufferManager.registerBuffer(appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
