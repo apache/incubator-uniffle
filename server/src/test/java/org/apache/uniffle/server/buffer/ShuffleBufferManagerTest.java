@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -481,6 +483,11 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
 
     String appId = "flushSingleBufferForHugePartitionTest_appId";
     int shuffleId = 1;
+
+    shuffleTaskManager.registerShuffle(
+        appId, shuffleId, Arrays.asList(new PartitionRange(0, 0)),
+        new RemoteStorageInfo(""), ""
+    );
 
     // case1: its partition is not huge partition
     shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 0);
