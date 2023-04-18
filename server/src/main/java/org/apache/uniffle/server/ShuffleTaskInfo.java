@@ -63,7 +63,7 @@ public class ShuffleTaskInfo {
   private final Map<Integer, Set<Integer>> hugePartitionTags;
   private final AtomicBoolean existHugePartition;
 
-  private volatile ShuffleSpecification specification;
+  private final AtomicReference<ShuffleSpecification> specification;
 
   public ShuffleTaskInfo(String appId) {
     this.appId = appId;
@@ -75,6 +75,7 @@ public class ShuffleTaskInfo {
     this.partitionDataSizes = JavaUtils.newConcurrentMap();
     this.hugePartitionTags = JavaUtils.newConcurrentMap();
     this.existHugePartition = new AtomicBoolean(false);
+    this.specification = new AtomicReference<>();
   }
 
   public Long getCurrentTimes() {
@@ -106,25 +107,15 @@ public class ShuffleTaskInfo {
   }
 
   public int getMaxConcurrencyPerPartitionToWrite() {
-    return specification.getMaxConcurrencyPerPartitionToWrite();
+    return specification.get().getMaxConcurrencyPerPartitionToWrite();
   }
 
   public ShuffleDataDistributionType getDataDistType() {
-    return specification.getDistributionType();
+    return specification.get().getDistributionType();
   }
 
-  public void setSpecification(ShuffleDataDistributionType type, int maxConcurrency) {
-    if (specification == null) {
-      synchronized (this) {
-        if (specification == null) {
-          specification = ShuffleSpecification
-              .builder()
-              .maxConcurrencyPerPartitionToWrite(maxConcurrency)
-              .dataDistributionType(type)
-              .build();
-        }
-      }
-    }
+  public void setSpecification(ShuffleSpecification specification) {
+    this.specification.set(specification);
   }
 
   public long addPartitionDataSize(int shuffleId, int partitionId, long delta) {

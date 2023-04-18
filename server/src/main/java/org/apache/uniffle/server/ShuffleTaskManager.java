@@ -198,8 +198,11 @@ public class ShuffleTaskManager {
     ShuffleTaskInfo taskInfo = shuffleTaskInfos.get(appId);
     taskInfo.setUser(user);
     taskInfo.setSpecification(
-        dataDistType,
-        getMaxConcurrencyWriting(maxConcurrencyPerPartitionToWrite, conf)
+        ShuffleSpecification
+            .builder()
+            .maxConcurrencyPerPartitionToWrite(getMaxConcurrencyWriting(maxConcurrencyPerPartitionToWrite, conf))
+            .dataDistributionType(dataDistType)
+            .build()
     );
 
     partitionsToBlockIds.putIfAbsent(appId, JavaUtils.newConcurrentMap());
