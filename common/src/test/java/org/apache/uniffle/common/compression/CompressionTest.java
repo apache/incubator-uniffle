@@ -31,6 +31,7 @@ import org.apache.uniffle.common.config.RssConf;
 
 import static org.apache.uniffle.common.config.RssClientConf.COMPRESSION_TYPE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CompressionTest {
 
@@ -87,7 +88,7 @@ public class CompressionTest {
     srcBuffer.flip();
     ByteBuffer destBuffer = ByteBuffer.allocateDirect(codec.maxCompressedLength(size));
     codec.compress(srcBuffer, destBuffer);
-
+    assertEquals(srcBuffer.position(), 0);
     destBuffer.flip();
     srcBuffer.clear();
     codec.decompress(destBuffer, size, srcBuffer, 0);

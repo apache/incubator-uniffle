@@ -58,7 +58,7 @@ public abstract class Codec {
   /**
    * Compresses the data in buffer src into dest.
    * dest ByteBuffer.remaining() must be exactly the size of the decompressed data.
-   * This method moves the positions of both buffers.
+   * This method move the position of dest ByteBuffer,keep src ByteBuffer position.
    * Returns:the compressed size
    */
   public abstract int compress(ByteBuffer src, ByteBuffer dest);

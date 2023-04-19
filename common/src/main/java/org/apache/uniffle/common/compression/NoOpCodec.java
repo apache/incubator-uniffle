@@ -38,7 +38,7 @@ public class NoOpCodec extends Codec {
   @Override
   public int compress(ByteBuffer src, ByteBuffer dest) {
     int destOff = dest.position();
-    dest.put(src);
+    dest.put(src.duplicate());
     return dest.position() - destOff;
   }
 

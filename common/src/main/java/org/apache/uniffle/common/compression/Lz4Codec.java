@@ -44,9 +44,9 @@ public class Lz4Codec extends Codec {
   @Override
   public int compress(ByteBuffer src, ByteBuffer dest) {
     try {
+      src = src.duplicate();
       final int cpLen = lz4Factory.fastCompressor()
           .compress(src, src.position(), src.remaining(), dest, dest.position(), dest.remaining());
-      src.position(src.limit());
       dest.position(dest.position() + cpLen);
       return cpLen;
     } catch (Exception e) {
