@@ -55,6 +55,14 @@ public abstract class Codec {
    */
   public abstract byte[] compress(byte[] src);
 
+  /**
+   * Compresses the data in buffer src into dest.
+   * dest ByteBuffer.remaining() must be exactly the size of the decompressed data.
+   * This method moves the positions of both buffers.
+   * Returns:the compressed size
+   */
+  public abstract int compress(ByteBuffer src, ByteBuffer dest);
+
   public enum Type {
     LZ4,
     ZSTD,

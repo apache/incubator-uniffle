@@ -64,4 +64,16 @@ public class SnappyCodec extends Codec {
       throw new RssException("Failed to uncompress by Snappy", e);
     }
   }
+
+  @Override
+  public int compress(ByteBuffer src, ByteBuffer dest) {
+    try {
+      int compressedSize = Snappy.compress(src, dest);
+      dest.position(compressedSize);
+      src.position(src.limit());
+      return compressedSize;
+    } catch (Exception e) {
+      throw new RssException("Failed to compress by Snappy", e);
+    }
+  }
 }

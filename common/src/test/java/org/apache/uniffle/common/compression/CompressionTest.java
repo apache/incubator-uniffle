@@ -17,14 +17,17 @@
 
 package org.apache.uniffle.common.compression;
 
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.github.luben.zstd.Zstd;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.xerial.snappy.pure.SnappyRawCompressor;
 
 import org.apache.uniffle.common.config.RssConf;
 
@@ -79,5 +82,33 @@ public class CompressionTest {
     codec.decompress(ByteBuffer.wrap(compressed), size, recycledDst, 0);
     recycledDst.get(res);
     assertArrayEquals(data, res);
+
+    // case4: use bytebuffer compress
+    ByteBuffer srcBuffer = ByteBuffer.allocateDirect(size);
+    srcBuffer.put(data);
+    srcBuffer.flip();
+    ByteBuffer destBuffer = ByteBuffer.allocateDirect(maxCompressedLength(type, size));
+    codec.compress(srcBuffer, destBuffer);
+
+    destBuffer.flip();
+    srcBuffer.clear();
+    codec.decompress(destBuffer, size, srcBuffer, 0);
+    byte[] res2 = new byte[size];
+    srcBuffer.get(res2);
+    assertArrayEquals(data, res2);
+  }
+
+  private int maxCompressedLength(Codec.Type type, int sourceLength) {
+    if (type == Codec.Type.LZ4) {
+      return sourceLength + sourceLength / 255 + 16;
+    } else if (type == Codec.Type.SNAPPY) {
+      return SnappyRawCompressor.maxCompressedLength(sourceLength);
+    } else if (type == Codec.Type.ZSTD) {
+      return (int) Zstd.compressBound(sourceLength);
+    } else if (type == Codec.Type.NOOP) {
+      return sourceLength;
+    } else {
+      return sourceLength * 2 + 32;
+    }
   }
 }

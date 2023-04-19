@@ -63,4 +63,13 @@ public class ZstdCodec extends Codec {
   public byte[] compress(byte[] src) {
     return Zstd.compress(src, compressionLevel);
   }
+
+  @Override
+  public int compress(ByteBuffer src, ByteBuffer dest) {
+    try {
+      return Zstd.compress(dest, src);
+    } catch (Exception e) {
+      throw new RssException("Failed to compress by Zstd", e);
+    }
+  }
 }
