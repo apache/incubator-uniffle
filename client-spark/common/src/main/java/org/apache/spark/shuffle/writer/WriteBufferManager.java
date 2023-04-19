@@ -18,6 +18,7 @@
 package org.apache.spark.shuffle.writer;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -26,12 +27,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.clearspring.analytics.util.Lists;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.memory.MemoryConsumer;
 import org.apache.spark.memory.MemoryMode;
@@ -92,6 +96,8 @@ public class WriteBufferManager extends MemoryConsumer {
   private Function<AddBlockEvent, CompletableFuture<Long>> spillFunc;
   private long sendSizeLimit;
   private int memorySpillTimeoutSec;
+  private int memorySpillLockTimeoutMs;
+  private ReentrantLock buffersLock;
 
   public WriteBufferManager(
       int shuffleId,
@@ -151,6 +157,8 @@ public class WriteBufferManager extends MemoryConsumer {
     this.spillFunc = spillFunc;
     this.sendSizeLimit = rssConf.get(RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMITATION);
     this.memorySpillTimeoutSec = rssConf.get(RssSparkConfig.RSS_MEMORY_SPILL_TIMEOUT);
+    this.buffersLock = new ReentrantLock();
+    this.memorySpillLockTimeoutMs = rssConf.get(RssSparkConfig.RSS_MEMORY_SPILL_LOCK_WAIT_TIMEOUT_MS);
   }
 
   public List<ShuffleBlockInfo> addRecord(int partitionId, Object key, Object value) {
@@ -174,7 +182,8 @@ public class WriteBufferManager extends MemoryConsumer {
       return null;
     }
     List<ShuffleBlockInfo> result = Lists.newArrayList();
-    synchronized (buffers) {
+    try {
+      buffersLock.lock();
       if (buffers.containsKey(partitionId)) {
         WriterBuffer wb = buffers.get(partitionId);
         if (wb.askForMemory(serializedDataLength)) {
@@ -195,6 +204,8 @@ public class WriteBufferManager extends MemoryConsumer {
         wb.addRecord(serializedData, serializedDataLength);
         buffers.put(partitionId, wb);
       }
+    } finally {
+      buffersLock.unlock();
     }
     shuffleWriteMetrics.incRecordsWritten(1L);
 
@@ -206,25 +217,52 @@ public class WriteBufferManager extends MemoryConsumer {
     return result;
   }
 
-  // transform all [partition, records] to [partition, ShuffleBlockInfo] and clear cache
-  public List<ShuffleBlockInfo> clear() {
+  private <T> T withLock(ReentrantLock lock, int lockTimeoutMs, Supplier<T> func) {
+    boolean locked = false;
+    try {
+      if (locked = lock.tryLock(lockTimeoutMs, TimeUnit.MILLISECONDS)) {
+        return func.get();
+      }
+    } catch (Exception e) {
+      // ignore
+    } finally {
+      if (locked) {
+        lock.unlock();
+      }
+    }
+    return null;
+  }
+
+  private <T> T withLock(ReentrantLock lock, Supplier<T> func) {
+    try {
+      lock.lock();
+      return func.get();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  private List<ShuffleBlockInfo> _clear() {
     List<ShuffleBlockInfo> result = Lists.newArrayList();
     long dataSize = 0;
     long memoryUsed = 0;
-    synchronized (buffers) {
-      final Set<Entry<Integer, WriterBuffer>> entrySet = buffers.entrySet();
-      for (Entry<Integer, WriterBuffer> entry : entrySet) {
-        WriterBuffer wb = entry.getValue();
-        dataSize += wb.getDataLength();
-        memoryUsed += wb.getMemoryUsed();
-        result.add(createShuffleBlock(entry.getKey(), wb));
-        copyTime += wb.getCopyTime();
-      }
-      LOG.info("Flush total buffer for shuffleId[" + shuffleId + "] with allocated["
-          + allocatedBytes + "], dataSize[" + dataSize + "], memoryUsed[" + memoryUsed + "]");
-      buffers.clear();
+    final Set<Entry<Integer, WriterBuffer>> entrySet = buffers.entrySet();
+    for (Entry<Integer, WriterBuffer> entry : entrySet) {
+      WriterBuffer wb = entry.getValue();
+      dataSize += wb.getDataLength();
+      memoryUsed += wb.getMemoryUsed();
+      result.add(createShuffleBlock(entry.getKey(), wb));
+      copyTime += wb.getCopyTime();
     }
+    LOG.info("Flush total buffer for shuffleId[" + shuffleId + "] with allocated["
+        + allocatedBytes + "], dataSize[" + dataSize + "], memoryUsed[" + memoryUsed + "]");
+    buffers.clear();
     return result;
+  }
+
+  // transform all [partition, records] to [partition, ShuffleBlockInfo] and clear cache
+  public List<ShuffleBlockInfo> clear() {
+    return withLock(buffersLock, () -> _clear());
   }
 
   // transform records to shuffleBlock
@@ -293,6 +331,9 @@ public class WriteBufferManager extends MemoryConsumer {
   }
 
   public List<AddBlockEvent> buildBlockEvents(List<ShuffleBlockInfo> shuffleBlockInfoList) {
+    if (CollectionUtils.isEmpty(shuffleBlockInfoList)) {
+      return Collections.emptyList();
+    }
     long totalSize = 0;
     long memoryUsed = 0;
     List<AddBlockEvent> events = new ArrayList<>();
@@ -329,7 +370,10 @@ public class WriteBufferManager extends MemoryConsumer {
 
   @Override
   public long spill(long size, MemoryConsumer trigger) {
-    List<AddBlockEvent> events = buildBlockEvents(clear());
+    List<AddBlockEvent> events = buildBlockEvents(withLock(buffersLock, memorySpillLockTimeoutMs, () -> _clear()));
+    if (CollectionUtils.isEmpty(events)) {
+      return 0L;
+    }
     List<CompletableFuture<Long>> futures = events.stream().map(x -> spillFunc.apply(x)).collect(Collectors.toList());
     CompletableFuture<Void> allOfFutures =
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));

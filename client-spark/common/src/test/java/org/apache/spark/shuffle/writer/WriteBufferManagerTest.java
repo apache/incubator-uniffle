@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -43,7 +44,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
 
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_MEMORY_SPILL_LOCK_WAIT_TIMEOUT_MS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
@@ -227,15 +230,58 @@ public class WriteBufferManagerTest {
     assertEquals(3, events.size());
   }
 
-  @ParameterizedTest
-  @ValueSource(longs = { 31, 63, 100000 })
-  public void concurrentAddAndSpill(long spillSize) {
+  @Test
+  public void concurrentAddAndSpillWhenAcquireMemFailed() {
+    Function<AddBlockEvent, CompletableFuture<Long>> spillFunc = event -> {
+      event.getProcessedCallbackChain().stream().forEach(x -> x.run());
+      long size = event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum();
+      return CompletableFuture.completedFuture(size);
+    };
     SparkConf conf = getConf();
+    conf.set("spark." + RSS_MEMORY_SPILL_LOCK_WAIT_TIMEOUT_MS.key(), "10");
+    WriteBufferManager bufferManager = createMockBufferManager(100, spillFunc, conf);
+    WriteBufferManager spyManager = spy(bufferManager);
+    doReturn(0L).when(spyManager).acquireMemory(anyLong());
+
+    final String testKey = "Key";
+    final String testValue = "Value";
+    AtomicBoolean produceFinished = new AtomicBoolean(false);
+
+    // It will be always blocked due to empty memory
+    new Thread(() -> {
+      spyManager.addRecord(1, testKey, testValue);
+      produceFinished.set(true);
+    }).start();
+
+    // It will return 0 if try lock failed
+    long spilledSize = 0;
+    for (int i = 0; i < 100; i++) {
+      spilledSize += spyManager.spill(10000, spyManager);
+    }
+
+    assertFalse(produceFinished.get());
+    assertEquals(0, spilledSize);
+  }
+
+  private WriteBufferManager createMockBufferManager(
+      long spillSize,
+      Function<AddBlockEvent, CompletableFuture<Long>> spillFunc,
+      SparkConf conf) {
     conf.set("spark.rss.client.send.size.limit", "1000");
     conf.set("spark.rss.writer.buffer.spill.size", String.valueOf(spillSize));
     TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
 
+    WriteBufferManager wbm = new WriteBufferManager(
+        0, "taskId_spillTest", 0, bufferOptions, new KryoSerializer(conf),
+        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(),
+        RssSparkConfig.toRssConf(conf), spillFunc);
+    return wbm;
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = { 31, 63, 100000 })
+  public void concurrentAddAndSpill(long spillSize) {
     AtomicLong processedSize = new AtomicLong();
     Function<AddBlockEvent, CompletableFuture<Long>> spillFunc = event -> {
       event.getProcessedCallbackChain().stream().forEach(x -> x.run());
@@ -243,11 +289,8 @@ public class WriteBufferManagerTest {
       processedSize.getAndAdd(size);
       return CompletableFuture.completedFuture(size);
     };
-
-    WriteBufferManager wbm = new WriteBufferManager(
-        0, "taskId_spillTest", 0, bufferOptions, new KryoSerializer(conf),
-        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(),
-        RssSparkConfig.toRssConf(conf), spillFunc);
+    SparkConf conf = getConf();
+    WriteBufferManager wbm = createMockBufferManager(spillSize, spillFunc, conf);
     WriteBufferManager spyManager = spy(wbm);
     doReturn(512L).when(spyManager).acquireMemory(anyLong());
 
@@ -255,7 +298,6 @@ public class WriteBufferManagerTest {
     final String testKey = "Key";
     final String testValue = "Value";
     AtomicBoolean produceFinished = new AtomicBoolean(false);
-    AtomicBoolean spillFinished = new AtomicBoolean(false);
 
     new Thread(() -> {
       IntStream.range(0, 1000).forEach(x -> {
@@ -266,16 +308,18 @@ public class WriteBufferManagerTest {
       produceFinished.set(true);
     }).start();
 
-
-    new Thread(() -> {
-      while (!produceFinished.get()) {
+    CountDownLatch latch = new CountDownLatch(2);
+    IntStream.range(0, 2).forEach(x -> {
+      new Thread(() -> {
+        while (!produceFinished.get()) {
+          spyManager.spill(100000, mock(WriteBufferManager.class));
+        }
         spyManager.spill(100000, mock(WriteBufferManager.class));
-      }
-      spyManager.spill(100000, mock(WriteBufferManager.class));
-      spillFinished.set(true);
-    }).start();
+        latch.countDown();
+      }).start();
+    });
 
-    Awaitility.await().timeout(Duration.ofSeconds(5)).until(() -> spillFinished.get() == true);
+    Awaitility.await().timeout(Duration.ofSeconds(5)).until(() -> latch.await(2, TimeUnit.SECONDS));
     assertEquals(expectedSize.get(), processedSize.get());
   }
 

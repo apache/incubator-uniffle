@@ -49,6 +49,12 @@ public class RssSparkConfig {
       .withDescription("The timeout of spilling data to remote shuffle server, "
           + "which will be triggered by Spark TaskMemoryManager. Unit is sec, default value is 1");
 
+  public static final ConfigOption<Integer> RSS_MEMORY_SPILL_LOCK_WAIT_TIMEOUT_MS = ConfigOptions
+      .key("rss.client.memory.spill.lock-wait-timeout.ms")
+      .intType()
+      .defaultValue(1000)
+      .withDescription("The timeout of lock wait when spilling data");
+
   public static final String SPARK_RSS_CONFIG_PREFIX = "spark.";
 
   public static final ConfigEntry<Integer> RSS_PARTITION_NUM_PER_RANGE = createIntegerBuilder(
