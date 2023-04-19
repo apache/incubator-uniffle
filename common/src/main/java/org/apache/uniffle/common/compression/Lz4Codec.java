@@ -44,11 +44,9 @@ public class Lz4Codec extends Codec {
   @Override
   public int compress(ByteBuffer src, ByteBuffer dest) {
     try {
-      src = src.duplicate();
-      final int cpLen = lz4Factory.fastCompressor()
-          .compress(src, src.position(), src.remaining(), dest, dest.position(), dest.remaining());
-      dest.position(dest.position() + cpLen);
-      return cpLen;
+      int destOff = dest.position();
+      lz4Factory.fastCompressor().compress(src.duplicate(), dest);
+      return dest.position() - destOff;
     } catch (Exception e) {
       throw new RssException("Failed to compress by Lz4", e);
     }
