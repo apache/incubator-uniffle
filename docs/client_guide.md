@@ -74,7 +74,7 @@ and Continuous partition assignment mechanism.
         
         # Default value is 1.0, used to estimate task concurrency, how likely is this part of the resource between spark.dynamicAllocation.minExecutors and spark.dynamicAllocation.maxExecutors to be allocated
         --conf spark.rss.estimate.task.concurrency.dynamic.factor=1.0
-        ```
+      ```
    
 Since v0.8.0, `RssShuffleManager` would disable local shuffle reader(`set spark.sql.adaptive.localShuffleReader.enabled=false`) optimization by default.
 
