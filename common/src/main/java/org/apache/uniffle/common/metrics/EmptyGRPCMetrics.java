@@ -18,6 +18,11 @@
 package org.apache.uniffle.common.metrics;
 
 public class EmptyGRPCMetrics extends GRPCMetrics {
+
+  public EmptyGRPCMetrics(String tags) {
+    super(tags);
+  }
+
   @Override
   public void registerMetrics() {
   }

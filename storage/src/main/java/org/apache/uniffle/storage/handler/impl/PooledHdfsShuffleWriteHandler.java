@@ -19,6 +19,7 @@ package org.apache.uniffle.storage.handler.impl;
 
 import java.util.List;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.function.Function;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang.StringUtils;
@@ -45,6 +46,8 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
   private final LinkedBlockingDeque<ShuffleWriteHandler> queue;
   private final int maxConcurrency;
   private final String basePath;
+  private Function<Integer, ShuffleWriteHandler> createWriterFunc;
+  private volatile int initializedHandlerCnt = 0;
 
   // Only for tests
   @VisibleForTesting
@@ -52,6 +55,17 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
     this.queue = queue;
     this.maxConcurrency = queue.size();
     this.basePath = StringUtils.EMPTY;
+  }
+
+  @VisibleForTesting
+  public PooledHdfsShuffleWriteHandler(
+      LinkedBlockingDeque<ShuffleWriteHandler> queue,
+      int maxConcurrency,
+      Function<Integer, ShuffleWriteHandler> createWriterFunc) {
+    this.queue = queue;
+    this.maxConcurrency = maxConcurrency;
+    this.basePath = StringUtils.EMPTY;
+    this.createWriterFunc = createWriterFunc;
   }
 
   public PooledHdfsShuffleWriteHandler(
@@ -70,31 +84,34 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
     this.basePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
         ShuffleStorageUtils.getShuffleDataPath(appId, shuffleId, startPartition, endPartition));
 
-    // todo: support init lazily
-    try {
-      for (int i = 0; i < maxConcurrency; i++) {
-        // Use add() here because we are sure the capacity will not be exceeded.
-        // Note: add() throws IllegalStateException when queue is full.
-        queue.add(
-            new HdfsShuffleWriteHandler(
-                appId,
-                shuffleId,
-                startPartition,
-                endPartition,
-                storageBasePath,
-                fileNamePrefix + "_" + i,
-                hadoopConf,
-                user
-            )
+    this.createWriterFunc = index -> {
+      try {
+        return new HdfsShuffleWriteHandler(
+            appId,
+            shuffleId,
+            startPartition,
+            endPartition,
+            storageBasePath,
+            fileNamePrefix + "_" + index,
+            hadoopConf,
+            user
         );
+      } catch (Exception e) {
+        throw new RssException("Errors on initializing Hdfs writer handler.", e);
       }
-    } catch (Exception e) {
-      throw new RssException("Errors on initializing Hdfs writer handler.", e);
-    }
+    };
   }
 
   @Override
   public void write(List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
+    if (queue.isEmpty() && initializedHandlerCnt < maxConcurrency) {
+      synchronized (this) {
+        if (initializedHandlerCnt < maxConcurrency) {
+          queue.add(createWriterFunc.apply(initializedHandlerCnt++));
+        }
+      }
+    }
+
     if (queue.isEmpty()) {
       LOGGER.warn("No free hdfs writer handler, it will wait. storage path: {}", basePath);
     }
@@ -106,5 +123,10 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
       // Note: addFirst() throws IllegalStateException when queue is full.
       queue.addFirst(writeHandler);
     }
+  }
+
+  @VisibleForTesting
+  protected int getInitializedHandlerCnt() {
+    return initializedHandlerCnt;
   }
 }

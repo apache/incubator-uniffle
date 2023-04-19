@@ -19,6 +19,7 @@ package org.apache.uniffle.common.metrics;
 
 import java.util.Map;
 
+import com.google.common.collect.Maps;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
@@ -39,19 +40,26 @@ public abstract class GRPCMetrics {
   private static final String GRPC_TOTAL = "grpc_total";
 
   private boolean isRegistered = false;
-  protected Map<String, Counter> counterMap = JavaUtils.newConcurrentMap();
-  protected Map<String, Gauge> gaugeMap = JavaUtils.newConcurrentMap();
-  protected Map<String, Summary> transportTimeSummaryMap = JavaUtils.newConcurrentMap();
-  protected Map<String, Summary> processTimeSummaryMap = JavaUtils.newConcurrentMap();
-  private Gauge gaugeGrpcOpen;
-  private Counter counterGrpcTotal;
+  protected Map<String, Counter.Child> counterMap = JavaUtils.newConcurrentMap();
+  protected Map<String, Gauge.Child> gaugeMap = JavaUtils.newConcurrentMap();
+  protected Map<String, Summary.Child> transportTimeSummaryMap = JavaUtils.newConcurrentMap();
+  protected Map<String, Summary.Child> processTimeSummaryMap = JavaUtils.newConcurrentMap();
+  protected Gauge.Child gaugeGrpcOpen;
+  protected Counter.Child counterGrpcTotal;
   protected MetricsManager metricsManager;
+  protected String tags;
+
+  public GRPCMetrics(String tags) {
+    this.tags = tags;
+  }
 
   public abstract void registerMetrics();
 
   public void register(CollectorRegistry collectorRegistry) {
     if (!isRegistered) {
-      metricsManager = new MetricsManager(collectorRegistry);
+      Map<String, String> labels = Maps.newHashMap();
+      labels.put(Constants.METRICS_TAG_LABEL_NAME, tags);
+      metricsManager = new MetricsManager(collectorRegistry, labels);
       registerGeneralMetrics();
       registerMetrics();
       isRegistered = true;
@@ -59,25 +67,22 @@ public abstract class GRPCMetrics {
   }
 
   private void registerGeneralMetrics() {
-    gaugeGrpcOpen = metricsManager.addGauge(GRPC_OPEN);
-    counterGrpcTotal = metricsManager.addCounter(GRPC_TOTAL);
-    gaugeMap.putIfAbsent(
-        GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY,
-        metricsManager.addGauge(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS)
+    gaugeGrpcOpen = metricsManager.addLabeledGauge(GRPC_OPEN);
+    counterGrpcTotal = metricsManager.addLabeledCounter(GRPC_TOTAL);
+    gaugeMap.putIfAbsent(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY,
+        metricsManager.addLabeledGauge(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS)
     );
-    gaugeMap.putIfAbsent(
-        GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY,
-        metricsManager.addGauge(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE)
+    gaugeMap.putIfAbsent(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY,
+        metricsManager.addLabeledGauge(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE)
     );
-    gaugeMap.putIfAbsent(
-            GRPC_SERVER_CONNECTION_NUMBER_KEY,
-        metricsManager.addGauge(GRPC_SERVER_CONNECTION_NUMBER)
+    gaugeMap.putIfAbsent(GRPC_SERVER_CONNECTION_NUMBER_KEY,
+        metricsManager.addLabeledGauge(GRPC_SERVER_CONNECTION_NUMBER)
     );
   }
 
   public void setGauge(String tag, double value) {
     if (isRegistered) {
-      Gauge gauge = gaugeMap.get(tag);
+      Gauge.Child gauge = gaugeMap.get(tag);
       if (gauge != null) {
         gauge.set(value);
       }
@@ -90,7 +95,7 @@ public abstract class GRPCMetrics {
 
   public void incGauge(String tag, double value) {
     if (isRegistered) {
-      Gauge gauge = gaugeMap.get(tag);
+      Gauge.Child gauge = gaugeMap.get(tag);
       if (gauge != null) {
         gauge.inc(value);
       }
@@ -103,7 +108,7 @@ public abstract class GRPCMetrics {
 
   public void decGauge(String tag, double value) {
     if (isRegistered) {
-      Gauge gauge = gaugeMap.get(tag);
+      Gauge.Child gauge = gaugeMap.get(tag);
       if (gauge != null) {
         gauge.dec(value);
       }
@@ -112,11 +117,11 @@ public abstract class GRPCMetrics {
 
   public void incCounter(String methodName) {
     if (isRegistered) {
-      Gauge gauge = gaugeMap.get(methodName);
+      Gauge.Child gauge = gaugeMap.get(methodName);
       if (gauge != null) {
         gauge.inc();
       }
-      Counter counter = counterMap.get(methodName);
+      Counter.Child counter = counterMap.get(methodName);
       if (counter != null) {
         counter.inc();
       }
@@ -127,7 +132,7 @@ public abstract class GRPCMetrics {
 
   public void decCounter(String methodName) {
     if (isRegistered) {
-      Gauge gauge = gaugeMap.get(methodName);
+      Gauge.Child gauge = gaugeMap.get(methodName);
       if (gauge != null) {
         gauge.dec();
       }
@@ -136,14 +141,14 @@ public abstract class GRPCMetrics {
   }
 
   public void recordTransportTime(String methodName, long transportTimeInMillionSecond) {
-    Summary summary = transportTimeSummaryMap.get(methodName);
+    Summary.Child summary = transportTimeSummaryMap.get(methodName);
     if (summary != null) {
       summary.observe(transportTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND);
     }
   }
 
   public void recordProcessTime(String methodName, long processTimeInMillionSecond) {
-    Summary summary = processTimeSummaryMap.get(methodName);
+    Summary.Child summary = processTimeSummaryMap.get(methodName);
     if (summary != null) {
       summary.observe(processTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND);
     }
@@ -153,31 +158,31 @@ public abstract class GRPCMetrics {
     return metricsManager.getCollectorRegistry();
   }
 
-  public Map<String, Counter> getCounterMap() {
+  public Map<String, Counter.Child> getCounterMap() {
     return counterMap;
   }
 
-  public Map<String, Gauge> getGaugeMap() {
+  public Map<String, Gauge.Child> getGaugeMap() {
     return gaugeMap;
   }
 
-  public Gauge getGaugeGrpcOpen() {
+  public Gauge.Child getGaugeGrpcOpen() {
     return gaugeGrpcOpen;
   }
 
-  public Counter getCounterGrpcTotal() {
+  public Counter.Child getCounterGrpcTotal() {
     return counterGrpcTotal;
   }
 
-  public Map<String, Summary> getTransportTimeSummaryMap() {
+  public Map<String, Summary.Child> getTransportTimeSummaryMap() {
     return transportTimeSummaryMap;
   }
 
-  public Map<String, Summary> getProcessTimeSummaryMap() {
+  public Map<String, Summary.Child> getProcessTimeSummaryMap() {
     return processTimeSummaryMap;
   }
 
   public static GRPCMetrics getEmptyGRPCMetrics() {
-    return new EmptyGRPCMetrics();
+    return new EmptyGRPCMetrics(Constants.SHUFFLE_SERVER_VERSION);
   }
 }

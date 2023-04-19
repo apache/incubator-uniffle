@@ -23,12 +23,14 @@ import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Summary;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.common.util.Constants;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ShuffleServerGrpcMetricsTest {
   @Test
   public void testLatencyMetrics() {
-    ShuffleServerGrpcMetrics metrics = new ShuffleServerGrpcMetrics();
+    ShuffleServerGrpcMetrics metrics = new ShuffleServerGrpcMetrics(Constants.SHUFFLE_SERVER_VERSION);
     metrics.register(new CollectorRegistry(true));
     metrics.recordTransportTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, 1000);
     metrics.recordTransportTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, 500);
@@ -36,8 +38,8 @@ public class ShuffleServerGrpcMetricsTest {
     metrics.recordProcessTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, 1000);
     metrics.recordProcessTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, 500);
     metrics.recordProcessTime(ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD, 200);
-    Map<String, Summary> sendTimeSummaryTime = metrics.getTransportTimeSummaryMap();
-    Map<String, Summary> processTimeSummaryTime = metrics.getProcessTimeSummaryMap();
+    Map<String, Summary.Child> sendTimeSummaryTime = metrics.getTransportTimeSummaryMap();
+    Map<String, Summary.Child> processTimeSummaryTime = metrics.getProcessTimeSummaryMap();
     assertEquals(3, sendTimeSummaryTime.size());
     assertEquals(3, processTimeSummaryTime.size());
 
