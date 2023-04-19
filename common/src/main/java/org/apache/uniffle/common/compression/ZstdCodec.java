@@ -72,4 +72,9 @@ public class ZstdCodec extends Codec {
       throw new RssException("Failed to compress by Zstd", e);
     }
   }
+
+  @Override
+  public int maxCompressedLength(int sourceLength) {
+    return (int) Zstd.compressBound(sourceLength);
+  }
 }

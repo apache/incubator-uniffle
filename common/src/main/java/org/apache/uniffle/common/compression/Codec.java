@@ -63,6 +63,12 @@ public abstract class Codec {
    */
   public abstract int compress(ByteBuffer src, ByteBuffer dest);
 
+  /**
+   * maximum size of the compressed data
+   * @param sourceLength
+   */
+  public abstract int maxCompressedLength(int sourceLength);
+
   public enum Type {
     LZ4,
     ZSTD,

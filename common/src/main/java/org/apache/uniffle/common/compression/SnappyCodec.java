@@ -76,4 +76,9 @@ public class SnappyCodec extends Codec {
       throw new RssException("Failed to compress by Snappy", e);
     }
   }
+
+  @Override
+  public int maxCompressedLength(int sourceLength) {
+    return Snappy.maxCompressedLength(sourceLength);
+  }
 }

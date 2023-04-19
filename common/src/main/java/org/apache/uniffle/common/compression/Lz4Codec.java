@@ -53,4 +53,9 @@ public class Lz4Codec extends Codec {
       throw new RssException("Failed to compress by Lz4", e);
     }
   }
+
+  @Override
+  public int maxCompressedLength(int sourceLength) {
+    return lz4Factory.fastCompressor().maxCompressedLength(sourceLength);
+  }
 }

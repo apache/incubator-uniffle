@@ -41,4 +41,9 @@ public class NoOpCodec extends Codec {
     dest.put(src);
     return dest.position() - destOff;
   }
+
+  @Override
+  public int maxCompressedLength(int sourceLength) {
+    return sourceLength;
+  }
 }
