@@ -73,7 +73,7 @@ public class NettyProtocolTestUtils {
     if (req1 == null || req2 == null) {
       return false;
     }
-    boolean isEqual = req1.requestId == req2.requestId
+    boolean isEqual = req1.getRequestId() == req2.getRequestId()
         && req1.getShuffleId() == req2.getShuffleId()
         && req1.getRequireId() == req2.getRequireId()
         && req1.getTimestamp() == req2.getTimestamp()

@@ -17,10 +17,43 @@
 
 package org.apache.uniffle.common;
 
+import io.netty.buffer.ByteBuf;
+
+import org.apache.uniffle.common.netty.EncodeException;
+import org.apache.uniffle.common.netty.protocol.Encodable;
+
 /**
  * The type of shuffle data distribution of a single partition.
  */
-public enum ShuffleDataDistributionType {
-  NORMAL,
-  LOCAL_ORDER
+public enum ShuffleDataDistributionType implements Encodable {
+  NORMAL(0),
+  LOCAL_ORDER(1);
+
+  private final byte id;
+
+  ShuffleDataDistributionType(int id) {
+    this.id = (byte) id;
+  }
+
+  @Override
+  public int encodedLength() {
+    return 1;
+  }
+
+  @Override
+  public void encode(ByteBuf buf) throws EncodeException {
+    buf.writeByte(id);
+  }
+
+  public static ShuffleDataDistributionType decode(ByteBuf buf) {
+    byte id = buf.readByte();
+    switch (id) {
+      case 0:
+        return NORMAL;
+      case 1:
+        return LOCAL_ORDER;
+      default:
+        throw new IllegalArgumentException("Unknown ShuffleDataDistributionType: " + id);
+    }
+  }
 }

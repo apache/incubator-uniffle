@@ -15,15 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common.netty.protocol;
+package org.apache.uniffle.common.netty;
 
-import io.netty.buffer.ByteBuf;
+public class EncodeException extends RuntimeException {
 
-import org.apache.uniffle.common.netty.EncodeException;
+  public EncodeException(String message) {
+    super(message);
+  }
 
-public interface Encodable {
+  public EncodeException(Throwable e) {
+    super(e);
+  }
 
-  int encodedLength();
-
-  void encode(ByteBuf buf) throws EncodeException;
+  public EncodeException(String message, Throwable e) {
+    super(message, e);
+  }
 }

@@ -17,13 +17,16 @@
 
 package org.apache.uniffle.common.netty.protocol;
 
-import io.netty.buffer.ByteBuf;
+public abstract class RequestMessage extends Message {
+  private final long requestId;
+  public static final int REQUEST_ID_ENCODE_LENGTH = Long.BYTES;
 
-import org.apache.uniffle.common.netty.EncodeException;
+  public RequestMessage(long requestId) {
+    super();
+    this.requestId = requestId;
+  }
 
-public interface Encodable {
-
-  int encodedLength();
-
-  void encode(ByteBuf buf) throws EncodeException;
+  public long getRequestId() {
+    return requestId;
+  }
 }
