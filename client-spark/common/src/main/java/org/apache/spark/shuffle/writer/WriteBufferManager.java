@@ -242,7 +242,7 @@ public class WriteBufferManager extends MemoryConsumer {
     }
   }
 
-  private List<ShuffleBlockInfo> _clear() {
+  private List<ShuffleBlockInfo> doClear() {
     List<ShuffleBlockInfo> result = Lists.newArrayList();
     long dataSize = 0;
     long memoryUsed = 0;
@@ -262,7 +262,7 @@ public class WriteBufferManager extends MemoryConsumer {
 
   // transform all [partition, records] to [partition, ShuffleBlockInfo] and clear cache
   public List<ShuffleBlockInfo> clear() {
-    return withLock(buffersLock, () -> _clear());
+    return withLock(buffersLock, () -> doClear());
   }
 
   // transform records to shuffleBlock
@@ -370,7 +370,7 @@ public class WriteBufferManager extends MemoryConsumer {
 
   @Override
   public long spill(long size, MemoryConsumer trigger) {
-    List<AddBlockEvent> events = buildBlockEvents(withLock(buffersLock, memorySpillLockTimeoutMs, () -> _clear()));
+    List<AddBlockEvent> events = buildBlockEvents(withLock(buffersLock, memorySpillLockTimeoutMs, () -> doClear()));
     if (CollectionUtils.isEmpty(events)) {
       return 0L;
     }
