@@ -68,6 +68,9 @@ public class SnappyCodec extends Codec {
   @Override
   public int compress(ByteBuffer src, ByteBuffer dest) {
     try {
+      if (!src.isDirect() || !dest.isDirect()) {
+        throw new RssException("Snappy srcBuff and destBuff must be a direct buffer");
+      }
       int destOff = dest.position();
       int compressedSize = Snappy.compress(src.duplicate(), dest);
       dest.position(destOff + compressedSize);

@@ -67,6 +67,9 @@ public class ZstdCodec extends Codec {
   @Override
   public int compress(ByteBuffer src, ByteBuffer dest) {
     try {
+      if (!src.isDirect() || !dest.isDirect()) {
+        throw new RssException("Zstd srcBuff and destBuff must be a direct buffer");
+      }
       return Zstd.compress(dest, src.duplicate(), compressionLevel);
     } catch (Exception e) {
       throw new RssException("Failed to compress by Zstd", e);
