@@ -32,6 +32,7 @@ import org.apache.uniffle.common.config.RssConf;
 import static org.apache.uniffle.common.config.RssClientConf.COMPRESSION_TYPE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CompressionTest {
 
@@ -82,7 +83,7 @@ public class CompressionTest {
     recycledDst.get(res);
     assertArrayEquals(data, res);
 
-    // case4: use bytebuffer compress
+    // case4: use off heap bytebuffer compress
     ByteBuffer srcBuffer = ByteBuffer.allocateDirect(size);
     srcBuffer.put(data);
     srcBuffer.flip();
@@ -92,8 +93,32 @@ public class CompressionTest {
     destBuffer.flip();
     srcBuffer.clear();
     codec.decompress(destBuffer, size, srcBuffer, 0);
-    byte[] res2 = new byte[size];
-    srcBuffer.get(res2);
-    assertArrayEquals(data, res2);
+    res = new byte[size];
+    srcBuffer.get(res);
+    assertArrayEquals(data, res);
+
+
+    // case4: use on heap bytebuffer compress
+    srcBuffer = ByteBuffer.allocate(size);
+    srcBuffer.put(data);
+    srcBuffer.flip();
+    destBuffer = ByteBuffer.allocate(codec.maxCompressedLength(size));
+    if (type == Codec.Type.ZSTD || type == Codec.Type.NOOP) {
+      codec.compress(srcBuffer, destBuffer);
+      assertEquals(srcBuffer.position(), 0);
+      destBuffer.flip();
+      srcBuffer.clear();
+      codec.decompress(destBuffer, size, srcBuffer, 0);
+      res = new byte[size];
+      srcBuffer.get(res);
+      assertArrayEquals(data, res);
+    } else {
+      try {
+        codec.compress(srcBuffer, destBuffer);
+      } catch (Exception e) {
+        assertTrue(e.getMessage().startsWith("Failed to compress"));
+      }
+    }
   }
+
 }
