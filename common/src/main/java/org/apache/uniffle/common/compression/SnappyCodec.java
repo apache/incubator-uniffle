@@ -68,8 +68,9 @@ public class SnappyCodec extends Codec {
   @Override
   public int compress(ByteBuffer src, ByteBuffer dest) {
     try {
+      int destOff = dest.position();
       int compressedSize = Snappy.compress(src.duplicate(), dest);
-      dest.position(compressedSize);
+      dest.position(destOff + compressedSize);
       return compressedSize;
     } catch (Exception e) {
       throw new RssException("Failed to compress by Snappy", e);
