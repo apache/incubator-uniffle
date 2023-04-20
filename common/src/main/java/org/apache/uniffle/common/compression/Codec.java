@@ -57,7 +57,7 @@ public abstract class Codec {
 
   /**
    * Compresses the data in buffer src into dest.
-   * dest ByteBuffer.remaining() must be exactly the size of the decompressed data.
+   * make sure dest.remaining() >= maxCompressedLength(src.remaining()).
    * This method move the position of dest ByteBuffer,keep src ByteBuffer position.
    * Returns:the compressed size
    */
