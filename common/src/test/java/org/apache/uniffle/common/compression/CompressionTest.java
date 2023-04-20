@@ -103,7 +103,7 @@ public class CompressionTest {
     srcBuffer.put(data);
     srcBuffer.flip();
     destBuffer = ByteBuffer.allocate(codec.maxCompressedLength(size));
-    if (type == Codec.Type.ZSTD || type == Codec.Type.NOOP) {
+    if (type == Codec.Type.LZ4 || type == Codec.Type.NOOP) {
       codec.compress(srcBuffer, destBuffer);
       assertEquals(srcBuffer.position(), 0);
       destBuffer.flip();
