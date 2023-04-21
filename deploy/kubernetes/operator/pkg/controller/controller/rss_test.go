@@ -161,6 +161,12 @@ var _ = Describe("RssController", func() {
 			_, err = testKubeClient.AppsV1().StatefulSets(corev1.NamespaceDefault).
 				Get(context.TODO(), shuffleServerName, metav1.GetOptions{})
 			Expect(err).ToNot(HaveOccurred())
+
+			By("Check hpa of shuffle server")
+			hpaName := shuffleserver.GenerateName(testRSS)
+			_, err = testKubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(corev1.NamespaceDefault).
+				Get(context.TODO(), hpaName, metav1.GetOptions{})
+			Expect(err).ToNot(HaveOccurred())
 		})
 		It("Update the rss object", func() {
 			By("Get current rss object")
@@ -197,6 +203,7 @@ var _ = Describe("RssController", func() {
 			By("Update test rss object")
 			curRSS.Spec.Coordinator.Image = testCoordinatorImage2
 			curRSS.Spec.ShuffleServer.Sync = pointer.Bool(true)
+			curRSS.Spec.ShuffleServer.Autoscaler.Enable = false
 			curRSS.Spec.ShuffleServer.Replicas = pointer.Int32(3)
 			_, err = testRssClient.UniffleV1alpha1().RemoteShuffleServices(corev1.NamespaceDefault).
 				Update(context.TODO(), curRSS, metav1.UpdateOptions{})
@@ -236,6 +243,12 @@ var _ = Describe("RssController", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(sts).ToNot(BeNil())
 			Expect(*sts.Spec.Replicas).To(Equal(int32(3)))
+
+			hpaName := shuffleserver.GenerateName(testRSS)
+			_, err = testKubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(corev1.NamespaceDefault).
+				Get(context.TODO(), hpaName, metav1.GetOptions{})
+			Expect(err).ToNot(BeNil())
+			Expect(errors.IsNotFound(err)).To(Equal(true))
 
 			// since we are in the env test, the rss object may never transmit upgrading to running.
 			By("Ensure rss object is still upgrading")
@@ -288,5 +301,9 @@ func initTestRss() (*corev1.ConfigMap, *unifflev1alpha1.RemoteShuffleService) {
 	rss.Name = testRssName
 	rss.Namespace = testNamespace
 	rss.Spec.Coordinator.Image = testCoordinatorImage1
+	rss.Spec.ShuffleServer.Autoscaler.Enable = true
+	rss.Spec.ShuffleServer.Autoscaler.HPASpec = unifflev1alpha1.HorizontalPodAutoscalerSpec{
+		MaxReplicas: 3,
+	}
 	return cm, rss
 }

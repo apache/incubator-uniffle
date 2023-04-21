@@ -615,6 +615,13 @@ func (r *rssController) syncCoordinator(rss *unifflev1alpha1.RemoteShuffleServic
 
 // syncShuffleServer synchronizes objects related to shuffle servers.
 func (r *rssController) syncShuffleServer(rss *unifflev1alpha1.RemoteShuffleService) error {
+	// The HPA object is independent of the StatefulSet and can be modified directly, ignoring the sync field.
+	hpa, enableHPA := shuffleserver.GenerateHPA(rss)
+	if err := kubeutil.SyncHPA(r.kubeClient, hpa, enableHPA); err != nil {
+		klog.Errorf("failed to sync hpa for rss (%v)", utils.UniqueName(rss), err)
+		return err
+	}
+
 	if rss.Status.Phase == unifflev1alpha1.RSSRunning && !*rss.Spec.ShuffleServer.Sync {
 		return nil
 	}
@@ -623,14 +630,14 @@ func (r *rssController) syncShuffleServer(rss *unifflev1alpha1.RemoteShuffleServ
 	// pointless. For spark apps running in the cluster, executor containers could access shuffler server via container
 	// network(overlay or host network). If shuffle servers should be exposed to external, host network should be used
 	// and external executor should access the host node ip:port directly.
-	serviceAccount, statefulSet := shuffleserver.GenerateShuffleServers(rss)
+	serviceAccount, statefulSet := shuffleserver.GenerateShuffleServers(r.kubeClient, rss)
 	if err := kubeutil.SyncServiceAccount(r.kubeClient, serviceAccount); err != nil {
-		klog.Errorf("sync SA (%v) for rss (%v) failed: %v",
+		klog.Errorf("failed to sync sa (%v) for rss (%v): %v",
 			utils.UniqueName(serviceAccount), utils.UniqueName(rss), err)
 		return err
 	}
 	if _, _, err := kubeutil.SyncStatefulSet(r.kubeClient, statefulSet, true); err != nil {
-		klog.Errorf("sync StatefulSet for rss (%v) failed: %v", utils.UniqueName(rss), err)
+		klog.Errorf("failed to sync statefulSet for rss (%v): %v", utils.UniqueName(rss), err)
 		return err
 	}
 	return nil
@@ -791,7 +798,6 @@ func (r *rssController) processRollingUpgrade(rss *unifflev1alpha1.RemoteShuffle
 		return false, r.updateRssStatus(rss,
 			&unifflev1alpha1.RemoteShuffleServiceStatus{Phase: unifflev1alpha1.RSSRunning})
 	}
-
 	return true, r.decreasePartition(oldSts, minPartition)
 }
 
@@ -813,7 +819,7 @@ func (r *rssController) checkUpgradeFinished(rss *unifflev1alpha1.RemoteShuffleS
 		*oldSts.Spec.Replicas == oldSts.Status.ReadyReplicas {
 		klog.V(4).Infof("do not need to update partition of statefulSet (%v)",
 			utils.UniqueName(oldSts))
-		return true, nil, nil
+		return true, oldSts, nil
 	}
 	return false, oldSts, nil
 }
@@ -825,8 +831,9 @@ func (r *rssController) decreasePartition(oldSts *appsv1.StatefulSet, minPartiti
 	if targetPartition < minPartition {
 		targetPartition = minPartition
 	}
-	klog.V(4).Infof("set partition of statefulSet (%v) to %v >= %v",
-		utils.UniqueName(newSts), targetPartition, minPartition)
+	oldPartition := *oldSts.Spec.UpdateStrategy.RollingUpdate.Partition
+	klog.V(4).Infof("set partition of statefulSet (%v) from %v to %v, minPartition %v",
+		utils.UniqueName(newSts), oldPartition, targetPartition, minPartition)
 	newSts.Spec.UpdateStrategy.RollingUpdate.Partition = &targetPartition
 	_, err := kubeutil.PatchStatefulSet(r.kubeClient, oldSts, newSts)
 	return err

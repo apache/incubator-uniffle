@@ -18,15 +18,18 @@
 package shuffleserver
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
 
 	unifflev1alpha1 "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/api/uniffle/v1alpha1"
@@ -51,9 +54,10 @@ func init() {
 }
 
 // GenerateShuffleServers generates objects related to shuffle servers.
-func GenerateShuffleServers(rss *unifflev1alpha1.RemoteShuffleService) (*corev1.ServiceAccount, *appsv1.StatefulSet) {
+func GenerateShuffleServers(kubeClient kubernetes.Interface, rss *unifflev1alpha1.RemoteShuffleService) (
+	*corev1.ServiceAccount, *appsv1.StatefulSet) {
 	sa := GenerateSA(rss)
-	sts := GenerateSts(rss)
+	sts := GenerateSts(kubeClient, rss)
 	return sa, sts
 }
 
@@ -69,17 +73,56 @@ func GenerateSA(rss *unifflev1alpha1.RemoteShuffleService) *corev1.ServiceAccoun
 	return sa
 }
 
+// GenerateHPA generates hpa object of shuffle servers and return when it is enabled.
+func GenerateHPA(rss *unifflev1alpha1.RemoteShuffleService) (*autoscalingv2.HorizontalPodAutoscaler, bool) {
+	rssHPASpec := rss.Spec.ShuffleServer.Autoscaler.HPASpec
+	name := GenerateName(rss)
+	hpa := &autoscalingv2.HorizontalPodAutoscaler{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: rss.Namespace,
+			Name:      name,
+			Labels: map[string]string{
+				constants.LabelShuffleServer: "true",
+			},
+		},
+		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
+			MinReplicas: rssHPASpec.MinReplicas,
+			MaxReplicas: rssHPASpec.MaxReplicas,
+			Metrics:     rssHPASpec.Metrics,
+			Behavior:    rssHPASpec.Behavior,
+		},
+	}
+	hpa.Spec.ScaleTargetRef = autoscalingv2.CrossVersionObjectReference{
+		Kind:       "StatefulSet",
+		Name:       name,
+		APIVersion: appsv1.SchemeGroupVersion.String(),
+	}
+	util.AddOwnerReference(&hpa.ObjectMeta, rss)
+	return hpa, rss.Spec.ShuffleServer.Autoscaler.Enable
+}
+
 // getReplicas returns replicas of shuffle servers.
-func getReplicas(rss *unifflev1alpha1.RemoteShuffleService) *int32 {
-	// TODO: we will support hpa for rss object,
-	// and when we enable hpa, we should not return replicas in .spec.shuffleServer field.
-	return rss.Spec.ShuffleServer.Replicas
+func getReplicas(kubeClient kubernetes.Interface, rss *unifflev1alpha1.RemoteShuffleService) *int32 {
+	// it is only during testing that kubeClient is empty.
+	if kubeClient == nil {
+		return rss.Spec.ShuffleServer.Replicas
+	}
+	if !rss.Spec.ShuffleServer.Autoscaler.Enable {
+		return rss.Spec.ShuffleServer.Replicas
+	}
+	stsName := GenerateName(rss)
+	existSts, err := kubeClient.AppsV1().StatefulSets(rss.Namespace).
+		Get(context.Background(), stsName, metav1.GetOptions{})
+	if err != nil {
+		return rss.Spec.ShuffleServer.Autoscaler.HPASpec.MinReplicas
+	}
+	return existSts.Spec.Replicas
 }
 
 // GenerateSts generates statefulSet of shuffle servers.
-func GenerateSts(rss *unifflev1alpha1.RemoteShuffleService) *appsv1.StatefulSet {
+func GenerateSts(kubeClient kubernetes.Interface, rss *unifflev1alpha1.RemoteShuffleService) *appsv1.StatefulSet {
 	name := GenerateName(rss)
-	replicas := getReplicas(rss)
+	replicas := getReplicas(kubeClient, rss)
 
 	podSpec := corev1.PodSpec{
 		SecurityContext:    rss.Spec.ShuffleServer.SecurityContext,

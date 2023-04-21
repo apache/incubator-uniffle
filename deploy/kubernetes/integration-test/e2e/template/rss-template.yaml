@@ -47,6 +47,21 @@ spec:
     replicas: 1
     image: "${RSS_SERVER_IMAGE}"
     initContainerImage: "busybox:latest"
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+    autoscaler:
+      enable: true
+      hpaSpec:
+        maxReplicas: 3
+        metrics:
+          - resource:
+              name: cpu
+              target:
+                averageUtilization: 10
+                type: Utilization
+            type: Resource
     upgradeStrategy:
       type: "FullUpgrade"
     xmxSize: "800M"

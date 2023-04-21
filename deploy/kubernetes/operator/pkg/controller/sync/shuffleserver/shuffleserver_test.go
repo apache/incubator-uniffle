@@ -25,11 +25,13 @@ import (
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/pointer"
 
 	uniffleapi "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/api/uniffle/v1alpha1"
+	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/constants"
 	controllerconstants "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/controller/constants"
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/controller/sync/coordinator"
 	"github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/utils"
@@ -43,6 +45,9 @@ const (
 
 // IsValidSts checks generated statefulSet, returns whether it is valid and error message.
 type IsValidSts func(*appsv1.StatefulSet, *uniffleapi.RemoteShuffleService) (bool, error)
+
+// IsValidHpa checks generated hpa, returns whether it is valid and error message.
+type IsValidHpa func(*autoscalingv2.HorizontalPodAutoscaler, *uniffleapi.RemoteShuffleService) (bool, error)
 
 var (
 	testLabels = map[string]string{
@@ -191,6 +196,19 @@ func withCustomAffinity(affinity *corev1.Affinity) *uniffleapi.RemoteShuffleServ
 func withCustomImagePullSecrets(imagePullSecrets []corev1.LocalObjectReference) *uniffleapi.RemoteShuffleService {
 	rss := utils.BuildRSSWithDefaultValue()
 	rss.Spec.ImagePullSecrets = imagePullSecrets
+	return rss
+}
+
+func buildRssWithHPA() *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.ShuffleServer.Autoscaler.Enable = true
+	rss.Spec.ShuffleServer.Autoscaler.HPASpec.MaxReplicas = 3
+	return rss
+}
+
+func buildRssWithoutHPA() *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.ShuffleServer.Autoscaler.Enable = false
 	return rss
 }
 
@@ -470,8 +488,50 @@ func TestGenerateSts(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(tc *testing.T) {
-			sts := GenerateSts(tt.rss)
+			sts := GenerateSts(nil, tt.rss)
 			if valid, err := tt.IsValidSts(sts, tt.rss); !valid {
+				tc.Error(err)
+			}
+		})
+	}
+}
+
+func TestGenerateHPA(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		rss  *uniffleapi.RemoteShuffleService
+		IsValidHpa
+	}{
+		{
+			name: "generate hpa",
+			rss:  buildRssWithHPA(),
+			IsValidHpa: func(hpa *autoscalingv2.HorizontalPodAutoscaler, rss *uniffleapi.RemoteShuffleService) (
+				bool, error) {
+				if hpa.Namespace != rss.Namespace {
+					return false, fmt.Errorf("unexpected namespace of generated hpa (%v), expect %v",
+						hpa.Namespace, rss.Namespace)
+				}
+				expectedName := GenerateName(rss)
+				if hpa.Name != expectedName {
+					return false, fmt.Errorf("unexpected name of generated hpa (%v), expect %v",
+						hpa.Name, expectedName)
+				}
+				if hpa.Labels[constants.LabelShuffleServer] != "true" {
+					return false, fmt.Errorf("unexpected label of generated hpa (%v), expect \"true\"",
+						hpa.Labels[constants.LabelShuffleServer])
+				}
+				targetName := hpa.Spec.ScaleTargetRef.Name
+				if hpa.Spec.ScaleTargetRef.Name != expectedName {
+					return false, fmt.Errorf("unexpected target name of generated hpa (%v), expect %v",
+						targetName, expectedName)
+				}
+				return true, nil
+			},
+		},
+	} {
+		t.Run(tt.name, func(tc *testing.T) {
+			hpa, _ := GenerateHPA(tt.rss)
+			if valid, err := tt.IsValidHpa(hpa, tt.rss); !valid {
 				tc.Error(err)
 			}
 		})
