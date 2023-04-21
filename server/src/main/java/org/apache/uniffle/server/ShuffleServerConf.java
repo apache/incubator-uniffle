@@ -201,14 +201,6 @@ public class ShuffleServerConf extends RssBaseConf {
           .withDescription("The maximum ratio of disk that could be used as shuffle server. This is only effective "
               + "when `rss.server.disk.capacity` is not explicitly set");
 
-  public static final ConfigOption<Long> SHUFFLE_EXPIRED_TIMEOUT_MS = ConfigOptions
-      .key("rss.server.shuffle.expired.timeout.ms")
-      .longType()
-      .checkValue(ConfigUtils.POSITIVE_LONG_VALIDATOR, "shuffle expired timeout must be positive")
-      .defaultValue(60L * 1000 * 2)
-      .withDescription("If the shuffle is not read for the long time, and shuffle is uploaded totally,"
-          + " , we can delete the shuffle");
-
   public static final ConfigOption<Long> SERVER_SHUFFLE_INDEX_SIZE_HINT = ConfigOptions
       .key("rss.server.index.size.hint")
       .longType()
