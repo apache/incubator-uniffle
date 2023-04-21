@@ -17,7 +17,9 @@
 
 package org.apache.uniffle.common.netty;
 
-public class DecodeException extends RuntimeException {
+import org.apache.uniffle.common.exception.RssException;
+
+public class DecodeException extends RssException {
 
   public DecodeException(String message) {
     super(message);

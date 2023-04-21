@@ -48,6 +48,7 @@ public class GetLocalShuffleDataResponse extends RpcResponse {
   public void encode(ByteBuf buf) {
     super.encode(buf);
     ByteBufUtils.copyByteBuf(data, buf);
+    data.release();
   }
 
   public static GetLocalShuffleDataResponse decode(ByteBuf byteBuf) {

@@ -17,7 +17,9 @@
 
 package org.apache.uniffle.common.netty;
 
-public class EncodeException extends RuntimeException {
+import org.apache.uniffle.common.exception.RssException;
+
+public class EncodeException extends RssException {
 
   public EncodeException(String message) {
     super(message);

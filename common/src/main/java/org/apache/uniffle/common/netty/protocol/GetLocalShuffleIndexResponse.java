@@ -52,6 +52,7 @@ public class GetLocalShuffleIndexResponse extends RpcResponse {
   public void encode(ByteBuf buf) {
     super.encode(buf);
     ByteBufUtils.copyByteBuf(indexData, buf);
+    indexData.release();
     buf.writeLong(fileLength);
   }
 

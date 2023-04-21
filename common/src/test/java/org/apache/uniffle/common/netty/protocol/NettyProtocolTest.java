@@ -116,7 +116,7 @@ public class NettyProtocolTest {
   public void testGetLocalShuffleDataResponse() {
     byte[] data = new byte[]{1, 2, 3};
     GetLocalShuffleDataResponse getLocalShuffleDataResponse =
-        new GetLocalShuffleDataResponse(1, StatusCode.SUCCESS, data);
+        new GetLocalShuffleDataResponse(1, StatusCode.SUCCESS, "", Unpooled.wrappedBuffer(data).retain());
     int encodeLength = getLocalShuffleDataResponse.encodedLength();
     ByteBuf byteBuf = Unpooled.buffer(encodeLength, encodeLength);
     getLocalShuffleDataResponse.encode(byteBuf);
@@ -151,7 +151,7 @@ public class NettyProtocolTest {
   public void testGetLocalShuffleIndexResponse() {
     byte[] indexData = new byte[]{1, 2, 3};
     GetLocalShuffleIndexResponse getLocalShuffleIndexResponse =
-        new GetLocalShuffleIndexResponse(1, StatusCode.SUCCESS, "", indexData, 23);
+        new GetLocalShuffleIndexResponse(1, StatusCode.SUCCESS, "", Unpooled.wrappedBuffer(indexData).retain(), 23);
     int encodeLength = getLocalShuffleIndexResponse.encodedLength();
     ByteBuf byteBuf = Unpooled.buffer(encodeLength, encodeLength);
     getLocalShuffleIndexResponse.encode(byteBuf);
@@ -192,7 +192,8 @@ public class NettyProtocolTest {
         new BufferSegment(1, 0, 5, 10, 123, 1),
         new BufferSegment(1, 0, 5, 10, 345, 1));
     GetMemoryShuffleDataResponse getMemoryShuffleDataResponse =
-        new GetMemoryShuffleDataResponse(1, StatusCode.SUCCESS, "", bufferSegments, data);
+        new GetMemoryShuffleDataResponse(1, StatusCode.SUCCESS, "", bufferSegments,
+            Unpooled.wrappedBuffer(data).retain());
     int encodeLength = getMemoryShuffleDataResponse.encodedLength();
     ByteBuf byteBuf = Unpooled.buffer(encodeLength, encodeLength);
     getMemoryShuffleDataResponse.encode(byteBuf);

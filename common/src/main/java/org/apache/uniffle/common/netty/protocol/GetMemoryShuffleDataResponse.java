@@ -58,6 +58,7 @@ public class GetMemoryShuffleDataResponse extends RpcResponse {
     super.encode(buf);
     Encoders.encodeBufferSegments(bufferSegments, buf);
     ByteBufUtils.copyByteBuf(data, buf);
+    data.release();
   }
 
   public static GetMemoryShuffleDataResponse decode(ByteBuf byteBuf) {
