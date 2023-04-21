@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.common.compression;
 
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -97,9 +96,44 @@ public class CompressionTest {
     srcBuffer.get(res);
     assertArrayEquals(data, res);
 
-
     // case4: use on heap bytebuffer compress
     srcBuffer = ByteBuffer.allocate(size);
+    srcBuffer.put(data);
+    srcBuffer.flip();
+    destBuffer = ByteBuffer.allocate(codec.maxCompressedLength(size));
+    codec.compress(srcBuffer, destBuffer);
+    assertEquals(srcBuffer.position(), 0);
+    destBuffer.flip();
+    srcBuffer.clear();
+    codec.decompress(destBuffer, size, srcBuffer, 0);
+    res = new byte[size];
+    srcBuffer.get(res);
+    assertArrayEquals(data, res);
+
+    // case5: src buffer is on heap && dest buffer is off heap
+    srcBuffer = ByteBuffer.allocate(size);
+    srcBuffer.put(data);
+    srcBuffer.flip();
+    destBuffer = ByteBuffer.allocateDirect(codec.maxCompressedLength(size));
+    if (type == Codec.Type.LZ4 || type == Codec.Type.NOOP) {
+      codec.compress(srcBuffer, destBuffer);
+      assertEquals(srcBuffer.position(), 0);
+      destBuffer.flip();
+      srcBuffer.clear();
+      codec.decompress(destBuffer, size, srcBuffer, 0);
+      res = new byte[size];
+      srcBuffer.get(res);
+      assertArrayEquals(data, res);
+    } else {
+      try {
+        codec.compress(srcBuffer, destBuffer);
+      } catch (Exception e) {
+        assertTrue(e instanceof IllegalStateException);
+      }
+    }
+
+    // case6: src buffer is off heap && dest buffer is on heap
+    srcBuffer = ByteBuffer.allocateDirect(size);
     srcBuffer.put(data);
     srcBuffer.flip();
     destBuffer = ByteBuffer.allocate(codec.maxCompressedLength(size));
@@ -116,9 +150,28 @@ public class CompressionTest {
       try {
         codec.compress(srcBuffer, destBuffer);
       } catch (Exception e) {
-        assertTrue(e.getMessage().startsWith("Failed to compress"));
+        assertTrue(e instanceof IllegalStateException);
       }
     }
+
+    // case7: use src&dest bytebuffer with offset
+    int destOffset = 10;
+    srcBuffer = ByteBuffer.allocateDirect(size + destOffset);
+    srcBuffer.position(destOffset);
+    srcBuffer.put(data);
+    srcBuffer.flip();
+    srcBuffer.position(destOffset);
+    destBuffer = ByteBuffer.allocateDirect(codec.maxCompressedLength(size) + destOffset);
+    destBuffer.position(destOffset);
+    codec.compress(srcBuffer, destBuffer);
+    assertEquals(srcBuffer.position(), 10);
+    destBuffer.flip();
+    destBuffer.position(destOffset);
+    srcBuffer.clear();
+    codec.decompress(destBuffer, size, srcBuffer, 0);
+    res = new byte[size];
+    srcBuffer.get(res);
+    assertArrayEquals(data, res);
   }
 
 }

@@ -68,16 +68,23 @@ public class SnappyCodec extends Codec {
   @Override
   public int compress(ByteBuffer src, ByteBuffer dest) {
     try {
-      if (!src.isDirect() || !dest.isDirect()) {
-        throw new RssException("Snappy srcBuff and destBuff must be a direct buffer");
+      if (src.isDirect() && dest.isDirect()) {
+        int destOff = dest.position();
+        int compressedSize = Snappy.compress(src.duplicate(), dest);
+        dest.position(destOff + compressedSize);
+        return compressedSize;
       }
-      int destOff = dest.position();
-      int compressedSize = Snappy.compress(src.duplicate(), dest);
-      dest.position(destOff + compressedSize);
-      return compressedSize;
+      if (!src.isDirect() && !dest.isDirect()) {
+        int destOff = dest.position();
+        int compressedSize = Snappy.compress(src.array(), src.position(), src.limit() - src.position(), dest.array(),
+            dest.position());
+        dest.position(destOff + compressedSize);
+        return compressedSize;
+      }
     } catch (Exception e) {
       throw new RssException("Failed to compress by Snappy", e);
     }
+    throw new IllegalStateException("Snappy only supports the same type of bytebuffer compression.");
   }
 
   @Override
