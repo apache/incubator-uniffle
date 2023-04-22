@@ -15,15 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common.netty.protocol;
+package org.apache.uniffle.common.netty;
 
-import io.netty.buffer.ByteBuf;
+import org.apache.uniffle.common.exception.RssException;
 
-import org.apache.uniffle.common.netty.EncodeException;
+public class DecodeException extends RssException {
 
-public interface Encodable {
+  public DecodeException(String message) {
+    super(message);
+  }
 
-  int encodedLength();
+  public DecodeException(Throwable e) {
+    super(e);
+  }
 
-  void encode(ByteBuf buf) throws EncodeException;
+  public DecodeException(String message, Throwable e) {
+    super(message, e);
+  }
 }

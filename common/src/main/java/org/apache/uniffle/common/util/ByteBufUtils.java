@@ -24,7 +24,10 @@ import io.netty.buffer.ByteBuf;
 public class ByteBufUtils {
 
   public static int encodedLength(String s) {
-    return 4 + s.getBytes(StandardCharsets.UTF_8).length;
+    if (s == null) {
+      return Integer.BYTES;
+    }
+    return Integer.BYTES + s.getBytes(StandardCharsets.UTF_8).length;
   }
 
   public static int encodedLength(ByteBuf buf) {

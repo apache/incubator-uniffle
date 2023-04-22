@@ -17,8 +17,6 @@
 
 package org.apache.uniffle.common.netty.protocol;
 
-import java.util.Objects;
-
 import io.netty.buffer.ByteBuf;
 
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -83,24 +81,5 @@ public class RpcResponse extends Message {
   @Override
   public Type type() {
     return Type.RPC_RESPONSE;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    RpcResponse that = (RpcResponse) o;
-    return requestId == that.requestId
-        && statusCode == that.statusCode
-        && Objects.equals(retMessage, that.retMessage);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(requestId, statusCode, retMessage);
   }
 }

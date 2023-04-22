@@ -21,6 +21,8 @@ import java.util.List;
 
 import io.netty.buffer.ByteBuf;
 
+import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.ByteBufUtils;
@@ -65,6 +67,30 @@ public class Encoders {
       encodeLength += encodeLengthOfShuffleServerInfo(shuffleServerInfo);
     }
     return encodeLength;
+  }
+
+  public static void encodePartitionRanges(List<PartitionRange> partitionRanges, ByteBuf byteBuf) {
+    byteBuf.writeInt(partitionRanges.size());
+    for (PartitionRange partitionRange : partitionRanges) {
+      byteBuf.writeInt(partitionRange.getStart());
+      byteBuf.writeInt(partitionRange.getEnd());
+    }
+  }
+
+  public static void encodeBufferSegments(List<BufferSegment> bufferSegments, ByteBuf byteBuf) {
+    byteBuf.writeInt(bufferSegments.size());
+    for (BufferSegment bufferSegment : bufferSegments) {
+      byteBuf.writeLong(bufferSegment.getBlockId());
+      byteBuf.writeInt(bufferSegment.getOffset());
+      byteBuf.writeInt(bufferSegment.getLength());
+      byteBuf.writeInt(bufferSegment.getUncompressLength());
+      byteBuf.writeLong(bufferSegment.getCrc());
+      byteBuf.writeLong(bufferSegment.getTaskAttemptId());
+    }
+  }
+
+  public static int encodeLengthOfBufferSegments(List<BufferSegment> bufferSegments) {
+    return Integer.BYTES + bufferSegments.size() * (3 * Long.BYTES + 3 * Integer.BYTES);
   }
 
 }

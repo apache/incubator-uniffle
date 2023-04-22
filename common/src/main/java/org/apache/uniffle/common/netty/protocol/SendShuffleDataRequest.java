@@ -27,8 +27,7 @@ import io.netty.buffer.ByteBuf;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.util.ByteBufUtils;
 
-public class SendShuffleDataRequest extends Message {
-  public long requestId;
+public class SendShuffleDataRequest extends RequestMessage {
   private String appId;
   private int shuffleId;
   private long requireId;
@@ -37,7 +36,7 @@ public class SendShuffleDataRequest extends Message {
 
   public SendShuffleDataRequest(long requestId, String appId, int shuffleId, long requireId,
       Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks, long timestamp) {
-    this.requestId = requestId;
+    super(requestId);
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.requireId = requireId;
@@ -52,7 +51,8 @@ public class SendShuffleDataRequest extends Message {
 
   @Override
   public int encodedLength() {
-    int encodeLength = Long.BYTES + ByteBufUtils.encodedLength(appId) + Integer.BYTES + Long.BYTES + Integer.BYTES;
+    int encodeLength =
+        REQUEST_ID_ENCODE_LENGTH + ByteBufUtils.encodedLength(appId) + Integer.BYTES + Long.BYTES + Integer.BYTES;
     for (Map.Entry<Integer, List<ShuffleBlockInfo>> entry : partitionToBlocks.entrySet()) {
       encodeLength += 2 * Integer.BYTES;
       for (ShuffleBlockInfo sbi : entry.getValue()) {
@@ -64,7 +64,7 @@ public class SendShuffleDataRequest extends Message {
 
   @Override
   public void encode(ByteBuf buf) {
-    buf.writeLong(requestId);
+    buf.writeLong(getRequestId());
     ByteBufUtils.writeLengthAndString(buf, appId);
     buf.writeInt(shuffleId);
     buf.writeLong(requireId);
@@ -106,10 +106,6 @@ public class SendShuffleDataRequest extends Message {
         Encoders.encodeShuffleBlockInfo(sbi, buf);
       }
     }
-  }
-
-  public long getRequestId() {
-    return requestId;
   }
 
   public String getAppId() {
