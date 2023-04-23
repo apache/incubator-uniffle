@@ -91,12 +91,9 @@ public class CompressionTest {
     assertEquals(srcBuffer.position(), 0);
     destBuffer.flip();
     srcBuffer.clear();
-    codec.decompress(destBuffer, size, srcBuffer, 0);
-    res = new byte[size];
-    srcBuffer.get(res);
-    assertArrayEquals(data, res);
+    checkCompressedData(codec, data, srcBuffer, destBuffer);
 
-    // case4: use on heap bytebuffer compress
+    // case5: use on heap bytebuffer compress
     srcBuffer = ByteBuffer.allocate(size);
     srcBuffer.put(data);
     srcBuffer.flip();
@@ -105,12 +102,9 @@ public class CompressionTest {
     assertEquals(srcBuffer.position(), 0);
     destBuffer.flip();
     srcBuffer.clear();
-    codec.decompress(destBuffer, size, srcBuffer, 0);
-    res = new byte[size];
-    srcBuffer.get(res);
-    assertArrayEquals(data, res);
+    checkCompressedData(codec, data, srcBuffer, destBuffer);
 
-    // case5: src buffer is on heap && dest buffer is off heap
+    // case6: src buffer is on heap && dest buffer is off heap
     srcBuffer = ByteBuffer.allocate(size);
     srcBuffer.put(data);
     srcBuffer.flip();
@@ -120,10 +114,7 @@ public class CompressionTest {
       assertEquals(srcBuffer.position(), 0);
       destBuffer.flip();
       srcBuffer.clear();
-      codec.decompress(destBuffer, size, srcBuffer, 0);
-      res = new byte[size];
-      srcBuffer.get(res);
-      assertArrayEquals(data, res);
+      checkCompressedData(codec, data, srcBuffer, destBuffer);
     } else {
       try {
         codec.compress(srcBuffer, destBuffer);
@@ -132,7 +123,7 @@ public class CompressionTest {
       }
     }
 
-    // case6: src buffer is off heap && dest buffer is on heap
+    // case7: src buffer is off heap && dest buffer is on heap
     srcBuffer = ByteBuffer.allocateDirect(size);
     srcBuffer.put(data);
     srcBuffer.flip();
@@ -142,10 +133,7 @@ public class CompressionTest {
       assertEquals(srcBuffer.position(), 0);
       destBuffer.flip();
       srcBuffer.clear();
-      codec.decompress(destBuffer, size, srcBuffer, 0);
-      res = new byte[size];
-      srcBuffer.get(res);
-      assertArrayEquals(data, res);
+      checkCompressedData(codec, data, srcBuffer, destBuffer);
     } else {
       try {
         codec.compress(srcBuffer, destBuffer);
@@ -154,7 +142,7 @@ public class CompressionTest {
       }
     }
 
-    // case7: use src&dest bytebuffer with offset
+    // case8: use src&dest bytebuffer with offset
     int destOffset = 10;
     srcBuffer = ByteBuffer.allocateDirect(size + destOffset);
     srcBuffer.position(destOffset);
@@ -168,10 +156,14 @@ public class CompressionTest {
     destBuffer.flip();
     destBuffer.position(destOffset);
     srcBuffer.clear();
-    codec.decompress(destBuffer, size, srcBuffer, 0);
-    res = new byte[size];
-    srcBuffer.get(res);
-    assertArrayEquals(data, res);
+    checkCompressedData(codec, data, srcBuffer, destBuffer);
+  }
+
+  private void checkCompressedData(Codec codec, byte[] originData, ByteBuffer dest, ByteBuffer src) {
+    codec.decompress(src, originData.length, dest, 0);
+    byte[] res = new byte[originData.length];
+    dest.get(res);
+    assertArrayEquals(originData, res);
   }
 
 }
