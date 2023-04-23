@@ -70,7 +70,8 @@ public class SnappyCodec extends Codec {
     try {
       if (src.isDirect() && dest.isDirect()) {
         int destOff = dest.position();
-        int compressedSize = Snappy.compress(src.duplicate(), dest);
+        // dest.duplicate and reset dest.position is consistent with other codec
+        int compressedSize = Snappy.compress(src.duplicate(), dest.duplicate());
         dest.position(destOff + compressedSize);
         return compressedSize;
       }
