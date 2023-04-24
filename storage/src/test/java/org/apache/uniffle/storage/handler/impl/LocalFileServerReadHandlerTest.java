@@ -73,6 +73,7 @@ public class LocalFileServerReadHandlerTest {
 
     int actualWriteDataBlock = expectTotalBlockNum - 1;
     int actualFileLen = blockSize * actualWriteDataBlock;
+    byteBuffer.rewind();
     RssGetShuffleIndexResponse response = new RssGetShuffleIndexResponse(StatusCode.SUCCESS,
         byteBuffer, actualFileLen);
     Mockito.doReturn(response).when(mockShuffleServerClient).getShuffleIndex(Mockito.any());

@@ -127,8 +127,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int dataCommitPoolSize,
       int unregisterThreadPoolSize,
       int unregisterRequestTimeSec) {
-    this(clientType, retryMax, retryIntervalMax, heartBeatThreadNum, replica, replicaWrite, replicaRead, replicaSkipEnabled,
-        dataTransferPoolSize, dataCommitPoolSize, unregisterThreadPoolSize, unregisterRequestTimeSec, new RssConf());
+    this(clientType, retryMax, retryIntervalMax, heartBeatThreadNum, replica, replicaWrite, replicaRead,
+        replicaSkipEnabled, dataTransferPoolSize, dataCommitPoolSize, unregisterThreadPoolSize,
+        unregisterRequestTimeSec, new RssConf());
   }
 
   public ShuffleWriteClientImpl(

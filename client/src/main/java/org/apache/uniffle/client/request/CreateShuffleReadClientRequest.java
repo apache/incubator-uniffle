@@ -20,12 +20,12 @@ package org.apache.uniffle.client.request;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.uniffle.common.config.RssConf;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.IdHelper;
 
 public class CreateShuffleReadClientRequest {

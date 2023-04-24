@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.client.impl.grpc;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -587,7 +588,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     switch (statusCode) {
       case SUCCESS:
         response = new RssGetShuffleDataResponse(
-            StatusCode.SUCCESS, rpcResponse.getData().asReadOnlyByteBuffer());
+            StatusCode.SUCCESS, ByteBuffer.wrap(rpcResponse.getData().toByteArray()));
 
         break;
       default:
@@ -622,7 +623,9 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     switch (statusCode) {
       case SUCCESS:
         response = new RssGetShuffleIndexResponse(
-            StatusCode.SUCCESS, rpcResponse.getIndexData().asReadOnlyByteBuffer(), rpcResponse.getDataFileLen());
+            StatusCode.SUCCESS,
+            ByteBuffer.wrap(rpcResponse.getIndexData().toByteArray()),
+            rpcResponse.getDataFileLen());
 
         break;
       default:
@@ -671,7 +674,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     switch (statusCode) {
       case SUCCESS:
         response = new RssGetInMemoryShuffleDataResponse(
-            StatusCode.SUCCESS, rpcResponse.getData().asReadOnlyByteBuffer(),
+            StatusCode.SUCCESS, ByteBuffer.wrap(rpcResponse.getData().toByteArray()),
             toBufferSegments(rpcResponse.getShuffleDataBlockSegmentsList()));
         break;
       default:
