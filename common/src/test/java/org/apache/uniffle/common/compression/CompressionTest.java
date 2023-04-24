@@ -84,79 +84,59 @@ public class CompressionTest {
 
     // case4: use off heap bytebuffer compress
     ByteBuffer srcBuffer = ByteBuffer.allocateDirect(size);
-    srcBuffer.put(data);
-    srcBuffer.flip();
     ByteBuffer destBuffer = ByteBuffer.allocateDirect(codec.maxCompressedLength(size));
-    codec.compress(srcBuffer, destBuffer);
-    assertEquals(srcBuffer.position(), 0);
-    destBuffer.flip();
-    srcBuffer.clear();
-    checkCompressedData(codec, data, srcBuffer, destBuffer);
+    testCompressWithByteBuffer(codec, data, srcBuffer, destBuffer, 0);
 
     // case5: use on heap bytebuffer compress
     srcBuffer = ByteBuffer.allocate(size);
-    srcBuffer.put(data);
-    srcBuffer.flip();
     destBuffer = ByteBuffer.allocate(codec.maxCompressedLength(size));
-    codec.compress(srcBuffer, destBuffer);
-    assertEquals(srcBuffer.position(), 0);
-    destBuffer.flip();
-    srcBuffer.clear();
-    checkCompressedData(codec, data, srcBuffer, destBuffer);
+    testCompressWithByteBuffer(codec, data, srcBuffer, destBuffer, 0);
 
     // case6: src buffer is on heap && dest buffer is off heap
     srcBuffer = ByteBuffer.allocate(size);
-    srcBuffer.put(data);
-    srcBuffer.flip();
     destBuffer = ByteBuffer.allocateDirect(codec.maxCompressedLength(size));
-    if (type == Codec.Type.LZ4 || type == Codec.Type.NOOP) {
-      codec.compress(srcBuffer, destBuffer);
-      assertEquals(srcBuffer.position(), 0);
-      destBuffer.flip();
-      srcBuffer.clear();
-      checkCompressedData(codec, data, srcBuffer, destBuffer);
-    } else {
-      try {
-        codec.compress(srcBuffer, destBuffer);
-      } catch (Exception e) {
-        assertTrue(e instanceof IllegalStateException);
-      }
-    }
+    testCompressWithByteBuffer(codec, data, srcBuffer, destBuffer, 0);
 
     // case7: src buffer is off heap && dest buffer is on heap
     srcBuffer = ByteBuffer.allocateDirect(size);
-    srcBuffer.put(data);
-    srcBuffer.flip();
     destBuffer = ByteBuffer.allocate(codec.maxCompressedLength(size));
-    if (type == Codec.Type.LZ4 || type == Codec.Type.NOOP) {
-      codec.compress(srcBuffer, destBuffer);
-      assertEquals(srcBuffer.position(), 0);
-      destBuffer.flip();
-      srcBuffer.clear();
-      checkCompressedData(codec, data, srcBuffer, destBuffer);
-    } else {
-      try {
-        codec.compress(srcBuffer, destBuffer);
-      } catch (Exception e) {
-        assertTrue(e instanceof IllegalStateException);
-      }
-    }
+    testCompressWithByteBuffer(codec, data, srcBuffer, destBuffer, 0);
 
     // case8: use src&dest bytebuffer with offset
     int destOffset = 10;
     srcBuffer = ByteBuffer.allocateDirect(size + destOffset);
+    destBuffer = ByteBuffer.allocateDirect(codec.maxCompressedLength(size) + destOffset);
+    testCompressWithByteBuffer(codec, data, srcBuffer, destBuffer, destOffset);
+  }
+
+  private void testCompressWithByteBuffer(Codec codec, byte[] originData, ByteBuffer srcBuffer, ByteBuffer destBuffer,
+                                          int destOffset) {
     srcBuffer.position(destOffset);
-    srcBuffer.put(data);
+    srcBuffer.put(originData);
     srcBuffer.flip();
     srcBuffer.position(destOffset);
-    destBuffer = ByteBuffer.allocateDirect(codec.maxCompressedLength(size) + destOffset);
     destBuffer.position(destOffset);
-    codec.compress(srcBuffer, destBuffer);
-    assertEquals(srcBuffer.position(), 10);
-    destBuffer.flip();
-    destBuffer.position(destOffset);
-    srcBuffer.clear();
-    checkCompressedData(codec, data, srcBuffer, destBuffer);
+    if (!isSameType(srcBuffer, destBuffer) && (codec instanceof SnappyCodec || codec instanceof ZstdCodec)) {
+      try {
+        codec.compress(srcBuffer, destBuffer);
+      } catch (Exception e) {
+        assertTrue(e instanceof IllegalStateException);
+      }
+    } else {
+      codec.compress(srcBuffer, destBuffer);
+      assertEquals(srcBuffer.position(), destOffset);
+      destBuffer.flip();
+      destBuffer.position(destOffset);
+      srcBuffer.clear();
+      checkCompressedData(codec, originData, srcBuffer, destBuffer);
+    }
+  }
+
+  private boolean isSameType(ByteBuffer srcBuffer, ByteBuffer destBuffer) {
+    if (srcBuffer == null || destBuffer == null) {
+      return false;
+    }
+    return (srcBuffer.isDirect() && destBuffer.isDirect()) || (!srcBuffer.isDirect() && !destBuffer.isDirect());
   }
 
   private void checkCompressedData(Codec codec, byte[] originData, ByteBuffer dest, ByteBuffer src) {
