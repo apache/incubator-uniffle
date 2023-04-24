@@ -17,20 +17,22 @@
 
 package org.apache.uniffle.common;
 
+import java.nio.ByteBuffer;
+
 public class ShuffleIndexResult {
-  private final byte[] indexData;
+  private final ByteBuffer indexData;
   private long dataFileLen;
 
   public ShuffleIndexResult() {
-    this(new byte[0], -1);
+    this(ByteBuffer.wrap(new byte[0]), -1);
   }
 
-  public ShuffleIndexResult(byte[] bytes, long dataFileLen) {
+  public ShuffleIndexResult(ByteBuffer bytes, long dataFileLen) {
     this.indexData = bytes;
     this.dataFileLen = dataFileLen;
   }
 
-  public byte[] getIndexData() {
+  public ByteBuffer getIndexData() {
     return indexData;
   }
 
@@ -39,6 +41,6 @@ public class ShuffleIndexResult {
   }
 
   public boolean isEmpty() {
-    return indexData == null || indexData.length == 0;
+    return indexData == null || indexData.remaining() == 0;
   }
 }

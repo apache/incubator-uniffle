@@ -98,7 +98,7 @@ public class RssMRUtils {
         .getInstance()
         .createShuffleWriteClient(clientType, retryMax, retryIntervalMax,
             heartBeatThreadNum, replica, replicaWrite, replicaRead, replicaSkipEnabled,
-            dataTransferPoolSize, dataCommitPoolSize);
+            dataTransferPoolSize, dataCommitPoolSize, RssMRConfig.toRssConf(jobConf));
     return client;
   }
 

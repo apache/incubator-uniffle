@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -600,14 +601,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
         long readTime = System.currentTimeMillis() - start;
 
-        byte[] data = shuffleIndexResult.getIndexData();
-        ShuffleServerMetrics.counterTotalReadDataSize.inc(data.length);
-        ShuffleServerMetrics.counterTotalReadLocalIndexFileSize.inc(data.length);
+        ByteBuffer data = shuffleIndexResult.getIndexData();
+        ShuffleServerMetrics.counterTotalReadDataSize.inc(data.remaining());
+        ShuffleServerMetrics.counterTotalReadLocalIndexFileSize.inc(data.remaining());
         GetLocalShuffleIndexResponse.Builder builder = GetLocalShuffleIndexResponse.newBuilder()
             .setStatus(status.toProto())
             .setRetMsg(msg);
         LOG.info("Successfully getShuffleIndex cost {} ms for {}"
-            + " bytes with {}", readTime, data.length, requestInfo);
+            + " bytes with {}", readTime, data.remaining(), requestInfo);
 
         builder.setIndexData(UnsafeByteOperations.unsafeWrap(data));
         builder.setDataFileLen(shuffleIndexResult.getDataFileLen());

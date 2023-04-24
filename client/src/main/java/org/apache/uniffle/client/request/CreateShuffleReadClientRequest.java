@@ -20,6 +20,7 @@ package org.apache.uniffle.client.request;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.uniffle.common.config.RssConf;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.util.DefaultIdHelper;
@@ -46,6 +47,7 @@ public class CreateShuffleReadClientRequest {
   private ShuffleDataDistributionType shuffleDataDistributionType = ShuffleDataDistributionType.NORMAL;
   private boolean expectedTaskIdsBitmapFilterEnable = false;
   private boolean offHeapEnabled = false;
+  private RssConf rssConf;
 
   public CreateShuffleReadClientRequest(
       String appId,
@@ -63,11 +65,36 @@ public class CreateShuffleReadClientRequest {
       Configuration hadoopConf,
       ShuffleDataDistributionType dataDistributionType,
       boolean expectedTaskIdsBitmapFilterEnable,
-      boolean offHeapEnabled) {
+      boolean offHeapEnabled,
+      RssConf rssConf) {
     this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize,
         partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
-        hadoopConf, new DefaultIdHelper(), expectedTaskIdsBitmapFilterEnable, offHeapEnabled);
+        hadoopConf, new DefaultIdHelper(), expectedTaskIdsBitmapFilterEnable, offHeapEnabled, rssConf);
     this.shuffleDataDistributionType = dataDistributionType;
+  }
+
+  public CreateShuffleReadClientRequest(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      String storageType,
+      String basePath,
+      int indexReadLimit,
+      int readBufferSize,
+      int partitionNumPerRange,
+      int partitionNum,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap taskIdBitmap,
+      List<ShuffleServerInfo> shuffleServerInfoList,
+      Configuration hadoopConf,
+      IdHelper idHelper,
+      boolean expectedTaskIdsBitmapFilterEnable,
+      boolean offHeapEnabled,
+      RssConf rssConf) {
+    this(appId, shuffleId, partitionId, storageType, basePath, indexReadLimit, readBufferSize, partitionNumPerRange,
+        partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf, idHelper,
+        expectedTaskIdsBitmapFilterEnable, offHeapEnabled);
+    this.rssConf = rssConf;
   }
 
   public CreateShuffleReadClientRequest(
@@ -192,5 +219,9 @@ public class CreateShuffleReadClientRequest {
 
   public boolean isOffHeapEnabled() {
     return offHeapEnabled;
+  }
+
+  public RssConf getRssConf() {
+    return rssConf;
   }
 }

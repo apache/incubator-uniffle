@@ -74,7 +74,7 @@ public class LocalFileServerReadHandlerTest {
     int actualWriteDataBlock = expectTotalBlockNum - 1;
     int actualFileLen = blockSize * actualWriteDataBlock;
     RssGetShuffleIndexResponse response = new RssGetShuffleIndexResponse(StatusCode.SUCCESS,
-        byteBuffer.array(), actualFileLen);
+        byteBuffer, actualFileLen);
     Mockito.doReturn(response).when(mockShuffleServerClient).getShuffleIndex(Mockito.any());
 
     int readBufferSize = 13;
@@ -91,9 +91,9 @@ public class LocalFileServerReadHandlerTest {
     ArgumentMatcher<RssGetShuffleDataRequest> segment2Match =
         (request) -> request.getOffset() == bytesPerSegment && request.getLength() == blockSize;
     RssGetShuffleDataResponse segment1Response =
-        new RssGetShuffleDataResponse(StatusCode.SUCCESS, segments.get(0));
+        new RssGetShuffleDataResponse(StatusCode.SUCCESS, ByteBuffer.wrap(segments.get(0)));
     RssGetShuffleDataResponse segment2Response =
-        new RssGetShuffleDataResponse(StatusCode.SUCCESS, segments.get(1));
+        new RssGetShuffleDataResponse(StatusCode.SUCCESS, ByteBuffer.wrap(segments.get(1)));
 
     Mockito.doReturn(segment1Response).when(mockShuffleServerClient).getShuffleData(Mockito.argThat(segment1Match));
     Mockito.doReturn(segment2Response).when(mockShuffleServerClient).getShuffleData(Mockito.argThat(segment2Match));

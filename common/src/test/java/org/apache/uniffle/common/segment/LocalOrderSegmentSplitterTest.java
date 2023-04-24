@@ -50,7 +50,7 @@ public class LocalOrderSegmentSplitterTest {
         Pair.of(8, 9)
     );
     List<ShuffleDataSegment> dataSegments1 = new LocalOrderSegmentSplitter(taskIds, 1000)
-        .split(new ShuffleIndexResult(data, -1));
+        .split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
 
     assertEquals(2, dataSegments1.size());
     assertEquals(16, dataSegments1.get(0).getOffset());
@@ -87,7 +87,7 @@ public class LocalOrderSegmentSplitterTest {
         Pair.of(1, 4)
     );
     List<ShuffleDataSegment> dataSegments2 =
-        new LocalOrderSegmentSplitter(taskIds, 32).split(new ShuffleIndexResult(data, -1));
+        new LocalOrderSegmentSplitter(taskIds, 32).split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments2.size());
     assertEquals(0, dataSegments2.get(0).getOffset());
     assertEquals(2, dataSegments2.get(0).getLength());
@@ -109,7 +109,7 @@ public class LocalOrderSegmentSplitterTest {
         Pair.of(1, 1)
     );
     List<ShuffleDataSegment> dataSegments3 =
-        new LocalOrderSegmentSplitter(taskIds, 3).split(new ShuffleIndexResult(data, -1));
+        new LocalOrderSegmentSplitter(taskIds, 3).split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(3, dataSegments3.size());
     assertEquals(0, dataSegments3.get(0).getOffset());
     assertEquals(3, dataSegments3.get(0).getLength());
@@ -133,7 +133,7 @@ public class LocalOrderSegmentSplitterTest {
         Pair.of(1, 4)
     );
     List<ShuffleDataSegment> dataSegments4 =
-        new LocalOrderSegmentSplitter(taskIds, 3).split(new ShuffleIndexResult(data, -1));
+        new LocalOrderSegmentSplitter(taskIds, 3).split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments4.size());
   }
 
@@ -161,10 +161,10 @@ public class LocalOrderSegmentSplitterTest {
         Pair.of(8, 5)
     );
     List<ShuffleDataSegment> dataSegments1 = new LocalOrderSegmentSplitter(taskIds, 32)
-        .split(new ShuffleIndexResult(data, realDataLength));
+        .split(new ShuffleIndexResult(ByteBuffer.wrap(data), realDataLength));
 
     List<ShuffleDataSegment> dataSegments2 = new FixedSizeSegmentSplitter(32)
-        .split(new ShuffleIndexResult(data, realDataLength));
+        .split(new ShuffleIndexResult(ByteBuffer.wrap(data), realDataLength));
 
     checkConsistency(dataSegments1, dataSegments2);
   }
@@ -217,7 +217,7 @@ public class LocalOrderSegmentSplitterTest {
         Pair.of(10, 3),
         Pair.of(9, 1)
     );
-    List<ShuffleDataSegment> dataSegments = splitter.split(new ShuffleIndexResult(data, -1));
+    List<ShuffleDataSegment> dataSegments = splitter.split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments.size());
     assertEquals(32, dataSegments.get(0).getOffset());
     assertEquals(56, dataSegments.get(0).getLength());
@@ -257,7 +257,7 @@ public class LocalOrderSegmentSplitterTest {
         Pair.of(1, 1),
         Pair.of(6, 1)
     );
-    dataSegments = new LocalOrderSegmentSplitter(taskIds, 32).split(new ShuffleIndexResult(data, -1));
+    dataSegments = new LocalOrderSegmentSplitter(taskIds, 32).split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments.size());
     assertEquals(0, dataSegments.get(0).getOffset());
     assertEquals(32, dataSegments.get(0).getLength());
@@ -286,7 +286,7 @@ public class LocalOrderSegmentSplitterTest {
         Pair.of(16, 1),
         Pair.of(6, 1)
     );
-    List<ShuffleDataSegment> dataSegments = splitter.split(new ShuffleIndexResult(data, -1));
+    List<ShuffleDataSegment> dataSegments = splitter.split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(3, dataSegments.size());
 
     assertEquals(0, dataSegments.get(0).getOffset());
@@ -310,7 +310,7 @@ public class LocalOrderSegmentSplitterTest {
         Pair.of(16, 2),
         Pair.of(6, 1)
     );
-    dataSegments = splitter.split(new ShuffleIndexResult(data, -1));
+    dataSegments = splitter.split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments.size());
 
     assertEquals(32, dataSegments.get(0).getOffset());
@@ -333,7 +333,7 @@ public class LocalOrderSegmentSplitterTest {
         Pair.of(16, 4),
         Pair.of(6, 1)
     );
-    dataSegments = splitter.split(new ShuffleIndexResult(data, -1));
+    dataSegments = splitter.split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments.size());
 
     assertEquals(32, dataSegments.get(0).getOffset());
@@ -353,7 +353,7 @@ public class LocalOrderSegmentSplitterTest {
         Pair.of(16, 230)
     );
     taskIds = Roaring64NavigableMap.bitmapOf(230);
-    dataSegments = new LocalOrderSegmentSplitter(taskIds, 10000).split(new ShuffleIndexResult(data, -1));
+    dataSegments = new LocalOrderSegmentSplitter(taskIds, 10000).split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments.size());
     assertEquals(16, dataSegments.get(0).getOffset());
     assertEquals(16, dataSegments.get(0).getLength());
@@ -374,7 +374,7 @@ public class LocalOrderSegmentSplitterTest {
         Pair.of(1, 6)
     );
     taskIds = Roaring64NavigableMap.bitmapOf(2, 3, 4);
-    dataSegments = new LocalOrderSegmentSplitter(taskIds, 10000).split(new ShuffleIndexResult(data, -1));
+    dataSegments = new LocalOrderSegmentSplitter(taskIds, 10000).split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments.size());
     assertEquals(0, dataSegments.get(0).getOffset());
     assertEquals(3, dataSegments.get(0).getLength());

@@ -147,11 +147,12 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.dataCommitPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE);
     int unregisterThreadPoolSize = sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);
     int unregisterRequestTimeoutSec = sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC);
+    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     shuffleWriteClient = ShuffleClientFactory
         .getInstance()
         .createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum,
             dataReplica, dataReplicaWrite, dataReplicaRead, dataReplicaSkipEnabled, dataTransferPoolSize,
-            dataCommitPoolSize, unregisterThreadPoolSize, unregisterRequestTimeoutSec);
+            dataCommitPoolSize, unregisterThreadPoolSize, unregisterRequestTimeoutSec, rssConf);
     registerCoordinator();
     // fetch client conf and apply them if necessary and disable ESS
     if (isDriver && dynamicConfEnabled) {
@@ -175,7 +176,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     if (isDriver) {
       heartBeatScheduledExecutorService =
           ThreadUtils.getDaemonSingleThreadScheduledExecutor("rss-heartbeat");
-      RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
       if (rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
               && RssSparkShuffleUtils.isStageResubmitSupported()) {
         LOG.info("stage resubmit is supported and enabled");
@@ -267,7 +267,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             dataTransferPoolSize,
             dataCommitPoolSize,
             unregisterThreadPoolSize,
-            unregisterRequestTimeoutSec
+            unregisterRequestTimeoutSec,
+            RssSparkConfig.toRssConf(sparkConf)
         );
     this.taskToSuccessBlockIds = taskToSuccessBlockIds;
     this.taskToFailedBlockIds = taskToFailedBlockIds;

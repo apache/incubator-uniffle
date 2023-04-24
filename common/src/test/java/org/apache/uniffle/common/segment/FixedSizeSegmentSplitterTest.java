@@ -45,7 +45,7 @@ public class FixedSizeSegmentSplitterTest {
         Pair.of(10, 0)
     );
 
-    List<ShuffleDataSegment> shuffleDataSegments = splitter.split(new ShuffleIndexResult(data, dataLength));
+    List<ShuffleDataSegment> shuffleDataSegments = splitter.split(new ShuffleIndexResult(ByteBuffer.wrap(data), dataLength));
     assertEquals(1, shuffleDataSegments.size());
     assertEquals(0, shuffleDataSegments.get(0).getOffset());
     assertEquals(48, shuffleDataSegments.get(0).getLength());
@@ -70,7 +70,7 @@ public class FixedSizeSegmentSplitterTest {
         Pair.of(32, 6),
         Pair.of(6, 0)
     );
-    shuffleDataSegments = splitter.split(new ShuffleIndexResult(data, -1));
+    shuffleDataSegments = splitter.split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(3, shuffleDataSegments.size());
 
     assertEquals(0, shuffleDataSegments.get(0).getOffset());
@@ -91,7 +91,7 @@ public class FixedSizeSegmentSplitterTest {
     data = incompleteByteBuffer.array();
     // It should throw exception
     try {
-      splitter.split(new ShuffleIndexResult(data, -1));
+      splitter.split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
       fail();
     } catch (Exception e) {
       // ignore

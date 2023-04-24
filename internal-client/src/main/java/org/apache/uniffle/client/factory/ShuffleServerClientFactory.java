@@ -21,8 +21,10 @@ import java.util.Map;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.JavaUtils;
 
 public class ShuffleServerClientFactory {
@@ -41,9 +43,15 @@ public class ShuffleServerClientFactory {
     return LazyHolder.INSTANCE;
   }
 
-  private ShuffleServerClient createShuffleServerClient(String clientType, ShuffleServerInfo shuffleServerInfo) {
+  private ShuffleServerClient createShuffleServerClient(String clientType,
+      ShuffleServerInfo shuffleServerInfo, RssConf rssConf) {
     if (clientType.equalsIgnoreCase(ClientType.GRPC.name())) {
       return new ShuffleServerGrpcClient(shuffleServerInfo.getHost(), shuffleServerInfo.getGrpcPort());
+    } else if (clientType.equalsIgnoreCase(ClientType.GRPC_NETTY.name())) {
+      return new ShuffleServerGrpcNettyClient(rssConf,
+          shuffleServerInfo.getHost(),
+          shuffleServerInfo.getGrpcPort(),
+          shuffleServerInfo.getNettyPort());
     } else {
       throw new UnsupportedOperationException("Unsupported client type " + clientType);
     }
@@ -51,10 +59,15 @@ public class ShuffleServerClientFactory {
 
   public synchronized ShuffleServerClient getShuffleServerClient(
       String clientType, ShuffleServerInfo shuffleServerInfo) {
+    return getShuffleServerClient(clientType, shuffleServerInfo, new RssConf());
+  }
+
+  public synchronized ShuffleServerClient getShuffleServerClient(
+      String clientType, ShuffleServerInfo shuffleServerInfo, RssConf rssConf) {
     clients.putIfAbsent(clientType, JavaUtils.newConcurrentMap());
     Map<ShuffleServerInfo, ShuffleServerClient> serverToClients = clients.get(clientType);
     if (serverToClients.get(shuffleServerInfo) == null) {
-      serverToClients.put(shuffleServerInfo, createShuffleServerClient(clientType, shuffleServerInfo));
+      serverToClients.put(shuffleServerInfo, createShuffleServerClient(clientType, shuffleServerInfo, rssConf));
     }
     return serverToClients.get(shuffleServerInfo);
   }

@@ -26,6 +26,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.uniffle.common.config.RssConf;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +80,8 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       IdHelper idHelper,
       ShuffleDataDistributionType dataDistributionType,
       boolean expectedTaskIdsBitmapFilterEnable,
-      boolean offHeapEnabled) {
+      boolean offHeapEnabled,
+      RssConf rssConf) {
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.blockIdBitmap = blockIdBitmap;
@@ -104,6 +106,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setDistributionType(dataDistributionType);
     request.setIdHelper(idHelper);
     request.setExpectTaskIds(taskIdBitmap);
+    request.setClientConf(rssConf);
     if (expectedTaskIdsBitmapFilterEnable) {
       request.useExpectedTaskIdsBitmapFilter();
     }
@@ -146,7 +149,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     this(storageType, appId, shuffleId, partitionId, indexReadLimit,
         partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
         blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf,
-        idHelper, ShuffleDataDistributionType.NORMAL, false, false);
+        idHelper, ShuffleDataDistributionType.NORMAL, false, false, new RssConf());
   }
 
   @Override

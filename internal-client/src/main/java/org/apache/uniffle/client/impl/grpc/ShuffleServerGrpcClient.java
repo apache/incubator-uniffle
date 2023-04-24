@@ -104,8 +104,8 @@ import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerBlockingStub;
 public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServerClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerGrpcClient.class);
-  private static final long FAILED_REQUIRE_ID = -1;
-  private static final long RPC_TIMEOUT_DEFAULT_MS = 60000;
+  protected static final long FAILED_REQUIRE_ID = -1;
+  protected static final long RPC_TIMEOUT_DEFAULT_MS = 60000;
   private long rpcTimeout = RPC_TIMEOUT_DEFAULT_MS;
   private ShuffleServerBlockingStub blockingStub;
 
@@ -587,7 +587,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     switch (statusCode) {
       case SUCCESS:
         response = new RssGetShuffleDataResponse(
-            StatusCode.SUCCESS, rpcResponse.getData().toByteArray());
+            StatusCode.SUCCESS, rpcResponse.getData().asReadOnlyByteBuffer());
 
         break;
       default:
@@ -622,7 +622,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     switch (statusCode) {
       case SUCCESS:
         response = new RssGetShuffleIndexResponse(
-            StatusCode.SUCCESS, rpcResponse.getIndexData().toByteArray(), rpcResponse.getDataFileLen());
+            StatusCode.SUCCESS, rpcResponse.getIndexData().asReadOnlyByteBuffer(), rpcResponse.getDataFileLen());
 
         break;
       default:
@@ -671,7 +671,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     switch (statusCode) {
       case SUCCESS:
         response = new RssGetInMemoryShuffleDataResponse(
-            StatusCode.SUCCESS, rpcResponse.getData().toByteArray(),
+            StatusCode.SUCCESS, rpcResponse.getData().asReadOnlyByteBuffer(),
             toBufferSegments(rpcResponse.getShuffleDataBlockSegmentsList()));
         break;
       default:
@@ -699,7 +699,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     return ret;
   }
 
-  private List<BufferSegment> toBufferSegments(List<ShuffleDataBlockSegment> blockSegments) {
+  protected List<BufferSegment> toBufferSegments(List<ShuffleDataBlockSegment> blockSegments) {
     List<BufferSegment> ret = Lists.newArrayList();
     for (ShuffleDataBlockSegment sdbs : blockSegments) {
       ret.add(new BufferSegment(sdbs.getBlockId(), sdbs.getOffset(), sdbs.getLength(),
