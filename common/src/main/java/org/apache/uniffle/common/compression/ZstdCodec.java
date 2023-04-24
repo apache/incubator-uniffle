@@ -63,4 +63,26 @@ public class ZstdCodec extends Codec {
   public byte[] compress(byte[] src) {
     return Zstd.compress(src, compressionLevel);
   }
+
+  @Override
+  public int compress(ByteBuffer src, ByteBuffer dest) {
+    try {
+      if (src.isDirect() && dest.isDirect()) {
+        return Zstd.compress(dest, src.duplicate(), compressionLevel);
+      }
+      if (!src.isDirect() && !dest.isDirect()) {
+        long compressedSize = Zstd.compressByteArray(dest.array(), dest.position(), dest.remaining(), src.array(),
+            src.position(), src.remaining(), compressionLevel);
+        return (int) compressedSize;
+      }
+    } catch (Exception e) {
+      throw new RssException("Failed to compress by Zstd", e);
+    }
+    throw new IllegalStateException("Zstd only supports the same type of bytebuffer compression.");
+  }
+
+  @Override
+  public int maxCompressedLength(int sourceLength) {
+    return (int) Zstd.compressBound(sourceLength);
+  }
 }

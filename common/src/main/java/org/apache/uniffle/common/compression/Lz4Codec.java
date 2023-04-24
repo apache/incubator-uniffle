@@ -21,6 +21,8 @@ import java.nio.ByteBuffer;
 
 import net.jpountz.lz4.LZ4Factory;
 
+import org.apache.uniffle.common.exception.RssException;
+
 public class Lz4Codec extends Codec {
 
   private LZ4Factory lz4Factory;
@@ -37,5 +39,21 @@ public class Lz4Codec extends Codec {
   @Override
   public byte[] compress(byte[] src) {
     return lz4Factory.fastCompressor().compress(src);
+  }
+
+  @Override
+  public int compress(ByteBuffer src, ByteBuffer dest) {
+    try {
+      int destOff = dest.position();
+      lz4Factory.fastCompressor().compress(src.duplicate(), dest);
+      return dest.position() - destOff;
+    } catch (Exception e) {
+      throw new RssException("Failed to compress by Lz4", e);
+    }
+  }
+
+  @Override
+  public int maxCompressedLength(int sourceLength) {
+    return lz4Factory.fastCompressor().maxCompressedLength(sourceLength);
   }
 }

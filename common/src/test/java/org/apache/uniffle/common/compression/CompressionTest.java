@@ -30,6 +30,8 @@ import org.apache.uniffle.common.config.RssConf;
 
 import static org.apache.uniffle.common.config.RssClientConf.COMPRESSION_TYPE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CompressionTest {
 
@@ -79,5 +81,69 @@ public class CompressionTest {
     codec.decompress(ByteBuffer.wrap(compressed), size, recycledDst, 0);
     recycledDst.get(res);
     assertArrayEquals(data, res);
+
+    // case4: use off heap bytebuffer compress
+    ByteBuffer srcBuffer = ByteBuffer.allocateDirect(size);
+    ByteBuffer destBuffer = ByteBuffer.allocateDirect(codec.maxCompressedLength(size));
+    testCompressWithByteBuffer(codec, data, srcBuffer, destBuffer, 0);
+
+    // case5: use on heap bytebuffer compress
+    srcBuffer = ByteBuffer.allocate(size);
+    destBuffer = ByteBuffer.allocate(codec.maxCompressedLength(size));
+    testCompressWithByteBuffer(codec, data, srcBuffer, destBuffer, 0);
+
+    // case6: src buffer is on heap && dest buffer is off heap
+    srcBuffer = ByteBuffer.allocate(size);
+    destBuffer = ByteBuffer.allocateDirect(codec.maxCompressedLength(size));
+    testCompressWithByteBuffer(codec, data, srcBuffer, destBuffer, 0);
+
+    // case7: src buffer is off heap && dest buffer is on heap
+    srcBuffer = ByteBuffer.allocateDirect(size);
+    destBuffer = ByteBuffer.allocate(codec.maxCompressedLength(size));
+    testCompressWithByteBuffer(codec, data, srcBuffer, destBuffer, 0);
+
+    // case8: use src&dest bytebuffer with offset
+    int destOffset = 10;
+    srcBuffer = ByteBuffer.allocateDirect(size + destOffset);
+    destBuffer = ByteBuffer.allocateDirect(codec.maxCompressedLength(size) + destOffset);
+    testCompressWithByteBuffer(codec, data, srcBuffer, destBuffer, destOffset);
   }
+
+  private void testCompressWithByteBuffer(Codec codec, byte[] originData, ByteBuffer srcBuffer, ByteBuffer destBuffer,
+                                          int destOffset) {
+    srcBuffer.position(destOffset);
+    srcBuffer.put(originData);
+    srcBuffer.flip();
+    srcBuffer.position(destOffset);
+    destBuffer.position(destOffset);
+    if (!isSameType(srcBuffer, destBuffer) && (codec instanceof SnappyCodec || codec instanceof ZstdCodec)) {
+      try {
+        codec.compress(srcBuffer, destBuffer);
+      } catch (Exception e) {
+        assertTrue(e instanceof IllegalStateException);
+      }
+    } else {
+      codec.compress(srcBuffer, destBuffer);
+      assertEquals(srcBuffer.position(), destOffset);
+      destBuffer.flip();
+      destBuffer.position(destOffset);
+      srcBuffer.clear();
+      checkCompressedData(codec, originData, srcBuffer, destBuffer);
+    }
+  }
+
+  private boolean isSameType(ByteBuffer srcBuffer, ByteBuffer destBuffer) {
+    if (srcBuffer == null || destBuffer == null) {
+      return false;
+    }
+    return (srcBuffer.isDirect() && destBuffer.isDirect()) || (!srcBuffer.isDirect() && !destBuffer.isDirect());
+  }
+
+  private void checkCompressedData(Codec codec, byte[] originData, ByteBuffer dest, ByteBuffer src) {
+    codec.decompress(src, originData.length, dest, 0);
+    byte[] res = new byte[originData.length];
+    dest.get(res);
+    assertArrayEquals(originData, res);
+  }
+
 }

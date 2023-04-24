@@ -34,4 +34,16 @@ public class NoOpCodec extends Codec {
     System.arraycopy(src, 0, dst, 0, src.length);
     return dst;
   }
+
+  @Override
+  public int compress(ByteBuffer src, ByteBuffer dest) {
+    int destOff = dest.position();
+    dest.put(src.duplicate());
+    return dest.position() - destOff;
+  }
+
+  @Override
+  public int maxCompressedLength(int sourceLength) {
+    return sourceLength;
+  }
 }

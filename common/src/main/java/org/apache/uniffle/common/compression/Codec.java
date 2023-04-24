@@ -55,6 +55,21 @@ public abstract class Codec {
    */
   public abstract byte[] compress(byte[] src);
 
+  /**
+   * Compresses the data in buffer src into dest.
+   * Snappy & Zstd should be the same type of both buffer.
+   * make sure dest.remaining() >= maxCompressedLength(src.remaining()).
+   * This method move the position of dest ByteBuffer,keep src ByteBuffer position.
+   * Returns:the compressed size
+   */
+  public abstract int compress(ByteBuffer src, ByteBuffer dest);
+
+  /**
+   * maximum size of the compressed data
+   * @param sourceLength
+   */
+  public abstract int maxCompressedLength(int sourceLength);
+
   public enum Type {
     LZ4,
     ZSTD,
