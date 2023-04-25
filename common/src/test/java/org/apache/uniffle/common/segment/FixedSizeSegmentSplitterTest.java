@@ -45,7 +45,8 @@ public class FixedSizeSegmentSplitterTest {
         Pair.of(10, 0)
     );
 
-    List<ShuffleDataSegment> shuffleDataSegments = splitter.split(new ShuffleIndexResult(ByteBuffer.wrap(data), dataLength));
+    List<ShuffleDataSegment> shuffleDataSegments = splitter.split(new ShuffleIndexResult(
+        ByteBuffer.wrap(data), dataLength));
     assertEquals(1, shuffleDataSegments.size());
     assertEquals(0, shuffleDataSegments.get(0).getOffset());
     assertEquals(48, shuffleDataSegments.get(0).getLength());

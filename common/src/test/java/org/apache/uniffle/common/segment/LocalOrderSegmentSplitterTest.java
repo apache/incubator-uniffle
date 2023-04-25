@@ -353,7 +353,8 @@ public class LocalOrderSegmentSplitterTest {
         Pair.of(16, 230)
     );
     taskIds = Roaring64NavigableMap.bitmapOf(230);
-    dataSegments = new LocalOrderSegmentSplitter(taskIds, 10000).split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
+    dataSegments = new LocalOrderSegmentSplitter(taskIds, 10000).split(
+        new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments.size());
     assertEquals(16, dataSegments.get(0).getOffset());
     assertEquals(16, dataSegments.get(0).getLength());
@@ -374,7 +375,8 @@ public class LocalOrderSegmentSplitterTest {
         Pair.of(1, 6)
     );
     taskIds = Roaring64NavigableMap.bitmapOf(2, 3, 4);
-    dataSegments = new LocalOrderSegmentSplitter(taskIds, 10000).split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
+    dataSegments = new LocalOrderSegmentSplitter(taskIds, 10000).split(
+        new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments.size());
     assertEquals(0, dataSegments.get(0).getOffset());
     assertEquals(3, dataSegments.get(0).getLength());
