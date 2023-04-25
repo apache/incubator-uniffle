@@ -25,6 +25,15 @@ import org.xerial.snappy.Snappy;
 import org.apache.uniffle.common.exception.RssException;
 
 public class SnappyCodec extends Codec {
+
+  private static class LazyHolder {
+    static final SnappyCodec INSTANCE = new SnappyCodec();
+  }
+
+  public static SnappyCodec getInstance() {
+    return LazyHolder.INSTANCE;
+  }
+
   @Override
   public void decompress(ByteBuffer src, int uncompressedLen, ByteBuffer dest, int destOffset) {
     try {

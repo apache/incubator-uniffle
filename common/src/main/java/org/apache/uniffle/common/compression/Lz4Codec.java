@@ -27,6 +27,14 @@ public class Lz4Codec extends Codec {
 
   private LZ4Factory lz4Factory;
 
+  private static class LazyHolder {
+    static final Lz4Codec INSTANCE = new Lz4Codec();
+  }
+
+  public static Lz4Codec getInstance() {
+    return LazyHolder.INSTANCE;
+  }
+
   public Lz4Codec() {
     this.lz4Factory = LZ4Factory.fastestInstance();
   }

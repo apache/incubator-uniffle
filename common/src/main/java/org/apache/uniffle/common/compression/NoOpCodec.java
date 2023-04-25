@@ -21,6 +21,14 @@ import java.nio.ByteBuffer;
 
 public class NoOpCodec extends Codec {
 
+  private static class LazyHolder {
+    static final NoOpCodec INSTANCE = new NoOpCodec();
+  }
+
+  public static NoOpCodec getInstance() {
+    return LazyHolder.INSTANCE;
+  }
+
   @Override
   public void decompress(ByteBuffer src, int uncompressedLen, ByteBuffer dest, int destOffset) {
     dest.put(src);
