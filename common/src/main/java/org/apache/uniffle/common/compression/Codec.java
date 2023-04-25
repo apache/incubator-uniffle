@@ -30,14 +30,14 @@ public abstract class Codec {
     Type type = rssConf.get(COMPRESSION_TYPE);
     switch (type) {
       case ZSTD:
-        return new ZstdCodec(rssConf.get(ZSTD_COMPRESSION_LEVEL));
+        return ZstdCodec.getInstance(rssConf.get(ZSTD_COMPRESSION_LEVEL));
       case SNAPPY:
-        return new SnappyCodec();
+        return SnappyCodec.getInstance();
       case NOOP:
-        return new NoOpCodec();
+        return NoOpCodec.getInstance();
       case LZ4:
       default:
-        return new Lz4Codec();
+        return Lz4Codec.getInstance();
     }
   }
 

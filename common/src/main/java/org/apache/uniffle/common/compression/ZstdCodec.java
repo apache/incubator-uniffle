@@ -28,10 +28,15 @@ import org.apache.uniffle.common.exception.RssException;
 public class ZstdCodec extends Codec {
   private static final Logger LOGGER = LoggerFactory.getLogger(ZstdCodec.class);
 
-  private final int compressionLevel;
+  private int compressionLevel;
 
-  public ZstdCodec(int level) {
-    this.compressionLevel = level;
+  private static class LazyHolder {
+    static final ZstdCodec INSTANCE = new ZstdCodec();
+  }
+
+  public static ZstdCodec getInstance(int level) {
+    LazyHolder.INSTANCE.compressionLevel = level;
+    return LazyHolder.INSTANCE;
   }
 
   @Override
