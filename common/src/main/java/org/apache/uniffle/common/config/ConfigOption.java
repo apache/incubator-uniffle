@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * A {@code ConfigOption} describes a configuration parameter. It encapsulates
@@ -101,15 +102,41 @@ public class ConfigOption<T> {
 
   /**
    * Creates a new config option, using this option's key and default value, and adding the given
+   * fallback keys.
+   *
+   * @param fallbackKeys The fallback keys, in the order in which they should be checked.
+   * @return A new config options, with the given fallback keys.
+   */
+  public ConfigOption<T> withFallbackKeys(String... fallbackKeys) {
+    final Stream<FallbackKey> newFallbackKeys =
+        Arrays.stream(fallbackKeys).map(FallbackKey::createFallbackKey);
+    final Stream<FallbackKey> currentAlternativeKeys = Arrays.stream(this.fallbackKeys);
+
+    // put fallback keys first so that they are prioritized
+    final FallbackKey[] mergedAlternativeKeys =
+        Stream.concat(newFallbackKeys, currentAlternativeKeys).toArray(FallbackKey[]::new);
+    return new ConfigOption<>(
+        key, clazz, description, defaultValue, converter, mergedAlternativeKeys);
+  }
+
+  /**
+   * Creates a new config option, using this option's key and default value, and adding the given
    * deprecated keys.
    *
    * @param deprecatedKeys The deprecated keys, in the order in which they should be checked.
    * @return A new config options, with the given deprecated keys.
    */
   public ConfigOption<T> withDeprecatedKeys(final String... deprecatedKeys) {
-    final FallbackKey[] keys =
-        Arrays.stream(deprecatedKeys).map(FallbackKey::createDeprecatedKey).toArray(FallbackKey[]::new);
-    return new ConfigOption<>(key, clazz, description, defaultValue, converter, keys);
+    final Stream<FallbackKey> newDeprecatedKeys =
+        Arrays.stream(deprecatedKeys).map(FallbackKey::createDeprecatedKey);
+    final Stream<FallbackKey> currentAlternativeKeys = Arrays.stream(this.fallbackKeys);
+
+    // put deprecated keys last so that they are de-prioritized
+    final FallbackKey[] mergedAlternativeKeys =
+        Stream.concat(currentAlternativeKeys, newDeprecatedKeys)
+            .toArray(FallbackKey[]::new);
+    return new ConfigOption<>(
+        key, clazz, description, defaultValue, converter, mergedAlternativeKeys);
   }
 
   // ------------------------------------------------------------------------
