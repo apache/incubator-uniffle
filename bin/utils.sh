@@ -195,13 +195,15 @@ function load_rss_env {
   JPS="${JAVA_HOME}/bin/jps"
 
   # print
-  echo "Using Java from ${JAVA_HOME}"
-  echo "Using Hadoop from ${HADOOP_HOME}"
-  echo "Using RSS from ${RSS_HOME}"
-  echo "Using RSS conf from ${RSS_CONF_DIR}"
-  echo "Using Hadoop conf from ${HADOOP_CONF_DIR}"
-  echo "Write log file to ${RSS_LOG_DIR}"
-  echo "Write pid file to ${RSS_PID_DIR}"
+  if [[ "${UNIFFLE_SHELL_SCRIPT_DEBUG}" = true ]]; then
+    echo "Using Java from ${JAVA_HOME}"
+    echo "Using Hadoop from ${HADOOP_HOME}"
+    echo "Using RSS from ${RSS_HOME}"
+    echo "Using RSS conf from ${RSS_CONF_DIR}"
+    echo "Using Hadoop conf from ${HADOOP_CONF_DIR}"
+    echo "Write log file to ${RSS_LOG_DIR}"
+    echo "Write pid file to ${RSS_PID_DIR}"
+  fi
 
   set +o allexport
 }

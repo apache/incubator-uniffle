@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+source "$(dirname "$0")/uniffle-function.sh"
+UNIFFLE_SHELL_EXECNAME="uniffle"
+
+function uniffle_usage
+{
+  uniffle_add_option "--daemon (start|status|stop)" "operate on a daemon"
+  uniffle_add_subcommand "example-cli" client "prints example-cli args information"
+  uniffle_add_subcommand "example-admin" admin "prints example-admin args information"
+  uniffle_generate_usage "${UNIFFLE_SHELL_EXECNAME}" true
+}
+
+function uniffle_cmd_case
+{
+  subcmd=$1
+  shift
+
+  case ${subcmd} in
+    example-cli)
+      UNIFFLE_CLASSNAME=org.apache.uniffle.cli.ExampleCLI
+    ;;
+    example-admin)
+      UNIFFLE_CLASSNAME=org.apache.uniffle.cli.ExampleCLI
+    ;;
+    *)
+      UNIFFLE_CLASSNAME="${subcmd}"
+      if ! uniffle_validate_classname "${UNIFFLE_CLASSNAME}"; then
+        uniffle_exit_with_usage 1
+      fi
+    ;;
+  esac
+}
+
+if [[ $# = 0 ]]; then
+  uniffle_exit_with_usage 1
+fi
+
+UNIFFLE_SUBCMD=$1
+shift
+
+case $UNIFFLE_SUBCMD in
+--help|-help|-h)
+  uniffle_exit_with_usage 0
+  exit
+  ;;
+esac
+
+UNIFFLE_SUBCMD_ARGS=("$@")
+
+UNIFFLE_SHELL_SCRIPT_DEBUG=false
+
+source "$(dirname "$0")/utils.sh"
+load_rss_env
+uniffle_java_setup
+
+CLASSPATH=""
+
+JAR_DIR="${RSS_HOME}/jars"
+for file in $(ls ${JAR_DIR}/cli/*.jar 2>/dev/null); do
+  CLASSPATH=$CLASSPATH:$file
+done
+
+set +u
+uniffle_cmd_case "${UNIFFLE_SUBCMD}" "${UNIFFLE_SUBCMD_ARGS[@]}"
+uniffle_generic_java_subcmd_handler
+set -u
