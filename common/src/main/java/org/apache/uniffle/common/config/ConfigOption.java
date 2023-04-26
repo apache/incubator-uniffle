@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.common.config;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -31,6 +33,7 @@ import java.util.function.Function;
  * @param <T> The type of value associated with the configuration option.
  */
 public class ConfigOption<T> {
+  static final FallbackKey[] EMPTY = new FallbackKey[0];
   static final String EMPTY_DESCRIPTION = "";
 
   /**
@@ -58,6 +61,9 @@ public class ConfigOption<T> {
    */
   private final Function<Object, T> converter;
 
+  /** The list of deprecated keys, in the order to be checked. */
+  private final FallbackKey[] fallbackKeys;
+
   /**
    * Creates a new config option with fallback keys.
    *
@@ -72,12 +78,14 @@ public class ConfigOption<T> {
       Class<?> clazz,
       String description,
       T defaultValue,
-      Function<Object, T> converter) {
+      Function<Object, T> converter,
+      FallbackKey... fallbackKeys) {
     this.key = Objects.requireNonNull(key);
     this.description = description;
     this.defaultValue = defaultValue;
     this.clazz = Objects.requireNonNull(clazz);
     this.converter = Objects.requireNonNull(converter);
+    this.fallbackKeys = fallbackKeys == null || fallbackKeys.length == 0 ? EMPTY : fallbackKeys;
   }
 
   /**
@@ -89,6 +97,19 @@ public class ConfigOption<T> {
    */
   public ConfigOption<T> withDescription(final String description) {
     return new ConfigOption<>(key, clazz, description, defaultValue, converter);
+  }
+
+  /**
+   * Creates a new config option, using this option's key and default value, and adding the given
+   * deprecated keys.
+   *
+   * @param deprecatedKeys The deprecated keys, in the order in which they should be checked.
+   * @return A new config options, with the given deprecated keys.
+   */
+  public ConfigOption<T> withDeprecatedKeys(final String... deprecatedKeys) {
+    final FallbackKey[] keys =
+        Arrays.stream(deprecatedKeys).map(FallbackKey::createDeprecatedKey).toArray(FallbackKey[]::new);
+    return new ConfigOption<>(key, clazz, description, defaultValue, converter, keys);
   }
 
   // ------------------------------------------------------------------------
@@ -118,6 +139,15 @@ public class ConfigOption<T> {
    */
   public T defaultValue() {
     return defaultValue;
+  }
+
+  /**
+   * Gets the fallback keys, in the order to be checked.
+   *
+   * @return The option's fallback keys.
+   */
+  public Iterable<FallbackKey> fallbackKeys() {
+    return (fallbackKeys == EMPTY) ? Collections.emptyList() : Arrays.asList(fallbackKeys);
   }
 
   /**

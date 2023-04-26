@@ -33,6 +33,40 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class ConfigOptionTest {
 
   @Test
+  public void testFallbackKeys() {
+    final ConfigOption<Integer> intConfig = ConfigOptions
+        .key("rss.key")
+        .intType()
+        .defaultValue(100)
+        .withDeprecatedKeys("rss.s1", "rss.s2", "rss.s3");
+
+    // case 1
+    RssConf conf = new RssBaseConf();
+    conf.setString("rss.s1", "10");
+    int val = conf.get(intConfig);
+    assertEquals(10, val);
+
+    // case 2
+    conf = new RssBaseConf();
+    conf.setString("rss.s1", "1");
+    conf.setString("rss.s2", "2");
+    conf.setString("rss.s3", "3");
+    assertEquals(1, conf.get(intConfig));
+
+    // case 3
+    conf = new RssBaseConf();
+    conf.setString("rss.s3", "3");
+    conf.setString("rss.s2", "2");
+    assertEquals(2, conf.get(intConfig));
+
+    // case 4
+    conf = new RssBaseConf();
+    conf.setString(intConfig.key(), "25");
+    conf.setString("rss.s3", "3");
+    assertEquals(25, conf.get(intConfig));
+  }
+
+  @Test
   public void testSetKVWithStringTypeDirectly() {
     final ConfigOption<Integer> intConfig = ConfigOptions
             .key("rss.key1")
