@@ -46,7 +46,7 @@ public class RssClientConf {
           + "The default value is normal. This config is only valid in Spark3.x");
 
   public static final ConfigOption<Integer> MAX_CONCURRENCY_PER_PARTITION_TO_WRITE = ConfigOptions
-      .key("rss.client.max.concurrency.per-partition.write")
+      .key("rss.client.max.concurrency.of.per-partition.write")
       .intType()
       .defaultValue(0)
       .withDescription("The max concurrency for single partition to write, the value is the max file number "
