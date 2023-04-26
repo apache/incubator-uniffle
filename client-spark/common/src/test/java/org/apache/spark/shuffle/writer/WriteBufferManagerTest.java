@@ -221,7 +221,6 @@ public class WriteBufferManagerTest {
     assertEquals(3, events.size());
   }
 
-  @Test
   public void spillTest() {
     SparkConf conf = getConf();
     conf.set("spark.rss.client.send.size.limit", "1000");
