@@ -408,7 +408,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int shuffleId,
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorage,
-      ShuffleDataDistributionType dataDistributionType) {
+      ShuffleDataDistributionType dataDistributionType,
+      int maxConcurrencyPerPartitionToWrite) {
     String user = null;
     try {
       user = UserGroupInformation.getCurrentUser().getShortUserName();
@@ -417,7 +418,15 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
 
     RssRegisterShuffleRequest request =
-        new RssRegisterShuffleRequest(appId, shuffleId, partitionRanges, remoteStorage, user, dataDistributionType);
+        new RssRegisterShuffleRequest(
+            appId,
+            shuffleId,
+            partitionRanges,
+            remoteStorage,
+            user,
+            dataDistributionType,
+            maxConcurrencyPerPartitionToWrite
+        );
     RssRegisterShuffleResponse response = getShuffleServerClient(shuffleServerInfo).registerShuffle(request);
 
     String msg = "Error happened when registerShuffle with appId[" + appId + "], shuffleId[" + shuffleId

@@ -88,7 +88,8 @@ This document will introduce how to deploy Uniffle shuffle servers.
 | rss.server.disk.capacity.ratio                        | 0.9     | When `rss.server.disk.capacity` is negative, disk whole space * ratio is used                                                                                                                                                                                                                                                                                                            |
 | rss.server.multistorage.fallback.strategy.class       | -       | The fallback strategy for `MEMORY_LOCALFILE_HDFS`. Support `org.apache.uniffle.server.storage.RotateStorageManagerFallbackStrategy`,`org.apache.uniffle.server.storage.LocalStorageManagerFallbackStrategy` and `org.apache.uniffle.server.storage.HdfsStorageManagerFallbackStrategy`. If not set, `org.apache.uniffle.server.storage.HdfsStorageManagerFallbackStrategy` will be used. |
 | rss.server.leak.shuffledata.check.interval            | 3600000 | The interval of leak shuffle data check (ms)                                                                                                                                                                                                                                                                                                                                             |
-| rss.server.max.concurrency.of.single.partition.writer | 1       | The max concurrency of single partition writer, the data partition file number is equal to this value. Default value is 1. This config could improve the writing speed, especially for huge partition.                                                                                                                                                                                   |
+| rss.server.max.concurrency.of.per-partition.write | 1       | The max concurrency of single partition writer, the data partition file number is equal to this value. Default value is 1. This config could improve the writing speed, especially for huge partition.                                                                                                                                                                                   |
+| rss.server.max.concurrency.limit.of.per-partition.write | - | The limit for max concurrency per-partition write specified by client, this won't be enabled by default.                                                                                                                                                                                                                                                                                 |
 | rss.metrics.reporter.class                            | -       | The class of metrics reporter.                                                                                                                                                                                                                                                                                                                                                           |
 |rss.server.multistorage.manager.selector.class         | org.apache.uniffle.server.storage.multi.DefaultStorageManagerSelector | The manager selector strategy for `MEMORY_LOCALFILE_HDFS`. Default value is `DefaultStorageManagerSelector`, and another `HugePartitionSensitiveStorageManagerSelector` will flush only huge partition's data to cold storage.                                                                                             |
 
@@ -129,7 +130,7 @@ If you don't use HDFS, the huge partition may be flushed to local disk, which is
 
 For HDFS, the conf value of `rss.server.single.buffer.flush.threshold` should be greater than the value of `rss.server.flush.cold.storage.threshold.size`, which will flush data directly to HDFS. 
 
-Finally, to improve the speed of writing to HDFS for a single partition, the value of `rss.server.max.concurrency.of.single.partition.writer` and `rss.server.flush.threadPool.size` could be increased to 10 or 20.
+Finally, to improve the speed of writing to HDFS for a single partition, the value of `rss.server.max.concurrency.of.per-partition.write` and `rss.server.flush.threadPool.size` could be increased to 10 or 20.
 
 #### Example of server conf
 ```
@@ -153,7 +154,7 @@ rss.server.app.expired.withoutHeartbeat 120000
 rss.server.flush.threadPool.size 20
 rss.server.flush.cold.storage.threshold.size 128m
 rss.server.single.buffer.flush.threshold 129m
-rss.server.max.concurrency.of.single.partition.writer 20
+rss.server.max.concurrency.of.per-partition.write 20
 rss.server.huge-partition.size.threshold 20g
 rss.server.huge-partition.memory.limit.ratio 0.2
 ```

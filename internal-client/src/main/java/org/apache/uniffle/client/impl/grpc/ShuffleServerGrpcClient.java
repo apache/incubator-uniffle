@@ -137,13 +137,15 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorageInfo,
       String user,
-      ShuffleDataDistributionType dataDistributionType) {
+      ShuffleDataDistributionType dataDistributionType,
+      int maxConcurrencyPerPartitionToWrite) {
     ShuffleRegisterRequest.Builder reqBuilder = ShuffleRegisterRequest.newBuilder();
     reqBuilder
         .setAppId(appId)
         .setShuffleId(shuffleId)
         .setUser(user)
         .setShuffleDataDistribution(RssProtos.DataDistribution.valueOf(dataDistributionType.name()))
+        .setMaxConcurrencyPerPartitionToWrite(maxConcurrencyPerPartitionToWrite)
         .addAllPartitionRanges(toShufflePartitionRanges(partitionRanges));
     RemoteStorage.Builder rsBuilder = RemoteStorage.newBuilder();
     rsBuilder.setPath(remoteStorageInfo.getPath());
@@ -278,7 +280,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         request.getPartitionRanges(),
         request.getRemoteStorageInfo(),
         request.getUser(),
-        request.getDataDistributionType()
+        request.getDataDistributionType(),
+        request.getMaxConcurrencyPerPartitionToWrite()
     );
 
     RssRegisterShuffleResponse response;

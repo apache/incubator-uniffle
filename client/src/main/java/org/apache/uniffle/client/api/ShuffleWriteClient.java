@@ -47,7 +47,8 @@ public interface ShuffleWriteClient {
       int shuffleId,
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorage,
-      ShuffleDataDistributionType dataDistributionType);
+      ShuffleDataDistributionType dataDistributionType,
+      int maxConcurrencyPerPartitionToWrite);
 
   boolean sendCommit(Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);
 

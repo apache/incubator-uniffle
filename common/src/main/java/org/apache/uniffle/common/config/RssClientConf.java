@@ -45,6 +45,13 @@ public class RssClientConf {
       .withDescription("The type of partition shuffle data distribution, including normal and local_order. "
           + "The default value is normal. This config is only valid in Spark3.x");
 
+  public static final ConfigOption<Integer> MAX_CONCURRENCY_PER_PARTITION_TO_WRITE = ConfigOptions
+      .key("rss.client.max.concurrency.of.per-partition.write")
+      .intType()
+      .defaultValue(0)
+      .withDescription("The max concurrency for single partition to write, the value is the max file number "
+          + "for one partition, remote shuffle server should respect this.");
+
   public static final ConfigOption<Integer> NETTY_IO_CONNECT_TIMEOUT_MS = ConfigOptions
       .key("rss.client.netty.io.connect.timeout.ms")
       .intType()

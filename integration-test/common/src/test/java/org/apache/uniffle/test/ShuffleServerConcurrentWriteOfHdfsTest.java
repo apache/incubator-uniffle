@@ -23,15 +23,20 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
@@ -41,7 +46,9 @@ import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -66,15 +73,26 @@ public class ShuffleServerConcurrentWriteOfHdfsTest extends ShuffleServerWithHdf
     startServers();
   }
 
-  @Test
-  public void testConcurrentWrite2Hdfs() throws Exception {
-    String appId = "testConcurrentWrite2Hdfs";
+  private static Stream<Arguments> clientConcurrencyAndExpectedProvider() {
+    return Stream.of(
+        Arguments.of(-1, MAX_CONCURRENCY),
+        Arguments.of(MAX_CONCURRENCY + 1, MAX_CONCURRENCY + 1)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("clientConcurrencyAndExpectedProvider")
+  public void testConcurrentWrite2Hdfs(int clientSpecifiedConcurrency, int expectedConcurrency) throws Exception {
+    String appId = "testConcurrentWrite2Hdfs_" + new Random().nextInt();
     String dataBasePath = HDFS_URI + "rss/test";
     RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest(
         appId,
         0,
         Lists.newArrayList(new PartitionRange(0, 1)),
-        dataBasePath
+        new RemoteStorageInfo(dataBasePath),
+        StringUtils.EMPTY,
+        ShuffleDataDistributionType.NORMAL,
+        clientSpecifiedConcurrency
     );
     shuffleServerClient.registerShuffle(rrsr);
 
@@ -118,7 +136,7 @@ public class ShuffleServerConcurrentWriteOfHdfsTest extends ShuffleServerWithHdf
         .stream(fileStatuses)
         .filter(x -> x.getPath().getName().endsWith(SHUFFLE_DATA_FILE_SUFFIX))
         .count();
-    assertEquals(MAX_CONCURRENCY, actual);
+    assertEquals(expectedConcurrency, actual);
 
     ShuffleServerInfo ssi = new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT);
     Roaring64NavigableMap blocksBitmap = Roaring64NavigableMap.bitmapOf();

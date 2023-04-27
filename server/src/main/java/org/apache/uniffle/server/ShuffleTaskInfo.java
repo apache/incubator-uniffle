@@ -52,8 +52,6 @@ public class ShuffleTaskInfo {
   private Map<Integer, Roaring64NavigableMap> cachedBlockIds;
   private AtomicReference<String> user;
 
-  private AtomicReference<ShuffleDataDistributionType> dataDistType;
-
   private AtomicLong totalDataSize = new AtomicLong(0);
   /**
    * shuffleId -> partitionId -> partition shuffle data size
@@ -65,6 +63,8 @@ public class ShuffleTaskInfo {
   private final Map<Integer, Set<Integer>> hugePartitionTags;
   private final AtomicBoolean existHugePartition;
 
+  private final AtomicReference<ShuffleSpecification> specification;
+
   public ShuffleTaskInfo(String appId) {
     this.appId = appId;
     this.currentTimes = System.currentTimeMillis();
@@ -72,10 +72,10 @@ public class ShuffleTaskInfo {
     this.commitLocks = JavaUtils.newConcurrentMap();
     this.cachedBlockIds = JavaUtils.newConcurrentMap();
     this.user = new AtomicReference<>();
-    this.dataDistType = new AtomicReference<>();
     this.partitionDataSizes = JavaUtils.newConcurrentMap();
     this.hugePartitionTags = JavaUtils.newConcurrentMap();
     this.existHugePartition = new AtomicBoolean(false);
+    this.specification = new AtomicReference<>();
   }
 
   public Long getCurrentTimes() {
@@ -106,13 +106,16 @@ public class ShuffleTaskInfo {
     this.user.set(user);
   }
 
-  public void setDataDistType(
-      ShuffleDataDistributionType dataDistType) {
-    this.dataDistType.set(dataDistType);
+  public int getMaxConcurrencyPerPartitionToWrite() {
+    return specification.get().getMaxConcurrencyPerPartitionToWrite();
   }
 
   public ShuffleDataDistributionType getDataDistType() {
-    return dataDistType.get();
+    return specification.get().getDistributionType();
+  }
+
+  public void setSpecification(ShuffleSpecification specification) {
+    this.specification.set(specification);
   }
 
   public long addPartitionDataSize(int shuffleId, int partitionId, long delta) {

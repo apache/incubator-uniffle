@@ -134,6 +134,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                     .name()
             );
 
+    int maxConcurrencyPerPartitionToWrite = req.getMaxConcurrencyPerPartitionToWrite();
+
     Map<String, String> remoteStorageConf = req
         .getRemoteStorage()
         .getRemoteStorageConfList()
@@ -153,7 +155,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             partitionRanges,
             new RemoteStorageInfo(remoteStoragePath, remoteStorageConf),
             user,
-            shuffleDataDistributionType
+            shuffleDataDistributionType,
+            maxConcurrencyPerPartitionToWrite
         );
 
     reply = ShuffleRegisterResponse

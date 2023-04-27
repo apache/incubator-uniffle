@@ -78,7 +78,6 @@ public class PooledHdfsShuffleWriteHandler implements ShuffleWriteHandler {
       Configuration hadoopConf,
       String user,
       int concurrency) {
-    // todo: support max concurrency specified by client side
     this.maxConcurrency = concurrency;
     this.queue = new LinkedBlockingDeque<>(maxConcurrency);
     this.basePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
