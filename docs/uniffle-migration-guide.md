@@ -23,3 +23,8 @@ license: |
 # Upgrading from Coordinator 0.6 to 0.7
 
 + Since we have reconstructed the class file under coordinator, for the `rss.coordinator.access.checkers` parameter, the original value `org.apache.unifle.coordinator.AccessClusterLoadChecker` has been replaced with `org.apache.unifle.coordinator.access.checker.AccessClusterLoadChecker`, `org.apache.unifle.coordinator.AccessCandidatesChecker` has been replaced with `org.apache.unifle.coordinator.access.checker.AccessCandidatesChecker`, In addition, `org.apache.unifle.coordinator.access.checker.AccessQuotaChecker` has been added as the default checker.
+
+
+# Upgrading from Server 0.7 to 0.8 (unreleased)
+
++ The configuration key rss.server.max.concurrency.of.single.partition.writer has been renamed to rss.server.max.concurrency.of.per-partition.write. However, we will continue to support the old key until version 0.9, at which point it will be deprecated.

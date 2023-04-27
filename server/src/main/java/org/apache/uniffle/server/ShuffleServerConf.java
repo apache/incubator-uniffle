@@ -334,11 +334,13 @@ public class ShuffleServerConf extends RssBaseConf {
       .withDescription("the interval of leak shuffle data check");
 
   public static final ConfigOption<Integer> SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION = ConfigOptions
-      .key("rss.server.max.concurrency.of.single.partition.writer")
+      .key("rss.server.max.concurrency.of.per-partition.write")
       .intType()
       .defaultValue(1)
-      .withDescription("The max concurrency of single partition writer, the data partition file number is "
-          + "equal to this value. Default value is 1.");
+      .withDescription(
+          "The max concurrency of single partition writer, the data partition file number is "
+              + "equal to this value. Default value is 1.")
+      .withDeprecatedKeys("rss.server.max.concurrency.of.single.partition.writer");
 
   public static final ConfigOption<Integer> CLIENT_MAX_CONCURRENCY_LIMITATION_OF_ONE_PARTITION = ConfigOptions
       .key("rss.server.max.concurrency.limit.of.per-partition.write")
