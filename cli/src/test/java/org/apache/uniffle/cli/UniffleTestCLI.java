@@ -76,7 +76,7 @@ public class UniffleTestCLI {
     String[] args = {"-c","hello world"};
     assertEquals(0, uniffleCLI.run(args));
     oldOutPrintStream.println(dataOut);
-    assertTrue(dataOut.toString().contains("example-cli : hello world"));
+    assertTrue(dataOut.toString().contains("uniffle-client-cli : hello world"));
     System.setOut(oldOutPrintStream);
     System.setErr(oldErrPrintStream);
 
