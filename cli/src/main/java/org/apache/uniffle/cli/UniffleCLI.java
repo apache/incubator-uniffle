@@ -30,20 +30,20 @@ public class UniffleCLI extends AbstractCustomCommandLine {
 
   private static final Logger LOG = LoggerFactory.getLogger(UniffleCLI.class);
   private final Options allOptions;
-  private final Option exampleCli;
-  private final Option exampleAdmin;
+  private final Option uniffleCli;
+  private final Option uniffleAdminCli;
   private final Option help;
 
   public UniffleCLI(String shortPrefix, String longPrefix) {
     allOptions = new Options();
-    exampleCli = new Option(shortPrefix + "c", longPrefix + "cli",
+    uniffleCli = new Option(shortPrefix + "c", longPrefix + "cli",
         true, "This is an example cli command that will print args.");
-    exampleAdmin = new Option(shortPrefix + "a", longPrefix + "admin",
-         true, "This is an example admin command that will print args.");
+    uniffleAdminCli = new Option(shortPrefix + "a", longPrefix + "admin",
+        true, "This is an example admin command that will print args.");
     help = new Option(shortPrefix + "h", longPrefix + "help",
         false, "Help for the Uniffle Example-CLI.");
-    allOptions.addOption(exampleCli);
-    allOptions.addOption(exampleAdmin);
+    allOptions.addOption(uniffleCli);
+    allOptions.addOption(uniffleAdminCli);
     allOptions.addOption(help);
   }
 
@@ -55,14 +55,14 @@ public class UniffleCLI extends AbstractCustomCommandLine {
       return 0;
     }
 
-    if (cmd.hasOption(exampleCli.getOpt())) {
-      String cliArgs = cmd.getOptionValue(exampleCli.getOpt());
+    if (cmd.hasOption(uniffleCli.getOpt())) {
+      String cliArgs = cmd.getOptionValue(uniffleCli.getOpt());
       System.out.println("example-cli : " + cliArgs);
       return 0;
     }
 
-    if (cmd.hasOption(exampleAdmin.getOpt())) {
-      String cliArgs = cmd.getOptionValue(exampleAdmin.getOpt());
+    if (cmd.hasOption(uniffleAdminCli.getOpt())) {
+      String cliArgs = cmd.getOptionValue(uniffleAdminCli.getOpt());
       System.out.println("example-admin : " + cliArgs);
       return 0;
     }
@@ -72,8 +72,8 @@ public class UniffleCLI extends AbstractCustomCommandLine {
 
   @Override
   public void addRunOptions(Options baseOptions) {
-    baseOptions.addOption(exampleCli);
-    baseOptions.addOption(exampleAdmin);
+    baseOptions.addOption(uniffleCli);
+    baseOptions.addOption(uniffleAdminCli);
   }
 
   @Override
