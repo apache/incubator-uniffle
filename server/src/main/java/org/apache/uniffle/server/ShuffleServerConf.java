@@ -299,7 +299,7 @@ public class ShuffleServerConf extends RssBaseConf {
       .key("rss.server.localstorage.storage.chooser.class")
       .stringType()
       .defaultValue("org.apache.uniffle.server.storage.local.HashBasedStorageChooser")
-      .withDescription("For localstorage, the storage chooser for per-partition. "
+      .withDescription("For localstorage, the storage chooser is for per-partition. "
           + "Default value is the hash-based disk selector.");
 
   public static final ConfigOption<List<String>> TAGS = ConfigOptions
