@@ -18,6 +18,7 @@
 package org.apache.uniffle.common.config;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -569,8 +570,23 @@ public class RssConf implements Cloneable {
         .orElseGet(option::defaultValue);
   }
 
+  private Optional<Object> geRawValFromFallbackKeys(Iterator<FallbackKey> iter) {
+    if (iter.hasNext()) {
+      FallbackKey key = iter.next();
+      Optional<Object> rawVal = getRawValue(key.getKey());
+      if (!rawVal.isPresent()) {
+        return geRawValFromFallbackKeys(iter);
+      }
+      return rawVal;
+    }
+    return Optional.empty();
+  }
+
   public <T> Optional<T> getOptional(ConfigOption<T> option) {
     Optional<Object> rawValue = getRawValueFromOption(option);
+    if (!rawValue.isPresent()) {
+      rawValue = geRawValFromFallbackKeys(option.fallbackKeys().iterator());
+    }
     Class<?> clazz = option.getClazz();
     Optional<T> value = rawValue.map(v -> option.convertValue(v, clazz));
     return value;

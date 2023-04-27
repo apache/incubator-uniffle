@@ -33,6 +33,112 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class ConfigOptionTest {
 
   @Test
+  public void testDeprecatedAndFallbackKeys() {
+    final ConfigOption<Integer> intConfig = ConfigOptions
+        .key("rss.main.key")
+        .intType().defaultValue(100)
+        .withFallbackKeys("rss.fallback.key1")
+        .withDeprecatedKeys("rss.deprecated.key1");
+
+    // case1
+    RssConf conf = new RssBaseConf();
+    assertEquals(100, conf.get(intConfig));
+
+    // case2
+    conf = new RssBaseConf();
+    conf.setString("rss.fallback.key1", "12");
+    conf.setString("rss.deprecated.key1", "13");
+    assertEquals(12, conf.get(intConfig));
+
+    // case3
+    conf = new RssBaseConf();
+    conf.setString("rss.deprecated.key1", "13");
+    assertEquals(13, conf.get(intConfig));
+
+    // case4
+    conf = new RssBaseConf();
+    conf.setString("rss.fallback.key1", "12");
+    assertEquals(12, conf.get(intConfig));
+
+    // case5
+    conf = new RssBaseConf();
+    conf.setString(intConfig.key(), "999");
+    conf.setString("rss.fallback.key1", "12");
+    conf.setString("rss.deprecated.key1", "13");
+    assertEquals(999, conf.get(intConfig));
+  }
+
+  @Test
+  public void testFallbackKeys() {
+    final ConfigOption<Integer> config1 = ConfigOptions
+        .key("rss.key.1")
+        .intType()
+        .defaultValue(1);
+
+    final ConfigOption<Integer> config2 = ConfigOptions
+        .key("rss.key.2")
+        .intType()
+        .defaultValue(2);
+
+    final ConfigOption<Integer> config3 = ConfigOptions
+        .key("rss.key.3")
+        .intType()
+        .defaultValue(9999)
+        .withFallbackKeys(config1.key(), config2.key());
+
+    // case1
+    RssConf conf = new RssBaseConf();
+    conf.setString(config1.key(), "10");
+    assertEquals(10, conf.get(config3));
+
+    // case2
+    conf.setString(config3.key(), "1111");
+    assertEquals(1111, conf.get(config3));
+
+    // case3
+    conf = new RssBaseConf();
+    assertEquals(9999, conf.get(config3));
+  }
+
+  @Test
+  public void testDeprecatedKeys() {
+    final ConfigOption<Integer> intConfig = ConfigOptions
+        .key("rss.key")
+        .intType()
+        .defaultValue(100)
+        .withDeprecatedKeys("rss.s1", "rss.s2", "rss.s3");
+
+    // case 1
+    RssConf conf = new RssBaseConf();
+    conf.setString("rss.s1", "10");
+    int val = conf.get(intConfig);
+    assertEquals(10, val);
+
+    // case 2
+    conf = new RssBaseConf();
+    conf.setString("rss.s1", "1");
+    conf.setString("rss.s2", "2");
+    conf.setString("rss.s3", "3");
+    assertEquals(1, conf.get(intConfig));
+
+    // case 3
+    conf = new RssBaseConf();
+    conf.setString("rss.s3", "3");
+    conf.setString("rss.s2", "2");
+    assertEquals(2, conf.get(intConfig));
+
+    // case 4
+    conf = new RssBaseConf();
+    conf.setString(intConfig.key(), "25");
+    conf.setString("rss.s3", "3");
+    assertEquals(25, conf.get(intConfig));
+
+    // case 5
+    conf = new RssBaseConf();
+    assertEquals(100, conf.get(intConfig));
+  }
+
+  @Test
   public void testSetKVWithStringTypeDirectly() {
     final ConfigOption<Integer> intConfig = ConfigOptions
             .key("rss.key1")
