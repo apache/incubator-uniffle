@@ -21,8 +21,8 @@ UNIFFLE_SHELL_EXECNAME="uniffle"
 function uniffle_usage
 {
   uniffle_add_option "--daemon (start|status|stop)" "operate on a daemon"
-  uniffle_add_subcommand "example-cli" client "prints example-cli args information"
-  uniffle_add_subcommand "example-admin" admin "prints example-admin args information"
+  uniffle_add_subcommand "uniffle-cli" client "prints uniffle-cli args information"
+  uniffle_add_subcommand "uniffle-admin" admin "prints uniffle-admin args information"
   uniffle_generate_usage "${UNIFFLE_SHELL_EXECNAME}" true
 }
 
@@ -32,10 +32,10 @@ function uniffle_cmd_case
   shift
 
   case ${subcmd} in
-    example-cli)
+    uniffle-cli)
       UNIFFLE_CLASSNAME=org.apache.uniffle.cli.UniffleCLI
     ;;
-    example-admin)
+    uniffle-admin)
       UNIFFLE_CLASSNAME=org.apache.uniffle.cli.UniffleCLI
     ;;
     *)

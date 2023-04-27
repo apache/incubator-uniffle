@@ -57,13 +57,13 @@ public class UniffleCLI extends AbstractCustomCommandLine {
 
     if (cmd.hasOption(uniffleCli.getOpt())) {
       String cliArgs = cmd.getOptionValue(uniffleCli.getOpt());
-      System.out.println("example-cli : " + cliArgs);
+      System.out.println("uniffle-cli : " + cliArgs);
       return 0;
     }
 
     if (cmd.hasOption(uniffleAdminCli.getOpt())) {
       String cliArgs = cmd.getOptionValue(uniffleAdminCli.getOpt());
-      System.out.println("example-admin : " + cliArgs);
+      System.out.println("uniffle-admin : " + cliArgs);
       return 0;
     }
 
