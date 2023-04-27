@@ -29,13 +29,13 @@ import org.apache.uniffle.UniffleCliArgsException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ExampleCLITest {
+public class UniffleTestCLITest {
 
-  private ExampleCLI exampleCLI;
+  private UniffleTestCLI uniffleTestCLI;
 
   @BeforeEach
   public void setup() throws Exception {
-    exampleCLI = new ExampleCLI("", "");
+    uniffleTestCLI = new UniffleTestCLI("", "");
   }
 
   @Test
@@ -48,7 +48,7 @@ public class ExampleCLITest {
     System.setErr(new PrintStream(dataErr));
 
     String[] args1 = {"-help"};
-    assertEquals(0, exampleCLI.run(args1));
+    assertEquals(0, uniffleTestCLI.run(args1));
     oldOutPrintStream.println(dataOut);
     assertTrue(dataOut.toString().contains(
         "-a,--admin <arg>   This is an example admin command that will print args."));
@@ -74,7 +74,7 @@ public class ExampleCLITest {
     System.setErr(new PrintStream(dataErr));
 
     String[] args = {"-c","hello world"};
-    assertEquals(0, exampleCLI.run(args));
+    assertEquals(0, uniffleTestCLI.run(args));
     oldOutPrintStream.println(dataOut);
     assertTrue(dataOut.toString().contains("example-cli : hello world"));
     System.setOut(oldOutPrintStream);
