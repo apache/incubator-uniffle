@@ -257,11 +257,9 @@ function uniffle_generic_columnprinter
     cmdtype="${brup[1]}"
     giventext="${brup[2]}"
 
-    if [[ -n "${reqtype}" ]]; then
-      if [[ "${cmdtype}" != "${reqtype}" ]]; then
-        ((i=i+1))
-        continue
-      fi
+    if [[ -n "${reqtype}" && "${cmdtype}" != "${reqtype}" ]]; then
+      ((i=i+1))
+      continue
     fi
 
     if [[ -z "${giventext}" ]]; then

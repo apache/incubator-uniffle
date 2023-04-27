@@ -21,6 +21,9 @@
 set -o nounset   # exit the script if you try to use an uninitialised variable
 set -o errexit   # exit the script if any statement returns a non-true return value
 
+# By default, we enable verbose log printing.
+UNIFFLE_SHELL_SCRIPT_DEBUG=true
+
 #---
 # is_process_running: Checks if a process is running
 # args:               Process ID of running proccess
@@ -195,6 +198,8 @@ function load_rss_env {
   JPS="${JAVA_HOME}/bin/jps"
 
   # print
+  # If UNIFFLE_SHELL_SCRIPT_DEBUG is true, we will print JAVA_HOME, HADOOP_HOME, RSS_HOME information etc.
+  # If UNIFFLE_SHELL_SCRIPT_DEBUG is false, we do not print Env information.
   if [[ "${UNIFFLE_SHELL_SCRIPT_DEBUG}" = true ]]; then
     echo "Using Java from ${JAVA_HOME}"
     echo "Using Hadoop from ${HADOOP_HOME}"

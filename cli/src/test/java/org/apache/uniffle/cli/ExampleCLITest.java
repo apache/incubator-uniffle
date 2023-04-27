@@ -58,6 +58,8 @@ public class ExampleCLITest {
 
     System.setOut(oldOutPrintStream);
     System.setErr(oldErrPrintStream);
+    oldOutPrintStream.close();
+    oldErrPrintStream.close();
   }
 
   @Test
@@ -75,5 +77,7 @@ public class ExampleCLITest {
     assertTrue(dataOut.toString().contains("example-cli : hello world"));
     System.setOut(oldOutPrintStream);
     System.setErr(oldErrPrintStream);
+    oldOutPrintStream.close();
+    oldErrPrintStream.close();
   }
 }
