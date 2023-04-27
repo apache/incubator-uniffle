@@ -26,6 +26,7 @@ import org.apache.uniffle.common.exception.RssException;
 
 public class ClassUtils {
 
+  @SuppressWarnings("unchecked")
   public static <T> T instantiate(Class<T> clazz, Pair<Class<T>, Object>... typeAndVals)
       throws RssException {
     try {
