@@ -33,18 +33,6 @@ public class CapacityBasedStorageChooserTest {
 
   @Test
   public void test() {
-    ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
-        1,
-        "1",
-        1,
-        1,
-        1,
-        1,
-        Collections.emptyList(),
-        null,
-        null
-    );
-
     // case1
     LocalStorage s1 = mock(LocalStorage.class);
     when(s1.canWrite()).thenReturn(true);
@@ -58,6 +46,17 @@ public class CapacityBasedStorageChooserTest {
     when(s2.getDiskSize()).thenReturn(10L);
     when(s2.getCapacity()).thenReturn(200L);
 
+    ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
+        1,
+        "1",
+        1,
+        1,
+        1,
+        1,
+        Collections.emptyList(),
+        null,
+        null
+    );
     CapacityBasedStorageChooser storageChooser = new CapacityBasedStorageChooser();
     assertEquals(s2, storageChooser.pick(event, s1, s2));
 
