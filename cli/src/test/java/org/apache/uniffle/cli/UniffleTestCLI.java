@@ -51,11 +51,11 @@ public class UniffleTestCLI {
     assertEquals(0, uniffleCLI.run(args1));
     oldOutPrintStream.println(dataOut);
     assertTrue(dataOut.toString().contains(
-        "-a,--admin <arg>   This is an example admin command that will print args."));
+        "-a,--admin <arg>   This is an admin command that will print args."));
     assertTrue(dataOut.toString().contains(
-        "-c,--cli <arg>     This is an example cli command that will print args."));
+        "-c,--cli <arg>     This is an client cli command that will print args."));
     assertTrue(dataOut.toString().contains(
-        "-h,--help          Help for the Uniffle Example-CLI."));
+        "-h,--help          Help for the Uniffle CLI."));
 
     System.setOut(oldOutPrintStream);
     System.setErr(oldErrPrintStream);
