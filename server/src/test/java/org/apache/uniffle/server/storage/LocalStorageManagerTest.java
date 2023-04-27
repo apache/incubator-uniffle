@@ -40,7 +40,6 @@ import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
-import org.apache.uniffle.server.storage.local.CapacityBasedStorageChooser;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.util.StorageType;
@@ -130,12 +129,12 @@ public class LocalStorageManagerTest {
     LocalStorage s2 = storages.get(1);
     LocalStorage s3 = storages.get(2);
 
-    String appId = "testPluggableStorageSelection";
 
     // case1
     s1.setDiskSize(300);
     s2.setDiskSize(200);
     s3.setDiskSize(500);
+    String appId = "testPluggableStorageSelection";
     ShuffleDataFlushEvent event1 = toDataFlushEvent(appId, 1, 1);
     Storage storage = localStorageManager.selectStorage(event1);
     assertEquals(s2, storage);
