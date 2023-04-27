@@ -63,9 +63,8 @@ esac
 
 UNIFFLE_SUBCMD_ARGS=("$@")
 
-UNIFFLE_SHELL_SCRIPT_DEBUG=false
-
 source "$(dirname "$0")/utils.sh"
+UNIFFLE_SHELL_SCRIPT_DEBUG=false
 load_rss_env
 uniffle_java_setup
 

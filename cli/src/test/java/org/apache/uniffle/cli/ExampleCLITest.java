@@ -18,6 +18,7 @@
 package org.apache.uniffle.cli;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +39,7 @@ public class ExampleCLITest {
   }
 
   @Test
-  public void testHelp() throws UniffleCliArgsException {
+  public void testHelp() throws UniffleCliArgsException, IOException {
     final PrintStream oldOutPrintStream = System.out;
     final PrintStream oldErrPrintStream = System.err;
     ByteArrayOutputStream dataOut = new ByteArrayOutputStream();
@@ -58,12 +59,13 @@ public class ExampleCLITest {
 
     System.setOut(oldOutPrintStream);
     System.setErr(oldErrPrintStream);
-    oldOutPrintStream.close();
-    oldErrPrintStream.close();
+
+    dataOut.close();
+    dataErr.close();
   }
 
   @Test
-  public void testExampleCLI() throws UniffleCliArgsException {
+  public void testExampleCLI() throws UniffleCliArgsException, IOException {
     final PrintStream oldOutPrintStream = System.out;
     final PrintStream oldErrPrintStream = System.err;
     ByteArrayOutputStream dataOut = new ByteArrayOutputStream();
@@ -77,7 +79,8 @@ public class ExampleCLITest {
     assertTrue(dataOut.toString().contains("example-cli : hello world"));
     System.setOut(oldOutPrintStream);
     System.setErr(oldErrPrintStream);
-    oldOutPrintStream.close();
-    oldErrPrintStream.close();
+
+    dataOut.close();
+    dataErr.close();
   }
 }
