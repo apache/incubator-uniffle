@@ -50,6 +50,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageMedia;
 import org.apache.uniffle.common.storage.StorageStatus;
+import org.apache.uniffle.common.util.ClassUtils;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
@@ -62,6 +63,7 @@ import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.server.event.AppPurgeEvent;
 import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.server.event.ShufflePurgeEvent;
+import org.apache.uniffle.server.storage.local.StorageChooser;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageMediaProvider;
@@ -71,6 +73,7 @@ import org.apache.uniffle.storage.request.CreateShuffleDeleteHandlerRequest;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.uniffle.server.ShuffleServerConf.LOCAL_STORAGE_CHOOSER_CLASS;
 import static org.apache.uniffle.server.ShuffleServerConf.LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER;
 
 public class LocalStorageManager extends SingleStorageManager {
@@ -83,6 +86,8 @@ public class LocalStorageManager extends SingleStorageManager {
 
   private final Map<String, LocalStorage> partitionsOfStorage;
   private final List<StorageMediaProvider> typeProviders = Lists.newArrayList();
+
+  private final StorageChooser<LocalStorage> storageChooser;
 
   @VisibleForTesting
   LocalStorageManager(ShuffleServerConf conf) {
@@ -155,6 +160,17 @@ public class LocalStorageManager extends SingleStorageManager {
         StringUtils.join(localStorages.stream().map(LocalStorage::getBasePath).collect(Collectors.toList()))
     );
     this.checker = new LocalStorageChecker(conf, localStorages);
+    this.storageChooser = initStorageChooser(conf);
+  }
+
+  private StorageChooser<LocalStorage> initStorageChooser(ShuffleServerConf conf) {
+    try {
+      String className = conf.get(LOCAL_STORAGE_CHOOSER_CLASS);
+      Class<StorageChooser<LocalStorage>> clz = (Class<StorageChooser<LocalStorage>>) Class.forName(className);
+      return ClassUtils.instantiate(clz);
+    } catch (Exception e) {
+      throw new RssException(e);
+    }
   }
 
   private StorageMedia getStorageTypeForBasePath(String basePath) {
@@ -184,19 +200,8 @@ public class LocalStorageManager extends SingleStorageManager {
         return storage;
       }
     }
-
-    List<LocalStorage> candidates = localStorages
-        .stream()
-        .filter(x -> x.canWrite() && !x.isCorrupted())
-        .collect(Collectors.toList());
-    final LocalStorage selectedStorage = candidates.get(
-        ShuffleStorageUtils.getStorageIndex(
-            candidates.size(),
-            appId,
-            shuffleId,
-            partitionId
-        )
-    );
+    final LocalStorage selectedStorage =
+        storageChooser.pick(event, localStorages.stream().toArray(LocalStorage[]::new));
     return partitionsOfStorage.compute(
         UnionKey.buildKey(appId, shuffleId, partitionId),
         (key, localStorage) -> {
@@ -354,5 +359,9 @@ public class LocalStorageManager extends SingleStorageManager {
 
   public List<LocalStorage> getStorages() {
     return localStorages;
+  }
+
+  public StorageChooser<LocalStorage> getStorageChooser() {
+    return storageChooser;
   }
 }

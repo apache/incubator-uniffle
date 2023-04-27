@@ -198,6 +198,12 @@ public class LocalStorage extends AbstractStorage {
     metaData.addUploadedShufflePartitionList(shuffleKey, partitions);
   }
 
+  // only for tests
+  @VisibleForTesting
+  public void setDiskSize(long size) {
+    metaData.getDiskSize().set(size);
+  }
+
   public long getDiskSize() {
     return metaData.getDiskSize().longValue();
   }

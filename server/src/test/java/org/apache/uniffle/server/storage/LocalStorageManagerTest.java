@@ -40,6 +40,7 @@ import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
+import org.apache.uniffle.server.storage.local.CapacityBasedStorageChooser;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.util.StorageType;
@@ -105,6 +106,49 @@ public class LocalStorageManagerTest {
     Storage storage2 = localStorageManager.selectStorage(dataFlushEvent);
 
     assertNotEquals(storage1, storage2);
+  }
+
+
+  @Test
+  public void testPluggableStorageSelection() {
+    String[] storagePaths = {"/tmp/rss-data1", "/tmp/rss-data2", "/tmp/rss-data3"};
+
+    ShuffleServerConf conf = new ShuffleServerConf();
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
+    conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
+    conf.setString(
+        ShuffleServerConf.LOCAL_STORAGE_CHOOSER_CLASS,
+        "org.apache.uniffle.server.storage.local.CapacityBasedStorageChooser"
+    );
+    LocalStorageManager localStorageManager = new LocalStorageManager(conf);
+
+    List<LocalStorage> storages = localStorageManager.getStorages();
+    assertNotNull(storages);
+
+    LocalStorage s1 = storages.get(0);
+    LocalStorage s2 = storages.get(1);
+    LocalStorage s3 = storages.get(2);
+
+    String appId = "testPluggableStorageSelection";
+
+    // case1
+    s1.setDiskSize(300);
+    s2.setDiskSize(200);
+    s3.setDiskSize(500);
+    ShuffleDataFlushEvent event1 = toDataFlushEvent(appId, 1, 1);
+    Storage storage = localStorageManager.selectStorage(event1);
+    assertEquals(s2, storage);
+
+    // case2
+    s2.markCorrupted();
+    storage = localStorageManager.selectStorage(event1);
+    assertEquals(s1, storage);
+
+    // case3
+    s1.markCorrupted();
+    storage = localStorageManager.selectStorage(event1);
+    assertEquals(s3, storage);
   }
 
   @Test
