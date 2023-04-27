@@ -26,15 +26,15 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.AbstractCustomCommandLine;
 import org.apache.uniffle.UniffleCliArgsException;
 
-public class UniffleTestCLI extends AbstractCustomCommandLine {
+public class UniffleCLI extends AbstractCustomCommandLine {
 
-  private static final Logger LOG = LoggerFactory.getLogger(UniffleTestCLI.class);
+  private static final Logger LOG = LoggerFactory.getLogger(UniffleCLI.class);
   private final Options allOptions;
   private final Option exampleCli;
   private final Option exampleAdmin;
   private final Option help;
 
-  public UniffleTestCLI(String shortPrefix, String longPrefix) {
+  public UniffleCLI(String shortPrefix, String longPrefix) {
     allOptions = new Options();
     exampleCli = new Option(shortPrefix + "c", longPrefix + "cli",
         true, "This is an example cli command that will print args.");
@@ -84,7 +84,7 @@ public class UniffleTestCLI extends AbstractCustomCommandLine {
   public static void main(String[] args) {
     int retCode;
     try {
-      final UniffleTestCLI cli = new UniffleTestCLI("", "");
+      final UniffleCLI cli = new UniffleCLI("", "");
       retCode = cli.run(args);
     } catch (UniffleCliArgsException e) {
       retCode = AbstractCustomCommandLine.handleCliArgsException(e, LOG);
