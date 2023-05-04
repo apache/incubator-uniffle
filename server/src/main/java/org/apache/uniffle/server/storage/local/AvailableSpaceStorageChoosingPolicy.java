@@ -28,7 +28,7 @@ import org.apache.uniffle.storage.common.LocalStorage;
 public class AvailableSpaceStorageChoosingPolicy implements StorageChoosingPolicy<LocalStorage> {
 
   @Override
-  public LocalStorage choose(final ShuffleDataFlushEvent event, final LocalStorage... storages) {
+  public LocalStorage choose(ShuffleDataFlushEvent event, LocalStorage... storages) {
     final List<LocalStorage> candidates = Arrays.stream(storages)
         .filter(x -> x.canWrite() && !x.isCorrupted())
         .collect(Collectors.toList());

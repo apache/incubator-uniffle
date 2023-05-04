@@ -22,6 +22,6 @@ import org.apache.uniffle.storage.common.Storage;
 
 public interface StorageChoosingPolicy<T extends Storage> {
 
-  T choose(final ShuffleDataFlushEvent event, final T... candidates);
+  T choose(ShuffleDataFlushEvent event, T... candidates);
 
 }
