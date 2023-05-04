@@ -117,8 +117,8 @@ public class LocalStorageManagerTest {
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
     conf.setString(
-        ShuffleServerConf.LOCAL_STORAGE_CHOOSER_CLASS,
-        "org.apache.uniffle.server.storage.local.CapacityBasedStorageChooser"
+        ShuffleServerConf.LOCAL_STORAGE_CHOOSING_POLICY,
+        "org.apache.uniffle.server.storage.local.AvailableSpaceStorageChoosingPolicy"
     );
     LocalStorageManager localStorageManager = new LocalStorageManager(conf);
 

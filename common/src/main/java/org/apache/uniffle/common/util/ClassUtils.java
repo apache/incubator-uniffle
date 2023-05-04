@@ -31,7 +31,7 @@ public class ClassUtils {
       throws RssException {
     try {
       if (typeAndVals == null || typeAndVals.length == 0) {
-        return clazz.newInstance();
+        return clazz.getConstructor().newInstance();
       }
       Class<T>[] types = Stream.of(typeAndVals).map(x -> x.getLeft()).toArray(Class[]::new);
       Constructor<T> constructor = clazz.getConstructor(types);

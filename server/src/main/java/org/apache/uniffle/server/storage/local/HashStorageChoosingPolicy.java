@@ -17,19 +17,19 @@
 
 package org.apache.uniffle.server.storage.local;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.storage.common.LocalStorage;
+import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
-public class CapacityBasedStorageChooser implements StorageChooser<LocalStorage> {
+public class HashStorageChoosingPolicy implements StorageChoosingPolicy<LocalStorage> {
 
   @Override
-  public LocalStorage pick(ShuffleDataFlushEvent event, LocalStorage... storages) {
-    final List<LocalStorage> candidates = Arrays.stream(storages)
+  public LocalStorage choose(final ShuffleDataFlushEvent event, final LocalStorage... storages) {
+    List<LocalStorage> candidates = Arrays.stream(storages)
         .filter(x -> x.canWrite() && !x.isCorrupted())
         .collect(Collectors.toList());
 
@@ -37,12 +37,17 @@ public class CapacityBasedStorageChooser implements StorageChooser<LocalStorage>
       return null;
     }
 
-    candidates.sort((s1, s2) -> {
-      BigDecimal s1UsedRatio = BigDecimal.valueOf(s1.getDiskSize()).divide(BigDecimal.valueOf(s1.getCapacity()));
-      BigDecimal s2UsedRatio = BigDecimal.valueOf(s2.getDiskSize()).divide(BigDecimal.valueOf(s2.getCapacity()));
-      return s1UsedRatio.compareTo(s2UsedRatio);
-    });
-
-    return candidates.get(0);
+    String appId = event.getAppId();
+    int shuffleId = event.getShuffleId();
+    int partitionId = event.getStartPartition();
+    final LocalStorage selectedStorage = candidates.get(
+        ShuffleStorageUtils.getStorageIndex(
+            candidates.size(),
+            appId,
+            shuffleId,
+            partitionId
+        )
+    );
+    return selectedStorage;
   }
 }

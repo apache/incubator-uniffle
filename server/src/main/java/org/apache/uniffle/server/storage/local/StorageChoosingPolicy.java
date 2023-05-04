@@ -20,8 +20,8 @@ package org.apache.uniffle.server.storage.local;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.storage.common.Storage;
 
-public interface StorageChooser<T extends Storage> {
+public interface StorageChoosingPolicy<T extends Storage> {
 
-  T pick(ShuffleDataFlushEvent event, T... candidates);
+  T choose(final ShuffleDataFlushEvent event, final T... candidates);
 
 }

@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class CapacityBasedStorageChooserTest {
+public class AvailableSpaceStorageChoosingPolicyTest {
 
   @Test
   public void test() {
@@ -57,15 +57,15 @@ public class CapacityBasedStorageChooserTest {
         null,
         null
     );
-    CapacityBasedStorageChooser storageChooser = new CapacityBasedStorageChooser();
-    assertEquals(s2, storageChooser.pick(event, s1, s2));
+    AvailableSpaceStorageChoosingPolicy storageChooser = new AvailableSpaceStorageChoosingPolicy();
+    assertEquals(s2, storageChooser.choose(event, s1, s2));
 
     // case2
     when(s2.canWrite()).thenReturn(false);
-    assertEquals(s1, storageChooser.pick(event, s1, s2));
+    assertEquals(s1, storageChooser.choose(event, s1, s2));
 
     // case3
     when(s1.isCorrupted()).thenReturn(true);
-    assertNull(storageChooser.pick(event, s1, s2));
+    assertNull(storageChooser.choose(event, s1, s2));
   }
 }
