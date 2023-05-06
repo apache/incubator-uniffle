@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.common;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import io.netty.buffer.ByteBuf;
@@ -34,6 +35,13 @@ public class ShuffleBlockInfo {
   private List<ShuffleServerInfo> shuffleServerInfos;
   private int uncompressLength;
   private long freeMemory;
+
+  public ShuffleBlockInfo(int shuffleId, int partitionId, long blockId, int length, long crc,
+      ByteBuffer data, List<ShuffleServerInfo> shuffleServerInfos,
+      int uncompressLength, long freeMemory, long taskAttemptId) {
+    this(shuffleId, partitionId, blockId, length, crc, Unpooled.wrappedBuffer(data),
+        shuffleServerInfos, uncompressLength, freeMemory, taskAttemptId);
+  }
 
   public ShuffleBlockInfo(int shuffleId, int partitionId, long blockId, int length, long crc,
       byte[] data, List<ShuffleServerInfo> shuffleServerInfos,

@@ -17,6 +17,7 @@
 
 package org.apache.spark.shuffle.writer;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -182,7 +183,7 @@ public class WriteBufferManagerTest {
     SparkConf conf = getConf();
     WriteBufferManager wbm = createManager(conf);
     WriterBuffer mockWriterBuffer = mock(WriterBuffer.class);
-    when(mockWriterBuffer.getData()).thenReturn(new byte[]{});
+    when(mockWriterBuffer.getData()).thenReturn(ByteBuffer.wrap(new byte[]{}));
     when(mockWriterBuffer.getMemoryUsed()).thenReturn(0);
     ShuffleBlockInfo sbi = wbm.createShuffleBlock(0, mockWriterBuffer);
     // seqNo = 0, partitionId = 0, taskId = 0
