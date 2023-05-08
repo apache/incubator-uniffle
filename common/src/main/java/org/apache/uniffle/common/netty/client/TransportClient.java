@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.util.concurrent.SettableFuture;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.concurrent.Future;
@@ -31,8 +32,10 @@ import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.netty.handle.TransportResponseHandler;
 import org.apache.uniffle.common.netty.protocol.Message;
+import org.apache.uniffle.common.netty.protocol.RpcResponse;
 import org.apache.uniffle.common.util.NettyUtils;
 
 
@@ -63,7 +66,7 @@ public class TransportClient implements Closeable {
     return channel.remoteAddress();
   }
 
-  public ChannelFuture sendShuffleData(Message message, RpcResponseCallback callback) {
+  public ChannelFuture sendRpc(Message message, RpcResponseCallback callback) {
     if (logger.isTraceEnabled()) {
       logger.trace("Pushing data to {}", NettyUtils.getRemoteAddress(channel));
     }
@@ -71,6 +74,27 @@ public class TransportClient implements Closeable {
     handler.addResponseCallback(requestId, callback);
     RpcChannelListener listener = new RpcChannelListener(requestId, callback);
     return channel.writeAndFlush(message).addListener(listener);
+  }
+
+  public RpcResponse sendRpcSync(Message message, long timeoutMs) {
+    SettableFuture<RpcResponse> result = SettableFuture.create();
+    RpcResponseCallback callback = new RpcResponseCallback() {
+      @Override
+      public void onSuccess(RpcResponse response) {
+        result.set(response);
+      }
+
+      @Override
+      public void onFailure(Throwable e) {
+        result.setException(e);
+      }
+    };
+    sendRpc(message, callback);
+    try {
+      return result.get(timeoutMs, TimeUnit.MILLISECONDS);
+    } catch (Exception e) {
+      throw new RssException(e);
+    }
   }
 
   public static long requestId() {

@@ -19,6 +19,7 @@ package org.apache.uniffle.storage.handler.impl;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.nio.ByteBuffer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -150,7 +151,7 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
       byte[] indexData = reader.read(0, len);
       // get dataFileSize for read segment generation in DataSkippableReadHandler#readShuffleData
       long dataFileSize = new File(dataFileName).length();
-      return new ShuffleIndexResult(indexData, dataFileSize);
+      return new ShuffleIndexResult(ByteBuffer.wrap(indexData), dataFileSize);
     } catch (Exception e) {
       LOG.error("Fail to read index file {} indexNum {} len {}",
           indexFileName, indexNum, len);

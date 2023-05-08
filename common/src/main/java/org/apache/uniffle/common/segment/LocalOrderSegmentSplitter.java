@@ -63,10 +63,9 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
       return Lists.newArrayList();
     }
 
-    byte[] indexData = shuffleIndexResult.getIndexData();
+    ByteBuffer indexData = shuffleIndexResult.getIndexData();
     long dataFileLen = shuffleIndexResult.getDataFileLen();
 
-    ByteBuffer byteBuffer = ByteBuffer.wrap(indexData);
     List<BufferSegment> bufferSegments = Lists.newArrayList();
 
     List<ShuffleDataSegment> dataFileSegments = Lists.newArrayList();
@@ -88,14 +87,14 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
      * 3. Single shuffleDataSegment's blocks should be continuous
      */
     int index = 0;
-    while (byteBuffer.hasRemaining()) {
+    while (indexData.hasRemaining()) {
       try {
-        long offset = byteBuffer.getLong();
-        int length = byteBuffer.getInt();
-        int uncompressLength = byteBuffer.getInt();
-        long crc = byteBuffer.getLong();
-        long blockId = byteBuffer.getLong();
-        long taskAttemptId = byteBuffer.getLong();
+        long offset = indexData.getLong();
+        int length = indexData.getInt();
+        int uncompressLength = indexData.getInt();
+        long crc = indexData.getLong();
+        long blockId = indexData.getLong();
+        long taskAttemptId = indexData.getLong();
 
         totalLen += length;
         indexTaskIds.add(taskAttemptId);

@@ -115,4 +115,21 @@ public class RssClientConf {
       .booleanType()
       .defaultValue(false)
       .withDescription("Client can use off heap memory");
+
+  public static final ConfigOption<Integer> RSS_INDEX_READ_LIMIT = ConfigOptions
+      .key("rss.index.read.limit")
+      .intType()
+      .defaultValue(500);
+
+  public static final ConfigOption<String> RSS_STORAGE_TYPE = ConfigOptions
+      .key("rss.storage.type")
+      .stringType()
+      .defaultValue("")
+      .withDescription("Supports MEMORY_LOCALFILE, MEMORY_HDFS, MEMORY_LOCALFILE_HDFS");
+
+  public static final ConfigOption<String> RSS_CLIENT_READ_BUFFER_SIZE = ConfigOptions
+      .key("rss.client.read.buffer.size")
+      .stringType()
+      .defaultValue("14m")
+      .withDescription("The max data size read from storage");
 }

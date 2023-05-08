@@ -69,10 +69,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private Serializer serializer;
   private String taskId;
   private String basePath;
-  private int indexReadLimit;
-  private int readBufferSize;
   private int partitionNum;
-  private String storageType;
   private Map<Integer, Roaring64NavigableMap> partitionToExpectBlocks;
   private Roaring64NavigableMap taskIdBitmap;
   private Configuration hadoopConf;
@@ -90,10 +87,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       TaskContext context,
       RssShuffleHandle<K, C, ?> rssShuffleHandle,
       String basePath,
-      int indexReadLimit,
       Configuration hadoopConf,
-      String storageType,
-      int readBufferSize,
       int partitionNum,
       Map<Integer, Roaring64NavigableMap> partitionToExpectBlocks,
       Roaring64NavigableMap taskIdBitmap,
@@ -111,9 +105,6 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.serializer = rssShuffleHandle.getDependency().serializer();
     this.taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
     this.basePath = basePath;
-    this.indexReadLimit = indexReadLimit;
-    this.storageType = storageType;
-    this.readBufferSize = readBufferSize;
     this.partitionNum = partitionNum;
     this.partitionToExpectBlocks = partitionToExpectBlocks;
     this.taskIdBitmap = taskIdBitmap;
@@ -225,10 +216,9 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         boolean expectedTaskIdsBitmapFilterEnable = !(mapStartIndex == 0 && mapEndIndex == Integer.MAX_VALUE)
             || shuffleServerInfoList.size() > 1;
         CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
-            appId, shuffleId, partition, storageType, basePath, indexReadLimit, readBufferSize,
-            1, partitionNum, partitionToExpectBlocks.get(partition), taskIdBitmap, shuffleServerInfoList,
-            hadoopConf, dataDistributionType, expectedTaskIdsBitmapFilterEnable,
-            rssConf.getBoolean(RssClientConf.OFF_HEAP_MEMORY_ENABLE));
+            appId, shuffleId, partition, basePath, 1, partitionNum,
+            partitionToExpectBlocks.get(partition), taskIdBitmap, shuffleServerInfoList, hadoopConf,
+            dataDistributionType, expectedTaskIdsBitmapFilterEnable, rssConf);
         ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
         RssShuffleDataIterator<K, C> iterator = new RssShuffleDataIterator<>(
             shuffleDependency.serializer(), shuffleReadClient,

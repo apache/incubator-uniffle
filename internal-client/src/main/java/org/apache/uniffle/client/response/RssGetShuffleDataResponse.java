@@ -17,18 +17,20 @@
 
 package org.apache.uniffle.client.response;
 
+import java.nio.ByteBuffer;
+
 import org.apache.uniffle.common.rpc.StatusCode;
 
 public class RssGetShuffleDataResponse extends ClientResponse {
 
-  private final byte[] shuffleData;
+  private final ByteBuffer shuffleData;
 
-  public RssGetShuffleDataResponse(StatusCode statusCode, byte[] data) {
+  public RssGetShuffleDataResponse(StatusCode statusCode, ByteBuffer data) {
     super(statusCode);
     this.shuffleData = data;
   }
 
-  public byte[] getShuffleData() {
+  public ByteBuffer getShuffleData() {
     return shuffleData;
   }
 

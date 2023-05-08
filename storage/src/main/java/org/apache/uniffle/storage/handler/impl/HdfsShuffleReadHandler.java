@@ -95,7 +95,7 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
       }
       long dateFileLen = getDataFileLen();
       LOG.info("Read index files {}.index for {} ms", filePrefix, System.currentTimeMillis() - start);
-      return new ShuffleIndexResult(indexData, dateFileLen);
+      return new ShuffleIndexResult(ByteBuffer.wrap(indexData), dateFileLen);
     } catch (Exception e) {
       LOG.info("Fail to read index files {}.index", filePrefix, e);
     }
