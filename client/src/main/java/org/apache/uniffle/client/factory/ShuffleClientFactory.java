@@ -92,14 +92,11 @@ public class ShuffleClientFactory {
 
   public ShuffleReadClient createShuffleReadClient(CreateShuffleReadClientRequest request) {
     return new ShuffleReadClientImpl(
-        request.getStorageType(),
         request.getAppId(),
         request.getShuffleId(),
         request.getPartitionId(),
-        request.getIndexReadLimit(),
         request.getPartitionNumPerRange(),
         request.getPartitionNum(),
-        request.getReadBufferSize(),
         request.getBasePath(),
         request.getBlockIdBitmap(),
         request.getTaskIdBitmap(),
@@ -108,7 +105,6 @@ public class ShuffleClientFactory {
         request.getIdHelper(),
         request.getShuffleDataDistributionType(),
         request.isExpectedTaskIdsBitmapFilterEnable(),
-        request.isOffHeapEnabled(),
         request.getRssConf()
     );
   }

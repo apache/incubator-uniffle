@@ -468,16 +468,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     if (!(handle instanceof RssShuffleHandle)) {
       throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
-    final String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
-    final int indexReadLimit = sparkConf.get(RssSparkConfig.RSS_INDEX_READ_LIMIT);
     RssShuffleHandle<K, C, ?> rssShuffleHandle = (RssShuffleHandle<K, C, ?>) handle;
     final int partitionNum = rssShuffleHandle.getDependency().partitioner().numPartitions();
-    long readBufferSize = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key(),
-        RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.defaultValue().get());
-    if (readBufferSize > Integer.MAX_VALUE) {
-      LOG.warn(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key() + " can support 2g as max");
-      readBufferSize = Integer.MAX_VALUE;
-    }
     int shuffleId = rssShuffleHandle.getShuffleId();
     Map<Integer, List<ShuffleServerInfo>> allPartitionToServers = rssShuffleHandle.getPartitionToServers();
     Map<Integer, List<ShuffleServerInfo>> requirePartitionToServers = allPartitionToServers.entrySet()
@@ -513,10 +505,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         context,
         rssShuffleHandle,
         shuffleRemoteStoragePath,
-        indexReadLimit,
         readerHadoopConf,
-        storageType,
-        (int) readBufferSize,
         partitionNum,
         RssUtils.generatePartitionToBitmap(blockIdBitmap, startPartition, endPartition),
         taskIdBitmap,

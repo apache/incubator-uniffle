@@ -101,12 +101,12 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
           long start = System.currentTimeMillis();
           RpcResponse rpcResponse = transportClient.sendRpcSync(sendShuffleDataRequest, RPC_TIMEOUT_DEFAULT_MS);
           LOG.debug("Do sendShuffleData to {}:{} rpc cost:" + (System.currentTimeMillis() - start)
-                        + " ms for " + allocateSize + " bytes with " + finalBlockNum + " blocks", host, port);
+              + " ms for " + allocateSize + " bytes with " + finalBlockNum + " blocks", host, port);
           if (rpcResponse.getStatusCode() != StatusCode.SUCCESS) {
             String msg = "Can't send shuffle data with " + finalBlockNum
-                             + " blocks to " + host + ":" + port
-                             + ", statusCode=" + rpcResponse.getStatusCode()
-                             + ", errorMsg:" + rpcResponse.getRetMessage();
+                + " blocks to " + host + ":" + port
+                + ", statusCode=" + rpcResponse.getStatusCode()
+                + ", errorMsg:" + rpcResponse.getRetMessage();
             if (rpcResponse.getStatusCode() == StatusCode.NO_REGISTER) {
               throw new NotRetryException(msg);
             } else {
@@ -146,9 +146,9 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
         request.getExpectedTaskIds()
     );
     String requestInfo = "appId[" + request.getAppId()
-                             + "], shuffleId[" + request.getShuffleId()
-                             + "], partitionId[" + request.getPartitionId()
-                             + "], lastBlockId[" + request.getLastBlockId() + "]";
+        + "], shuffleId[" + request.getShuffleId()
+        + "], partitionId[" + request.getPartitionId()
+        + "], lastBlockId[" + request.getLastBlockId() + "]";
     RpcResponse rpcResponse = transportClient.sendRpcSync(getMemoryShuffleDataRequest, RPC_TIMEOUT_DEFAULT_MS);
     GetMemoryShuffleDataResponse getMemoryShuffleDataResponse = (GetMemoryShuffleDataResponse) rpcResponse;
     StatusCode statusCode = rpcResponse.getStatusCode();

@@ -379,17 +379,9 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   public <K, C> ShuffleReader<K, C> getReader(ShuffleHandle handle,
       int startPartition, int endPartition, TaskContext context) {
     if (handle instanceof RssShuffleHandle) {
-      final String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
-      final int indexReadLimit = sparkConf.get(RssSparkConfig.RSS_INDEX_READ_LIMIT);
       RssShuffleHandle<K, C, ?> rssShuffleHandle = (RssShuffleHandle<K, C, ?>) handle;
       final int partitionNumPerRange = sparkConf.get(RssSparkConfig.RSS_PARTITION_NUM_PER_RANGE);
       final int partitionNum = rssShuffleHandle.getDependency().partitioner().numPartitions();
-      long readBufferSize = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key(),
-          RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.defaultValue().get());
-      if (readBufferSize > Integer.MAX_VALUE) {
-        LOG.warn(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE + " can support 2g as max");
-        readBufferSize = Integer.MAX_VALUE;
-      }
       int shuffleId = rssShuffleHandle.getShuffleId();
       long start = System.currentTimeMillis();
       Roaring64NavigableMap taskIdBitmap = getExpectedTasks(shuffleId, startPartition, endPartition);
@@ -413,9 +405,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
       return new RssShuffleReader<K, C>(
           startPartition, endPartition, context,
-          rssShuffleHandle, shuffleRemoteStoragePath, indexReadLimit,
-          readerHadoopConf,
-          storageType, (int) readBufferSize, partitionNumPerRange, partitionNum,
+          rssShuffleHandle, shuffleRemoteStoragePath,
+          readerHadoopConf, partitionNumPerRange, partitionNum,
           blockIdBitmap, taskIdBitmap, RssSparkConfig.toRssConf(sparkConf));
     } else {
       throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());

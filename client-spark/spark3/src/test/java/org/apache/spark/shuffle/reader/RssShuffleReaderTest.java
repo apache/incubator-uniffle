@@ -38,6 +38,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.storage.handler.impl.HdfsShuffleWriteHandler;
 import org.apache.uniffle.storage.util.StorageType;
@@ -88,6 +89,10 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
 
     Map<Integer, Roaring64NavigableMap> partitionToExpectBlocks = Maps.newHashMap();
     partitionToExpectBlocks.put(0, blockIdBitmap);
+    RssConf rssConf = new RssConf();
+    rssConf.set(RssClientConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    rssConf.set(RssClientConf.RSS_INDEX_READ_LIMIT, 1000);
+    rssConf.set(RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE, "1000");
     RssShuffleReader<String, String> rssShuffleReaderSpy = spy(new RssShuffleReader<>(
         0,
         1,
@@ -96,15 +101,12 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
         contextMock,
         handleMock,
         basePath,
-        1000,
         conf,
-        StorageType.HDFS.name(),
-        1000,
         1,
         partitionToExpectBlocks,
         taskIdBitmap,
         new ShuffleReadMetrics(),
-        new RssConf(),
+        rssConf,
         ShuffleDataDistributionType.NORMAL
     ));
     validateResult(rssShuffleReaderSpy.read(), expectedData, 10);
@@ -120,15 +122,12 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
         contextMock,
         handleMock,
         basePath,
-        1000,
         conf,
-        StorageType.HDFS.name(),
-        1000,
         2,
         partitionToExpectBlocks,
         taskIdBitmap,
         new ShuffleReadMetrics(),
-        new RssConf(),
+        rssConf,
         ShuffleDataDistributionType.NORMAL
     ));
     validateResult(rssShuffleReaderSpy1.read(), expectedData, 18);
@@ -141,15 +140,12 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
         contextMock,
         handleMock,
         basePath,
-        1000,
         conf,
-        StorageType.HDFS.name(),
-        1000,
         2,
         partitionToExpectBlocks,
         Roaring64NavigableMap.bitmapOf(),
         new ShuffleReadMetrics(),
-        new RssConf(),
+        rssConf,
         ShuffleDataDistributionType.NORMAL
     ));
     validateResult(rssShuffleReaderSpy2.read(), Maps.newHashMap(), 0);
