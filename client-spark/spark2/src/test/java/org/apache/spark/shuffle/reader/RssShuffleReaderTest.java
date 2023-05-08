@@ -87,7 +87,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     rssConf.set(RssClientConf.RSS_INDEX_READ_LIMIT, 1000);
     rssConf.set(RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE, "1000");
     RssShuffleReader<String, String> rssShuffleReaderSpy = spy(new RssShuffleReader<>(0, 1, contextMock,
-        handleMock, basePath, conf, 2, 10, blockIdBitmap, taskIdBitmap, new RssConf()));
+        handleMock, basePath, conf, 2, 10, blockIdBitmap, taskIdBitmap, rssConf));
 
     validateResult(rssShuffleReaderSpy.read(), expectedData, 10);
   }
