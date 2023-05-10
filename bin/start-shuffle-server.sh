@@ -44,7 +44,9 @@ fi
 # glibc use an arena memory allocator that causes virtual
 # memory usage to explode. This interacts badly
 # with the many threads that we use in rss. Tune the variable
-# down to prevent vmem explosion. Default value is 8 * CORES.
+# down to prevent vmem explosion.
+# glibc's default value of MALLOC_ARENA_MAX is 8 * CORES.
+# After referring to hadoop/presto, the default MALLOC_ARENA_MAX of shuffle server is set to 4.
 export MALLOC_ARENA_MAX=${MALLOC_ARENA_MAX:-4}
 
 MAIN_CLASS="org.apache.uniffle.server.ShuffleServer"
