@@ -42,7 +42,11 @@ to [crd yaml file](../../deploy/kubernetes/operator/config/crd/bases/uniffle.apa
 Run the following command:
 
 ```
-kubectl apply -f ${crd-yaml-file}
+# create, cannot use apply here, see https://github.com/apache/incubator-uniffle/issues/774
+kubectl create -f ${crd-yaml-file}
+
+# update, make sure the crd-yaml-file is a complete CRD file.
+kubectl replace -f ${crd-yaml-file}
 ```
 
 ## Setup or Update Uniffle Webhook
