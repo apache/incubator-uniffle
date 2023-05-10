@@ -41,6 +41,12 @@ if [ -n "${RSS_IP:-}" ]; then
   echo "Shuffle Server RSS_IP: ${RSS_IP}"
 fi
 
+# glibc use an arena memory allocator that causes virtual
+# memory usage to explode. This interacts badly
+# with the many threads that we use in rss. Tune the variable
+# down to prevent vmem explosion. Default value is 8 * CORES.
+export MALLOC_ARENA_MAX=${MALLOC_ARENA_MAX:-4}
+
 MAIN_CLASS="org.apache.uniffle.server.ShuffleServer"
 
 HADOOP_DEPENDENCY="$("$HADOOP_HOME/bin/hadoop" classpath --glob)"
