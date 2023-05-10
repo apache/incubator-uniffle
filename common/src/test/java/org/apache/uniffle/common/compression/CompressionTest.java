@@ -123,7 +123,8 @@ public class CompressionTest {
         assertTrue(e instanceof IllegalStateException);
       }
     } else {
-      codec.compress(srcBuffer, destBuffer);
+      int compressedLength = codec.compress(srcBuffer, destBuffer);
+      assertEquals(destBuffer.position(), destOffset + compressedLength);
       assertEquals(srcBuffer.position(), destOffset);
       destBuffer.flip();
       destBuffer.position(destOffset);
