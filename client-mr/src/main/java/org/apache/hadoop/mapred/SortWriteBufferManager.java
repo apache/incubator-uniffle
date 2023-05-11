@@ -160,12 +160,13 @@ public class SortWriteBufferManager<K, V> {
       memoryLock.unlock();
     }
 
-    if (!buffers.containsKey(partitionId)) {
+    buffers.computeIfAbsent(partitionId, key -> {
       SortWriteBuffer<K, V> sortWriterBuffer = new SortWriteBuffer(
-          partitionId, comparator, maxSegmentSize, keySerializer, valSerializer);
-      buffers.putIfAbsent(partitionId, sortWriterBuffer);
+              partitionId, comparator, maxSegmentSize, keySerializer, valSerializer);
       waitSendBuffers.add(sortWriterBuffer);
-    }
+      return sortWriterBuffer;
+    });
+
     SortWriteBuffer<K, V> buffer = buffers.get(partitionId);
     long length = buffer.addRecord(key, value);
     if (length > maxMemSize) {
@@ -221,9 +222,7 @@ public class SortWriteBufferManager<K, V> {
     buffer.clear();
     shuffleBlocks.add(block);
     allBlockIds.add(block.getBlockId());
-    if (!partitionToBlocks.containsKey(block.getPartitionId())) {
-      partitionToBlocks.putIfAbsent(block.getPartitionId(), Lists.newArrayList());
-    }
+    partitionToBlocks.computeIfAbsent(block.getPartitionId(), key ->  Lists.newArrayList());
     partitionToBlocks.get(block.getPartitionId()).add(block.getBlockId());
   }
 
@@ -362,7 +361,7 @@ public class SortWriteBufferManager<K, V> {
 
   // it's run in single thread, and is not thread safe
   private int getNextSeqNo(int partitionId) {
-    partitionToSeqNo.putIfAbsent(partitionId, 0);
+    partitionToSeqNo.computeIfAbsent(partitionId, key -> 0);
     int seqNo = partitionToSeqNo.get(partitionId);
     partitionToSeqNo.put(partitionId, seqNo + 1);
     return seqNo;

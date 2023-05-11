@@ -312,7 +312,7 @@ public class RssUtils {
       Roaring64NavigableMap shuffleBitmap, int startPartition, int endPartition) {
     Map<Integer, Roaring64NavigableMap> result = Maps.newHashMap();
     for (int partitionId = startPartition; partitionId < endPartition; partitionId++) {
-      result.putIfAbsent(partitionId, Roaring64NavigableMap.bitmapOf());
+      result.computeIfAbsent(partitionId, key -> Roaring64NavigableMap.bitmapOf());
     }
     Iterator<Long> it = shuffleBitmap.iterator();
     long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;

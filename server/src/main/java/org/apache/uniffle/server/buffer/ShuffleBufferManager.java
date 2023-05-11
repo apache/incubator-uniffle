@@ -110,9 +110,9 @@ public class ShuffleBufferManager {
   }
 
   public StatusCode registerBuffer(String appId, int shuffleId, int startPartition, int endPartition) {
-    bufferPool.putIfAbsent(appId, JavaUtils.newConcurrentMap());
+    bufferPool.computeIfAbsent(appId, key -> JavaUtils.newConcurrentMap());
     Map<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers = bufferPool.get(appId);
-    shuffleIdToBuffers.putIfAbsent(shuffleId, TreeRangeMap.create());
+    shuffleIdToBuffers.computeIfAbsent(shuffleId, key -> TreeRangeMap.create());
     RangeMap<Integer, ShuffleBuffer> bufferRangeMap = shuffleIdToBuffers.get(shuffleId);
     if (bufferRangeMap.get(startPartition) == null) {
       ShuffleServerMetrics.counterTotalPartitionNum.inc();
@@ -163,9 +163,9 @@ public class ShuffleBufferManager {
   }
 
   private void updateShuffleSize(String appId, int shuffleId, long size) {
-    shuffleSizeMap.putIfAbsent(appId, JavaUtils.newConcurrentMap());
+    shuffleSizeMap.computeIfAbsent(appId, key -> JavaUtils.newConcurrentMap());
     Map<Integer, AtomicLong> shuffleIdToSize = shuffleSizeMap.get(appId);
-    shuffleIdToSize.putIfAbsent(shuffleId, new AtomicLong(0));
+    shuffleIdToSize.computeIfAbsent(shuffleId, key -> new AtomicLong(0));
     shuffleIdToSize.get(shuffleId).addAndGet(size);
   }
 
@@ -537,11 +537,11 @@ public class ShuffleBufferManager {
     return Lists.newArrayList(sizeMap.entrySet());
   }
 
-  private void addPickedShuffle(String key, Map<String, Set<Integer>> pickedShuffle) {
-    String[] splits = key.split(Constants.KEY_SPLIT_CHAR);
+  private void addPickedShuffle(String shuffleIdKey, Map<String, Set<Integer>> pickedShuffle) {
+    String[] splits = shuffleIdKey.split(Constants.KEY_SPLIT_CHAR);
     String appId = splits[0];
     Integer shuffleId = Integer.parseInt(splits[1]);
-    pickedShuffle.putIfAbsent(appId, Sets.newHashSet());
+    pickedShuffle.computeIfAbsent(appId, key -> Sets.newHashSet());
     Set<Integer> shuffleIdSet = pickedShuffle.get(appId);
     shuffleIdSet.add(shuffleId);
   }

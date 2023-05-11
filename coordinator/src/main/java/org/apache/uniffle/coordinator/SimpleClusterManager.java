@@ -210,7 +210,7 @@ public class SimpleClusterManager implements ClusterManager {
     }
     // add node to related tags
     for (String tag : tags) {
-      tagToNodes.putIfAbsent(tag, Sets.newConcurrentHashSet());
+      tagToNodes.computeIfAbsent(tag, key -> Sets.newConcurrentHashSet());
       tagToNodes.get(tag).add(node);
     }
   }

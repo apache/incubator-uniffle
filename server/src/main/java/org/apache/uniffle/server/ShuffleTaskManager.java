@@ -205,7 +205,7 @@ public class ShuffleTaskManager {
             .build()
     );
 
-    partitionsToBlockIds.putIfAbsent(appId, JavaUtils.newConcurrentMap());
+    partitionsToBlockIds.computeIfAbsent(appId, key -> JavaUtils.newConcurrentMap());
     for (PartitionRange partitionRange : partitionRanges) {
       shuffleBufferManager.registerBuffer(appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
     }
@@ -302,13 +302,13 @@ public class ShuffleTaskManager {
     if (shuffleIdToPartitions == null) {
       throw new RssException("appId[" + appId  + "] is expired!");
     }
-    if (!shuffleIdToPartitions.containsKey(shuffleId)) {
+    shuffleIdToPartitions.computeIfAbsent(shuffleId, key -> {
       Roaring64NavigableMap[] blockIds = new Roaring64NavigableMap[bitmapNum];
       for (int i = 0; i < bitmapNum; i++) {
         blockIds[i] = Roaring64NavigableMap.bitmapOf();
       }
-      shuffleIdToPartitions.putIfAbsent(shuffleId, blockIds);
-    }
+      return blockIds;
+    });
     Roaring64NavigableMap[] blockIds = shuffleIdToPartitions.get(shuffleId);
     for (Map.Entry<Integer, long[]> entry : partitionToBlockIds.entrySet()) {
       Integer partitionId = entry.getKey();
