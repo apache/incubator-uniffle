@@ -29,11 +29,12 @@
         <property name="fileNamePattern" value="module\-info\.java$"/>
     </module>
     <!-- https://checkstyle.org/config_filters.html#SuppressionFilter -->
+    <!--
     <module name="SuppressionFilter">
-        <property name="file" value="${org.checkstyle.google.suppressionfilter.config}"
-                  default="checkstyle-suppressions.xml" />
+        <property name="file" default="checkstyle-suppressions.xml"/>
         <property name="optional" value="true"/>
     </module>
+    -->
     <!-- new add -->
     <module name="SuppressWarningsFilter" />
     <!-- Checks for whitespace                               -->
