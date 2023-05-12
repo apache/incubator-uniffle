@@ -209,10 +209,11 @@ public class WriteBufferManager extends MemoryConsumer {
     long memoryUsed = 0;
     Iterator<Entry<Integer, WriterBuffer>> iterator = buffers.entrySet().iterator();
     while (iterator.hasNext()) {
-      WriterBuffer wb = iterator.next().getValue();
+      Entry<Integer, WriterBuffer>  entry = iterator.next();
+      WriterBuffer wb = entry.getValue();
       dataSize += wb.getDataLength();
       memoryUsed += wb.getMemoryUsed();
-      result.add(createShuffleBlock(iterator.next().getKey(), wb));
+      result.add(createShuffleBlock(entry.getKey(), wb));
       iterator.remove();
       copyTime += wb.getCopyTime();
     }
