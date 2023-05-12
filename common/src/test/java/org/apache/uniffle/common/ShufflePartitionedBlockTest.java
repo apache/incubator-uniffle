@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import org.apache.uniffle.common.util.ByteBufUtils;
+
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -40,7 +42,7 @@ public class ShufflePartitionedBlockTest {
     assertEquals(3, b1.getBlockId());
 
     ShufflePartitionedBlock b3 = new ShufflePartitionedBlock(1, 1, 2, 3, 3, buf);
-    assertArrayEquals(buf, b3.getData());
+    assertArrayEquals(buf, ByteBufUtils.readBytes(b3.getData()));
   }
 
   @Test

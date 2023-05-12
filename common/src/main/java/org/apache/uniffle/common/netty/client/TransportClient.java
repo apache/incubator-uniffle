@@ -165,4 +165,8 @@ public class TransportClient implements Closeable {
     channel.close().awaitUninterruptibly(10, TimeUnit.SECONDS);
   }
 
+  public void timeOut() {
+    this.timedOut = true;
+  }
+
 }

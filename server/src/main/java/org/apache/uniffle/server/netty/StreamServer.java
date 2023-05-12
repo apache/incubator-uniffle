@@ -19,12 +19,10 @@ package org.apache.uniffle.server.netty;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -36,13 +34,15 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.netty.TransportFrameDecoder;
+import org.apache.uniffle.common.netty.client.TransportConf;
+import org.apache.uniffle.common.netty.client.TransportContext;
 import org.apache.uniffle.common.rpc.ServerInterface;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
-import org.apache.uniffle.server.netty.decoder.StreamServerInitDecoder;
 
 public class StreamServer implements ServerInterface {
 
@@ -75,8 +75,7 @@ public class StreamServer implements ServerInterface {
       int backlogSize,
       int timeoutMillis,
       int sendBuf,
-      int receiveBuf,
-      Supplier<ChannelHandler[]> handlerSupplier) {
+      int receiveBuf) {
     ServerBootstrap serverBootstrap = new ServerBootstrap().group(bossGroup, workerGroup);
     if (bossGroup instanceof EpollEventLoopGroup) {
       serverBootstrap.channel(EpollServerSocketChannel.class);
@@ -84,10 +83,13 @@ public class StreamServer implements ServerInterface {
       serverBootstrap.channel(NioServerSocketChannel.class);
     }
 
+    ShuffleServerNettyHandler serverNettyHandler = new ShuffleServerNettyHandler(shuffleServer);
+    TransportContext transportContext =
+        new TransportContext(new TransportConf(shuffleServerConf), serverNettyHandler, true);
     serverBootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
       @Override
       public void initChannel(final SocketChannel ch) {
-        ch.pipeline().addLast(handlerSupplier.get());
+        transportContext.initializePipeline(ch, new TransportFrameDecoder());
       }
     })
                .option(ChannelOption.SO_BACKLOG, backlogSize)
@@ -121,15 +123,12 @@ public class StreamServer implements ServerInterface {
 
   @Override
   public void startOnPort(int port) throws Exception {
-    Supplier<ChannelHandler[]> streamHandlers = () -> new ChannelHandler[]{
-        new StreamServerInitDecoder()
-    };
+
     ServerBootstrap serverBootstrap = bootstrapChannel(shuffleBossGroup, shuffleWorkerGroup,
         shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_BACKLOG),
         shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_TIMEOUT),
         shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_SEND_BUF),
-        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_RECEIVE_BUF),
-        streamHandlers);
+        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_RECEIVE_BUF));
 
     // Bind the ports and save the results so that the channels can be closed later.
     // If the second bind fails, the first one gets cleaned up in the shutdown.
@@ -143,6 +142,7 @@ public class StreamServer implements ServerInterface {
     }
   }
 
+  @Override
   public void stop() {
     if (channelFuture != null) {
       channelFuture.channel().close().awaitUninterruptibly(10L, TimeUnit.SECONDS);
