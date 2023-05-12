@@ -160,7 +160,7 @@ public class SortWriteBufferManager<K, V> {
       memoryLock.unlock();
     }
 
-    buffers.computeIfAbsent(partitionId, key -> {
+    buffers.computeIfAbsent(partitionId, k -> {
       SortWriteBuffer<K, V> sortWriterBuffer = new SortWriteBuffer(
               partitionId, comparator, maxSegmentSize, keySerializer, valSerializer);
       waitSendBuffers.add(sortWriterBuffer);
