@@ -18,6 +18,7 @@
 package org.apache.spark.shuffle.writer;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -206,16 +207,18 @@ public class WriteBufferManager extends MemoryConsumer {
     List<ShuffleBlockInfo> result = Lists.newArrayList();
     long dataSize = 0;
     long memoryUsed = 0;
-    for (Entry<Integer, WriterBuffer> entry : buffers.entrySet()) {
+    Iterator<Entry<Integer, WriterBuffer>> iterator = buffers.entrySet().iterator();
+    while (iterator.hasNext()) {
+      Entry<Integer, WriterBuffer>  entry = iterator.next();
       WriterBuffer wb = entry.getValue();
       dataSize += wb.getDataLength();
       memoryUsed += wb.getMemoryUsed();
       result.add(createShuffleBlock(entry.getKey(), wb));
+      iterator.remove();
       copyTime += wb.getCopyTime();
     }
     LOG.info("Flush total buffer for shuffleId[" + shuffleId + "] with allocated["
         + allocatedBytes + "], dataSize[" + dataSize + "], memoryUsed[" + memoryUsed + "]");
-    buffers.clear();
     return result;
   }
 
