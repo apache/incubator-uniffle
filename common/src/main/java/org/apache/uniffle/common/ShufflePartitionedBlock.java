@@ -43,7 +43,7 @@ public class ShufflePartitionedBlock {
     this.blockId = blockId;
     this.uncompressLength = uncompressLength;
     this.taskAttemptId = taskAttemptId;
-    this.data = Unpooled.wrappedBuffer(data);
+    this.data = data == null ? Unpooled.EMPTY_BUFFER : Unpooled.wrappedBuffer(data);
   }
 
   public ShufflePartitionedBlock(
