@@ -544,7 +544,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         groupedPartitions.get(ssi).add(partitionIdx);
       }
       if (CollectionUtils.isNotEmpty(partitionToBlockIds.get(partitionIdx))) {
-        partitionReportTracker.computeIfAbsent(partitionIdx, key -> 0);
+        partitionReportTracker.putIfAbsent(partitionIdx, 0);
       }
     }
 
@@ -630,7 +630,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       ShuffleServerInfo shuffleServerInfo = entry.getKey();
       Set<Integer> requestPartitions = Sets.newHashSet();
       for (Integer partitionId : entry.getValue()) {
-        partitionReadSuccess.computeIfAbsent(partitionId, key -> 0);
+        partitionReadSuccess.putIfAbsent(partitionId, 0);
         if (partitionReadSuccess.get(partitionId) < replicaRead) {
           requestPartitions.add(partitionId);
         }

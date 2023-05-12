@@ -241,7 +241,7 @@ public class WriteBufferManager extends MemoryConsumer {
 
   // it's run in single thread, and is not thread safe
   private int getNextSeqNo(int partitionId) {
-    partitionToSeqNo.computeIfAbsent(partitionId, key -> 0);
+    partitionToSeqNo.putIfAbsent(partitionId, 0);
     int seqNo = partitionToSeqNo.get(partitionId);
     partitionToSeqNo.put(partitionId, seqNo + 1);
     return seqNo;
