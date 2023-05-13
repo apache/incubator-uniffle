@@ -276,11 +276,9 @@ public class ShuffleFlushManager {
     if (blocks == null || blocks.size() == 0) {
       return;
     }
-    if (!committedBlockIds.containsKey(appId)) {
-      committedBlockIds.putIfAbsent(appId, JavaUtils.newConcurrentMap());
-    }
+    committedBlockIds.computeIfAbsent(appId, key -> JavaUtils.newConcurrentMap());
     Map<Integer, Roaring64NavigableMap> shuffleToBlockIds = committedBlockIds.get(appId);
-    shuffleToBlockIds.putIfAbsent(shuffleId, Roaring64NavigableMap.bitmapOf());
+    shuffleToBlockIds.computeIfAbsent(shuffleId, key -> Roaring64NavigableMap.bitmapOf());
     Roaring64NavigableMap bitmap = shuffleToBlockIds.get(shuffleId);
     synchronized (bitmap) {
       for (ShufflePartitionedBlock spb : blocks) {
