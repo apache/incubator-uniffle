@@ -163,7 +163,6 @@ public class ShuffleBuffer {
       updateBufferSegmentsAndResultBlocks(
           lastBlockId, readBufferSize, bufferSegments, readBlocks, expectedTaskIds);
       if (!bufferSegments.isEmpty()) {
-        int length = calculateDataLength(bufferSegments);
         CompositeByteBuf byteBuf = Unpooled.compositeBuffer();
         // copy result data
         updateShuffleData(readBlocks, byteBuf);
