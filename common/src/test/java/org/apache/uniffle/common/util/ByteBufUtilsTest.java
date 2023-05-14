@@ -18,6 +18,7 @@
 package org.apache.uniffle.common.util;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.Test;
 
@@ -42,5 +43,22 @@ public class ByteBufUtilsTest {
     byteBuf.clear();
     ByteBufUtils.writeLengthAndString(byteBuf, null);
     assertNull(ByteBufUtils.readLengthAndString(byteBuf));
+
+    byteBuf.clear();
+    ByteBufUtils.writeLengthAndString(byteBuf, expectedString);
+    ByteBuf byteBuf1 = Unpooled.buffer(100);
+    ByteBufUtils.writeLengthAndString(byteBuf1, expectedString);
+    final int expectedLength = byteBuf.readableBytes() + byteBuf1.readableBytes();
+    CompositeByteBuf compositeByteBuf = Unpooled.compositeBuffer();
+    compositeByteBuf.addComponent(true, byteBuf);
+    compositeByteBuf.addComponent(true, byteBuf1);
+
+    ByteBuf res = Unpooled.buffer(100);
+    ByteBufUtils.copyByteBuf(compositeByteBuf, res);
+    assertEquals(expectedLength, res.readableBytes() - Integer.BYTES);
+
+    res.clear();
+    ByteBufUtils.copyByteBuf(compositeByteBuf, res);
+    assertEquals(expectedLength, res.readableBytes()  - Integer.BYTES);
   }
 }

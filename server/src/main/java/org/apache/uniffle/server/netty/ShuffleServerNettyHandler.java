@@ -351,7 +351,7 @@ public class ShuffleServerNettyHandler extends BaseMessageHandler {
         LOG.info("Successfully getShuffleData cost {} ms for shuffle"
             + " data with {}", readTime, requestInfo);
         response = new GetLocalShuffleDataResponse(req.getRequestId(),
-            status, msg, Unpooled.wrappedBuffer(sdr.getDataBuffer()));
+            status, msg, sdr.getDataBuf());
       } catch (Exception e) {
         status = StatusCode.INTERNAL_ERROR;
         msg = "Error happened when get shuffle data for " + requestInfo + ", " + e.getMessage();

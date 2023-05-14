@@ -244,7 +244,7 @@ public class ShuffleBuffer {
     for (ShufflePartitionedBlock block : readBlocks) {
       // fill shuffle data
       try {
-        data.addComponent(block.getData().retain());
+        data.addComponent(true, block.getData().retain());
       } catch (Exception e) {
         LOG.error("Unexpected exception for System.arraycopy, length["
             + block.getLength() + "], offset["
