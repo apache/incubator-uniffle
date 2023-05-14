@@ -55,6 +55,9 @@ public class RssTezUtils {
   public static final String COLON_DELIMITER = ":";
   public static final String COMMA_DELIMITER = ",";
 
+  private RssTezUtils(){
+  }
+
   public static ShuffleWriteClient createShuffleClient(Configuration conf) {
     int heartBeatThreadNum = conf.getInt(RssTezConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM,
         RssTezConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM_DEFAULT_VALUE);
@@ -364,7 +367,7 @@ public class RssTezUtils {
       int taskId = RssTezUtils.taskIdStrToTaskId(pathComponent);
       // There can be multiple successful attempts on same map task.
       // So we only need to accept one of them.
-      LOG.info("----fetchAllRssTaskIds, contains:{}", mapIndexBitmap.contains(taskId));
+      LOG.info("FetchAllRssTaskIds, taskId:{}, is contains:{}", taskId, mapIndexBitmap.contains(taskId));
       if (!mapIndexBitmap.contains(taskId)) {
         taskIdBitmap.addLong(taskId);
 
@@ -372,12 +375,12 @@ public class RssTezUtils {
                 + "totalMapsCount:{}, taskId: {} ",
             successMapTaskAttempts.size(), totalMapsCount, appAttemptId, mapIndex, totalMapsCount, taskId);
 
-        if (mapIndex < totalMapsCount) {  // 上游map task的序号，应该 < 总的map task数(包括失败等map task数)
+        if (mapIndex < totalMapsCount) {  // up-stream map task index should < total task number(including failed task)
           mapIndexBitmap.addLong(taskId);
         } else {
 
-          LOG.error("---sssssuccessMapTaskAttempts:{}, totoMapCoutn:{}, appAtemptId:{}, mapInde:{}, totalMapcounts:{} ",
-              successMapTaskAttempts, totalMapsCount,appAttemptId, mapIndex, totalMapsCount);
+          LOG.error("SuccessMapTaskAttempts:{}, totalMapsCount:{}, appAttemptId:{}, mapIndex:{}, totalMapsCount:{} ",
+              successMapTaskAttempts, totalMapsCount, appAttemptId, mapIndex, totalMapsCount);
 
           LOG.error(inputAttemptIdentifier + " has overflowed mapIndex");
           throw new IllegalStateException(errMsg);

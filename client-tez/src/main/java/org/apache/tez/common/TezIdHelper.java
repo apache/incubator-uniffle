@@ -25,11 +25,4 @@ public class TezIdHelper implements IdHelper {
   public long getTaskAttemptId(long blockId) {
     return RssTezUtils.getTaskAttemptId(blockId);
   }
-
-  public static void main(String[] args) throws Exception {
-    TezIdHelper tezIdHelper = new TezIdHelper();
-    System.out.println(tezIdHelper.getTaskAttemptId(27262976));
-    System.out.println(tezIdHelper.getTaskAttemptId(27262977));
-    System.out.println(RssTezUtils.taskIdStrToTaskId("attempt_1680867852986_0012_1_01_000000_0_10003"));
-  }
 }
