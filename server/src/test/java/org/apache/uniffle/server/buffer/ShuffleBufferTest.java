@@ -28,6 +28,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 
@@ -603,7 +604,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     int offset = 0;
     for (ShufflePartitionedData spd : spds) {
       ShufflePartitionedBlock block = spd.getBlockList()[0];
-      System.arraycopy(block.getData(), 0, expectedData, offset, block.getLength());
+      ByteBufUtils.readBytes(block.getData(), expectedData, offset, block.getLength());
       offset += block.getLength();
     }
     return expectedData;

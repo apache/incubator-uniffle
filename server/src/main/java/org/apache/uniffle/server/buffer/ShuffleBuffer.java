@@ -25,6 +25,8 @@ import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -162,10 +164,10 @@ public class ShuffleBuffer {
           lastBlockId, readBufferSize, bufferSegments, readBlocks, expectedTaskIds);
       if (!bufferSegments.isEmpty()) {
         int length = calculateDataLength(bufferSegments);
-        byte[] data = new byte[length];
+        CompositeByteBuf byteBuf = Unpooled.compositeBuffer();
         // copy result data
-        updateShuffleData(readBlocks, data);
-        return new ShuffleDataResult(data, bufferSegments);
+        updateShuffleData(readBlocks, byteBuf);
+        return new ShuffleDataResult(byteBuf, bufferSegments);
       }
     } catch (Exception e) {
       LOG.error("Exception happened when getShuffleData in buffer", e);
@@ -238,16 +240,16 @@ public class ShuffleBuffer {
     return bufferSegment.getOffset() + bufferSegment.getLength();
   }
 
-  private void updateShuffleData(List<ShufflePartitionedBlock> readBlocks, byte[] data) {
+  private void updateShuffleData(List<ShufflePartitionedBlock> readBlocks, CompositeByteBuf data) {
     int offset = 0;
     for (ShufflePartitionedBlock block : readBlocks) {
       // fill shuffle data
       try {
-        System.arraycopy(block.getData(), 0, data, offset, block.getLength());
+        data.addComponent(block.getData().retain());
       } catch (Exception e) {
         LOG.error("Unexpected exception for System.arraycopy, length["
             + block.getLength() + "], offset["
-            + offset + "], dataLength[" + data.length + "]", e);
+            + offset + "], dataLength[" + data.capacity() + "]", e);
         throw e;
       }
       offset += block.getLength();
