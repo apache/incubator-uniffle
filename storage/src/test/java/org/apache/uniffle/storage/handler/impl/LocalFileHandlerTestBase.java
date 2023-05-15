@@ -59,6 +59,7 @@ public class LocalFileHandlerTestBase {
 
   public static void writeTestData(List<ShufflePartitionedBlock> blocks, ShuffleWriteHandler handler,
       Map<Long, byte[]> expectedData, Set<Long> expectedBlockIds) throws Exception {
+    blocks.forEach(block -> block.getData().retain());
     handler.write(blocks);
     blocks.forEach(block -> expectedBlockIds.add(block.getBlockId()));
     blocks.forEach(block -> expectedData.put(block.getBlockId(), ByteBufUtils.readBytes(block.getData())));
