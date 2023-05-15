@@ -187,7 +187,7 @@ public class SimpleClusterManager implements ClusterManager {
     try (BufferedReader br = new BufferedReader(new InputStreamReader(fsDataInputStream, StandardCharsets.UTF_8))) {
       String line;
       while ((line = br.readLine()) != null) {
-        if (!StringUtils.isEmpty(line)) {
+        if (!StringUtils.isEmpty(line) && !line.trim().startsWith("#")) {
           nodes.add(line.trim());
         }
       }
@@ -210,7 +210,7 @@ public class SimpleClusterManager implements ClusterManager {
     }
     // add node to related tags
     for (String tag : tags) {
-      tagToNodes.putIfAbsent(tag, Sets.newConcurrentHashSet());
+      tagToNodes.computeIfAbsent(tag, key -> Sets.newConcurrentHashSet());
       tagToNodes.get(tag).add(node);
     }
   }
@@ -287,7 +287,7 @@ public class SimpleClusterManager implements ClusterManager {
   private ShuffleServerInternalGrpcClient getShuffleServerClient(ServerNode serverNode) {
     try {
       return clientCache.get(serverNode,
-              () -> new ShuffleServerInternalGrpcClient(serverNode.getIp(), serverNode.getGrpcPort()));
+          () -> new ShuffleServerInternalGrpcClient(serverNode.getIp(), serverNode.getGrpcPort()));
     } catch (ExecutionException e) {
       throw new RssException(e);
     }

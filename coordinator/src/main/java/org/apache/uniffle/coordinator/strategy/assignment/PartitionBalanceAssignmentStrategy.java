@@ -83,17 +83,19 @@ public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrate
       List<ServerNode> nodes = clusterManager.getServerList(requiredTags);
       Map<ServerNode, PartitionAssignmentInfo> newPartitionInfos = JavaUtils.newConcurrentMap();
       for (ServerNode node : nodes) {
-        PartitionAssignmentInfo partitionInfo;
-        if (serverToPartitions.containsKey(node)) {
-          partitionInfo = serverToPartitions.get(node);
-          if (partitionInfo.getTimestamp() < node.getTimestamp()) {
-            partitionInfo.resetPartitionNum();
-            partitionInfo.setTimestamp(node.getTimestamp());
+        newPartitionInfos.computeIfAbsent(node, key -> {
+          PartitionAssignmentInfo partitionInfo;
+          if (serverToPartitions.containsKey(node)) {
+            partitionInfo = serverToPartitions.get(node);
+            if (partitionInfo.getTimestamp() < node.getTimestamp()) {
+              partitionInfo.resetPartitionNum();
+              partitionInfo.setTimestamp(node.getTimestamp());
+            }
+          } else {
+            partitionInfo = new PartitionAssignmentInfo();
           }
-        } else {
-          partitionInfo = new PartitionAssignmentInfo();
-        }
-        newPartitionInfos.putIfAbsent(node, partitionInfo);
+          return partitionInfo;
+        });
       }
       serverToPartitions = newPartitionInfos;
       int averagePartitions = totalPartitionNum * replica / clusterManager.getShuffleNodesMax();

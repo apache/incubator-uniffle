@@ -69,6 +69,9 @@ import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
+import static org.apache.uniffle.server.ShuffleServerConf.CLIENT_MAX_CONCURRENCY_LIMITATION_OF_ONE_PARTITION;
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
+
 public class ShuffleTaskManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleTaskManager.class);
@@ -177,7 +180,8 @@ public class ShuffleTaskManager {
         partitionRanges,
         remoteStorageInfo,
         user,
-        ShuffleDataDistributionType.NORMAL
+        ShuffleDataDistributionType.NORMAL,
+        -1
     );
   }
 
@@ -187,11 +191,21 @@ public class ShuffleTaskManager {
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorageInfo,
       String user,
-      ShuffleDataDistributionType dataDistType) {
+      ShuffleDataDistributionType dataDistType,
+      int maxConcurrencyPerPartitionToWrite) {
     refreshAppId(appId);
-    shuffleTaskInfos.get(appId).setUser(user);
-    shuffleTaskInfos.get(appId).setDataDistType(dataDistType);
-    partitionsToBlockIds.putIfAbsent(appId, JavaUtils.newConcurrentMap());
+
+    ShuffleTaskInfo taskInfo = shuffleTaskInfos.get(appId);
+    taskInfo.setUser(user);
+    taskInfo.setSpecification(
+        ShuffleSpecification
+            .builder()
+            .maxConcurrencyPerPartitionToWrite(getMaxConcurrencyWriting(maxConcurrencyPerPartitionToWrite, conf))
+            .dataDistributionType(dataDistType)
+            .build()
+    );
+
+    partitionsToBlockIds.computeIfAbsent(appId, key -> JavaUtils.newConcurrentMap());
     for (PartitionRange partitionRange : partitionRanges) {
       shuffleBufferManager.registerBuffer(appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
     }
@@ -199,6 +213,14 @@ public class ShuffleTaskManager {
       storageManager.registerRemoteStorage(appId, remoteStorageInfo);
     }
     return StatusCode.SUCCESS;
+  }
+
+  @VisibleForTesting
+  protected static int getMaxConcurrencyWriting(int maxConcurrencyPerPartitionToWrite, ShuffleServerConf conf) {
+    if (maxConcurrencyPerPartitionToWrite > 0) {
+      return Math.min(maxConcurrencyPerPartitionToWrite, conf.get(CLIENT_MAX_CONCURRENCY_LIMITATION_OF_ONE_PARTITION));
+    }
+    return conf.get(SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION);
   }
 
   public StatusCode cacheShuffleData(
@@ -280,13 +302,13 @@ public class ShuffleTaskManager {
     if (shuffleIdToPartitions == null) {
       throw new RssException("appId[" + appId  + "] is expired!");
     }
-    if (!shuffleIdToPartitions.containsKey(shuffleId)) {
+    shuffleIdToPartitions.computeIfAbsent(shuffleId, key -> {
       Roaring64NavigableMap[] blockIds = new Roaring64NavigableMap[bitmapNum];
       for (int i = 0; i < bitmapNum; i++) {
         blockIds[i] = Roaring64NavigableMap.bitmapOf();
       }
-      shuffleIdToPartitions.putIfAbsent(shuffleId, blockIds);
-    }
+      return blockIds;
+    });
     Roaring64NavigableMap[] blockIds = shuffleIdToPartitions.get(shuffleId);
     for (Map.Entry<Integer, long[]> entry : partitionToBlockIds.entrySet()) {
       Integer partitionId = entry.getKey();

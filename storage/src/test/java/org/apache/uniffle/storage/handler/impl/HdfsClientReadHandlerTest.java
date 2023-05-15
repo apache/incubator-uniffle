@@ -92,7 +92,7 @@ public class HdfsClientReadHandlerTest extends HdfsTestBase {
         readBufferSize, expectBlockIds, processBlockIds, hadoopConf);
     try {
       ShuffleIndexResult indexResult = indexReader.readShuffleIndex();
-      assertEquals(0, indexResult.getIndexData().length % FileBasedShuffleSegment.SEGMENT_SIZE);
+      assertEquals(0, indexResult.getIndexData().remaining() % FileBasedShuffleSegment.SEGMENT_SIZE);
     } catch (Exception e) {
       fail();
     }

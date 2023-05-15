@@ -83,6 +83,7 @@ import org.apache.uniffle.shuffle.manager.ShuffleManagerGrpcService;
 import org.apache.uniffle.shuffle.manager.ShuffleManagerServerFactory;
 
 import static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_PORT;
+import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE;
 
 public class RssShuffleManager extends RssShuffleManagerBase {
 
@@ -105,6 +106,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
   private final ShuffleDataDistributionType dataDistributionType;
+  private final int maxConcurrencyPerPartitionToWrite;
   private String user;
   private String uuid;
   private Set<String> failedTaskIds = Sets.newConcurrentHashSet();
@@ -141,17 +143,20 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
     this.dynamicConfEnabled = sparkConf.get(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED);
     this.dataDistributionType = getDataDistributionType(sparkConf);
+    this.maxConcurrencyPerPartitionToWrite =
+        RssSparkConfig.toRssConf(sparkConf).get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
     long retryIntervalMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);
     int heartBeatThreadNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
     this.dataTransferPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE);
     this.dataCommitPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE);
     int unregisterThreadPoolSize = sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);
     int unregisterRequestTimeoutSec = sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC);
+    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     shuffleWriteClient = ShuffleClientFactory
         .getInstance()
         .createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum,
             dataReplica, dataReplicaWrite, dataReplicaRead, dataReplicaSkipEnabled, dataTransferPoolSize,
-            dataCommitPoolSize, unregisterThreadPoolSize, unregisterRequestTimeoutSec);
+            dataCommitPoolSize, unregisterThreadPoolSize, unregisterRequestTimeoutSec, rssConf);
     registerCoordinator();
     // fetch client conf and apply them if necessary and disable ESS
     if (isDriver && dynamicConfEnabled) {
@@ -175,7 +180,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     if (isDriver) {
       heartBeatScheduledExecutorService =
           ThreadUtils.getDaemonSingleThreadScheduledExecutor("rss-heartbeat");
-      RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
       if (rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
               && RssSparkShuffleUtils.isStageResubmitSupported()) {
         LOG.info("stage resubmit is supported and enabled");
@@ -236,6 +240,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.sparkConf = conf;
     this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
     this.dataDistributionType = RssSparkConfig.toRssConf(sparkConf).get(RssClientConf.DATA_DISTRIBUTION_TYPE);
+    this.maxConcurrencyPerPartitionToWrite =
+        RssSparkConfig.toRssConf(sparkConf).get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
     this.heartbeatInterval = sparkConf.get(RssSparkConfig.RSS_HEARTBEAT_INTERVAL);
     this.heartbeatTimeout = sparkConf.getLong(RssSparkConfig.RSS_HEARTBEAT_TIMEOUT.key(), heartbeatInterval / 2);
     this.dataReplica = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA);
@@ -267,7 +273,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             dataTransferPoolSize,
             dataCommitPoolSize,
             unregisterThreadPoolSize,
-            unregisterRequestTimeoutSec
+            unregisterRequestTimeoutSec,
+            RssSparkConfig.toRssConf(sparkConf)
         );
     this.taskToSuccessBlockIds = taskToSuccessBlockIds;
     this.taskToFailedBlockIds = taskToFailedBlockIds;
@@ -467,16 +474,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     if (!(handle instanceof RssShuffleHandle)) {
       throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
-    final String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
-    final int indexReadLimit = sparkConf.get(RssSparkConfig.RSS_INDEX_READ_LIMIT);
     RssShuffleHandle<K, C, ?> rssShuffleHandle = (RssShuffleHandle<K, C, ?>) handle;
     final int partitionNum = rssShuffleHandle.getDependency().partitioner().numPartitions();
-    long readBufferSize = sparkConf.getSizeAsBytes(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key(),
-        RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.defaultValue().get());
-    if (readBufferSize > Integer.MAX_VALUE) {
-      LOG.warn(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key() + " can support 2g as max");
-      readBufferSize = Integer.MAX_VALUE;
-    }
     int shuffleId = rssShuffleHandle.getShuffleId();
     Map<Integer, List<ShuffleServerInfo>> allPartitionToServers = rssShuffleHandle.getPartitionToServers();
     Map<Integer, List<ShuffleServerInfo>> requirePartitionToServers = allPartitionToServers.entrySet()
@@ -512,10 +511,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         context,
         rssShuffleHandle,
         shuffleRemoteStoragePath,
-        indexReadLimit,
         readerHadoopConf,
-        storageType,
-        (int) readBufferSize,
         partitionNum,
         RssUtils.generatePartitionToBitmap(blockIdBitmap, startPartition, endPartition),
         taskIdBitmap,
@@ -699,7 +695,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               shuffleId,
               entry.getValue(),
               remoteStorage,
-              dataDistributionType
+              dataDistributionType,
+              maxConcurrencyPerPartitionToWrite
           );
         });
     LOG.info("Finish register shuffleId[" + shuffleId + "] with " + (System.currentTimeMillis() - start) + " ms");

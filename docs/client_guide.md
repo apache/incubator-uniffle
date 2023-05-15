@@ -121,6 +121,7 @@ These configurations are shared by all types of clients.
 |<client_type>.rss.estimate.task.concurrency.dynamic.factor|1.0|Between 0 and 1, used to estimate task concurrency, when the client is spark, it represents how likely is this part of the resource between spark.dynamicAllocation.minExecutors and spark.dynamicAllocation.maxExecutors to be allocated, when the client is mr, it represents how likely the resources of map and reduce are satisfied. Effective when <client_type>.rss.estimate.server.assignment.enabled=true or Coordinator's rss.coordinator.select.partition.strategy is CONTINUOUS.|
 |<client_type>.rss.estimate.server.assignment.enabled|false|Support mr and spark, whether to enable estimation of the number of ShuffleServers that need to be allocated based on the number of concurrent tasks.|
 |<client_type>.rss.estimate.task.concurrency.per.server|80|It takes effect when rss.estimate.server.assignment.enabled=true, how many tasks are concurrently assigned to a ShuffleServer.|
+|<client_type>.rss.client.max.concurrency.of.per-partition.write|-|The maximum number of files that can be written concurrently to a single partition is determined. This value will only be respected by the remote shuffle server if it is greater than 0.|
 Notice:
 
 1. `<client_type>` should be `spark` or `mapreduce`

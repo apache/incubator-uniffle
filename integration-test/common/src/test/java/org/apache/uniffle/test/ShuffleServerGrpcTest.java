@@ -116,7 +116,8 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
         0,
         Lists.newArrayList(new PartitionRange(0, 1)),
         new RemoteStorageInfo(""),
-        ShuffleDataDistributionType.NORMAL
+        ShuffleDataDistributionType.NORMAL,
+        -1
     );
     shuffleWriteClient.registerApplicationInfo("application_clearResourceTest1", 500L, "user");
     shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest1", 500L);

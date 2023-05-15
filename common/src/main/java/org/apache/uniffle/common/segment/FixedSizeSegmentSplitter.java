@@ -46,28 +46,27 @@ public class FixedSizeSegmentSplitter implements SegmentSplitter {
       return Lists.newArrayList();
     }
 
-    byte[] indexData = shuffleIndexResult.getIndexData();
+    ByteBuffer indexData = shuffleIndexResult.getIndexData();
     long dataFileLen = shuffleIndexResult.getDataFileLen();
     return transIndexDataToSegments(indexData, readBufferSize, dataFileLen);
   }
 
-  private static List<ShuffleDataSegment> transIndexDataToSegments(byte[] indexData,
+  private static List<ShuffleDataSegment> transIndexDataToSegments(ByteBuffer indexData,
       int readBufferSize, long dataFileLen) {
-    ByteBuffer byteBuffer = ByteBuffer.wrap(indexData);
     List<BufferSegment> bufferSegments = Lists.newArrayList();
     List<ShuffleDataSegment> dataFileSegments = Lists.newArrayList();
     int bufferOffset = 0;
     long fileOffset = -1;
     long totalLength = 0;
 
-    while (byteBuffer.hasRemaining()) {
+    while (indexData.hasRemaining()) {
       try {
-        final long offset = byteBuffer.getLong();
-        final int length = byteBuffer.getInt();
-        final int uncompressLength = byteBuffer.getInt();
-        final long crc = byteBuffer.getLong();
-        final long blockId = byteBuffer.getLong();
-        final long taskAttemptId = byteBuffer.getLong();
+        final long offset = indexData.getLong();
+        final int length = indexData.getInt();
+        final int uncompressLength = indexData.getInt();
+        final long crc = indexData.getLong();
+        final long blockId = indexData.getLong();
+        final long taskAttemptId = indexData.getLong();
 
         // The index file is written, read and parsed sequentially, so these parsed index segments
         // index a continuous shuffle data in the corresponding data file and the first segment's

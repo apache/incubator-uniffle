@@ -44,7 +44,6 @@ import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.common.util.UnitConverter;
 
 public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionReporter {
 
@@ -69,7 +68,6 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
   private Task reduceTask; //Used for status updates
 
   private String appId;
-  private String storageType;
   private String clientType;
   private int replicaWrite;
   private int replicaRead;
@@ -78,8 +76,6 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
   private int partitionNum;
   private int partitionNumPerRange;
   private String basePath;
-  private int indexReadLimit;
-  private int readBufferSize;
   private RemoteStorageInfo remoteStorageInfo;
   private int appAttemptId;
 
@@ -102,7 +98,6 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
     // rss init
     this.appId = RssMRUtils.getApplicationAttemptId().toString();
     this.appAttemptId = RssMRUtils.getApplicationAttemptId().getAttemptId();
-    this.storageType = RssMRUtils.getString(rssJobConf, mrJobConf, RssMRConfig.RSS_STORAGE_TYPE);
     this.replicaWrite = RssMRUtils.getInt(rssJobConf, mrJobConf, RssMRConfig.RSS_DATA_REPLICA_WRITE,
         RssMRConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE);
     this.replicaRead = RssMRUtils.getInt(rssJobConf, mrJobConf, RssMRConfig.RSS_DATA_REPLICA_READ,
@@ -114,11 +109,6 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
     this.partitionNumPerRange = RssMRUtils.getInt(rssJobConf, mrJobConf, RssMRConfig.RSS_PARTITION_NUM_PER_RANGE,
         RssMRConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
     this.basePath = RssMRUtils.getString(rssJobConf, mrJobConf, RssMRConfig.RSS_REMOTE_STORAGE_PATH);
-    this.indexReadLimit = RssMRUtils.getInt(rssJobConf, mrJobConf, RssMRConfig.RSS_INDEX_READ_LIMIT,
-        RssMRConfig.RSS_INDEX_READ_LIMIT_DEFAULT_VALUE);
-    this.readBufferSize = (int)UnitConverter.byteStringAsBytes(
-        RssMRUtils.getString(rssJobConf, mrJobConf, RssMRConfig.RSS_CLIENT_READ_BUFFER_SIZE,
-            RssMRConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE));
     String remoteStorageConf = RssMRUtils.getString(rssJobConf, mrJobConf, RssMRConfig.RSS_REMOTE_STORAGE_CONF, "");
     this.remoteStorageInfo = new RemoteStorageInfo(basePath, remoteStorageConf);
     this.merger = createMergeManager(context);
@@ -193,9 +183,9 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
       JobConf readerJobConf = getRemoteConf();
       boolean expectedTaskIdsBitmapFilterEnable = serverInfoList.size() > 1;
       CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
-          appId, 0, reduceId.getTaskID().getId(), storageType, basePath, indexReadLimit, readBufferSize,
-          partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, serverInfoList,
-          readerJobConf, new MRIdHelper(), expectedTaskIdsBitmapFilterEnable, false);
+          appId, 0, reduceId.getTaskID().getId(), basePath, partitionNumPerRange,
+          partitionNum, blockIdBitmap, taskIdBitmap, serverInfoList, readerJobConf,
+          new MRIdHelper(), expectedTaskIdsBitmapFilterEnable, RssMRConfig.toRssConf(rssJobConf));
       ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
       RssFetcher fetcher = new RssFetcher(mrJobConf, reduceId, taskStatus, merger, copyPhase, reporter, metrics,
           shuffleReadClient, blockIdBitmap.getLongCardinality(), RssMRConfig.toRssConf(rssJobConf));

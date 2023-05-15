@@ -48,6 +48,8 @@ import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
+
 public class ShuffleFlushManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleFlushManager.class);
@@ -68,7 +70,6 @@ public class ShuffleFlushManager {
   private final BlockingQueue<PendingShuffleFlushEvent> pendingEvents = Queues.newLinkedBlockingQueue();
   private final long pendingEventTimeoutSec;
   private int processPendingEventIndex = 0;
-  private final int maxConcurrencyOfSingleOnePartition;
 
   public ShuffleFlushManager(ShuffleServerConf shuffleServerConf, ShuffleServer shuffleServer,
                              StorageManager storageManager) {
@@ -79,8 +80,6 @@ public class ShuffleFlushManager {
     retryMax = shuffleServerConf.getInteger(ShuffleServerConf.SERVER_WRITE_RETRY_MAX);
     storageType = shuffleServerConf.get(RssBaseConf.RSS_STORAGE_TYPE);
     storageDataReplica = shuffleServerConf.get(RssBaseConf.RSS_STORAGE_DATA_REPLICA);
-    this.maxConcurrencyOfSingleOnePartition =
-        shuffleServerConf.get(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION);
 
     storageBasePaths = RssUtils.getConfiguredLocalDirs(shuffleServerConf);
     pendingEventTimeoutSec = shuffleServerConf.getLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC);
@@ -210,6 +209,7 @@ public class ShuffleFlushManager {
             shuffleServer.getShuffleTaskManager().getUserByAppId(event.getAppId()),
             StringUtils.EMPTY
         );
+        int maxConcurrencyPerPartitionToWrite = getMaxConcurrencyPerPartitionWrite(event);
         CreateShuffleWriteHandlerRequest request = new CreateShuffleWriteHandlerRequest(
             storageType,
             event.getAppId(),
@@ -221,7 +221,7 @@ public class ShuffleFlushManager {
             hadoopConf,
             storageDataReplica,
             user,
-            maxConcurrencyOfSingleOnePartition);
+            maxConcurrencyPerPartitionToWrite);
         ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
         writeSuccess = storageManager.write(storage, handler, event);
         if (writeSuccess) {
@@ -258,6 +258,16 @@ public class ShuffleFlushManager {
     }
   }
 
+  private int getMaxConcurrencyPerPartitionWrite(ShuffleDataFlushEvent event) {
+    ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(event.getAppId());
+    // For some tests.
+    if (taskInfo == null) {
+      LOG.warn("Should not happen that shuffle task info of {} is null.", event.getAppId());
+      return shuffleServerConf.get(SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION);
+    }
+    return taskInfo.getMaxConcurrencyPerPartitionToWrite();
+  }
+
   private String getShuffleServerId() {
     return shuffleServerConf.getString(ShuffleServerConf.SHUFFLE_SERVER_ID, "shuffleServerId");
   }
@@ -266,11 +276,9 @@ public class ShuffleFlushManager {
     if (blocks == null || blocks.size() == 0) {
       return;
     }
-    if (!committedBlockIds.containsKey(appId)) {
-      committedBlockIds.putIfAbsent(appId, JavaUtils.newConcurrentMap());
-    }
+    committedBlockIds.computeIfAbsent(appId, key -> JavaUtils.newConcurrentMap());
     Map<Integer, Roaring64NavigableMap> shuffleToBlockIds = committedBlockIds.get(appId);
-    shuffleToBlockIds.putIfAbsent(shuffleId, Roaring64NavigableMap.bitmapOf());
+    shuffleToBlockIds.computeIfAbsent(shuffleId, key -> Roaring64NavigableMap.bitmapOf());
     Roaring64NavigableMap bitmap = shuffleToBlockIds.get(shuffleId);
     synchronized (bitmap) {
       for (ShufflePartitionedBlock spb : blocks) {

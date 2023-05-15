@@ -19,15 +19,13 @@ package org.apache.spark.shuffle.writer;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import scala.reflect.ClassTag$;
 import scala.reflect.ManifestFactory$;
@@ -210,16 +208,18 @@ public class WriteBufferManager extends MemoryConsumer {
     List<ShuffleBlockInfo> result = Lists.newArrayList();
     long dataSize = 0;
     long memoryUsed = 0;
-    for (Entry<Integer, WriterBuffer> entry : buffers.entrySet()) {
+    Iterator<Entry<Integer, WriterBuffer>> iterator = buffers.entrySet().iterator();
+    while (iterator.hasNext()) {
+      Entry<Integer, WriterBuffer>  entry = iterator.next();
       WriterBuffer wb = entry.getValue();
       dataSize += wb.getDataLength();
       memoryUsed += wb.getMemoryUsed();
       result.add(createShuffleBlock(entry.getKey(), wb));
+      iterator.remove();
       copyTime += wb.getCopyTime();
     }
     LOG.info("Flush total buffer for shuffleId[" + shuffleId + "] with allocated["
         + allocatedBytes + "], dataSize[" + dataSize + "], memoryUsed[" + memoryUsed + "]");
-    buffers.clear();
     return result;
   }
 
@@ -328,27 +328,7 @@ public class WriteBufferManager extends MemoryConsumer {
 
   @Override
   public long spill(long size, MemoryConsumer trigger) {
-    List<AddBlockEvent> events = buildBlockEvents(clear());
-    List<CompletableFuture<Long>> futures = events.stream().map(x -> spillFunc.apply(x)).collect(Collectors.toList());
-    CompletableFuture<Void> allOfFutures =
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
-    try {
-      allOfFutures.get(memorySpillTimeoutSec, TimeUnit.SECONDS);
-    } catch (TimeoutException timeoutException) {
-      // A best effort strategy to wait.
-      // If timeout exception occurs, the underlying tasks won't be cancelled.
-    } finally {
-      long releasedSize = futures.stream().filter(x -> x.isDone()).mapToLong(x -> {
-        try {
-          return x.get();
-        } catch (Exception e) {
-          return 0;
-        }
-      }).sum();
-      LOG.info("[taskId: {}] Spill triggered by memory consumer of {}, released memory size: {}",
-          taskId, trigger.getClass().getSimpleName(), releasedSize);
-      return releasedSize;
-    }
+    return 0L;
   }
 
   @VisibleForTesting

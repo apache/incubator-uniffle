@@ -84,6 +84,7 @@ import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -111,6 +112,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private final int unregisterThreadPoolSize;
   private final int unregisterRequestTimeSec;
   private Set<ShuffleServerInfo> defectiveServers;
+  private RssConf rssConf;
 
   public ShuffleWriteClientImpl(
       String clientType,
@@ -125,6 +127,25 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int dataCommitPoolSize,
       int unregisterThreadPoolSize,
       int unregisterRequestTimeSec) {
+    this(clientType, retryMax, retryIntervalMax, heartBeatThreadNum, replica, replicaWrite, replicaRead,
+        replicaSkipEnabled, dataTransferPoolSize, dataCommitPoolSize, unregisterThreadPoolSize,
+        unregisterRequestTimeSec, new RssConf());
+  }
+
+  public ShuffleWriteClientImpl(
+      String clientType,
+      int retryMax,
+      long retryIntervalMax,
+      int heartBeatThreadNum,
+      int replica,
+      int replicaWrite,
+      int replicaRead,
+      boolean replicaSkipEnabled,
+      int dataTransferPoolSize,
+      int dataCommitPoolSize,
+      int unregisterThreadPoolSize,
+      int unregisterRequestTimeSec,
+      RssConf rssConf) {
     this.clientType = clientType;
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
@@ -141,6 +162,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     if (replica > 1) {
       defectiveServers = Sets.newConcurrentHashSet();
     }
+    this.rssConf = rssConf;
   }
 
   private boolean sendShuffleDataAsync(
@@ -408,7 +430,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int shuffleId,
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorage,
-      ShuffleDataDistributionType dataDistributionType) {
+      ShuffleDataDistributionType dataDistributionType,
+      int maxConcurrencyPerPartitionToWrite) {
     String user = null;
     try {
       user = UserGroupInformation.getCurrentUser().getShortUserName();
@@ -417,7 +440,15 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
 
     RssRegisterShuffleRequest request =
-        new RssRegisterShuffleRequest(appId, shuffleId, partitionRanges, remoteStorage, user, dataDistributionType);
+        new RssRegisterShuffleRequest(
+            appId,
+            shuffleId,
+            partitionRanges,
+            remoteStorage,
+            user,
+            dataDistributionType,
+            maxConcurrencyPerPartitionToWrite
+        );
     RssRegisterShuffleResponse response = getShuffleServerClient(shuffleServerInfo).registerShuffle(request);
 
     String msg = "Error happened when registerShuffle with appId[" + appId + "], shuffleId[" + shuffleId
@@ -671,7 +702,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           callableList.add(() -> {
             try {
               ShuffleServerClient client =
-                  ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
+                  ShuffleServerClientFactory.getInstance().getShuffleServerClient(
+                      clientType, shuffleServerInfo, rssConf);
               RssAppHeartBeatResponse response = client.sendHeartBeat(request);
               if (response.getStatusCode() != StatusCode.SUCCESS) {
                 LOG.warn("Failed to send heartbeat to " + shuffleServerInfo);
@@ -736,7 +768,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           callableList.add(() -> {
             try {
               ShuffleServerClient client =
-                  ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
+                  ShuffleServerClientFactory.getInstance().getShuffleServerClient(
+                      clientType, shuffleServerInfo, rssConf);
               RssUnregisterShuffleResponse response = client.unregisterShuffle(request);
               if (response.getStatusCode() != StatusCode.SUCCESS) {
                 LOG.warn("Failed to unregister shuffle to " + shuffleServerInfo);
@@ -789,7 +822,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @VisibleForTesting
   public ShuffleServerClient getShuffleServerClient(ShuffleServerInfo shuffleServerInfo) {
-    return ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
+    return ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo, rssConf);
   }
 
   @VisibleForTesting

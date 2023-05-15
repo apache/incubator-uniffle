@@ -302,7 +302,8 @@ public class SortWriteBufferManagerTest {
         int shuffleId,
         List<PartitionRange> partitionRanges,
         RemoteStorageInfo remoteStorage,
-        ShuffleDataDistributionType distributionType) {
+        ShuffleDataDistributionType distributionType,
+        int maxConcurrencyPerPartitionToWrite) {
     }
 
     @Override

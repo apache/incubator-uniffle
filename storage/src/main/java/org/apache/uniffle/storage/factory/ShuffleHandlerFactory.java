@@ -58,7 +58,6 @@ public class ShuffleHandlerFactory {
     return INSTANCE;
   }
 
-
   public ClientReadHandler createShuffleReadHandler(CreateShuffleReadHandlerRequest request) {
     if (CollectionUtils.isEmpty(request.getShuffleServerInfoList())) {
       throw new RssException("Shuffle servers should not be empty!");
@@ -118,7 +117,7 @@ public class ShuffleHandlerFactory {
 
   private ClientReadHandler getMemoryClientReadHandler(CreateShuffleReadHandlerRequest request, ShuffleServerInfo ssi) {
     ShuffleServerClient shuffleServerClient = ShuffleServerClientFactory.getInstance().getShuffleServerClient(
-        ClientType.GRPC.name(), ssi);
+        ClientType.GRPC.name(), ssi, request.getClientConf());
     Roaring64NavigableMap expectTaskIds = null;
     if (request.isExpectedTaskIdsBitmapFilterEnable()) {
       Roaring64NavigableMap realExceptBlockIds = RssUtils.cloneBitMap(request.getExpectBlockIds());
@@ -139,7 +138,7 @@ public class ShuffleHandlerFactory {
   private ClientReadHandler getLocalfileClientReaderHandler(CreateShuffleReadHandlerRequest request,
                                                             ShuffleServerInfo ssi) {
     ShuffleServerClient shuffleServerClient = ShuffleServerClientFactory.getInstance().getShuffleServerClient(
-        ClientType.GRPC.name(), ssi);
+        ClientType.GRPC.name(), ssi, request.getClientConf());
     return new LocalFileClientReadHandler(
         request.getAppId(), request.getShuffleId(), request.getPartitionId(),
         request.getIndexReadLimit(), request.getPartitionNumPerRange(), request.getPartitionNum(),

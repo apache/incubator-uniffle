@@ -76,9 +76,11 @@ public class ZstdCodec extends Codec {
         return Zstd.compress(dest, src.duplicate(), compressionLevel);
       }
       if (!src.isDirect() && !dest.isDirect()) {
-        long compressedSize = Zstd.compressByteArray(dest.array(), dest.position(), dest.remaining(), src.array(),
+        int destOff = dest.position();
+        int compressedSize = (int) Zstd.compressByteArray(dest.array(), dest.position(), dest.remaining(), src.array(),
             src.position(), src.remaining(), compressionLevel);
-        return (int) compressedSize;
+        dest.position(destOff + compressedSize);
+        return compressedSize;
       }
     } catch (Exception e) {
       throw new RssException("Failed to compress by Zstd", e);

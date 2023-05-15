@@ -388,7 +388,8 @@ public class FetcherTest {
         int shuffleId,
         List<PartitionRange> partitionRanges,
         RemoteStorageInfo storageType,
-        ShuffleDataDistributionType distributionType) {
+        ShuffleDataDistributionType distributionType,
+        int maxConcurrencyPerPartitionToWrite) {
 
     }
 

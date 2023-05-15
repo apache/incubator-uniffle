@@ -45,6 +45,13 @@ public class RssClientConf {
       .withDescription("The type of partition shuffle data distribution, including normal and local_order. "
           + "The default value is normal. This config is only valid in Spark3.x");
 
+  public static final ConfigOption<Integer> MAX_CONCURRENCY_PER_PARTITION_TO_WRITE = ConfigOptions
+      .key("rss.client.max.concurrency.of.per-partition.write")
+      .intType()
+      .defaultValue(0)
+      .withDescription("The max concurrency for single partition to write, the value is the max file number "
+          + "for one partition, remote shuffle server should respect this.");
+
   public static final ConfigOption<Integer> NETTY_IO_CONNECT_TIMEOUT_MS = ConfigOptions
       .key("rss.client.netty.io.connect.timeout.ms")
       .intType()
@@ -108,4 +115,21 @@ public class RssClientConf {
       .booleanType()
       .defaultValue(false)
       .withDescription("Client can use off heap memory");
+
+  public static final ConfigOption<Integer> RSS_INDEX_READ_LIMIT = ConfigOptions
+      .key("rss.index.read.limit")
+      .intType()
+      .defaultValue(500);
+
+  public static final ConfigOption<String> RSS_STORAGE_TYPE = ConfigOptions
+      .key("rss.storage.type")
+      .stringType()
+      .defaultValue("")
+      .withDescription("Supports MEMORY_LOCALFILE, MEMORY_HDFS, MEMORY_LOCALFILE_HDFS");
+
+  public static final ConfigOption<String> RSS_CLIENT_READ_BUFFER_SIZE = ConfigOptions
+      .key("rss.client.read.buffer.size")
+      .stringType()
+      .defaultValue("14m")
+      .withDescription("The max data size read from storage");
 }

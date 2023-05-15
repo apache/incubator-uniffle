@@ -154,6 +154,13 @@ echo "copy $COORDINATOR_JAR to ${COORDINATOR_JAR_DIR}"
 cp $COORDINATOR_JAR ${COORDINATOR_JAR_DIR}
 cp "${RSS_HOME}"/coordinator/target/jars/* ${COORDINATOR_JAR_DIR}
 
+CLI_JAR_DIR="${DISTDIR}/jars/cli"
+mkdir -p $CLI_JAR_DIR
+CLI_JAR="${RSS_HOME}/cli/target/cli-${VERSION}.jar"
+echo "copy $CLI_JAR to ${CLI_JAR_DIR}"
+cp $CLI_JAR ${CLI_JAR_DIR}
+cp "${RSS_HOME}"/cli/target/jars/* ${CLI_JAR_DIR}
+
 CLIENT_JAR_DIR="${DISTDIR}/jars/client"
 mkdir -p $CLIENT_JAR_DIR
 

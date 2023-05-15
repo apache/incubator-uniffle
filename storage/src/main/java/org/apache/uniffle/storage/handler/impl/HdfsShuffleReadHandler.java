@@ -84,14 +84,18 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
   protected ShuffleIndexResult readShuffleIndex() {
     long start = System.currentTimeMillis();
     try {
-      byte[] indexData = indexReader.read();
-      int segmentNumber = indexData.length / FileBasedShuffleSegment.SEGMENT_SIZE;
+      ByteBuffer indexData = null;
+      if (offHeapEnabled) {
+        indexData = indexReader.readAsByteBuffer();
+      } else {
+        indexData = ByteBuffer.wrap(indexReader.read());
+      }
+      int indexDataLength = indexData.limit() - indexData.position();
+      int segmentNumber = indexDataLength / FileBasedShuffleSegment.SEGMENT_SIZE;
       int expectedLen = segmentNumber * FileBasedShuffleSegment.SEGMENT_SIZE;
-      if (indexData.length != expectedLen) {
+      if (indexDataLength != expectedLen) {
         LOG.warn("Maybe the index file: {} is being written due to the shuffle-buffer flushing.", filePrefix);
-        byte[] indexNewData = new byte[expectedLen];
-        System.arraycopy(indexData, 0, indexNewData, 0, expectedLen);
-        indexData = indexNewData;
+        indexData.limit(expectedLen);
       }
       long dateFileLen = getDataFileLen();
       LOG.info("Read index files {}.index for {} ms", filePrefix, System.currentTimeMillis() - start);

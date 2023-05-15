@@ -58,6 +58,7 @@ jobs:
           - spark3.2.0
           - spark3.3
           - mr
+          - tez
       fail-fast: false
     name: -P${{ matrix.profile }}
     steps:

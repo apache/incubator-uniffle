@@ -140,10 +140,12 @@ public class ApplicationManager implements Closeable {
       // add remote path if not exist
       for (String path : paths) {
         if (!availableRemoteStorageInfo.containsKey(path)) {
-          remoteStoragePathRankValue.putIfAbsent(path, new RankValue(0));
-          // refreshRemoteStorage is designed without multiple thread problem
-          // metrics shouldn't be added duplicated
-          addRemoteStorageMetrics(path);
+          remoteStoragePathRankValue.computeIfAbsent(path, key -> {
+            // refreshRemoteStorage is designed without multiple thread problem
+            // metrics shouldn't be added duplicated
+            addRemoteStorageMetrics(path);
+            return new RankValue(0);
+          });
         }
         String storageHost = getStorageHost(path);
         RemoteStorageInfo rsInfo = new RemoteStorageInfo(path, confKVs.getOrDefault(storageHost, Maps.newHashMap()));
