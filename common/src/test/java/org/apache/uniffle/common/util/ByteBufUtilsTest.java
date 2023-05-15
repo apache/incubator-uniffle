@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.common.util;
 
+import java.nio.charset.StandardCharsets;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
@@ -60,5 +62,11 @@ public class ByteBufUtilsTest {
     res.clear();
     ByteBufUtils.copyByteBuf(compositeByteBuf, res);
     assertEquals(expectedLength, res.readableBytes()  - Integer.BYTES);
+
+    byteBuf.clear();
+    byte[] bytes = expectedString.getBytes(StandardCharsets.UTF_8);
+    byteBuf.writeBytes(bytes);
+    ByteBufUtils.readBytes(byteBuf, bytes, 1, byteBuf.readableBytes() - 1);
+    assertEquals("ttest_st", new String(bytes, StandardCharsets.UTF_8));
   }
 }

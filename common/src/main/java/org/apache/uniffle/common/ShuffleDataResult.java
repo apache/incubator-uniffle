@@ -24,6 +24,8 @@ import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
+import org.apache.uniffle.common.util.ByteBufUtils;
+
 public class ShuffleDataResult {
 
   private final ByteBuf data;
@@ -58,21 +60,7 @@ public class ShuffleDataResult {
     if (data.hasArray()) {
       return data.array();
     }
-    int offset = 0;
-    int length = calLength();
-    byte[] bytes = new byte[length];
-    if (data.nioBufferCount() == 1) {
-      ByteBuffer buffer = data.nioBuffer(data.readerIndex(), length);
-      buffer.get(bytes);
-    } else {
-      ByteBuffer[] buffers = data.nioBuffers(data.readerIndex(), length);
-      for (ByteBuffer buffer : buffers) {
-        int remaining = buffer.remaining();
-        buffer.get(bytes, offset, remaining);
-        offset += remaining;
-      }
-    }
-    return bytes;
+    return ByteBufUtils.readBytes(data);
   }
 
   public ByteBuf getDataBuf() {
@@ -90,13 +78,4 @@ public class ShuffleDataResult {
   public boolean isEmpty() {
     return bufferSegments == null || bufferSegments.isEmpty() || data == null || data.capacity() == 0;
   }
-
-  private int calLength() {
-    int length = 0;
-    for (BufferSegment bufferSegment : bufferSegments) {
-      length += bufferSegment.getLength();
-    }
-    return length;
-  }
-
 }
