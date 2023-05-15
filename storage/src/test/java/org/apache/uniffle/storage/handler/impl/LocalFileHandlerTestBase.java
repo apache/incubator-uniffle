@@ -63,6 +63,7 @@ public class LocalFileHandlerTestBase {
     handler.write(blocks);
     blocks.forEach(block -> expectedBlockIds.add(block.getBlockId()));
     blocks.forEach(block -> expectedData.put(block.getBlockId(), ByteBufUtils.readBytes(block.getData())));
+    blocks.forEach(block -> block.getData().release());
   }
 
   public static void validateResult(ServerReadHandler readHandler, Set<Long> expectedBlockIds,
