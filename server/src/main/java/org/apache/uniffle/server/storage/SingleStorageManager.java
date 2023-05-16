@@ -55,15 +55,6 @@ public abstract class SingleStorageManager implements StorageManager {
   public boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event) {
     String shuffleKey = RssUtils.generateShuffleKey(event.getAppId(), event.getShuffleId());
     storage.createMetadataIfNotExist(shuffleKey);
-
-    boolean locked = storage.lockShuffleShared(shuffleKey);
-    if (!locked) {
-      LOG.warn("AppId {} shuffleId {} was removed already, lock don't exist {} should be dropped,"
-          + " may leak one handler", event.getAppId(), event.getShuffleId(), event);
-      throw new IllegalStateException("AppId " + event.getAppId() + " ShuffleId " + event.getShuffleId()
-        + " was removed");
-    }
-
     try {
       long startWrite = System.currentTimeMillis();
       handler.write(event.getShuffleBlocks());
@@ -74,8 +65,6 @@ public abstract class SingleStorageManager implements StorageManager {
       LOG.warn("Exception happened when write data for " + event + ", try again", e);
       ShuffleServerMetrics.counterWriteException.inc();
       Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
-    } finally {
-      storage.unlockShuffleShared(shuffleKey);
     }
     return false;
   }

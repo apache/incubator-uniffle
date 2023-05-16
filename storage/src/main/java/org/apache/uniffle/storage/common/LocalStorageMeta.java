@@ -19,13 +19,9 @@ package org.apache.uniffle.storage.common;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.roaringbitmap.RoaringBitmap;
@@ -47,52 +43,6 @@ public class LocalStorageMeta {
   private final AtomicLong size = new AtomicLong(0L);
   private final Map<String, ShuffleMeta> shuffleMetaMap = JavaUtils.newConcurrentMap();
 
-  // todo: add ut
-  public List<String> getSortedShuffleKeys(boolean checkRead, int hint) {
-    // Filter the unread shuffle is checkRead is true
-    // Filter the remaining size is 0
-    List<Map.Entry<String, ShuffleMeta>> shuffleMetaList = shuffleMetaMap
-        .entrySet()
-        .stream()
-        .filter(e -> (!checkRead || e.getValue().isStartRead.get()) && e.getValue().getNotUploadedSize() > 0)
-        .collect(Collectors.toList());
-
-    shuffleMetaList.sort((Entry<String, ShuffleMeta> o1, Entry<String, ShuffleMeta> o2) -> {
-      long sz1 = o1.getValue().getSize().longValue();
-      long sz2 = o2.getValue().getSize().longValue();
-      return Long.compare(sz2, sz1);
-    });
-
-    return shuffleMetaList
-        .subList(0, Math.min(shuffleMetaList.size(), hint))
-        .stream()
-        .map(Entry::getKey).collect(Collectors.toList());
-  }
-
-  public RoaringBitmap getNotUploadedPartitions(String shuffleKey) {
-    ShuffleMeta shuffleMeta = getShuffleMeta(shuffleKey);
-    if (shuffleMeta == null) {
-      return RoaringBitmap.bitmapOf();
-    }
-
-    RoaringBitmap partitionBitmap;
-    RoaringBitmap uploadedPartitionBitmap;
-    synchronized (shuffleMeta.partitionBitmap) {
-      partitionBitmap = shuffleMeta.partitionBitmap.clone();
-    }
-    synchronized (shuffleMeta.uploadedPartitionBitmap) {
-      uploadedPartitionBitmap = shuffleMeta.uploadedPartitionBitmap.clone();
-    }
-    for (int partition : uploadedPartitionBitmap) {
-      partitionBitmap.remove(partition);
-    }
-    return partitionBitmap;
-  }
-
-  public long getNotUploadedSize(String shuffleKey) {
-    ShuffleMeta shuffleMeta = getShuffleMeta(shuffleKey);
-    return shuffleMeta == null ? 0 : shuffleMeta.getNotUploadedSize();
-  }
 
   public void updateDiskSize(long delta) {
     size.addAndGet(delta);
@@ -105,27 +55,10 @@ public class LocalStorageMeta {
     }
   }
 
-  public void updateUploadedShuffleSize(String shuffleKey, long delta) {
-    ShuffleMeta shuffleMeta = getShuffleMeta(shuffleKey);
-    if (shuffleMeta != null) {
-      shuffleMeta.uploadedSize.addAndGet(delta);
-    }
-  }
-
   public void addShufflePartitionList(String shuffleKey, List<Integer> partitions) {
     ShuffleMeta shuffleMeta = getShuffleMeta(shuffleKey);
     if (shuffleMeta != null) {
       RoaringBitmap bitmap = shuffleMeta.partitionBitmap;
-      synchronized (bitmap) {
-        partitions.forEach(bitmap::add);
-      }
-    }
-  }
-
-  public void addUploadedShufflePartitionList(String shuffleKey, List<Integer> partitions) {
-    ShuffleMeta shuffleMeta = getShuffleMeta(shuffleKey);
-    if (shuffleMeta != null) {
-      RoaringBitmap bitmap = shuffleMeta.uploadedPartitionBitmap;
       synchronized (bitmap) {
         partitions.forEach(bitmap::add);
       }
@@ -199,27 +132,15 @@ public class LocalStorageMeta {
     }
   }
 
-  public ReadWriteLock getLock(String shuffleKey) {
-    ShuffleMeta shuffleMeta = getShuffleMeta(shuffleKey);
-    return shuffleMeta == null ? null : shuffleMeta.getLock();
-  }
-
   // Consider that ShuffleMeta is a simple class, we keep the class ShuffleMeta as an inner class.
   private static class ShuffleMeta {
     private final AtomicLong size = new AtomicLong(0);
     private final RoaringBitmap partitionBitmap = RoaringBitmap.bitmapOf();
-    private final AtomicLong uploadedSize = new AtomicLong(0);
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final AtomicBoolean isStartRead = new AtomicBoolean(false);
-    private final RoaringBitmap uploadedPartitionBitmap = RoaringBitmap.bitmapOf();
     private final AtomicLong lastReadTs = new AtomicLong(-1L);
 
     public AtomicLong getSize() {
       return size;
-    }
-
-    public long getNotUploadedSize() {
-      return size.longValue() - uploadedSize.longValue();
     }
 
     public void markStartRead() {
@@ -230,8 +151,5 @@ public class LocalStorageMeta {
       lastReadTs.set(System.currentTimeMillis());
     }
 
-    public ReadWriteLock getLock() {
-      return lock;
-    }
   }
 }
