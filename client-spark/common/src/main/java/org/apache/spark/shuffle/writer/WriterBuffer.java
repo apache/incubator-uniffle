@@ -44,12 +44,12 @@ public class WriterBuffer {
   public void addRecord(byte[] recordBuffer, int length) {
     if (askForMemory(length)) {
       // buffer has data already, add buffer to list
-      if (bufferUsedSize > 0) {
+      if (bufferUsedSize > 0 && buffer.readableBytes() > 0) {
         compositeByteBuf.addComponent(true, buffer);
-        bufferUsedSize = 0;
       }
       int newBufferSize = Math.max(length, bufferSize);
       buffer = Unpooled.buffer(newBufferSize);
+      bufferUsedSize = 0;
       memoryUsed += newBufferSize;
     }
     buffer.writeBytes(Unpooled.wrappedBuffer(recordBuffer, 0, length));
