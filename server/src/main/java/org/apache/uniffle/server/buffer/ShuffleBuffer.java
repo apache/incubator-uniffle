@@ -25,8 +25,8 @@ import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.Unpooled;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -163,7 +163,8 @@ public class ShuffleBuffer {
       updateBufferSegmentsAndResultBlocks(
           lastBlockId, readBufferSize, bufferSegments, readBlocks, expectedTaskIds);
       if (!bufferSegments.isEmpty()) {
-        CompositeByteBuf byteBuf = Unpooled.compositeBuffer();
+        CompositeByteBuf byteBuf =
+            new CompositeByteBuf(ByteBufAllocator.DEFAULT, true, Constants.COMPOSITE_BYTE_BUF_MAX_COMPONENTS);
         // copy result data
         updateShuffleData(readBlocks, byteBuf);
         return new ShuffleDataResult(byteBuf, bufferSegments);

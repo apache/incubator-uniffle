@@ -44,16 +44,6 @@ public class TransportRequestHandler extends MessageHandler<RequestMessage> {
   }
 
   @Override
-  public void channelActive() {
-    msgHandler.channelActive(reverseClient);
-  }
-
-  @Override
-  public void channelInactive() {
-    msgHandler.channelInactive(reverseClient);
-  }
-
-  @Override
   public void handle(RequestMessage request) {
     msgHandler.receive(reverseClient, request);
   }

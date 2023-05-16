@@ -17,29 +17,12 @@
 
 package org.apache.uniffle.common.netty.handle;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.uniffle.common.netty.client.TransportClient;
 import org.apache.uniffle.common.netty.protocol.RequestMessage;
 
-public abstract class BaseMessageHandler {
+public interface BaseMessageHandler {
 
-  private static final Logger LOG = LoggerFactory.getLogger(BaseMessageHandler.class);
+  void receive(TransportClient client, RequestMessage msg);
 
-  public void receive(TransportClient client, RequestMessage msg) {
-    throw new UnsupportedOperationException();
-  }
-
-  public void channelActive(TransportClient client) {
-
-  }
-
-  public void channelInactive(TransportClient client) {
-
-  }
-
-  public void exceptionCaught(Throwable cause, TransportClient client) {
-    LOG.error("exception caught {}", client.getSocketAddress(), cause);
-  }
+  void exceptionCaught(Throwable cause, TransportClient client);
 }

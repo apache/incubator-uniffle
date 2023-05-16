@@ -59,7 +59,7 @@ import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
-public class ShuffleServerNettyHandler extends BaseMessageHandler {
+public class ShuffleServerNettyHandler implements BaseMessageHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerNettyHandler.class);
   private static final int RPC_TIMEOUT = 60000;
@@ -82,6 +82,11 @@ public class ShuffleServerNettyHandler extends BaseMessageHandler {
     } else {
       throw new RssException("Can not handle message " + msg.type());
     }
+  }
+
+  @Override
+  public void exceptionCaught(Throwable cause, TransportClient client) {
+    LOG.error("exception caught {}", client.getSocketAddress(), cause);
   }
 
   public void handleSendShuffleDataRequest(
