@@ -50,15 +50,15 @@ public class WriteBufferTest {
     wb.addRecord(serializedData, serializedDataLength);
     assertEquals(32, wb.getMemoryUsed());
     // case: data size < output buffer size, when getData(), [] + buffer with 24b = 24b
-    assertEquals(24, wb.getData().limit());
+    assertEquals(24, wb.getData().remaining());
     wb.addRecord(serializedData, serializedDataLength);
     // case: data size > output buffer size, when getData(), [1 buffer] + buffer with 12 = 36b
-    assertEquals(36, wb.getData().limit());
+    assertEquals(36, wb.getData().remaining());
     assertEquals(64, wb.getMemoryUsed());
     wb.addRecord(serializedData, serializedDataLength);
     wb.addRecord(serializedData, serializedDataLength);
     // case: data size > output buffer size, when getData(), 2 buffer + output with 12b = 60b
-    assertEquals(60, wb.getData().array().length);
+    assertEquals(60, wb.getData().remaining());
     assertEquals(96, wb.getMemoryUsed());
 
     wb = new WriterBuffer(32);
@@ -74,7 +74,7 @@ public class WriteBufferTest {
     assertEquals(99, wb.getMemoryUsed());
     // 67 + 12
     assertEquals(79, wb.getDataLength());
-    assertEquals(79, wb.getData().array().length);
+    assertEquals(79, wb.getData().remaining());
 
     wb.addRecord(serializedData, serializedDataLength);
     assertEquals(99, wb.getMemoryUsed());
