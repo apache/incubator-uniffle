@@ -44,6 +44,16 @@ public class TransportRequestHandler extends MessageHandler<RequestMessage> {
   }
 
   @Override
+  public void channelActive() {
+    logger.debug("channelActive: {}", reverseClient.getSocketAddress());
+  }
+
+  @Override
+  public void channelInactive() {
+    logger.debug("channelInactive: {}", reverseClient.getSocketAddress());
+  }
+
+  @Override
   public void handle(RequestMessage request) {
     msgHandler.receive(reverseClient, request);
   }
