@@ -29,10 +29,6 @@ public interface Storage {
 
   boolean canWrite();
 
-  boolean lockShuffleShared(String shuffleKey);
-
-  boolean unlockShuffleShared(String shuffleKey);
-
   void updateWriteMetrics(StorageWriteMetrics metrics);
 
   void updateReadMetrics(StorageReadMetrics metrics);

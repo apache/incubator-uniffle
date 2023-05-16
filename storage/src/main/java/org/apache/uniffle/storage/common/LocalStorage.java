@@ -24,7 +24,6 @@ import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.locks.ReadWriteLock;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.io.FileUtils;
@@ -102,26 +101,6 @@ public class LocalStorage extends AbstractStorage {
   }
 
   @Override
-  public boolean lockShuffleShared(String shuffleKey) {
-    ReadWriteLock lock = getLock(shuffleKey);
-    if (lock == null) {
-      return false;
-    }
-    lock.readLock().lock();
-    return true;
-  }
-
-  @Override
-  public boolean unlockShuffleShared(String shuffleKey) {
-    ReadWriteLock lock = getLock(shuffleKey);
-    if (lock == null) {
-      return false;
-    }
-    lock.readLock().unlock();
-    return true;
-  }
-
-  @Override
   public void updateWriteMetrics(StorageWriteMetrics metrics) {
     updateWrite(RssUtils.generateShuffleKey(metrics.getAppId(), metrics.getShuffleId()),
         metrics.getDataSize(),
@@ -189,15 +168,6 @@ public class LocalStorage extends AbstractStorage {
     metaData.updateShuffleLastReadTs(shuffleKey);
   }
 
-  public RoaringBitmap getNotUploadedPartitions(String key) {
-    return metaData.getNotUploadedPartitions(key);
-  }
-
-  public void updateUploadedShuffle(String shuffleKey, long size, List<Integer> partitions) {
-    metaData.updateUploadedShuffleSize(shuffleKey, size);
-    metaData.addUploadedShufflePartitionList(shuffleKey, partitions);
-  }
-
   public long getDiskSize() {
     return metaData.getDiskSize().longValue();
   }
@@ -226,38 +196,14 @@ public class LocalStorage extends AbstractStorage {
   // add the shuffle key back to the expiredShuffleKeys if get lock but fail to acquire write lock.
   public void removeResources(String shuffleKey) {
     LOG.info("Start to remove resource of {}", shuffleKey);
-    ReadWriteLock lock = metaData.getLock(shuffleKey);
-    if (lock == null) {
-      LOG.info("Ignore shuffle {} for its resource was removed already", shuffleKey);
-      return;
+    try {
+      metaData.updateDiskSize(-metaData.getShuffleSize(shuffleKey));
+      metaData.remoteShuffle(shuffleKey);
+      LOG.info("Finish remove resource of {}, disk size is {} and {} shuffle metadata",
+          shuffleKey, metaData.getDiskSize(), metaData.getShuffleMetaSet().size());
+    } catch (Exception e) {
+      LOG.error("Fail to update disk size", e);
     }
-
-    if (lock.writeLock().tryLock()) {
-      try {
-        metaData.updateDiskSize(-metaData.getShuffleSize(shuffleKey));
-        metaData.remoteShuffle(shuffleKey);
-        LOG.info("Finish remove resource of {}, disk size is {} and {} shuffle metadata",
-            shuffleKey, metaData.getDiskSize(), metaData.getShuffleMetaSet().size());
-      } catch (Exception e) {
-        LOG.error("Fail to update disk size", e);
-      } finally {
-        lock.writeLock().unlock();
-      }
-    } else {
-      LOG.info("Fail to get write lock of {}, add it back to expired shuffle queue", shuffleKey);
-    }
-  }
-
-  public ReadWriteLock getLock(String shuffleKey) {
-    return metaData.getLock(shuffleKey);
-  }
-
-  public long getNotUploadedSize(String key) {
-    return metaData.getNotUploadedSize(key);
-  }
-
-  public List<String> getSortedShuffleKeys(boolean checkRead, int num) {
-    return metaData.getSortedShuffleKeys(checkRead, num);
   }
 
   public boolean isCorrupted() {

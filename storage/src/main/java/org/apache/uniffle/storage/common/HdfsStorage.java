@@ -68,16 +68,6 @@ public class HdfsStorage extends AbstractStorage {
   }
 
   @Override
-  public boolean lockShuffleShared(String shuffleKey) {
-    return true;
-  }
-
-  @Override
-  public boolean unlockShuffleShared(String shuffleKey) {
-    return true;
-  }
-
-  @Override
   public void updateReadMetrics(StorageReadMetrics metrics) {
     // do nothing
   }
