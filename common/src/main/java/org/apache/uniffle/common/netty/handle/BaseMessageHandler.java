@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.netty.client.TransportClient;
 import org.apache.uniffle.common.netty.protocol.RequestMessage;
 
-public class BaseMessageHandler {
+public abstract class BaseMessageHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(BaseMessageHandler.class);
 
