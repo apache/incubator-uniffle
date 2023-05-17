@@ -1625,10 +1625,13 @@
       </dependencyManagement>
     </profile>
     <profile>
-      <id>tez</id>
+      <id>tez0.9</id>
       <modules>
         <module>client-tez</module>
       </modules>
+      <properties>
+        <tez.version>0.9.1.3.1.4.0-315</tez.version>
+      </properties>
       <dependencyManagement>
         <dependencies>
           <dependency>
