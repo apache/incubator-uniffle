@@ -18,7 +18,9 @@
 package org.apache.tez.common;
 
 import java.util.Map;
+import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.hadoop.conf.Configuration;
 
 import org.apache.uniffle.client.util.RssClientConfig;
@@ -144,6 +146,10 @@ public class RssTezConfig {
 
   public static final String RSS_CONF_FILE = "rss_conf.xml";
 
+  public static final String RSS_REMOTE_STORAGE_PATH =
+      TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_STORAGE_PATH;
+  public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
+      ImmutableSet.of(RSS_STORAGE_TYPE, RSS_REMOTE_STORAGE_PATH);
 
   //Whether enable test mode for the MR Client
   public static final String RSS_TEST_MODE_ENABLE = TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_TEST_MODE_ENABLE;

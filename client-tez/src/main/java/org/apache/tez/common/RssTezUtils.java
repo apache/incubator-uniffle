@@ -30,6 +30,7 @@ import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.tez.dag.records.TezTaskAttemptID;
+import org.apache.tez.runtime.api.InputContext;
 import org.apache.tez.runtime.library.api.TezRuntimeConfiguration;
 import org.apache.tez.runtime.library.common.InputAttemptIdentifier;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -55,7 +56,7 @@ public class RssTezUtils {
   public static final String COLON_DELIMITER = ":";
   public static final String COMMA_DELIMITER = ",";
 
-  private RssTezUtils(){
+  private RssTezUtils() {
   }
 
   public static ShuffleWriteClient createShuffleClient(Configuration conf) {
@@ -271,6 +272,13 @@ public class RssTezUtils {
     }
   }
 
+  public static int computeShuffleId(InputContext inputContext) {
+    int dagIdentifier = inputContext.getDagIdentifier();
+    String sourceVertexName = inputContext.getSourceVertexName();
+    String taskVertexName  = inputContext.getTaskVertexName();
+    return RssTezUtils.computeShuffleId(dagIdentifier, sourceVertexName, taskVertexName);
+  }
+
   public static int computeShuffleId(int tezDagID, String upVertexName, String downVertexName) {
     int upVertexId = mapVertexId(upVertexName);
     int downVertexId = mapVertexId(downVertexName);
@@ -280,7 +288,7 @@ public class RssTezUtils {
     return shuffleId;
   }
 
-  public static int computeShuffleId(int tezDagID, int upTezVertexID, int downTezVertexID) {
+  private static int computeShuffleId(int tezDagID, int upTezVertexID, int downTezVertexID) {
     return tezDagID * (SHUFFLE_ID_MAGIC * SHUFFLE_ID_MAGIC)  + upTezVertexID * SHUFFLE_ID_MAGIC + downTezVertexID;
   }
 
@@ -455,12 +463,13 @@ public class RssTezUtils {
   }
 
   // Map 1=0_172.19.193.152:19999,0_172.19.193.152:19999;Map 2=0_172.19.193.152:19999,1_17
-  public static void parseRssWorker(Map<Integer, Set<ShuffleServerInfo>> rssWorker, String vertexName,
+  public static void parseRssWorker(Map<Integer, Set<ShuffleServerInfo>> rssWorker, int shuffleId,
                                     String hostnameInfo) {
     LOG.info("ParseRssWorker, hostnameInfo:{}", hostnameInfo);
     for (String toVertex: hostnameInfo.split(";")) {
       LOG.info("ParseRssWorker, hostnameInffdafdso:{}", toVertex);
-      if (toVertex.startsWith(vertexName) && toVertex.split("=").length == 2) {
+      String[] splits = toVertex.split("=");
+      if (splits.length == 2 && String.valueOf(shuffleId).equals(splits[0])) {
         String workerStr = toVertex.split("=")[1];
         LOG.info("ParseRssWorker, workerStr:{}", workerStr);
         parseRssWorkerFromHostInfo(rssWorker, workerStr);
