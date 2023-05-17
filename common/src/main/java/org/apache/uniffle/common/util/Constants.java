@@ -75,4 +75,6 @@ public final class Constants {
   public static final String DEVICE_NO_SPACE_ERROR_MESSAGE = "No space left on device";
   public static final String NETTY_STREAM_SERVICE_NAME = "netty.rpc.server";
   public static final String GRPC_SERVICE_NAME = "grpc.server";
+
+  public static final int COMPOSITE_BYTE_BUF_MAX_COMPONENTS = 1024;
 }

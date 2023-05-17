@@ -54,7 +54,7 @@ public class StorageManagerFallbackStrategyTest {
     String appId = "testDefaultFallbackStrategy_appId";
     coldStorageManager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList(
-        new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, null));
+        new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
     ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
         1, appId, 1, 1, 1, 1000, blocks, null, null);
     event.increaseRetryTimes();
@@ -90,7 +90,7 @@ public class StorageManagerFallbackStrategyTest {
     String appId = "testHdfsFallbackStrategy_appId";
     coldStorageManager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList(
-        new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, null));
+        new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
     ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
         1, appId, 1, 1, 1, 1000, blocks, null, null);
     event.increaseRetryTimes();
@@ -112,7 +112,7 @@ public class StorageManagerFallbackStrategyTest {
     String appId = "testLocalFallbackStrategy_appId";
     coldStorageManager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList(
-        new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, null));
+        new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
     ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
         1, appId, 1, 1, 1, 1000, blocks, null, null);
     event.increaseRetryTimes();

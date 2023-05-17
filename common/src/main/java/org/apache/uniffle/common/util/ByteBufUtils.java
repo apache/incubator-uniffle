@@ -80,4 +80,9 @@ public class ByteBufUtils {
     buf.resetReaderIndex();
     return bytes;
   }
+
+  public static void readBytes(ByteBuf from, byte[] to, int offset, int length) {
+    from.readBytes(to, offset, length);
+    from.resetReaderIndex();
+  }
 }

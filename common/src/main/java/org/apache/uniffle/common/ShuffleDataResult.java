@@ -21,10 +21,14 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
+import org.apache.uniffle.common.util.ByteBufUtils;
 
 public class ShuffleDataResult {
 
-  private final ByteBuffer data;
+  private final ByteBuf data;
   private final List<BufferSegment> bufferSegments;
 
   public ShuffleDataResult() {
@@ -36,6 +40,11 @@ public class ShuffleDataResult {
   }
 
   public ShuffleDataResult(ByteBuffer data, List<BufferSegment> bufferSegments) {
+    this.data = data != null ? Unpooled.wrappedBuffer(data) : Unpooled.EMPTY_BUFFER;
+    this.bufferSegments = bufferSegments;
+  }
+
+  public ShuffleDataResult(ByteBuf data, List<BufferSegment> bufferSegments) {
     this.data = data;
     this.bufferSegments = bufferSegments;
   }
@@ -51,14 +60,15 @@ public class ShuffleDataResult {
     if (data.hasArray()) {
       return data.array();
     }
-    ByteBuffer dataBuffer = data.duplicate();
-    byte[] byteArray = new byte[dataBuffer.remaining()];
-    dataBuffer.get(byteArray);
-    return byteArray;
+    return ByteBufUtils.readBytes(data);
+  }
+
+  public ByteBuf getDataBuf() {
+    return data;
   }
 
   public ByteBuffer getDataBuffer() {
-    return data;
+    return data.nioBuffer();
   }
 
   public List<BufferSegment> getBufferSegments() {
@@ -68,5 +78,4 @@ public class ShuffleDataResult {
   public boolean isEmpty() {
     return bufferSegments == null || bufferSegments.isEmpty() || data == null || data.capacity() == 0;
   }
-
 }
