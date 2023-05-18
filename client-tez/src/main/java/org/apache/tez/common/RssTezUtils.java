@@ -18,6 +18,7 @@
 package org.apache.tez.common;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -52,10 +53,19 @@ public class RssTezUtils {
 
   public static final String HOST_NAME = "hostname";
 
+  public static final String PLUS_DELIMITER = "+";
   public static final String UNDERLINE_DELIMITER = "_";
-
   public static final String COLON_DELIMITER = ":";
   public static final String COMMA_DELIMITER = ",";
+
+  // constant to compute shuffle id
+  private static final int VERTEX_ID_MAPPING_MAX_ID = 500;
+  private static final String VERTEX_ID_MAPPING_MAP = "Map";
+  private static final String VERTEX_ID_MAPPING_REDUCER = "Reducer";
+  private static final int VERTEX_ID_MAPPING_MAGIC = 600;
+  private static final int SHUFFLE_ID_MAGIC = 1000;
+
+
 
   private RssTezUtils() {
   }
@@ -92,9 +102,8 @@ public class RssTezUtils {
   public static long getInitialMemoryRequirement(Configuration conf, long maxAvailableTaskMemory) {
     long initialMemRequestMb = conf.getLong(RssTezConfig.RSS_RUNTIME_IO_SORT_MB,
         RssTezConfig.RSS_DEFAULT_RUNTIME_IO_SORT_MB);
-
-    LOG.info("initialMemRequestMb is {}", initialMemRequestMb);
-    LOG.info("maxAvailableTaskMemory is {}", maxAvailableTaskMemory);
+    LOG.info("InitialMemRequestMb is {}", initialMemRequestMb);
+    LOG.info("MaxAvailableTaskMemory is {}", maxAvailableTaskMemory);
     long reqBytes = initialMemRequestMb << 20;
     Preconditions.checkArgument(initialMemRequestMb > 0 && reqBytes < maxAvailableTaskMemory,
             RssTezConfig.RSS_RUNTIME_IO_SORT_MB + initialMemRequestMb
@@ -115,9 +124,38 @@ public class RssTezUtils {
         res.add(tmp);
       }
     }
-    String str = org.apache.commons.lang.StringUtils.join(res, COMMA_DELIMITER);
+    return org.apache.commons.lang.StringUtils.join(res, COMMA_DELIMITER);
+  }
 
-    return str;
+  public static Map<String, List<String>> uniformServerToPartitions(String partitionToServers) {
+    Map<String, List<String>> serverToPartitions = new HashMap<>();
+    List<String> list;
+
+    String[] pidWithWorkerInfos = partitionToServers.split(COMMA_DELIMITER);
+    for (String pidWithWorkerInfo : pidWithWorkerInfos) {
+      String[] pidUnderLineWorkerInfo = pidWithWorkerInfo.split(UNDERLINE_DELIMITER);
+      if (serverToPartitions.containsKey(pidUnderLineWorkerInfo[1])) {
+        list = serverToPartitions.get(pidUnderLineWorkerInfo[1]);
+        list.add(pidUnderLineWorkerInfo[0]);
+      } else {
+        list = new ArrayList<>();
+        list.add(pidUnderLineWorkerInfo[0]);
+        serverToPartitions.put(pidUnderLineWorkerInfo[1], list);
+      }
+    }
+
+    return serverToPartitions;
+  }
+
+  public static String uniformServerToPartitions(Map<String, List<String>> map) {
+    List<String> res = new ArrayList<>();
+    Set<String> keySet = map.keySet();
+    for (String s : keySet) {
+      String join = org.apache.commons.lang.StringUtils.join(map.get(s), UNDERLINE_DELIMITER);
+      res.add(s + PLUS_DELIMITER + join);
+    }
+
+    return org.apache.commons.lang.StringUtils.join(res,COMMA_DELIMITER);
   }
 
   public static ApplicationAttemptId getApplicationAttemptId() {
@@ -243,6 +281,7 @@ public class RssTezUtils {
     }
   }
 
+  // compute shuffle id using
   public static int computeShuffleId(InputContext inputContext) {
     int dagIdentifier = inputContext.getDagIdentifier();
     String sourceVertexName = inputContext.getSourceVertexName();
@@ -250,6 +289,16 @@ public class RssTezUtils {
     return RssTezUtils.computeShuffleId(dagIdentifier, sourceVertexName, taskVertexName);
   }
 
+  /**
+   *
+   * @param tezDagID Get from tez InputContext, represent dag id.
+   * @param upVertexName Up stream vertex name of the task, like "Map 1" or "Reducer 2".
+   * @param downVertexName The vertex name of task, like "Map 1" or "Reducer 2".
+   * @return The shuffle id. First convert upVertexName of String type to int, by invoke mapVertexId() method,
+   * Then convert downVertexName of String type to int, by invoke mapVertexId() method.
+   * Finally compute shuffle id by pass tezDagID, upVertexId, downVertexId and invoke computeShuffleId() method.
+   * By map vertex name of String type to int type, we can compute shuffle id.
+   */
   public static int computeShuffleId(int tezDagID, String upVertexName, String downVertexName) {
     int upVertexId = mapVertexId(upVertexName);
     int downVertexId = mapVertexId(downVertexName);
@@ -259,16 +308,19 @@ public class RssTezUtils {
     return shuffleId;
   }
 
-  private static final int SHUFFLE_ID_MAGIC = 1000;
+
 
   private static int computeShuffleId(int tezDagID, int upTezVertexID, int downTezVertexID) {
     return tezDagID * (SHUFFLE_ID_MAGIC * SHUFFLE_ID_MAGIC)  + upTezVertexID * SHUFFLE_ID_MAGIC + downTezVertexID;
   }
 
-  private static final int VERTEX_ID_MAPPING_MAX_ID = 500;
-  private static final String VERTEX_ID_MAPPING_MAP = "Map";
-  private static final String VERTEX_ID_MAPPING_REDUCER = "Reducer";
-
+  /**
+   *
+   * @param vertexName: vertex name, like "Map 1" or "Reducer 2"
+   * @return Map vertex name of String type to int type.
+   * Split vertex name, get vertex type and vertex id number, if it's map vertex, then return vertex id number,
+   * else if it's reducer vertex, then add VERTEX_ID_MAPPING_MAGIC and vertex id number finally return it.
+   */
   private static int mapVertexId(String vertexName) {
     String[] ss = vertexName.split("\\s+");
     if (Integer.parseInt(ss[1]) > VERTEX_ID_MAPPING_MAX_ID) {
@@ -277,13 +329,12 @@ public class RssTezUtils {
     if (VERTEX_ID_MAPPING_MAP.equals(ss[0])) {
       return Integer.parseInt(ss[1]);
     } else if (VERTEX_ID_MAPPING_REDUCER.equals(ss[0])) {
-      return 600 + Integer.parseInt(ss[1]);
+      return VERTEX_ID_MAPPING_MAGIC + Integer.parseInt(ss[1]);
     } else {
       throw new RssException("Wrong vertex name to id mapping, vertexName:" + vertexName);
     }
   }
 
-  // 有用到这个方法
   public static long convertTaskAttemptIdToLong(TezTaskAttemptID taskAttemptID, int appAttemptId) {
     long lowBytes = taskAttemptID.getTaskID().getId();
     if (lowBytes > Constants.MAX_TASK_ATTEMPT_ID) {
@@ -349,16 +400,15 @@ public class RssTezUtils {
     return taskIdBitmap;
   }
 
-  public static final char SEPARATOR = '_';
 
   public static int taskIdStrToTaskId(String taskIdStr) {
     try {
-      int pos1 = taskIdStr.indexOf(SEPARATOR);
-      int pos2 = taskIdStr.indexOf(SEPARATOR, pos1 + 1);
-      int pos3 = taskIdStr.indexOf(SEPARATOR, pos2 + 1);
-      int pos4 = taskIdStr.indexOf(SEPARATOR, pos3 + 1);
-      int pos5 = taskIdStr.indexOf(SEPARATOR, pos4 + 1);
-      int pos6 = taskIdStr.indexOf(SEPARATOR, pos5 + 1);
+      int pos1 = taskIdStr.indexOf(UNDERLINE_DELIMITER);
+      int pos2 = taskIdStr.indexOf(UNDERLINE_DELIMITER, pos1 + 1);
+      int pos3 = taskIdStr.indexOf(UNDERLINE_DELIMITER, pos2 + 1);
+      int pos4 = taskIdStr.indexOf(UNDERLINE_DELIMITER, pos3 + 1);
+      int pos5 = taskIdStr.indexOf(UNDERLINE_DELIMITER, pos4 + 1);
+      int pos6 = taskIdStr.indexOf(UNDERLINE_DELIMITER, pos5 + 1);
       return Integer.parseInt(taskIdStr.substring(pos5 + 1, pos6));
     } catch (Exception e) {
       e.printStackTrace();
@@ -367,6 +417,7 @@ public class RssTezUtils {
     }
   }
 
+  // multiHostInfo is like:
   // 0_172.19.193.152:19999,1_172.19.193.152:19999
   private static void parseRssWorkerFromHostInfo(Map<Integer, Set<ShuffleServerInfo>> rssWorker, String multiHostInfo) {
     for (String hostInfo : multiHostInfo.split(",")) {
@@ -380,6 +431,7 @@ public class RssTezUtils {
     }
   }
 
+  // hostnameInfo is like:
   // Map 1=0_172.19.193.152:19999,0_172.19.193.152:19999;Map 2=0_172.19.193.152:19999,1_17
   public static void parseRssWorker(Map<Integer, Set<ShuffleServerInfo>> rssWorker, int shuffleId,
                                     String hostnameInfo) {

@@ -21,6 +21,7 @@ package org.apache.tez.common;
 import org.apache.uniffle.common.util.IdHelper;
 
 public class TezIdHelper implements IdHelper {
+
   @Override
   public long getTaskAttemptId(long blockId) {
     return RssTezUtils.getTaskAttemptId(blockId);
