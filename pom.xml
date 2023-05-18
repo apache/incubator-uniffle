@@ -1625,7 +1625,7 @@
       </dependencyManagement>
     </profile>
     <profile>
-      <id>tez0.9</id>
+      <id>tez</id>
       <modules>
         <module>client-tez</module>
       </modules>
