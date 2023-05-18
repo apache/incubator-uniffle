@@ -8,10 +8,9 @@ public class TezIdHelperTest {
   @Test
   public void TestTetTaskAttemptId(){
     TezIdHelper tezIdHelper = new TezIdHelper();
-    System.out.println(tezIdHelper.getTaskAttemptId(27262976));
-    System.out.println(tezIdHelper.getTaskAttemptId(27262977));
-    System.out.println(RssTezUtils.taskIdStrToTaskId("attempt_1680867852986_0012_1_01_000000_0_10003"));
-
+    assertEquals(0, tezIdHelper.getTaskAttemptId(27262976));
+    assertEquals(1, tezIdHelper.getTaskAttemptId(27262977));
+    assertEquals(0, RssTezUtils.taskIdStrToTaskId("attempt_1680867852986_0012_1_01_000000_0_10003"));
     assertEquals(tezIdHelper.getTaskAttemptId(27262976), RssTezUtils.taskIdStrToTaskId("attempt_1680867852986_0012_1_01_000000_0_10003"));
   }
 }

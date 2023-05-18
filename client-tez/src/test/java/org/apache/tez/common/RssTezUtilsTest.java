@@ -151,7 +151,18 @@ public class RssTezUtilsTest {
     }
   }
 
+  @Test
+  public void testComputeShuffleId() {
+    int dagId = 1;
+    String upVertexName = "Map 1";
+    String downVertexName = "Reducer 2";
+    assertEquals(1001602, RssTezUtils.computeShuffleId(dagId, upVertexName, downVertexName));
+  }
 
+  @Test
+  public void testTaskIdStrToTaskId() {
+    assertEquals(0, RssTezUtils.taskIdStrToTaskId("attempt_1680867852986_0012_1_01_000000_0_10003"));
+  }
 
   @Test
   public void attemptTaskIdTest() {
