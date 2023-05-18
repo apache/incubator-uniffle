@@ -18,9 +18,7 @@
 package org.apache.tez.common;
 
 import java.util.Map;
-import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.hadoop.conf.Configuration;
 
 import org.apache.uniffle.client.util.RssClientConfig;
@@ -103,7 +101,6 @@ public class RssTezConfig {
   public static final String DEFAULT_HIVE_TEZ_LOG_LEVEL = "INFO";
   public static final String DEBUG_HIVE_TEZ_LOG_LEVEL = "debug";
 
-  // reduce 相关config
   public static final String RSS_STORAGE_TYPE = TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_STORAGE_TYPE;
 
   public static final String RSS_DYNAMIC_CLIENT_CONF_ENABLED =
@@ -148,10 +145,8 @@ public class RssTezConfig {
 
   public static final String RSS_REMOTE_STORAGE_PATH =
       TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_STORAGE_PATH;
-  public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
-      ImmutableSet.of(RSS_STORAGE_TYPE, RSS_REMOTE_STORAGE_PATH);
 
-  //Whether enable test mode for the MR Client
+  // Whether enable test mode for the MR Client
   public static final String RSS_TEST_MODE_ENABLE = TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_TEST_MODE_ENABLE;
 
   public static final String RSS_AM_SHUFFLE_MANAGER_ADDRESS = TEZ_RSS_CONFIG_PREFIX + "rss.am.shuffle.manager.address";

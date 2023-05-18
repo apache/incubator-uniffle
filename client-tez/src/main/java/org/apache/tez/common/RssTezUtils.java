@@ -46,6 +46,7 @@ import org.apache.uniffle.common.util.Constants;
 public class RssTezUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssTezUtils.class);
+
   private static final int MAX_ATTEMPT_LENGTH = 6;
   private static final long MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
 
@@ -120,13 +121,10 @@ public class RssTezUtils {
   }
 
   public static ApplicationAttemptId getApplicationAttemptId() {
-    String containerIdStr =
-        System.getenv(ApplicationConstants.Environment.CONTAINER_ID.name());
+    String containerIdStr = System.getenv(ApplicationConstants.Environment.CONTAINER_ID.name());
     ContainerId containerId = ContainerId.fromString(containerIdStr);
     return containerId.getApplicationAttemptId();
   }
-
-
 
   public static String uniqueIdentifierToAttemptId(String uniqueIdentifier) {
     if (uniqueIdentifier == null) {
@@ -134,33 +132,6 @@ public class RssTezUtils {
     }
     String[] ids = uniqueIdentifier.split("_");
     return StringUtils.join(ids, "_", 0, 7);
-  }
-
-
-
-  public static void applyDynamicClientConf(Configuration jobConf, Map<String, String> confItems) {
-    if (jobConf == null) {
-      LOG.warn("Job conf is null");
-      return;
-    }
-
-    if (confItems == null || confItems.isEmpty()) {
-      LOG.warn("Empty conf items");
-      return;
-    }
-
-    for (Map.Entry<String, String> kv : confItems.entrySet()) {
-      String mrConfKey = kv.getKey();
-      if (!mrConfKey.startsWith(RssTezConfig.TEZ_RSS_CONFIG_PREFIX)) {
-        mrConfKey = RssTezConfig.TEZ_RSS_CONFIG_PREFIX + mrConfKey;
-      }
-      String mrConfVal = kv.getValue();
-      if (StringUtils.isEmpty(jobConf.get(mrConfKey, ""))
-          || RssTezConfig.RSS_MANDATORY_CLUSTER_CONF.contains(mrConfKey)) {
-        LOG.warn("Use conf dynamic conf {} = {}", mrConfKey, mrConfVal);
-        jobConf.set(mrConfKey, mrConfVal);
-      }
-    }
   }
 
   public static int getInt(Configuration rssJobConf, Configuration mrJobCOnf, String key, int defaultValue) {
@@ -194,7 +165,7 @@ public class RssTezUtils {
       throw new RuntimeException("Can't support attemptId [" + attemptId
           + "], the max value should be " + MAX_ATTEMPT_ID);
     }
-    long  atomicInt = (nextSeqNo << MAX_ATTEMPT_LENGTH) + attemptId;
+    long atomicInt = (nextSeqNo << MAX_ATTEMPT_LENGTH) + attemptId;
     if (atomicInt < 0 || atomicInt > Constants.MAX_SEQUENCE_NO) {
       throw new RuntimeException("Can't support sequence [" + atomicInt
           + "], the max value should be " + Constants.MAX_SEQUENCE_NO);
@@ -288,12 +259,10 @@ public class RssTezUtils {
     return shuffleId;
   }
 
+  private static final int SHUFFLE_ID_MAGIC = 1000;
+
   private static int computeShuffleId(int tezDagID, int upTezVertexID, int downTezVertexID) {
     return tezDagID * (SHUFFLE_ID_MAGIC * SHUFFLE_ID_MAGIC)  + upTezVertexID * SHUFFLE_ID_MAGIC + downTezVertexID;
-  }
-
-  public static int computeShuffleId(int tezDagID, int tezVertexID) {
-    return tezDagID * 10000 + tezVertexID;
   }
 
   private static final int VERTEX_ID_MAPPING_MAX_ID = 500;
@@ -314,16 +283,7 @@ public class RssTezUtils {
     }
   }
 
-
-
-  private static int SHUFFLE_ID_MAGIC = 1000;
-
-
-
-  public static int computeVertexId(InputAttemptIdentifier inputAttemptIdentifier) {
-    return TezTaskAttemptID.fromString(inputAttemptIdentifier.getPathComponent()).getTaskID().getVertexID().getId();
-  }
-
+  // 有用到这个方法
   public static long convertTaskAttemptIdToLong(TezTaskAttemptID taskAttemptID, int appAttemptId) {
     long lowBytes = taskAttemptID.getTaskID().getId();
     if (lowBytes > Constants.MAX_TASK_ATTEMPT_ID) {
@@ -334,7 +294,8 @@ public class RssTezUtils {
     }
     long highBytes = (long)taskAttemptID.getId() - (appAttemptId - 1) * 1000;
     if (highBytes > MAX_ATTEMPT_ID || highBytes < 0) {
-      throw new RssException("TaskAttempt " + taskAttemptID + " high bytes " + highBytes + " exceed");
+      throw new RssException("TaskAttempt " + taskAttemptID + " high bytes " + highBytes
+          + " exceed, appAttemptId:" + appAttemptId);
     }
 
     long id = (highBytes << (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH)) + lowBytes;
@@ -342,21 +303,6 @@ public class RssTezUtils {
     LOG.info("lowBytes id is {}", lowBytes);
     LOG.info("highBytes id is {}", highBytes);
     return id;
-  }
-
-  public static long convertTaskAttemptIdToLong(int taskId, int taskAttemptID, int appAttemptId) {
-    long lowBytes = taskId;
-    if (lowBytes > Constants.MAX_TASK_ATTEMPT_ID) {
-      throw new RssException("TaskAttempt " + taskAttemptID + " low bytes " + lowBytes + " exceed");
-    }
-    if (appAttemptId < 1) {
-      throw new RssException("appAttemptId  " + appAttemptId + " is wrong");
-    }
-    long highBytes = (long)taskAttemptID - (appAttemptId - 1) * 1000;
-    if (highBytes > MAX_ATTEMPT_ID || highBytes < 0) {
-      throw new RssException("TaskAttempt " + taskAttemptID + " high bytes " + highBytes + " exceed");
-    }
-    return (highBytes << (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH)) + lowBytes;
   }
 
   public static Roaring64NavigableMap fetchAllRssTaskIds(Set<InputAttemptIdentifier> successMapTaskAttempts,
@@ -369,8 +315,6 @@ public class RssTezUtils {
 
     for (InputAttemptIdentifier inputAttemptIdentifier: successMapTaskAttempts) {
       int mapIndex = inputAttemptIdentifier.getInputIdentifier();
-      int taskAttemptId = inputAttemptIdentifier.getAttemptNumber();
-      long rssTaskId = convertTaskAttemptIdToLong(mapIndex, taskAttemptId, appAttemptId);
       String pathComponent = inputAttemptIdentifier.getPathComponent();
       int taskId = RssTezUtils.taskIdStrToTaskId(pathComponent);
       // There can be multiple successful attempts on same map task.
@@ -407,26 +351,6 @@ public class RssTezUtils {
 
   public static final char SEPARATOR = '_';
 
-  public static int taskIdToVertexId(String taskIdStr) {
-    try {
-      int pos1 = taskIdStr.indexOf(SEPARATOR);
-      int pos2 = taskIdStr.indexOf(SEPARATOR, pos1 + 1);
-      int pos3 = taskIdStr.indexOf(SEPARATOR, pos2 + 1);
-      int pos4 = taskIdStr.indexOf(SEPARATOR, pos3 + 1);
-      int pos5 = taskIdStr.indexOf(SEPARATOR, pos4 + 1);
-      String rmId = taskIdStr.substring(pos1 + 1, pos2);
-      int appId = Integer.parseInt(taskIdStr.substring(pos2 + 1, pos3));
-      int dagId = Integer.parseInt(taskIdStr.substring(pos3 + 1, pos4));
-      int vId = Integer.parseInt(taskIdStr.substring(pos4 + 1, pos5));
-
-      return vId;
-    } catch (Exception e) {
-      e.printStackTrace();
-      LOG.error("Failed to get VertexId, taskId:{}.",taskIdStr, e);
-      throw e;
-    }
-  }
-
   public static int taskIdStrToTaskId(String taskIdStr) {
     try {
       int pos1 = taskIdStr.indexOf(SEPARATOR);
@@ -435,13 +359,7 @@ public class RssTezUtils {
       int pos4 = taskIdStr.indexOf(SEPARATOR, pos3 + 1);
       int pos5 = taskIdStr.indexOf(SEPARATOR, pos4 + 1);
       int pos6 = taskIdStr.indexOf(SEPARATOR, pos5 + 1);
-      String rmId = taskIdStr.substring(pos1 + 1, pos2);
-      int appId = Integer.parseInt(taskIdStr.substring(pos2 + 1, pos3));
-      int dagId = Integer.parseInt(taskIdStr.substring(pos3 + 1, pos4));
-      int vId = Integer.parseInt(taskIdStr.substring(pos4 + 1, pos5));
-      int taskId = Integer.parseInt(taskIdStr.substring(pos5 + 1, pos6));
-
-      return taskId;
+      return Integer.parseInt(taskIdStr.substring(pos5 + 1, pos6));
     } catch (Exception e) {
       e.printStackTrace();
       LOG.error("Failed to get VertexId, taskId:{}.",taskIdStr, e);
