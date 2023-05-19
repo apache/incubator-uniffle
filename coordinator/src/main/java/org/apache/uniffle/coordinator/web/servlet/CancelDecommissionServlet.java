@@ -36,7 +36,7 @@ public class CancelDecommissionServlet extends BaseServlet {
   }
 
   @Override
-  protected <T>Response <T> handlePost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+  protected <T> Response<T> handlePost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
     CancelDecommissionRequest params = parseParamsFromJson(req, CancelDecommissionRequest.class);
     if (CollectionUtils.isEmpty(params.getServerIds())) {
       return Response.fail("Parameter[serverIds] should not be null!");
