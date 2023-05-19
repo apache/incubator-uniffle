@@ -36,10 +36,10 @@ import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ByteUnit;
-import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.storage.util.StorageType;
 
 public class RssMapOutputCollector<K extends Object, V extends Object>
@@ -53,8 +53,8 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
   private Set<Long> failedBlockIds = Sets.newConcurrentHashSet();
   private int partitions;
   private SortWriteBufferManager bufferManager;
-
   private ShuffleWriteClient shuffleClient;
+
   @Override
   public void init(Context context) throws IOException, ClassNotFoundException {
     JobConf mrJobConf = context.getJobConf();
