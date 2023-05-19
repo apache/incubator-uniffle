@@ -262,6 +262,12 @@ public class SortWriteBufferManager<K, V> {
       sendBuffersToServers();
     }
     long start = System.currentTimeMillis();
+    long commitDuration = 0;
+    if (!isMemoryShuffleEnabled) {
+      long s = System.currentTimeMillis();
+      sendCommit();
+      commitDuration = System.currentTimeMillis() - s;
+    }
     while (true) {
       // if failed when send data to shuffle server, mark task as failed
       if (failedBlockIds.size() > 0) {
@@ -286,12 +292,6 @@ public class SortWriteBufferManager<K, V> {
         LOG.error(errorMsg);
         throw new RssException(errorMsg);
       }
-    }
-    long commitDuration = 0;
-    if (!isMemoryShuffleEnabled) {
-      long s = System.currentTimeMillis();
-      sendCommit();
-      commitDuration = System.currentTimeMillis() - s;
     }
 
     start = System.currentTimeMillis();
