@@ -238,7 +238,7 @@ public class RssTezUtils {
     return (int) Math.ceil(taskConcurrency * 1.0 / taskConcurrencyPerServer);
   }
 
-  // compute shuffle id using
+  // compute shuffle id using InputContext
   public static int computeShuffleId(InputContext inputContext) {
     int dagIdentifier = inputContext.getDagIdentifier();
     String sourceVertexName = inputContext.getSourceVertexName();
