@@ -133,23 +133,6 @@ public class RssTezUtilsTest {
     assertEquals(3, RssTezUtils.getRequiredShuffleServerNumber(jobConf, mapNum, reduceNum));
   }
 
-  @Test
-  public void testValidateRssClientConf() {
-    Configuration jobConf = new Configuration();
-    Configuration rssJobConf = new Configuration();
-    rssJobConf.setInt("mapreduce.job.maps", 500);
-    rssJobConf.setInt("mapreduce.job.reduces", 20);
-    RssTezUtils.validateRssClientConf(rssJobConf, jobConf);
-    rssJobConf.setInt(RssTezConfig.RSS_CLIENT_RETRY_MAX, 5);
-    rssJobConf.setLong(RssTezConfig.RSS_CLIENT_RETRY_INTERVAL_MAX, 1000L);
-    rssJobConf.setLong(RssTezConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS, 4999L);
-    try {
-      RssTezUtils.validateRssClientConf(rssJobConf, jobConf);
-      fail(EXPECTED_EXCEPTION_MESSAGE);
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("should not bigger than"));
-    }
-  }
 
   @Test
   public void testComputeShuffleId() {

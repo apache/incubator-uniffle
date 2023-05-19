@@ -172,31 +172,6 @@ public class RssTezUtils {
     return StringUtils.join(ids, "_", 0, 7);
   }
 
-  public static int getInt(Configuration rssJobConf, Configuration mrJobCOnf, String key, int defaultValue) {
-    return rssJobConf.getInt(key,  mrJobCOnf.getInt(key, defaultValue));
-  }
-
-  public static long getLong(Configuration rssJobConf, Configuration mrJobConf, String key, long defaultValue) {
-    return rssJobConf.getLong(key, mrJobConf.getLong(key, defaultValue));
-  }
-
-  public static boolean getBoolean(Configuration rssJobConf, Configuration mrJobConf, String key,
-                                   boolean defaultValue) {
-    return rssJobConf.getBoolean(key, mrJobConf.getBoolean(key, defaultValue));
-  }
-
-  public static double getDouble(Configuration rssJobConf, Configuration mrJobConf, String key, double defaultValue) {
-    return rssJobConf.getDouble(key, mrJobConf.getDouble(key, defaultValue));
-  }
-
-  public static String getString(Configuration rssJobConf, Configuration mrJobConf, String key) {
-    return rssJobConf.get(key, mrJobConf.get(key));
-  }
-
-  public static String getString(Configuration rssJobConf, Configuration mrJobConf, String key, String defaultValue) {
-    return rssJobConf.get(key, mrJobConf.get(key, defaultValue));
-  }
-
   public static long getBlockId(long partitionId, long taskAttemptId, int nextSeqNo) {
     long attemptId = taskAttemptId >> (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH);
     if (attemptId < 0 || attemptId > MAX_ATTEMPT_ID) {
@@ -263,24 +238,6 @@ public class RssTezUtils {
     return (int) Math.ceil(taskConcurrency * 1.0 / taskConcurrencyPerServer);
   }
 
-  public static void validateRssClientConf(Configuration rssJobConf, Configuration mrJobConf) {
-    int retryMax = getInt(rssJobConf, mrJobConf, RssTezConfig.RSS_CLIENT_RETRY_MAX,
-        RssTezConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
-    long retryIntervalMax = getLong(rssJobConf, mrJobConf, RssTezConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
-        RssTezConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
-    long sendCheckTimeout = getLong(rssJobConf, mrJobConf, RssTezConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
-        RssTezConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE);
-    if (retryIntervalMax * retryMax > sendCheckTimeout) {
-      throw new IllegalArgumentException(String.format("%s(%s) * %s(%s) should not bigger than %s(%s)",
-          RssTezConfig.RSS_CLIENT_RETRY_MAX,
-          retryMax,
-          RssTezConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
-          retryIntervalMax,
-          RssTezConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
-          sendCheckTimeout));
-    }
-  }
-
   // compute shuffle id using
   public static int computeShuffleId(InputContext inputContext) {
     int dagIdentifier = inputContext.getDagIdentifier();
@@ -307,8 +264,6 @@ public class RssTezUtils {
         upVertexName, upVertexId, downVertexName, downVertexId, shuffleId);
     return shuffleId;
   }
-
-
 
   private static int computeShuffleId(int tezDagID, int upTezVertexID, int downTezVertexID) {
     return tezDagID * (SHUFFLE_ID_MAGIC * SHUFFLE_ID_MAGIC)  + upTezVertexID * SHUFFLE_ID_MAGIC + downTezVertexID;
@@ -398,10 +353,8 @@ public class RssTezUtils {
     if (mapIndexBitmap.getLongCardinality() != taskIdBitmap.getLongCardinality()) {
       throw new IllegalStateException(errMsg);
     }
-
     return taskIdBitmap;
   }
-
 
   public static int taskIdStrToTaskId(String taskIdStr) {
     try {
