@@ -51,6 +51,6 @@ public class NodesServlet extends BaseServlet {
       return true;
     }).collect(Collectors.toList());
     Collections.sort(serverList, Comparator.comparing(ServerNode::getId));
-    return Response.success(serverList);
+    return (Response<T>) Response.success(serverList);
   }
 }
