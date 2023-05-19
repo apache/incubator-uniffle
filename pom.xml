@@ -1630,7 +1630,7 @@
         <module>client-tez</module>
       </modules>
       <properties>
-        <tez.version>0.9.1.3.1.4.0-315</tez.version>
+        <tez.version>0.9.1</tez.version>
       </properties>
       <dependencyManagement>
         <dependencies>
