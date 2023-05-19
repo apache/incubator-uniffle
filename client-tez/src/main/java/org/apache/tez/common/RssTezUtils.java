@@ -350,14 +350,16 @@ public class RssTezUtils {
     }
 
     long id = (highBytes << (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH)) + lowBytes;
-    LOG.info("convertTaskAttemptIdToLong id is {}", id);
-    LOG.info("lowBytes id is {}", lowBytes);
-    LOG.info("highBytes id is {}", highBytes);
+    LOG.info("ConvertTaskAttemptIdToLong id is {}", id);
+    LOG.info("LowBytes id is {}", lowBytes);
+    LOG.info("HighBytes id is {}", highBytes);
     return id;
   }
 
-  public static Roaring64NavigableMap fetchAllRssTaskIds(Set<InputAttemptIdentifier> successMapTaskAttempts,
-                                                         Integer totalMapsCount, Integer appAttemptId) {
+  public static Roaring64NavigableMap fetchAllRssTaskIds(
+          Set<InputAttemptIdentifier> successMapTaskAttempts,
+          Integer totalMapsCount,
+          Integer appAttemptId) {
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap mapIndexBitmap = Roaring64NavigableMap.bitmapOf();
     String errMsg = "TaskAttemptIDs are inconsistent with map tasks";
