@@ -44,9 +44,9 @@ public abstract class BaseServlet extends HttpServlet {
     writeJSON(resp, handlerRequest(() -> handlePost(req, resp)));
   }
 
-  private Response handlerRequest(
-      Callable<Response> function) {
-    Response response;
+  private <T> Response<T> handlerRequest(
+      Callable<Response<T>> function) {
+    Response<T> response;
     try {
       // todo: Do something for authentication
       response = function.call();
@@ -56,13 +56,13 @@ public abstract class BaseServlet extends HttpServlet {
     return response;
   }
 
-  protected Response handleGet(
+  protected <T> Response<T> handleGet(
       HttpServletRequest req,
       HttpServletResponse resp) throws ServletException, IOException {
     throw new IOException("Method not support!");
   }
 
-  protected Response handlePost(
+  protected <T> Response<T> handlePost(
       HttpServletRequest req,
       HttpServletResponse resp) throws ServletException, IOException {
     throw new IOException("Method not support!");

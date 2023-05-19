@@ -37,7 +37,7 @@ public class NodesServlet extends BaseServlet {
   }
 
   @Override
-  protected Response handleGet(HttpServletRequest req, HttpServletResponse resp) {
+  protected <T> Response<T> handleGet(HttpServletRequest req, HttpServletResponse resp) {
     List<ServerNode> serverList = coordinator.getClusterManager().getServerList(Collections.EMPTY_SET);
     String id = req.getParameter("id");
     String status = req.getParameter("status");
