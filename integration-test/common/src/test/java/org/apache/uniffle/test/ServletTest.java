@@ -90,8 +90,7 @@ public class ServletTest extends IntegrationTestBase {
   public void testNodesServlet() throws Exception {
     String content = TestUtils.httpGet(NODES_URL);
     Response<List<HashMap<String, String>>> response = objectMapper.readValue(content,
-            new TypeReference<Response<List<HashMap<String, String>>>>() {
-    });
+            new TypeReference<Response<List<HashMap<String, String>>>>() {});
     List<HashMap<String, String>> serverList = response.getData();
     assertEquals(0, response.getCode());
     assertEquals(2, serverList.size());
