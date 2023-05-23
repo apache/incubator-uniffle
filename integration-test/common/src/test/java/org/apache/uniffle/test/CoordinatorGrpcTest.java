@@ -135,7 +135,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     Class<RssConf> clazz = RssConf.class;
     Field field = clazz.getDeclaredField("settings");
     field.setAccessible(true);
-    ((ConcurrentHashMap<Integer, Object>) field.get(shuffleServerConf)).remove(
+    ((ConcurrentHashMap<Object, Object>) field.get(shuffleServerConf)).remove(
             ShuffleServerConf.NETTY_SERVER_PORT.key());
     String storageTypeJsonSource = String.format("{\"%s\": \"ssd\"}", baseDir);
     withEnvironmentVariables("RSS_ENV_KEY", storageTypeJsonSource).execute(() -> {
