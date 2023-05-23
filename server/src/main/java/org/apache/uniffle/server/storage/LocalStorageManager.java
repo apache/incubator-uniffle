@@ -189,6 +189,10 @@ public class LocalStorageManager extends SingleStorageManager {
         .stream()
         .filter(x -> x.canWrite() && !x.isCorrupted())
         .collect(Collectors.toList());
+
+    if (candidates.size() == 0) {
+      return null;
+    }
     final LocalStorage selectedStorage = candidates.get(
         ShuffleStorageUtils.getStorageIndex(
             candidates.size(),
