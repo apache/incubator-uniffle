@@ -27,7 +27,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
-import org.apache.uniffle.storage.common.HdfsStorage;
+import org.apache.uniffle.storage.common.HadoopStorage;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.util.StorageType;
@@ -42,7 +42,7 @@ public class MultiStorageManagerTest {
     conf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 2000L);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("test"));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HADOOP.name());
     MultiStorageManager manager = new MultiStorageManager(conf);
     String remoteStorage = "test";
     String appId = "selectStorageManagerTest_appId";
@@ -54,7 +54,7 @@ public class MultiStorageManagerTest {
     assertTrue((manager.selectStorage(event) instanceof LocalStorage));
     event = new ShuffleDataFlushEvent(
         1, appId, 1, 1, 1, 1000000, blocks, null, null);
-    assertTrue((manager.selectStorage(event) instanceof HdfsStorage));
+    assertTrue((manager.selectStorage(event) instanceof HadoopStorage));
   }
 
   @Test
@@ -63,7 +63,7 @@ public class MultiStorageManagerTest {
     conf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 10000L);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("test"));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 10000L);
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HADOOP.name());
     conf.setString(ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
         RotateStorageManagerFallbackStrategy.class.getCanonicalName());
     conf.set(
@@ -92,7 +92,7 @@ public class MultiStorageManagerTest {
     ShuffleDataFlushEvent event1 = new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 10, blocks, null, null);
     event1.markOwnedByHugePartition();
     storage = manager.selectStorage(event1);
-    assertTrue(storage instanceof HdfsStorage);
+    assertTrue(storage instanceof HadoopStorage);
   }
 
   @Test
@@ -101,7 +101,7 @@ public class MultiStorageManagerTest {
     conf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 10000L);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("test"));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 10000L);
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HADOOP.name());
     conf.setString(ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS, 
         RotateStorageManagerFallbackStrategy.class.getCanonicalName());
     MultiStorageManager manager = new MultiStorageManager(conf);
@@ -117,7 +117,7 @@ public class MultiStorageManagerTest {
     );
     ShuffleDataFlushEvent hugeEvent = new ShuffleDataFlushEvent(
         1, appId, 1, 1, 1, 10001, blocks, null, null);
-    assertTrue(manager.selectStorage(hugeEvent) instanceof HdfsStorage);
+    assertTrue(manager.selectStorage(hugeEvent) instanceof HadoopStorage);
 
     /**
      * case2: fallback when disk can not write
@@ -130,6 +130,6 @@ public class MultiStorageManagerTest {
     ((LocalStorage)storage).markCorrupted();
     event = new ShuffleDataFlushEvent(
         1, appId, 1, 1, 1, 1000, blocks, null, null);
-    assertTrue((manager.selectStorage(event) instanceof HdfsStorage));
+    assertTrue((manager.selectStorage(event) instanceof HadoopStorage));
   }
 }

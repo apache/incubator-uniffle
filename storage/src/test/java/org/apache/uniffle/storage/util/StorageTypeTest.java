@@ -27,42 +27,42 @@ public class StorageTypeTest {
 
   @Test
   public void commonTest() {
-    String type = "HDFS";
-    assertEquals(StorageType.valueOf(type), StorageType.HDFS);
+    String type = "HADOOP";
+    assertEquals(StorageType.valueOf(type), StorageType.HADOOP);
 
     StorageType storageType = StorageType.MEMORY;
     assertTrue(StorageType.withMemory(storageType));
     assertFalse(StorageType.withLocalfile(storageType));
-    assertFalse(StorageType.withHDFS(storageType));
+    assertFalse(StorageType.withHadoop(storageType));
 
     storageType = StorageType.LOCALFILE;
     assertFalse(StorageType.withMemory(storageType));
     assertTrue(StorageType.withLocalfile(storageType));
-    assertFalse(StorageType.withHDFS(storageType));
+    assertFalse(StorageType.withHadoop(storageType));
 
-    storageType = StorageType.HDFS;
+    storageType = StorageType.HADOOP;
     assertFalse(StorageType.withMemory(storageType));
     assertFalse(StorageType.withLocalfile(storageType));
-    assertTrue(StorageType.withHDFS(storageType));
+    assertTrue(StorageType.withHadoop(storageType));
 
-    storageType = StorageType.MEMORY_HDFS;
+    storageType = StorageType.MEMORY_HADOOP;
     assertTrue(StorageType.withMemory(storageType));
     assertFalse(StorageType.withLocalfile(storageType));
-    assertTrue(StorageType.withHDFS(storageType));
+    assertTrue(StorageType.withHadoop(storageType));
 
     storageType = StorageType.MEMORY_LOCALFILE;
     assertTrue(StorageType.withMemory(storageType));
     assertTrue(StorageType.withLocalfile(storageType));
-    assertFalse(StorageType.withHDFS(storageType));
+    assertFalse(StorageType.withHadoop(storageType));
 
-    storageType = StorageType.MEMORY_LOCALFILE_HDFS;
+    storageType = StorageType.MEMORY_LOCALFILE_HADOOP;
     assertTrue(StorageType.withMemory(storageType));
     assertTrue(StorageType.withLocalfile(storageType));
-    assertTrue(StorageType.withHDFS(storageType));
+    assertTrue(StorageType.withHadoop(storageType));
 
-    storageType = StorageType.LOCALFILE_HDFS;
+    storageType = StorageType.LOCALFILE_HADOOP;
     assertFalse(StorageType.withMemory(storageType));
     assertTrue(StorageType.withLocalfile(storageType));
-    assertTrue(StorageType.withHDFS(storageType));
+    assertTrue(StorageType.withHadoop(storageType));
   }
 }

@@ -117,7 +117,7 @@ public class RssSparkConfig {
 
   public static final ConfigEntry<String> RSS_STORAGE_TYPE = createStringBuilder(
       new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_STORAGE_TYPE)
-          .doc("Supports MEMORY_LOCALFILE, MEMORY_HDFS, MEMORY_LOCALFILE_HDFS"))
+          .doc("Supports MEMORY_LOCALFILE, MEMORY_HADOOP, MEMORY_LOCALFILE_HADOOP"))
       .createWithDefault("");
 
   public static final ConfigEntry<Integer> RSS_CLIENT_RETRY_MAX = createIntegerBuilder(

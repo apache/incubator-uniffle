@@ -75,10 +75,10 @@ public class ClientUtils {
   }
 
   private static boolean requireRemoteStorage(String storageType) {
-    return StorageType.MEMORY_HDFS.name().equals(storageType)
-        || StorageType.MEMORY_LOCALFILE_HDFS.name().equals(storageType)
-        || StorageType.HDFS.name().equals(storageType)
-        || StorageType.LOCALFILE_HDFS.name().equals(storageType);
+    return StorageType.MEMORY_HADOOP.name().equals(storageType)
+        || StorageType.MEMORY_LOCALFILE_HADOOP.name().equals(storageType)
+        || StorageType.HADOOP.name().equals(storageType)
+        || StorageType.LOCALFILE_HADOOP.name().equals(storageType);
   }
 
   public static boolean waitUntilDoneOrFail(List<CompletableFuture<Boolean>> futures, boolean allowFastFail) {
@@ -121,8 +121,8 @@ public class ClientUtils {
 
   public static void validateTestModeConf(boolean testMode, String storageType) {
     if (!testMode && (StorageType.LOCALFILE.name().equals(storageType)
-            || (StorageType.HDFS.name()).equals(storageType))) {
-      throw new IllegalArgumentException("LOCALFILE or HDFS storage type should be used in test mode only, "
+            || (StorageType.HADOOP.name()).equals(storageType))) {
+      throw new IllegalArgumentException("LOCALFILE or HADOOP storage type should be used in test mode only, "
               + "because of the poor performance of these two types.");
     }
   }

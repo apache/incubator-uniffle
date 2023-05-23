@@ -143,7 +143,7 @@ public class CoordinatorConf extends RssBaseConf {
       .key("rss.coordinator.remote.storage.schedule.time")
       .longType()
       .defaultValue(60 * 1000L)
-      .withDescription("The time of scheduling the read and write time of the paths to obtain different HDFS");
+      .withDescription("The time of scheduling the read and write time of the paths to obtain different Hadoop FS");
   public static final ConfigOption<Integer> COORDINATOR_REMOTE_STORAGE_SCHEDULE_FILE_SIZE = ConfigOptions
       .key("rss.coordinator.remote.storage.schedule.file.size")
       .intType()
@@ -153,7 +153,7 @@ public class CoordinatorConf extends RssBaseConf {
       .key("rss.coordinator.remote.storage.schedule.access.times")
       .intType()
       .defaultValue(3)
-      .withDescription("The number of times to read and write HDFS files");
+      .withDescription("The number of times to read and write Hadoop FS files");
   public static final ConfigOption<AbstractAssignmentStrategy.HostAssignmentStrategyName>
       COORDINATOR_ASSIGNMENT_HOST_STRATEGY =
       ConfigOptions.key("rss.coordinator.assignment.host.strategy")

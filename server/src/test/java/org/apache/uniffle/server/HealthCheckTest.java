@@ -51,7 +51,7 @@ public class HealthCheckTest {
     assertConf(conf);
     conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(), LocalStorageChecker.class.getCanonicalName());
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("s1"));
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HADOOP.name());
     assertConf(conf);
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     conf.set(ShuffleServerConf.HEALTH_MIN_STORAGE_PERCENTAGE, -1.0);

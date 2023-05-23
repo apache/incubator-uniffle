@@ -59,7 +59,7 @@ public class ShuffleServerMetricsTest {
     ssc.set(ShuffleServerConf.RPC_SERVER_PORT, 12346);
     ssc.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("tmp"));
     ssc.set(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
-    ssc.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    ssc.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HADOOP.name());
     ssc.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "fake.coordinator:123");
     ssc.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 1000L);
     shuffleServer = new ShuffleServer(ssc);

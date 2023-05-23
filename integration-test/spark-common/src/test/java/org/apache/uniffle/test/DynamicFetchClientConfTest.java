@@ -53,7 +53,7 @@ public class DynamicFetchClientConfTest extends IntegrationTestBase {
     printWriter.println("spark.mock.1  1234");
     printWriter.println(" spark.mock.2 overwrite-conf ");
     printWriter.println(" spark.mock.3 true ");
-    printWriter.println("spark.rss.storage.type " + StorageType.MEMORY_LOCALFILE_HDFS.name());
+    printWriter.println("spark.rss.storage.type " + StorageType.MEMORY_LOCALFILE_HADOOP.name());
     printWriter.println(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key() + " expectedPath");
     printWriter.flush();
     printWriter.close();
@@ -85,7 +85,7 @@ public class DynamicFetchClientConfTest extends IntegrationTestBase {
     SparkConf sparkConf1 = rssShuffleManager.getSparkConf();
     assertEquals(1234, sparkConf1.getInt("spark.mock.1", 0));
     assertEquals("no-overwrite-conf", sparkConf1.get("spark.mock.2"));
-    assertEquals(StorageType.MEMORY_LOCALFILE_HDFS.name(), sparkConf.get("spark.rss.storage.type"));
+    assertEquals(StorageType.MEMORY_LOCALFILE_HADOOP.name(), sparkConf.get("spark.rss.storage.type"));
     assertEquals("expectedPath", sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key()));
     assertFalse(sparkConf1.getBoolean("spark.shuffle.service.enabled", true));
 

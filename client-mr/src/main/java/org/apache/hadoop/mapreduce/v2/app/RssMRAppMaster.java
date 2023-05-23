@@ -181,7 +181,7 @@ public class RssMRAppMaster extends MRAppMaster {
 
         if (remoteStorage.isEmpty()) {
           throw new IllegalArgumentException("Remote spill only supports "
-            + StorageType.MEMORY_LOCALFILE_HDFS.name() + " mode with " + remoteStorage);
+            + StorageType.MEMORY_LOCALFILE_HADOOP.name() + " mode with " + remoteStorage);
         }
 
         // When remote spill is enabled, reduce task is more easy to crash.

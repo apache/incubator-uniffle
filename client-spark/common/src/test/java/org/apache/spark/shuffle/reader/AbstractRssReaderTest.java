@@ -39,13 +39,13 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.ChecksumUtils;
-import org.apache.uniffle.storage.HdfsTestBase;
+import org.apache.uniffle.storage.HadoopTestBase;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
-public abstract class AbstractRssReaderTest extends HdfsTestBase {
+public abstract class AbstractRssReaderTest extends HadoopTestBase {
 
   private AtomicInteger atomicInteger = new AtomicInteger(0);
 

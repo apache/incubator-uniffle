@@ -59,7 +59,7 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
+    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HADOOP.name());
 
     coordinatorConf.set(CoordinatorConf.COORDINATOR_SELECT_PARTITION_STRATEGY,
         AbstractAssignmentStrategy.SelectPartitionStrategyName.CONTINUOUS);
@@ -77,7 +77,7 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
       ShuffleServerConf serverConf = new ShuffleServerConf();
       dataFolder.deleteOnExit();
       serverConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + i);
-      serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
+      serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HADOOP.name());
       serverConf.setString("rss.storage.basePath", dataFolder.getAbsolutePath());
       serverConf.setString("rss.server.buffer.capacity", String.valueOf(671088640 - i));
       serverConf.setString("rss.server.memory.shuffle.highWaterMark", "50.0");
@@ -120,7 +120,7 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
 
   @Override
   public void updateSparkConfCustomer(SparkConf sparkConf) {
-    sparkConf.set(RssSparkConfig.RSS_STORAGE_TYPE.key(), "HDFS");
+    sparkConf.set(RssSparkConfig.RSS_STORAGE_TYPE.key(), "HADOOP");
     sparkConf.set(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
   }
 

@@ -116,7 +116,7 @@ public class RssMRUtilsTest {
         Integer.toString(RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE));
     clientConf.put(RssClientConfig.RSS_HEARTBEAT_INTERVAL,
         Long.toString(RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE));
-    clientConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    clientConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HADOOP.name());
     clientConf.put(RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS,
         Long.toString(RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE));
     clientConf.put(RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
@@ -145,7 +145,7 @@ public class RssMRUtilsTest {
         conf.get(RssMRConfig.RSS_DATA_REPLICA_READ));
     assertEquals(Long.toString(RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE),
         conf.get(RssMRConfig.RSS_HEARTBEAT_INTERVAL));
-    assertEquals(StorageType.MEMORY_LOCALFILE_HDFS.name(), conf.get(RssMRConfig.RSS_STORAGE_TYPE));
+    assertEquals(StorageType.MEMORY_LOCALFILE_HADOOP.name(), conf.get(RssMRConfig.RSS_STORAGE_TYPE));
     assertEquals(Long.toString(RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE),
         conf.get(RssMRConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS));
     assertEquals(Long.toString(RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE),
@@ -160,14 +160,14 @@ public class RssMRUtilsTest {
 
     String remoteStoragePath2 = "hdfs://path2";
     clientConf = Maps.newHashMap();
-    clientConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_HDFS.name());
+    clientConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_HADOOP.name());
     clientConf.put(RssMRConfig.RSS_REMOTE_STORAGE_PATH, remoteStoragePath2);
     clientConf.put(mockKey, "won't be rewrite");
     clientConf.put(RssClientConfig.RSS_CLIENT_RETRY_MAX, "99999");
     RssMRUtils.applyDynamicClientConf(conf, clientConf);
     // overwrite
     assertEquals(remoteStoragePath2, conf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH));
-    assertEquals(StorageType.MEMORY_HDFS.name(), conf.get(RssMRConfig.RSS_STORAGE_TYPE));
+    assertEquals(StorageType.MEMORY_HADOOP.name(), conf.get(RssMRConfig.RSS_STORAGE_TYPE));
     // won't be overwrite
     assertEquals(mockValue, conf.get(mockKey));
     assertEquals(Integer.toString(RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE),

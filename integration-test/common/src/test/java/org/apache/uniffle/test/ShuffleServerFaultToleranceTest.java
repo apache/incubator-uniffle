@@ -174,7 +174,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     shuffleServerClients.get(1).sendCommit(commitRequest);
     waitFlush(testAppId, shuffleId);
     request = mockCreateShuffleReadHandlerRequest(
-        testAppId, shuffleId, partitionId, shuffleServerInfoList, expectBlockIds, StorageType.HDFS);
+        testAppId, shuffleId, partitionId, shuffleServerInfoList, expectBlockIds, StorageType.HADOOP);
     clientReadHandler = (AbstractClientReadHandler)
         ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
     sdr = clientReadHandler.readShuffleData();
@@ -243,7 +243,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     File dataDir1 = new File(tmpDir, id + "_1");
     File dataDir2 = new File(tmpDir, id + "_2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
-    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HADOOP.name());
     shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 450L);
     shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 20 + id);
     shuffleServerConf.setInteger("rss.jetty.http.port", 19081 + id * 100);

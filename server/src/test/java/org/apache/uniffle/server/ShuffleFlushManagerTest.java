@@ -55,16 +55,16 @@ import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.event.AppPurgeEvent;
-import org.apache.uniffle.server.storage.HdfsStorageManager;
+import org.apache.uniffle.server.storage.HadoopStorageManager;
 import org.apache.uniffle.server.storage.LocalStorageManagerFallbackStrategy;
 import org.apache.uniffle.server.storage.MultiStorageManager;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
-import org.apache.uniffle.storage.HdfsTestBase;
+import org.apache.uniffle.storage.HadoopTestBase;
 import org.apache.uniffle.storage.common.AbstractStorage;
-import org.apache.uniffle.storage.common.HdfsStorage;
+import org.apache.uniffle.storage.common.HadoopStorage;
 import org.apache.uniffle.storage.common.LocalStorage;
-import org.apache.uniffle.storage.handler.impl.HdfsClientReadHandler;
+import org.apache.uniffle.storage.handler.impl.HadoopClientReadHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -75,7 +75,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ShuffleFlushManagerTest extends HdfsTestBase {
+public class ShuffleFlushManagerTest extends HadoopTestBase {
 
   private static AtomicInteger ATOMIC_INT = new AtomicInteger(0);
   private static AtomicLong ATOMIC_LONG = new AtomicLong(0);
@@ -98,7 +98,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   public void prepare() {
     ShuffleServerMetrics.register();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.emptyList());
-    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HADOOP.name());
     LogManager.getRootLogger().setLevel(Level.INFO);
   }
 
@@ -127,7 +127,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   public void concurrentWrite2HdfsWriteOneByOne() throws Exception {
     ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.emptyList());
-    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HADOOP.name());
     int maxConcurrency = 3;
     shuffleServerConf.setInteger(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, maxConcurrency);
 
@@ -155,7 +155,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   public void concurrentWrite2HdfsWriteOfSinglePartition() throws Exception {
     ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.emptyList());
-    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HADOOP.name());
     int maxConcurrency = 3;
     shuffleServerConf.setInteger(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, maxConcurrency);
 
@@ -301,11 +301,11 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     assertTrue(fileStatus.length > 0);
     manager.removeResources(appId1);
 
-    assertTrue(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId1));
+    assertTrue(((HadoopStorageManager)storageManager).getAppIdToStorages().containsKey(appId1));
     storageManager.removeResources(
         new AppPurgeEvent(appId1, StringUtils.EMPTY, Arrays.asList(1))
     );
-    assertFalse(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId1));
+    assertFalse(((HadoopStorageManager)storageManager).getAppIdToStorages().containsKey(appId1));
     try {
       fs.listStatus(new Path(remoteStorage.getPath() + "/" + appId1 + "/"));
       fail("Exception should be thrown");
@@ -318,11 +318,11 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     size = storage.getHandlerSize();
     assertEquals(1, size);
     manager.removeResources(appId2);
-    assertTrue(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId2));
+    assertTrue(((HadoopStorageManager)storageManager).getAppIdToStorages().containsKey(appId2));
     storageManager.removeResources(
         new AppPurgeEvent(appId2, StringUtils.EMPTY, Arrays.asList(1))
     );
-    assertFalse(((HdfsStorageManager)storageManager).getAppIdToStorages().containsKey(appId2));
+    assertFalse(((HadoopStorageManager)storageManager).getAppIdToStorages().containsKey(appId2));
     assertEquals(0, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     size = storage.getHandlerSize();
     assertEquals(0, size);
@@ -334,7 +334,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
         new AppPurgeEvent(appId2, StringUtils.EMPTY, Lists.newArrayList(1))
     );
     assertFalse(fs.exists(path));
-    HdfsStorage storageByAppId = ((HdfsStorageManager) storageManager).getStorageByAppId(appId2);
+    HadoopStorage storageByAppId = ((HadoopStorageManager) storageManager).getStorageByAppId(appId2);
     assertNull(storageByAppId);
   }
 
@@ -475,7 +475,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
       expectBlockIds.addLong(spb.getBlockId());
       remainIds.add(spb.getBlockId());
     }
-    HdfsClientReadHandler handler = new HdfsClientReadHandler(
+    HadoopClientReadHandler handler = new HadoopClientReadHandler(
         appId,
         shuffleId,
         partitionId,
@@ -508,7 +508,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
   @Test
   public void fallbackWrittenWhenMultiStorageManagerEnableTest(@TempDir File tempDir) throws InterruptedException {
     shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 10000L);
-    shuffleServerConf.set(RssBaseConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS.toString());
+    shuffleServerConf.set(RssBaseConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HADOOP.toString());
     shuffleServerConf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
     shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
     shuffleServerConf.setString(ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
@@ -534,7 +534,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100000);
     flushManager.addToFlushQueue(event);
     Thread.sleep(1000);
-    assertTrue(event.getUnderStorage() instanceof HdfsStorage);
+    assertTrue(event.getUnderStorage() instanceof HadoopStorage);
     assertEquals(0, event.getRetryTimes());
 
     // case3: local disk is full or corrupted, fallback to HDFS
@@ -548,7 +548,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100);
     flushManager.addToFlushQueue(event);
     Thread.sleep(1000);
-    assertTrue(event.getUnderStorage() instanceof HdfsStorage);
+    assertTrue(event.getUnderStorage() instanceof HadoopStorage);
     assertEquals(1, event.getRetryTimes());
   }
 

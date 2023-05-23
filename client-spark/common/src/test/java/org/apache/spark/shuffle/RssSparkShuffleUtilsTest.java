@@ -107,7 +107,7 @@ public class RssSparkShuffleUtilsTest {
         Integer.toString(RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE));
     clientConf.put(RssClientConfig.RSS_HEARTBEAT_INTERVAL,
         Long.toString(RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE));
-    clientConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    clientConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HADOOP.name());
     clientConf.put(RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS,
         Long.toString(RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE));
     clientConf.put(RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
@@ -136,7 +136,7 @@ public class RssSparkShuffleUtilsTest {
         conf.get(RssSparkConfig.RSS_DATA_REPLICA_READ.key()));
     assertEquals(Long.toString(RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE),
         conf.get(RssSparkConfig.RSS_HEARTBEAT_INTERVAL.key()));
-    assertEquals(StorageType.MEMORY_LOCALFILE_HDFS.name(), conf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
+    assertEquals(StorageType.MEMORY_LOCALFILE_HADOOP.name(), conf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
     assertEquals(Long.toString(RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE),
         conf.get(RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key()));
     assertEquals(Long.toString(RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE),
@@ -151,14 +151,14 @@ public class RssSparkShuffleUtilsTest {
 
     String remoteStoragePath2 = "hdfs://path2";
     clientConf = Maps.newHashMap();
-    clientConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_HDFS.name());
+    clientConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_HADOOP.name());
     clientConf.put(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), remoteStoragePath2);
     clientConf.put(mockKey, "won't be rewrite");
     clientConf.put(RssClientConfig.RSS_CLIENT_RETRY_MAX, "99999");
     RssSparkShuffleUtils.applyDynamicClientConf(conf, clientConf);
     // overwrite
     assertEquals(remoteStoragePath2, conf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key()));
-    assertEquals(StorageType.MEMORY_HDFS.name(), conf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
+    assertEquals(StorageType.MEMORY_HADOOP.name(), conf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
     // won't be overwrite
     assertEquals(mockValue, conf.get(mockKey));
     assertEquals(Integer.toString(RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE),

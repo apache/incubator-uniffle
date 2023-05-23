@@ -38,7 +38,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
-import org.apache.uniffle.storage.handler.impl.HdfsShuffleWriteHandler;
+import org.apache.uniffle.storage.handler.impl.HadoopShuffleWriteHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.mockito.Mockito.doNothing;
@@ -54,8 +54,8 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
   public void readTest() throws Exception {
     ShuffleServerInfo ssi = new ShuffleServerInfo("127.0.0.1", 0);
     String basePath = HDFS_URI + "readTest1";
-    HdfsShuffleWriteHandler writeHandler =
-        new HdfsShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler =
+        new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi.getId(), conf);
 
     Map<String, String> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -83,7 +83,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     when(dependencyMock.keyOrdering()).thenReturn(Option.empty());
 
     RssConf rssConf = new RssConf();
-    rssConf.set(RssClientConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    rssConf.set(RssClientConf.RSS_STORAGE_TYPE, StorageType.HADOOP.name());
     rssConf.set(RssClientConf.RSS_INDEX_READ_LIMIT, 1000);
     rssConf.set(RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE, "1000");
     RssShuffleReader<String, String> rssShuffleReaderSpy = spy(new RssShuffleReader<>(0, 1, contextMock,
