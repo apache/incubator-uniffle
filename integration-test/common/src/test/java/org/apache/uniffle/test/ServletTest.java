@@ -89,9 +89,10 @@ public class ServletTest extends IntegrationTestBase {
   @Test
   public void testNodesServlet() throws Exception {
     String content = TestUtils.httpGet(NODES_URL);
-    Response<List<HashMap<String, String>>> response = objectMapper.readValue(content,
-            new TypeReference<Response<List<HashMap<String, String>>>>() {});
-    List<HashMap<String, String>> serverList = response.getData();
+    Response<List<HashMap<String, Object>>> response = objectMapper.readValue(content,
+            new TypeReference<Response<List<HashMap<String, Object>>>>() {
+            });
+    List<HashMap<String, Object>> serverList = response.getData();
     assertEquals(0, response.getCode());
     assertEquals(2, serverList.size());
     assertEquals(SHUFFLE_SERVER_PORT, Integer.parseInt(serverList.get(0).get("grpcPort").toString()));
@@ -102,18 +103,18 @@ public class ServletTest extends IntegrationTestBase {
     // Only fetch one server.
     ShuffleServer shuffleServer = shuffleServers.get(0);
     content = TestUtils.httpGet(NODES_URL + "?id=" + shuffleServer.getId());
-    response = objectMapper.readValue(content, new TypeReference<Response<List<HashMap<String, String>>>>() {
+    response = objectMapper.readValue(content, new TypeReference<Response<List<HashMap<String, Object>>>>() {
     });
     serverList = response.getData();
     assertEquals(1, serverList.size());
     assertEquals(shuffleServer.getId(), serverList.get(0).get("id"));
 
     content = TestUtils.httpGet(NODES_URL + "?status=DECOMMISSIONED");
-    response = objectMapper.readValue(content, new TypeReference<Response<List<HashMap<String, String>>>>() {});
+    response = objectMapper.readValue(content, new TypeReference<Response<List<HashMap<String, Object>>>>() {});
     serverList = response.getData();
     assertEquals(0, serverList.size());
     content = TestUtils.httpGet(NODES_URL + "?status=ACTIVE");
-    response = objectMapper.readValue(content, new TypeReference<Response<List<HashMap<String, String>>>>() {});
+    response = objectMapper.readValue(content, new TypeReference<Response<List<HashMap<String, Object>>>>() {});
     serverList = response.getData();
     assertEquals(2, serverList.size());
   }
