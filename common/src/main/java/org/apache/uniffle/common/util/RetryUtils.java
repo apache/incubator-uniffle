@@ -32,7 +32,7 @@ public class RetryUtils {
   }
 
   public static <T> T retry(RetryCmd<T> cmd, long intervalMs, int retryTimes,
-      Set<Class<? extends Object>> exceptionClasses) throws Throwable {
+      Set<Class<? extends Throwable>> exceptionClasses) throws Throwable {
     return retry(cmd, null, intervalMs, retryTimes, exceptionClasses);
   }
 
@@ -47,7 +47,7 @@ public class RetryUtils {
    * @throws Throwable
    */
   public static <T> T retry(RetryCmd<T> cmd, RetryCallBack callBack, long intervalMs,
-                            int retryTimes, Set<Class<? extends Object>> exceptionClasses) throws Throwable {
+                            int retryTimes, Set<Class<? extends Throwable>> exceptionClasses) throws Throwable {
     int retry = 0;
     while (true) {
       try {
@@ -69,8 +69,8 @@ public class RetryUtils {
     }
   }
 
-  private static boolean isInstanceOf(Set<Class<? extends Object>> classes, Throwable t) {
-    for (Class<? extends Object> c : classes) {
+  private static boolean isInstanceOf(Set<Class<? extends Throwable>> classes, Throwable t) {
+    for (Class<? extends Throwable> c : classes) {
       if (c.isInstance(t)) {
         return true;
       }
