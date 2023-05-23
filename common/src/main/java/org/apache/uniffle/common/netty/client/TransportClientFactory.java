@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.netty.IOMode;
 import org.apache.uniffle.common.netty.TransportFrameDecoder;
-import org.apache.uniffle.common.netty.handle.TransportResponseHandler;
+import org.apache.uniffle.common.netty.handle.TransportChannelHandler;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.NettyUtils;
 
@@ -121,8 +121,11 @@ public class TransportClientFactory implements Closeable {
       // Make sure that the channel will not timeout by updating the last use time of the
       // handler. Then check that the client is still alive, in case it timed out before
       // this code was able to update things.
-      TransportResponseHandler handler =
-          cachedClient.getChannel().pipeline().get(TransportResponseHandler.class);
+      TransportChannelHandler handler =
+          cachedClient.getChannel().pipeline().get(TransportChannelHandler.class);
+      synchronized (handler) {
+        handler.getResponseHandler().updateTimeOfLastRequest();
+      }
 
       if (cachedClient.isActive()) {
         logger.trace(
@@ -197,9 +200,8 @@ public class TransportClientFactory implements Closeable {
         new ChannelInitializer<SocketChannel>() {
           @Override
           public void initChannel(SocketChannel ch) {
-            TransportResponseHandler transportResponseHandler = context.initializePipeline(ch, decoder);
-            TransportClient client = new TransportClient(ch, transportResponseHandler);
-            clientRef.set(client);
+            TransportChannelHandler transportResponseHandler = context.initializePipeline(ch, decoder);
+            clientRef.set(transportResponseHandler.getClient());
             channelRef.set(ch);
           }
         });

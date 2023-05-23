@@ -47,7 +47,8 @@ public class MultiStorageManagerTest {
     String remoteStorage = "test";
     String appId = "selectStorageManagerTest_appId";
     manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
-    List<ShufflePartitionedBlock> blocks = Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, null));
+    List<ShufflePartitionedBlock> blocks =
+        Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
     ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
         1, appId, 1, 1, 1, 1000, blocks, null, null);
     assertTrue((manager.selectStorage(event) instanceof LocalStorage));
@@ -81,7 +82,7 @@ public class MultiStorageManagerTest {
      * is enabled.
      */
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList(
-        new ShufflePartitionedBlock(10001, 1000, 1, 1, 1L, null)
+        new ShufflePartitionedBlock(10001, 1000, 1, 1, 1L, (byte[]) null)
     );
     ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
         1, appId, 1, 1, 1, 100000, blocks, null, null);
@@ -112,7 +113,7 @@ public class MultiStorageManagerTest {
      * case1: big event should be written into cold storage directly
      */
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList(
-        new ShufflePartitionedBlock(10001, 1000, 1, 1, 1L, null)
+        new ShufflePartitionedBlock(10001, 1000, 1, 1, 1L, (byte[]) null)
     );
     ShuffleDataFlushEvent hugeEvent = new ShuffleDataFlushEvent(
         1, appId, 1, 1, 1, 10001, blocks, null, null);
@@ -121,7 +122,7 @@ public class MultiStorageManagerTest {
     /**
      * case2: fallback when disk can not write
      */
-    blocks = Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, null));
+    blocks = Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
     ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
         1, appId, 1, 1, 1, 1000, blocks, null, null);
     Storage storage = manager.selectStorage(event);

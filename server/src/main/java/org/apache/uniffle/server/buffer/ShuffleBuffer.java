@@ -25,6 +25,8 @@ import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.CompositeByteBuf;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -161,11 +163,11 @@ public class ShuffleBuffer {
       updateBufferSegmentsAndResultBlocks(
           lastBlockId, readBufferSize, bufferSegments, readBlocks, expectedTaskIds);
       if (!bufferSegments.isEmpty()) {
-        int length = calculateDataLength(bufferSegments);
-        byte[] data = new byte[length];
+        CompositeByteBuf byteBuf =
+            new CompositeByteBuf(ByteBufAllocator.DEFAULT, true, Constants.COMPOSITE_BYTE_BUF_MAX_COMPONENTS);
         // copy result data
-        updateShuffleData(readBlocks, data);
-        return new ShuffleDataResult(data, bufferSegments);
+        updateShuffleData(readBlocks, byteBuf);
+        return new ShuffleDataResult(byteBuf, bufferSegments);
       }
     } catch (Exception e) {
       LOG.error("Exception happened when getShuffleData in buffer", e);
@@ -238,16 +240,16 @@ public class ShuffleBuffer {
     return bufferSegment.getOffset() + bufferSegment.getLength();
   }
 
-  private void updateShuffleData(List<ShufflePartitionedBlock> readBlocks, byte[] data) {
+  private void updateShuffleData(List<ShufflePartitionedBlock> readBlocks, CompositeByteBuf data) {
     int offset = 0;
     for (ShufflePartitionedBlock block : readBlocks) {
       // fill shuffle data
       try {
-        System.arraycopy(block.getData(), 0, data, offset, block.getLength());
+        data.addComponent(true, block.getData().retain());
       } catch (Exception e) {
         LOG.error("Unexpected exception for System.arraycopy, length["
             + block.getLength() + "], offset["
-            + offset + "], dataLength[" + data.length + "]", e);
+            + offset + "], dataLength[" + data.capacity() + "]", e);
         throw e;
       }
       offset += block.getLength();

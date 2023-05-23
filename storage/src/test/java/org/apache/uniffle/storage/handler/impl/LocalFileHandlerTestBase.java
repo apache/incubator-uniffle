@@ -33,6 +33,7 @@ import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.segment.FixedSizeSegmentSplitter;
+import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
@@ -58,9 +59,11 @@ public class LocalFileHandlerTestBase {
 
   public static void writeTestData(List<ShufflePartitionedBlock> blocks, ShuffleWriteHandler handler,
       Map<Long, byte[]> expectedData, Set<Long> expectedBlockIds) throws Exception {
+    blocks.forEach(block -> block.getData().retain());
     handler.write(blocks);
     blocks.forEach(block -> expectedBlockIds.add(block.getBlockId()));
-    blocks.forEach(block -> expectedData.put(block.getBlockId(), block.getData()));
+    blocks.forEach(block -> expectedData.put(block.getBlockId(), ByteBufUtils.readBytes(block.getData())));
+    blocks.forEach(block -> block.getData().release());
   }
 
   public static void validateResult(ServerReadHandler readHandler, Set<Long> expectedBlockIds,

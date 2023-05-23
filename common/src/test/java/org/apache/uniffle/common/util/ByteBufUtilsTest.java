@@ -17,7 +17,10 @@
 
 package org.apache.uniffle.common.util;
 
+import java.nio.charset.StandardCharsets;
+
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.Test;
 
@@ -42,5 +45,28 @@ public class ByteBufUtilsTest {
     byteBuf.clear();
     ByteBufUtils.writeLengthAndString(byteBuf, null);
     assertNull(ByteBufUtils.readLengthAndString(byteBuf));
+
+    byteBuf.clear();
+    ByteBufUtils.writeLengthAndString(byteBuf, expectedString);
+    ByteBuf byteBuf1 = Unpooled.buffer(100);
+    ByteBufUtils.writeLengthAndString(byteBuf1, expectedString);
+    final int expectedLength = byteBuf.readableBytes() + byteBuf1.readableBytes();
+    CompositeByteBuf compositeByteBuf = Unpooled.compositeBuffer();
+    compositeByteBuf.addComponent(true, byteBuf);
+    compositeByteBuf.addComponent(true, byteBuf1);
+
+    ByteBuf res = Unpooled.buffer(100);
+    ByteBufUtils.copyByteBuf(compositeByteBuf, res);
+    assertEquals(expectedLength, res.readableBytes() - Integer.BYTES);
+
+    res.clear();
+    ByteBufUtils.copyByteBuf(compositeByteBuf, res);
+    assertEquals(expectedLength, res.readableBytes()  - Integer.BYTES);
+
+    byteBuf.clear();
+    byte[] bytes = expectedString.getBytes(StandardCharsets.UTF_8);
+    byteBuf.writeBytes(bytes);
+    ByteBufUtils.readBytes(byteBuf, bytes, 1, byteBuf.readableBytes() - 1);
+    assertEquals("ttest_st", new String(bytes, StandardCharsets.UTF_8));
   }
 }

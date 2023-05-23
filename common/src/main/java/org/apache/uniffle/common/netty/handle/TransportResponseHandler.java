@@ -17,50 +17,40 @@
 
 package org.apache.uniffle.common.netty.handle;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.netty.client.RpcResponseCallback;
 import org.apache.uniffle.common.netty.protocol.RpcResponse;
 import org.apache.uniffle.common.util.NettyUtils;
 
 
-public class TransportResponseHandler extends ChannelInboundHandlerAdapter {
+public class TransportResponseHandler extends MessageHandler<RpcResponse> {
   private static final Logger logger = LoggerFactory.getLogger(TransportResponseHandler.class);
 
   private Map<Long, RpcResponseCallback> outstandingRpcRequests;
   private Channel channel;
 
+  /** Records the time (in system nanoseconds) that the last fetch or RPC request was sent. */
+  private final AtomicLong timeOfLastRequestNs;
+
   public TransportResponseHandler(Channel channel) {
     this.channel = channel;
     this.outstandingRpcRequests = new ConcurrentHashMap<>();
-  }
-
-  @Override
-  public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-    if (msg instanceof RpcResponse) {
-      RpcResponse responseMessage = (RpcResponse) msg;
-      RpcResponseCallback listener = outstandingRpcRequests.get(responseMessage.getRequestId());
-      if (listener == null) {
-        logger.warn("Ignoring response from {} since it is not outstanding",
-            NettyUtils.getRemoteAddress(channel));
-      } else {
-        listener.onSuccess(responseMessage);
-      }
-    } else {
-      throw new RssException("receive unexpected message!");
-    }
-    super.channelRead(ctx, msg);
+    this.timeOfLastRequestNs = new AtomicLong(0);
   }
 
   public void addResponseCallback(long requestId, RpcResponseCallback callback) {
+    updateTimeOfLastRequest();
+    if (outstandingRpcRequests.containsKey(requestId)) {
+      logger.warn("[addRpcRequest] requestId {} already exists!", requestId);
+    }
     outstandingRpcRequests.put(requestId, callback);
   }
 
@@ -68,5 +58,69 @@ public class TransportResponseHandler extends ChannelInboundHandlerAdapter {
     outstandingRpcRequests.remove(requestId);
   }
 
+  @Override
+  public void handle(RpcResponse message) throws Exception {
+    RpcResponseCallback listener = outstandingRpcRequests.get(message.getRequestId());
+    if (listener == null) {
+      logger.warn("Ignoring response from {} since it is not outstanding",
+          NettyUtils.getRemoteAddress(channel));
+    } else {
+      listener.onSuccess(message);
+    }
+  }
 
+  @Override
+  public void channelActive() {
+
+  }
+
+  @Override
+  public void exceptionCaught(Throwable cause) {
+    if (numOutstandingRequests() > 0) {
+      String remoteAddress = NettyUtils.getRemoteAddress(channel);
+      logger.error(
+          "Still have {} requests outstanding when connection from {} is closed",
+          numOutstandingRequests(),
+          remoteAddress);
+      failOutstandingRequests(cause);
+    }
+  }
+
+  @Override
+  public void channelInactive() {
+    if (numOutstandingRequests() > 0) {
+      String remoteAddress = NettyUtils.getRemoteAddress(channel);
+      logger.error(
+          "Still have {} requests outstanding when connection from {} is closed",
+          numOutstandingRequests(),
+          remoteAddress);
+      failOutstandingRequests(new IOException("Connection from " + remoteAddress + " closed"));
+    }
+  }
+
+  public int numOutstandingRequests() {
+    return outstandingRpcRequests.size();
+  }
+
+  private void failOutstandingRequests(Throwable cause) {
+    for (Map.Entry<Long, RpcResponseCallback> entry : outstandingRpcRequests.entrySet()) {
+      try {
+        entry.getValue().onFailure(cause);
+      } catch (Exception e) {
+        logger.warn("RpcResponseCallback.onFailure throws exception", e);
+      }
+    }
+
+    outstandingRpcRequests.clear();
+  }
+
+  /** Returns the time in nanoseconds of when the last request was sent out. */
+  public long getTimeOfLastRequestNs() {
+    return timeOfLastRequestNs.get();
+  }
+
+  /** Updates the time of the last request to the current system time. */
+  public void updateTimeOfLastRequest() {
+    timeOfLastRequestNs.set(System.nanoTime());
+  }
 }
