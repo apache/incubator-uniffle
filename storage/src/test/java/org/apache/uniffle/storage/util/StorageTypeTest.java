@@ -27,7 +27,7 @@ public class StorageTypeTest {
 
   @Test
   public void commonTest() {
-    String type = "HADOOP";
+    String type = "HDFS";
     assertEquals(StorageType.valueOf(type), StorageType.HDFS);
 
     StorageType storageType = StorageType.MEMORY;
