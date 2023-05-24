@@ -107,7 +107,7 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
   private RssShuffleDataIterator getDataIterator(String basePath, Roaring64NavigableMap blockIdBitmap,
        Roaring64NavigableMap taskIdBitmap, List<ShuffleServerInfo> serverInfos, boolean compress) {
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(
-        StorageType.HADOOP.name(), "appId", 0, 1, 100, 2,
+        StorageType.HDFS.name(), "appId", 0, 1, 100, 2,
         10, 10000, basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(serverInfos),
         new Configuration(), new DefaultIdHelper());
     RssConf rc;

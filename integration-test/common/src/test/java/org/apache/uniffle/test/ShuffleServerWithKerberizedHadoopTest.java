@@ -85,7 +85,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     ShuffleServerConf serverConf = new ShuffleServerConf();
     dataFolder.deleteOnExit();
     serverConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT);
-    serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HADOOP.name());
+    serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
     serverConf.setString("rss.storage.basePath", dataFolder.getAbsolutePath());
     serverConf.setString("rss.server.buffer.capacity", "671088640");
     serverConf.setString("rss.server.memory.shuffle.highWaterMark", "50.0");
@@ -100,7 +100,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     serverConf.setString("rss.server.hadoop.dfs.replication", "2");
     serverConf.setLong("rss.server.disk.capacity", 10L * 1024L * 1024L * 1024L);
     serverConf.setBoolean("rss.server.health.check.enable", false);
-    serverConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HADOOP.name());
+    serverConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     serverConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     return serverConf;
   }
@@ -227,7 +227,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
 
     ShuffleServerInfo ssi = new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT);
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(
-        StorageType.HADOOP.name(),
+        StorageType.HDFS.name(),
         appId,
         0,
         0,
@@ -269,7 +269,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     shuffleServerClient.finishShuffle(rfsr);
 
     readClient = new ShuffleReadClientImpl(
-        StorageType.HADOOP.name(),
+        StorageType.HDFS.name(),
         appId,
         0,
         0,
@@ -286,7 +286,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     validateResult(readClient, expectedData, bitmaps[0]);
 
     readClient = new ShuffleReadClientImpl(
-        StorageType.HADOOP.name(),
+        StorageType.HDFS.name(),
         appId,
         0,
         1,
@@ -304,7 +304,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     validateResult(readClient, expectedData, bitmaps[1]);
 
     readClient = new ShuffleReadClientImpl(
-        StorageType.HADOOP.name(),
+        StorageType.HDFS.name(),
         appId,
         0,
         2,
@@ -322,7 +322,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     validateResult(readClient, expectedData, bitmaps[2]);
 
     readClient = new ShuffleReadClientImpl(
-        StorageType.HADOOP.name(),
+        StorageType.HDFS.name(),
         appId,
         0,
         3,

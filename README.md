@@ -137,8 +137,8 @@ rss-xxx.tgz will be generated for deployment
    ```
 4. update <RSS_HOME>/conf/dynamic_client.conf, rss client will get default conf from coordinator e.g.,
    ```
-    # MEMORY_LOCALFILE_HADOOP is recommended for production environment
-    rss.storage.type MEMORY_LOCALFILE_HADOOP
+    # MEMORY_LOCALFILE_HDFS is recommended for production environment
+    rss.storage.type MEMORY_LOCALFILE_HDFS
     # multiple remote storages are supported, and client will get assignment from coordinator
     rss.coordinator.remote.storage.path hdfs://cluster1/path,hdfs://cluster2/path
     rss.writer.require.memory.retryMax 1200
@@ -166,7 +166,7 @@ rss-xxx.tgz will be generated for deployment
      rss.jetty.http.port 19998
      rss.rpc.executor.size 2000
      # it should be configured the same as in coordinator
-     rss.storage.type MEMORY_LOCALFILE_HADOOP
+     rss.storage.type MEMORY_LOCALFILE_HDFS
      rss.coordinator.quorum <coordinatorIp1>:19999,<coordinatorIp2>:19999
      # local storage path for shuffle server
      rss.storage.basePath /data1/rssdata,/data2/rssdata....
@@ -182,7 +182,7 @@ rss-xxx.tgz will be generated for deployment
      rss.server.commit.timeout 600000
      rss.server.app.expired.withoutHeartbeat 120000
      # note: the default value of rss.server.flush.cold.storage.threshold.size is 64m
-     # there will be no data written to DFS if set it as 100g even rss.storage.type=MEMORY_LOCALFILE_HADOOP
+     # there will be no data written to DFS if set it as 100g even rss.storage.type=MEMORY_LOCALFILE_HDFS
      # please set a proper value if DFS is used, e.g., 64m, 128m.
      rss.server.flush.cold.storage.threshold.size 100g
    ```

@@ -67,7 +67,7 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HADOOP.name());
+    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     // Create multi shuffle servers
@@ -82,7 +82,7 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
       ShuffleServerConf serverConf = new ShuffleServerConf();
       dataFolder.deleteOnExit();
       serverConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + i);
-      serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HADOOP.name());
+      serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
       serverConf.setString("rss.storage.basePath", dataFolder.getAbsolutePath());
       serverConf.setString("rss.server.buffer.capacity", "671088640");
       serverConf.setString("rss.server.memory.shuffle.highWaterMark", "50.0");

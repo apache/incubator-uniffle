@@ -98,7 +98,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
   public void prepare() {
     ShuffleServerMetrics.register();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.emptyList());
-    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HADOOP.name());
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     LogManager.getRootLogger().setLevel(Level.INFO);
   }
 
@@ -127,7 +127,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
   public void concurrentWrite2HdfsWriteOneByOne() throws Exception {
     ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.emptyList());
-    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HADOOP.name());
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     int maxConcurrency = 3;
     shuffleServerConf.setInteger(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, maxConcurrency);
 
@@ -155,7 +155,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
   public void concurrentWrite2HdfsWriteOfSinglePartition() throws Exception {
     ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.emptyList());
-    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HADOOP.name());
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     int maxConcurrency = 3;
     shuffleServerConf.setInteger(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, maxConcurrency);
 
@@ -508,7 +508,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
   @Test
   public void fallbackWrittenWhenMultiStorageManagerEnableTest(@TempDir File tempDir) throws InterruptedException {
     shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 10000L);
-    shuffleServerConf.set(RssBaseConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HADOOP.toString());
+    shuffleServerConf.set(RssBaseConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS.toString());
     shuffleServerConf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
     shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
     shuffleServerConf.setString(ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,

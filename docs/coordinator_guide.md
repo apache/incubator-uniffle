@@ -52,8 +52,8 @@ This document will introduce how to deploy Uniffle coordinators.
    ```
 4. update <RSS_HOME>/conf/dynamic_client.conf, rss client will get default conf from coordinator eg,
    ```
-    # MEMORY_LOCALFILE_HADOOP is recommandation for production environment
-    rss.storage.type MEMORY_LOCALFILE_HADOOP
+    # MEMORY_LOCALFILE_HDFS is recommandation for production environment
+    rss.storage.type MEMORY_LOCALFILE_HDFS
     # multiple remote storages are supported, and client will get assignment from coordinator
     rss.coordinator.remote.storage.path hdfs://cluster1/path,hdfs://cluster2/path
     rss.writer.require.memory.retryMax 1200

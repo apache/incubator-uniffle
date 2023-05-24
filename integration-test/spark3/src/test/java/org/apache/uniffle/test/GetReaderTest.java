@@ -82,7 +82,7 @@ public class GetReaderTest extends IntegrationTestBase {
     printWriter.println(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key()
         + " " + String.join(Constants.COMMA_SPLIT_CHAR,  remoteStorage1, remoteStorage2));
     printWriter.println(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_CLUSTER_CONF.key() + " h2,k1=v1,k2=v2");
-    printWriter.println("spark.rss.storage.type " + StorageType.MEMORY_LOCALFILE_HADOOP.name());
+    printWriter.println("spark.rss.storage.type " + StorageType.MEMORY_LOCALFILE_HDFS.name());
     printWriter.flush();
     printWriter.close();
 

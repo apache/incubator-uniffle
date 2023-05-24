@@ -95,7 +95,7 @@ public class HadoopStorageManager extends SingleStorageManager {
       ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory
           .getInstance()
           .createShuffleDeleteHandler(
-              new CreateShuffleDeleteHandlerRequest(StorageType.HADOOP.name(), storage.getConf())
+              new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), storage.getConf())
           );
 
       String basicPath = ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);

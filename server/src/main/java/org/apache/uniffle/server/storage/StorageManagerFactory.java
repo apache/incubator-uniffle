@@ -34,10 +34,10 @@ public class StorageManagerFactory {
     StorageType type = StorageType.valueOf(conf.get(ShuffleServerConf.RSS_STORAGE_TYPE));
     if (StorageType.LOCALFILE.equals(type) || StorageType.MEMORY_LOCALFILE.equals(type)) {
       return new LocalStorageManager(conf);
-    } else if (StorageType.HADOOP.equals(type) || StorageType.MEMORY_HADOOP.equals(type)) {
+    } else if (StorageType.HDFS.equals(type) || StorageType.MEMORY_HDFS.equals(type)) {
       return new HadoopStorageManager(conf);
-    } else if (StorageType.LOCALFILE_HADOOP.equals(type)
-        || StorageType.MEMORY_LOCALFILE_HADOOP.equals(type)) {
+    } else if (StorageType.LOCALFILE_HDFS.equals(type)
+        || StorageType.MEMORY_LOCALFILE_HDFS.equals(type)) {
       return new MultiStorageManager(conf);
     } else {
       throw new IllegalArgumentException("unknown storageType was found");

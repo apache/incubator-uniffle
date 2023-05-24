@@ -105,7 +105,7 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     ShuffleServerConf serverConf = new ShuffleServerConf();
     dataFolder.deleteOnExit();
     serverConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT);
-    serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HADOOP.name());
+    serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
     serverConf.setString("rss.storage.basePath", dataFolder.getAbsolutePath());
     serverConf.setString("rss.server.buffer.capacity", "671088640");
     serverConf.setString("rss.server.memory.shuffle.highWaterMark", "50.0");

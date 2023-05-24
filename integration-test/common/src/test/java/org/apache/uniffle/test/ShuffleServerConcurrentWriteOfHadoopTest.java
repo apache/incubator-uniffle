@@ -65,7 +65,7 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HADOOP.name());
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     shuffleServerConf.setInteger(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, MAX_CONCURRENCY);
     shuffleServerConf.setBoolean(shuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED, true);
     shuffleServerConf.setLong(shuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD, 1024 * 1024L);
@@ -148,7 +148,7 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
     });
 
     ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(
-        StorageType.HADOOP.name(),
+        StorageType.HDFS.name(),
         appId,
         0,
         0,

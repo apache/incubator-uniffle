@@ -83,7 +83,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     when(dependencyMock.keyOrdering()).thenReturn(Option.empty());
 
     RssConf rssConf = new RssConf();
-    rssConf.set(RssClientConf.RSS_STORAGE_TYPE, StorageType.HADOOP.name());
+    rssConf.set(RssClientConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     rssConf.set(RssClientConf.RSS_INDEX_READ_LIMIT, 1000);
     rssConf.set(RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE, "1000");
     RssShuffleReader<String, String> rssShuffleReaderSpy = spy(new RssShuffleReader<>(0, 1, contextMock,

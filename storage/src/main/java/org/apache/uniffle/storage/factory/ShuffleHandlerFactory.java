@@ -85,7 +85,7 @@ public class ShuffleHandlerFactory {
           "Doesn't support storage type for client read  :" + storageType);
     }
 
-    if (StorageType.HADOOP == type) {
+    if (StorageType.HDFS == type) {
       return getHadoopClientReadHandler(request, serverInfo);
     }
     if (StorageType.LOCALFILE == type) {
@@ -167,7 +167,7 @@ public class ShuffleHandlerFactory {
   }
 
   public ShuffleDeleteHandler createShuffleDeleteHandler(CreateShuffleDeleteHandlerRequest request) {
-    if (StorageType.HADOOP.name().equals(request.getStorageType())) {
+    if (StorageType.HDFS.name().equals(request.getStorageType())) {
       return new HadoopShuffleDeleteHandler(request.getConf());
     } else if (StorageType.LOCALFILE.name().equals(request.getStorageType())) {
       return new LocalFileDeleteHandler();
