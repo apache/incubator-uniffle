@@ -34,8 +34,8 @@ import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
 import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
 import org.apache.uniffle.storage.handler.impl.ComposedClientReadHandler;
-import org.apache.uniffle.storage.handler.impl.HdfsClientReadHandler;
-import org.apache.uniffle.storage.handler.impl.HdfsShuffleDeleteHandler;
+import org.apache.uniffle.storage.handler.impl.HadoopClientReadHandler;
+import org.apache.uniffle.storage.handler.impl.HadoopShuffleDeleteHandler;
 import org.apache.uniffle.storage.handler.impl.LocalFileClientReadHandler;
 import org.apache.uniffle.storage.handler.impl.LocalFileDeleteHandler;
 import org.apache.uniffle.storage.handler.impl.MemoryClientReadHandler;
@@ -86,7 +86,7 @@ public class ShuffleHandlerFactory {
     }
 
     if (StorageType.HDFS == type) {
-      return getHdfsClientReadHandler(request, serverInfo);
+      return getHadoopClientReadHandler(request, serverInfo);
     }
     if (StorageType.LOCALFILE == type) {
       return getLocalfileClientReaderHandler(request, serverInfo);
@@ -103,9 +103,9 @@ public class ShuffleHandlerFactory {
           () -> getLocalfileClientReaderHandler(request, serverInfo)
       );
     }
-    if (StorageType.withHDFS(type)) {
+    if (StorageType.withHadoop(type)) {
       handlers.add(
-          () -> getHdfsClientReadHandler(request, serverInfo)
+          () -> getHadoopClientReadHandler(request, serverInfo)
       );
     }
     if (handlers.isEmpty()) {
@@ -147,8 +147,8 @@ public class ShuffleHandlerFactory {
     );
   }
 
-  private ClientReadHandler getHdfsClientReadHandler(CreateShuffleReadHandlerRequest request, ShuffleServerInfo ssi) {
-    return new HdfsClientReadHandler(
+  private ClientReadHandler getHadoopClientReadHandler(CreateShuffleReadHandlerRequest request, ShuffleServerInfo ssi) {
+    return new HadoopClientReadHandler(
         request.getAppId(),
         request.getShuffleId(),
         request.getPartitionId(),
@@ -168,7 +168,7 @@ public class ShuffleHandlerFactory {
 
   public ShuffleDeleteHandler createShuffleDeleteHandler(CreateShuffleDeleteHandlerRequest request) {
     if (StorageType.HDFS.name().equals(request.getStorageType())) {
-      return new HdfsShuffleDeleteHandler(request.getConf());
+      return new HadoopShuffleDeleteHandler(request.getConf());
     } else if (StorageType.LOCALFILE.name().equals(request.getStorageType())) {
       return new LocalFileDeleteHandler();
     } else {

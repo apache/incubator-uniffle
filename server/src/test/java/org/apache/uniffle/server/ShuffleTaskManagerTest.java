@@ -58,9 +58,9 @@ import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.storage.LocalStorageManager;
 import org.apache.uniffle.server.storage.StorageManager;
-import org.apache.uniffle.storage.HdfsTestBase;
+import org.apache.uniffle.storage.HadoopTestBase;
 import org.apache.uniffle.storage.common.LocalStorage;
-import org.apache.uniffle.storage.handler.impl.HdfsClientReadHandler;
+import org.apache.uniffle.storage.handler.impl.HadoopClientReadHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -74,7 +74,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class ShuffleTaskManagerTest extends HdfsTestBase {
+public class ShuffleTaskManagerTest extends HadoopTestBase {
 
   private static final AtomicInteger ATOMIC_INT = new AtomicInteger(0);
 
@@ -1010,7 +1010,7 @@ public class ShuffleTaskManagerTest extends HdfsTestBase {
       expectBlockIds.addLong(spb.getBlockId());
       remainIds.add(spb.getBlockId());
     }
-    HdfsClientReadHandler handler = new HdfsClientReadHandler(appId, shuffleId, partitionId,
+    HadoopClientReadHandler handler = new HadoopClientReadHandler(appId, shuffleId, partitionId,
         100, 1, 10, 1000, expectBlockIds, processBlockIds, basePath, new Configuration());
 
     ShuffleDataResult sdr = handler.readShuffleData();

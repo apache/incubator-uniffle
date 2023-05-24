@@ -122,7 +122,7 @@ public class ClientUtils {
   public static void validateTestModeConf(boolean testMode, String storageType) {
     if (!testMode && (StorageType.LOCALFILE.name().equals(storageType)
             || (StorageType.HDFS.name()).equals(storageType))) {
-      throw new IllegalArgumentException("LOCALFILE or HDFS storage type should be used in test mode only, "
+      throw new IllegalArgumentException("LOCALFILE or HADOOP storage type should be used in test mode only, "
               + "because of the poor performance of these two types.");
     }
   }

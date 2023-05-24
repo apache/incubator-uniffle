@@ -195,7 +195,7 @@ public class ShuffleServer {
     String storageType = shuffleServerConf.getString(RSS_STORAGE_TYPE);
     if (!testMode && (StorageType.LOCALFILE.name().equals(storageType)
             || (StorageType.HDFS.name()).equals(storageType))) {
-      throw new IllegalArgumentException("RSS storage type about LOCALFILE and HDFS should be used in test mode, "
+      throw new IllegalArgumentException("RSS storage type about LOCALFILE and HADOOP should be used in test mode, "
               + "because of the poor performance of these two types.");
     }
     ip = RssUtils.getHostIp();

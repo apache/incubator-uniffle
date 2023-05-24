@@ -40,7 +40,7 @@ public class DefaultStorageMediaProvider implements StorageMediaProvider {
   private static final String NUMBERIC_STRING = "0123456789";
   private static final String BLOCK_PATH_FORMAT = "/sys/block/%s/queue/rotational";
   private static final String HDFS = "hdfs";
-  private static final List<String> OBJECT_STORE_SCHEMAS = Arrays.asList("s3", "oss", "cos", "gcs", "obs");
+  private static final List<String> OBJECT_STORE_SCHEMAS = Arrays.asList("s3", "oss", "cos", "gcs", "obs", "daos");
 
   @Override
   public StorageMedia getStorageMediaFor(String baseDir) {

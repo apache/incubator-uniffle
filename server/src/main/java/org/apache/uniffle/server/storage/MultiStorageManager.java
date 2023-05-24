@@ -50,7 +50,7 @@ public class MultiStorageManager implements StorageManager {
 
   MultiStorageManager(ShuffleServerConf conf) {
     warmStorageManager = new LocalStorageManager(conf);
-    coldStorageManager = new HdfsStorageManager(conf);
+    coldStorageManager = new HadoopStorageManager(conf);
 
     try {
       AbstractStorageManagerFallbackStrategy storageManagerFallbackStrategy = loadFallbackStrategy(conf);
@@ -95,7 +95,7 @@ public class MultiStorageManager implements StorageManager {
   public static AbstractStorageManagerFallbackStrategy loadFallbackStrategy(
       ShuffleServerConf conf) throws Exception {
     String name = conf.getString(ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
-        HdfsStorageManagerFallbackStrategy.class.getCanonicalName());
+        HadoopStorageManagerFallbackStrategy.class.getCanonicalName());
     Class<?> klass = Class.forName(name);
     Constructor<?> constructor;
     AbstractStorageManagerFallbackStrategy instance;
