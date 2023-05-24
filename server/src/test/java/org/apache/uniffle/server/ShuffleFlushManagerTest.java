@@ -39,6 +39,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
+import org.apache.uniffle.server.storage.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,11 +56,6 @@ import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.event.AppPurgeEvent;
-import org.apache.uniffle.server.storage.HadoopStorageManager;
-import org.apache.uniffle.server.storage.LocalStorageManagerFallbackStrategy;
-import org.apache.uniffle.server.storage.MultiStorageManager;
-import org.apache.uniffle.server.storage.StorageManager;
-import org.apache.uniffle.server.storage.StorageManagerFactory;
 import org.apache.uniffle.storage.HadoopTestBase;
 import org.apache.uniffle.storage.common.AbstractStorage;
 import org.apache.uniffle.storage.common.HadoopStorage;
@@ -67,11 +63,7 @@ import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.handler.impl.HadoopClientReadHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -231,6 +223,34 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     manager.addToFlushQueue(fakeEvent);
     waitForQueueClear(manager);
     waitForMetrics(ShuffleServerMetrics.gaugeWriteHandler, 0, 0.5);
+  }
+
+  @Test
+  public void localMetricsTest(@TempDir File tempDir) throws Exception {
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE.name());
+
+    String appId = "localMetricsTest_appId";
+    StorageManager storageManager =
+            StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
+    ShuffleFlushManager manager =
+            new ShuffleFlushManager(shuffleServerConf, mockShuffleServer, storageManager);
+    ShuffleDataFlushEvent event1 =
+            createShuffleDataFlushEvent(appId, 1, 1, 1, null);
+    manager.addToFlushQueue(event1);
+    // wait for write data
+    waitForFlush(manager, appId, 1, 5);
+
+    validateLocalMetadata(storageManager, 160L);
+
+    ShuffleDataFlushEvent event12 =
+            createShuffleDataFlushEvent(appId, 1, 1, 1, null);
+    manager.addToFlushQueue(event12);
+
+    // wait for write data
+    waitForFlush(manager, appId, 1, 10);
+
+    validateLocalMetadata(storageManager, 320L);
   }
 
   @Test
@@ -586,5 +606,11 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     Thread.sleep(6 * 1000);
     assertEquals(eventNum + 3, (int) ShuffleServerMetrics.counterTotalDroppedEventNum.get());
     assertEquals(0, manager.getPendingEventsSize());
+  }
+
+  private void validateLocalMetadata(StorageManager storageManager, Long size) {
+    assertInstanceOf(LocalStorageManager.class, storageManager);
+    LocalStorage localStorage = ((LocalStorageManager) storageManager).getStorages().get(0);
+    assertEquals(size, localStorage.getMetaData().getDiskSize().longValue());
   }
 }
