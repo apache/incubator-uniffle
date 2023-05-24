@@ -45,7 +45,7 @@ public class ShuffleServerConfTest {
     withEnvironmentVariables("RSS_HOME", (new File(confFile)).getParent()).execute(() -> {
       ShuffleServerConf shuffleServerConf = new ShuffleServerConf(null);
       assertEquals(1234, shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
-      assertEquals("HADOOP", shuffleServerConf.getString(ShuffleServerConf.RSS_STORAGE_TYPE));
+      assertEquals("HDFS", shuffleServerConf.getString(ShuffleServerConf.RSS_STORAGE_TYPE));
       assertEquals("/var/tmp/test", shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0));
       withEnvironmentVariables("RSS_HOME", (new File(confFile)).getParent() + "/wrong_dir/")
           .execute(() -> assertFalse(shuffleServerConf.loadConfFromFile(null)));

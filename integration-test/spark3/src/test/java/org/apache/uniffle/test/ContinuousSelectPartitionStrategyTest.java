@@ -120,7 +120,7 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
 
   @Override
   public void updateSparkConfCustomer(SparkConf sparkConf) {
-    sparkConf.set(RssSparkConfig.RSS_STORAGE_TYPE.key(), "HADOOP");
+    sparkConf.set(RssSparkConfig.RSS_STORAGE_TYPE.key(), "HDFS");
     sparkConf.set(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
   }
 
