@@ -37,7 +37,7 @@
   ````
   
   ## TPC-DS
-  We generate 1TB data, we use the code of the [repo](https://github.com/databricks/spark-sql-perf)
+  We used [spark-sql-perf](https://github.com/databricks/spark-sql-perf) to generate 1TB data.
   
   |query name|vanilla|uniffle|
   |---|---|---|
