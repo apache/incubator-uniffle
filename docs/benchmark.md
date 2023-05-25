@@ -146,6 +146,7 @@
   |query98|17|21|
   |query99|13|12|
   |total|5821|6494|
+  
   Uniffle is a little 9% slower than vanilla Spark. Because the amount of shuffle is tiny.
   
   ## Tera Sort
