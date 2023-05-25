@@ -275,6 +275,9 @@ The following security configurations are introduced.
   be as the superuser for HDFS. For more details of related sections, 
   please see [Proxy user - Superusers Acting On Behalf Of Other Users](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/Superusers.html)
 
+## Benchmark
+We provide some benchmark tests for Uniffle. For details, you can see [Uniffle Benchmark](docs/benchmark.md)
+
 ## LICENSE
 
 Uniffle is under the Apache License Version 2.0. See the [LICENSE](https://github.com/apache/incubator-uniffle/blob/master/LICENSE) file for details.
