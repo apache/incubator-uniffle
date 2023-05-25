@@ -15,9 +15,13 @@
   ~ limitations under the License.
   -->
   ## Environment
+  
   Software: Uniffle 0.2.0  Hadoop 2.8.5 Spark 2.4.6
+  
   Hardware: Machine 176 cores, 265G memory, 4T * 12 HDD, network bandwidth 10GB/s
+  
   Hadoop Yarn Cluster: 1 * ResourceManager + 6 * NodeManager, every machine 4T * 10 HDD
+  
   Uniffle Cluster: 1 * Coordinator + 6 * Shuffle Server, every machine 4T * 10 HDD
   
   ## Configuration
