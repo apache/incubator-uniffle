@@ -65,6 +65,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
 
   protected abstract ShuffleDataResult readShuffleData(ShuffleDataSegment segment);
 
+  @Override
   public ShuffleDataResult readShuffleData() {
     if (shuffleDataSegments.isEmpty()) {
       ShuffleIndexResult shuffleIndexResult = readShuffleIndex();
