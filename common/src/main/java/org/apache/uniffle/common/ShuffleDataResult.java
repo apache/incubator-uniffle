@@ -24,11 +24,13 @@ import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
+import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
+import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.util.ByteBufUtils;
 
 public class ShuffleDataResult {
 
-  private final ByteBuf data;
+  private final ManagedBuffer buffer;
   private final List<BufferSegment> bufferSegments;
 
   public ShuffleDataResult() {
@@ -39,13 +41,18 @@ public class ShuffleDataResult {
     this(data, Lists.newArrayList());
   }
 
+  public ShuffleDataResult(ManagedBuffer buffer) {
+    this.buffer = buffer;
+    this.bufferSegments = Lists.newArrayList();
+  }
+
   public ShuffleDataResult(ByteBuffer data, List<BufferSegment> bufferSegments) {
-    this.data = data != null ? Unpooled.wrappedBuffer(data) : Unpooled.EMPTY_BUFFER;
+    this.buffer = new NettyManagedBuffer(data != null ? Unpooled.wrappedBuffer(data) : Unpooled.EMPTY_BUFFER);
     this.bufferSegments = bufferSegments;
   }
 
   public ShuffleDataResult(ByteBuf data, List<BufferSegment> bufferSegments) {
-    this.data = data;
+    this.buffer = new NettyManagedBuffer(data);
     this.bufferSegments = bufferSegments;
   }
 
@@ -54,21 +61,25 @@ public class ShuffleDataResult {
   }
 
   public byte[] getData() {
-    if (data == null) {
+    if (buffer == null) {
       return null;
     }
-    if (data.hasArray()) {
-      return data.array();
+    if (buffer.nioByteBuffer().hasArray()) {
+      return buffer.nioByteBuffer().array();
     }
-    return ByteBufUtils.readBytes(data);
+    return ByteBufUtils.readBytes(Unpooled.wrappedBuffer(buffer.nioByteBuffer()));
   }
 
   public ByteBuf getDataBuf() {
-    return data;
+    return Unpooled.wrappedBuffer(buffer.nioByteBuffer());
   }
 
   public ByteBuffer getDataBuffer() {
-    return data.nioBuffer();
+    return buffer.nioByteBuffer();
+  }
+
+  public ManagedBuffer getManagedBuffer() {
+    return buffer;
   }
 
   public List<BufferSegment> getBufferSegments() {
@@ -76,6 +87,6 @@ public class ShuffleDataResult {
   }
 
   public boolean isEmpty() {
-    return bufferSegments == null || bufferSegments.isEmpty() || data == null || data.capacity() == 0;
+    return bufferSegments == null || bufferSegments.isEmpty() || buffer == null || buffer.size() == 0;
   }
 }

@@ -1,0 +1,86 @@
+package org.apache.uniffle.common.netty.buffer;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.DefaultFileRegion;
+
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.JavaUtils;
+
+public class FileSegmentManagedBuffer extends ManagedBuffer {
+
+  private final File file;
+  private final int offset;
+  private final int length;
+
+  public FileSegmentManagedBuffer(File file, int offset, int length) {
+    this.file = file;
+    this.offset = offset;
+    this.length = length;
+  }
+
+  @Override
+  public int size() {
+    return length;
+  }
+
+  @Override
+  public ByteBuf byteBuf() {
+    return Unpooled.wrappedBuffer(this.nioByteBuffer());
+  }
+
+  @Override
+  public ByteBuffer nioByteBuffer() {
+    FileChannel channel = null;
+    try {
+      channel = new RandomAccessFile(file, "r").getChannel();
+      ByteBuffer buf = ByteBuffer.allocate(length);
+      channel.position(offset);
+      while (buf.remaining() != 0) {
+        if (channel.read(buf) == -1) {
+          throw new IOException(
+              String.format("Reached EOF before filling buffer.offset=%s,file=%s,buf.remaining=%s",
+              offset, file.getAbsoluteFile(), buf.remaining()));
+        }
+      }
+      buf.flip();
+      return buf;
+    } catch (IOException e) {
+      String errorMessage = "Error in reading " + this;
+      try {
+        if (channel != null) {
+          long size = channel.size();
+          errorMessage = "Error in reading " + this + " (actual file length " + size + ")";
+        }
+      } catch (IOException ignored) {
+        // ignore
+      }
+      throw new RssException(errorMessage, e);
+    } finally {
+      JavaUtils.closeQuietly(channel);
+    }
+  }
+
+  @Override
+  public ManagedBuffer release() {
+    return this;
+  }
+
+  @Override
+  public Object convertToNetty() {
+    FileChannel fileChannel;
+    try {
+      fileChannel = FileChannel.open(file.toPath(), StandardOpenOption.READ);
+    } catch (IOException e) {
+      throw new RssException("Error in reading " + file);
+    }
+    return new DefaultFileRegion(fileChannel, offset, length);
+  }
+}
