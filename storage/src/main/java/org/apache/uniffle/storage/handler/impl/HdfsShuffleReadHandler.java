@@ -80,7 +80,6 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
         processBlockIds, conf, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf(), false);
   }
 
-  @Override
   protected ShuffleIndexResult readShuffleIndex() {
     long start = System.currentTimeMillis();
     try {
