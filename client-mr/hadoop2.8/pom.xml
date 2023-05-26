@@ -26,7 +26,7 @@
     <version>0.8.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
-  <artifactId>rss-hadoop2.8-shim</artifactId>
+  <artifactId>hadoop2.8-shim</artifactId>
   <name>Apache Uniffle Hadoop2.8 Shims</name>
   <dependencies>
     <dependency>
