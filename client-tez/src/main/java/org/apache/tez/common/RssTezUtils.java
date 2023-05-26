@@ -124,7 +124,7 @@ public class RssTezUtils {
         res.add(tmp);
       }
     }
-    return org.apache.commons.lang.StringUtils.join(res, COMMA_DELIMITER);
+    return StringUtils.join(res, COMMA_DELIMITER);
   }
 
   public static Map<String, List<String>> uniformServerToPartitions(String partitionToServers) {
@@ -151,11 +151,11 @@ public class RssTezUtils {
     List<String> res = new ArrayList<>();
     Set<String> keySet = map.keySet();
     for (String s : keySet) {
-      String join = org.apache.commons.lang.StringUtils.join(map.get(s), UNDERLINE_DELIMITER);
+      String join = StringUtils.join(map.get(s), UNDERLINE_DELIMITER);
       res.add(s + PLUS_DELIMITER + join);
     }
 
-    return org.apache.commons.lang.StringUtils.join(res,COMMA_DELIMITER);
+    return StringUtils.join(res,COMMA_DELIMITER);
   }
 
   public static ApplicationAttemptId getApplicationAttemptId() {

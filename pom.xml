@@ -352,6 +352,10 @@
             <groupId>net.minidev</groupId>
             <artifactId>json-smart</artifactId>
           </exclusion>
+          <exclusion>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-json</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
@@ -1602,7 +1606,7 @@
     <profile>
       <id>mr</id>
       <modules>
-        <module>client-mr</module>
+        <module>client-mr/core</module>
         <module>integration-test/mr</module>
       </modules>
       <dependencyManagement>
@@ -1668,6 +1672,12 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <version>${hadoop.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>com.sun.jersey</groupId>
+                <artifactId>jersey-json</artifactId>
+              </exclusion>
+            </exclusions>
           </dependency>
           <dependency>
             <groupId>com.google.protobuf</groupId>
@@ -1693,6 +1703,46 @@
       <modules>
         <module>deploy/kubernetes</module>
       </modules>
+    </profile>
+    <profile>
+      <id>hadoop2.8</id>
+      <properties>
+        <hadoop.version>2.8.5</hadoop.version>
+        <hadoop.short.version>2.8</hadoop.short.version>
+      </properties>
+      <modules>
+        <module>client-mr/hadoop2.8</module>
+      </modules>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-hadoop-shim-hadoop${hadoop.short.version}</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+    </profile>
+    <profile>
+      <id>hadoop3.2</id>
+      <properties>
+        <hadoop.version>3.2.1</hadoop.version>
+        <hadoop.short.version>3.2</hadoop.short.version>
+        <commons-codec.version>1.11</commons-codec.version>
+        <metrics.version>3.2.4</metrics.version>
+      </properties>
+      <modules>
+        <module>client-mr/hadoop3.2</module>
+      </modules>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-hadoop-shim-hadoop${hadoop.short.version}</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
     </profile>
   </profiles>
 </project>

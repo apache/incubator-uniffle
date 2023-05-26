@@ -17,44 +17,22 @@
   -->
 
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns="http://maven.apache.org/POM/4.0.0"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.apache.uniffle</groupId>
     <artifactId>uniffle-parent</artifactId>
     <version>0.8.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
   </parent>
-
-  <groupId>org.apache.uniffle</groupId>
-  <artifactId>rss-client</artifactId>
-  <version>0.8.0-SNAPSHOT</version>
-  <packaging>jar</packaging>
-  <name>Apache Uniffle Client</name>
-
+  <artifactId>rss-hadoop-shim-hadoop3.2</artifactId>
+  <name>Apache Uniffle Hadoop3.2 Shims</name>
   <dependencies>
-    <dependency>
-      <groupId>org.apache.uniffle</groupId>
-      <artifactId>shuffle-storage</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.uniffle</groupId>
-      <artifactId>shuffle-storage</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-inline</artifactId>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
+      <version>${hadoop.version}</version>
       <exclusions>
         <exclusion>
           <groupId>com.sun.jersey</groupId>
@@ -64,7 +42,13 @@
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-minicluster</artifactId>
+      <artifactId>hadoop-mapreduce-client-core</artifactId>
+      <version>${hadoop.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-mapreduce-client-app</artifactId>
+      <version>${hadoop.version}</version>
     </dependency>
   </dependencies>
 </project>
