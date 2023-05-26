@@ -80,6 +80,7 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
         processBlockIds, conf, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf(), false);
   }
 
+  @Override
   protected ShuffleIndexResult readShuffleIndex() {
     long start = System.currentTimeMillis();
     try {
@@ -105,7 +106,6 @@ public class HdfsShuffleReadHandler extends DataSkippableReadHandler {
     return new ShuffleIndexResult();
   }
 
-  @Override
   protected ShuffleDataResult readShuffleData(ShuffleDataSegment shuffleDataSegment) {
     // Here we make an assumption that the rest of the file is corrupted, if an unexpected data is read.
     int expectedLength = shuffleDataSegment.getLength();
