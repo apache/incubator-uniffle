@@ -38,7 +38,7 @@ public class HadoopShimImpl {
   public static ShuffleClientMetrics createShuffleClientMetrics(TaskAttemptID taskAttemptID, JobConf jobConf) {
     try {
       Constructor constructor =
-          ShuffleClientMetrics.class.getConstructor(new Class[] {TaskAttemptID.class, JobConf.class});
+          ShuffleClientMetrics.class.getDeclaredConstructor(new Class[] {TaskAttemptID.class, JobConf.class});
       constructor.setAccessible(true);
       return (ShuffleClientMetrics) constructor.newInstance(taskAttemptID, jobConf);
     } catch (Exception e) {
