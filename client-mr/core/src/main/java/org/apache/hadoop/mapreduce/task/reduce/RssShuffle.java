@@ -36,7 +36,6 @@ import org.apache.hadoop.mapreduce.MRIdHelper;
 import org.apache.hadoop.mapreduce.RssMRConfig;
 import org.apache.hadoop.mapreduce.RssMRUtils;
 import org.apache.hadoop.util.Progress;
-import org.apache.uniffle.hadoop.shim.HadoopShimImpl;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
@@ -45,6 +44,7 @@ import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.hadoop.shim.HadoopShimImpl;
 
 public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionReporter {
 

@@ -56,7 +56,6 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.util.Progress;
-import org.apache.uniffle.hadoop.shim.HadoopShimImpl;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -75,6 +74,7 @@ import org.apache.uniffle.common.compression.Lz4Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.JavaUtils;
+import org.apache.uniffle.hadoop.shim.HadoopShimImpl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
