@@ -81,7 +81,7 @@ jobs:
           mvn-${{ inputs.java-version }}-package-${{ matrix.profile }}-
           mvn-${{ inputs.java-version }}-package-
     - name: Execute `mvn ${{ inputs.maven-args }} -P${{ matrix.profile }}`
-      run:
+      run: |
         PROFILES="${{ matrix.profile }}"
         PROFILES=${PROFILES/:/,}
         mvn -B -fae ${{ inputs.maven-args }} -P${PROFILES} | tee /tmp/maven.log
