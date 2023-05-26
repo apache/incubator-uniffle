@@ -19,6 +19,7 @@ package org.apache.uniffle.hadoop.shim;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapred.JobConf;
