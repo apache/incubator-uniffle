@@ -113,7 +113,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.uniffle</groupId>
-            <artifactId>rss-hadoop-shim-hadoop${hadoop.short.version}</artifactId>
+            <artifactId>rss-hadoop${hadoop.short.version}-shim</artifactId>
         </dependency>
     </dependencies>
 
