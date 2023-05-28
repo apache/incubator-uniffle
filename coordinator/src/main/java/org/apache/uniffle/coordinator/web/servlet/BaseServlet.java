@@ -30,7 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.uniffle.coordinator.web.Response;
 
-public abstract class BaseServlet extends HttpServlet {
+public abstract class BaseServlet<T> extends HttpServlet {
   public static final String JSON_MIME_TYPE = "application/json";
   final ObjectMapper mapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
@@ -44,9 +44,9 @@ public abstract class BaseServlet extends HttpServlet {
     writeJSON(resp, handlerRequest(() -> handlePost(req, resp)));
   }
 
-  private Response handlerRequest(
-      Callable<Response> function) {
-    Response response;
+  private Response<T> handlerRequest(
+      Callable<Response<T>> function) {
+    Response<T> response;
     try {
       // todo: Do something for authentication
       response = function.call();
@@ -56,13 +56,13 @@ public abstract class BaseServlet extends HttpServlet {
     return response;
   }
 
-  protected Response handleGet(
+  protected Response<T> handleGet(
       HttpServletRequest req,
       HttpServletResponse resp) throws ServletException, IOException {
     throw new IOException("Method not support!");
   }
 
-  protected Response handlePost(
+  protected Response<T> handlePost(
       HttpServletRequest req,
       HttpServletResponse resp) throws ServletException, IOException {
     throw new IOException("Method not support!");

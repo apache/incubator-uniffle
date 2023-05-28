@@ -64,7 +64,7 @@ public class PooledHadoopShuffleWriteHandlerTest {
   @Test
   public void lazyInitializeWriterHandlerTest() throws Exception {
     int maxConcurrency = 5;
-    LinkedBlockingDeque deque = new LinkedBlockingDeque(maxConcurrency);
+    LinkedBlockingDeque<ShuffleWriteHandler> deque = new LinkedBlockingDeque<>(maxConcurrency);
 
     CopyOnWriteArrayList<Integer> invokedList = new CopyOnWriteArrayList<>();
     CopyOnWriteArrayList<Integer> initializedList = new CopyOnWriteArrayList<>();
@@ -111,7 +111,7 @@ public class PooledHadoopShuffleWriteHandlerTest {
   public void writeSameFileWhenNoRaceCondition() throws Exception {
     int concurrency = 5;
     CopyOnWriteArrayList<Integer> invokedIndexes = new CopyOnWriteArrayList<>();
-    LinkedBlockingDeque deque = new LinkedBlockingDeque(concurrency);
+    LinkedBlockingDeque<ShuffleWriteHandler> deque = new LinkedBlockingDeque<>(concurrency);
     for (int i = 0; i < concurrency; i++) {
       deque.addFirst(
           new FakedShuffleWriteHandler(invokedIndexes, i, () -> {
@@ -136,7 +136,7 @@ public class PooledHadoopShuffleWriteHandlerTest {
   public void concurrentWrite() throws InterruptedException {
     int concurrency = 5;
     CopyOnWriteArrayList<Integer> invokedIndexes = new CopyOnWriteArrayList<>();
-    LinkedBlockingDeque deque = new LinkedBlockingDeque(concurrency);
+    LinkedBlockingDeque<ShuffleWriteHandler> deque = new LinkedBlockingDeque<>(concurrency);
     for (int i = 0; i < concurrency; i++) {
       deque.addFirst(
           new FakedShuffleWriteHandler(invokedIndexes, i, () -> {

@@ -81,6 +81,7 @@ public class ClientUtils {
         || StorageType.LOCALFILE_HDFS.name().equals(storageType);
   }
 
+  @SuppressWarnings("rawtypes")
   public static boolean waitUntilDoneOrFail(List<CompletableFuture<Boolean>> futures, boolean allowFastFail) {
     int expected = futures.size();
     int failed = 0;

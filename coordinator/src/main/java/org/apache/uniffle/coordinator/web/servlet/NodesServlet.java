@@ -29,7 +29,7 @@ import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.coordinator.web.Response;
 
 
-public class NodesServlet extends BaseServlet {
+public class NodesServlet extends BaseServlet<List<ServerNode>> {
   private final CoordinatorServer coordinator;
 
   public NodesServlet(CoordinatorServer coordinator) {
@@ -37,7 +37,7 @@ public class NodesServlet extends BaseServlet {
   }
 
   @Override
-  protected Response handleGet(HttpServletRequest req, HttpServletResponse resp) {
+  protected Response<List<ServerNode>> handleGet(HttpServletRequest req, HttpServletResponse resp) {
     List<ServerNode> serverList = coordinator.getClusterManager().getServerList(Collections.EMPTY_SET);
     String id = req.getParameter("id");
     String status = req.getParameter("status");

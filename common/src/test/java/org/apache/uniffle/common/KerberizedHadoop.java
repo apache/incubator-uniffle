@@ -80,7 +80,7 @@ public class KerberizedHadoop implements Serializable {
 
   private MiniDFSCluster kerberizedDfsCluster;
 
-  private Class testRunnerCls = KerberizedHadoop.class;
+  private Class<?> testRunnerCls = KerberizedHadoop.class;
 
   // The superuser for accessing HDFS
   private String hdfsKeytab;
@@ -301,7 +301,7 @@ public class KerberizedHadoop implements Serializable {
    * Should be invoked by extending class to solve the NPE.
    * refer to: https://github.com/apache/hbase/pull/1207
    */
-  public void setTestRunner(Class cls) {
+  public void setTestRunner(Class<?> cls) {
     this.testRunnerCls = cls;
   }
 
