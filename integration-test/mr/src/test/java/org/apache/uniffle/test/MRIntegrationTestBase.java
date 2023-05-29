@@ -115,6 +115,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
   private void updateCommonConfiguration(Configuration jobConf) {
     long mapMb = MRJobConfig.DEFAULT_MAP_MEMORY_MB;
     jobConf.set(MRJobConfig.MAP_JAVA_OPTS, "-Xmx" + mapMb + "m");
+    jobConf.setInt(MRJobConfig.MAP_MEMORY_MB, 500);
   }
 
   private void runOriginApp(Configuration jobConf) throws Exception {
