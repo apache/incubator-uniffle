@@ -60,6 +60,10 @@
           <groupId>com.sun.jersey</groupId>
           <artifactId>jersey-json</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>com.google.protobuf</groupId>
+          <artifactId>protobuf-java</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
