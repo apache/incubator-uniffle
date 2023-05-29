@@ -115,6 +115,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
   private void updateCommonConfiguration(Configuration jobConf) {
     long mapMb = MRJobConfig.DEFAULT_MAP_MEMORY_MB;
     jobConf.set(MRJobConfig.MAP_JAVA_OPTS, "-Xmx" + mapMb + "m");
+    jobConf.setInt(MRJobConfig.MAP_MEMORY_MB, 500);
   }
 
   private void runOriginApp(Configuration jobConf) throws Exception {
@@ -138,7 +139,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     jobConf.set(MRConfig.SHUFFLE_CONSUMER_PLUGIN, "org.apache.hadoop.mapreduce.task.reduce.RssShuffle");
     jobConf.set(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED, "true");
 
-    File file = new File(parentPath, "client-mr/target/shaded");
+    File file = new File(parentPath, "client-mr/core/target/shaded");
     File[] jars = file.listFiles();
     File localFile = null;
     for (File jar : jars) {

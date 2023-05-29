@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import com.google.common.collect.Maps;
-import org.apache.commons.lang.reflect.FieldUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.memory.TaskMemoryManager;

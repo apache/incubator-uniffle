@@ -37,6 +37,7 @@ function exit_with_usage() {
   echo "+------------------------------------------------------------------------------------------------------+"
   echo "| ./build_distribution.sh [--spark2-profile <spark2 profile id>] [--spark2-mvn <custom maven options>] |"
   echo "|                         [--spark3-profile <spark3 profile id>] [--spark3-mvn <custom maven options>] |"
+  echo "|                         [--hadoop-profile <hadoop profile id>]                                       |"
   echo "|                         <maven build options>                                                        |"
   echo "+------------------------------------------------------------------------------------------------------+"
   exit 1
@@ -46,6 +47,7 @@ SPARK2_PROFILE_ID="spark2"
 SPARK2_MVN_OPTS=""
 SPARK3_PROFILE_ID="spark3"
 SPARK3_MVN_OPTS=""
+HADOOP_PROFILE_ID="hadoop2.8"
 while (( "$#" )); do
   case $1 in
     --spark2-profile)
@@ -62,6 +64,10 @@ while (( "$#" )); do
       ;;
     --spark3-mvn)
       SPARK3_MVN_OPTS=$2
+      shift
+      ;;
+    --hadoop-profile)
+      HADOOP_PROFILE_ID=$2
       shift
       ;;
     --help)
@@ -103,7 +109,7 @@ VERSION=$("$MVN" help:evaluate -Dexpression=project.version $@ 2>/dev/null |
   tail -n 1)
 
 # Dependencies version
-HADOOP_VERSION=$("$MVN" help:evaluate -Dexpression=hadoop.version $@ 2>/dev/null\
+HADOOP_VERSION=$("$MVN" help:evaluate -Dexpression=hadoop.version -P$HADOOP_PROFILE_ID $@ 2>/dev/null\
     | grep -v "INFO"\
     | grep -v "WARNING"\
     | tail -n 1)
@@ -137,7 +143,7 @@ DISTDIR="rss-$VERSION"
 rm -rf "$DISTDIR"
 mkdir -p "${DISTDIR}/jars"
 echo "RSS ${VERSION}${GITREVSTRING} built for Hadoop ${HADOOP_VERSION} Spark2 ${SPARK2_VERSION} Spark3 ${SPARK3_VERSION}" >"${DISTDIR}/RELEASE"
-echo "Build flags: --spark2-profile '$SPARK2_PROFILE_ID' --spark2-mvn '$SPARK2_MVN_OPTS' --spark3-profile '$SPARK3_PROFILE_ID' --spark3-mvn '$SPARK3_MVN_OPTS' $@" >>"$DISTDIR/RELEASE"
+echo "Build flags: --spark2-profile '$SPARK2_PROFILE_ID' --spark2-mvn '$SPARK2_MVN_OPTS' --spark3-profile '$SPARK3_PROFILE_ID' --spark3-mvn '$SPARK3_MVN_OPTS' --hadoop-profile '$HADOOP_PROFILE_ID' $@" >>"$DISTDIR/RELEASE"
 mkdir -p "${DISTDIR}/logs"
 
 SERVER_JAR_DIR="${DISTDIR}/jars/server"
@@ -191,13 +197,13 @@ SPARK_CLIENT3_JAR="${RSS_HOME}/client-spark/spark3/target/shaded/rss-client-spar
 echo "copy $SPARK_CLIENT3_JAR to ${SPARK_CLIENT3_JAR_DIR}"
 cp $SPARK_CLIENT3_JAR $SPARK_CLIENT3_JAR_DIR
 
-BUILD_COMMAND_MR=("$MVN" clean package -Pmr -pl client-mr -DskipTests -am $@)
+BUILD_COMMAND_MR=("$MVN" clean package -Pmr,$HADOOP_PROFILE_ID -pl client-mr/core -DskipTests -am $@)
 echo -e "\nBuilding with..."
 echo -e "\$ ${BUILD_COMMAND_MR[@]}\n"
 "${BUILD_COMMAND_MR[@]}"
 MR_CLIENT_JAR_DIR="${CLIENT_JAR_DIR}/mr"
 mkdir -p $MR_CLIENT_JAR_DIR
-MR_CLIENT_JAR="${RSS_HOME}/client-mr/target/shaded/rss-client-mr-${VERSION}-shaded.jar"
+MR_CLIENT_JAR="${RSS_HOME}/client-mr/core/target/shaded/rss-client-mr-${VERSION}-shaded.jar"
 echo "copy $MR_CLIENT_JAR to ${MR_CLIENT_JAR_DIR}"
 cp $MR_CLIENT_JAR $MR_CLIENT_JAR_DIR
 
