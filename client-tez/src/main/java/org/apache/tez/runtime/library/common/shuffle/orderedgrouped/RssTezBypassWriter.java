@@ -28,6 +28,7 @@ import org.apache.tez.runtime.library.common.shuffle.MemoryFetchedInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ChecksumUtils;
 
 
@@ -52,7 +53,7 @@ public class RssTezBypassWriter {
       throw new IllegalStateException("RSS does not support OnDiskMapOutput as shuffle ouput,"
               + " try to reduce mapreduce.reduce.shuffle.memory.limit.percent");
     } else {
-      throw new IllegalStateException("Merger reserve unknown type of MapOutput: "
+      throw new RssException("Merger reserve unknown type of MapOutput: "
               + mapOutput.getClass().getCanonicalName());
     }
   }
@@ -74,7 +75,7 @@ public class RssTezBypassWriter {
       output.flush();
       output.close();
     } else {
-      throw new IllegalStateException("Merger reserve unknown type of MapOutput: "
+      throw new RssException("Merger reserve unknown type of MapOutput: "
           + mapOutput.getClass().getCanonicalName());
     }
   }
