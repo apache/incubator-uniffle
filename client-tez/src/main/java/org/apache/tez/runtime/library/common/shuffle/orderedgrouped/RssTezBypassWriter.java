@@ -17,16 +17,19 @@
 
 package org.apache.tez.runtime.library.common.shuffle.orderedgrouped;
 
+
 import java.io.IOException;
 import java.io.OutputStream;
 
-import com.google.common.annotations.VisibleForTesting;
-import org.apache.hadoop.util.DataChecksum;
+import com.google.common.primitives.Ints;
 import org.apache.tez.runtime.library.common.shuffle.DiskFetchedInput;
 import org.apache.tez.runtime.library.common.shuffle.FetchedInput;
 import org.apache.tez.runtime.library.common.shuffle.MemoryFetchedInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.uniffle.common.util.ChecksumUtils;
+
 
 
 // In Tez shuffle, MapOutput encapsulates the logic to fetch map task's output data via http.
@@ -67,28 +70,12 @@ public class RssTezBypassWriter {
       OutputStream output = ((DiskFetchedInput) mapOutput).getOutputStream();
       output.write(HEADER);
       output.write(buffer);
-      output.write(calcChecksum(buffer));
+      output.write(Ints.toByteArray((int)ChecksumUtils.getCrc32(buffer)));
       output.flush();
       output.close();
     } else {
       throw new IllegalStateException("Merger reserve unknown type of MapOutput: "
           + mapOutput.getClass().getCanonicalName());
     }
-  }
-
-  @VisibleForTesting
-  protected static byte[] calcChecksum(final byte[] buffer) throws IOException {
-    DataChecksum sum = DataChecksum.newDataChecksum(DataChecksum.Type.CRC32, Integer.MAX_VALUE);
-    int size = 4096;
-    int bufferSize = buffer.length;
-    int cur = 0;
-    while (cur < bufferSize) {
-      int l = Math.min(size, bufferSize - cur);
-      sum.update(buffer, cur, l);
-      cur += l;
-    }
-    byte[] checksum = new byte[sum.getChecksumSize()];
-    sum.writeValue(checksum, 0, false);
-    return checksum;
   }
 }
