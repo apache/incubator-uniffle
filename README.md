@@ -70,7 +70,7 @@ Currently supports Spark 2.3.x, Spark 2.4.x, Spark 3.0.x, Spark 3.1.x, Spark 3.2
 Note: To support dynamic allocation, the patch(which is included in patch/spark folder) should be applied to Spark
 
 ## Supported MapReduce Version
-Currently supports the MapReduce framework of Hadoop 2.8.5
+Currently supports the MapReduce framework of Hadoop 2.8.5, Hadoop 3.2.1
 
 ## Building Uniffle
 > note: currently Uniffle requires JDK 1.8 to build, adding later JDK support is on our roadmap.
@@ -96,6 +96,14 @@ Build against Spark 3.2.0
 
     mvn -DskipTests clean package -Pspark3.2.0
 
+Build against Hadoop 2.8.5
+
+    mvn -DskipTests clean package -Pmr,hadoop2.8
+
+Build against Hadoop 3.2.1
+
+    mvn -DskipTests clean package -Pmr,hadoop3.2
+
 To package the Uniffle, run:
 
     ./build_distribution.sh
@@ -107,6 +115,10 @@ Package against Spark 3.2.x, Except 3.2.0, run:
 Package against Spark 3.2.0, run:
 
     ./build_distribution.sh --spark3-profile 'spark3.2.0'
+
+Package will build against Hadoop 2.8.5 in default. If you want to build package against Hadoop 3.2.1, run:
+
+    ./build_distribution.sh --hadoop-profile 'hadoop3.2'
 
 rss-xxx.tgz will be generated for deployment
 
