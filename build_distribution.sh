@@ -48,6 +48,7 @@ SPARK2_MVN_OPTS=""
 SPARK3_PROFILE_ID="spark3"
 SPARK3_MVN_OPTS=""
 HADOOP_PROFILE_ID="hadoop2.8"
+NAME=none
 while (( "$#" )); do
   case $1 in
     --spark2-profile)
@@ -68,6 +69,10 @@ while (( "$#" )); do
       ;;
     --hadoop-profile)
       HADOOP_PROFILE_ID=$2
+      shift
+      ;;
+    --name)
+      NAME="$2"
       shift
       ;;
     --help)
@@ -122,6 +127,10 @@ SPARK3_VERSION=$("$MVN" help:evaluate -Dexpression=spark.version -P$SPARK3_PROFI
     | grep -v "WARNING"\
     | tail -n 1)
 
+if [ "$NAME" == "none" ]; then
+  NAME=$HADOOP_PROFILE_ID
+fi
+
 echo "RSS version is $VERSION"
 
 export MAVEN_OPTS="${MAVEN_OPTS:--Xmx2g -XX:ReservedCodeCacheSize=1g}"
@@ -139,7 +148,7 @@ echo -e "\$ ${BUILD_COMMAND[@]}\n"
 
 
 # Make directories
-DISTDIR="rss-$VERSION"
+DISTDIR="rss-$VERSION-$NAME"
 rm -rf "$DISTDIR"
 mkdir -p "${DISTDIR}/jars"
 echo "RSS ${VERSION}${GITREVSTRING} built for Hadoop ${HADOOP_VERSION} Spark2 ${SPARK2_VERSION} Spark3 ${SPARK3_VERSION}" >"${DISTDIR}/RELEASE"
@@ -210,6 +219,6 @@ cp $MR_CLIENT_JAR $MR_CLIENT_JAR_DIR
 cp -r bin $DISTDIR
 cp -r conf $DISTDIR
 
-rm -rf "rss-$VERSION.tgz"
-tar czf "rss-$VERSION.tgz" $DISTDIR
+rm -rf "rss-$VERSION-$NAME.tgz"
+tar czf "rss-$VERSION-$NAME.tgz" $DISTDIR
 rm -rf $DISTDIR
