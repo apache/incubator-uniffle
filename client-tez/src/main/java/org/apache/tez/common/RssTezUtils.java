@@ -120,7 +120,8 @@ public class RssTezUtils {
     Set<Integer> pidSet = map.keySet();
     for (Integer pid : pidSet) {
       for (ShuffleServerInfo shuffleServerInfo : map.get(pid)) {
-        tmp = pid + UNDERLINE_DELIMITER + shuffleServerInfo.getHost() + COLON_DELIMITER + shuffleServerInfo.getNettyPort();
+        tmp = pid + UNDERLINE_DELIMITER + shuffleServerInfo.getHost() + COLON_DELIMITER
+            + shuffleServerInfo.getNettyPort();
         res.add(tmp);
       }
     }
