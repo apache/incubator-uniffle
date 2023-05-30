@@ -70,7 +70,7 @@ Currently supports Spark 2.3.x, Spark 2.4.x, Spark 3.0.x, Spark 3.1.x, Spark 3.2
 Note: To support dynamic allocation, the patch(which is included in patch/spark folder) should be applied to Spark
 
 ## Supported MapReduce Version
-Currently supports the MapReduce framework of Hadoop 2.8.5
+Currently supports the MapReduce framework of Hadoop 2.8.5, Hadoop 3.2.1
 
 ## Building Uniffle
 > note: currently Uniffle requires JDK 1.8 to build, adding later JDK support is on our roadmap.
