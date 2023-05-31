@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.hash.MurmurHash;
@@ -37,12 +37,12 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.impl.DataFileSegment;
-import org.apache.uniffle.storage.handler.impl.HdfsFileWriter;
+import org.apache.uniffle.storage.handler.impl.HadoopFileWriter;
 
 public class ShuffleStorageUtils {
 
-  static final String HDFS_PATH_SEPARATOR = "/";
-  static final String HDFS_DIRNAME_SEPARATOR = "-";
+  static final String HADOOP_PATH_SEPARATOR = "/";
+  static final String HADOOP_DIRNAME_SEPARATOR = "-";
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleStorageUtils.class);
 
   private ShuffleStorageUtils() {
@@ -107,29 +107,29 @@ public class ShuffleStorageUtils {
 
   public static String getShuffleDataPath(String appId, int shuffleId) {
     return String.join(
-        HDFS_PATH_SEPARATOR,
+            HADOOP_PATH_SEPARATOR,
         appId,
         String.valueOf(shuffleId));
   }
 
   public static String getShuffleDataPath(String appId, int shuffleId, int start, int end) {
     return String.join(
-        HDFS_PATH_SEPARATOR,
+            HADOOP_PATH_SEPARATOR,
         appId,
         String.valueOf(shuffleId),
-        String.join(HDFS_DIRNAME_SEPARATOR, String.valueOf(start), String.valueOf(end)));
+        String.join(HADOOP_DIRNAME_SEPARATOR, String.valueOf(start), String.valueOf(end)));
   }
 
   public static String getCombineDataPath(String appId, int shuffleId) {
     return String.join(
-        HDFS_PATH_SEPARATOR,
+            HADOOP_PATH_SEPARATOR,
         appId,
         String.valueOf(shuffleId),
         "combine");
   }
 
   public static String getFullShuffleDataFolder(String basePath, String subPath) {
-    return String.join(HDFS_PATH_SEPARATOR, basePath, subPath);
+    return String.join(HADOOP_PATH_SEPARATOR, basePath, subPath);
   }
 
   public static String getShuffleDataPathWithRange(
@@ -186,7 +186,7 @@ public class ShuffleStorageUtils {
   }
 
 
-  public static long uploadFile(File file, HdfsFileWriter writer, int bufferSize) throws IOException {
+  public static long uploadFile(File file, HadoopFileWriter writer, int bufferSize) throws IOException {
     try (FileInputStream inputStream = new FileInputStream(file)) {
       return writer.copy(inputStream, bufferSize);
     } catch (IOException e) {

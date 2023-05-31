@@ -28,26 +28,26 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.common.KerberizedHdfsBase;
+import org.apache.uniffle.common.KerberizedHadoopBase;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class HadoopSecurityContextTest extends KerberizedHdfsBase {
+public class HadoopSecurityContextTest extends KerberizedHadoopBase {
 
   @BeforeAll
   public static void beforeAll() throws Exception {
     testRunner = HadoopSecurityContextTest.class;
-    KerberizedHdfsBase.init();
+    KerberizedHadoopBase.init();
   }
 
   @Test
   public void testSecuredCallable() throws Exception {
     try (HadoopSecurityContext context = new HadoopSecurityContext(
               null,
-              kerberizedHdfs.getHdfsKeytab(),
-              kerberizedHdfs.getHdfsPrincipal(),
+              kerberizedHadoop.getHdfsKeytab(),
+              kerberizedHadoop.getHdfsPrincipal(),
               1000)) {
 
       // case1: when user is empty or null, it should throw exception
@@ -61,10 +61,10 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
       // case2: run by the login user, there is no need to wrap proxy action
       Path pathWithHdfsUser = new Path("/hdfs/HadoopSecurityContextTest");
       context.runSecured("hdfs", (Callable<Void>) () -> {
-        kerberizedHdfs.getFileSystem().mkdirs(pathWithHdfsUser);
+        kerberizedHadoop.getFileSystem().mkdirs(pathWithHdfsUser);
         return null;
       });
-      FileStatus fileStatus = kerberizedHdfs.getFileSystem().getFileStatus(pathWithHdfsUser);
+      FileStatus fileStatus = kerberizedHadoop.getFileSystem().getFileStatus(pathWithHdfsUser);
       assertEquals("hdfs", fileStatus.getOwner());
 
       // case3: run by the proxy user
@@ -72,10 +72,10 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
       AtomicReference<UserGroupInformation> ugi1 = new AtomicReference<>();
       context.runSecured("alex", (Callable<Void>) () -> {
         ugi1.set(UserGroupInformation.getCurrentUser());
-        kerberizedHdfs.getFileSystem().mkdirs(pathWithAlexUser);
+        kerberizedHadoop.getFileSystem().mkdirs(pathWithAlexUser);
         return null;
       });
-      fileStatus = kerberizedHdfs.getFileSystem().getFileStatus(pathWithAlexUser);
+      fileStatus = kerberizedHadoop.getFileSystem().getFileStatus(pathWithAlexUser);
       assertEquals("alex", fileStatus.getOwner());
 
       // case4: run by the proxy user again, it will always return the same
@@ -88,8 +88,8 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
       assertTrue(ugi1.get() == ugi2.get());
       assertTrue(ugi1.get() == context.getProxyUserUgiPool().get("alex"));
 
-      FileSystem fileSystem1 = context.runSecured("alex", () -> FileSystem.get(kerberizedHdfs.getConf()));
-      FileSystem fileSystem2 = context.runSecured("alex", () -> FileSystem.get(kerberizedHdfs.getConf()));
+      FileSystem fileSystem1 = context.runSecured("alex", () -> FileSystem.get(kerberizedHadoop.getConf()));
+      FileSystem fileSystem2 = context.runSecured("alex", () -> FileSystem.get(kerberizedHadoop.getConf()));
       assertTrue(fileSystem1 == fileSystem2);
     }
   }
@@ -101,7 +101,7 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
     // case1: lack principal, should throw exception
     try (HadoopSecurityContext context = new HadoopSecurityContext(
             null,
-            kerberizedHdfs.getHdfsKeytab(),
+            kerberizedHadoop.getHdfsKeytab(),
             null,
             1000)) {
       fail();
@@ -113,7 +113,7 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
     try (HadoopSecurityContext context = new HadoopSecurityContext(
             null,
             null,
-            kerberizedHdfs.getHdfsPrincipal(),
+            kerberizedHadoop.getHdfsPrincipal(),
             1000)) {
       fail();
     } catch (Exception e) {
@@ -123,8 +123,8 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
     // case3: illegal re-login interval sec
     try (HadoopSecurityContext context = new HadoopSecurityContext(
             null,
-            kerberizedHdfs.getHdfsKeytab(),
-            kerberizedHdfs.getHdfsPrincipal(),
+            kerberizedHadoop.getHdfsKeytab(),
+            kerberizedHadoop.getHdfsPrincipal(),
             0)) {
       fail();
     } catch (Exception e) {
@@ -136,8 +136,8 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
     System.clearProperty("java.security.krb5.conf");
     HadoopSecurityContext context = new HadoopSecurityContext(
             krbConfFilePath,
-            kerberizedHdfs.getHdfsKeytab(),
-            kerberizedHdfs.getHdfsPrincipal(),
+            kerberizedHadoop.getHdfsKeytab(),
+            kerberizedHadoop.getHdfsPrincipal(),
             100
     );
     context.close();
@@ -153,8 +153,8 @@ public class HadoopSecurityContextTest extends KerberizedHdfsBase {
     System.clearProperty("java.security.krb5.conf");
     try (HadoopSecurityContext context2 = new HadoopSecurityContext(
             null,
-            kerberizedHdfs.getHdfsKeytab(),
-            kerberizedHdfs.getHdfsPrincipal(),
+            kerberizedHadoop.getHdfsKeytab(),
+            kerberizedHadoop.getHdfsPrincipal(),
             100)) {
       fail();
     } catch (Exception e) {

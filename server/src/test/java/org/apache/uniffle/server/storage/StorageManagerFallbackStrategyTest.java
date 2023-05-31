@@ -48,7 +48,7 @@ public class StorageManagerFallbackStrategyTest {
   public void testDefaultFallbackStrategy() {
     RotateStorageManagerFallbackStrategy fallbackStrategy = new RotateStorageManagerFallbackStrategy(conf);
     LocalStorageManager warmStorageManager = new LocalStorageManager(conf);
-    HdfsStorageManager coldStorageManager = new HdfsStorageManager(conf);
+    HadoopStorageManager coldStorageManager = new HadoopStorageManager(conf);
     StorageManager current = warmStorageManager;
     String remoteStorage = "test";
     String appId = "testDefaultFallbackStrategy_appId";
@@ -82,10 +82,10 @@ public class StorageManagerFallbackStrategyTest {
   }
 
   @Test
-  public void testHdfsFallbackStrategy() {
-    HdfsStorageManagerFallbackStrategy fallbackStrategy = new HdfsStorageManagerFallbackStrategy(conf);
+  public void testHadoopFallbackStrategy() {
+    HadoopStorageManagerFallbackStrategy fallbackStrategy = new HadoopStorageManagerFallbackStrategy(conf);
     LocalStorageManager warmStorageManager = new LocalStorageManager(conf);
-    HdfsStorageManager coldStorageManager = new HdfsStorageManager(conf);
+    HadoopStorageManager coldStorageManager = new HadoopStorageManager(conf);
     String remoteStorage = "test";
     String appId = "testHdfsFallbackStrategy_appId";
     coldStorageManager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
@@ -107,7 +107,7 @@ public class StorageManagerFallbackStrategyTest {
   public void testLocalFallbackStrategy() {
     LocalStorageManagerFallbackStrategy fallbackStrategy = new LocalStorageManagerFallbackStrategy(conf);
     LocalStorageManager warmStorageManager = new LocalStorageManager(conf);
-    HdfsStorageManager coldStorageManager = new HdfsStorageManager(conf);
+    HadoopStorageManager coldStorageManager = new HadoopStorageManager(conf);
     String remoteStorage = "test";
     String appId = "testLocalFallbackStrategy_appId";
     coldStorageManager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));

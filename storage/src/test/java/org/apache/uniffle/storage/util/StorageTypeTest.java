@@ -33,36 +33,36 @@ public class StorageTypeTest {
     StorageType storageType = StorageType.MEMORY;
     assertTrue(StorageType.withMemory(storageType));
     assertFalse(StorageType.withLocalfile(storageType));
-    assertFalse(StorageType.withHDFS(storageType));
+    assertFalse(StorageType.withHadoop(storageType));
 
     storageType = StorageType.LOCALFILE;
     assertFalse(StorageType.withMemory(storageType));
     assertTrue(StorageType.withLocalfile(storageType));
-    assertFalse(StorageType.withHDFS(storageType));
+    assertFalse(StorageType.withHadoop(storageType));
 
     storageType = StorageType.HDFS;
     assertFalse(StorageType.withMemory(storageType));
     assertFalse(StorageType.withLocalfile(storageType));
-    assertTrue(StorageType.withHDFS(storageType));
+    assertTrue(StorageType.withHadoop(storageType));
 
     storageType = StorageType.MEMORY_HDFS;
     assertTrue(StorageType.withMemory(storageType));
     assertFalse(StorageType.withLocalfile(storageType));
-    assertTrue(StorageType.withHDFS(storageType));
+    assertTrue(StorageType.withHadoop(storageType));
 
     storageType = StorageType.MEMORY_LOCALFILE;
     assertTrue(StorageType.withMemory(storageType));
     assertTrue(StorageType.withLocalfile(storageType));
-    assertFalse(StorageType.withHDFS(storageType));
+    assertFalse(StorageType.withHadoop(storageType));
 
     storageType = StorageType.MEMORY_LOCALFILE_HDFS;
     assertTrue(StorageType.withMemory(storageType));
     assertTrue(StorageType.withLocalfile(storageType));
-    assertTrue(StorageType.withHDFS(storageType));
+    assertTrue(StorageType.withHadoop(storageType));
 
     storageType = StorageType.LOCALFILE_HDFS;
     assertFalse(StorageType.withMemory(storageType));
     assertTrue(StorageType.withLocalfile(storageType));
-    assertTrue(StorageType.withHDFS(storageType));
+    assertTrue(StorageType.withHadoop(storageType));
   }
 }

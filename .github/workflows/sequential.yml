@@ -74,11 +74,14 @@ jobs:
     - name: Execute `mvn ${{ inputs.maven-args }} -Pspark2`
       run: mvn -B -fae ${{ inputs.maven-args }} -Pspark2 | tee -a /tmp/maven.log;
       shell: bash
-    - name: Execute `mvn ${{ inputs.maven-args }} -Pmr`
-      run: mvn -B -fae ${{ inputs.maven-args }} -Pmr | tee -a /tmp/maven.log;
+    - name: Execute `mvn ${{ inputs.maven-args }} -Pmr,hadoop2.8`
+      run: mvn -B -fae ${{ inputs.maven-args }} -Pmr,hadoop2.8 | tee -a /tmp/maven.log;
+      shell: bash
+    - name: Execute `mvn ${{ inputs.maven-args }} -Pmr,hadoop3.2`
+      run: mvn -B -fae ${{ inputs.maven-args }} -Pmr,hadoop3.2 | tee -a /tmp/maven.log;
       shell: bash
     - name: Execute `mvn ${{ inputs.maven-args }} -Ptez`
-      run: mvn -B -fae ${{ inputs.maven-args }} -Pmr | tee -a /tmp/maven.log;
+      run: mvn -B -fae ${{ inputs.maven-args }} -Ptez | tee -a /tmp/maven.log;
       shell: bash
     - name: Summary of failures
       if: ${{ failure() && inputs.summary != '' }}

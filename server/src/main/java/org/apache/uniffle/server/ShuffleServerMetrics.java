@@ -69,7 +69,7 @@ public class ShuffleServerMetrics {
   private static final String READ_USED_BUFFER_SIZE = "read_used_buffer_size";
   private static final String TOTAL_FAILED_WRITTEN_EVENT_NUM = "total_failed_written_event_num";
   private static final String TOTAL_DROPPED_EVENT_NUM = "total_dropped_event_num";
-  private static final String TOTAL_HDFS_WRITE_DATA = "total_hdfs_write_data";
+  private static final String TOTAL_HADOOP_WRITE_DATA = "total_hadoop_write_data";
   private static final String TOTAL_LOCALFILE_WRITE_DATA = "total_localfile_write_data";
   private static final String TOTAL_REQUIRE_BUFFER_FAILED = "total_require_buffer_failed";
   private static final String TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION =
@@ -117,7 +117,7 @@ public class ShuffleServerMetrics {
   public static Counter.Child  counterTotalReadTime;
   public static Counter.Child  counterTotalFailedWrittenEventNum;
   public static Counter.Child  counterTotalDroppedEventNum;
-  public static Counter.Child  counterTotalHdfsWriteDataSize;
+  public static Counter.Child counterTotalHadoopWriteDataSize;
   public static Counter.Child  counterTotalLocalFileWriteDataSize;
   public static Counter.Child  counterTotalRequireBufferFailed;
   public static Counter.Child  counterTotalRequireBufferFailedForHugePartition;
@@ -239,7 +239,7 @@ public class ShuffleServerMetrics {
     counterTotalReadTime = metricsManager.addLabeledCounter(TOTAL_READ_TIME);
     counterTotalDroppedEventNum = metricsManager.addLabeledCounter(TOTAL_DROPPED_EVENT_NUM);
     counterTotalFailedWrittenEventNum = metricsManager.addLabeledCounter(TOTAL_FAILED_WRITTEN_EVENT_NUM);
-    counterTotalHdfsWriteDataSize = metricsManager.addLabeledCounter(TOTAL_HDFS_WRITE_DATA);
+    counterTotalHadoopWriteDataSize = metricsManager.addLabeledCounter(TOTAL_HADOOP_WRITE_DATA);
     counterTotalLocalFileWriteDataSize = metricsManager.addLabeledCounter(TOTAL_LOCALFILE_WRITE_DATA);
     counterTotalRequireBufferFailed = metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED);
     counterTotalRequireBufferFailedForRegularPartition =

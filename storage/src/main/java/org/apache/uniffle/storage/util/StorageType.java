@@ -44,7 +44,7 @@ public enum StorageType {
     return (storageType.getVal() & LOCALFILE.getVal()) != 0;
   }
 
-  public static boolean withHDFS(StorageType storageType) {
+  public static boolean withHadoop(StorageType storageType) {
     return (storageType.getVal() & HDFS.getVal()) != 0;
   }
 }

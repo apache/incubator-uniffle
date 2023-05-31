@@ -223,7 +223,7 @@ public class ApplicationManager implements Closeable {
   public synchronized void removePathFromCounter(String storagePath) {
     RankValue atomic = remoteStoragePathRankValue.get(storagePath);
     // The time spent reading and writing cannot be used to determine whether the current path is still used by apps.
-    // Therefore, determine whether the HDFS path is still used by the number of apps
+    // Therefore, determine whether the Hadoop FS path is still used by the number of apps
     if (atomic != null && atomic.getAppNum().get() == 0) {
       remoteStoragePathRankValue.remove(storagePath);
     }

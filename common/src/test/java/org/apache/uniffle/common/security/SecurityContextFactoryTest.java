@@ -21,17 +21,17 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.common.KerberizedHdfsBase;
+import org.apache.uniffle.common.KerberizedHadoopBase;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class SecurityContextFactoryTest extends KerberizedHdfsBase {
+public class SecurityContextFactoryTest extends KerberizedHadoopBase {
 
   @BeforeAll
   public static void beforeAll() throws Exception {
     testRunner = SecurityContextFactoryTest.class;
-    KerberizedHdfsBase.init();
+    KerberizedHadoopBase.init();
   }
 
   @AfterEach
@@ -70,8 +70,8 @@ public class SecurityContextFactoryTest extends KerberizedHdfsBase {
     // case2: create the correct hadoop security context
     final SecurityConfig correctConfig = SecurityConfig
         .newBuilder()
-        .keytabFilePath(kerberizedHdfs.getHdfsKeytab())
-        .principal(kerberizedHdfs.getHdfsPrincipal())
+        .keytabFilePath(kerberizedHadoop.getHdfsKeytab())
+        .principal(kerberizedHadoop.getHdfsPrincipal())
         .reloginIntervalSec(60)
         .build();
     SecurityContextFactory.get().init(correctConfig);
