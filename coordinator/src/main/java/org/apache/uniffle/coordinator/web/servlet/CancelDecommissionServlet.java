@@ -28,7 +28,7 @@ import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.coordinator.web.Response;
 import org.apache.uniffle.coordinator.web.request.CancelDecommissionRequest;
 
-public class CancelDecommissionServlet extends BaseServlet {
+public class CancelDecommissionServlet extends BaseServlet<Object> {
   private final CoordinatorServer coordinator;
 
   public CancelDecommissionServlet(CoordinatorServer coordinator) {
@@ -36,7 +36,7 @@ public class CancelDecommissionServlet extends BaseServlet {
   }
 
   @Override
-  protected Response handlePost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+  protected Response<Object> handlePost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
     CancelDecommissionRequest params = parseParamsFromJson(req, CancelDecommissionRequest.class);
     if (CollectionUtils.isEmpty(params.getServerIds())) {
       return Response.fail("Parameter[serverIds] should not be null!");

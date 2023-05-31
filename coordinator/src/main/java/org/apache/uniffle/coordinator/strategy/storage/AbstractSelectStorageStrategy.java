@@ -57,7 +57,7 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
   protected final Map<String, RankValue> remoteStoragePathRankValue;
   protected final int fileSize;
   private final String coordinatorId;
-  private final Configuration hdfsConf;
+  private final Configuration hadoopConf;
   private final CoordinatorConf conf;
   protected List<Map.Entry<String, RankValue>> uris;
 
@@ -65,14 +65,14 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
       Map<String, RankValue> remoteStoragePathRankValue,
       CoordinatorConf conf) {
     this.remoteStoragePathRankValue = remoteStoragePathRankValue;
-    this.hdfsConf = new Configuration();
+    this.hadoopConf = new Configuration();
     this.fileSize = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_FILE_SIZE);
     this.coordinatorId = conf.getString(CoordinatorUtils.COORDINATOR_ID, UUID.randomUUID().toString());
     this.conf = conf;
   }
 
-  public void readAndWriteHdfsStorage(FileSystem fs, Path testPath,
-      String uri, RankValue rankValue) throws IOException {
+  public void readAndWriteHadoopStorage(FileSystem fs, Path testPath,
+                                        String uri, RankValue rankValue) throws IOException {
     byte[] data = RandomUtils.nextBytes(fileSize);
     try (FSDataOutputStream fos = fs.create(testPath)) {
       fos.write(data);
@@ -112,9 +112,9 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
           rankValue.setHealthy(new AtomicBoolean(true));
           long startWriteTime = System.currentTimeMillis();
           try {
-            FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hdfsConf);
+            FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hadoopConf);
             for (int j = 0; j < readAndWriteTimes(conf); j++) {
-              readAndWriteHdfsStorage(fs, testPath, uri.getKey(), rankValue);
+              readAndWriteHadoopStorage(fs, testPath, uri.getKey(), rankValue);
             }
           } catch (Exception e) {
             LOG.error("Storage read and write error, we will not use this remote path {}.", uri, e);
@@ -138,7 +138,7 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
       String path, String testPath, long startWrite) {
     RankValue rankValue = remoteStoragePathRankValue.get(path);
     try {
-      FileSystem fs = HadoopFilesystemProvider.getFilesystem(new Path(path), hdfsConf);
+      FileSystem fs = HadoopFilesystemProvider.getFilesystem(new Path(path), hadoopConf);
       fs.delete(new Path(testPath), true);
       if (rankValue.getHealthy().get()) {
         rankValue.setCostTime(new AtomicLong(System.currentTimeMillis() - startWrite));

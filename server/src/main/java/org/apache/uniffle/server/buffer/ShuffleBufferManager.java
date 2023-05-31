@@ -563,6 +563,7 @@ public class ShuffleBufferManager {
       Collection<ShuffleBuffer> buffers = bufferRangeMap.asMapOfRanges().values();
       if (buffers != null) {
         for (ShuffleBuffer buffer : buffers) {
+          buffer.getBlocks().forEach(spb -> spb.getData().release());
           ShuffleServerMetrics.gaugeTotalPartitionNum.dec();
           size += buffer.getSize();
         }

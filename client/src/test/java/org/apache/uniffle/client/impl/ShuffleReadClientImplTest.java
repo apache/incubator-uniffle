@@ -41,8 +41,8 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.Constants;
-import org.apache.uniffle.storage.HdfsTestBase;
-import org.apache.uniffle.storage.handler.impl.HdfsShuffleWriteHandler;
+import org.apache.uniffle.storage.HadoopTestBase;
+import org.apache.uniffle.storage.handler.impl.HadoopShuffleWriteHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 
-public class ShuffleReadClientImplTest extends HdfsTestBase {
+public class ShuffleReadClientImplTest extends HadoopTestBase {
 
   private static final String EXPECTED_EXCEPTION_MESSAGE = "Exception should be thrown";
   private static AtomicLong ATOMIC_LONG = new AtomicLong(0);
@@ -62,8 +62,8 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
   @Test
   public void readTest1() throws Exception {
     String basePath = HDFS_URI + "clientReadTest1";
-    HdfsShuffleWriteHandler writeHandler =
-        new HdfsShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler =
+        new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -99,10 +99,10 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
   @Test
   public void readTest2() throws Exception {
     String basePath = HDFS_URI + "clientReadTest2";
-    HdfsShuffleWriteHandler writeHandler1 =
-        new HdfsShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
-    HdfsShuffleWriteHandler writeHandler2 =
-        new HdfsShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi2.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler1 =
+        new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler2 =
+        new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi2.getId(), conf);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -123,10 +123,10 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
   @Test
   public void readTest3() throws Exception {
     String basePath = HDFS_URI + "clientReadTest3";
-    HdfsShuffleWriteHandler writeHandler1 =
-        new HdfsShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
-    HdfsShuffleWriteHandler writeHandler2 =
-        new HdfsShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi2.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler1 =
+        new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler2 =
+        new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi2.getId(), conf);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     final Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -158,8 +158,8 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
   @Test
   public void readTest4() throws Exception {
     String basePath = HDFS_URI + "clientReadTest4";
-    HdfsShuffleWriteHandler writeHandler =
-        new HdfsShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler =
+        new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -193,8 +193,8 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
   @Test
   public void readTest5() throws Exception {
     String basePath = HDFS_URI + "clientReadTest5";
-    HdfsShuffleWriteHandler writeHandler =
-        new HdfsShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler =
+        new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -215,8 +215,8 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
   @Test
   public void readTest7() throws Exception {
     String basePath = HDFS_URI + "clientReadTest7";
-    HdfsShuffleWriteHandler writeHandler =
-        new HdfsShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler =
+        new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
 
     Map<Long, byte[]> expectedData1 = Maps.newHashMap();
     Map<Long, byte[]> expectedData2 = Maps.newHashMap();
@@ -247,8 +247,8 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
   @Test
   public void readTest8() throws Exception {
     String basePath = HDFS_URI + "clientReadTest8";
-    HdfsShuffleWriteHandler writeHandler =
-        new HdfsShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler =
+        new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -296,8 +296,8 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
   @Test
   public void readTest10() throws Exception {
     String basePath = HDFS_URI + "clientReadTest10";
-    HdfsShuffleWriteHandler writeHandler =
-        new HdfsShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler =
+        new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -325,8 +325,8 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
   @Test
   public void readTest11() throws Exception {
     String basePath = HDFS_URI + "clientReadTest11";
-    HdfsShuffleWriteHandler writeHandler =
-        new HdfsShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler =
+        new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -378,8 +378,8 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
   @Test
   public void readTest12() throws Exception {
     String basePath = HDFS_URI + "clientReadTest12";
-    HdfsShuffleWriteHandler writeHandler =
-        new HdfsShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler =
+        new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     final Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -402,8 +402,8 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
   @Test
   public void readTest13() throws Exception {
     String basePath = HDFS_URI + "clientReadTest13";
-    HdfsShuffleWriteHandler writeHandler =
-        new HdfsShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler =
+        new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     final Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -429,8 +429,8 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
   @Test
   public void readTest14() throws Exception {
     String basePath = HDFS_URI + "clientReadTest14";
-    HdfsShuffleWriteHandler writeHandler =
-        new HdfsShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler =
+        new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     final Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -453,8 +453,8 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
   @Test
   public void readTest15() throws Exception {
     String basePath = HDFS_URI + "clientReadTest15";
-    HdfsShuffleWriteHandler writeHandler =
-        new HdfsShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler =
+        new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     final Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -477,7 +477,7 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
   }
 
   private void writeTestData(
-      HdfsShuffleWriteHandler writeHandler,
+      HadoopShuffleWriteHandler writeHandler,
       int num, int length, long taskAttemptId,
       Map<Long, byte[]> expectedData,
       Roaring64NavigableMap blockIdBitmap) throws Exception {
@@ -496,7 +496,7 @@ public class ShuffleReadClientImplTest extends HdfsTestBase {
   }
 
   private void writeDuplicatedData(
-      HdfsShuffleWriteHandler writeHandler,
+      HadoopShuffleWriteHandler writeHandler,
       int num, int length, long taskAttemptId,
       Map<Long, byte[]> expectedData,
       Roaring64NavigableMap blockIdBitmap) throws Exception {

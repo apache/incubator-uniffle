@@ -181,6 +181,9 @@ public class LocalStorageManager extends SingleStorageManager {
               storage.getBasePath(), event);
         }
       } else {
+        if (event.getUnderStorage() == null) {
+          event.setUnderStorage(storage);
+        }
         return storage;
       }
     }
@@ -189,6 +192,10 @@ public class LocalStorageManager extends SingleStorageManager {
         .stream()
         .filter(x -> x.canWrite() && !x.isCorrupted())
         .collect(Collectors.toList());
+
+    if (candidates.size() == 0) {
+      return null;
+    }
     final LocalStorage selectedStorage = candidates.get(
         ShuffleStorageUtils.getStorageIndex(
             candidates.size(),
@@ -202,7 +209,7 @@ public class LocalStorageManager extends SingleStorageManager {
         (key, localStorage) -> {
           // If this is the first time to select storage or existing storage is corrupted,
           // we should refresh the cache.
-          if (localStorage == null || localStorage.isCorrupted()) {
+          if (localStorage == null || localStorage.isCorrupted() || event.getUnderStorage() == null) {
             event.setUnderStorage(selectedStorage);
             return selectedStorage;
           }

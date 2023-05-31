@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.SystemUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -47,6 +47,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -159,6 +160,11 @@ public class LocalStorageManagerTest {
     ((LocalStorage)restStorage).markCorrupted();
     Storage storage8 = localStorageManager.selectStorage(dataReadEvent);
     assertEquals(storage7, storage8);
+
+    // make all storage corrupted
+    ((LocalStorage)localStorageManager.selectStorage(dataFlushEvent1)).markCorrupted();
+    ShuffleDataFlushEvent dataFlushEvent3 = toDataFlushEvent(appId, 1, 2);
+    assertNull(localStorageManager.selectStorage(dataFlushEvent3));
   }
 
   @Test
