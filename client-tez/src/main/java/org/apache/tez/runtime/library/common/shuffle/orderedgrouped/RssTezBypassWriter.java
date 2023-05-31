@@ -50,7 +50,7 @@ public class RssTezBypassWriter {
     } else if (mapOutput.getType() == MapOutput.Type.DISK) {
       // RSS leverages its own compression, it is incompatible with hadoop's disk file compression.
       // So we should disable this situation.
-      throw new IllegalStateException("RSS does not support OnDiskMapOutput as shuffle ouput,"
+      throw new RssException("RSS does not support OnDiskMapOutput as shuffle ouput,"
               + " try to reduce mapreduce.reduce.shuffle.memory.limit.percent");
     } else {
       throw new RssException("Merger reserve unknown type of MapOutput: "
