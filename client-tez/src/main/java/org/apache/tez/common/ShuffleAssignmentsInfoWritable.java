@@ -28,14 +28,17 @@ import java.util.Map;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.hadoop.io.Writable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
-
 public class ShuffleAssignmentsInfoWritable implements Writable {
   private ShuffleAssignmentsInfo shuffleAssignmentsInfo;
+  private static final Logger LOG = LoggerFactory.getLogger(ShuffleAssignmentsInfoWritable.class);
+
 
   public ShuffleAssignmentsInfoWritable() {
 
@@ -50,6 +53,7 @@ public class ShuffleAssignmentsInfoWritable implements Writable {
   public void write(DataOutput dataOutput) throws IOException {
     if (shuffleAssignmentsInfo == null) {
       dataOutput.writeInt(-1);
+      LOG.warn("shuffleAssignmentsInfo is null, no need write");
       return;
     } else {
       dataOutput.writeInt(1);
@@ -101,28 +105,29 @@ public class ShuffleAssignmentsInfoWritable implements Writable {
   @Override
   public void readFields(DataInput dataInput) throws IOException {
     if (dataInput.readInt() == -1) {
+      LOG.warn("shuffleAssignmentsInfo is null, no need read");
       return;
     }
 
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = new HashMap<>();
     int partitionToServersSize = dataInput.readInt();
     if (partitionToServersSize != -1) {
-      Integer k;
+      Integer partitionId;
       for (int i = 0; i < partitionToServersSize; i++) {
-        k = dataInput.readInt();
-        List<ShuffleServerInfo> v = new ArrayList<>();
-        int vSize = dataInput.readInt();
-        if (vSize != -1) {
-          for (int i1 = 0; i1 < vSize; i1++) {
+        partitionId = dataInput.readInt();
+        List<ShuffleServerInfo> shuffleServerInfoList = new ArrayList<>();
+        int shuffleServerInfoListSize = dataInput.readInt();
+        if (shuffleServerInfoListSize != -1) {
+          for (int i1 = 0; i1 < shuffleServerInfoListSize; i1++) {
             String id = dataInput.readUTF();
             String host = dataInput.readUTF();
             int port = dataInput.readInt();
             ShuffleServerInfo shuffleServerInfo = new ShuffleServerInfo(id, host, port);
-            v.add(shuffleServerInfo);
+            shuffleServerInfoList.add(shuffleServerInfo);
           }
         }
 
-        partitionToServers.put(k, v);
+        partitionToServers.put(partitionId, shuffleServerInfoList);
       }
     }
 
@@ -130,24 +135,24 @@ public class ShuffleAssignmentsInfoWritable implements Writable {
     int serverToPartitionRangesSize = dataInput.readInt();
     if (serverToPartitionRangesSize != -1) {
       for (int i = 0; i < serverToPartitionRangesSize; i++) {
-        ShuffleServerInfo k;
-        List<PartitionRange> v = new ArrayList<>();
+        ShuffleServerInfo shuffleServerInfo;
+        List<PartitionRange> partitionRangeList = new ArrayList<>();
 
         String id = dataInput.readUTF();
         String host = dataInput.readUTF();
         int port = dataInput.readInt();
-        k = new ShuffleServerInfo(id, host, port);
+        shuffleServerInfo = new ShuffleServerInfo(id, host, port);
 
-        int vSize = dataInput.readInt();
-        if (vSize != -1) {
-          for (int i1 = 0; i1 < vSize; i1++) {
+        int partitionRangeListSize = dataInput.readInt();
+        if (partitionRangeListSize != -1) {
+          for (int i1 = 0; i1 < partitionRangeListSize; i1++) {
             int start = dataInput.readInt();
             int end = dataInput.readInt();
             PartitionRange partitionRange = new PartitionRange(start, end);
-            v.add(partitionRange);
+            partitionRangeList.add(partitionRange);
           }
         }
-        serverToPartitionRanges.put(k, v);
+        serverToPartitionRanges.put(shuffleServerInfo, partitionRangeList);
       }
     }
 
