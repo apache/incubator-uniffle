@@ -47,22 +47,18 @@ public class GetShuffleServerRequestTest {
     int partitionNum = 20;
     int shuffleId = 1998;
 
-    // 构建实例
     GetShuffleServerRequest request = new GetShuffleServerRequest(tezTaskAttemptID, startIndex,
             partitionNum, shuffleId);
 
-    // 序列化
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     DataOutput out = new DataOutputStream(bos);
     request.write(out);
 
-    // 反序列化
     GetShuffleServerRequest deSerRequest = new GetShuffleServerRequest();
     ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
     DataInput in = new DataInputStream(bis);
     deSerRequest.readFields(in);
 
-    // 校验
     assertEquals(request.getCurrentTaskAttemptID(), deSerRequest.getCurrentTaskAttemptID());
     assertEquals(request.getStartIndex(), deSerRequest.getStartIndex());
     assertEquals(request.getPartitionNum(), deSerRequest.getPartitionNum());

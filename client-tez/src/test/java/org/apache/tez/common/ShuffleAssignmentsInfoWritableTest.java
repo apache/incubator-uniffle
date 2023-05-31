@@ -72,22 +72,18 @@ public class ShuffleAssignmentsInfoWritableTest {
     serverToPartitionRanges.put(work4, Arrays.asList(range0, range1, range3, range4));
 
 
-    // 构建实例
     ShuffleAssignmentsInfo info = new ShuffleAssignmentsInfo(partitionToServers, serverToPartitionRanges);
     ShuffleAssignmentsInfoWritable infoWritable = new ShuffleAssignmentsInfoWritable(info);
 
-    // 序列化
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     DataOutput out = new DataOutputStream(bos);
     infoWritable.write(out);
 
-    // 反序列化
     ShuffleAssignmentsInfoWritable deSerInfoWritable = new ShuffleAssignmentsInfoWritable();
     ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
     DataInput in = new DataInputStream(bis);
     deSerInfoWritable.readFields(in);
 
-    // 校验
     {
       Map<Integer, List<ShuffleServerInfo>> base = infoWritable.getShuffleAssignmentsInfo().getPartitionToServers();
       Map<Integer, List<ShuffleServerInfo>> deSer = deSerInfoWritable.getShuffleAssignmentsInfo()

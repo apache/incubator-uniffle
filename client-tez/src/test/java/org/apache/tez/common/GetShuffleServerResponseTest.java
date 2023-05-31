@@ -71,7 +71,6 @@ public class GetShuffleServerResponseTest {
 
     ShuffleAssignmentsInfo info = new ShuffleAssignmentsInfo(partitionToServers, serverToPartitionRanges);
 
-    // 构建实例
     int status = 0;
     String retMsg = "none";
     ShuffleAssignmentsInfoWritable infoWritable = new ShuffleAssignmentsInfoWritable(info);
@@ -81,18 +80,15 @@ public class GetShuffleServerResponseTest {
     response.setRetMsg(retMsg);
     response.setShuffleAssignmentsInfoWritable(infoWritable);
 
-    // 序列化
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     DataOutput out = new DataOutputStream(bos);
     response.write(out);
 
-    // 反序列化
     GetShuffleServerResponse deSerResponse = new GetShuffleServerResponse();
     ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
     DataInput in = new DataInputStream(bis);
     deSerResponse.readFields(in);
 
-    // 校验
     assertEquals(response.getStatus(), deSerResponse.getStatus());
     assertEquals(response.getRetMsg(), deSerResponse.getRetMsg());
     {
