@@ -69,7 +69,7 @@ public class ShuffleAssignmentsInfoWritable implements Writable {
           for (ShuffleServerInfo serverInfo : entry.getValue()) {
             dataOutput.writeUTF(serverInfo.getId());
             dataOutput.writeUTF(serverInfo.getHost());
-            dataOutput.writeInt(serverInfo.getNettyPort());
+            dataOutput.writeInt(serverInfo.getGrpcPort());
           }
         }
       }
@@ -84,7 +84,7 @@ public class ShuffleAssignmentsInfoWritable implements Writable {
       for (Map.Entry<ShuffleServerInfo, List<PartitionRange>> entry : serverToPartitionRanges.entrySet()) {
         dataOutput.writeUTF(entry.getKey().getId());
         dataOutput.writeUTF(entry.getKey().getHost());
-        dataOutput.writeInt(entry.getKey().getNettyPort());
+        dataOutput.writeInt(entry.getKey().getGrpcPort());
         if (CollectionUtils.isEmpty(entry.getValue())) {
           dataOutput.writeInt(-1);
         } else {
