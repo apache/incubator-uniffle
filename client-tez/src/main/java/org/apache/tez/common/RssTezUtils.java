@@ -17,21 +17,14 @@
 
 package org.apache.tez.common;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.yarn.api.ApplicationConstants;
-import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
-import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.tez.dag.records.TezTaskAttemptID;
-import org.apache.tez.runtime.api.InputContext;
 import org.apache.tez.runtime.library.api.TezRuntimeConfiguration;
 import org.apache.tez.runtime.library.common.InputAttemptIdentifier;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -53,11 +46,7 @@ public class RssTezUtils {
 
   public static final String HOST_NAME = "hostname";
 
-  public static final String PLUS_DELIMITER = "+";
   public static final String UNDERLINE_DELIMITER = "_";
-  public static final String COLON_DELIMITER = ":";
-  public static final String COMMA_DELIMITER = ",";
-
   // constant to compute shuffle id
   private static final int VERTEX_ID_MAPPING_MAX_ID = 500;
   private static final String VERTEX_ID_MAPPING_MAP = "Map";
@@ -114,58 +103,6 @@ public class RssTezUtils {
     return reqBytes;
   }
 
-  public static String uniformPartitionHostInfo(Map<Integer, List<ShuffleServerInfo>> map) {
-    List<String> res = new ArrayList<>();
-    String tmp;
-    for (Map.Entry<Integer, List<ShuffleServerInfo>> entry : map.entrySet()) {
-      Integer partitionId = entry.getKey();
-      List<ShuffleServerInfo> shuffleServerInfos = entry.getValue();
-      for (ShuffleServerInfo shuffleServerInfo : shuffleServerInfos) {
-        tmp = partitionId + UNDERLINE_DELIMITER + shuffleServerInfo.getHost() + COLON_DELIMITER
-            + shuffleServerInfo.getNettyPort();
-        res.add(tmp);
-      }
-    }
-    return StringUtils.join(res, COMMA_DELIMITER);
-  }
-
-  public static Map<String, List<String>> uniformServerToPartitions(String partitionToServers) {
-    Map<String, List<String>> serverToPartitions = new HashMap<>();
-    List<String> list;
-
-    String[] pidWithWorkerInfos = partitionToServers.split(COMMA_DELIMITER);
-    for (String pidWithWorkerInfo : pidWithWorkerInfos) {
-      String[] pidUnderLineWorkerInfo = pidWithWorkerInfo.split(UNDERLINE_DELIMITER);
-      if (serverToPartitions.containsKey(pidUnderLineWorkerInfo[1])) {
-        list = serverToPartitions.get(pidUnderLineWorkerInfo[1]);
-        list.add(pidUnderLineWorkerInfo[0]);
-      } else {
-        list = new ArrayList<>();
-        list.add(pidUnderLineWorkerInfo[0]);
-        serverToPartitions.put(pidUnderLineWorkerInfo[1], list);
-      }
-    }
-
-    return serverToPartitions;
-  }
-
-  public static String uniformServerToPartitions(Map<String, List<String>> map) {
-    List<String> res = new ArrayList<>();
-    for (Map.Entry<String, List<String>> entry : map.entrySet()) {
-      String server = entry.getKey();
-      List<String> partitions = entry.getValue();
-      String join = StringUtils.join(partitions, UNDERLINE_DELIMITER);
-      res.add(server + PLUS_DELIMITER + join);
-    }
-    return StringUtils.join(res, COMMA_DELIMITER);
-  }
-
-  public static ApplicationAttemptId getApplicationAttemptId() {
-    String containerIdStr = System.getenv(ApplicationConstants.Environment.CONTAINER_ID.name());
-    ContainerId containerId = ContainerId.fromString(containerIdStr);
-    return containerId.getApplicationAttemptId();
-  }
-
   public static String uniqueIdentifierToAttemptId(String uniqueIdentifier) {
     if (uniqueIdentifier == null) {
       throw new RssException("uniqueIdentifier should not be null");
@@ -175,6 +112,7 @@ public class RssTezUtils {
   }
 
   public static long getBlockId(long partitionId, long taskAttemptId, int nextSeqNo) {
+    LOG.info("GetBlockId, partitionId:{}, taskAttemptId:{}, nextSeqNo:{}", partitionId, taskAttemptId, nextSeqNo);
     long attemptId = taskAttemptId >> (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH);
     if (attemptId < 0 || attemptId > MAX_ATTEMPT_ID) {
       throw new RssException("Can't support attemptId [" + attemptId
@@ -191,6 +129,7 @@ public class RssTezUtils {
     }
     long taskId = taskAttemptId - (attemptId
         << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH));
+
     if (taskId < 0 ||  taskId > Constants.MAX_TASK_ATTEMPT_ID) {
       throw new RssException("Can't support taskId["
           + taskId + "], the max value should be " + Constants.MAX_TASK_ATTEMPT_ID);
@@ -238,14 +177,6 @@ public class RssTezUtils {
     int taskConcurrencyPerServer = jobConf.getInt(RssTezConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER,
         RssTezConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE);
     return (int) Math.ceil(taskConcurrency * 1.0 / taskConcurrencyPerServer);
-  }
-
-  // compute shuffle id using InputContext
-  public static int computeShuffleId(InputContext inputContext) {
-    int dagIdentifier = inputContext.getDagIdentifier();
-    String sourceVertexName = inputContext.getSourceVertexName();
-    String taskVertexName  = inputContext.getTaskVertexName();
-    return RssTezUtils.computeShuffleId(dagIdentifier, sourceVertexName, taskVertexName);
   }
 
   /**
@@ -305,57 +236,43 @@ public class RssTezUtils {
       throw new RssException("TaskAttempt " + taskAttemptID + " high bytes " + highBytes
           + " exceed, appAttemptId:" + appAttemptId);
     }
-
     long id = (highBytes << (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH)) + lowBytes;
-    LOG.info("ConvertTaskAttemptIdToLong id is {}", id);
-    LOG.info("LowBytes id is {}", lowBytes);
-    LOG.info("HighBytes id is {}", highBytes);
+    LOG.info("ConvertTaskAttemptIdToLong taskAttemptID:{}, id is {}, .", taskAttemptID, id);
     return id;
   }
 
-  public static Roaring64NavigableMap fetchAllRssTaskIds(
-          Set<InputAttemptIdentifier> successMapTaskAttempts,
-          Integer totalMapsCount,
-          Integer appAttemptId) {
-    Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf();
-    Roaring64NavigableMap mapIndexBitmap = Roaring64NavigableMap.bitmapOf();
+  public static Roaring64NavigableMap fetchAllRssTaskIds(Set<InputAttemptIdentifier> successMapTaskAttempts,
+          int totalMapsCount, int appAttemptId) {
     String errMsg = "TaskAttemptIDs are inconsistent with map tasks";
-    LOG.info("FetchAllRssTaskIds successMapTaskAttempts:{}", successMapTaskAttempts);
+    Roaring64NavigableMap rssTaskIdBitmap = Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap mapTaskIdBitmap = Roaring64NavigableMap.bitmapOf();
+    LOG.info("FetchAllRssTaskIds successMapTaskAttempts size:{}", successMapTaskAttempts.size());
     LOG.info("FetchAllRssTaskIds totalMapsCount:{}, appAttemptId:{}", totalMapsCount, appAttemptId);
 
     for (InputAttemptIdentifier inputAttemptIdentifier: successMapTaskAttempts) {
-      int mapIndex = inputAttemptIdentifier.getInputIdentifier();
       String pathComponent = inputAttemptIdentifier.getPathComponent();
-      int taskId = RssTezUtils.taskIdStrToTaskId(pathComponent);
-      // There can be multiple successful attempts on same map task.
-      // So we only need to accept one of them.
-      LOG.info("FetchAllRssTaskIds, taskId:{}, is contains:{}", taskId, mapIndexBitmap.contains(taskId));
-      if (!mapIndexBitmap.contains(taskId)) {
-        taskIdBitmap.addLong(taskId);
+      TezTaskAttemptID mapTaskAttemptID = IdUtils.convertTezTaskAttemptID(pathComponent);
+      long rssTaskId = RssTezUtils.convertTaskAttemptIdToLong(mapTaskAttemptID, appAttemptId);
+      long mapTaskId = mapTaskAttemptID.getTaskID().getId();
 
-        LOG.info("FetchAllRssTaskIds, successMapTaskAttempts:{}, totalMapsCount:{}, appAttemptId:{}, mapIndex:{}, "
-                + "totalMapsCount:{}, taskId: {} ",
-            successMapTaskAttempts.size(), totalMapsCount, appAttemptId, mapIndex, totalMapsCount, taskId);
-
-        if (mapIndex < totalMapsCount) {  // up-stream map task index should < total task number(including failed task)
-          mapIndexBitmap.addLong(taskId);
-        } else {
-
-          LOG.error("SuccessMapTaskAttempts:{}, totalMapsCount:{}, appAttemptId:{}, mapIndex:{}, totalMapsCount:{} ",
-              successMapTaskAttempts, totalMapsCount, appAttemptId, mapIndex, totalMapsCount);
-
-          LOG.error(inputAttemptIdentifier + " has overflowed mapIndex");
-          throw new IllegalStateException(errMsg);
+      LOG.info("FetchAllRssTaskIds, pathComponent: {}, mapTaskId:{}, rssTaskId:{}, is contains:{}",
+              pathComponent, mapTaskId, rssTaskId, mapTaskIdBitmap.contains(mapTaskId));
+      if (!mapTaskIdBitmap.contains(mapTaskId)) {
+        rssTaskIdBitmap.addLong(rssTaskId);
+        mapTaskIdBitmap.addLong(mapTaskId);
+        if (mapTaskId >= totalMapsCount) { // up-stream map task index should < total task number(including failed task)
+          LOG.warn(inputAttemptIdentifier + " has overflowed mapIndex, pathComponent: " + pathComponent
+              + ",totalMapsCount: " + totalMapsCount);
         }
       } else {
-        LOG.warn(inputAttemptIdentifier + " is redundant on index: " + mapIndex);
+        LOG.warn(inputAttemptIdentifier + " is redundant on index: " + mapTaskId);
       }
     }
     // each map should have only one success attempt
-    if (mapIndexBitmap.getLongCardinality() != taskIdBitmap.getLongCardinality()) {
+    if (mapTaskIdBitmap.getLongCardinality() != rssTaskIdBitmap.getLongCardinality()) {
       throw new IllegalStateException(errMsg);
     }
-    return taskIdBitmap;
+    return rssTaskIdBitmap;
   }
 
   public static int taskIdStrToTaskId(String taskIdStr) {
@@ -375,30 +292,35 @@ public class RssTezUtils {
   }
 
   // multiHostInfo is like:
-  // 0_172.19.193.152:19999,1_172.19.193.152:19999
+  // 172.19.193.247:19999+1_4_7, 172.19.193.55:19999+2_5, 172.19.193.152:19999+0_3_6
   private static void parseRssWorkerFromHostInfo(Map<Integer, Set<ShuffleServerInfo>> rssWorker, String multiHostInfo) {
     for (String hostInfo : multiHostInfo.split(",")) {
-      LOG.info("ParseRssWorker, hostInfo:{}", hostInfo);
-      String[] info = hostInfo.split("_|:");
-      int partitionId = Integer.parseInt(info[0]);
-      ShuffleServerInfo serverInfo = new ShuffleServerInfo(info[1], Integer.parseInt(info[2]));
-      rssWorker.computeIfAbsent(partitionId, k -> new HashSet<>());
-      rssWorker.get(partitionId).add(serverInfo);
-      LOG.info("Parse Rss Worker, add partition:{}, serverInfo:{}", partitionId, serverInfo);
+      // LOG.info("ParseRssWorker, hostInfo:{}", hostInfo);
+      String[] info = hostInfo.split("\\+");
+      ShuffleServerInfo serverInfo = new ShuffleServerInfo(info[0].split(":")[0],
+          Integer.parseInt(info[0].split(":")[1]));
+
+      String[] partitions = info[1].split("_");
+      assert (partitions.length > 0);
+      for (String partitionId: partitions) {
+        rssWorker.computeIfAbsent(Integer.parseInt(partitionId), k -> new HashSet<>());
+        rssWorker.get(Integer.parseInt(partitionId)).add(serverInfo);
+      }
     }
   }
 
   // hostnameInfo is like:
-  // Map 1=0_172.19.193.152:19999,0_172.19.193.152:19999;Map 2=0_172.19.193.152:19999,1_17
-  public static void parseRssWorker(Map<Integer, Set<ShuffleServerInfo>> rssWorker, int shuffleId,
-                                    String hostnameInfo) {
-    LOG.info("ParseRssWorker, hostnameInfo:{}", hostnameInfo);
+  // 172.19.193.247:19999+1_4_7, 172.19.193.55:19999+2_5,172.19.193.152:19999+0_3_6
+  public static void parseRssWorker(
+          Map<Integer, Set<ShuffleServerInfo>> rssWorker,
+          int shuffleId,
+          String hostnameInfo) {
+    LOG.info("ParseRssWorker, hostnameInfo length:{}", hostnameInfo.length());
     for (String toVertex: hostnameInfo.split(";")) {
-      LOG.info("ParseRssWorker, hostnameInffdafdso:{}", toVertex);
+      // toVertex is like: 1001602=172.19.193.247:19999+1_4_7,172.19.193.55:19999+2_5,172.19.193.152:19999+0_3_6
       String[] splits = toVertex.split("=");
       if (splits.length == 2 && String.valueOf(shuffleId).equals(splits[0])) {
-        String workerStr = toVertex.split("=")[1];
-        LOG.info("ParseRssWorker, workerStr:{}", workerStr);
+        String workerStr = splits[1];
         parseRssWorkerFromHostInfo(rssWorker, workerStr);
       }
     }
