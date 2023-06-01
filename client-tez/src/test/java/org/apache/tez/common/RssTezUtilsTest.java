@@ -17,23 +17,27 @@
 
 package org.apache.tez.common;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.tez.dag.records.TezDAGID;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 import org.apache.tez.dag.records.TezTaskID;
 import org.apache.tez.dag.records.TezVertexID;
-import org.junit.jupiter.api.Test;
-
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
+import org.junit.jupiter.api.Test;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RssTezUtilsTest {
-
-  private static final String EXPECTED_EXCEPTION_MESSAGE = "Exception should be thrown";
 
   @Test
   public void baskAttemptIdTest() {
@@ -157,5 +161,26 @@ public class RssTezUtilsTest {
     assertEquals(tezTaskAttemptId, uniqueIdentifierToAttemptId);
     TezTaskAttemptID tezTaskAttemptID = TezTaskAttemptID.fromString(uniqueIdentifierToAttemptId);
     assertEquals(originalTezTaskAttemptID, tezTaskAttemptID);
+  }
+
+  @Test
+  public void testParseRssWorker(){
+    Map<Integer, Set<ShuffleServerInfo>> rssWorker = new HashMap<>();
+    int shuffleId = 1001602;
+    String hostnameInfo = "localhost;1001602=172.19.193.152:19999+0_1_2_3,172.19.193.153:19999+2_3_4_5";
+    RssTezUtils.parseRssWorker(rssWorker, shuffleId, hostnameInfo);
+
+    assertEquals(6, rssWorker.size());
+
+    Set<ShuffleServerInfo> shuffleServerInfo = rssWorker.get(0);
+    ShuffleServerInfo server = new ShuffleServerInfo("172.19.193.152", 19999);
+    assertEquals(ImmutableSet.of(server), shuffleServerInfo);
+
+    shuffleServerInfo = rssWorker.get(3);
+    ShuffleServerInfo server2 = new ShuffleServerInfo("172.19.193.153", 19999);
+    assertEquals(ImmutableSet.of(server, server2), shuffleServerInfo);
+
+    shuffleServerInfo = rssWorker.get(18);
+    assertNull(shuffleServerInfo);
   }
 }
