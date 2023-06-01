@@ -17,6 +17,7 @@
 
 package org.apache.tez.common;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -174,15 +175,21 @@ public class RssTezUtilsTest {
 
     assertEquals(6, rssWorker.size());
 
-    Set<ShuffleServerInfo> shuffleServerInfo = rssWorker.get(0);
+    int partitionId = 0;
+    Set<ShuffleServerInfo> shuffleServerInfo = rssWorker.get(partitionId);
     ShuffleServerInfo server = new ShuffleServerInfo("172.19.193.152", 19999);
     assertEquals(ImmutableSet.of(server), shuffleServerInfo);
 
-    shuffleServerInfo = rssWorker.get(3);
+    partitionId = 3;
+    shuffleServerInfo = rssWorker.get(partitionId);
     ShuffleServerInfo server2 = new ShuffleServerInfo("172.19.193.153", 19999);
     assertEquals(ImmutableSet.of(server, server2), shuffleServerInfo);
 
-    shuffleServerInfo = rssWorker.get(18);
+    partitionId = 18;
+    shuffleServerInfo = rssWorker.get(partitionId);
     assertNull(shuffleServerInfo);
+
+    Integer[] expectPartitionArr = new Integer[]{0, 1, 2, 3, 4, 5};
+    assertTrue(Arrays.equals(expectPartitionArr, rssWorker.keySet().toArray(new Integer[0])));
   }
 }
