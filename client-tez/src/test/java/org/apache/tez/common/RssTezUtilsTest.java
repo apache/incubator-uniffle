@@ -168,6 +168,7 @@ public class RssTezUtilsTest {
   public void testParseRssWorker() {
     Map<Integer, Set<ShuffleServerInfo>> rssWorker = new HashMap<>();
     int shuffleId = 1001602;
+    // 0_1_2_3 is consist of partition id.
     String hostnameInfo = "localhost;1001602=172.19.193.152:19999+0_1_2_3,172.19.193.153:19999+2_3_4_5";
     RssTezUtils.parseRssWorker(rssWorker, shuffleId, hostnameInfo);
 
