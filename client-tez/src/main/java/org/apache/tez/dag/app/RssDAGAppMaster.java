@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.cli.CommandLine;
@@ -65,6 +64,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.common.util.ThreadUtils;
 
 import static org.apache.tez.common.TezCommonUtils.TEZ_SYSTEM_SUB_DIR;
 
@@ -73,21 +73,15 @@ public class RssDAGAppMaster extends DAGAppMaster {
   private ShuffleWriteClient shuffleWriteClient;
   private TezRemoteShuffleManager tezRemoteShuffleManager;
   private static final String rssConfFileLocalResourceName = "rss_conf.xml";
+
   private DAGProtos.PlanLocalResource rssConfFileLocalResource;
   final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-    new ThreadFactory() {
-      @Override
-      public Thread newThread(Runnable r) {
-        Thread t = Executors.defaultThreadFactory().newThread(r);
-        t.setDaemon(true);
-        return t;
-      }
-    }
+          ThreadUtils.getThreadFactory("AppHeartbeat-%d")
   );
 
   public RssDAGAppMaster(ApplicationAttemptId applicationAttemptId, ContainerId containerId,
           String nmHost, int nmPort, int nmHttpPort, Clock clock, long appSubmitTime, boolean isSession,
-          String workingDirectory, String [] localDirs, String[] logDirs, String clientVersion,
+          String workingDirectory, String[] localDirs, String[] logDirs, String clientVersion,
           Credentials credentials, String jobUserName, AMPluginDescriptorProto pluginDescriptorProto) {
     super(applicationAttemptId, containerId, nmHost, nmPort, nmHttpPort, clock, appSubmitTime, isSession,
             workingDirectory, localDirs, logDirs, clientVersion, credentials, jobUserName, pluginDescriptorProto);
@@ -117,7 +111,7 @@ public class RssDAGAppMaster extends DAGAppMaster {
    * @throws Exception
    */
   public static void initAndStartRSSClient(final RssDAGAppMaster appMaster, Configuration conf,
-          ApplicationAttemptId  applicationAttemptId) throws Exception {
+          ApplicationAttemptId applicationAttemptId) throws Exception {
 
     ShuffleWriteClient client = RssTezUtils.createShuffleClient(conf);
     appMaster.setShuffleWriteClient(client);
@@ -166,6 +160,18 @@ public class RssDAGAppMaster extends DAGAppMaster {
   @Override
   public String submitDAGToAppMaster(DAGProtos.DAGPlan dagPlan, Map<String, LocalResource> additionalResources)
           throws TezException {
+
+    addAdditionalResource(dagPlan, getRssConfFileLocalResource());
+
+    return super.submitDAGToAppMaster(dagPlan, additionalResources);
+  }
+
+  public DAGProtos.PlanLocalResource getRssConfFileLocalResource() {
+    return rssConfFileLocalResource;
+  }
+
+  public static void addAdditionalResource(DAGProtos.DAGPlan dagPlan, DAGProtos.PlanLocalResource additionalResource)
+          throws TezException {
     List<DAGProtos.PlanLocalResource> planLocalResourceList = dagPlan.getLocalResourceList();
 
     if (planLocalResourceList == null) {
@@ -176,7 +182,7 @@ public class RssDAGAppMaster extends DAGAppMaster {
     }
 
     try {
-      planLocalResourceList.add(rssConfFileLocalResource);
+      planLocalResourceList.add(additionalResource);
       Field field = DAGProtos.DAGPlan.class.getDeclaredField("localResource_");
       field.setAccessible(true);
       field.set(dagPlan, planLocalResourceList);
@@ -191,8 +197,6 @@ public class RssDAGAppMaster extends DAGAppMaster {
         LOG.debug("localResource: {}", localResource.toString());
       }
     }
-
-    return super.submitDAGToAppMaster(dagPlan, additionalResources);
   }
 
   /**
@@ -245,7 +249,7 @@ public class RssDAGAppMaster extends DAGAppMaster {
       Configuration conf = new Configuration(new YarnConfiguration());
 
       DAGProtos.ConfigurationProto confProto = TezUtilsInternal.readUserSpecifiedTezConfiguration(
-                      System.getenv(ApplicationConstants.Environment.PWD.name()));
+              System.getenv(ApplicationConstants.Environment.PWD.name()));
       TezUtilsInternal.addUserSpecifiedTezConfiguration(conf, confProto.getConfKeyValuesList());
 
       AMPluginDescriptorProto amPluginDescriptorProto = null;
@@ -295,7 +299,7 @@ public class RssDAGAppMaster extends DAGAppMaster {
   }
 
   static void writeExtraConf(final RssDAGAppMaster appMaster, Configuration conf,
-                             TezConfiguration extraConf, String strAppId) {
+          TezConfiguration extraConf, String strAppId) {
     try {
       Path baseStagingPath = TezCommonUtils.getTezBaseStagingPath(conf);
       Path tezStagingDir = new Path(new Path(baseStagingPath, TEZ_SYSTEM_SUB_DIR), strAppId);
