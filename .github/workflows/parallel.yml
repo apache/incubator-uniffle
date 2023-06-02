@@ -50,6 +50,7 @@ jobs:
     strategy:
       matrix:
         profile:
+          # Pay attention! Don't use profile with character ':'!
           - spark2
           - spark2.3
           - spark3.0
@@ -57,8 +58,8 @@ jobs:
           - spark3.2
           - spark3.2.0
           - spark3.3
-          - mr:hadoop2.8
-          - mr:hadoop3.2
+          - mr-hadoop2.8
+          - mr-hadoop3.2
           - tez
       fail-fast: false
     name: -P${{ matrix.profile }}
@@ -83,7 +84,7 @@ jobs:
     - name: Execute `mvn ${{ inputs.maven-args }} -P${{ matrix.profile }}`
       run: |
         PROFILES="${{ matrix.profile }}"
-        PROFILES=${PROFILES/:/,}
+        PROFILES=${PROFILES/-/,}
         mvn -B -fae ${{ inputs.maven-args }} -P${PROFILES} | tee /tmp/maven.log
       shell: bash
     - name: Summary of failures
