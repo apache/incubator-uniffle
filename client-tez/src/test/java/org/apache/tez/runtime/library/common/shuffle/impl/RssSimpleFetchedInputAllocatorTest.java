@@ -38,7 +38,6 @@ public class RssSimpleFetchedInputAllocatorTest {
   
   @Test
   public void testAllocate() throws IOException {
-    String localDirs = "/tmp/" + this.getClass().getName();
     Configuration conf = new Configuration();
     
     long jvmMax = 954728448;
@@ -47,6 +46,7 @@ public class RssSimpleFetchedInputAllocatorTest {
     float bufferPercent = 0.1f;
     conf.setFloat(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_BUFFER_PERCENT, bufferPercent);
     conf.setFloat(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MEMORY_LIMIT_PERCENT, 1.0f);
+    String localDirs = "/tmp/" + this.getClass().getName();
     conf.setStrings(TezRuntimeFrameworkConfigs.LOCAL_DIRS, localDirs);
     
     long inMemThreshold = (long) (bufferPercent * jvmMax);
