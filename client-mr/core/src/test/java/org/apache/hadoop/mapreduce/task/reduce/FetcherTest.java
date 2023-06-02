@@ -192,6 +192,7 @@ public class FetcherTest {
     assertEquals(2, ((MockMergeManagerImpl)merger).happenedFails.size());
   }
 
+  @Test
   public void testCodecIsDuplicated() throws Exception {
     fs = FileSystem.getLocal(conf);
     BZip2Codec codec = new BZip2Codec();
