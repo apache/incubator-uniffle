@@ -68,10 +68,10 @@ public class UmbilicalUtils {
    * @throws TezException
    */
   private static Map<Integer, List<ShuffleServerInfo>> doRequestShuffleServer(
-      ApplicationId applicationId,
-      Configuration conf,
-      TezTaskAttemptID taskAttemptId,
-      int shuffleId) throws IOException, InterruptedException, TezException {
+            ApplicationId applicationId,
+            Configuration conf,
+            TezTaskAttemptID taskAttemptId,
+            int shuffleId) throws IOException, InterruptedException, TezException {
     UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(applicationId.toString());
 
     Pair<String, Integer> amHostPort = getAmHostPort();
@@ -97,10 +97,10 @@ public class UmbilicalUtils {
   }
 
   public static Map<Integer, List<ShuffleServerInfo>> requestShuffleServer(
-      ApplicationId applicationId,
-      Configuration conf,
-      TezTaskAttemptID taskAttemptId,
-      int shuffleId) {
+          ApplicationId applicationId,
+          Configuration conf,
+          TezTaskAttemptID taskAttemptId,
+          int shuffleId) {
     try {
       return doRequestShuffleServer(applicationId, conf, taskAttemptId,shuffleId);
     } catch (IOException | InterruptedException | TezException e) {
