@@ -50,7 +50,7 @@ jobs:
     strategy:
       matrix:
         profile:
-          # Pay attention! Don't use profile with character '-'!
+          # Pay attention! Don't use profile with character ':'!
           - spark2
           - spark2.3
           - spark3.0
