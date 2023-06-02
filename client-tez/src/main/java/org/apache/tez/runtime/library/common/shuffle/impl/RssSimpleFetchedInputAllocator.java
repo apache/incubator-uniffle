@@ -24,7 +24,6 @@ import org.apache.hadoop.classification.InterfaceAudience.Private;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
-import org.apache.tez.dag.api.TezUncheckedException;
 import org.apache.tez.runtime.library.api.TezRuntimeConfiguration;
 import org.apache.tez.runtime.library.common.Constants;
 import org.apache.tez.runtime.library.common.InputAttemptIdentifier;
@@ -36,6 +35,7 @@ import org.apache.tez.runtime.library.common.task.local.output.TezTaskOutputFile
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
 
 /**
  * Usage: Create instance, setInitialMemoryAvailable(long), configureAndStart()
@@ -81,7 +81,7 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
         TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_BUFFER_PERCENT,
         TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_BUFFER_PERCENT_DEFAULT);
     if (maxInMemCopyUse > 1.0 || maxInMemCopyUse < 0.0) {
-      throw new IllegalArgumentException("Invalid value for "
+      throw new RssException("Invalid value for "
           + TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_BUFFER_PERCENT + ": " + maxInMemCopyUse);
     }
     
@@ -99,7 +99,7 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
         TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MEMORY_LIMIT_PERCENT_DEFAULT);
     if (singleShuffleMemoryLimitPercent <= 0.0f
         || singleShuffleMemoryLimitPercent > 1.0f) {
-      throw new IllegalArgumentException("Invalid value for "
+      throw new RssException("Invalid value for "
           + TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MEMORY_LIMIT_PERCENT + ": " + singleShuffleMemoryLimitPercent);
     }
     this.maxSingleShuffleLimit = (long) Math.min((memoryLimit * singleShuffleMemoryLimitPercent), Integer.MAX_VALUE);
@@ -118,7 +118,7 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
         TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_BUFFER_PERCENT,
         TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_BUFFER_PERCENT_DEFAULT);
     if (maxInMemCopyUse > 1.0 || maxInMemCopyUse < 0.0) {
-      throw new IllegalArgumentException("Invalid value for "
+      throw new RssException("Invalid value for "
           + TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_BUFFER_PERCENT + ": " + maxInMemCopyUse);
     }
     return (long) (conf.getLong(Constants.TEZ_RUNTIME_TASK_MEMORY,
@@ -166,7 +166,7 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
       case MEMORY:
         break;
       default:
-        throw new TezUncheckedException("InputType: " + fetchedInput.getType() + " not expected for Broadcast fetch");
+        throw new RssException("InputType: " + fetchedInput.getType() + " not expected for Broadcast fetch");
     }
   }
 
@@ -188,7 +188,7 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
         unreserve(((MemoryFetchedInput) fetchedInput).getSize());
         break;
       default:
-        throw new TezUncheckedException("InputType: " + fetchedInput.getType() + " not expected for Broadcast fetch");
+        throw new RssException("InputType: " + fetchedInput.getType() + " not expected for Broadcast fetch");
     }
   }
 
