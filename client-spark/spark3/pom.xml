@@ -175,7 +175,8 @@
                                 </relocation>
                             </relocations>
                         </configuration>
-                    </execution><!-- shade the native netty libs as well -->
+                    </execution>
+                    <!-- shade the native netty libs as well -->
                     <execution>
                         <id>unpack</id>
                         <phase>package</phase>
