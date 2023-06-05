@@ -51,13 +51,11 @@ public class RegisterHeartBeat {
   private final ScheduledExecutorService service =
       ThreadUtils.getDaemonSingleThreadScheduledExecutor("startHeartBeat");
   private final ExecutorService heartBeatExecutorService;
-  private long heartBeatTimeout;
 
   public RegisterHeartBeat(ShuffleServer shuffleServer) {
     ShuffleServerConf conf = shuffleServer.getShuffleServerConf();
     this.heartBeatInitialDelay = conf.getLong(ShuffleServerConf.SERVER_HEARTBEAT_DELAY);
     this.heartBeatInterval = conf.getLong(ShuffleServerConf.SERVER_HEARTBEAT_INTERVAL);
-    this.heartBeatTimeout = conf.getLong(ShuffleServerConf.SERVER_HEARTBEAT_TIMEOUT);
     this.coordinatorQuorum = conf.getString(ShuffleServerConf.RSS_COORDINATOR_QUORUM);
     CoordinatorClientFactory factory =
         new CoordinatorClientFactory(conf.get(ShuffleServerConf.RSS_CLIENT_TYPE));
@@ -107,6 +105,7 @@ public class RegisterHeartBeat {
       Map<String, StorageInfo> localStorageInfo,
       int nettyPort) {
     boolean sendSuccessfully = false;
+    // use `rss.server.heartbeat.interval` as the timeout option
     RssSendHeartBeatRequest request = new RssSendHeartBeatRequest(
         id,
         ip,
@@ -115,7 +114,7 @@ public class RegisterHeartBeat {
         preAllocatedMemory,
         availableMemory,
         eventNumInFlush,
-        heartBeatTimeout,
+        heartBeatInterval,
         tags,
         isHealthy,
         serverStatus,

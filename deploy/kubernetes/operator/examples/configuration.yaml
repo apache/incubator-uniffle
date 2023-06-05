@@ -64,7 +64,6 @@ data:
     rss.server.hdfs.base.path hdfs://${your-hdfs-path}
     rss.server.health.check.enable false
     rss.server.heartbeat.interval 10000
-    rss.server.heartbeat.timeout 60000
     rss.server.memory.shuffle.highWaterMark.percentage 70.0
     rss.server.memory.shuffle.lowWaterMark.percentage 10.0
     rss.server.pending.event.timeoutSec 600

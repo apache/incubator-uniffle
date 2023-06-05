@@ -195,7 +195,7 @@ public class RssMRAppMaster extends MRAppMaster {
       }
       
       int requiredAssignmentShuffleServersNum = RssMRUtils.getRequiredShuffleServerNumber(conf);
-      // retryInterval must bigger than `rss.server.heartbeat.timeout`, or maybe it will return the same result
+      // retryInterval must bigger than `rss.server.heartbeat.interval`, or maybe it will return the same result
       long retryInterval = conf.getLong(RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL,
               RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE);
       int retryTimes = conf.getInt(RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES,
