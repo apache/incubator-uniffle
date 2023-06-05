@@ -375,7 +375,6 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     RemoteStorageInfo remoteStorage = new RemoteStorageInfo("");
     ShuffleAssignmentsInfo response = null;
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    int heartbeatTimeout = shuffleServerConf.getInteger("rss.server.heartbeat.timeout", 65000);
     int heartbeatInterval = shuffleServerConf.getInteger("rss.server.heartbeat.interval", 1000);
     Thread.sleep(heartbeatInterval * 2);
     shuffleWriteClientImpl.registerCoordinators(COORDINATOR_QUORUM);
@@ -410,7 +409,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         );
       });
       return shuffleAssignments;
-    }, heartbeatTimeout, maxTryTime);
+    }, heartbeatInterval, maxTryTime);
 
     assertNotNull(response);
   }
