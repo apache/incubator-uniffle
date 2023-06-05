@@ -63,6 +63,8 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RetryUtils;
 
+import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE;
+
 
 public class TezRemoteShuffleManager implements ServicePluginLifecycle {
   private static final Logger LOG = LoggerFactory.getLogger(TezRemoteShuffleManager.class);
@@ -213,7 +215,8 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
                 shuffleId,
                 entry.getValue(),
                 remoteStorage,
-                ShuffleDataDistributionType.NORMAL
+                ShuffleDataDistributionType.NORMAL,
+                RssTezConfig.toRssConf(conf).get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE)
         ));
         LOG.info("Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
         return shuffleAssignments;
