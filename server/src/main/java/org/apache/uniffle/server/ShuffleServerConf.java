@@ -75,12 +75,6 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(10 * 1000L)
       .withDescription("Heartbeat interval to Coordinator (ms)");
 
-  public static final ConfigOption<Long> SERVER_HEARTBEAT_TIMEOUT = ConfigOptions
-      .key("rss.server.heartbeat.timeout")
-      .longType()
-      .defaultValue(60 * 1000L)
-      .withDescription("rss heartbeat interval ms");
-
   public static final ConfigOption<Integer> SERVER_FLUSH_THREAD_POOL_SIZE = ConfigOptions
       .key("rss.server.flush.threadPool.size")
       .intType()
