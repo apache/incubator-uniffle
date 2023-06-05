@@ -37,12 +37,12 @@ import org.apache.tez.dag.records.TezDAGID;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 import org.apache.tez.dag.records.TezTaskID;
 import org.apache.tez.dag.records.TezVertexID;
-import org.apache.uniffle.common.PartitionRange;
-import org.apache.uniffle.common.ShuffleAssignmentsInfo;
-import org.apache.uniffle.common.ShuffleServerInfo;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.ShuffleAssignmentsInfo;
+import org.apache.uniffle.common.ShuffleServerInfo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -110,13 +110,13 @@ public class TezRemoteShuffleManagerTest {
       UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(tokenIdentifier);
 
       TezRemoteShuffleUmbilicalProtocol umbilical = taskOwner.doAs(
-              new PrivilegedExceptionAction<TezRemoteShuffleUmbilicalProtocol>() {
-                @Override
-                public TezRemoteShuffleUmbilicalProtocol run() throws Exception {
-                  return RPC.getProxy(TezRemoteShuffleUmbilicalProtocol.class,
-                          TezRemoteShuffleUmbilicalProtocol.versionID, address, conf);
-                }
-              });
+          new PrivilegedExceptionAction<TezRemoteShuffleUmbilicalProtocol>() {
+            @Override
+            public TezRemoteShuffleUmbilicalProtocol run() throws Exception {
+              return RPC.getProxy(TezRemoteShuffleUmbilicalProtocol.class,
+                      TezRemoteShuffleUmbilicalProtocol.versionID, address, conf);
+            }
+          });
 
       TezDAGID dagId = TezDAGID.getInstance(appId, 1);
       TezVertexID vId = TezVertexID.getInstance(dagId, 35);
