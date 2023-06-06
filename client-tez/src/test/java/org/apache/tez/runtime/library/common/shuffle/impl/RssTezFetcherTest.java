@@ -71,7 +71,7 @@ public class RssTezFetcherTest {
     initRssData();
     ShuffleReadClient shuffleReadClient = new MockedShuffleReadClient(data);
 
-    SimpleFetchedInputAllocator inputManager = new RssSimpleFetchedInputAllocator(
+    SimpleFetchedInputAllocator inputManager = new SimpleFetchedInputAllocator(
         TezUtilsInternal.cleanVertexName("Map 1"),
         "1",
         2, conf,
