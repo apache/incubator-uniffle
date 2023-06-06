@@ -201,7 +201,7 @@ public class RssTezFetcherTest {
       data.add(kvp);
       if ((repeatCount > 0) && (i % 2 == 0)) { // Repeat this key for random number of times
         int count = rnd.nextInt(5);
-        for(int j = 0; j < count; j++) {
+        for (int j = 0; j < count; j++) {
           repeatCount++;
           value.set(i + rnd.nextInt());
           kvp = new KVPair(key, value);
