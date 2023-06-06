@@ -64,6 +64,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 import static org.apache.tez.common.TezCommonUtils.TEZ_SYSTEM_SUB_DIR;
@@ -325,7 +326,7 @@ public class RssDAGAppMaster extends DAGAppMaster {
       LOG.info("Upload extra conf success!");
     } catch (Exception e) {
       LOG.error("Upload extra conf exception!", e);
-      throw new RuntimeException("Upload extra conf exception ", e);
+      throw new RssException("Upload extra conf exception ", e);
     }
   }
 

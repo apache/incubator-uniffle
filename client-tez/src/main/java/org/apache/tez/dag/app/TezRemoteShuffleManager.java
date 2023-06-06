@@ -44,7 +44,6 @@ import org.apache.tez.common.ServicePluginLifecycle;
 import org.apache.tez.common.ShuffleAssignmentsInfoWritable;
 import org.apache.tez.common.TezRemoteShuffleUmbilicalProtocol;
 import org.apache.tez.common.security.JobTokenIdentifier;
-import org.apache.tez.common.security.JobTokenSecretManager;
 import org.apache.tez.dag.api.TezConfiguration;
 import org.apache.tez.dag.api.TezException;
 import org.apache.tez.dag.api.TezUncheckedException;
@@ -65,7 +64,6 @@ import org.apache.uniffle.common.util.RetryUtils;
 
 import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE;
 
-
 public class TezRemoteShuffleManager implements ServicePluginLifecycle {
   private static final Logger LOG = LoggerFactory.getLogger(TezRemoteShuffleManager.class);
 
@@ -80,7 +78,7 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
   private String appId;
 
   public TezRemoteShuffleManager(String tokenIdentifier, Token<JobTokenIdentifier> sessionToken,
-                                 Configuration conf, String appId, ShuffleWriteClient rssClient) {
+          Configuration conf, String appId, ShuffleWriteClient rssClient) {
     this.tokenIdentifier = tokenIdentifier;
     this.sessionToken = sessionToken;
     this.conf = conf;
@@ -114,7 +112,7 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
 
     @Override
     public ProtocolSignature getProtocolSignature(String protocol, long clientVersion,
-                                                  int clientMethodsHash) throws IOException {
+            int clientMethodsHash) throws IOException {
       return ProtocolSignature.getProtocolSignature(this, protocol,
               clientVersion, clientMethodsHash);
     }
@@ -122,14 +120,18 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
     @Override
     public GetShuffleServerResponse getShuffleAssignments(GetShuffleServerRequest request)
             throws IOException, TezException {
+
+      GetShuffleServerResponse response = new GetShuffleServerResponse();
       if (request != null) {
         LOG.info("getShuffleAssignments with request = " + request);
       } else {
-        LOG.info("getShuffleAssignments with request is null");
+        LOG.error("getShuffleAssignments with request is null");
+        response.setStatus(-1);
+        response.setRetMsg("GetShuffleServerRequest is null");
+        return response;
       }
-      int shuffleId = request.getShuffleId();
 
-      GetShuffleServerResponse response = new GetShuffleServerResponse();
+      int shuffleId = request.getShuffleId();
       ShuffleAssignmentsInfo shuffleAssignmentsInfo;
       try {
         synchronized (TezRemoteShuffleUmbilicalProtocolImpl.class) {
@@ -231,8 +233,6 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
 
   protected void startRpcServer() {
     try {
-      JobTokenSecretManager jobTokenSecretManager = new JobTokenSecretManager();
-
       String rssAmRpcBindAddress;
       Integer rssAmRpcBindPort;
       if (conf.getBoolean(RssTezConfig.RSS_AM_SHUFFLE_MANAGER_DEBUG, false)) {
@@ -273,7 +273,7 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
   }
 
   private void refreshServiceAcls(Configuration configuration,
-                                  PolicyProvider policyProvider) {
+          PolicyProvider policyProvider) {
     this.server.refreshServiceAcl(configuration, policyProvider);
   }
 }
