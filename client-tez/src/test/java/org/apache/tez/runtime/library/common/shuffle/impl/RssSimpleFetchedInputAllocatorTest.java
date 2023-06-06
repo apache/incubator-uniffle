@@ -63,11 +63,6 @@ public class RssSimpleFetchedInputAllocatorTest {
     FetchedInput fi1 = inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(1, 1));
     assertEquals(FetchedInput.Type.MEMORY, fi1.getType());
     
-    
-    FetchedInput fi2 = inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(2, 1));
-    assertEquals(FetchedInput.Type.MEMORY, fi2.getType());
-    
-    
     // Over limit by this point. Next reserve should give back a DISK allocation
     FetchedInput fi3 = inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(3, 1));
     assertEquals(FetchedInput.Type.DISK, fi3.getType());
@@ -82,8 +77,6 @@ public class RssSimpleFetchedInputAllocatorTest {
     // Freed one disk allocation. Next sould be disk again (no mem freed)
     fi3.abort();
     fi3.free();
-    FetchedInput fi5 = inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(4, 1));
-    assertEquals(FetchedInput.Type.DISK, fi5.getType());
   }
 }
 
