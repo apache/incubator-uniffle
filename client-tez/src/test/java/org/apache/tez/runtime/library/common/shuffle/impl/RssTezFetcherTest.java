@@ -81,7 +81,8 @@ public class RssTezFetcherTest {
     List<byte[]> result = new ArrayList<byte[]>();
     FetcherCallback fetcherCallback = new FetcherCallback() {
       @Override
-      public void fetchSucceeded(String host, InputAttemptIdentifier srcAttemptIdentifier, FetchedInput fetchedInput, long fetchedBytes, long decompressedLength, long copyDuration) throws IOException {
+      public void fetchSucceeded(String host, InputAttemptIdentifier srcAttemptIdentifier, FetchedInput fetchedInput,
+            long fetchedBytes, long decompressedLength, long copyDuration) throws IOException {
         LOG.info("Fetch success");
         fetchedInput.commit();
         result.add(((MemoryFetchedInput) fetchedInput).getBytes());
@@ -101,22 +102,21 @@ public class RssTezFetcherTest {
         new RssConf());
     rssFetcher.fetchAllRssBlocks();
 
-    for(int i = 0 ; i < data.size(); i++) {
-      InMemoryReader reader = new InMemoryReader(null,
-          new InputAttemptIdentifier(0, 0), result.get(i), 0, result.get(i).length);
-
+    for (int i = 0; i < data.size(); i++) {
       Text readKey = new Text();
       IntWritable readValue = new IntWritable();
-      DataInputBuffer keyIn = new DataInputBuffer();
-      DataInputBuffer valIn = new DataInputBuffer();
       Deserializer<Text> keyDeserializer;
       Deserializer<IntWritable> valDeserializer;
       SerializationFactory serializationFactory = new SerializationFactory(conf);
       keyDeserializer = serializationFactory.getDeserializer(Text.class);
       valDeserializer = serializationFactory.getDeserializer(IntWritable.class);
+      DataInputBuffer keyIn = new DataInputBuffer();
+      DataInputBuffer valIn = new DataInputBuffer();
       keyDeserializer.open(keyIn);
       valDeserializer.open(valIn);
 
+      InMemoryReader reader = new InMemoryReader(null,
+          new InputAttemptIdentifier(0, 0), result.get(i), 0, result.get(i).length);
       int numRecordsRead = 0;
       while (reader.nextRawKey(keyIn)) {
         reader.nextRawValue(valIn);

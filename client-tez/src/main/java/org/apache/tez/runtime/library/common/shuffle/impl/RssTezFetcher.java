@@ -39,7 +39,7 @@ import org.apache.uniffle.common.exception.RssException;
 
 
 public class RssTezFetcher {
-  private static final Logger LOG = LoggerFactory.getLogger(RssShuffleManager.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RssTezFetcher.class);
   private final FetcherCallback fetcherCallback;
 
   private final FetchedInputAllocator inputManager;
@@ -134,6 +134,7 @@ public class RssTezFetcher {
       } else {
         LOG.info("uncompressedData is null");
         // if reserve fail, return and wait
+        waitCount++;
         startWait = System.currentTimeMillis();
         return;
       }
