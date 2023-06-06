@@ -49,9 +49,9 @@ public class GetShuffleServerResponseTest {
     partitionToServers.put(4, new ArrayList<>());
 
     ShuffleServerInfo work1 = new ShuffleServerInfo("host1", 9999);
-    ShuffleServerInfo work2 = new ShuffleServerInfo("host1", 9999);
-    ShuffleServerInfo work3 = new ShuffleServerInfo("host1", 9999);
-    ShuffleServerInfo work4 = new ShuffleServerInfo("host1", 9999);
+    ShuffleServerInfo work2 = new ShuffleServerInfo("host2", 9999);
+    ShuffleServerInfo work3 = new ShuffleServerInfo("host3", 9999);
+    ShuffleServerInfo work4 = new ShuffleServerInfo("host4", 9999);
 
     partitionToServers.get(0).addAll(Arrays.asList(work1, work2, work3, work4));
     partitionToServers.get(1).addAll(Arrays.asList(work1, work2, work3, work4));
