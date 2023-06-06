@@ -205,7 +205,7 @@ public class ShuffleFlushManagerTest extends HdfsTestBase {
     StorageManager storageManager =
             StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     ShuffleFlushManager manager =
-            new ShuffleFlushManager(shuffleServerConf, mockShuffleServer, storageManager);
+            new ShuffleFlushManager(shuffleServerConf, "shuffleServerId", mockShuffleServer, storageManager);
     ShuffleDataFlushEvent event1 =
             createShuffleDataFlushEvent(appId, 1, 1, 1, null);
     manager.addToFlushQueue(event1);
