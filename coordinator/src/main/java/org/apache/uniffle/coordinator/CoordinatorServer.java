@@ -45,6 +45,7 @@ import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 import org.apache.uniffle.coordinator.web.servlet.CancelDecommissionServlet;
 import org.apache.uniffle.coordinator.web.servlet.DecommissionServlet;
 import org.apache.uniffle.coordinator.web.servlet.NodesServlet;
+import org.apache.uniffle.coordinator.web.servlet.admin.RefreshCheckerServlet;
 
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_ENABLE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE;
@@ -201,6 +202,9 @@ public class CoordinatorServer extends ReconfigurableBase {
     jettyServer.addServlet(
         new CancelDecommissionServlet(this),
         "/api/server/cancelDecommission");
+    jettyServer.addServlet(
+        new RefreshCheckerServlet(this),
+        "/api/server/admin/refreshChecker");
   }
 
   private void registerMetrics() throws Exception {

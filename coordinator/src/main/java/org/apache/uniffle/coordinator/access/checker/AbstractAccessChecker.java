@@ -25,6 +25,11 @@ import org.apache.uniffle.coordinator.AccessManager;
 public abstract class AbstractAccessChecker implements AccessChecker {
 
   protected AbstractAccessChecker(AccessManager accessManager) throws Exception {
-    
+
+  }
+
+  @Override
+  public void refreshAccessChecker() {
+
   }
 }
