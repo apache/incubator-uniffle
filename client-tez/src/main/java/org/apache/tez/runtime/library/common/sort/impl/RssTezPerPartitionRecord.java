@@ -24,31 +24,31 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
 
-public class RssTezSpillRecord extends TezSpillRecord {
+public class RssTezPerPartitionRecord extends TezSpillRecord {
   private int numPartitions;
   private int[] numRecordsPerPartition;
 
-  public RssTezSpillRecord(int numPartitions) {
+  public RssTezPerPartitionRecord(int numPartitions) {
     super(numPartitions);
     this.numPartitions = numPartitions;
   }
 
-  public RssTezSpillRecord(int numPartitions, int[] numRecordsPerPartition) {
+  public RssTezPerPartitionRecord(int numPartitions, int[] numRecordsPerPartition) {
     super(numPartitions);
     this.numPartitions = numPartitions;
     this.numRecordsPerPartition = numRecordsPerPartition;
   }
 
 
-  public RssTezSpillRecord(Path indexFileName, Configuration job) throws IOException {
+  public RssTezPerPartitionRecord(Path indexFileName, Configuration job) throws IOException {
     super(indexFileName, job);
   }
 
-  public RssTezSpillRecord(Path indexFileName, Configuration job, String expectedIndexOwner) throws IOException {
+  public RssTezPerPartitionRecord(Path indexFileName, Configuration job, String expectedIndexOwner) throws IOException {
     super(indexFileName, job, expectedIndexOwner);
   }
 
-  public RssTezSpillRecord(Path indexFileName, Configuration job, Checksum crc, String expectedIndexOwner)
+  public RssTezPerPartitionRecord(Path indexFileName, Configuration job, Checksum crc, String expectedIndexOwner)
       throws IOException {
     super(indexFileName, job, crc, expectedIndexOwner);
   }
@@ -68,15 +68,15 @@ public class RssTezSpillRecord extends TezSpillRecord {
 
 
   class RssTezIndexRecord extends TezIndexRecord {
-    private boolean flag;
+    private boolean hasData;
 
-    private void setData(boolean flag) {
-      this.flag = flag;
+    private void setData(boolean hasData) {
+      this. hasData = hasData;
     }
 
     @Override
     public boolean hasData() {
-      return flag;
+      return hasData;
     }
   }
 

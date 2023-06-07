@@ -59,7 +59,7 @@ import org.apache.tez.runtime.library.common.MemoryUpdateCallbackHandler;
 import org.apache.tez.runtime.library.common.shuffle.ShuffleUtils;
 import org.apache.tez.runtime.library.common.sort.impl.ExternalSorter;
 import org.apache.tez.runtime.library.common.sort.impl.RssSorter;
-import org.apache.tez.runtime.library.common.sort.impl.RssTezSpillRecord;
+import org.apache.tez.runtime.library.common.sort.impl.RssTezPerPartitionRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -230,9 +230,9 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
 
     int[] numRecordsPerPartition = ((RssSorter) sorter).getNumRecordsPerPartition();
 
-    RssTezSpillRecord rssTezSpillRecord = new RssTezSpillRecord(numOutputs, numRecordsPerPartition);
+    RssTezPerPartitionRecord rssTezSpillRecord = new RssTezPerPartitionRecord(numOutputs, numRecordsPerPartition);
 
-    LOG.info("RssTezSpillRecord is initialized");
+    LOG.info("RssTezPerPartitionRecord is initialized");
 
     ShuffleUtils.generateEventOnSpill(eventList, true, isLastEvent,
         getContext(), 0, rssTezSpillRecord,
