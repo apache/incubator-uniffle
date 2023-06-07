@@ -18,14 +18,15 @@
 package org.apache.uniffle.common.web;
 
 import java.io.FileNotFoundException;
-import java.net.BindException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.Servlet;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -39,6 +40,8 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.glassfish.jersey.server.ServerProperties;
+import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +56,8 @@ public class JettyServer {
   private Server server;
   private ServletContextHandler servletContextHandler;
   private int httpPort;
+  private ServletHolder servletHolder;
+  private Set<String> reourcePackages = new HashSet<>();
 
   public JettyServer(RssBaseConf conf) throws FileNotFoundException {
     createServer(conf);
@@ -73,15 +78,9 @@ public class JettyServer {
         conf.getLong(RssBaseConf.JETTY_HTTP_IDLE_TIMEOUT));
 
     setRootServletHandler();
-
     if (conf.getBoolean(RssBaseConf.JETTY_SSL_ENABLE)) {
       addHttpsConnector(httpConfig, conf);
     }
-  }
-
-  public void addServlet(Servlet servlet, String pathSpec) {
-    servletContextHandler.addServlet(new ServletHolder(servlet), pathSpec);
-    server.setHandler(servletContextHandler);
   }
 
   private ExecutorThreadPool createThreadPool(RssBaseConf conf) {
@@ -133,6 +132,20 @@ public class JettyServer {
     servletContextHandler = new ServletContextHandler();
     servletContextHandler.setContextPath("/");
     server.setHandler(servletContextHandler);
+    servletHolder = servletContextHandler.addServlet(ServletContainer.class, "/*");
+  }
+
+  public void addResourcePackages(String... packages) {
+    reourcePackages.addAll(Arrays.asList(packages));
+    servletHolder.setInitParameter(ServerProperties.PROVIDER_PACKAGES, String.join(",", reourcePackages));
+  }
+
+  public void registerInstance(Class<?> clazz, Object instance) {
+    registerInstance(clazz.getCanonicalName(), instance);
+  }
+
+  public void registerInstance(String name, Object instance) {
+    servletContextHandler.setAttribute(name, instance);
   }
 
   public Server getServer() {
@@ -142,7 +155,7 @@ public class JettyServer {
   public void start() throws Exception {
     try {
       server.start();
-    } catch (BindException e) {
+    } catch (Exception e) {
       ExitUtils.terminate(1, "Fail to start jetty http server", e, LOG);
     }
     LOG.info("Jetty http server started, listening on port {}", httpPort);
@@ -150,9 +163,5 @@ public class JettyServer {
 
   public void stop() throws Exception {
     server.stop();
-  }
-
-  public ServletContextHandler getServletContextHandler() {
-    return this.servletContextHandler;
   }
 }
