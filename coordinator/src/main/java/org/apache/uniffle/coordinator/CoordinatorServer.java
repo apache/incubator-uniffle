@@ -152,6 +152,7 @@ public class CoordinatorServer extends ReconfigurableBase {
     int port = coordinatorConf.getInteger(CoordinatorConf.RPC_SERVER_PORT);
     id = ip + "-" + port;
     LOG.info("Start to initialize coordinator {}", id);
+    registerMetrics();
     coordinatorConf.setString(CoordinatorUtils.COORDINATOR_ID, id);
     this.applicationManager = new ApplicationManager(coordinatorConf);
 
@@ -177,7 +178,6 @@ public class CoordinatorServer extends ReconfigurableBase {
     this.assignmentStrategy = assignmentStrategyFactory.getAssignmentStrategy();
     this.accessManager = new AccessManager(coordinatorConf, clusterManager,
         applicationManager.getQuotaManager(), hadoopConf);
-    registerMetrics();
     CoordinatorFactory coordinatorFactory = new CoordinatorFactory(this);
     server = coordinatorFactory.getServer();
     jettyServer = new JettyServer(coordinatorConf);
