@@ -67,11 +67,11 @@ public class ShuffleDataResult {
     if (buffer.nioByteBuffer().hasArray()) {
       return buffer.nioByteBuffer().array();
     }
-    return ByteBufUtils.readBytes(Unpooled.wrappedBuffer(buffer.nioByteBuffer()));
+    return ByteBufUtils.readBytes(buffer.byteBuf());
   }
 
   public ByteBuf getDataBuf() {
-    return Unpooled.wrappedBuffer(buffer.nioByteBuffer());
+    return buffer.byteBuf();
   }
 
   public ByteBuffer getDataBuffer() {
