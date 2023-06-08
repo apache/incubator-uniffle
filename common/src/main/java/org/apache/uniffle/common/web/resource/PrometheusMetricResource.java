@@ -35,6 +35,8 @@ import javax.ws.rs.core.Context;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
 
+import org.apache.uniffle.common.exception.InvalidRequestException;
+
 @Path("/prometheus/metrics")
 public class PrometheusMetricResource {
   @Context
@@ -65,7 +67,7 @@ public class PrometheusMetricResource {
     CollectorRegistry registry = (CollectorRegistry) servletContext.getAttribute(
         CollectorRegistry.class.getCanonicalName() + "#" + type);
     if (registry == null) {
-      throw new RuntimeException(String.format("Metric type[%s] not supported", type));
+      throw new InvalidRequestException(String.format("Metric type[%s] not supported", type));
     }
     return registry;
   }

@@ -36,6 +36,8 @@ import javax.ws.rs.core.MediaType;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 
+import org.apache.uniffle.common.exception.InvalidRequestException;
+
 @Path("/metrics")
 public class MetricResource {
   @Context
@@ -62,7 +64,7 @@ public class MetricResource {
     CollectorRegistry registry = (CollectorRegistry) servletContext.getAttribute(
         CollectorRegistry.class.getCanonicalName() + "#" + type);
     if (registry == null) {
-      throw new RuntimeException(String.format("Metric type[%s] not supported", type));
+      throw new InvalidRequestException(String.format("Metric type[%s] not supported", type));
     }
     return registry;
   }
