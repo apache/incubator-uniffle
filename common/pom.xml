@@ -142,8 +142,8 @@
       <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-bundle</artifactId>
+      <groupId>com.owlike</groupId>
+      <artifactId>genson</artifactId>
     </dependency>
   </dependencies>
 

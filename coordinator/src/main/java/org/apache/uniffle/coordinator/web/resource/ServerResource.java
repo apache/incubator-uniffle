@@ -20,6 +20,7 @@ package org.apache.uniffle.coordinator.web.resource;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.servlet.ServletContext;
@@ -53,7 +54,7 @@ public class ServerResource {
   public Response<List<ServerNode>> nodes(@QueryParam("id") String id, @QueryParam("status") String status) {
     ClusterManager clusterManager = getClusterManager();
     List<ServerNode> serverList = clusterManager.getServerList(Collections.emptySet());
-    serverList.stream().filter(new Predicate<ServerNode>() {
+    serverList = serverList.stream().filter(new Predicate<ServerNode>() {
       @Override
       public boolean test(ServerNode server) {
         if (id != null && !id.equals(server.getId())) {
@@ -65,7 +66,12 @@ public class ServerResource {
         return true;
       }
     }).collect(Collectors.toList());
-    //serverList.sort(Comparator.comparing(ServerNode::getId));
+    serverList.sort(Comparator.comparing(new Function<ServerNode, String>() {
+      @Override
+      public String apply(ServerNode serverNode) {
+        return serverNode.getId();
+      }
+    }));
     return Response.success(serverList);
   }
 
