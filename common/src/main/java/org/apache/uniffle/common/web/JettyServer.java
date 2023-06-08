@@ -18,6 +18,7 @@
 package org.apache.uniffle.common.web;
 
 import java.io.FileNotFoundException;
+import java.net.BindException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -155,7 +156,7 @@ public class JettyServer {
   public void start() throws Exception {
     try {
       server.start();
-    } catch (Exception e) {
+    } catch (BindException e) {
       ExitUtils.terminate(1, "Fail to start jetty http server", e, LOG);
     }
     LOG.info("Jetty http server started, listening on port {}", httpPort);
