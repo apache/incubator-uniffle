@@ -28,6 +28,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -40,8 +41,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.glassfish.jersey.server.ServerProperties;
-import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,7 +136,8 @@ public class JettyServer {
 
   public void addResourcePackages(String... packages) {
     reourcePackages.addAll(Arrays.asList(packages));
-    servletHolder.setInitParameter(ServerProperties.PROVIDER_PACKAGES, String.join(",", reourcePackages));
+    servletHolder.setInitParameter("com.sun.jersey.config.property.packages",
+        String.join(",", reourcePackages));
   }
 
   public void registerInstance(Class<?> clazz, Object instance) {

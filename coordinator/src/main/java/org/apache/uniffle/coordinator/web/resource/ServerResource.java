@@ -20,6 +20,7 @@ package org.apache.uniffle.coordinator.web.resource;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -52,16 +53,19 @@ public class ServerResource {
   public Response<List<ServerNode>> nodes(@QueryParam("id") String id, @QueryParam("status") String status) {
     ClusterManager clusterManager = getClusterManager();
     List<ServerNode> serverList = clusterManager.getServerList(Collections.emptySet());
-    serverList = serverList.stream().filter((server) -> {
-      if (id != null && !id.equals(server.getId())) {
-        return false;
+    serverList.stream().filter(new Predicate<ServerNode>() {
+      @Override
+      public boolean test(ServerNode server) {
+        if (id != null && !id.equals(server.getId())) {
+          return false;
+        }
+        if (status != null && !server.getStatus().toString().equals(status)) {
+          return false;
+        }
+        return true;
       }
-      if (status != null && !server.getStatus().toString().equals(status)) {
-        return false;
-      }
-      return true;
     }).collect(Collectors.toList());
-    serverList.sort(Comparator.comparing(ServerNode::getId));
+    //serverList.sort(Comparator.comparing(ServerNode::getId));
     return Response.success(serverList);
   }
 
@@ -74,7 +78,9 @@ public class ServerResource {
     }
     ClusterManager clusterManager = getClusterManager();
     try {
-      params.getServerIds().forEach(clusterManager::cancelDecommission);
+      for (String serverId : params.getServerIds()) {
+        clusterManager.cancelDecommission(serverId);
+      }
     } catch (Exception e) {
       return Response.fail(e.getMessage());
     }
@@ -90,7 +96,9 @@ public class ServerResource {
     }
     ClusterManager clusterManager = getClusterManager();
     try {
-      params.getServerIds().forEach(clusterManager::decommission);
+      for (String serverId : params.getServerIds()) {
+        clusterManager.decommission(serverId);
+      }
     } catch (Exception e) {
       return Response.fail(e.getMessage());
     }
