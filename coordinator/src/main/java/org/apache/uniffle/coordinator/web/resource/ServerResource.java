@@ -41,7 +41,6 @@ import org.apache.uniffle.coordinator.web.Response;
 import org.apache.uniffle.coordinator.web.request.CancelDecommissionRequest;
 import org.apache.uniffle.coordinator.web.request.DecommissionRequest;
 
-@Path("/server")
 @Produces({ MediaType.APPLICATION_JSON })
 public class ServerResource {
   @Context
