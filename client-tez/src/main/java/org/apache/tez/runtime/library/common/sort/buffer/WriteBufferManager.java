@@ -152,7 +152,7 @@ public class WriteBufferManager<K,V> {
     this.isNeedSorted = isNeedSorted;
     this.sendExecutorService = Executors.newFixedThreadPool(
             1,
-            ThreadUtils.getThreadFactory("send-thread-%d"));
+            ThreadUtils.getThreadFactory("send-thread"));
   }
 
   /**
