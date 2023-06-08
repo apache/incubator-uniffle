@@ -152,6 +152,7 @@ public class CoordinatorServer extends ReconfigurableBase {
     int port = coordinatorConf.getInteger(CoordinatorConf.RPC_SERVER_PORT);
     id = ip + "-" + port;
     LOG.info("Start to initialize coordinator {}", id);
+    // register metrics first to avoid NPE problem when add dynamic metrics
     registerMetrics();
     coordinatorConf.setString(CoordinatorUtils.COORDINATOR_ID, id);
     this.applicationManager = new ApplicationManager(coordinatorConf);
