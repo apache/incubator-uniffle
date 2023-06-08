@@ -78,6 +78,7 @@ public class JettyServer {
         conf.getLong(RssBaseConf.JETTY_HTTP_IDLE_TIMEOUT));
 
     setRootServletHandler();
+
     if (conf.getBoolean(RssBaseConf.JETTY_SSL_ENABLE)) {
       addHttpsConnector(httpConfig, conf);
     }
