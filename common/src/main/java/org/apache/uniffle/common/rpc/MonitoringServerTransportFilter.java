@@ -37,7 +37,9 @@ public class MonitoringServerTransportFilter extends ServerTransportFilter {
   }
 
   public void transportTerminated(Attributes transportAttrs) {
-    grpcMetrics.decGauge(GRPC_SERVER_CONNECTION_NUMBER_KEY);
+    if (transportAttrs != null) {
+      grpcMetrics.decGauge(GRPC_SERVER_CONNECTION_NUMBER_KEY);
+    }
     super.transportTerminated(transportAttrs);
   }
 }
