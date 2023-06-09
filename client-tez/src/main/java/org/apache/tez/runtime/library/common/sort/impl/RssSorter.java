@@ -172,7 +172,7 @@ public class RssSorter extends ExternalSorter {
     try {
       collect(key, value, partitioner.getPartition(key, value, partitions));
     } catch (InterruptedException e) {
-      throw new RuntimeException(e);
+      throw new RssException(e);
     }
   }
 

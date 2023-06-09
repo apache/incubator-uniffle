@@ -348,8 +348,6 @@ public class WriteBufferManager<K,V> {
         serverInfos.add(serverInfo);
       }
     }
-    TezVertexID tezVertexID = tezTaskAttemptID.getTaskID().getVertexID();
-    TezDAGID tezDAGID = tezVertexID.getDAGId();
     LOG.info("sendCommit  shuffle id is {}", shuffleId);
     Future<Boolean> future = executor.submit(
           () -> shuffleWriteClient.sendCommit(serverInfos, appId, shuffleId, numMaps));
@@ -369,7 +367,7 @@ public class WriteBufferManager<K,V> {
     } catch (InterruptedException ie) {
       LOG.warn("Ignore the InterruptedException which should be caused by internal killed");
     } catch (Exception e) {
-      throw new RuntimeException("Exception happened when get commit status", e);
+      throw new RssException("Exception happened when get commit status", e);
     } finally {
       executor.shutdown();
     }

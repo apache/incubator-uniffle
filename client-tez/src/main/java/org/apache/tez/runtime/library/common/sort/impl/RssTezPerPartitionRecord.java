@@ -67,7 +67,7 @@ public class RssTezPerPartitionRecord extends TezSpillRecord {
   }
 
 
-  class RssTezIndexRecord extends TezIndexRecord {
+  static class RssTezIndexRecord extends TezIndexRecord {
     private boolean hasData;
 
     private void setData(boolean hasData) {
