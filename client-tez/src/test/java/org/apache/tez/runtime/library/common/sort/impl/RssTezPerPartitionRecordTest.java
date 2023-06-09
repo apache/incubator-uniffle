@@ -24,32 +24,32 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RssTezPerPartitionRecordTest {
 
-	@Test
-	public void testNumPartitions() {
-		int[] numRecordsPerPartition = {0, 10, 10, 20, 30};
-		int numOutputs = 5;
+  @Test
+  public void testNumPartitions() {
+    int[] numRecordsPerPartition = {0, 10, 10, 20, 30};
+    int numOutputs = 5;
 
-		RssTezPerPartitionRecord rssTezPerPartitionRecord
-				= new RssTezPerPartitionRecord(numOutputs, numRecordsPerPartition);
+    RssTezPerPartitionRecord rssTezPerPartitionRecord
+        = new RssTezPerPartitionRecord(numOutputs, numRecordsPerPartition);
 
-		assertTrue(numOutputs == rssTezPerPartitionRecord.size());
-	}
+    assertTrue(numOutputs == rssTezPerPartitionRecord.size());
+  }
 
-	@Test
-	public void testRssTezIndexHasData() {
-		int[] numRecordsPerPartition = {0, 10, 10, 20, 30};
-		int numOutputs = 5;
+  @Test
+  public void testRssTezIndexHasData() {
+    int[] numRecordsPerPartition = {0, 10, 10, 20, 30};
+    int numOutputs = 5;
 
-		RssTezPerPartitionRecord rssTezPerPartitionRecord
-				= new RssTezPerPartitionRecord(numOutputs, numRecordsPerPartition);
+    RssTezPerPartitionRecord rssTezPerPartitionRecord
+        = new RssTezPerPartitionRecord(numOutputs, numRecordsPerPartition);
 
-		for (int i = 0; i < numRecordsPerPartition.length; i++) {
-			if (0 == i) {
-				assertFalse(rssTezPerPartitionRecord.getIndex(i).hasData());
-			}
-			if (0 != i) {
-				assertTrue(rssTezPerPartitionRecord.getIndex(i).hasData());
-			}
-		}
-	}
+    for (int i = 0; i < numRecordsPerPartition.length; i++) {
+      if (0 == i) {
+        assertFalse(rssTezPerPartitionRecord.getIndex(i).hasData());
+      }
+      if (0 != i) {
+        assertTrue(rssTezPerPartitionRecord.getIndex(i).hasData());
+      }
+    }
+  }
 }
