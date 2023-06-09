@@ -49,7 +49,7 @@ public class WriteBufferManagerTest {
 	public void testWriteException() throws IOException, InterruptedException {
 		TezTaskAttemptID tezTaskAttemptID = TezTaskAttemptID.fromString("attempt_1681717153064_3770270_1_00_000000_0");
 		long maxMemSize = 10240;
-		String appId = "";
+		String appId = "application_1681717153064_3770270";
 		long taskAttemptId = 0;
 		Set<Long> successBlockIds = Sets.newConcurrentHashSet();
 		Set<Long> failedBlockIds = Sets.newConcurrentHashSet();
@@ -164,7 +164,7 @@ public class WriteBufferManagerTest {
 	public void testCommitBlocksWhenMemoryShuffleDisabled() throws IOException, InterruptedException {
 		TezTaskAttemptID tezTaskAttemptID = TezTaskAttemptID.fromString("attempt_1681717153064_3770270_1_00_000000_0");
 		long maxMemSize = 10240;
-		String appId = "";
+		String appId = "application_1681717153064_3770270";
 		long taskAttemptId = 0;
 		Set<Long> successBlockIds = Sets.newConcurrentHashSet();
 		Set<Long> failedBlockIds = Sets.newConcurrentHashSet();

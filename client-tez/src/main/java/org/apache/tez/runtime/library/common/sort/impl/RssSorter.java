@@ -61,14 +61,11 @@ public class RssSorter extends ExternalSorter {
    * Initialization
    */
   public RssSorter(TezTaskAttemptID tezTaskAttemptID,OutputContext outputContext,
-                   Configuration conf, int numMaps, int numOutputs, long initialMemoryAvailable,
-                   TezTaskAttemptID tezTaskAttemptId,
-                   int shuffleId,
+                   Configuration conf, int numMaps, int numOutputs,
+                   long initialMemoryAvailable, int shuffleId,
                    Map<Integer, List<ShuffleServerInfo>> partitionToServers) throws IOException {
     super(outputContext, conf, numOutputs, initialMemoryAvailable);
     this.partitionToServers = partitionToServers;
-
-    LOG.info("tezTaskAttemptId is {}",tezTaskAttemptId);
 
     this.numRecordsPerPartition = new int[numOutputs];
 
@@ -82,7 +79,7 @@ public class RssSorter extends ExternalSorter {
     }
     double sortThreshold = conf.getDouble(RssTezConfig.RSS_CLIENT_SORT_MEMORY_USE_THRESHOLD,
           RssTezConfig.RSS_CLIENT_DEFAULT_SORT_MEMORY_USE_THRESHOLD);
-    long taskAttemptId = RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptId, IdUtils.getAppAttemptId());
+    long taskAttemptId = RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptID, IdUtils.getAppAttemptId());
 
     long maxSegmentSize = conf.getLong(RssTezConfig.RSS_CLIENT_MAX_BUFFER_SIZE,
           RssTezConfig.RSS_CLIENT_DEFAULT_MAX_BUFFER_SIZE);

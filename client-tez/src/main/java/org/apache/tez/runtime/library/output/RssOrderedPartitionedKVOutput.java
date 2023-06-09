@@ -197,7 +197,7 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
     if (!isStarted.get()) {
       memoryUpdateCallbackHandler.validateUpdateReceived();
       sorter = new RssSorter(taskAttemptId, getContext(), conf, mapNum, numOutputs,
-          memoryUpdateCallbackHandler.getMemoryAssigned(), taskAttemptId, shuffleId,
+          memoryUpdateCallbackHandler.getMemoryAssigned(), shuffleId,
           partitionToServers);
       LOG.info("Initialized RssSorter.");
       isStarted.set(true);
