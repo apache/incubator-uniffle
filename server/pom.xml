@@ -203,13 +203,6 @@
                   <pattern>com.fasterxml.jackson.databind</pattern>
                   <shadedPattern>${rss.shade.packageName}.jackson.databind</shadedPattern>
                 </relocation>
-                <relocation>
-                  <pattern>io.netty</pattern>
-                  <shadedPattern>${rss.shade.packageName}.io.netty</shadedPattern>
-                  <includes>
-                    <include>io.netty.**</include>
-                  </includes>
-                </relocation>
               </relocations>
             </configuration>
           </execution>
