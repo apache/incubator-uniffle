@@ -140,7 +140,7 @@ public class RssTezShuffleDataFetcherTest {
     try {
       boolean hasNext = iterator.moveToNext();
       fail();
-    } catch(IOException e) {
+    } catch (IOException e) {
       assertTrue(e.getMessage().contains("Please check if you are invoking moveToNext()"));
     }
   }
@@ -160,8 +160,7 @@ public class RssTezShuffleDataFetcherTest {
     // sort original data based on comparator
     ListMultimap<Writable, Writable> sortedMap =
         new ImmutableListMultimap.Builder<Writable, Writable>()
-            .orderKeysBy(this.comparator).putAll
-            (originalData).build();
+            .orderKeysBy(this.comparator).putAll(originalData).build();
 
     Set<Map.Entry<Writable, Writable>> oriKeySet = Sets.newSet();
     oriKeySet.addAll(sortedMap.entries());
