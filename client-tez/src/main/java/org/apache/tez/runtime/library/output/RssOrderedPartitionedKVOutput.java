@@ -230,12 +230,13 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
 
     int[] numRecordsPerPartition = ((RssSorter) sorter).getNumRecordsPerPartition();
 
-    RssTezPerPartitionRecord rssTezSpillRecord = new RssTezPerPartitionRecord(numOutputs, numRecordsPerPartition);
+    RssTezPerPartitionRecord rssTezPerPartitionRecord =
+        new RssTezPerPartitionRecord(numOutputs, numRecordsPerPartition);
 
     LOG.info("RssTezPerPartitionRecord is initialized");
 
     ShuffleUtils.generateEventOnSpill(eventList, true, isLastEvent,
-        getContext(), 0, rssTezSpillRecord,
+        getContext(), 0, rssTezPerPartitionRecord,
         getNumPhysicalOutputs(), sendEmptyPartitionDetails, getContext().getUniqueIdentifier(),
         sorter.getPartitionStats(), sorter.reportDetailedPartitionStats(), auxiliaryService, deflater);
     LOG.info("Generate events.");

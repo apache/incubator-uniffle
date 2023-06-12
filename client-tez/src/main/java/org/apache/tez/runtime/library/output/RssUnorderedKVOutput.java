@@ -66,16 +66,17 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
 
+
 /**
- * {@link RssUnorderedPartitionedKVOutput} is an {@link AbstractLogicalOutput} which
+ * {@link RssUnorderedKVOutput} is an {@link AbstractLogicalOutput} which
  * support remote shuffle.
  *
  */
 @Public
-public class RssUnorderedPartitionedKVOutput extends AbstractLogicalOutput {
-  private static final Logger LOG = LoggerFactory.getLogger(RssUnorderedPartitionedKVOutput.class);
-  protected ExternalSorter sorter;
+public class RssUnorderedKVOutput extends AbstractLogicalOutput {
 
+  private static final Logger LOG = LoggerFactory.getLogger(RssUnorderedKVOutput.class);
+  protected ExternalSorter sorter;
   protected Configuration conf;
   protected MemoryUpdateCallbackHandler memoryUpdateCallbackHandler;
   private long startTime;
@@ -95,7 +96,7 @@ public class RssUnorderedPartitionedKVOutput extends AbstractLogicalOutput {
   private String destinationVertexName;
   private int shuffleId;
 
-  public RssUnorderedPartitionedKVOutput(OutputContext outputContext, int numPhysicalOutputs) {
+  public RssUnorderedKVOutput(OutputContext outputContext, int numPhysicalOutputs) {
     super(outputContext, numPhysicalOutputs);
     this.outputContext = outputContext;
     this.deflater = TezCommonUtils.newBestCompressionDeflater();
@@ -109,7 +110,7 @@ public class RssUnorderedPartitionedKVOutput extends AbstractLogicalOutput {
     LOG.info("taskAttemptId is {}", taskAttemptId.toString());
     LOG.info("taskVertexName is {}", taskVertexName);
     LOG.info("destinationVertexName is {}", destinationVertexName);
-    LOG.info("Initialized RssUnOrderedPartitionedKVOutput.");
+    LOG.info("Initialized RssUnorderedKVOutput.");
   }
 
   private void getRssConf() {
@@ -117,12 +118,13 @@ public class RssUnorderedPartitionedKVOutput extends AbstractLogicalOutput {
       JobConf conf = new JobConf(RssTezConfig.RSS_CONF_FILE);
       this.host = conf.get(RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS, "null host");
       this.port = conf.getInt(RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT, -1);
-
       LOG.info("Got RssConf am info : host is {}, port is {}", host, port);
+
     } catch (Exception e) {
       LOG.warn("debugRssConf error: ", e);
     }
   }
+
 
   @Override
   public List<Event> initialize() throws Exception {
@@ -141,10 +143,10 @@ public class RssUnorderedPartitionedKVOutput extends AbstractLogicalOutput {
       TezRuntimeConfiguration.TEZ_RUNTIME_EMPTY_PARTITION_INFO_VIA_EVENTS_ENABLED,
       TezRuntimeConfiguration.TEZ_RUNTIME_EMPTY_PARTITION_INFO_VIA_EVENTS_ENABLED_DEFAULT);
 
-
     final InetSocketAddress address = NetUtils.createSocketAddrForHost(host, port);
 
     UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(this.applicationId.toString());
+
     TezRemoteShuffleUmbilicalProtocol umbilical = taskOwner
         .doAs(new PrivilegedExceptionAction<TezRemoteShuffleUmbilicalProtocol>() {
           @Override
@@ -160,8 +162,8 @@ public class RssUnorderedPartitionedKVOutput extends AbstractLogicalOutput {
     this.shuffleId = RssTezUtils.computeShuffleId(tezDAGID.getId(), this.taskVertexName, this.destinationVertexName);
     GetShuffleServerRequest request = new GetShuffleServerRequest(this.taskAttemptId, this.mapNum,
         this.numOutputs, this.shuffleId);
-    GetShuffleServerResponse response = umbilical.getShuffleAssignments(request);
 
+    GetShuffleServerResponse response = umbilical.getShuffleAssignments(request);
     this.partitionToServers = response.getShuffleAssignmentsInfoWritable()
         .getShuffleAssignmentsInfo().getPartitionToServers();
 
@@ -190,7 +192,7 @@ public class RssUnorderedPartitionedKVOutput extends AbstractLogicalOutput {
           getContext().getDestinationVertexName(), this.getClass().getSimpleName());
       returnEvents = generateEmptyEvents();
     }
-    LOG.info("RssUnorderedPartitionedKVOutput close.");
+    LOG.info("RssUnOrderedKVOutput close.");
     return returnEvents;
   }
 
@@ -207,7 +209,7 @@ public class RssUnorderedPartitionedKVOutput extends AbstractLogicalOutput {
   }
 
   @Override
-  public Writer getWriter() throws IOException {
+  public Writer getWriter() throws Exception {
     Preconditions.checkState(isStarted.get(), "Cannot get writer before starting the Output");
     return new KeyValuesWriter() {
       @Override
@@ -289,6 +291,4 @@ public class RssUnorderedPartitionedKVOutput extends AbstractLogicalOutput {
   public static Set<String> getConfigurationKeySet() {
     return Collections.unmodifiableSet(confKeys);
   }
-
 }
-
