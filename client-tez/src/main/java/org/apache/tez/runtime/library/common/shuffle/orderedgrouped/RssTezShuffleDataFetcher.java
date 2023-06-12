@@ -73,13 +73,13 @@ public class RssTezShuffleDataFetcher extends CallableWithNdc<Void> {
   private final AtomicInteger issuedCnt = new AtomicInteger(0);
 
   public RssTezShuffleDataFetcher(InputAttemptIdentifier inputAttemptIdentifier,
-                                  Integer partitionId,
-                                  MergeManager merger,
-                                  TezCounters tezCounters,
-                                  ShuffleReadClient shuffleReadClient,
-                                  long totalBlockCount,
-                                  RssConf rssConf,
-                                  ExceptionReporter exceptionReporter) {
+        Integer partitionId,
+        MergeManager merger,
+        TezCounters tezCounters,
+        ShuffleReadClient shuffleReadClient,
+        long totalBlockCount,
+        RssConf rssConf,
+        ExceptionReporter exceptionReporter) {
     this.merger = merger;
     this.partitionId = partitionId;
     this.inputAttemptIdentifier = inputAttemptIdentifier;

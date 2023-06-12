@@ -101,8 +101,7 @@ public class RssTezShuffleDataFetcherTest {
   static List<byte[]> bytesData = new ArrayList<>();
   static Codec codec = new Lz4Codec();
 
-  public RssTezShuffleDataFetcherTest()
-      throws IOException, ClassNotFoundException {
+  public RssTezShuffleDataFetcherTest() throws IOException, ClassNotFoundException {
     this.keyClass = Class.forName("org.apache.hadoop.io.Text");
     this.valClass = Class.forName("org.apache.hadoop.io.Text");
     this.comparator = getComparator(TestWithComparator.TEXT);
