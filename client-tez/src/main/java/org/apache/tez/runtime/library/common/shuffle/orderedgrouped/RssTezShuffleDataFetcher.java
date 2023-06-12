@@ -179,7 +179,7 @@ public class RssTezShuffleDataFetcher extends CallableWithNdc<Void> {
       shuffleReadClient.close();
       shuffleReadClient.checkProcessedBlockIds();
       shuffleReadClient.logStatics();
-      LOG.info("Reduce task " + inputAttemptIdentifier.toString()  + " read block cnt: " + copyBlockCount
+      LOG.info("Reduce task " + inputAttemptIdentifier + " read block cnt: " + copyBlockCount
               + " cost " + readTime + " ms to fetch and "
               + decompressTime + " ms to decompress with unCompressionLength["
               + unCompressionLength + "] and " + serializeTime + " ms to serialize and "
