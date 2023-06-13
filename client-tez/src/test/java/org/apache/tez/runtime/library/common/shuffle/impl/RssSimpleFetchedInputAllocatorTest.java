@@ -82,6 +82,6 @@ public class RssSimpleFetchedInputAllocatorTest {
             fi3.free();
             FetchedInput fi5 = inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(4, 1));
             assertEquals(FetchedInput.Type.DISK, fi5.getType());
-    }));
+          }));
   }
 }
