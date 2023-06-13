@@ -137,10 +137,8 @@ public class RssShuffleManagerTest {
     }
 
     int waitCount = 100;
-    while (waitCount-- > 0 &&
-        !(shuffleManager.isFetcherExecutorShutdown() &&
-            numOfMappers * numOfPartitions ==
-                shuffleManager.getNumOfCompletedInputs())) {
+    while (waitCount-- > 0 && !(shuffleManager.isFetcherExecutorShutdown()
+        && numOfMappers * numOfPartitions == shuffleManager.getNumOfCompletedInputs())) {
       Thread.sleep(100);
     }
     Assert.assertTrue(shuffleManager.isFetcherExecutorShutdown());
@@ -149,11 +147,11 @@ public class RssShuffleManagerTest {
   }
 
   private InputContext createInputContext() throws IOException {
-    DataOutputBuffer port_dob = new DataOutputBuffer();
-    port_dob.writeInt(PORT);
-    final ByteBuffer shuffleMetaData = ByteBuffer.wrap(port_dob.getData(), 0,
-        port_dob.getLength());
-    port_dob.close();
+    DataOutputBuffer portDob = new DataOutputBuffer();
+    portDob.writeInt(PORT);
+    final ByteBuffer shuffleMetaData = ByteBuffer.wrap(portDob.getData(), 0,
+        portDob.getLength());
+    portDob.close();
 
     ExecutionContext executionContext = mock(ExecutionContext.class);
     doReturn(FETCHER_HOST).when(executionContext).getHostName();
@@ -168,7 +166,7 @@ public class RssShuffleManagerTest {
     return inputContext;
   }
 
-  @org.junit.Test(timeout=5000)
+  @org.junit.Test(timeout = 5000)
   public void testUseSharedExecutor() throws Exception {
     InputContext inputContext = createInputContext();
     createShuffleManager(inputContext, 2);
@@ -272,8 +270,8 @@ public class RssShuffleManagerTest {
     Token<JobTokenIdentifier> token = new Token<JobTokenIdentifier>(new JobTokenIdentifier(),
         new JobTokenSecretManager(null));
     token.write(out);
-    doReturn(ByteBuffer.wrap(out.getData())).when(inputContext).
-        getServiceConsumerMetaData(
+    doReturn(ByteBuffer.wrap(out.getData())).when(inputContext)
+        .getServiceConsumerMetaData(
             conf.get(TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID,
                 TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID_DEFAULT));
 
@@ -294,7 +292,7 @@ public class RssShuffleManagerTest {
   }
 
   private static class ShuffleManagerForTest extends RssShuffleManager {
-    public ShuffleManagerForTest(InputContext inputContext, Configuration conf, int numInputs, int bufferSize,
+    ShuffleManagerForTest(InputContext inputContext, Configuration conf, int numInputs, int bufferSize,
           boolean ifileReadAheadEnabled, int ifileReadAheadLength, CompressionCodec codec,
           FetchedInputAllocator inputAllocator) throws IOException {
       super(inputContext, conf, numInputs, bufferSize, ifileReadAheadEnabled,
@@ -310,7 +308,7 @@ public class RssShuffleManagerTest {
         doAnswer(new Answer<FetchResult>() {
           @Override
           public FetchResult answer(InvocationOnMock invocation) throws Throwable {
-            for(InputAttemptIdentifier input : fetcher.getSrcAttempts()) {
+            for (InputAttemptIdentifier input : fetcher.getSrcAttempts()) {
               ShuffleManagerForTest.this.fetchSucceeded(
                   fetcher.getHost(), input, new TestFetchedInput(input), 0, 0,
                   0);
@@ -340,7 +338,7 @@ public class RssShuffleManagerTest {
   @VisibleForTesting
   static class TestFetchedInput extends FetchedInput {
 
-    public TestFetchedInput(InputAttemptIdentifier inputAttemptIdentifier) {
+    TestFetchedInput(InputAttemptIdentifier inputAttemptIdentifier) {
       super(inputAttemptIdentifier, null);
     }
 

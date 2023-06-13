@@ -509,7 +509,7 @@ public class RssShuffleManager extends ShuffleManager {
                 RssTezFetcherTask fetcher = new RssTezFetcherTask(RssShuffleManager.this, inputContext,
                     conf, inputManager, partition, partitionToInput.get(partition),
                     new HashSet<ShuffleServerInfo>(partitionToServers.get(partition)),
-                    rssAllBlockIdBitmapMap, rssSuccessBlockIdBitmapMap, numInputs, partitionToServers.size(), codec);
+                    rssAllBlockIdBitmapMap, rssSuccessBlockIdBitmapMap, numInputs, partitionToServers.size());
                 rssRunningFetchers.add(fetcher);
                 if (isShutdown.get()) {
                   LOG.info(srcNameTrimmed + ": " + "hasBeenShutdown,"
