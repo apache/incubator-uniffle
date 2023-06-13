@@ -70,7 +70,6 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
 
   private String storageType;
   private String basePath;
-  private int indexReadLimit;
   private final int readBufferSize;
   private final int partitionNumPerRange;
   private final int partitionNum;
