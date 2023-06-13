@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +34,8 @@ import java.util.List;
 import java.util.Properties;
 
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.JavaVersion;
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -167,9 +170,6 @@ public class KerberizedHadoop implements Serializable {
   }
 
   private void startKerberizedDFS() throws Throwable {
-    String krb5Conf = kdc.getKrb5conf().getAbsolutePath();
-    System.setProperty("java.security.krb5.conf", krb5Conf);
-
     String principal = "hdfs/" + RssUtils.getHostIp();
     File keytab = new File(workDir, "hdfs.keytab");
     kdc.createPrincipal(keytab, principal);
@@ -228,6 +228,17 @@ public class KerberizedHadoop implements Serializable {
 
     krb5ConfFile = kdc.getKrb5conf().getAbsolutePath();
     System.setProperty("java.security.krb5.conf", krb5ConfFile);
+    // Reload config when krb5 conf is setup
+    if (SystemUtils.isJavaVersionAtMost(JavaVersion.JAVA_1_8)) {
+      Class<?> classRef;
+      if (System.getProperty("java.vendor").contains("IBM")) {
+        classRef = Class.forName("com.ibm.security.krb5.internal.Config");
+      } else {
+        classRef = Class.forName("sun.security.krb5.Config");
+      }
+      Method method = classRef.getDeclaredMethod("refresh");
+      method.invoke(null);
+    }
   }
 
   public void tearDown() throws IOException {

@@ -35,6 +35,9 @@ github:
   collaborators:
     - leixm
     - wangao1236
+    - lifeSo
+    - zhengchenyu
+    - xumanbu
   enabled_merge_buttons:
     squash: true
     merge: false

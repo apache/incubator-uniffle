@@ -41,6 +41,12 @@
       <dependency>
         <groupId>org.apache.tez</groupId>
         <artifactId>tez-runtime-library</artifactId>
+        <exclusions>
+          <exclusion>
+              <groupId>org.apache.hadoop</groupId>
+              <artifactId>hadoop-auth</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.tez</groupId>
