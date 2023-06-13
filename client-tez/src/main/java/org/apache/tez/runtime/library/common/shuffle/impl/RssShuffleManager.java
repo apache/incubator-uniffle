@@ -66,8 +66,7 @@ import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.hadoop.io.compress.CompressionCodec;
-import org.apache.hadoop.yarn.util.Clock;
-import org.apache.hadoop.yarn.util.MonotonicClock;
+import org.apache.hadoop.util.Time;
 import org.apache.tez.common.CallableWithNdc;
 import org.apache.tez.common.InputContextUtils;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
@@ -258,9 +257,7 @@ public class RssShuffleManager extends ShuffleManager {
     this.verifyDiskChecksum = conf.getBoolean(
         TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_VERIFY_DISK_CHECKSUM,
         TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_VERIFY_DISK_CHECKSUM_DEFAULT);
-    this.maxTimeToWaitForReportMillis = conf.getInt(
-        TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_BATCH_WAIT,
-        TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_BATCH_WAIT_DEFAULT);
+    this.maxTimeToWaitForReportMillis = 1;
 
     this.shufflePhaseTime = inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_PHASE_TIME);
     this.firstEventReceived = inputContext.getCounters().findCounter(TaskCounter.FIRST_EVENT_RECEIVED);
@@ -375,10 +372,8 @@ public class RssShuffleManager extends ShuffleManager {
     /**
      * Measures if the batching interval has ended.
      */
-    private final Clock clock;
-    
+
     ReporterCallable() {
-      clock = new MonotonicClock();
     }
 
     @Override
@@ -392,7 +387,7 @@ public class RssShuffleManager extends ShuffleManager {
                 TimeUnit.MILLISECONDS);
           }
 
-          long currentTime = clock.getTime();
+          long currentTime = Time.monotonicNow();;
           if (currentTime > nextReport) {
             if (failedEvents.size() > 0) {
               List<Event> failedEventsToSend = Lists.newArrayListWithCapacity(
@@ -400,7 +395,7 @@ public class RssShuffleManager extends ShuffleManager {
               for (InputReadErrorEvent key : failedEvents.keySet()) {
                 failedEventsToSend.add(InputReadErrorEvent
                     .create(key.getDiagnostics(), key.getIndex(),
-                        key.getVersion(), failedEvents.get(key)));
+                        key.getVersion()));
               }
               inputContext.sendEvents(failedEventsToSend);
               failedEvents.clear();

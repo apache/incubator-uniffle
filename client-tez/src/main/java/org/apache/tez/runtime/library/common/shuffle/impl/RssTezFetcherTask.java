@@ -147,10 +147,17 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
       LOG.info("RssTezFetcherTask storageType:{}", storageType);
       boolean expectedTaskIdsBitmapFilterEnable = serverInfoSet.size() > 1;
       CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
-          appId, InputContextUtils.computeShuffleId(inputContext), partition, storageType,
-          basePath, indexReadLimit, readBufferSize,
-          partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, new ArrayList<>(serverInfoSet),
-          readerJobConf, expectedTaskIdsBitmapFilterEnable);
+          appId,
+          InputContextUtils.computeShuffleId(inputContext),
+          partition,
+          basePath,
+          partitionNumPerRange,
+          partitionNum,
+          blockIdBitmap,
+          taskIdBitmap,
+          new ArrayList<>(serverInfoSet),
+          readerJobConf,
+          expectedTaskIdsBitmapFilterEnable, RssTezConfig.toRssConf(this.conf));
       ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
       RssTezFetcher fetcher = new RssTezFetcher(fetcherCallback,
           inputManager,
