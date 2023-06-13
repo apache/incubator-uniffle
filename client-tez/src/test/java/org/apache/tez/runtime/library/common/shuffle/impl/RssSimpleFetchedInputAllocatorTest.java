@@ -10,7 +10,7 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY RssSimpleFetchedInputAllocatorTest.javaKIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -67,21 +67,21 @@ public class RssSimpleFetchedInputAllocatorTest {
 
     MockedConstruction<DiskFetchedInput> mockedConstruction =
           Mockito.mockConstruction(DiskFetchedInput.class, ((mockedInput, context) -> {
-      // Over limit by this point. Next reserve should give back a DISK allocation
-      FetchedInput fi3 = inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(3, 1));
-      assertEquals(FetchedInput.Type.DISK, fi3.getType());
+            // Over limit by this point. Next reserve should give back a DISK allocation
+            FetchedInput fi3 = inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(3, 1));
+            assertEquals(FetchedInput.Type.DISK, fi3.getType());
 
-      // Freed one memory allocation. Next should be mem again.
-      fi1.abort();
-      fi1.free();
-      FetchedInput fi4 = inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(4, 1));
-      assertEquals(FetchedInput.Type.MEMORY, fi4.getType());
+            // Freed one memory allocation. Next should be mem again.
+            fi1.abort();
+            fi1.free();
+            FetchedInput fi4 = inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(4, 1));
+            assertEquals(FetchedInput.Type.MEMORY, fi4.getType());
 
-      // Freed one disk allocation. Next sould be disk again (no mem freed)
-      fi3.abort();
-      fi3.free();
-      FetchedInput fi5 = inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(4, 1));
-      assertEquals(FetchedInput.Type.DISK, fi5.getType());
+            // Freed one disk allocation. Next sould be disk again (no mem freed)
+            fi3.abort();
+            fi3.free();
+            FetchedInput fi5 = inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(4, 1));
+            assertEquals(FetchedInput.Type.DISK, fi5.getType());
     }));
   }
 }
