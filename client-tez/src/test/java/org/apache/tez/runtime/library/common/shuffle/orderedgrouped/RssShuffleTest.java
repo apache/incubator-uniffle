@@ -148,7 +148,7 @@ public class RssShuffleTest {
     doReturn(shuffleBuffer).when(inputContext).getServiceProviderMetaData(anyString());
     Token<JobTokenIdentifier>
         sessionToken = new Token<JobTokenIdentifier>(new JobTokenIdentifier(new Text("text")),
-        new JobTokenSecretManager());
+            new JobTokenSecretManager());
     ByteBuffer tokenBuffer = TezCommonUtils.serializeServiceData(sessionToken);
     doReturn(tokenBuffer).when(inputContext).getServiceConsumerMetaData(anyString());
     return inputContext;
