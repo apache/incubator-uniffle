@@ -506,8 +506,8 @@ public class RssShuffleManager extends ShuffleManager {
                 LOG.info("generate RssTezFetcherTask, partition:{}, rssWoker:{}, all woker:{}",
                     partition, partitionToServers.get(partition), partitionToServers);
 
-                RssTezFetcherTask fetcher = new RssTezFetcherTask(RssShuffleManager.this, inputContext, conf,
-                    inputManager, partition, partitionToInput.get(partition),
+                RssTezFetcherTask fetcher = new RssTezFetcherTask(RssShuffleManager.this, inputContext,
+                    conf, inputManager, partition, partitionToInput.get(partition),
                     new HashSet<ShuffleServerInfo>(partitionToServers.get(partition)),
                     rssAllBlockIdBitmapMap, rssSuccessBlockIdBitmapMap, numInputs, partitionToServers.size(), codec);
                 rssRunningFetchers.add(fetcher);
