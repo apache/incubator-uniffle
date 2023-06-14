@@ -1053,18 +1053,14 @@ class RssShuffleScheduler extends ShuffleScheduler {
     boolean fetcherHealthy = isFetcherHealthy(logContext);
 
     // check if the reducer has progressed enough
-    boolean reducerProgressedEnough =
-            (((float)doneMaps / numInputs)
-                    >= MIN_REQUIRED_PROGRESS_PERCENT);
+    boolean reducerProgressedEnough = (((float)doneMaps / numInputs) >= MIN_REQUIRED_PROGRESS_PERCENT);
 
     // check if the reducer is stalled for a long time
     // duration for which the reducer is stalled
-    int stallDuration =
-            (int)(System.currentTimeMillis() - lastProgressTime);
+    int stallDuration = (int)(System.currentTimeMillis() - lastProgressTime);
 
     // duration for which the reducer ran with progress
-    int shuffleProgressDuration =
-            (int)(lastProgressTime - startTime);
+    int shuffleProgressDuration = (int)(lastProgressTime - startTime);
 
     boolean reducerStalled = (shuffleProgressDuration > 0) && (((float)stallDuration / shuffleProgressDuration)
                     >= MAX_ALLOWED_STALL_TIME_PERCENT);
@@ -1551,7 +1547,6 @@ class RssShuffleScheduler extends ShuffleScheduler {
   private RssTezShuffleDataFetcher constructRssFetcherForPartition(MapHost mapHost,
           List<ShuffleServerInfo> shuffleServerInfoList) throws RssException {
     Set<ShuffleServerInfo> shuffleServerInfoSet = new HashSet<>(shuffleServerInfoList);
-    int shuffleId = InputContextUtils.computeShuffleId(inputContext);
     LOG.info("ConstructRssFetcherForPartition, shuffleServerInfoSet: {}", shuffleServerInfoSet);
 
     Optional<InputAttemptIdentifier> attempt = partitionIdToSuccessMapTaskAttempts.get(
@@ -1560,7 +1555,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
 
     ShuffleWriteClient writeClient = RssTezUtils.createShuffleClient(conf);
     String clientType = "";
-
+    int shuffleId = InputContextUtils.computeShuffleId(inputContext);
     Roaring64NavigableMap blockIdBitmap = writeClient.getShuffleResult(
             clientType, shuffleServerInfoSet, applicationId, shuffleId, mapHost.getPartitionId());
     writeClient.close();
@@ -1581,10 +1576,21 @@ class RssShuffleScheduler extends ShuffleScheduler {
 
       int partitionNum = partitionToServers.size();
       boolean expectedTaskIdsBitmapFilterEnable = shuffleServerInfoSet.size() > 1;
+
       CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
-              applicationId, shuffleId, mapHost.getPartitionId(), storageType, basePath, indexReadLimit, readBufferSize,
-              partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
-              readerJobConf, new TezIdHelper(), expectedTaskIdsBitmapFilterEnable);
+          applicationId,
+          shuffleId,
+          mapHost.getPartitionId(),
+          basePath,
+          partitionNumPerRange,
+          partitionNum,
+          blockIdBitmap,
+          taskIdBitmap,
+          shuffleServerInfoList,
+          readerJobConf,
+          new TezIdHelper(),
+          expectedTaskIdsBitmapFilterEnable);
+
       ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
       RssTezShuffleDataFetcher fetcher = new RssTezShuffleDataFetcher(
               partitionIdToSuccessMapTaskAttempts.get(mapHost.getPartitionId()).iterator().next(),
