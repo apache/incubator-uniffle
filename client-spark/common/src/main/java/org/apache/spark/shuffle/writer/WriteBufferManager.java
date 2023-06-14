@@ -128,11 +128,6 @@ public class WriteBufferManager extends MemoryConsumer {
     super(taskMemoryManager, taskMemoryManager.pageSizeBytes(), MemoryMode.ON_HEAP);
     this.bufferSize = bufferManagerOptions.getBufferSize();
     this.spillSize = bufferManagerOptions.getBufferSpillThreshold();
-    // columnar shuffle reader use the serialized data directly
-    if (serializer != null) {
-      this.instance = serializer.newInstance();
-      this.serializeStream = instance.serializeStream(arrayOutputStream);
-    }
     this.buffers = Maps.newHashMap();
     this.shuffleId = shuffleId;
     this.taskId = taskId;
@@ -145,6 +140,11 @@ public class WriteBufferManager extends MemoryConsumer {
     this.requireMemoryInterval = bufferManagerOptions.getRequireMemoryInterval();
     this.requireMemoryRetryMax = bufferManagerOptions.getRequireMemoryRetryMax();
     this.arrayOutputStream = new WrappedByteArrayOutputStream(serializerBufferSize);
+    // columnar shuffle use the serialized data directly
+    if (serializer != null) {
+      this.instance = serializer.newInstance();
+      this.serializeStream = instance.serializeStream(arrayOutputStream);
+    }
     boolean compress = rssConf.getBoolean(RssSparkConfig.SPARK_SHUFFLE_COMPRESS_KEY
             .substring(RssSparkConfig.SPARK_RSS_CONFIG_PREFIX.length()),
         RssSparkConfig.SPARK_SHUFFLE_COMPRESS_DEFAULT);
