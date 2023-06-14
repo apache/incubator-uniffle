@@ -208,10 +208,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     MultiPartitionIterator() {
       List<CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>>> iterators = Lists.newArrayList();
       for (int partition = startPartition; partition < endPartition; partition++) {
-        if (rssShuffleHandle.getNumMaps() <= 0) {
-          continue;
-        }
-        if (partitionToExpectBlocks.get(partition).isEmpty()) {
+        if (rssShuffleHandle.getNumMaps() <= 0 || partitionToExpectBlocks.get(partition).isEmpty()) {
           LOG.info("{} partition is empty partition", partition);
           continue;
         }
