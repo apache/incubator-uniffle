@@ -225,7 +225,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
       case SUCCESS:
         return new RssGetShuffleDataResponse(
             StatusCode.SUCCESS,
-            getLocalShuffleDataResponse.getData().nioBuffer());
+            getLocalShuffleDataResponse.getBuffer().nioByteBuffer());
       default:
         String msg = "Can't get shuffle data from " + host + ":" + port
                          + " for " + requestInfo + ", errorMsg:" + getLocalShuffleDataResponse.getRetMessage();
