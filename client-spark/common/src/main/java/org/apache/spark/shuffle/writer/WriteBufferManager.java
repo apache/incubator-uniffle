@@ -201,7 +201,7 @@ public class WriteBufferManager extends MemoryConsumer {
   }
 
   public List<ShuffleBlockInfo> addRecord(int partitionId, Object key, Object value) {
-    long start = System.currentTimeMillis();
+    final long start = System.currentTimeMillis();
     arrayOutputStream.reset();
     if (key != null) {
       serializeStream.writeKey(key, ClassTag$.MODULE$.apply(key.getClass()));
