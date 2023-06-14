@@ -14,26 +14,13 @@
 
 package org.apache.tez.runtime.library.common.shuffle.orderedgrouped;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.hadoop.conf.Configuration;
@@ -54,27 +41,44 @@ import org.apache.tez.runtime.api.impl.ExecutionContextImpl;
 import org.apache.tez.runtime.library.api.TezRuntimeConfiguration;
 import org.apache.tez.runtime.library.common.CompositeInputAttemptIdentifier;
 import org.apache.tez.runtime.library.common.InputAttemptIdentifier;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class ShuffleSchedulerTest {
 
   private TezExecutors sharedExecutor;
 
-  @Before
+  @BeforeEach
   public void setup() {
     sharedExecutor = new TezSharedExecutor(new Configuration());
   }
 
-  @After
+  @AfterEach
   public void cleanup() {
     sharedExecutor.shutdownNow();
   }
 
-  @Test (timeout = 10000)
+  @Test
+  @Timeout(value = 10000, unit = TimeUnit.MILLISECONDS)
   public void testNumParallelScheduledFetchers() throws IOException, InterruptedException {
     InputContext inputContext = createTezInputContext();
     Configuration conf = new TezConfiguration();
@@ -122,7 +126,8 @@ public class ShuffleSchedulerTest {
     }
   }
 
-  @Test(timeout=5000)
+  @Test
+  @Timeout(value = 5000, unit = TimeUnit.MILLISECONDS)
   public void testUseSharedExecutor() throws Exception {
     InputContext inputContext = createTezInputContext();
     Configuration conf = new TezConfiguration();
@@ -143,7 +148,8 @@ public class ShuffleSchedulerTest {
     scheduler.close();
   }
 
-  @Test(timeout = 5000)
+  @Test
+  @Timeout(value = 5000, unit = TimeUnit.MILLISECONDS)
   public void testSimpleFlow() throws Exception {
     InputContext inputContext = createTezInputContext();
     Configuration conf = new TezConfiguration();
@@ -157,14 +163,6 @@ public class ShuffleSchedulerTest {
 
     ExecutorService executor = Executors.newFixedThreadPool(1);
     try {
-      Future<Void> executorFuture = executor.submit(new Callable<Void>() {
-        @Override
-        public Void call() throws Exception {
-          scheduler.start();
-          return null;
-        }
-      });
-
       InputAttemptIdentifier[] identifiers = new InputAttemptIdentifier[numInputs];
 
       for (int i = 0; i < numInputs; i++) {
@@ -186,9 +184,15 @@ public class ShuffleSchedulerTest {
         scheduler.copySucceeded(identifiers[i], mapHosts[i], 20, 25, 100, mapOutput, false);
         scheduler.freeHost(mapHosts[i]);
       }
-      
       verify(inputContext, atLeast(numInputs)).notifyProgress();
 
+      Future<Void> executorFuture = executor.submit(new Callable<Void>() {
+        @Override
+        public Void call() throws Exception {
+          scheduler.start();
+          return null;
+        }
+      });
       // Ensure the executor exits, and without an error.
       executorFuture.get();
     } finally {
@@ -197,7 +201,7 @@ public class ShuffleSchedulerTest {
     }
   }
 
-  @Test(timeout = 60000)
+  @Test
   /**
    * Scenario
    *    - reducer has not progressed enough
@@ -206,14 +210,15 @@ public class ShuffleSchedulerTest {
    * Expected result
    *    - fail the reducer
    */
-  public void testReducerHealth_1() throws IOException {
+  @Timeout(value = 60000, unit = TimeUnit.MILLISECONDS)
+  public void testReducerHealth1() throws IOException {
     Configuration conf = new TezConfiguration();
-    _testReducerHealth_1(conf);
+    testReducerHealth1(conf);
     conf.setInt(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MIN_FAILURES_PER_HOST, 4000);
-    _testReducerHealth_1(conf);
+    testReducerHealth1(conf);
   }
 
-  public void _testReducerHealth_1(Configuration conf) throws IOException {
+  public void testReducerHealth1(Configuration conf) throws IOException {
     long startTime = System.currentTimeMillis() - 500000;
     Shuffle shuffle = mock(Shuffle.class);
     final ShuffleSchedulerForTest scheduler = createScheduler(startTime, 320, shuffle, conf);
@@ -267,7 +272,7 @@ public class ShuffleSchedulerTest {
     }
   }
 
-  @Test(timeout = 60000)
+  @Test
   /**
    * Scenario
    *    - reducer has progressed enough
@@ -280,7 +285,8 @@ public class ShuffleSchedulerTest {
    * When reducer stalls, wait until enough retries are done and throw exception
    *
    */
-  public void testReducerHealth_2() throws IOException, InterruptedException {
+  @Timeout(value = 60000, unit = TimeUnit.MILLISECONDS)
+  public void testReducerHealth2() throws IOException, InterruptedException {
     long startTime = System.currentTimeMillis() - 500000;
     Shuffle shuffle = mock(Shuffle.class);
     final ShuffleSchedulerForTest scheduler = createScheduler(startTime, 320, shuffle);
@@ -376,7 +382,7 @@ public class ShuffleSchedulerTest {
     verify(shuffle, atLeast(1)).reportException(any(Throwable.class));
   }
 
-  @Test(timeout = 60000)
+  @Test
   /**
    * Scenario
    *    - reducer has progressed enough
@@ -388,7 +394,8 @@ public class ShuffleSchedulerTest {
    *    it should be fine to proceed. AM would restart source task eventually.
    *
    */
-  public void testReducerHealth_3() throws IOException {
+  @Timeout(value = 60000, unit = TimeUnit.MILLISECONDS)
+  public void testReducerHealth3() throws IOException {
     long startTime = System.currentTimeMillis() - 500000;
     Shuffle shuffle = mock(Shuffle.class);
     final ShuffleSchedulerForTest scheduler = createScheduler(startTime, 320, shuffle);
@@ -435,7 +442,7 @@ public class ShuffleSchedulerTest {
     verify(shuffle, times(0)).reportException(any(Throwable.class));
   }
 
-  @Test(timeout = 60000)
+  @Test
   /**
    * Scenario
    *    - reducer has progressed enough
@@ -448,7 +455,8 @@ public class ShuffleSchedulerTest {
    *    nodes, it is left to the AM to retart producer. Do not kill consumer.
    *
    */
-  public void testReducerHealth_4() throws IOException {
+  @Timeout(value = 60000, unit = TimeUnit.MILLISECONDS)
+  public void testReducerHealth4() throws IOException {
     long startTime = System.currentTimeMillis() - 500000;
     Shuffle shuffle = mock(Shuffle.class);
     final ShuffleSchedulerForTest scheduler = createScheduler(startTime, 320, shuffle);
@@ -483,7 +491,7 @@ public class ShuffleSchedulerTest {
           10000, i, 1), 100, 200, startTime + (i * 100), mapOutput, false);
     }
 
-      //319 succeeds
+    //319 succeeds
     for (int i = 64; i < 319; i++) {
       InputAttemptIdentifier inputAttemptIdentifier = new InputAttemptIdentifier(i, 0, "attempt_");
       MapOutput mapOutput = MapOutput
@@ -524,7 +532,7 @@ public class ShuffleSchedulerTest {
     verify(shuffle, times(1)).reportException(any(Throwable.class));
   }
 
-  @Test(timeout = 60000)
+  @Test
   /**
    * Scenario
    *    - Shuffle has progressed enough
@@ -536,7 +544,8 @@ public class ShuffleSchedulerTest {
    *    - Do not throw errors, as Shuffle is yet to receive inputs
    *
    */
-  public void testReducerHealth_5() throws IOException {
+  @Timeout(value = 60000, unit = TimeUnit.MILLISECONDS)
+  public void testReducerHealth5() throws IOException {
     long startTime = System.currentTimeMillis() - 500000;
     Shuffle shuffle = mock(Shuffle.class);
     final ShuffleSchedulerForTest scheduler = createScheduler(startTime, 320, shuffle);
@@ -585,7 +594,7 @@ public class ShuffleSchedulerTest {
   }
 
 
-  @Test(timeout = 60000)
+  @Test
   /**
    * Scenario
    *    - Shuffle has NOT progressed enough
@@ -596,17 +605,18 @@ public class ShuffleSchedulerTest {
    *    - Bail out
    *
    */
-  public void testReducerHealth_6() throws IOException {
+  @Timeout(value = 60000, unit = TimeUnit.MILLISECONDS)
+  public void testReducerHealth6() throws IOException {
     Configuration conf = new TezConfiguration();
     conf.setBoolean(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FAILED_CHECK_SINCE_LAST_COMPLETION, true);
-    _testReducerHealth_6(conf);
+    testReducerHealth6(conf);
 
     conf.setBoolean(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FAILED_CHECK_SINCE_LAST_COMPLETION, false);
-    _testReducerHealth_6(conf);
+    testReducerHealth6(conf);
 
   }
 
-  public void _testReducerHealth_6(Configuration conf) throws IOException {
+  public void testReducerHealth6(Configuration conf) throws IOException {
     long startTime = System.currentTimeMillis() - 500000;
     Shuffle shuffle = mock(Shuffle.class);
     final ShuffleSchedulerForTest scheduler = createScheduler(startTime, 320, shuffle, conf);
@@ -654,8 +664,8 @@ public class ShuffleSchedulerTest {
           10000, i, 1), false, true, false);
     }
 
-    boolean checkFailedFetchSinceLastCompletion = conf.getBoolean
-        (TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FAILED_CHECK_SINCE_LAST_COMPLETION,
+    boolean checkFailedFetchSinceLastCompletion = conf.getBoolean(
+            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FAILED_CHECK_SINCE_LAST_COMPLETION,
             TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FAILED_CHECK_SINCE_LAST_COMPLETION_DEFAULT);
     if (checkFailedFetchSinceLastCompletion) {
       // Now bail out, as Shuffle has crossed the
@@ -669,7 +679,7 @@ public class ShuffleSchedulerTest {
 
   }
 
-  @Test(timeout = 60000)
+  @Test
   /**
    * Scenario
    *    - reducer has not progressed enough
@@ -678,7 +688,8 @@ public class ShuffleSchedulerTest {
    * Expected result
    *    - fail the reducer
    */
-  public void testReducerHealth_7() throws IOException {
+  @Timeout(value = 60000, unit = TimeUnit.MILLISECONDS)
+  public void testReducerHealth7() throws IOException {
     long startTime = System.currentTimeMillis() - 500000;
     Shuffle shuffle = mock(Shuffle.class);
     final ShuffleSchedulerForTest scheduler = createScheduler(startTime, 320, shuffle);
@@ -742,7 +753,8 @@ public class ShuffleSchedulerTest {
         TezConfiguration());
   }
 
-  @Test(timeout = 60000)
+  @Test
+  @Timeout(value = 60000, unit = TimeUnit.MILLISECONDS)
   public void testPenalty() throws IOException, InterruptedException {
     long startTime = System.currentTimeMillis();
     Shuffle shuffle = mock(Shuffle.class);
@@ -761,18 +773,19 @@ public class ShuffleSchedulerTest {
 
     //Should not get host, as it is added to penalty loop
     MapHost host = scheduler.getHost();
-    assertFalse("Host identifier mismatch", (host.getHost() + ":" + host.getPort() + ":"
+    assertFalse((host.getHost() + ":" + host.getPort() + ":"
         + host.getPartitionId()).equalsIgnoreCase("host0:10000"));
 
 
     //Refree thread would release it after INITIAL_PENALTY timeout
     Thread.sleep(ShuffleScheduler.INITIAL_PENALTY + 1000);
     host = scheduler.getHost();
-    assertFalse("Host identifier mismatch", (host.getHost() + ":" + host.getPort() + ":"
+    assertFalse((host.getHost() + ":" + host.getPort() + ":"
         + host.getPartitionId()).equalsIgnoreCase("host0:10000"));
   }
 
-  @Test (timeout = 20000)
+  @Test
+  @Timeout(value = 20000, unit = TimeUnit.MILLISECONDS)
   public void testProgressDuringGetHostWait() throws IOException, InterruptedException {
     long startTime = System.currentTimeMillis();
     Configuration conf = new TezConfiguration();
@@ -794,7 +807,8 @@ public class ShuffleSchedulerTest {
     verify(scheduler.inputContext, atLeast(3)).notifyProgress();
   }
 
-  @Test(timeout = 5000)
+  @Test
+  @Timeout(value = 5000, unit = TimeUnit.MILLISECONDS)
   public void testShutdown() throws Exception {
     InputContext inputContext = createTezInputContext();
     Configuration conf = new TezConfiguration();
@@ -808,14 +822,6 @@ public class ShuffleSchedulerTest {
 
     ExecutorService executor = Executors.newFixedThreadPool(1);
     try {
-      Future<Void> executorFuture = executor.submit(new Callable<Void>() {
-        @Override
-        public Void call() throws Exception {
-          scheduler.start();
-          return null;
-        }
-      });
-
       InputAttemptIdentifier[] identifiers = new InputAttemptIdentifier[numInputs];
 
       for (int i = 0; i < numInputs; i++) {
@@ -839,8 +845,15 @@ public class ShuffleSchedulerTest {
         scheduler.copySucceeded(identifiers[i], mapHosts[i], 20, 25, 100, mapOutput, false);
         scheduler.freeHost(mapHosts[i]);
       }
-
       scheduler.close();
+
+      Future<Void> executorFuture = executor.submit(new Callable<Void>() {
+        @Override
+        public Void call() throws Exception {
+          scheduler.start();
+          return null;
+        }
+      });
       // Ensure the executor exits, and without an error.
       executorFuture.get();
     } finally {
@@ -849,7 +862,8 @@ public class ShuffleSchedulerTest {
     }
   }
 
-  @Test(timeout = 30000)
+  @Test
+  @Timeout(value = 30000, unit = TimeUnit.MILLISECONDS)
   public void testShutdownWithInterrupt() throws Exception {
     InputContext inputContext = createTezInputContext();
     Configuration conf = new TezConfiguration();
@@ -906,8 +920,7 @@ public class ShuffleSchedulerTest {
       thread.start();
       thread.join();
     } finally {
-      assertTrue("Fetcher executor should be shutdown, but still running",
-          scheduler.hasFetcherExecutorStopped());
+      assertTrue(scheduler.hasFetcherExecutorStopped());
       executor.shutdownNow();
     }
   }
@@ -925,7 +938,7 @@ public class ShuffleSchedulerTest {
     doReturn(shuffleBuffer).when(inputContext).getServiceProviderMetaData(anyString());
     Token<JobTokenIdentifier>
         sessionToken = new Token<JobTokenIdentifier>(new JobTokenIdentifier(new Text("text")),
-        new JobTokenSecretManager());
+            new JobTokenSecretManager());
     ByteBuffer tokenBuffer = TezCommonUtils.serializeServiceData(sessionToken);
     doReturn(tokenBuffer).when(inputContext).getServiceConsumerMetaData(anyString());
     return inputContext;
@@ -938,7 +951,7 @@ public class ShuffleSchedulerTest {
     private final ExceptionReporter reporter;
     private final InputContext inputContext;
 
-    public ShuffleSchedulerForTest(InputContext inputContext, Configuration conf,
+    ShuffleSchedulerForTest(InputContext inputContext, Configuration conf,
             int numberOfInputs,
             Shuffle shuffle,
             MergeManager mergeManager,
@@ -950,7 +963,7 @@ public class ShuffleSchedulerTest {
           ifileReadAhead, ifileReadAheadLength, srcNameTrimmed, false);
     }
 
-    public ShuffleSchedulerForTest(InputContext inputContext, Configuration conf,
+    ShuffleSchedulerForTest(InputContext inputContext, Configuration conf,
             int numberOfInputs,
             Shuffle shuffle,
             MergeManager mergeManager,
