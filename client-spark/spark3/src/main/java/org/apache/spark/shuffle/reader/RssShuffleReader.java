@@ -65,7 +65,8 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private int startPartition;
   private int endPartition;
   private TaskContext context;
-  private ShuffleDependency<K, C, ?> shuffleDependency;
+  private ShuffleDependency<K, ?, C> shuffleDependency;
+  RssShuffleHandle<K, ?, C> rssShuffleHandle;
   private Serializer serializer;
   private String taskId;
   private String basePath;
@@ -85,7 +86,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       int mapStartIndex,
       int mapEndIndex,
       TaskContext context,
-      RssShuffleHandle<K, C, ?> rssShuffleHandle,
+      RssShuffleHandle<K, ?, C> rssShuffleHandle,
       String basePath,
       Configuration hadoopConf,
       int partitionNum,
@@ -100,6 +101,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.mapStartIndex = mapStartIndex;
     this.mapEndIndex = mapEndIndex;
     this.context = context;
+    this.rssShuffleHandle = rssShuffleHandle;
     this.shuffleDependency = rssShuffleHandle.getDependency();
     this.shuffleId = shuffleDependency.shuffleId();
     this.serializer = rssShuffleHandle.getDependency().serializer();
@@ -206,6 +208,9 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     MultiPartitionIterator() {
       List<CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>>> iterators = Lists.newArrayList();
       for (int partition = startPartition; partition < endPartition; partition++) {
+        if (rssShuffleHandle.getNumMaps() <= 0) {
+          continue;
+        }
         if (partitionToExpectBlocks.get(partition).isEmpty()) {
           LOG.info("{} partition is empty partition", partition);
           continue;

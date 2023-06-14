@@ -128,7 +128,11 @@ public class WriteBufferManager extends MemoryConsumer {
     super(taskMemoryManager, taskMemoryManager.pageSizeBytes(), MemoryMode.ON_HEAP);
     this.bufferSize = bufferManagerOptions.getBufferSize();
     this.spillSize = bufferManagerOptions.getBufferSpillThreshold();
-    this.instance = serializer.newInstance();
+    // columnar shuffle reader use the serialized data directly
+    if (serializer != null) {
+      this.instance = serializer.newInstance();
+      this.serializeStream = instance.serializeStream(arrayOutputStream);
+    }
     this.buffers = Maps.newHashMap();
     this.shuffleId = shuffleId;
     this.taskId = taskId;
@@ -141,7 +145,6 @@ public class WriteBufferManager extends MemoryConsumer {
     this.requireMemoryInterval = bufferManagerOptions.getRequireMemoryInterval();
     this.requireMemoryRetryMax = bufferManagerOptions.getRequireMemoryRetryMax();
     this.arrayOutputStream = new WrappedByteArrayOutputStream(serializerBufferSize);
-    this.serializeStream = instance.serializeStream(arrayOutputStream);
     boolean compress = rssConf.getBoolean(RssSparkConfig.SPARK_SHUFFLE_COMPRESS_KEY
             .substring(RssSparkConfig.SPARK_RSS_CONFIG_PREFIX.length()),
         RssSparkConfig.SPARK_SHUFFLE_COMPRESS_DEFAULT);
@@ -151,25 +154,20 @@ public class WriteBufferManager extends MemoryConsumer {
     this.memorySpillTimeoutSec = rssConf.get(RssSparkConfig.RSS_MEMORY_SPILL_TIMEOUT);
   }
 
-  public List<ShuffleBlockInfo> addRecord(int partitionId, Object key, Object value) {
-    final long start = System.currentTimeMillis();
-    arrayOutputStream.reset();
-    if (key != null) {
-      serializeStream.writeKey(key, ClassTag$.MODULE$.apply(key.getClass()));
-    } else {
-      serializeStream.writeKey(null, ManifestFactory$.MODULE$.Null());
+  /**
+   * add serialized columnar data directly when integrate with gluten
+   */
+  public List<ShuffleBlockInfo> addPartitionData(int partitionId, byte[] serializedData) {
+    return addPartitionData(partitionId, serializedData, 0, 0L);
+  }
+
+  public List<ShuffleBlockInfo> addPartitionData(
+          int partitionId, byte[] serializedData, int serializedDataLength, long start) {
+    if (start == 0L) {
+      start = System.currentTimeMillis();
     }
-    if (value != null) {
-      serializeStream.writeValue(value, ClassTag$.MODULE$.apply(value.getClass()));
-    } else {
-      serializeStream.writeValue(null, ManifestFactory$.MODULE$.Null());
-    }
-    serializeStream.flush();
-    serializeTime += System.currentTimeMillis() - start;
-    byte[] serializedData = arrayOutputStream.getBuf();
-    int serializedDataLength = arrayOutputStream.size();
     if (serializedDataLength == 0) {
-      return null;
+      serializedDataLength = serializedData.length;
     }
     List<ShuffleBlockInfo> result = Lists.newArrayList();
     if (buffers.containsKey(partitionId)) {
@@ -200,6 +198,29 @@ public class WriteBufferManager extends MemoryConsumer {
     }
     writeTime += System.currentTimeMillis() - start;
     return result;
+  }
+
+  public List<ShuffleBlockInfo> addRecord(int partitionId, Object key, Object value) {
+    long start = System.currentTimeMillis();
+    arrayOutputStream.reset();
+    if (key != null) {
+      serializeStream.writeKey(key, ClassTag$.MODULE$.apply(key.getClass()));
+    } else {
+      serializeStream.writeKey(null, ManifestFactory$.MODULE$.Null());
+    }
+    if (value != null) {
+      serializeStream.writeValue(value, ClassTag$.MODULE$.apply(value.getClass()));
+    } else {
+      serializeStream.writeValue(null, ManifestFactory$.MODULE$.Null());
+    }
+    serializeStream.flush();
+    serializeTime += System.currentTimeMillis() - start;
+    byte[] serializedData = arrayOutputStream.getBuf();
+    int serializedDataLength = arrayOutputStream.size();
+    if (serializedDataLength == 0) {
+      return null;
+    }
+    return addPartitionData(partitionId, serializedData, serializedDataLength, start);
   }
 
   // transform all [partition, records] to [partition, ShuffleBlockInfo] and clear cache
