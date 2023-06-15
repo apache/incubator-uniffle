@@ -158,17 +158,12 @@ public class WriteBufferManager extends MemoryConsumer {
    * add serialized columnar data directly when integrate with gluten
    */
   public List<ShuffleBlockInfo> addPartitionData(int partitionId, byte[] serializedData) {
-    return addPartitionData(partitionId, serializedData, 0, 0L);
+    return addPartitionData(
+            partitionId, serializedData, serializedData.length, System.currentTimeMillis());
   }
 
   public List<ShuffleBlockInfo> addPartitionData(
           int partitionId, byte[] serializedData, int serializedDataLength, long start) {
-    if (start == 0L) {
-      start = System.currentTimeMillis();
-    }
-    if (serializedDataLength == 0) {
-      serializedDataLength = serializedData.length;
-    }
     List<ShuffleBlockInfo> result = Lists.newArrayList();
     if (buffers.containsKey(partitionId)) {
       WriterBuffer wb = buffers.get(partitionId);

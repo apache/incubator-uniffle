@@ -188,9 +188,9 @@ public class WriteBufferManagerTest {
     WriteBufferManager spyManager = spy(wbm);
     doReturn(512L).when(spyManager).acquireMemory(anyLong());
 
-    List<ShuffleBlockInfo> shuffleBlockInfos = spyManager.addPartitionData(0, new byte[32]);
+    List<ShuffleBlockInfo> shuffleBlockInfos = spyManager.addPartitionData(0, new byte[65]);
     assertEquals(1, shuffleBlockInfos.size());
-    assertEquals(32, shuffleBlockInfos.get(0).getUncompressLength());
+    assertEquals(65, shuffleBlockInfos.get(0).getUncompressLength());
   }
 
   @Test
