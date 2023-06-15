@@ -57,6 +57,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.compress.CompressionCodec;
@@ -1339,6 +1340,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
   /**
    * A structure that records the penalty for a host.
    */
+  @SuppressFBWarnings
   private static class Penalty implements Delayed {
     MapHost host;
     private long endTime;
