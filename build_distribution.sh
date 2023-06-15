@@ -97,7 +97,7 @@ cd $RSS_HOME
 
 if [ -z "$JAVA_HOME" ]; then
   echo "Error: JAVA_HOME is not set, cannot proceed."
-  exit -1
+  exit 1
 fi
 
 if [ $(command -v git) ]; then

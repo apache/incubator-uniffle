@@ -22,7 +22,17 @@ set -o nounset   # exit the script if you try to use an uninitialised variable
 set -o errexit   # exit the script if any statement returns a non-true return value
 
 source "$(dirname "$0")/utils.sh"
+
 load_rss_env
+if [ -z "$JAVA_HOME" ]; then
+  echo "Error: JAVA_HOME is not set, cannot proceed."
+  exit 1
+fi
+
+if [ -z "$HADOOP_HOME" ]; then
+  echo "Error: HADOOP_HOME is not set, cannot proceed."
+  exit 1
+fi
 
 cd "$RSS_HOME"
 
