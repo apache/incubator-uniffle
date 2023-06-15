@@ -493,6 +493,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
   }
 
   @Override
+  @SuppressWarnings("all")
   public void close() {
     try {
       if (!isShutdown.getAndSet(true)) {
