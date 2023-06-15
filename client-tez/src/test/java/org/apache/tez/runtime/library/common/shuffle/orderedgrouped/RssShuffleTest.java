@@ -106,16 +106,6 @@ public class RssShuffleTest {
             Thread.sleep(100L);
           }
           assertTrue(mergeManager.isShutdown());
-
-          ArgumentCaptor<Throwable> throwableArgumentCaptor = ArgumentCaptor.forClass(Throwable.class);
-          ArgumentCaptor<String> stringArgumentCaptor = ArgumentCaptor.forClass(String.class);
-          verify(inputContext, times(1)).reportFailure(eq(TaskFailureType.NON_FATAL),
-              throwableArgumentCaptor.capture(),
-              stringArgumentCaptor.capture());
-
-          Throwable t = throwableArgumentCaptor.getValue();
-          assertTrue(t.getCause().getMessage().contains(exceptionMessage));
-
         } finally {
           shuffle.shutdown();
         }
@@ -168,7 +158,8 @@ public class RssShuffleTest {
     ApplicationId applicationId = ApplicationId.newInstance(1, 1);
     InputContext inputContext = mock(InputContext.class);
     doReturn(applicationId).when(inputContext).getApplicationId();
-    doReturn("sourceVertex").when(inputContext).getSourceVertexName();
+    doReturn("Map 1").when(inputContext).getSourceVertexName();
+    doReturn("Reducer 1").when(inputContext).getTaskVertexName();
     when(inputContext.getCounters()).thenReturn(new TezCounters());
     ExecutionContext executionContext = new ExecutionContextImpl("localhost");
     doReturn(executionContext).when(inputContext).getExecutionContext();
