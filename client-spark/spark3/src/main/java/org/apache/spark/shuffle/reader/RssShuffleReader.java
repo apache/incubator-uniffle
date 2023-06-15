@@ -66,7 +66,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private int endPartition;
   private TaskContext context;
   private ShuffleDependency<K, ?, C> shuffleDependency;
-  RssShuffleHandle<K, ?, C> rssShuffleHandle;
+  private int numMaps;
   private Serializer serializer;
   private String taskId;
   private String basePath;
@@ -101,7 +101,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.mapStartIndex = mapStartIndex;
     this.mapEndIndex = mapEndIndex;
     this.context = context;
-    this.rssShuffleHandle = rssShuffleHandle;
+    this.numMaps = rssShuffleHandle.getNumMaps();
     this.shuffleDependency = rssShuffleHandle.getDependency();
     this.shuffleId = shuffleDependency.shuffleId();
     this.serializer = rssShuffleHandle.getDependency().serializer();
@@ -207,7 +207,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 
     MultiPartitionIterator() {
       List<CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>>> iterators = Lists.newArrayList();
-      if (rssShuffleHandle.getNumMaps() <= 0) {
+      if (numMaps <= 0) {
         return;
       }
       for (int partition = startPartition; partition < endPartition; partition++) {
