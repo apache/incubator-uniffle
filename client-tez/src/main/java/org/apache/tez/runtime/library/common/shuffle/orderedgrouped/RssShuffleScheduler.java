@@ -493,7 +493,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
   }
 
   @Override
-  @SuppressWarnings("all")
+  @SuppressWarnings("NN_NAKED_NOTIFY")
   public void close() {
     try {
       if (!isShutdown.getAndSet(true)) {
