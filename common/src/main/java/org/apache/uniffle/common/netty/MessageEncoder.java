@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.netty.protocol.Message;
+import org.apache.uniffle.common.netty.protocol.Transferable;
 
 /**
  * Encoder used by the server side to encode server-to-client responses.
@@ -46,7 +47,6 @@ public class MessageEncoder extends ChannelOutboundHandlerAdapter {
 
   @Override
   public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-    // todo: support zero copy
     Message message = (Message) msg;
     int encodeLength = message.encodedLength();
     ByteBuf byteBuf = ctx.alloc().buffer(FrameDecoder.HEADER_SIZE + encodeLength);
@@ -59,5 +59,9 @@ public class MessageEncoder extends ChannelOutboundHandlerAdapter {
       byteBuf.release();
     }
     ctx.writeAndFlush(byteBuf);
+    // do transferTo send data after encode buffer send.
+    if (message instanceof Transferable) {
+      ((Transferable) message).transferTo(ctx.channel());
+    }
   }
 }
