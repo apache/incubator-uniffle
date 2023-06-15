@@ -102,6 +102,8 @@ public class RssTezConfig {
   public static final String DEBUG_HIVE_TEZ_LOG_LEVEL = "debug";
 
   public static final String RSS_STORAGE_TYPE = TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_STORAGE_TYPE;
+  public static final String RSS_STORAGE_TYPE_DEFAULT_VALUE = "MEMORY_LOCALFILE";
+
 
   public static final String RSS_DYNAMIC_CLIENT_CONF_ENABLED =
           TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED;
@@ -140,6 +142,16 @@ public class RssTezConfig {
           TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER;
   public static final int RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE =
           RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE;
+
+  public static final String RSS_CLIENT_READ_BUFFER_SIZE =
+      TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE;
+  public static final String RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE =
+      RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE;
+
+  public static final String RSS_PARTITION_NUM_PER_RANGE =
+      TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_PARTITION_NUM_PER_RANGE;
+  public static final int RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE =
+      RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE;
 
   public static final String RSS_CONF_FILE = "rss_conf.xml";
 
