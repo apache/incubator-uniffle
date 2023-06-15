@@ -101,7 +101,6 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.UnitConverter;
 
-@SuppressWarnings("NN_NAKED_NOTIFY")
 class RssShuffleScheduler extends ShuffleScheduler {
 
   public static class PathPartition {
@@ -495,7 +494,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
   }
 
   @Override
-  @SuppressWarnings("NN_NAKED_NOTIFY")
+  @SuppressFBWarnings("NN_NAKED_NOTIFY")
   public void close() {
     try {
       if (!isShutdown.getAndSet(true)) {
@@ -1341,7 +1340,6 @@ class RssShuffleScheduler extends ShuffleScheduler {
   /**
    * A structure that records the penalty for a host.
    */
-  @SuppressFBWarnings
   private static class Penalty implements Delayed {
     MapHost host;
     private long endTime;
