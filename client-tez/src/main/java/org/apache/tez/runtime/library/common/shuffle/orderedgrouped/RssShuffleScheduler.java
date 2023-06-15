@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -1353,6 +1354,23 @@ class RssShuffleScheduler extends ShuffleScheduler {
     }
 
     @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      Penalty penalty = (Penalty) o;
+      return endTime == penalty.endTime && Objects.equals(host, penalty.host);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(host, endTime);
+    }
+
+    @Override
     public int compareTo(Delayed o) {
       long other = ((Penalty) o).endTime;
       return endTime == other ? 0 : (endTime < other ? -1 : 1);
@@ -1667,3 +1685,4 @@ class RssShuffleScheduler extends ShuffleScheduler {
     }
   }
 }
+
