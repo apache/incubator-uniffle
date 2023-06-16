@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.coordinator.web.Response;
@@ -37,10 +38,17 @@ public class NodesServlet extends BaseServlet<List<ServerNode>> {
   }
 
   @Override
-  protected Response<List<ServerNode>> handleGet(HttpServletRequest req, HttpServletResponse resp) {
-    List<ServerNode> serverList = coordinator.getClusterManager().getServerList(Collections.EMPTY_SET);
+  protected Response handleGet(HttpServletRequest req, HttpServletResponse resp) {
+    List<ServerNode> serverList;
     String id = req.getParameter("id");
     String status = req.getParameter("status");
+    if (ServerStatus.UNHEALTHY.name().equalsIgnoreCase(status)) {
+      serverList = coordinator.getClusterManager().getUnhealthyServerList();
+    } else if (ServerStatus.LOST.name().equalsIgnoreCase(status)) {
+      serverList = coordinator.getClusterManager().getLostServerList();
+    } else {
+      serverList = coordinator.getClusterManager().getServerList(Collections.EMPTY_SET);
+    }
     serverList = serverList.stream().filter((server) -> {
       if (id != null && !id.equals(server.getId())) {
         return false;
