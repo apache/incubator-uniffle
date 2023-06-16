@@ -140,7 +140,7 @@ public class WriteBufferManager extends MemoryConsumer {
     this.requireMemoryInterval = bufferManagerOptions.getRequireMemoryInterval();
     this.requireMemoryRetryMax = bufferManagerOptions.getRequireMemoryRetryMax();
     this.arrayOutputStream = new WrappedByteArrayOutputStream(serializerBufferSize);
-    // columnar shuffle use the serialized data directly
+    // in columnar shuffle, the serializer here is never used
     if (serializer != null) {
       this.instance = serializer.newInstance();
       this.serializeStream = instance.serializeStream(arrayOutputStream);
