@@ -362,6 +362,10 @@
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-json</artifactId>
           </exclusion>
+          <exclusion>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
