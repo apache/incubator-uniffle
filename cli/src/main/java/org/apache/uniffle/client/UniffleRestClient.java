@@ -19,7 +19,7 @@ package org.apache.uniffle.client;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 
-public class UniffleRestClient implements AutoCloseable, Cloneable {
+public class UniffleRestClient implements AutoCloseable {
 
   private RestClient restClient;
   private RestClientConf conf;

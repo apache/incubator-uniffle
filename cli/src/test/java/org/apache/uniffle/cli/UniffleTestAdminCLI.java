@@ -18,7 +18,6 @@
 package org.apache.uniffle.cli;
 
 import java.io.IOException;
-import java.util.Collections;
 
 import java.util.HashMap;
 import org.junit.jupiter.api.Test;

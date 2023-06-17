@@ -107,9 +107,6 @@ public class RestClientImpl implements RestClient {
     return response;
   }
 
-  private URI buildURI(String path) {
-    return buildURI(path, null);
-  }
 
   private URI buildURI(String path, Map<String, Object> params) {
     URI uri;

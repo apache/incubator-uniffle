@@ -17,10 +17,7 @@
 
 package org.apache.uniffle.cli;
 
-import java.util.Collections;
-
 import java.util.HashMap;
-import org.apache.hadoop.util.hash.Hash;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
