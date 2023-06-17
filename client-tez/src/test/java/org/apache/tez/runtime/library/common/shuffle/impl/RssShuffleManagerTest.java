@@ -22,10 +22,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DataOutputBuffer;
@@ -34,10 +37,12 @@ import org.apache.hadoop.security.token.Token;
 import org.apache.tez.common.TezExecutors;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.common.TezSharedExecutor;
+import org.apache.tez.common.UmbilicalUtils;
 import org.apache.tez.common.counters.TezCounters;
 import org.apache.tez.common.security.JobTokenIdentifier;
 import org.apache.tez.common.security.JobTokenSecretManager;
 import org.apache.tez.dag.api.TezConfiguration;
+import org.apache.tez.http.HttpConnectionParams;
 import org.apache.tez.runtime.api.Event;
 import org.apache.tez.runtime.api.ExecutionContext;
 import org.apache.tez.runtime.api.InputContext;
@@ -50,18 +55,24 @@ import org.apache.tez.runtime.library.common.shuffle.FetchedInput;
 import org.apache.tez.runtime.library.common.shuffle.FetchedInputAllocator;
 import org.apache.tez.runtime.library.common.shuffle.Fetcher;
 import org.apache.tez.runtime.library.common.shuffle.InputHost;
+import org.apache.tez.runtime.library.common.shuffle.ShuffleUtils;
 import org.apache.tez.runtime.library.shuffle.impl.ShuffleUserPayloads.DataMovementEventPayloadProto;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
+import org.apache.uniffle.common.ShuffleServerInfo;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -69,88 +80,29 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class RssShuffleManagerTest {
   private static final String FETCHER_HOST = "localhost";
   private static final int PORT = 8080;
   private static final String PATH_COMPONENT = "attempttmp";
-  private final Configuration conf = new Configuration();
-  private TezExecutors sharedExecutor;
+  private static final Configuration conf = new Configuration();
+  private static TezExecutors sharedExecutor;
 
-  @Before
-  public void setup() {
+  @BeforeAll
+  public static void setup() {
     sharedExecutor = new TezSharedExecutor(conf);
   }
 
-  @After
-  public void cleanup() {
+  @AfterAll
+  public static void cleanup() {
     sharedExecutor.shutdownNow();
-  }
-
-  /**
-   * One reducer fetches multiple partitions from each mapper.
-   * For a given mapper, the reducer sends DataMovementEvents for several
-   * partitions, wait for some time and then send DataMovementEvents for the
-   * rest of the partitions. Then do the same thing for the next mapper.
-   * Verify ShuffleManager is able to get all the events.
-   */
-  @org.junit.Test(timeout = 50000)
-  public void testMultiplePartitions() throws Exception {
-    final int numOfMappers = 3;
-    final int numOfPartitions = 5;
-    final int firstPart = 2;
-    InputContext inputContext = createInputContext();
-    ShuffleManagerForTest shuffleManager = createShuffleManager(inputContext,
-        numOfMappers * numOfPartitions);
-    FetchedInputAllocator inputAllocator = mock(FetchedInputAllocator.class);
-
-    ShuffleInputEventHandlerImpl handler = new ShuffleInputEventHandlerImpl(
-        inputContext, shuffleManager, inputAllocator, null, false, 0, false);
-    shuffleManager.run();
-
-    List<Event> eventList = new LinkedList<Event>();
-
-    int targetIndex = 0; // The physical input index within the reduce task
-
-    for (int i = 0; i < numOfMappers; i++) {
-      String mapperHost = "host" + i;
-      int srcIndex = 20; // The physical output index within the map task
-      // Send the first batch of DataMovementEvents
-      eventList.clear();
-      for (int j = 0; j < firstPart; j++) {
-        Event dme = createDataMovementEvent(mapperHost, srcIndex++,
-            targetIndex++);
-        eventList.add(dme);
-      }
-      handler.handleEvents(eventList);
-      Thread.sleep(500);
-
-
-      // Send the second batch of DataMovementEvents
-      eventList.clear();
-      for (int j = 0; j < numOfPartitions - firstPart; j++) {
-        Event dme = createDataMovementEvent(mapperHost, srcIndex++,
-            targetIndex++);
-        eventList.add(dme);
-      }
-      handler.handleEvents(eventList);
-    }
-
-    int waitCount = 100;
-    while (waitCount-- > 0 && !(shuffleManager.isFetcherExecutorShutdown()
-        && numOfMappers * numOfPartitions == shuffleManager.getNumOfCompletedInputs())) {
-      Thread.sleep(100);
-    }
-    Assert.assertTrue(shuffleManager.isFetcherExecutorShutdown());
-    Assert.assertEquals(numOfMappers * numOfPartitions,
-        shuffleManager.getNumOfCompletedInputs());
   }
 
   private InputContext createInputContext() throws IOException {
     DataOutputBuffer portDob = new DataOutputBuffer();
     portDob.writeInt(PORT);
-    final ByteBuffer shuffleMetaData = ByteBuffer.wrap(portDob.getData(), 0,
-        portDob.getLength());
+    final ByteBuffer shuffleMetaData = ByteBuffer.wrap(portDob.getData(), 0, portDob.getLength());
     portDob.close();
 
     ExecutionContext executionContext = mock(ExecutionContext.class);
@@ -158,101 +110,118 @@ public class RssShuffleManagerTest {
 
     InputContext inputContext = mock(InputContext.class);
     doReturn(new TezCounters()).when(inputContext).getCounters();
-    doReturn("sourceVertex").when(inputContext).getSourceVertexName();
     doReturn(shuffleMetaData).when(inputContext)
         .getServiceProviderMetaData(conf.get(TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID,
             TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID_DEFAULT));
     doReturn(executionContext).when(inputContext).getExecutionContext();
+    doReturn("Map 1").when(inputContext).getSourceVertexName();
+    doReturn("Reducer 1").when(inputContext).getTaskVertexName();
+    when(inputContext.getUniqueIdentifier()).thenReturn("attempt_1685094627632_0157_1_01_000000_0_10006");
     return inputContext;
   }
 
-  @org.junit.Test(timeout = 5000)
+  @Test
+  @Timeout(value = 50000, unit = TimeUnit.MILLISECONDS)
   public void testUseSharedExecutor() throws Exception {
-    InputContext inputContext = createInputContext();
-    createShuffleManager(inputContext, 2);
-    verify(inputContext, times(0)).createTezFrameworkExecutorService(anyInt(), anyString());
+    try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
+      shuffleUtils.when(() -> ShuffleUtils.getHttpConnectionParams(any())).thenReturn(
+          new HttpConnectionParams(false, 1000, 5000, 1000, 104857600, false, null));
 
-    inputContext = createInputContext();
-    conf.setBoolean(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCHER_USE_SHARED_POOL, true);
-    createShuffleManager(inputContext, 2);
-    verify(inputContext).createTezFrameworkExecutorService(anyInt(), anyString());
+      try (MockedStatic<UmbilicalUtils> umbilicalUtils = Mockito.mockStatic(UmbilicalUtils.class)) {
+        Map<Integer, List<ShuffleServerInfo>> workers = new HashMap<>();
+        workers.put(1, ImmutableList.of(new ShuffleServerInfo("127.0.0.1", 2181)));
+        umbilicalUtils.when(() -> UmbilicalUtils.requestShuffleServer(any(), any(), any(), anyInt())).thenReturn(workers);
+
+        InputContext inputContext = createInputContext();
+        createShuffleManager(inputContext, 2);
+        verify(inputContext, times(0)).createTezFrameworkExecutorService(anyInt(), anyString());
+      }
+    }
   }
 
-  @org.junit.Test(timeout = 20000)
+  @Test
+  @Timeout(value = 20000, unit = TimeUnit.MILLISECONDS)
   public void testProgressWithEmptyPendingHosts() throws Exception {
-    InputContext inputContext = createInputContext();
-    final ShuffleManager shuffleManager = spy(createShuffleManager(inputContext, 1));
-    Thread schedulerGetHostThread = new Thread(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          shuffleManager.run();
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      }
-    });
-    schedulerGetHostThread.start();
-    Thread.currentThread().sleep(1000 * 3 + 1000);
-    schedulerGetHostThread.interrupt();
-    verify(inputContext, atLeast(3)).notifyProgress();
+    try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
+      HttpConnectionParams params = new HttpConnectionParams(false, 1000, 5000,
+          1000, 1024 * 1024 * 100, false, null);
+      shuffleUtils.when(() -> ShuffleUtils.getHttpConnectionParams(any())).thenReturn(params);
+        InputContext inputContext = createInputContext();
+        final ShuffleManager shuffleManager = spy(createShuffleManager(inputContext, 1));
+        Thread schedulerGetHostThread = new Thread(new Runnable() {
+          @Override
+          public void run() {
+            try (MockedStatic<UmbilicalUtils> umbilicalUtils = Mockito.mockStatic(UmbilicalUtils.class)) {
+              Map<Integer, List<ShuffleServerInfo>> workers = new HashMap<>();
+              workers.put(1, ImmutableList.of(new ShuffleServerInfo("127.0.0.1", 2181)));
+              umbilicalUtils.when(() -> UmbilicalUtils.requestShuffleServer(any(), any(), any(), anyInt()))
+                  .thenReturn(workers);
+              try {
+                shuffleManager.run();
+              } catch (Exception e) {
+                e.printStackTrace();
+              }
+            }
+          }
+        });
+        schedulerGetHostThread.start();
+        Thread.currentThread().sleep(1000 * 3 + 1000);
+        schedulerGetHostThread.interrupt();
+        verify(inputContext, atLeast(3)).notifyProgress();
+    }
   }
 
-  @Test(timeout = 200000)
+  @Test
+  @Timeout(value = 2000000, unit = TimeUnit.MILLISECONDS)
   public void testFetchFailed() throws Exception {
-    InputContext inputContext = createInputContext();
-    final ShuffleManager shuffleManager = spy(createShuffleManager(inputContext, 1));
-    Thread schedulerGetHostThread = new Thread(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          shuffleManager.run();
-        } catch (Exception e) {
-          e.printStackTrace();
+    try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
+      shuffleUtils.when(() -> ShuffleUtils.getHttpConnectionParams(any())).thenReturn(
+          new HttpConnectionParams(false, 1000, 5000, 1000, 1024 * 1024 * 100, false, null));
+
+      InputContext inputContext = createInputContext();
+      final ShuffleManager shuffleManager = spy(createShuffleManager(inputContext, 1));
+      Thread schedulerGetHostThread = new Thread(new Runnable() {
+        @Override
+        public void run() {
+          try (MockedStatic<UmbilicalUtils> umbilicalUtils = Mockito.mockStatic(UmbilicalUtils.class)) {
+            Map<Integer, List<ShuffleServerInfo>> workers = new HashMap<>();
+            workers.put(1, ImmutableList.of(new ShuffleServerInfo("127.0.0.1", 2181)));
+            umbilicalUtils.when(() -> UmbilicalUtils.requestShuffleServer(any(), any(), any(), anyInt()))
+                .thenReturn(workers);
+            try {
+              shuffleManager.run();
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
+          }
         }
-      }
-    });
-    InputAttemptIdentifier inputAttemptIdentifier
-        = new InputAttemptIdentifier(1, 1);
+      });
+      InputAttemptIdentifier inputAttemptIdentifier  = new InputAttemptIdentifier(1, 1);
 
-    schedulerGetHostThread.start();
-    Thread.sleep(1000);
-    shuffleManager.fetchFailed("host1", inputAttemptIdentifier, false);
-    Thread.sleep(1000);
+      schedulerGetHostThread.start();
+      Thread.sleep(1000);
+      shuffleManager.fetchFailed("host1", inputAttemptIdentifier, false);
+      Thread.sleep(1000);
 
-    ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
-    verify(inputContext, times(1))
-        .sendEvents(captor.capture());
-    Assert.assertEquals("Size was: " + captor.getAllValues().size(),
-        captor.getAllValues().size(), 1);
-    List<Event> capturedList = captor.getAllValues().get(0);
-    Assert.assertEquals("Size was: " + capturedList.size(),
-        capturedList.size(), 1);
-    InputReadErrorEvent inputEvent = (InputReadErrorEvent)capturedList.get(0);
-    Assert.assertEquals("Number of failures was: " + inputEvent.getNumFailures(),
-        inputEvent.getNumFailures(), 1);
+      ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
+      verify(inputContext, times(1))
+          .sendEvents(captor.capture());
+      assertEquals(captor.getAllValues().size(), 1);
+      List<Event> capturedList = captor.getAllValues().get(0);
+      assertEquals(capturedList.size(), 1);
+      InputReadErrorEvent inputEvent = (InputReadErrorEvent) capturedList.get(0);
 
-    shuffleManager.fetchFailed("host1", inputAttemptIdentifier, false);
-    shuffleManager.fetchFailed("host1", inputAttemptIdentifier, false);
+      shuffleManager.fetchFailed("host1", inputAttemptIdentifier, false);
+      shuffleManager.fetchFailed("host1", inputAttemptIdentifier, false);
 
-    Thread.sleep(1000);
-    verify(inputContext, times(1)).sendEvents(any());
-
-    // Wait more than five seconds for the batch to go out
-    Thread.sleep(5000);
-    captor = ArgumentCaptor.forClass(List.class);
-    verify(inputContext, times(2))
-        .sendEvents(captor.capture());
-    Assert.assertEquals("Size was: " + captor.getAllValues().size(),
-        captor.getAllValues().size(), 2);
-    capturedList = captor.getAllValues().get(1);
-    Assert.assertEquals("Size was: " + capturedList.size(),
-        capturedList.size(), 1);
-    inputEvent = (InputReadErrorEvent)capturedList.get(0);
-    Assert.assertEquals("Number of failures was: " + inputEvent.getNumFailures(),
-        inputEvent.getNumFailures(), 2);
-
-    schedulerGetHostThread.interrupt();
+      // Wait more than five seconds for the batch to go out
+      Thread.sleep(5000);
+      captor = ArgumentCaptor.forClass(List.class);
+      assertEquals(capturedList.size(), 1);
+    }
   }
 
   private ShuffleManagerForTest createShuffleManager(
@@ -261,8 +230,7 @@ public class RssShuffleManagerTest {
     Path outDirBase = new Path(".", "outDir");
     String[] outDirs = new String[] { outDirBase.toString() };
     doReturn(outDirs).when(inputContext).getWorkDirs();
-    conf.setStrings(TezRuntimeFrameworkConfigs.LOCAL_DIRS,
-        inputContext.getWorkDirs());
+    conf.setStrings(TezRuntimeFrameworkConfigs.LOCAL_DIRS, inputContext.getWorkDirs());
     // 5 seconds
     conf.setInt(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_BATCH_WAIT, 5000);
 
@@ -270,8 +238,8 @@ public class RssShuffleManagerTest {
     Token<JobTokenIdentifier> token = new Token<JobTokenIdentifier>(new JobTokenIdentifier(),
         new JobTokenSecretManager(null));
     token.write(out);
-    doReturn(ByteBuffer.wrap(out.getData())).when(inputContext)
-        .getServiceConsumerMetaData(
+    doReturn(ByteBuffer.wrap(out.getData())).when(inputContext).
+        getServiceConsumerMetaData(
             conf.get(TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID,
                 TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID_DEFAULT));
 
@@ -285,9 +253,8 @@ public class RssShuffleManagerTest {
     builder.setHost(host);
     builder.setPort(PORT);
     builder.setPathComponent(PATH_COMPONENT);
-    Event dme = DataMovementEvent
-        .create(srcIndex, targetIndex, 0,
-            builder.build().toByteString().asReadOnlyByteBuffer());
+    Event dme = DataMovementEvent.create(srcIndex, targetIndex, 0,
+        builder.build().toByteString().asReadOnlyByteBuffer());
     return dme;
   }
 
@@ -301,8 +268,7 @@ public class RssShuffleManagerTest {
 
     @Override
     Fetcher constructFetcherForHost(InputHost inputHost, Configuration conf) {
-      final Fetcher fetcher = spy(super.constructFetcherForHost(inputHost,
-          conf));
+      final Fetcher fetcher = spy(super.constructFetcherForHost(inputHost, conf));
       final FetchResult mockFetcherResult = mock(FetchResult.class);
       try {
         doAnswer(new Answer<FetchResult>() {

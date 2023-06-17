@@ -46,7 +46,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-import javax.crypto.SecretKey;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
@@ -74,7 +73,6 @@ import org.apache.tez.common.TezUtilsInternal;
 import org.apache.tez.common.UmbilicalUtils;
 import org.apache.tez.common.counters.TaskCounter;
 import org.apache.tez.common.counters.TezCounter;
-import org.apache.tez.common.security.JobTokenSecretManager;
 import org.apache.tez.dag.api.TezConfiguration;
 import org.apache.tez.dag.api.TezUncheckedException;
 import org.apache.tez.dag.records.TezTaskAttemptID;
@@ -169,7 +167,6 @@ public class RssShuffleManager extends ShuffleManager {
   private final boolean asyncHttp;
 
   // Parameters required by Fetchers
-  private final JobTokenSecretManager jobTokenSecretMgr;
   private final CompressionCodec codec;
   private final Configuration conf;
   private final boolean localDiskFetchEnabled;
@@ -303,12 +300,6 @@ public class RssShuffleManager extends ShuffleManager {
     this.startTime = System.currentTimeMillis();
     this.lastProgressTime = startTime;
 
-    String auxiliaryService = conf.get(TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID,
-        TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID_DEFAULT);
-    SecretKey shuffleSecret = ShuffleUtils
-        .getJobTokenSecretFromTokenBytes(inputContext
-            .getServiceConsumerMetaData(auxiliaryService));
-    this.jobTokenSecretMgr = new JobTokenSecretManager(shuffleSecret);
     this.asyncHttp = conf.getBoolean(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_USE_ASYNC_HTTP, false);
     httpConnectionParams = ShuffleUtils.getHttpConnectionParams(conf);
 
@@ -320,6 +311,9 @@ public class RssShuffleManager extends ShuffleManager {
     this.localDisks = Iterables.toArray(
         localDirAllocator.getAllLocalPathsToRead(".", conf), Path.class);
     this.localhostName = inputContext.getExecutionContext().getHostName();
+
+    String auxiliaryService = conf.get(TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID,
+        TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID_DEFAULT);
     final ByteBuffer shuffleMetaData =
         inputContext.getServiceProviderMetaData(auxiliaryService);
     this.shufflePort = ShuffleUtils.deserializeShuffleProviderMetaData(shuffleMetaData);
@@ -581,7 +575,7 @@ public class RssShuffleManager extends ShuffleManager {
 
     FetcherBuilder fetcherBuilder = new FetcherBuilder(RssShuffleManager.this,
         httpConnectionParams, inputManager, inputContext.getApplicationId(), inputContext.getDagIdentifier(),
-        jobTokenSecretMgr, srcNameTrimmed, conf, localFs, localDirAllocator,
+        null, srcNameTrimmed, conf, localFs, localDirAllocator,
         lockDisk, localDiskFetchEnabled, sharedFetchEnabled,
         localhostName, shufflePort, asyncHttp, verifyDiskChecksum, compositeFetch);
 
