@@ -36,6 +36,7 @@ import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.netty.client.TransportClient;
 import org.apache.uniffle.common.netty.handle.BaseMessageHandler;
 import org.apache.uniffle.common.netty.protocol.GetLocalShuffleDataRequest;
@@ -356,12 +357,13 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         LOG.info("Successfully getShuffleData cost {} ms for shuffle"
             + " data with {}", readTime, requestInfo);
         response = new GetLocalShuffleDataResponse(req.getRequestId(),
-            status, msg, sdr.getDataBuf());
+            status, msg, sdr.getManagedBuffer());
       } catch (Exception e) {
         status = StatusCode.INTERNAL_ERROR;
         msg = "Error happened when get shuffle data for " + requestInfo + ", " + e.getMessage();
         LOG.error(msg, e);
-        response = new GetLocalShuffleDataResponse(req.getRequestId(), status, msg, Unpooled.EMPTY_BUFFER);
+        response = new GetLocalShuffleDataResponse(req.getRequestId(), status, msg,
+            new NettyManagedBuffer(Unpooled.EMPTY_BUFFER));
       } finally {
         shuffleServer.getShuffleBufferManager().releaseReadMemory(length);
       }
@@ -369,7 +371,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       status = StatusCode.INTERNAL_ERROR;
       msg = "Can't require memory to get shuffle data";
       LOG.error(msg + " for " + requestInfo);
-      response = new GetLocalShuffleDataResponse(req.getRequestId(), status, msg, Unpooled.EMPTY_BUFFER);
+      response = new GetLocalShuffleDataResponse(req.getRequestId(), status, msg,
+          new NettyManagedBuffer(Unpooled.EMPTY_BUFFER));
     }
     client.sendRpcSync(response, RPC_TIMEOUT);
   }
