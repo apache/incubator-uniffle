@@ -37,8 +37,7 @@ public class ServerNode implements Comparable<ServerNode> {
   private int eventNumInFlush;
   private long timestamp;
   private Set<String> tags;
-  private boolean isHealthy;
-  private final ServerStatus status;
+  private ServerStatus status;
   private Map<String, StorageInfo> storageInfo;
   private int nettyPort = -1;
 
@@ -110,8 +109,7 @@ public class ServerNode implements Comparable<ServerNode> {
     this.eventNumInFlush = eventNumInFlush;
     this.timestamp = System.currentTimeMillis();
     this.tags = tags;
-    this.isHealthy = isHealthy;
-    this.status = status;
+    this.status = isHealthy ? status : ServerStatus.UNHEALTHY;
     this.storageInfo = storageInfoMap;
     if (nettyPort > 0) {
       this.nettyPort = nettyPort;
@@ -160,12 +158,17 @@ public class ServerNode implements Comparable<ServerNode> {
   }
 
   public boolean isHealthy() {
-    return isHealthy;
+    return this.status != ServerStatus.UNHEALTHY;
   }
-
+  
   public ServerStatus getStatus() {
     return status;
   }
+  
+  public void setStatus(ServerStatus serverStatus) {
+    this.status = serverStatus;
+  }
+  
 
   public Map<String, StorageInfo> getStorageInfo() {
     return storageInfo;
@@ -183,7 +186,6 @@ public class ServerNode implements Comparable<ServerNode> {
         + "], eventNumInFlush[" + eventNumInFlush
         + "], timestamp[" + timestamp
         + "], tags" + tags.toString() + ""
-        + ", healthy[" + isHealthy
         + ", status[" + status
         + "], storages[num=" + storageInfo.size() + "]";
 
@@ -192,7 +194,7 @@ public class ServerNode implements Comparable<ServerNode> {
   /**
    * Only for test case
    */
-  void setTimestamp(long timestamp) {
+  public void setTimestamp(long timestamp) {
     this.timestamp = timestamp;
   }
 

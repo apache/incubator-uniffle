@@ -27,6 +27,8 @@ public enum ServerStatus {
   ACTIVE(0),
   DECOMMISSIONING(1),
   DECOMMISSIONED(2),
+  LOST(3),
+  UNHEALTHY(4),
   UNKNOWN(-1);
 
   static final Map<Integer, ServerStatus> VALUE_MAP =

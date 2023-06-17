@@ -457,6 +457,11 @@ public class ShuffleServer {
     return isHealthy.get();
   }
 
+  @VisibleForTesting
+  public void markUnhealthy() {
+    isHealthy.set(false);
+  }
+
   public GRPCMetrics getGrpcMetrics() {
     return grpcMetrics;
   }

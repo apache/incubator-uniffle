@@ -18,14 +18,19 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.commons.collections.CollectionUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -39,6 +44,8 @@ import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.metrics.TestUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
+import org.apache.uniffle.coordinator.ServerNode;
+import org.apache.uniffle.coordinator.SimpleClusterManager;
 import org.apache.uniffle.coordinator.web.Response;
 import org.apache.uniffle.coordinator.web.request.CancelDecommissionRequest;
 import org.apache.uniffle.coordinator.web.request.DecommissionRequest;
@@ -48,10 +55,13 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServletTest extends IntegrationTestBase {
   private static final String URL_PREFIX = "http://127.0.0.1:12345/api/";
   private static final String NODES_URL = URL_PREFIX + "server/nodes";
+  private static final String LOSTNODES_URL = URL_PREFIX + "server/nodes?status=LOST";
+  private static final String UNHEALTHYNODES_URL = URL_PREFIX + "server/nodes?status=UNHEALTHY";
   private static final String DECOMMISSION_URL = URL_PREFIX + "server/decommission";
   private static final String CANCEL_DECOMMISSION_URL = URL_PREFIX + "server/cancelDecommission";
   private static CoordinatorServer coordinatorServer;
@@ -80,10 +90,24 @@ public class ServletTest extends IntegrationTestBase {
     shuffleServerConf.set(RssBaseConf.RPC_SERVER_PORT, SHUFFLE_SERVER_PORT + 1);
     shuffleServerConf.set(RssBaseConf.JETTY_HTTP_PORT, 18081);
     createShuffleServer(shuffleServerConf);
+    File dataDir5 = new File(tmpDir, "data5");
+    File dataDir6 = new File(tmpDir, "data6");
+    basePath = Lists.newArrayList(dataDir5.getAbsolutePath(), dataDir6.getAbsolutePath());
+    shuffleServerConf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, basePath);
+    shuffleServerConf.set(RssBaseConf.RPC_SERVER_PORT, SHUFFLE_SERVER_PORT + 2);
+    shuffleServerConf.set(RssBaseConf.JETTY_HTTP_PORT, 18082);
+    createShuffleServer(shuffleServerConf);
+    File dataDir7 = new File(tmpDir, "data7");
+    File dataDir8 = new File(tmpDir, "data8");
+    basePath = Lists.newArrayList(dataDir7.getAbsolutePath(), dataDir8.getAbsolutePath());
+    shuffleServerConf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, basePath);
+    shuffleServerConf.set(RssBaseConf.RPC_SERVER_PORT, SHUFFLE_SERVER_PORT + 3);
+    shuffleServerConf.set(RssBaseConf.JETTY_HTTP_PORT, 18083);
+    createShuffleServer(shuffleServerConf);
     startServers();
     coordinatorServer = coordinators.get(0);
     Awaitility.await().timeout(30, TimeUnit.SECONDS).until(() ->
-        coordinatorServer.getClusterManager().list().size() == 2);
+        coordinatorServer.getClusterManager().list().size() == 4);
   }
 
   @Test
@@ -93,7 +117,7 @@ public class ServletTest extends IntegrationTestBase {
             new TypeReference<Response<List<HashMap<String, Object>>>>() {});
     List<HashMap<String, Object>> serverList = response.getData();
     assertEquals(0, response.getCode());
-    assertEquals(2, serverList.size());
+    assertEquals(4, serverList.size());
     assertEquals(SHUFFLE_SERVER_PORT, Integer.parseInt(serverList.get(0).get("grpcPort").toString()));
     assertEquals(ServerStatus.ACTIVE.toString(), serverList.get(0).get("status"));
     assertEquals(SHUFFLE_SERVER_PORT + 1, Integer.parseInt(serverList.get(1).get("grpcPort").toString()));
@@ -107,15 +131,48 @@ public class ServletTest extends IntegrationTestBase {
     serverList = response.getData();
     assertEquals(1, serverList.size());
     assertEquals(shuffleServer.getId(), serverList.get(0).get("id"));
+  }
 
-    content = TestUtils.httpGet(NODES_URL + "?status=DECOMMISSIONED");
-    response = objectMapper.readValue(content, new TypeReference<Response<List<HashMap<String, Object>>>>() {});
-    serverList = response.getData();
-    assertEquals(0, serverList.size());
-    content = TestUtils.httpGet(NODES_URL + "?status=ACTIVE");
-    response = objectMapper.readValue(content, new TypeReference<Response<List<HashMap<String, Object>>>>() {});
-    serverList = response.getData();
-    assertEquals(2, serverList.size());
+  @Test
+  public void testLostNodesServlet() throws IOException {
+    SimpleClusterManager clusterManager = (SimpleClusterManager) coordinatorServer.getClusterManager();
+    ShuffleServer shuffleServer3 = shuffleServers.get(2);
+    ShuffleServer shuffleServer4 = shuffleServers.get(3);
+    Map<String, ServerNode> servers = clusterManager.getServers();
+    servers.get(shuffleServer3.getId()).setTimestamp(System.currentTimeMillis() - 40000);
+    servers.get(shuffleServer4.getId()).setTimestamp(System.currentTimeMillis() - 40000);
+    clusterManager.nodesCheckTest();
+    List<String> expectShuffleIds = Arrays.asList(shuffleServer3.getId(), shuffleServer4.getId());
+    List<String> shuffleIds = new ArrayList<>();
+    Response<List<HashMap<String, Object>>> response = objectMapper.readValue(TestUtils.httpGet(LOSTNODES_URL),
+        new TypeReference<Response<List<HashMap<String, Object>>>>() {});
+    List<HashMap<String, Object>> serverList = response.getData();
+    for (HashMap<String, Object> stringObjectHashMap : serverList) {
+      String shuffleId = (String) stringObjectHashMap.get("id");
+      shuffleIds.add(shuffleId);
+    }
+    assertTrue(CollectionUtils.isEqualCollection(expectShuffleIds, shuffleIds));
+  }
+
+  @Test
+  public void testUnhealthyNodesServlet() {
+    ShuffleServer shuffleServer3 = shuffleServers.get(2);
+    ShuffleServer shuffleServer4 = shuffleServers.get(3);
+    shuffleServer3.markUnhealthy();
+    shuffleServer4.markUnhealthy();
+    List<String> expectShuffleIds = Arrays.asList(shuffleServer3.getId(),shuffleServer4.getId());
+    List<String> shuffleIds = new ArrayList<>();
+    Awaitility.await().atMost(30,TimeUnit.SECONDS).until(() -> {
+      Response<List<HashMap<String, Object>>> response = objectMapper.readValue(TestUtils.httpGet(UNHEALTHYNODES_URL), 
+          new TypeReference<Response<List<HashMap<String, Object>>>>() {});
+      List<HashMap<String, Object>> serverList = response.getData();
+      for (HashMap<String, Object> stringObjectHashMap : serverList) {
+        String shuffleId = (String) stringObjectHashMap.get("id");
+        shuffleIds.add(shuffleId);
+      }
+      return serverList.size() == 2;
+    });
+    assertTrue(CollectionUtils.isEqualCollection(expectShuffleIds, shuffleIds));
   }
 
   @Test
