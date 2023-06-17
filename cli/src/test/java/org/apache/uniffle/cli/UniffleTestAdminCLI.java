@@ -18,8 +18,8 @@
 package org.apache.uniffle.cli;
 
 import java.io.IOException;
-
 import java.util.HashMap;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 import org.mockito.Mockito;
@@ -43,7 +43,7 @@ public class UniffleTestAdminCLI {
     assertEquals(0, uniffleAdminCLI.run(args));
     Mockito.verify(client.getHttpClient(),
         Mockito.times(1)).get("/api/server/admin/refreshChecker",
-        new HashMap<>(), null);
+           new HashMap<>(), null);
   }
 
 

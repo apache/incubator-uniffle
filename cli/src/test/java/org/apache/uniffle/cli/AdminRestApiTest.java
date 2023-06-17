@@ -18,6 +18,7 @@
 package org.apache.uniffle.cli;
 
 import java.util.HashMap;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
@@ -52,7 +53,7 @@ public class AdminRestApiTest {
     String result = adminRestApi.refreshAccessChecker();
     Mockito.verify(uniffleRestClient.getHttpClient(),
         Mockito.times(1)).get("/api/server/admin/refreshChecker",
-        new HashMap<>(), null);
+           new HashMap<>(), null);
   }
 
 }
