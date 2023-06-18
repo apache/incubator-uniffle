@@ -48,7 +48,6 @@ import org.apache.tez.runtime.api.ExecutionContext;
 import org.apache.tez.runtime.api.InputContext;
 import org.apache.tez.runtime.api.events.DataMovementEvent;
 import org.apache.tez.runtime.api.events.InputReadErrorEvent;
-import org.apache.tez.runtime.library.api.TezRuntimeConfiguration;
 import org.apache.tez.runtime.library.common.InputAttemptIdentifier;
 import org.apache.tez.runtime.library.common.shuffle.FetchResult;
 import org.apache.tez.runtime.library.common.shuffle.FetchedInput;
@@ -131,7 +130,8 @@ public class RssShuffleManagerTest {
       try (MockedStatic<UmbilicalUtils> umbilicalUtils = Mockito.mockStatic(UmbilicalUtils.class)) {
         Map<Integer, List<ShuffleServerInfo>> workers = new HashMap<>();
         workers.put(1, ImmutableList.of(new ShuffleServerInfo("127.0.0.1", 2181)));
-        umbilicalUtils.when(() -> UmbilicalUtils.requestShuffleServer(any(), any(), any(), anyInt())).thenReturn(workers);
+        umbilicalUtils.when(() -> UmbilicalUtils.requestShuffleServer(any(), any(), any(), anyInt()))
+            .thenReturn(workers);
 
         InputContext inputContext = createInputContext();
         createShuffleManager(inputContext, 2);
@@ -148,28 +148,28 @@ public class RssShuffleManagerTest {
       HttpConnectionParams params = new HttpConnectionParams(false, 1000, 5000,
           1000, 1024 * 1024 * 100, false, null);
       shuffleUtils.when(() -> ShuffleUtils.getHttpConnectionParams(any())).thenReturn(params);
-        InputContext inputContext = createInputContext();
-        final ShuffleManager shuffleManager = spy(createShuffleManager(inputContext, 1));
-        Thread schedulerGetHostThread = new Thread(new Runnable() {
-          @Override
-          public void run() {
-            try (MockedStatic<UmbilicalUtils> umbilicalUtils = Mockito.mockStatic(UmbilicalUtils.class)) {
-              Map<Integer, List<ShuffleServerInfo>> workers = new HashMap<>();
-              workers.put(1, ImmutableList.of(new ShuffleServerInfo("127.0.0.1", 2181)));
-              umbilicalUtils.when(() -> UmbilicalUtils.requestShuffleServer(any(), any(), any(), anyInt()))
-                  .thenReturn(workers);
-              try {
-                shuffleManager.run();
-              } catch (Exception e) {
-                e.printStackTrace();
-              }
+      InputContext inputContext = createInputContext();
+      final ShuffleManager shuffleManager = spy(createShuffleManager(inputContext, 1));
+      Thread schedulerGetHostThread = new Thread(new Runnable() {
+        @Override
+        public void run() {
+          try (MockedStatic<UmbilicalUtils> umbilicalUtils = Mockito.mockStatic(UmbilicalUtils.class)) {
+            Map<Integer, List<ShuffleServerInfo>> workers = new HashMap<>();
+            workers.put(1, ImmutableList.of(new ShuffleServerInfo("127.0.0.1", 2181)));
+            umbilicalUtils.when(() -> UmbilicalUtils.requestShuffleServer(any(), any(), any(), anyInt()))
+                .thenReturn(workers);
+            try {
+              shuffleManager.run();
+            } catch (Exception e) {
+              e.printStackTrace();
             }
           }
-        });
-        schedulerGetHostThread.start();
-        Thread.currentThread().sleep(1000 * 3 + 1000);
-        schedulerGetHostThread.interrupt();
-        verify(inputContext, atLeast(3)).notifyProgress();
+        }
+      });
+      schedulerGetHostThread.start();
+      Thread.currentThread().sleep(1000 * 3 + 1000);
+      schedulerGetHostThread.interrupt();
+      verify(inputContext, atLeast(3)).notifyProgress();
     }
   }
 
@@ -236,8 +236,8 @@ public class RssShuffleManagerTest {
     Token<JobTokenIdentifier> token = new Token<JobTokenIdentifier>(new JobTokenIdentifier(),
         new JobTokenSecretManager(null));
     token.write(out);
-    doReturn(ByteBuffer.wrap(out.getData())).when(inputContext).
-        getServiceConsumerMetaData(
+    doReturn(ByteBuffer.wrap(out.getData())).when(inputContext)
+        .getServiceConsumerMetaData(
             conf.get(TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID,
                 TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID_DEFAULT));
 
