@@ -51,7 +51,7 @@ public class AdminRestApiTest {
         .thenReturn("OK");
     String result = adminRestApi.refreshAccessChecker();
     Mockito.verify(uniffleRestClient.getHttpClient(),
-        Mockito.times(1)).get("/api/server/admin/refreshChecker",
+        Mockito.times(1)).get("/api/admin/refreshChecker",
            new HashMap<>(), null);
   }
 

@@ -35,7 +35,7 @@ public class AdminRestApi {
 
   public String refreshAccessChecker() {
     Map<String, Object> params = new HashMap<>();
-    return this.getClient().get("/api/server/admin/refreshChecker",  params, null);
+    return this.getClient().get("/api/admin/refreshChecker",  params, null);
   }
 
   private RestClient getClient() {

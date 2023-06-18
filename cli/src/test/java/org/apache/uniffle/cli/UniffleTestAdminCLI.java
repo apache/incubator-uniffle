@@ -42,7 +42,7 @@ public class UniffleTestAdminCLI {
     String[] args = {"-r"};
     assertEquals(0, uniffleAdminCLI.run(args));
     Mockito.verify(client.getHttpClient(),
-        Mockito.times(1)).get("/api/server/admin/refreshChecker",
+        Mockito.times(1)).get("/api/admin/refreshChecker",
            new HashMap<>(), null);
   }
 
