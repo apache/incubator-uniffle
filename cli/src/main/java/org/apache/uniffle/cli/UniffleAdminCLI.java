@@ -33,7 +33,7 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
   private static final Logger LOG = LoggerFactory.getLogger(UniffleAdminCLI.class);
 
   private final Options allOptions;
-  private final Option refreshAccessCli;
+  private final Option refreshCheckerCli;
   private final Option coordinatorHost;
   private final Option coordPort;
   private final Option ssl;
@@ -43,7 +43,7 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
 
   public UniffleAdminCLI(String shortPrefix, String longPrefix) {
     allOptions = new Options();
-    refreshAccessCli = new Option(shortPrefix + "r", longPrefix + "refreshChecker",
+    refreshCheckerCli = new Option(shortPrefix + "r", longPrefix + "refreshChecker",
         false, "This is an admin command that will refresh access checker.");
     help = new Option(shortPrefix + "h", longPrefix + "help",
         false, "Help for the Uniffle Admin CLI.");
@@ -53,7 +53,7 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
         true, "This is coordinator server port.");
     ssl = new Option(null, longPrefix + "ssl", false, "use SSL");
 
-    allOptions.addOption(refreshAccessCli);
+    allOptions.addOption(refreshCheckerCli);
     allOptions.addOption(coordinatorHost);
     allOptions.addOption(coordPort);
     allOptions.addOption(ssl);
@@ -86,7 +86,7 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
       client = UniffleRestClient.builder(hostUrl).build();
     }
 
-    if (cmd.hasOption(refreshAccessCli.getOpt())) {
+    if (cmd.hasOption(refreshCheckerCli.getOpt())) {
       LOG.info("uniffle-admin-cli : refresh coordinator access checker!");
       refreshAccessChecker();
       return 0;
@@ -104,7 +104,7 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
 
   @Override
   public void addRunOptions(Options baseOptions) {
-    baseOptions.addOption(refreshAccessCli);
+    baseOptions.addOption(refreshCheckerCli);
     baseOptions.addOption(coordinatorHost);
     baseOptions.addOption(coordPort);
   }
