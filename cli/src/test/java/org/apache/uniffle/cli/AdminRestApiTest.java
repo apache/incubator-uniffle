@@ -46,7 +46,6 @@ public class AdminRestApiTest {
 
   @Test
   public void testRunRefreshAccessChecker() throws UniffleCliArgsException {
-
     Mockito.when(uniffleRestClient.getHttpClient()
             .get(Mockito.anyString(), Mockito.anyMap(), Mockito.anyString()))
         .thenReturn("OK");

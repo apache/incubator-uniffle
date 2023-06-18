@@ -204,7 +204,7 @@ public class CoordinatorServer extends ReconfigurableBase {
         "/api/server/cancelDecommission");
     jettyServer.addServlet(
         new RefreshCheckerServlet(this),
-        "/api/server/admin/refreshChecker");
+        "/api/admin/refreshChecker");
   }
 
   private void registerMetrics() throws Exception {

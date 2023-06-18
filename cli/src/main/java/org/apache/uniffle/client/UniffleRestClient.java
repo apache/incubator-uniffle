@@ -20,10 +20,10 @@ package org.apache.uniffle.client;
 import org.apache.http.impl.client.CloseableHttpClient;
 
 public class UniffleRestClient implements AutoCloseable {
-
   private RestClient restClient;
   private RestClientConf conf;
-
+  // This is the base host URL for the coordinator server.
+  // It should be in the format of "https://server:port" or "http://server:port".
   private String hostUrl;
 
   @Override

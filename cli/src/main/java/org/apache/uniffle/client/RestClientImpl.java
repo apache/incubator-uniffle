@@ -42,11 +42,8 @@ import org.apache.uniffle.client.exception.UniffleRestException;
 
 
 public class RestClientImpl implements RestClient {
-
   private static final Logger LOG = LoggerFactory.getLogger(RestClientImpl.class);
-
   private CloseableHttpClient httpclient;
-
   private String baseUrl;
 
   public RestClientImpl(String baseUrl, CloseableHttpClient httpclient) {

@@ -26,8 +26,6 @@ import org.apache.uniffle.client.UniffleRestClient;
 public class AdminRestApi {
   private UniffleRestClient client;
 
-  private static final String API_BASE_PATH = "admin";
-
   private AdminRestApi() {
   }
 
@@ -36,9 +34,8 @@ public class AdminRestApi {
   }
 
   public String refreshAccessChecker() {
-    String path = String.format("/api/server/%s/%s", API_BASE_PATH, "refreshChecker");
     Map<String, Object> params = new HashMap<>();
-    return this.getClient().get(path, params, null);
+    return this.getClient().get("/api/server/admin/refreshChecker",  params, null);
   }
 
   private RestClient getClient() {
