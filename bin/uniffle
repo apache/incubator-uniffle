@@ -36,7 +36,7 @@ function uniffle_cmd_case
       UNIFFLE_CLASSNAME=org.apache.uniffle.cli.UniffleCLI
     ;;
     admin-cli)
-      UNIFFLE_CLASSNAME=org.apache.uniffle.cli.UniffleCLI
+      UNIFFLE_CLASSNAME=org.apache.uniffle.cli.UniffleAdminCLI
     ;;
     *)
       UNIFFLE_CLASSNAME="${subcmd}"

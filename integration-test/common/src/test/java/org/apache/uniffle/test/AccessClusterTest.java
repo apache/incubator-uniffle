@@ -70,6 +70,11 @@ public class AccessClusterTest extends CoordinatorTestBase {
     }
 
     @Override
+    public void refreshAccessChecker() {
+      // ignore.
+    }
+
+    @Override
     public void close() throws IOException {
       // ignore.
     }
