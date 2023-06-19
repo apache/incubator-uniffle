@@ -195,6 +195,7 @@ public class WriteBufferManagerTest {
     assertEquals(0, spyManager.getBuffers().size());
     assertEquals(1, shuffleBlockInfos.size());
     assertEquals(128, shuffleBlockInfos.get(0).getUncompressLength());
+    assertEquals(0, spyManager.getShuffleWriteMetrics().recordsWritten());
   }
 
   @Test

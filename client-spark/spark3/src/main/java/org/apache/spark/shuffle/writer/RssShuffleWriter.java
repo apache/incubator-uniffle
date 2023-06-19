@@ -60,30 +60,30 @@ import org.apache.uniffle.storage.util.StorageType;
 public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleWriter.class);
-  private static final String DUMMY_HOST = "dummy_host";
-  private static final int DUMMY_PORT = 99999;
+  protected static final String DUMMY_HOST = "dummy_host";
+  protected static final int DUMMY_PORT = 99999;
 
-  private final String appId;
-  private final int shuffleId;
-  private final WriteBufferManager bufferManager;
-  private final String taskId;
-  private final long taskAttemptId;
-  private final int numMaps;
-  private final ShuffleDependency<K, V, C> shuffleDependency;
-  private final ShuffleWriteMetrics shuffleWriteMetrics;
-  private final Partitioner partitioner;
-  private final RssShuffleManager shuffleManager;
-  private final boolean shouldPartition;
-  private final long sendCheckTimeout;
-  private final long sendCheckInterval;
-  private final int bitmapSplitNum;
-  private final Map<Integer, Set<Long>> partitionToBlockIds;
-  private final ShuffleWriteClient shuffleWriteClient;
-  private final Map<Integer, List<ShuffleServerInfo>> partitionToServers;
-  private final Set<ShuffleServerInfo> shuffleServersForData;
-  private final long[] partitionLengths;
-  private boolean isMemoryShuffleEnabled;
-  private final Function<String, Boolean> taskFailureCallback;
+  protected final String appId;
+  protected final int shuffleId;
+  protected final WriteBufferManager bufferManager;
+  protected final String taskId;
+  protected final long taskAttemptId;
+  protected final int numMaps;
+  protected final ShuffleDependency<K, V, C> shuffleDependency;
+  protected final ShuffleWriteMetrics shuffleWriteMetrics;
+  protected final Partitioner partitioner;
+  protected final RssShuffleManager shuffleManager;
+  protected final boolean shouldPartition;
+  protected final long sendCheckTimeout;
+  protected final long sendCheckInterval;
+  protected final int bitmapSplitNum;
+  protected final Map<Integer, Set<Long>> partitionToBlockIds;
+  protected final ShuffleWriteClient shuffleWriteClient;
+  protected final Map<Integer, List<ShuffleServerInfo>> partitionToServers;
+  protected final Set<ShuffleServerInfo> shuffleServersForData;
+  protected final long[] partitionLengths;
+  protected boolean isMemoryShuffleEnabled;
+  protected final Function<String, Boolean> taskFailureCallback;
 
   public RssShuffleWriter(
       String appId,
@@ -213,7 +213,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     return new long[0];
   }
 
-  private void processShuffleBlockInfos(List<ShuffleBlockInfo> shuffleBlockInfoList, Set<Long> blockIds) {
+  protected void processShuffleBlockInfos(List<ShuffleBlockInfo> shuffleBlockInfoList, Set<Long> blockIds) {
     if (shuffleBlockInfoList != null && !shuffleBlockInfoList.isEmpty()) {
       shuffleBlockInfoList.forEach(sbi -> {
         long blockId = sbi.getBlockId();

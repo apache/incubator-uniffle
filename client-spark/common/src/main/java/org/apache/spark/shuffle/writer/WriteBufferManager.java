@@ -90,6 +90,7 @@ public class WriteBufferManager extends MemoryConsumer {
   private Function<AddBlockEvent, CompletableFuture<Long>> spillFunc;
   private long sendSizeLimit;
   private int memorySpillTimeoutSec;
+  private boolean isRowBased;
 
   public WriteBufferManager(
       int shuffleId,
@@ -141,7 +142,8 @@ public class WriteBufferManager extends MemoryConsumer {
     this.requireMemoryRetryMax = bufferManagerOptions.getRequireMemoryRetryMax();
     this.arrayOutputStream = new WrappedByteArrayOutputStream(serializerBufferSize);
     // in columnar shuffle, the serializer here is never used
-    if (serializer != null) {
+    this.isRowBased = (serializer != null);
+    if (isRowBased) {
       this.instance = serializer.newInstance();
       this.serializeStream = instance.serializeStream(arrayOutputStream);
     }
@@ -185,7 +187,10 @@ public class WriteBufferManager extends MemoryConsumer {
       wb.addRecord(serializedData, serializedDataLength);
       buffers.put(partitionId, wb);
     }
-    shuffleWriteMetrics.incRecordsWritten(1L);
+    // records is a row based semantic
+    if (isRowBased) {
+      shuffleWriteMetrics.incRecordsWritten(1L);
+    }
 
     // check buffer size > spill threshold
     if (usedBytes.get() - inSendListBytes.get() > spillSize) {
