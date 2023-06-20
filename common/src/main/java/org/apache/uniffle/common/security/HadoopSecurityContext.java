@@ -25,13 +25,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public class HadoopSecurityContext implements SecurityContext {
@@ -81,7 +81,7 @@ public class HadoopSecurityContext implements SecurityContext {
         refreshIntervalSec,
         refreshIntervalSec,
         TimeUnit.SECONDS);
-    proxyUserUgiPool = Maps.newConcurrentMap();
+    proxyUserUgiPool = JavaUtils.newConcurrentMap();
   }
 
   private void authRefresh() {
