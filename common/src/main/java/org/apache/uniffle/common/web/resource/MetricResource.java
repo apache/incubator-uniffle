@@ -17,10 +17,7 @@
 
 package org.apache.uniffle.common.web.resource;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -30,6 +27,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
@@ -42,16 +40,17 @@ import org.apache.uniffle.common.exception.InvalidRequestException;
 public class MetricResource {
   @Context
   private HttpServletRequest httpRequest;
-
   @Context
   protected ServletContext servletContext;
 
   @GET
   @Path("/{type}")
   @Produces({ MediaType.APPLICATION_JSON })
-  public MetricsJsonObj metrics(@PathParam("type") String type) {
+  public MetricsJsonObj metrics(
+      @PathParam("type") String type,
+      @QueryParam("name[]") Set<String> names) {
     Enumeration<Collector.MetricFamilySamples> mfs =
-        getCollectorRegistry(type).filteredMetricFamilySamples(this.parse(httpRequest));
+        getCollectorRegistry(type).filteredMetricFamilySamples(names);
     List<Collector.MetricFamilySamples.Sample> metrics = new LinkedList<>();
     while (mfs.hasMoreElements()) {
       Collector.MetricFamilySamples metricFamilySamples = mfs.nextElement();
@@ -87,10 +86,5 @@ public class MetricResource {
       return timeStamp;
     }
 
-  }
-
-  private Set<String> parse(HttpServletRequest req) {
-    String[] includedParam = req.getParameterValues("name[]");
-    return includedParam == null ? Collections.emptySet() : new HashSet<>(Arrays.asList(includedParam));
   }
 }

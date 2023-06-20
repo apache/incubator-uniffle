@@ -20,9 +20,6 @@ package org.apache.uniffle.common.web.resource;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -30,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 
 import io.prometheus.client.CollectorRegistry;
@@ -43,19 +41,20 @@ public class PrometheusMetricResource {
   private HttpServletRequest httpRequest;
   @Context
   private HttpServletResponse httpServletResponse;
-
   @Context
   protected ServletContext servletContext;
 
   @GET
   @Path("/{type}")
-  public String metrics(@PathParam("type") String type) throws IOException {
+  public String metrics(
+      @PathParam("type") String type,
+      @QueryParam("name[]") Set<String> names) throws IOException {
     httpServletResponse.setStatus(200);
     httpServletResponse.setContentType("text/plain; version=0.0.4; charset=utf-8");
     Writer writer = new BufferedWriter(httpServletResponse.getWriter());
 
     try {
-      TextFormat.write004(writer, getCollectorRegistry(type).filteredMetricFamilySamples(this.parse(httpRequest)));
+      TextFormat.write004(writer, getCollectorRegistry(type).filteredMetricFamilySamples(names));
       writer.flush();
     } finally {
       writer.close();
@@ -70,10 +69,5 @@ public class PrometheusMetricResource {
       throw new InvalidRequestException(String.format("Metric type[%s] not supported", type));
     }
     return registry;
-  }
-
-  private Set<String> parse(HttpServletRequest req) {
-    String[] includedParam = req.getParameterValues("name[]");
-    return includedParam == null ? Collections.emptySet() : new HashSet<>(Arrays.asList(includedParam));
   }
 }
