@@ -34,4 +34,6 @@ public interface AccessChecker extends Closeable {
    * @return  access check result
    */
   AccessCheckResult check(AccessInfo accessInfo);
+
+  void refreshAccessChecker();
 }

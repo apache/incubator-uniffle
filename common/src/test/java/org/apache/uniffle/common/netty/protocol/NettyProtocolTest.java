@@ -31,6 +31,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -116,7 +117,8 @@ public class NettyProtocolTest {
   public void testGetLocalShuffleDataResponse() {
     byte[] data = new byte[]{1, 2, 3};
     GetLocalShuffleDataResponse getLocalShuffleDataResponse =
-        new GetLocalShuffleDataResponse(1, StatusCode.SUCCESS, "", Unpooled.wrappedBuffer(data).retain());
+        new GetLocalShuffleDataResponse(1, StatusCode.SUCCESS, "",
+            new NettyManagedBuffer(Unpooled.wrappedBuffer(data).retain()));
     int encodeLength = getLocalShuffleDataResponse.encodedLength();
     ByteBuf byteBuf = Unpooled.buffer(encodeLength, encodeLength);
     getLocalShuffleDataResponse.encode(byteBuf);
