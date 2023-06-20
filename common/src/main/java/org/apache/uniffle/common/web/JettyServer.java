@@ -29,6 +29,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -138,7 +139,7 @@ public class JettyServer {
 
   public void addResourcePackages(String... packages) {
     reourcePackages.addAll(Arrays.asList(packages));
-    servletHolder.setInitParameter("com.sun.jersey.config.property.packages",
+    servletHolder.setInitParameter(PackagesResourceConfig.PROPERTY_PACKAGES,
         String.join(",", reourcePackages));
   }
 

@@ -186,6 +186,7 @@ public class CoordinatorServer extends ReconfigurableBase {
     jettyServer.addResourcePackages("org.apache.uniffle.coordinator.web.resource",
         "org.apache.uniffle.common.web.resource");
     jettyServer.registerInstance(ClusterManager.class, clusterManager);
+    jettyServer.registerInstance(AccessManager.class, accessManager);
     jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#server",
         CoordinatorMetrics.getCollectorRegistry());
     jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#grpc",

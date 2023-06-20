@@ -35,6 +35,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.collections.CollectionUtils;
 
+import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.coordinator.ClusterManager;
 import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.coordinator.web.Response;
@@ -52,7 +53,14 @@ public class ServerResource {
   @Path("/nodes")
   public Response<List<ServerNode>> nodes(@QueryParam("id") String id, @QueryParam("status") String status) {
     ClusterManager clusterManager = getClusterManager();
-    List<ServerNode> serverList = clusterManager.getServerList(Collections.emptySet());
+    List<ServerNode> serverList;
+    if (ServerStatus.UNHEALTHY.name().equalsIgnoreCase(status)) {
+      serverList = clusterManager.getUnhealthyServerList();
+    } else if (ServerStatus.LOST.name().equalsIgnoreCase(status)) {
+      serverList = clusterManager.getLostServerList();
+    } else {
+      serverList = clusterManager.getServerList(Collections.emptySet());
+    }
     serverList = serverList.stream().filter(new Predicate<ServerNode>() {
       @Override
       public boolean test(ServerNode server) {
@@ -112,6 +120,6 @@ public class ServerResource {
 
   private ClusterManager getClusterManager() {
     return (ClusterManager) servletContext.getAttribute(
-        ClusterManager.class.getCanonicalName());
+            ClusterManager.class.getCanonicalName());
   }
 }

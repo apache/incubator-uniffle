@@ -15,36 +15,48 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.web.servlet.admin;
+package org.apache.uniffle.coordinator.web.resource;
 
 import java.util.List;
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.coordinator.CoordinatorServer;
+import org.apache.uniffle.coordinator.AccessManager;
+import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.coordinator.access.checker.AccessChecker;
 import org.apache.uniffle.coordinator.web.Response;
-import org.apache.uniffle.coordinator.web.servlet.BaseServlet;
 
-public class RefreshCheckerServlet extends BaseServlet {
+@Produces({MediaType.APPLICATION_JSON})
+public class AdminResource {
+  private static final Logger LOG = LoggerFactory.getLogger(AdminResource.class);
+  @Context
+  private HttpServletRequest httpRequest;
+  @Context
+  protected ServletContext servletContext;
 
-  private static final Logger LOG = LoggerFactory.getLogger(RefreshCheckerServlet.class);
-  private final CoordinatorServer coordinator;
-
-  public RefreshCheckerServlet(CoordinatorServer coordinator) {
-    this.coordinator = coordinator;
-  }
-
-  @Override
-  protected Response handleGet(HttpServletRequest req, HttpServletResponse resp) {
-    List<AccessChecker> accessCheckers = coordinator.getAccessManager().getAccessCheckers();
+  @GET
+  @Path("/refreshChecker")
+  public Response<List<ServerNode>> refreshChecker() {
+    List<AccessChecker> accessCheckers = getAccessManager().getAccessCheckers();
     LOG.info(
         "The access checker {} has been refreshed, you can add the checker via rss.coordinator.access.checkers.",
         accessCheckers);
-    accessCheckers.forEach(AccessChecker::refreshAccessChecker);
+    for (AccessChecker accessChecker : accessCheckers) {
+      accessChecker.refreshAccessChecker();
+    }
     return Response.success(null);
+  }
+
+  private AccessManager getAccessManager() {
+    return (AccessManager) servletContext.getAttribute(
+        AccessManager.class.getCanonicalName());
   }
 }

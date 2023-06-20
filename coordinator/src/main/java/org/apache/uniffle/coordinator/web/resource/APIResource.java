@@ -29,4 +29,8 @@ public class APIResource {
     return ServerResource.class;
   }
 
+  @Path("admin")
+  public Class<AdminResource> getAdminResource() {
+    return AdminResource.class;
+  }
 }
