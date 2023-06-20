@@ -79,7 +79,6 @@ public class RegisterHeartBeat {
             shuffleServer.getAvailableMemory(),
             shuffleServer.getEventNumInFlush(),
             shuffleServer.getTags(),
-            shuffleServer.isHealthy(),
             shuffleServer.getServerStatus(),
             shuffleServer.getStorageManager().getStorageInfo(),
             shuffleServer.getNettyPort());
@@ -100,7 +99,6 @@ public class RegisterHeartBeat {
       long availableMemory,
       int eventNumInFlush,
       Set<String> tags,
-      boolean isHealthy,
       ServerStatus serverStatus,
       Map<String, StorageInfo> localStorageInfo,
       int nettyPort) {
@@ -116,7 +114,6 @@ public class RegisterHeartBeat {
         eventNumInFlush,
         heartBeatInterval,
         tags,
-        isHealthy,
         serverStatus,
         localStorageInfo,
         nettyPort);

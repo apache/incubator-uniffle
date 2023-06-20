@@ -32,6 +32,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.client.request.RssGetShuffleAssignmentsRequest;
 import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
+import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -41,7 +42,6 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
@@ -113,7 +113,7 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
         coordinatorClient.getShuffleAssignments(request);
     assertFalse(response.getPartitionToServers().isEmpty());
     for (ServerNode node : nodes) {
-      assertTrue(node.isHealthy());
+      assertEquals(ServerStatus.ACTIVE, node.getStatus());
     }
     byte[] bytes = new byte[writeDataSize];
     new Random().nextBytes(bytes);
@@ -125,7 +125,7 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
     nodes  = coordinators.get(0).getClusterManager().list();
     assertEquals(2, nodes.size());
     for (ServerNode node : nodes) {
-      assertFalse(node.isHealthy());
+      assertEquals(ServerStatus.UNHEALTHY, node.getStatus());
     }
     nodes = coordinators.get(0).getClusterManager().getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     assertEquals(0, nodes.size());
@@ -144,7 +144,7 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
       }
     } while (nodes.size() != 2);
     for (ServerNode node : nodes) {
-      assertTrue(node.isHealthy());
+      assertEquals(ServerStatus.ACTIVE, node.getStatus());
     }
     assertEquals(2, nodes.size());
     response =
