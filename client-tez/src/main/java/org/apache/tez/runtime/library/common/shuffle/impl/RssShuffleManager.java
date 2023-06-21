@@ -422,6 +422,7 @@ public class RssShuffleManager extends ShuffleManager {
     return numNoDataInput.get() + numWithDataInput.get() >= numInputs;
   }
 
+  @SuppressWarnings("RV_RETURN_VALUE_IGNORED_BAD_PRACTICE")
   private class RssRunShuffleCallable extends CallableWithNdc<Void> {
 
     private final Configuration conf;
@@ -430,7 +431,6 @@ public class RssShuffleManager extends ShuffleManager {
       this.conf = conf;
     }
 
-    @SuppressWarnings("RV_RETURN_VALUE_IGNORED_BAD_PRACTICE")
     @Override
     protected Void callInternal() throws Exception {
       while (!isShutdown.get() && !isAllInputFetched()) {
