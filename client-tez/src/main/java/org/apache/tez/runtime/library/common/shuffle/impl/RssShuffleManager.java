@@ -59,6 +59,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalDirAllocator;
@@ -225,6 +226,7 @@ public class RssShuffleManager extends ShuffleManager {
   private final AtomicInteger numNoDataInput = new AtomicInteger(0);
   private final AtomicInteger numWithDataInput = new AtomicInteger(0);
 
+  @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
   public RssShuffleManager(InputContext inputContext, Configuration conf, int numInputs,
           int bufferSize, boolean ifileReadAheadEnabled, int ifileReadAheadLength,
           CompressionCodec codec, FetchedInputAllocator inputAllocator) throws IOException {
@@ -428,6 +430,7 @@ public class RssShuffleManager extends ShuffleManager {
       this.conf = conf;
     }
 
+    @SuppressWarnings("RV_RETURN_VALUE_IGNORED_BAD_PRACTICE")
     @Override
     protected Void callInternal() throws Exception {
       while (!isShutdown.get() && !isAllInputFetched()) {
@@ -814,8 +817,6 @@ public class RssShuffleManager extends ShuffleManager {
   public void fetchSucceeded(String host, InputAttemptIdentifier srcAttemptIdentifier,
                              FetchedInput fetchedInput, long fetchedBytes, long decompressedLength, long copyDuration)
       throws IOException {
-    int inputIdentifier = srcAttemptIdentifier.getInputIdentifier();
-
     // Count irrespective of whether this is a copy of an already fetched input
     lock.lock();
     try {
