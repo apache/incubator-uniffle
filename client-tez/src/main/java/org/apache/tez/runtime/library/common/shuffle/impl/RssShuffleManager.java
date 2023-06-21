@@ -445,7 +445,10 @@ public class RssShuffleManager extends ShuffleManager {
                 numFetchers, pendingPartition, successRssPartitionSet, allRssPartition);
 
             inputContext.notifyProgress();
-            wakeLoop.await(1000, TimeUnit.MILLISECONDS);
+            boolean isSignal =  wakeLoop.await(1000, TimeUnit.MILLISECONDS);
+            if (isSignal) {
+              LOG.info("wakeLoop is signal");
+            }
             if (isShutdown.get()) {
               LOG.info("is shut down and break");
               break;
