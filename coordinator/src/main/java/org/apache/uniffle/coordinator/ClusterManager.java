@@ -41,6 +41,20 @@ public interface ClusterManager extends Closeable, Reconfigurable {
   List<ServerNode> getServerList(Set<String> requiredTags);
 
   /**
+   * Get lost nodes from the cluster
+   *
+   * @return list of lost nodes
+   */
+  List<ServerNode> getLostServerList();
+  
+  /**
+   * Get unhealthy nodes from the cluster
+   *
+   * @return list of unhealthy nodes
+   */
+  List<ServerNode> getUnhealthyServerList();
+
+  /**
    * @return number of server nodes in the cluster
    */
   int getNodesNum();

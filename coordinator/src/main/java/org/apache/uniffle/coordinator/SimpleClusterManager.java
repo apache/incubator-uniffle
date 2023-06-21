@@ -64,6 +64,14 @@ public class SimpleClusterManager implements ClusterManager {
   private final Map<String, ServerNode> servers = JavaUtils.newConcurrentMap();
   private final Cache<ServerNode, ShuffleServerInternalGrpcClient> clientCache;
   private Set<String> excludeNodes = Sets.newConcurrentHashSet();
+  /**
+   * ServerNode whose heartbeat is lost
+   */
+  Set<ServerNode> lostNodes = Sets.newHashSet();
+  /**
+   * Unhealthy ServerNode
+   */
+  Set<ServerNode> unhealthyNodes = Sets.newHashSet();
   // tag -> nodes
   private Map<String, Set<ServerNode>> tagToNodes = JavaUtils.newConcurrentMap();
   private AtomicLong excludeLastModify = new AtomicLong(0L);
@@ -121,19 +129,24 @@ public class SimpleClusterManager implements ClusterManager {
   void nodesCheck() {
     try {
       long timestamp = System.currentTimeMillis();
-      Set<String> deleteIds = Sets.newHashSet();
-      Set<String> unhealthyNode = Sets.newHashSet();
       for (ServerNode sn : servers.values()) {
         if (timestamp - sn.getTimestamp() > heartbeatTimeout) {
           LOG.warn("Heartbeat timeout detect, " + sn + " will be removed from node list.");
-          deleteIds.add(sn.getId());
+          sn.setStatus(ServerStatus.LOST);
+          lostNodes.add(sn);
+          unhealthyNodes.remove(sn);
         } else if (!sn.isHealthy()) {
           LOG.warn("Found server {} was unhealthy, will not assign it.", sn);
-          unhealthyNode.add(sn.getId());
+          unhealthyNodes.add(sn);
+          lostNodes.remove(sn);
+        } else {
+          sn.setStatus(ServerStatus.ACTIVE);
+          lostNodes.remove(sn);
+          unhealthyNodes.remove(sn);
         }
       }
-      for (String serverId : deleteIds) {
-        ServerNode sn = servers.remove(serverId);
+      for (ServerNode server : lostNodes) {
+        ServerNode sn = servers.remove(server.getId());
         if (sn != null) {
           clientCache.invalidate(sn);
           for (Set<ServerNode> nodesWithTag : tagToNodes.values()) {
@@ -141,7 +154,7 @@ public class SimpleClusterManager implements ClusterManager {
           }
         }
       }
-      if (!deleteIds.isEmpty() || outputAliveServerCount % periodicOutputIntervalTimes == 0) {
+      if (!lostNodes.isEmpty() || outputAliveServerCount % periodicOutputIntervalTimes == 0) {
         LOG.info("Alive servers number: {}, ids: {}",
             servers.size(),
             servers.keySet().stream().collect(Collectors.toList())
@@ -149,11 +162,16 @@ public class SimpleClusterManager implements ClusterManager {
       }
       outputAliveServerCount++;
 
-      CoordinatorMetrics.gaugeUnhealthyServerNum.set(unhealthyNode.size());
+      CoordinatorMetrics.gaugeUnhealthyServerNum.set(unhealthyNodes.size());
       CoordinatorMetrics.gaugeTotalServerNum.set(servers.size());
     } catch (Exception e) {
       LOG.warn("Error happened in nodesCheck", e);
     }
+  }
+  
+  @VisibleForTesting
+  public void nodesCheckTest() {
+    nodesCheck();
   }
 
   private void updateExcludeNodes(String path) {
@@ -229,6 +247,16 @@ public class SimpleClusterManager implements ClusterManager {
       }
     }
     return availableNodes;
+  }
+
+  @Override
+  public List<ServerNode> getLostServerList() {
+    return Lists.newArrayList(lostNodes);
+  }
+
+  @Override
+  public List<ServerNode> getUnhealthyServerList() {
+    return Lists.newArrayList(unhealthyNodes);
   }
 
   public Set<String> getExcludeNodes() {
@@ -330,6 +358,11 @@ public class SimpleClusterManager implements ClusterManager {
   @VisibleForTesting
   public void setStartupSilentPeriodEnabled(boolean startupSilentPeriodEnabled) {
     this.startupSilentPeriodEnabled = startupSilentPeriodEnabled;
+  }
+  
+  @VisibleForTesting
+  public Map<String, ServerNode> getServers() {
+    return servers;
   }
 
   @Override

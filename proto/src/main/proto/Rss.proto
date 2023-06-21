@@ -239,6 +239,8 @@ enum ServerStatus {
   ACTIVE = 0;
   DECOMMISSIONING = 1;
   DECOMMISSIONED = 2;
+  LOST = 3;
+  UNHEALTHY = 4;
   // todo: more status, such as UPGRADING
 }
 

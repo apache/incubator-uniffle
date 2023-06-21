@@ -21,8 +21,8 @@ set -o pipefail
 set -o nounset   # exit the script if you try to use an uninitialised variable
 set -o errexit   # exit the script if any statement returns a non-true return value
 
-JAVA_HOME=<java_home_dir>
-HADOOP_HOME=<hadoop_home_dir>
+# JAVA_HOME=<java_home_dir>
+# HADOOP_HOME=<hadoop_home_dir>
 XMX_SIZE="80g" # Shuffle Server JVM XMX size
 
 # RSS_HOME, RSS home directory (Default: parent directory of the script)

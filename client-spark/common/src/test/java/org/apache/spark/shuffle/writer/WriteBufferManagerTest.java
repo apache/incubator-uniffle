@@ -178,6 +178,26 @@ public class WriteBufferManagerTest {
   }
 
   @Test
+  public void addPartitionDataTest() {
+    SparkConf conf = getConf();
+    TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
+    BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
+    WriteBufferManager wbm = new WriteBufferManager(
+            0, 0, bufferOptions, null,
+            Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(), RssSparkConfig.toRssConf(conf));
+    WriteBufferManager spyManager = spy(wbm);
+    doReturn(512L).when(spyManager).acquireMemory(anyLong());
+
+    List<ShuffleBlockInfo> shuffleBlockInfos = spyManager.addPartitionData(0, new byte[64]);
+    assertEquals(1, spyManager.getBuffers().size());
+    assertEquals(0, shuffleBlockInfos.size());
+    shuffleBlockInfos = spyManager.addPartitionData(0, new byte[64]);
+    assertEquals(0, spyManager.getBuffers().size());
+    assertEquals(1, shuffleBlockInfos.size());
+    assertEquals(128, shuffleBlockInfos.get(0).getUncompressLength());
+  }
+
+  @Test
   public void createBlockIdTest() {
     SparkConf conf = getConf();
     WriteBufferManager wbm = createManager(conf);

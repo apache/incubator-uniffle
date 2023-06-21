@@ -73,6 +73,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     when(handleMock.getAppId()).thenReturn("appId");
     when(handleMock.getDependency()).thenReturn(dependencyMock);
     when(handleMock.getShuffleId()).thenReturn(1);
+    when(handleMock.getNumMaps()).thenReturn(1);
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = new HashMap<>();
     partitionToServers.put(0, Lists.newArrayList(ssi));
     partitionToServers.put(1, Lists.newArrayList(ssi));
