@@ -326,7 +326,9 @@ public class RssShuffleManager extends ShuffleManager {
         TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_MAX_TASK_OUTPUT_AT_ONCE,
         TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_MAX_TASK_OUTPUT_AT_ONCE_DEFAULT)));
 
-    Arrays.sort(this.localDisks);
+    if (null != this.localDisks) {
+      Arrays.sort(this.localDisks);
+    }
 
     shuffleInfoEventsMap = new ConcurrentHashMap<>();
 
