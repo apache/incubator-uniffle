@@ -59,7 +59,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalDirAllocator;
@@ -226,7 +225,6 @@ public class RssShuffleManager extends ShuffleManager {
   private final AtomicInteger numNoDataInput = new AtomicInteger(0);
   private final AtomicInteger numWithDataInput = new AtomicInteger(0);
 
-  @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
   public RssShuffleManager(InputContext inputContext, Configuration conf, int numInputs,
           int bufferSize, boolean ifileReadAheadEnabled, int ifileReadAheadLength,
           CompressionCodec codec, FetchedInputAllocator inputAllocator) throws IOException {
