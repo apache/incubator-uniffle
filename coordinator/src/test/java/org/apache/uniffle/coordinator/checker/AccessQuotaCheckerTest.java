@@ -72,8 +72,7 @@ public class AccessQuotaCheckerTest {
         20,
         1000,
         0,
-        null,
-        true);
+        null);
     ServerNode node2 = new ServerNode(
         "1",
         "1",
@@ -82,8 +81,7 @@ public class AccessQuotaCheckerTest {
         20,
         1000,
         0,
-        null,
-        true);
+        null);
     nodes.add(node1);
     nodes.add(node2);
 

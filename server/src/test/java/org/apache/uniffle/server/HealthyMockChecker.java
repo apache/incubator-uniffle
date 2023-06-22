@@ -17,7 +17,7 @@
 
 package org.apache.uniffle.server;
 
-class HealthyMockChecker extends Checker {
+public class HealthyMockChecker extends Checker {
 
   @SuppressWarnings("checkstyle:RedundantModifier")
   public HealthyMockChecker(ShuffleServerConf conf) {

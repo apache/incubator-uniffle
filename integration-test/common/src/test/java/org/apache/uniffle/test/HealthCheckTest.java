@@ -15,24 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.server;
+package org.apache.uniffle.test;
 
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.common.ServerStatus;
+import org.apache.uniffle.server.HealthCheck;
+import org.apache.uniffle.server.HealthyMockChecker;
+import org.apache.uniffle.server.LocalStorageChecker;
+import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.server.ShuffleServerMetrics;
+import org.apache.uniffle.server.UnHealthyMockChecker;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HealthCheckTest {
-
+public class HealthCheckTest extends CoordinatorTestBase {
   @BeforeAll
   public static void setup() {
     ShuffleServerMetrics.register();
@@ -73,26 +78,26 @@ public class HealthCheckTest {
   }
 
   @Test
-  public void checkTest() {
-    AtomicBoolean healthy = new AtomicBoolean(false);
+  public void checkTest() throws Exception {
     ShuffleServerConf conf = new ShuffleServerConf();
+    AtomicReference<ServerStatus> serverStatusAtomicReference = new AtomicReference(ServerStatus.ACTIVE);
     conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(), HealthyMockChecker.class.getCanonicalName());
-    HealthCheck checker = new HealthCheck(healthy, conf, Lists.newArrayList());
+    HealthCheck checker = new HealthCheck(serverStatusAtomicReference, conf, Lists.newArrayList());
     checker.check();
-    assertTrue(healthy.get());
+    assertEquals(ServerStatus.ACTIVE, checker.getServerStatus());
     assertEquals(0, ShuffleServerMetrics.gaugeIsHealthy.get());
 
     conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(), UnHealthyMockChecker.class.getCanonicalName());
-    checker = new HealthCheck(healthy, conf, Lists.newArrayList());
+    checker = new HealthCheck(serverStatusAtomicReference, conf, Lists.newArrayList());
     checker.check();
-    assertFalse(healthy.get());
+    assertEquals(ServerStatus.UNHEALTHY, checker.getServerStatus());
     assertEquals(1, ShuffleServerMetrics.gaugeIsHealthy.get());
 
     conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(),
         UnHealthyMockChecker.class.getCanonicalName() + "," + HealthyMockChecker.class.getCanonicalName());
-    checker = new HealthCheck(healthy, conf, Lists.newArrayList());
+    checker = new HealthCheck(serverStatusAtomicReference, conf, Lists.newArrayList());
     checker.check();
-    assertFalse(healthy.get());
+    assertEquals(ServerStatus.UNHEALTHY, checker.getServerStatus());
     assertEquals(1, ShuffleServerMetrics.gaugeIsHealthy.get());
   }
 

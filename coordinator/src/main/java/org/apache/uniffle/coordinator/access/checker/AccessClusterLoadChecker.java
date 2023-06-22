@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.config.Reconfigurable;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.Constants;
@@ -67,7 +68,8 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker implements R
   public AccessCheckResult check(AccessInfo accessInfo) {
     Set<String> tags = accessInfo.getTags();
     List<ServerNode> servers = clusterManager.getServerList(tags);
-    int size = (int) servers.stream().filter(ServerNode::isHealthy).filter(this::checkMemory).count();
+    int size = (int) servers.stream().filter(serverNode -> serverNode.getStatus()
+        .equals(ServerStatus.ACTIVE)).filter(this::checkMemory).count();
 
     // If the hard constraint number exist, directly check it
     if (availableServerNumThreshold != -1 && size >= availableServerNumThreshold) {

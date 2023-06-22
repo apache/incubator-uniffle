@@ -20,14 +20,15 @@ package org.apache.uniffle.server;
 import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.uniffle.common.ServerStatus;
 
 /**
  * HealthCheck will check every server whether it has the ability to process shuffle data. Currently, we only support
@@ -38,14 +39,17 @@ public class HealthCheck {
 
   private static final Logger LOG = LoggerFactory.getLogger(HealthCheck.class);
 
-  private final AtomicBoolean isHealthy;
+  private AtomicReference<ServerStatus> serverStatus;
   private final long checkIntervalMs;
   private final Thread thread;
   private volatile boolean isStop = false;
   private List<Checker> checkers = Lists.newArrayList();
 
-  public HealthCheck(AtomicBoolean isHealthy, ShuffleServerConf conf, List<Checker> buildInCheckers) {
-    this.isHealthy = isHealthy;
+  public HealthCheck(
+      AtomicReference<ServerStatus> serverStatus,
+      ShuffleServerConf conf,
+      List<Checker> buildInCheckers) {
+    this.serverStatus = serverStatus;
     this.checkIntervalMs = conf.getLong(ShuffleServerConf.HEALTH_CHECK_INTERVAL);
     List<String> configuredCheckers = conf.get(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES);
     if (CollectionUtils.isEmpty(configuredCheckers) && buildInCheckers.isEmpty()) {
@@ -78,17 +82,23 @@ public class HealthCheck {
     thread.setDaemon(true);
   }
 
-  @VisibleForTesting
-  void check() {
+
+  public void check() {
     for (Checker checker : checkers) {
       if (!checker.checkIsHealthy()) {
-        isHealthy.set(false);
+        serverStatus.set(ServerStatus.UNHEALTHY);
         ShuffleServerMetrics.gaugeIsHealthy.set(1);
         return;
       }
     }
     ShuffleServerMetrics.gaugeIsHealthy.set(0);
-    isHealthy.set(true);
+    if (serverStatus.get() == ServerStatus.UNHEALTHY) {
+      serverStatus.set(ServerStatus.ACTIVE);
+    }
+  }
+
+  public ServerStatus getServerStatus() {
+    return serverStatus.get();
   }
 
   public void start() {

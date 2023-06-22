@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -87,10 +87,10 @@ public class ShuffleServer {
   private StorageManager storageManager;
   private HealthCheck healthCheck;
   private Set<String> tags = Sets.newHashSet();
-  private AtomicBoolean isHealthy = new AtomicBoolean(true);
   private GRPCMetrics grpcMetrics;
   private MetricReporter metricReporter;
-  private volatile ServerStatus serverStatus = ServerStatus.ACTIVE;
+
+  private AtomicReference<ServerStatus> serverStatus = new AtomicReference(ServerStatus.ACTIVE);
   private volatile boolean running;
   private ExecutorService executorService;
   private Future<?> decommissionFuture;
@@ -226,7 +226,7 @@ public class ShuffleServer {
     if (healthCheckEnable) {
       List<Checker> builtInCheckers = Lists.newArrayList();
       builtInCheckers.add(storageManager.getStorageChecker());
-      healthCheck = new HealthCheck(isHealthy, shuffleServerConf, builtInCheckers);
+      healthCheck = new HealthCheck(serverStatus, shuffleServerConf, builtInCheckers);
       healthCheck.start();
     }
 
@@ -315,7 +315,11 @@ public class ShuffleServer {
   }
 
   public ServerStatus getServerStatus() {
-    return serverStatus;
+    return serverStatus.get();
+  }
+
+  public void setServerStatus(ServerStatus serverStatus) {
+    this.serverStatus.set(serverStatus);
   }
 
   public synchronized void decommission() {
@@ -323,11 +327,11 @@ public class ShuffleServer {
       LOG.info("Shuffle Server is decommissioning. Nothing needs to be done.");
       return;
     }
-    if (!ServerStatus.ACTIVE.equals(serverStatus)) {
+    if (!ServerStatus.ACTIVE.equals(serverStatus.get())) {
       throw new InvalidRequestException(
           "Shuffle Server is processing other procedures, current status:" + serverStatus);
     }
-    serverStatus = ServerStatus.DECOMMISSIONING;
+    serverStatus.set(ServerStatus.DECOMMISSIONING);
     LOG.info("Shuffle Server is decommissioning.");
     if (executorService == null) {
       executorService = ThreadUtils.getDaemonSingleThreadExecutor("shuffle-server-decommission");
@@ -342,7 +346,7 @@ public class ShuffleServer {
     while (isDecommissioning()) {
       remainApplicationNum = shuffleTaskManager.getAppIds().size();
       if (remainApplicationNum == 0) {
-        serverStatus = ServerStatus.DECOMMISSIONED;
+        serverStatus.set(ServerStatus.DECOMMISSIONED);
         LOG.info("All applications finished. Current status is " + serverStatus);
         if (shutdownAfterDecommission) {
           LOG.info("Exiting...");
@@ -374,11 +378,11 @@ public class ShuffleServer {
       LOG.info("Shuffle server is not decommissioning. Nothing needs to be done.");
       return;
     }
-    if (ServerStatus.DECOMMISSIONED.equals(serverStatus)) {
-      serverStatus = ServerStatus.ACTIVE;
+    if (ServerStatus.DECOMMISSIONED.equals(serverStatus.get())) {
+      serverStatus.set(ServerStatus.ACTIVE);
       return;
     }
-    serverStatus = ServerStatus.ACTIVE;
+    serverStatus.set(ServerStatus.ACTIVE);
     if (decommissionFuture.cancel(true)) {
       LOG.info("Decommission canceled.");
     } else {
@@ -453,13 +457,9 @@ public class ShuffleServer {
     return Collections.unmodifiableSet(tags);
   }
 
-  public boolean isHealthy() {
-    return isHealthy.get();
-  }
-
   @VisibleForTesting
   public void markUnhealthy() {
-    isHealthy.set(false);
+    serverStatus.set(ServerStatus.UNHEALTHY);
   }
 
   public GRPCMetrics getGrpcMetrics() {
@@ -467,8 +467,8 @@ public class ShuffleServer {
   }
 
   public boolean isDecommissioning() {
-    return ServerStatus.DECOMMISSIONING.equals(serverStatus)
-        || ServerStatus.DECOMMISSIONED.equals(serverStatus);
+    return ServerStatus.DECOMMISSIONING.equals(serverStatus.get())
+        || ServerStatus.DECOMMISSIONED.equals(serverStatus.get());
   }
 
   @VisibleForTesting
