@@ -304,7 +304,7 @@ public class SimpleClusterManagerTest {
 
   private void addNode(String id, SimpleClusterManager clusterManager) {
     ServerNode node = new ServerNode(id, "ip", 0, 100L, 50L, 30L, 10, testTags, true);
-    LOG.info("Add node " + node.getId() + " " + node.getTimestamp());
+    LOG.info("Add node {} {}", node.getId(), node.getTimestamp());
     clusterManager.add(node);
   }
 

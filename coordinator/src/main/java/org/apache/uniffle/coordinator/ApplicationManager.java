@@ -284,9 +284,9 @@ public class ApplicationManager implements Closeable {
           }
         }
       }
-      LOG.info("Start to check status for " + appIds.size() + " applications");
+      LOG.info("Start to check status for {} applications.", appIds.size());
       for (String appId : expiredAppIds) {
-        LOG.info("Remove expired application:" + appId);
+        LOG.info("Remove expired application : {}.", appId);
         appIds.remove(appId);
         if (appIdToRemoteStorageInfo.containsKey(appId)) {
           decRemoteStorageCounter(appIdToRemoteStorageInfo.get(appId).getPath());

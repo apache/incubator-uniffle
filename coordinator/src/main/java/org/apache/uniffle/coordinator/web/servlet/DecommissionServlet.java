@@ -42,9 +42,7 @@ public class DecommissionServlet extends BaseServlet<Object> {
       return Response.fail("Parameter[serverIds] should not be null!");
     }
     ClusterManager clusterManager = coordinator.getClusterManager();
-    params.getServerIds().forEach((serverId) -> {
-      clusterManager.decommission(serverId);
-    });
+    params.getServerIds().forEach(clusterManager::decommission);
     return Response.success(null);
   }
 }

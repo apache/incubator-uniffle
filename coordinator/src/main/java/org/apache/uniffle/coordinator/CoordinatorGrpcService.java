@@ -120,12 +120,10 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     final int requiredShuffleServerNumber = request.getAssignmentShuffleServerNumber();
     final int estimateTaskConcurrency = request.getEstimateTaskConcurrency();
 
-    LOG.info("Request of getShuffleAssignments for appId[" + appId
-        + "], shuffleId[" + shuffleId + "], partitionNum[" + partitionNum
-        + "], partitionNumPerRange[" + partitionNumPerRange + "], replica[" + replica
-        + "], requiredTags[" + requiredTags
-        + "], requiredShuffleServerNumber[" + requiredShuffleServerNumber + "]"
-    );
+    LOG.info("Request of getShuffleAssignments for appId[{}], shuffleId[{}], partitionNum[{}], " +
+        " partitionNumPerRange[{}], replica[{}], requiredTags[{}], requiredShuffleServerNumber[{}]",
+        appId, shuffleId, partitionNum, partitionNumPerRange, replica,
+        requiredTags, requiredShuffleServerNumber);
 
     GetShuffleAssignmentsResponse response;
     try {
@@ -168,7 +166,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         .setRetMsg("")
         .setStatus(StatusCode.SUCCESS)
         .build();
-    LOG.debug("Got heartbeat from " + serverNode);
+    LOG.debug("Got heartbeat from {}", serverNode);
     responseObserver.onNext(response);
     responseObserver.onCompleted();
   }
@@ -209,7 +207,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       StreamObserver<AppHeartBeatResponse> responseObserver) {
     String appId = request.getAppId();
     coordinatorServer.getApplicationManager().refreshAppId(appId);
-    LOG.debug("Got heartbeat from application: " + appId);
+    LOG.debug("Got heartbeat from application: {}", appId);
     AppHeartBeatResponse response = AppHeartBeatResponse
         .newBuilder()
         .setRetMsg("")
@@ -233,7 +231,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     String appId = request.getAppId();
     String user = request.getUser();
     coordinatorServer.getApplicationManager().registerApplicationInfo(appId, user);
-    LOG.debug("Got a registered application info: " + appId);
+    LOG.debug("Got a registered application info: {}", appId);
     ApplicationInfoResponse response = ApplicationInfoResponse
         .newBuilder()
         .setRetMsg("")
@@ -334,7 +332,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     } catch (Exception e) {
       status = StatusCode.INTERNAL_ERROR;
       response = FetchRemoteStorageResponse.newBuilder().setStatus(status).build();
-      LOG.error("Error happened when get remote storage for appId[" + appId + "]", e);
+      LOG.error("Error happened when get remote storage for appId[{}]", appId, e);
     }
 
     if (Context.current().isCancelled()) {
@@ -357,8 +355,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         }
       }
       if (!nodeIds.isEmpty()) {
-        LOG.info("Shuffle Servers of assignment for appId[" + appId + "], shuffleId["
-            + shuffleId + "] are " + nodeIds);
+        LOG.info("Shuffle Servers of assignment for appId[{}], shuffleId[{}] are {}",
+            appId, shuffleId, nodeIds);
       }
     }
   }
