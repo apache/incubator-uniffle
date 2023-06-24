@@ -20,10 +20,7 @@ package org.apache.uniffle.coordinator;
 import java.io.Closeable;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -31,6 +28,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -338,6 +336,33 @@ public class ApplicationManager implements Closeable {
       LOG.warn("Invalid format of remoteStoragePath to get host, {}", remoteStoragePath);
     }
     return storageHost;
+  }
+
+  /**
+   * Get Applications,
+   * The list contains applicationId, user, lastHeartBeatTime, remoteStoragePath.
+   *
+   * @param appIds Application List
+   * @return Applications.
+   */
+  public Set<Application> getApplications(Set<String> appIds) {
+    Set<Application> applications = new HashSet<>();
+    for (Map.Entry<String, Map<String, Long>> entry : currentUserAndApp.entrySet()) {
+      String user = entry.getKey();
+      Map<String, Long> apps = entry.getValue();
+      apps.forEach((appId, heartBeatTime) -> {
+        if(appIds.size() == 0 || appIds.contains(appId)) {
+          RemoteStorageInfo remoteStorageInfo = appIdToRemoteStorageInfo.getOrDefault(appId, null);
+          Application application = new Application.Builder()
+              .applicationId(appId)
+              .user(user)
+              .lastHeartBeatTime(heartBeatTime)
+              .remoteStoragePath(remoteStorageInfo).build();
+          applications.add(application);
+        }
+      });
+    }
+    return applications;
   }
 
   public Map<String, Integer> getDefaultUserApps() {
