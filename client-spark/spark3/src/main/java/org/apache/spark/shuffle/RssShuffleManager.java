@@ -88,34 +88,38 @@ import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER
 public class RssShuffleManager extends RssShuffleManagerBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleManager.class);
-  protected final String clientType;
-  protected final long heartbeatInterval;
-  protected final long heartbeatTimeout;
+  private final String clientType;
+  private final long heartbeatInterval;
+  private final long heartbeatTimeout;
+  private final int dataReplica;
+  private final int dataReplicaWrite;
+  private final int dataReplicaRead;
+  private final boolean dataReplicaSkipEnabled;
+  private final int dataTransferPoolSize;
+  private final int dataCommitPoolSize;
+  private final Map<String, Set<Long>> taskToSuccessBlockIds;
+  private final Map<String, Set<Long>> taskToFailedBlockIds;
+  private ScheduledExecutorService heartBeatScheduledExecutorService;
+  private boolean heartbeatStarted = false;
+  private boolean dynamicConfEnabled = false;
+  private final ShuffleDataDistributionType dataDistributionType;
+  private final int maxConcurrencyPerPartitionToWrite;
+  private String user;
+  private String uuid;
+  private Set<String> failedTaskIds = Sets.newConcurrentHashSet();
+
+  private final Map<Integer, Integer> shuffleIdToPartitionNum = Maps.newConcurrentMap();
+  private final Map<Integer, Integer> shuffleIdToNumMapTasks = Maps.newConcurrentMap();
+  private ShuffleManagerGrpcService service;
+  private GrpcServer shuffleManagerServer;
+
+  /**
+   * used by columnar rss shuffle writer implementation
+   */
   protected AtomicReference<String> id = new AtomicReference<>();
   protected SparkConf sparkConf;
-  protected final int dataReplica;
-  protected final int dataReplicaWrite;
-  protected final int dataReplicaRead;
-  protected final boolean dataReplicaSkipEnabled;
-  protected final int dataTransferPoolSize;
-  protected final int dataCommitPoolSize;
   protected ShuffleWriteClient shuffleWriteClient;
-  protected final Map<String, Set<Long>> taskToSuccessBlockIds;
-  protected final Map<String, Set<Long>> taskToFailedBlockIds;
-  protected ScheduledExecutorService heartBeatScheduledExecutorService;
-  protected boolean heartbeatStarted = false;
-  protected boolean dynamicConfEnabled = false;
-  protected final ShuffleDataDistributionType dataDistributionType;
-  protected final int maxConcurrencyPerPartitionToWrite;
-  protected String user;
-  protected String uuid;
-  protected Set<String> failedTaskIds = Sets.newConcurrentHashSet();
   protected DataPusher dataPusher;
-
-  protected final Map<Integer, Integer> shuffleIdToPartitionNum = Maps.newConcurrentMap();
-  protected final Map<Integer, Integer> shuffleIdToNumMapTasks = Maps.newConcurrentMap();
-  protected ShuffleManagerGrpcService service;
-  protected GrpcServer shuffleManagerServer;
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
