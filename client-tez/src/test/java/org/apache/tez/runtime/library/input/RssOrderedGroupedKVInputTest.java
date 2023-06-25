@@ -114,7 +114,7 @@ public class RssOrderedGroupedKVInputTest {
   }
 
   static class OrderedGroupedKVInputForTest extends RssOrderedGroupedKVInput {
-    public OrderedGroupedKVInputForTest(InputContext inputContext, int numPhysicalInputs) {
+    OrderedGroupedKVInputForTest(InputContext inputContext, int numPhysicalInputs) {
       super(inputContext, numPhysicalInputs);
     }
 

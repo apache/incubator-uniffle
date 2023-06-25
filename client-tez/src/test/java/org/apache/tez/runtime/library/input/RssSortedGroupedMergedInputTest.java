@@ -46,16 +46,6 @@ public class RssSortedGroupedMergedInputTest {
     return mock(MergedInputContext.class);
   }
 
-  private void getNextFromFinishedReader(KeyValuesReader kvsReader) {
-    //Try reading again and it should throw IOException
-    try {
-      boolean hasNext = kvsReader.next();
-      fail();
-    } catch(IOException e) {
-      assertTrue(e.getMessage().contains("For usage, please refer to"));
-    }
-  }
-
   @Test
   @Timeout(value = 5000, unit = TimeUnit.MILLISECONDS)
   public void testSimpleConcatenatedMergedKeyValueInput() throws Exception {
@@ -128,12 +118,22 @@ public class RssSortedGroupedMergedInputTest {
     getNextFromFinishedReader(kvsReader);
   }
 
+  private void getNextFromFinishedReader(KeyValuesReader kvsReader) {
+    //Try reading again and it should throw IOException
+    try {
+      boolean hasNext = kvsReader.next();
+      fail();
+    } catch (IOException e) {
+      assertTrue(e.getMessage().contains("For usage, please refer to"));
+    }
+  }
+
   private void getNextFromFinishedReader(KeyValueReader kvReader) {
     //Try reading again and it should throw IOException
     try {
       boolean hasNext = kvReader.next();
       fail();
-    } catch(IOException e) {
+    } catch (IOException e) {
       assertTrue(e.getMessage().contains("For usage, please refer to"));
     }
   }
@@ -216,7 +216,7 @@ public class RssSortedGroupedMergedInputTest {
   private static class DummyInput implements Input {
     DummyKeyValueReader reader;
 
-    public DummyInput(int records) {
+    DummyInput(int records) {
       reader = new DummyKeyValueReader(records);
     }
 
@@ -233,7 +233,7 @@ public class RssSortedGroupedMergedInputTest {
   private static class DummyKeyValueReader extends KeyValueReader {
     private int records;
 
-    public DummyKeyValueReader(int records) {
+    DummyKeyValueReader(int records) {
       this.records = records;
     }
 
