@@ -50,9 +50,8 @@ public class ServerNode implements Comparable<ServerNode> {
       long preAllocatedMemory,
       long availableMemory,
       int eventNumInFlush,
-      Set<String> tags,
-      boolean isHealthy) {
-    this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags, isHealthy,
+      Set<String> tags) {
+    this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags,
         ServerStatus.ACTIVE, Maps.newHashMap());
   }
 
@@ -65,9 +64,8 @@ public class ServerNode implements Comparable<ServerNode> {
       long availableMemory,
       int eventNumInFlush,
       Set<String> tags,
-      boolean isHealthy,
       ServerStatus status) {
-    this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags, isHealthy,
+    this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags,
         status, Maps.newHashMap());
   }
 
@@ -80,10 +78,9 @@ public class ServerNode implements Comparable<ServerNode> {
       long availableMemory,
       int eventNumInFlush,
       Set<String> tags,
-      boolean isHealthy,
       ServerStatus status,
       Map<String, StorageInfo> storageInfoMap) {
-    this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags, isHealthy,
+    this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags,
         status, storageInfoMap, -1);
   }
 
@@ -96,7 +93,6 @@ public class ServerNode implements Comparable<ServerNode> {
       long availableMemory,
       int eventNumInFlush,
       Set<String> tags,
-      boolean isHealthy,
       ServerStatus status,
       Map<String, StorageInfo> storageInfoMap,
       int nettyPort) {
@@ -109,7 +105,7 @@ public class ServerNode implements Comparable<ServerNode> {
     this.eventNumInFlush = eventNumInFlush;
     this.timestamp = System.currentTimeMillis();
     this.tags = tags;
-    this.status = isHealthy ? status : ServerStatus.UNHEALTHY;
+    this.status = status;
     this.storageInfo = storageInfoMap;
     if (nettyPort > 0) {
       this.nettyPort = nettyPort;
@@ -155,10 +151,6 @@ public class ServerNode implements Comparable<ServerNode> {
 
   public Set<String> getTags() {
     return tags;
-  }
-
-  public boolean isHealthy() {
-    return this.status != ServerStatus.UNHEALTHY;
   }
   
   public ServerStatus getStatus() {

@@ -194,8 +194,7 @@ public class PartitionBalanceAssignmentStrategyTest {
           5L,
           resources.get(i),
           5,
-          tags,
-          true);
+          tags);
       clusterManager.add(node);
     }
   }
@@ -206,7 +205,7 @@ public class PartitionBalanceAssignmentStrategyTest {
 
     for (int i = 0; i < 20; ++i) {
       clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
-          20 - i, 0, serverTags, true));
+          20 - i, 0, serverTags));
     }
 
     /**
@@ -276,7 +275,7 @@ public class PartitionBalanceAssignmentStrategyTest {
     serverTags = Sets.newHashSet("tag-2");
     for (int i = 0; i < shuffleNodesMax - 1; ++i) {
       clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 0, 0, 0,
-          20 - i, 0, serverTags, true));
+          20 - i, 0, serverTags));
     }
     pra = strategy.assign(100, 1, 1, serverTags, shuffleNodesMax, -1);
     assertEquals(
@@ -304,11 +303,11 @@ public class PartitionBalanceAssignmentStrategyTest {
 
     for (int i = 0; i < 5; ++i) {
       clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
-          20 - i, 0, serverTags, true));
+          20 - i, 0, serverTags));
     }
     for (int i = 0; i < 5; ++i) {
       clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0,
-          20 - i, 0, serverTags, true));
+          20 - i, 0, serverTags));
     }
     PartitionRangeAssignment pra = strategy.assign(100, 1, 5, serverTags, -1, -1);
     pra.getAssignments().values().forEach((nodeList) -> {
@@ -349,11 +348,11 @@ public class PartitionBalanceAssignmentStrategyTest {
 
     for (int i = 0; i < 3; ++i) {
       clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
-          20 - i, 0, serverTags, true));
+          20 - i, 0, serverTags));
     }
     for (int i = 0; i < 2; ++i) {
       clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0,
-          20 - i, 0, serverTags, true));
+          20 - i, 0, serverTags));
     }
     PartitionRangeAssignment pra = strategy.assign(100, 1, 5, serverTags, -1, -1);
     pra.getAssignments().values().forEach((nodeList) -> {
@@ -364,11 +363,11 @@ public class PartitionBalanceAssignmentStrategyTest {
     clusterManager = new SimpleClusterManager(ssc, new Configuration());
     for (int i = 0; i < 3; ++i) {
       clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
-          20 - i, 0, serverTags, true));
+          20 - i, 0, serverTags));
     }
     for (int i = 0; i < 2; ++i) {
       clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0,
-          20 - i, 0, serverTags, true));
+          20 - i, 0, serverTags));
     }
     strategy = new PartitionBalanceAssignmentStrategy(clusterManager, ssc);
     pra = strategy.assign(100, 1, 3, serverTags, -1, -1);
@@ -394,11 +393,11 @@ public class PartitionBalanceAssignmentStrategyTest {
 
     for (int i = 0; i < 3; ++i) {
       clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
-          20 - i, 0, serverTags, true));
+          20 - i, 0, serverTags));
     }
     for (int i = 0; i < 2; ++i) {
       clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0,
-          20 - i, 0, serverTags, true));
+          20 - i, 0, serverTags));
     }
     PartitionRangeAssignment pra = strategy.assign(100, 1, 5, serverTags, -1, -1);
     pra.getAssignments().values().forEach((nodeList) -> {

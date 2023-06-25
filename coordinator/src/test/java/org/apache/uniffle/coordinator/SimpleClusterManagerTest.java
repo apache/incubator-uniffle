@@ -85,11 +85,11 @@ public class SimpleClusterManagerTest {
     try (SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration())) {
 
       ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-          10, grpcTags, true);
+          10, grpcTags);
       ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-          10, grpcTags, true);
+          10, grpcTags);
       ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-          11, grpcTags, true);
+          11, grpcTags);
       clusterManager.add(sn1);
       clusterManager.add(sn2);
       clusterManager.add(sn3);
@@ -100,11 +100,11 @@ public class SimpleClusterManagerTest {
 
       // tag changes
       sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-          10, Sets.newHashSet("new_tag"), true);
+          10, Sets.newHashSet("new_tag"));
       sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-          10, Sets.newHashSet("test", "new_tag"), true);
+          10, Sets.newHashSet("test", "new_tag"));
       ServerNode sn4 = new ServerNode("sn4", "ip", 0, 100L, 51L, 20,
-          10, grpcTags, true);
+          10, grpcTags);
       clusterManager.add(sn1);
       clusterManager.add(sn2);
       clusterManager.add(sn4);
@@ -137,11 +137,11 @@ public class SimpleClusterManagerTest {
     coordinatorConf.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 300L);
     SimpleClusterManager clusterManager = new SimpleClusterManager(coordinatorConf, new Configuration());
     ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-        10, grpcTags, true);
+        10, grpcTags);
     ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-        10, grpcTags, true);
+        10, grpcTags);
     ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-        11, grpcTags, true);
+        11, grpcTags);
     clusterManager.add(sn1);
     clusterManager.add(sn2);
     clusterManager.add(sn3);
@@ -154,7 +154,7 @@ public class SimpleClusterManagerTest {
     );
     // re-register sn3
     sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-        11, grpcTags, true);
+        11, grpcTags);
     clusterManager.add(sn3);
     Set<String> expectedIdsre = Sets.newHashSet("sn1", "sn2");
     await().atMost(1, TimeUnit.SECONDS).until(() -> { 
@@ -173,13 +173,13 @@ public class SimpleClusterManagerTest {
     coordinatorConf.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 300L);
     SimpleClusterManager clusterManager = new SimpleClusterManager(coordinatorConf, new Configuration());
     ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-        10, grpcTags, true);
+        10, grpcTags);
     ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-        10, grpcTags, true);
+        10, grpcTags);
     ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-        11, grpcTags, false);
+        11, grpcTags, ServerStatus.UNHEALTHY);
     ServerNode sn4 = new ServerNode("sn4", "ip", 0, 100L, 50L, 20,
-        11, grpcTags, false);
+        11, grpcTags, ServerStatus.UNHEALTHY);
     clusterManager.add(sn1);
     clusterManager.add(sn2);
     clusterManager.add(sn3);
@@ -193,7 +193,7 @@ public class SimpleClusterManagerTest {
     });
     // Register unhealthy node sn3 again
     sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-        11, grpcTags, false);
+        11, grpcTags, ServerStatus.UNHEALTHY);
     clusterManager.add(sn3);
     Set<String> expectedIdsre = Sets.newHashSet("sn3");
     await().atMost(1, TimeUnit.SECONDS).until(() -> { 
@@ -215,13 +215,13 @@ public class SimpleClusterManagerTest {
     try (SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration())) {
 
       ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-          10, nettyTags, true, ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
+          10, nettyTags, ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
       ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-          10, nettyTags, true, ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
+          10, nettyTags, ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
       ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-          11, nettyTags, true, ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
+          11, nettyTags, ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
       ServerNode sn4 = new ServerNode("sn4", "ip", 0, 100L, 50L, 20,
-          11, grpcTags, true);
+          11, grpcTags);
       clusterManager.add(sn1);
       clusterManager.add(sn2);
       clusterManager.add(sn3);
@@ -241,12 +241,12 @@ public class SimpleClusterManagerTest {
 
       // tag changes
       sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-          10, Sets.newHashSet("new_tag"), true, ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
+          10, Sets.newHashSet("new_tag"), ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
       sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
           10, Sets.newHashSet("test", "new_tag"),
-          true, ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
+          ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
       sn4 = new ServerNode("sn4", "ip", 0, 100L, 51L, 20,
-          10, grpcTags, true);
+          10, grpcTags);
       clusterManager.add(sn1);
       clusterManager.add(sn2);
       clusterManager.add(sn4);
@@ -275,11 +275,11 @@ public class SimpleClusterManagerTest {
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
     try (SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration())) {
       ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-          10, testTags, false);
+          10, testTags, ServerStatus.UNHEALTHY);
       ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-          10, testTags, true);
+          10, testTags);
       ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-          11, testTags, true);
+          11, testTags);
       clusterManager.add(sn1);
       clusterManager.add(sn2);
       clusterManager.add(sn3);
@@ -303,7 +303,7 @@ public class SimpleClusterManagerTest {
   }
 
   private void addNode(String id, SimpleClusterManager clusterManager) {
-    ServerNode node = new ServerNode(id, "ip", 0, 100L, 50L, 30L, 10, testTags, true);
+    ServerNode node = new ServerNode(id, "ip", 0, 100L, 50L, 30L, 10, testTags);
     LOG.info("Add node " + node.getId() + " " + node.getTimestamp());
     clusterManager.add(node);
   }
@@ -337,11 +337,11 @@ public class SimpleClusterManagerTest {
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
     try (SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration())) {
       ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-          10, testTags, true);
+          10, testTags);
       ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-          10, testTags, true);
+          10, testTags);
       ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-          11, testTags, true);
+          11, testTags);
       clusterManager.add(sn1);
       clusterManager.add(sn2);
       clusterManager.add(sn3);
@@ -369,13 +369,13 @@ public class SimpleClusterManagerTest {
 
     try (SimpleClusterManager scm = new SimpleClusterManager(ssc, new Configuration())) {
       scm.add(new ServerNode("node1-1999", "ip", 0, 100L, 50L, 20,
-          10, testTags, true));
+          10, testTags));
       scm.add(new ServerNode("node2-1999", "ip", 0, 100L, 50L, 20,
-          10, testTags, true));
+          10, testTags));
       scm.add(new ServerNode("node3-1999", "ip", 0, 100L, 50L, 20,
-          10, testTags, true));
+          10, testTags));
       scm.add(new ServerNode("node4-1999", "ip", 0, 100L, 50L, 20,
-          10, testTags, true));
+          10, testTags));
       assertTrue(scm.getExcludeNodes().isEmpty());
 
       final Set<String> nodes = Sets.newHashSet("node1-1999", "node2-1999");
