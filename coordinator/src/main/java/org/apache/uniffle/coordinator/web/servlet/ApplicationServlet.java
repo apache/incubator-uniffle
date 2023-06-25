@@ -23,7 +23,8 @@ import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.coordinator.web.Response;
 import org.apache.uniffle.coordinator.web.request.ApplicationRequest;
-import org.apache.uniffle.coordinator.web.request.CancelDecommissionRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -33,12 +34,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ApplicationServlet extends BaseServlet<Object> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ApplicationServlet.class);
   private final CoordinatorServer coordinator;
-  private final ApplicationManager applicationManager;
 
   public ApplicationServlet(CoordinatorServer coordinator) {
     this.coordinator = coordinator;
-    this.applicationManager = coordinator.getApplicationManager();
   }
 
   @Override
@@ -49,6 +50,7 @@ public class ApplicationServlet extends BaseServlet<Object> {
     if(params!= null && CollectionUtils.isNotEmpty(params.getApplications())) {
       filterApplications = params.getApplications();
     }
+    ApplicationManager applicationManager = coordinator.getApplicationManager();
     Set<Application> applicationSet = applicationManager.getApplications(filterApplications);
     return Response.success(applicationSet);
   }

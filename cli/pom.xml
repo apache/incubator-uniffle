@@ -49,5 +49,9 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>coordinator</artifactId>
+        </dependency>
     </dependencies>
 </project>

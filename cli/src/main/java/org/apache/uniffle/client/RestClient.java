@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.client;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,4 +27,5 @@ public interface RestClient extends AutoCloseable, Cloneable {
 
   String get(String path, Map<String, Object> params, String authHeader);
 
+  String post(String path, Map<String, Object> params, String authHeader);
 }

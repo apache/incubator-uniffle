@@ -19,6 +19,7 @@ package org.apache.uniffle.coordinator;
 
 import io.prometheus.client.CollectorRegistry;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.uniffle.coordinator.web.servlet.ApplicationServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -205,6 +206,9 @@ public class CoordinatorServer extends ReconfigurableBase {
     jettyServer.addServlet(
         new RefreshCheckerServlet(this),
         "/api/admin/refreshChecker");
+    jettyServer.addServlet(
+        new ApplicationServlet(this),
+        "/api/server/applications");
   }
 
   private void registerMetrics() throws Exception {

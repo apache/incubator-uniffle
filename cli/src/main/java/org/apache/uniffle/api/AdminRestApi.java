@@ -17,11 +17,19 @@
 
 package org.apache.uniffle.api;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.uniffle.client.RestClient;
 import org.apache.uniffle.client.UniffleRestClient;
+import org.apache.uniffle.coordinator.Application;
+import org.apache.uniffle.entity.ApplicationResponse;
 
 public class AdminRestApi {
   private UniffleRestClient client;
@@ -36,6 +44,22 @@ public class AdminRestApi {
   public String refreshAccessChecker() {
     Map<String, Object> params = new HashMap<>();
     return this.getClient().get("/api/admin/refreshChecker",  params, null);
+  }
+
+  public List<Application> getApplications(String applications) throws JsonProcessingException {
+    List<Application> results = new ArrayList<>();
+    Map<String, Object> params = new HashMap<>();
+    String[] applicationArrays = applications.split(",");
+    params.put("applications", applicationArrays);
+    String postJson = this.getClient().post("/api/server/applications",  params, null);
+    if (StringUtils.isNotBlank(postJson)) {
+      ObjectMapper objectMapper = new ObjectMapper();
+      ApplicationResponse response = objectMapper.readValue(postJson,  new TypeReference<ApplicationResponse>() {});
+      if (response != null && response.getData() != null) {
+        results.addAll(response.getData());
+      }
+    }
+    return results;
   }
 
   private RestClient getClient() {

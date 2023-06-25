@@ -30,6 +30,10 @@ public class Application {
   private String lastHeartBeatTime;
   private String remoteStoragePath;
 
+  public Application() {
+
+  }
+
   public Application(Builder builder) {
     this.applicationId = builder.applicationId;
     this.user = builder.user;
@@ -89,6 +93,22 @@ public class Application {
     return remoteStoragePath;
   }
 
+  public void setApplicationId(String applicationId) {
+    this.applicationId = applicationId;
+  }
+
+  public void setUser(String user) {
+    this.user = user;
+  }
+
+  public void setLastHeartBeatTime(String lastHeartBeatTime) {
+    this.lastHeartBeatTime = lastHeartBeatTime;
+  }
+
+  public void setRemoteStoragePath(String remoteStoragePath) {
+    this.remoteStoragePath = remoteStoragePath;
+  }
+
   @Override
   public boolean equals(Object other) {
     if (!(other instanceof Application)) {
@@ -111,5 +131,15 @@ public class Application {
         .append(this.getLastHeartBeatTime())
         .append(this.getRemoteStoragePath())
         .toHashCode();
+  }
+
+  @Override
+  public String toString() {
+    return "Application{" +
+            "applicationId='" + applicationId + '\'' +
+            ", user='" + user + '\'' +
+            ", lastHeartBeatTime='" + lastHeartBeatTime + '\'' +
+            ", remoteStoragePath='" + remoteStoragePath + '\'' +
+            '}';
   }
 }

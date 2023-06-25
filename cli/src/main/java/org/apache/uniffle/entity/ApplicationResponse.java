@@ -14,26 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.uniffle.coordinator.web.request;
 
-import org.apache.commons.lang3.StringUtils;
+package org.apache.uniffle.entity;
 
-import java.util.Set;
+import org.apache.uniffle.coordinator.Application;
 
-public class ApplicationRequest {
-  private Set<String> applications;
+import java.util.List;
 
-  public Set<String> getApplications() {
-    return applications;
-  }
+public class ApplicationResponse {
+ private List<Application> data;
+ private int code;
 
-  public void setApplications(Set<String> applications) {
-    this.applications = applications;
-  }
+ public List<Application> getData() {
+   return data;
+ }
 
-  @Override
-  public String toString() {
-    return "ApplicationRequest{" +
-       "applications=" + StringUtils.join(applications, ",") + '}';
-  }
+ public void setData(List<Application> data) {
+   this.data = data;
+ }
+
+ public int getCode() {
+   return code;
+ }
+
+ public void setCode(int code) {
+   this.code = code;
+ }
 }

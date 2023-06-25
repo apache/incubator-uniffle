@@ -17,14 +17,23 @@
 
 package org.apache.uniffle;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.*;
+import org.apache.uniffle.cli.UniffleCLI;
+import org.apache.uniffle.client.UniffleRestClient;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractCustomCommandLine implements CustomCommandLine {
+
+  protected final Option coordinatorHost = new Option("host", "coordinatorHost",
+      true, "This is coordinator server host.");
+  protected final Option coordinatorPort = new Option( "port", "coordinatorPort",
+      true, "This is coordinator server port.");
+  protected final Option ssl = new Option("s",  "ssl", false, "use SSL");
+
+  protected UniffleRestClient client;
+
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractCustomCommandLine.class);
 
   protected void printUsage() {
     System.out.println("Usage:");
@@ -77,5 +86,25 @@ public abstract class AbstractCustomCommandLine implements CustomCommandLine {
     addGeneralOptions(options);
     addRunOptions(options);
     return parse(options, args, stopAtNonOptions);
+  }
+
+  @Override
+  public void addGeneralOptions(Options baseOptions) {
+    baseOptions.addOption(coordinatorHost);
+    baseOptions.addOption(coordinatorPort);
+    baseOptions.addOption(ssl);
+  }
+
+  protected void getUniffleRestClient(CommandLine cmd) {
+    String host = cmd.getOptionValue(coordinatorHost.getOpt()).trim();
+    int port = Integer.parseInt(cmd.getOptionValue(coordinatorPort.getOpt()).trim());
+    String hostUrl;
+    if (cmd.hasOption(ssl.getOpt())) {
+      hostUrl = String.format("https://%s:%d", host, port);
+    } else {
+      hostUrl = String.format("http://%s:%d", host, port);
+    }
+    LOG.info("connected to coordinator: {}.", hostUrl);
+    client = UniffleRestClient.builder(hostUrl).build();
   }
 }
