@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.client;
 
-import java.util.List;
 import java.util.Map;
 
 /**

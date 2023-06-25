@@ -23,15 +23,16 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.uniffle.client.UniffleRestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.uniffle.client.UniffleRestClient;
 
 public abstract class AbstractCustomCommandLine implements CustomCommandLine {
 
   protected final Option coordinatorHost = new Option("host", "coordinatorHost",
       true, "This is coordinator server host.");
-  protected final Option coordinatorPort = new Option( "port", "coordinatorPort",
+  protected final Option coordinatorPort = new Option("port", "coordinatorPort",
       true, "This is coordinator server port.");
   protected final Option ssl = new Option("s",  "ssl", false, "use SSL");
 

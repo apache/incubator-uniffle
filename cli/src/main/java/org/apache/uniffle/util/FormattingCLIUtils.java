@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.uniffle.util;
 
 import java.util.ArrayList;
@@ -83,8 +84,8 @@ public final class FormattingCLIUtils {
     if (objects != null && objects.length > 0) {
       int len = objects.length;
       if (this.maxColMap.size() > len) {
-        throw new IllegalArgumentException("The number of columns that inserted a row " +
-            "of data into the table is different from the number of previous columns, check!");
+        throw new IllegalArgumentException("The number of columns that inserted a row "
+            + "of data into the table is different from the number of previous columns, check!");
       }
       List<String> lines = new ArrayList<>();
       for (int i = 0; i < len; i++) {
@@ -138,21 +139,21 @@ public final class FormattingCLIUtils {
     for (int i = 0, len = this.tableRows.size(); i < len; i++) {
       List<String> data = this.tableRows.get(i).data;
       switch (this.tableRows.get(i).tableRowType) {
-      case HEADER:
-        if (this.lastTableRowType != TableRowType.HEADER) {
+        case HEADER:
+          if (this.lastTableRowType != TableRowType.HEADER) {
+            this.buildRowBorder(data);
+          }
+          this.buildRowLine(data);
           this.buildRowBorder(data);
-        }
-        this.buildRowLine(data);
-        this.buildRowBorder(data);
-        break;
-      case LINE:
-        this.buildRowLine(data);
-        if (i == len - 1) {
-          this.buildRowBorder(data);
-        }
-        break;
-      default:
-        break;
+          break;
+        case LINE:
+          this.buildRowLine(data);
+          if (i == len - 1) {
+            this.buildRowBorder(data);
+          }
+          break;
+        default:
+          break;
       }
     }
   }
@@ -200,6 +201,7 @@ public final class FormattingCLIUtils {
   private static class TableRow {
     private TableRowType tableRowType;
     private List<String> data;
+
     TableRow(TableRowType tableRowType, List<String> data) {
       this.tableRowType = tableRowType;
       this.data = data;

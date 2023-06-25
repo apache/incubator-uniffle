@@ -17,27 +17,27 @@
 
 package org.apache.uniffle.entity;
 
-import org.apache.uniffle.coordinator.Application;
-
 import java.util.List;
 
+import org.apache.uniffle.coordinator.Application;
+
 public class ApplicationResponse {
- private List<Application> data;
- private int code;
+  private List<Application> data;
+  private int code;
 
- public List<Application> getData() {
-   return data;
- }
+  public List<Application> getData() {
+    return data;
+  }
 
- public void setData(List<Application> data) {
-   this.data = data;
- }
+  public void setData(List<Application> data) {
+    this.data = data;
+  }
 
- public int getCode() {
-   return code;
- }
+  public int getCode() {
+    return code;
+  }
 
- public void setCode(int code) {
-   this.code = code;
- }
+  public void setCode(int code) {
+    this.code = code;
+  }
 }

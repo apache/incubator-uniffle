@@ -17,21 +17,22 @@
 
 package org.apache.uniffle.coordinator.web.servlet;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.uniffle.coordinator.Application;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.coordinator.web.Response;
 import org.apache.uniffle.coordinator.web.request.ApplicationRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 public class ApplicationServlet extends BaseServlet<Object> {
 
@@ -47,7 +48,7 @@ public class ApplicationServlet extends BaseServlet<Object> {
       throws ServletException, IOException {
     ApplicationRequest params = parseParamsFromJson(req, ApplicationRequest.class);
     Set<String> filterApplications = new HashSet<>();
-    if(params!= null && CollectionUtils.isNotEmpty(params.getApplications())) {
+    if (params != null && CollectionUtils.isNotEmpty(params.getApplications())) {
       filterApplications = params.getApplications();
     }
     ApplicationManager applicationManager = coordinator.getApplicationManager();

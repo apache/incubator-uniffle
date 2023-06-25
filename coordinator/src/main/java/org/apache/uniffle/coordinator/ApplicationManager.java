@@ -21,10 +21,10 @@ import java.io.Closeable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -354,7 +354,7 @@ public class ApplicationManager implements Closeable {
       String user = entry.getKey();
       Map<String, Long> apps = entry.getValue();
       apps.forEach((appId, heartBeatTime) -> {
-        if(appIds.size() == 0 || appIds.contains(appId)) {
+        if (appIds.size() == 0 || appIds.contains(appId)) {
           RemoteStorageInfo remoteStorageInfo = appIdToRemoteStorageInfo.getOrDefault(appId, null);
           Application application = new Application.Builder()
               .applicationId(appId)

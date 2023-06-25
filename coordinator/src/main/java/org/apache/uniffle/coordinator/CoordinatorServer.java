@@ -19,7 +19,6 @@ package org.apache.uniffle.coordinator;
 
 import io.prometheus.client.CollectorRegistry;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.uniffle.coordinator.web.servlet.ApplicationServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -43,6 +42,7 @@ import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategy;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategyFactory;
 import org.apache.uniffle.coordinator.util.CoordinatorUtils;
+import org.apache.uniffle.coordinator.web.servlet.ApplicationServlet;
 import org.apache.uniffle.coordinator.web.servlet.CancelDecommissionServlet;
 import org.apache.uniffle.coordinator.web.servlet.DecommissionServlet;
 import org.apache.uniffle.coordinator.web.servlet.NodesServlet;

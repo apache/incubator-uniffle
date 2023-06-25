@@ -17,25 +17,25 @@
 
 package org.apache.uniffle.cli;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.uniffle.api.AdminRestApi;
-import org.apache.uniffle.coordinator.Application;
-import org.apache.uniffle.util.FormattingCLIUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.uniffle.AbstractCustomCommandLine;
-import org.apache.uniffle.UniffleCliArgsException;
-
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.uniffle.AbstractCustomCommandLine;
+import org.apache.uniffle.UniffleCliArgsException;
+import org.apache.uniffle.api.AdminRestApi;
+import org.apache.uniffle.coordinator.Application;
+import org.apache.uniffle.util.FormattingCLIUtils;
 
 public class UniffleCLI extends AbstractCustomCommandLine {
 
@@ -56,10 +56,9 @@ public class UniffleCLI extends AbstractCustomCommandLine {
     uniffleAdminCli = new Option(shortPrefix + "a", longPrefix + "admin",
         true, "This is an admin command that will print args.");
     uniffleApplicationCli = new Option(shortPrefix + "apps", longPrefix + "applications",
-        true, "The command will be used to print a list of applications. \n" +
-        "The parameter is appid, similar to the following: application_167671938823_0001,application_167671938823_0002.\n" +
-        "We usually use the command like this: \n" +
-        "uniffle -apps|--applications application_167671938823_0001,application_167671938823_0002");
+        true, "The command will be used to print a list of applications. \n"
+         + "We usually use the command like this: \n"
+         + "uniffle -apps|--applications application_167671938823_0001,application_167671938823_0002");
     help = new Option(shortPrefix + "h", longPrefix + "help",
         false, "Help for the Uniffle CLI.");
 
@@ -74,8 +73,8 @@ public class UniffleCLI extends AbstractCustomCommandLine {
 
   public int run(String[] args) throws UniffleCliArgsException, JsonProcessingException {
     final CommandLine cmd = parseCommandLineOptions(args, true);
-    
-    if(args.length < 1){
+
+    if (args.length < 1) {
       printUsage();
       return 1;
     }

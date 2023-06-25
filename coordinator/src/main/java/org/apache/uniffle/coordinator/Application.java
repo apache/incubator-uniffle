@@ -17,14 +17,15 @@
 
 package org.apache.uniffle.coordinator;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.time.DateFormatUtils;
-import org.apache.commons.lang3.builder.EqualsBuilder;
+
 import org.apache.uniffle.common.RemoteStorageInfo;
 
 public class Application {
 
-  private final static String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
+  private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
   private String applicationId;
   private String user;
   private String lastHeartBeatTime;
@@ -135,11 +136,11 @@ public class Application {
 
   @Override
   public String toString() {
-    return "Application{" +
-            "applicationId='" + applicationId + '\'' +
-            ", user='" + user + '\'' +
-            ", lastHeartBeatTime='" + lastHeartBeatTime + '\'' +
-            ", remoteStoragePath='" + remoteStoragePath + '\'' +
-            '}';
+    return "Application{"
+        + "applicationId='" + applicationId + '\''
+        + ", user='" + user + '\''
+        + ", lastHeartBeatTime='" + lastHeartBeatTime + '\''
+        + ", remoteStoragePath='" + remoteStoragePath + '\''
+        + '}';
   }
 }

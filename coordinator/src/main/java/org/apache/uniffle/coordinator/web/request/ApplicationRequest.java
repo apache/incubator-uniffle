@@ -14,11 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.uniffle.coordinator.web.request;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
 
 public class ApplicationRequest {
   private Set<String> applications;
@@ -33,7 +34,7 @@ public class ApplicationRequest {
 
   @Override
   public String toString() {
-    return "ApplicationRequest{" +
-       "applications=" + StringUtils.join(applications, ",") + '}';
+    return "ApplicationRequest{"
+        + "applications=" + StringUtils.join(applications, ",") + '}';
   }
 }
