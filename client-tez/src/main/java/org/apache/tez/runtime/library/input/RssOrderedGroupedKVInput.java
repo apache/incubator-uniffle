@@ -55,6 +55,8 @@ import org.apache.tez.runtime.library.common.sort.impl.TezRawKeyValueIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
+
 /**
  * {@link RssOrderedGroupedKVInput} in a {@link AbstractLogicalInput} which shuffles
  * intermediate sorted data, merges them and provides key/<values> to the
@@ -232,12 +234,12 @@ public class RssOrderedGroupedKVInput extends AbstractLogicalInput {
 
           @Override
           public Object getCurrentKey() throws IOException {
-            throw new RuntimeException("No data available in Input");
+            throw new RssException("No data available in Input");
           }
 
           @Override
           public Iterable<Object> getCurrentValues() throws IOException {
-            throw new RuntimeException("No data available in Input");
+            throw new RssException("No data available in Input");
           }
         };
       }
@@ -277,7 +279,7 @@ public class RssOrderedGroupedKVInput extends AbstractLogicalInput {
     RssShuffle shuffleLocalRef;
     synchronized (this) {
       if (getNumPhysicalInputs() == 0) {
-        throw new RuntimeException("No input events expected as numInputs is 0");
+        throw new RssException("No input events expected as numInputs is 0");
       }
       if (!isStarted.get()) {
         if (firstEventReceivedTime == -1) {

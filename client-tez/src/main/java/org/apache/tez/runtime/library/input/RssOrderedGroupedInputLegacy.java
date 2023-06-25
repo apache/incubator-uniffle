@@ -27,6 +27,8 @@ import org.apache.tez.dag.api.TezException;
 import org.apache.tez.runtime.api.InputContext;
 import org.apache.tez.runtime.library.common.sort.impl.TezRawKeyValueIterator;
 
+import org.apache.uniffle.common.exception.RssException;
+
 @Private
 public class RssOrderedGroupedInputLegacy extends RssOrderedGroupedKVInput {
   private final Progress progress = new Progress();
@@ -50,12 +52,12 @@ public class RssOrderedGroupedInputLegacy extends RssOrderedGroupedKVInput {
         return new TezRawKeyValueIterator() {
           @Override
           public DataInputBuffer getKey() throws IOException {
-            throw new RuntimeException("No data available in Input");
+            throw new RssException("No data available in Input");
           }
 
           @Override
           public DataInputBuffer getValue() throws IOException {
-            throw new RuntimeException("No data available in Input");
+            throw new RssException("No data available in Input");
           }
 
           @Override

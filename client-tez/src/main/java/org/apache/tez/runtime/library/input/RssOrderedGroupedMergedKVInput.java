@@ -38,6 +38,8 @@ import org.apache.tez.runtime.library.api.KeyValuesReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
+
 /**
  * A {@link MergedLogicalInput} which merges multiple
  * {@link OrderedGroupedKVInput}s and returns a single view of these by merging
@@ -196,7 +198,7 @@ public class RssOrderedGroupedMergedKVInput extends MergedLogicalInput {
                 return false;
               }
             } catch (IOException e) {
-              throw new RuntimeException(e);
+              throw new RssException(e);
             }
           }
         } else {
@@ -246,7 +248,7 @@ public class RssOrderedGroupedMergedKVInput extends MergedLogicalInput {
           return keyComparator.compare(o1.getCurrentKey(), o2.getCurrentKey());
         } catch (IOException e) {
           LOG.error("Caught exception while comparing keys in shuffle input", e);
-          throw new RuntimeException(e);
+          throw new RssException(e);
         }
       }
     }

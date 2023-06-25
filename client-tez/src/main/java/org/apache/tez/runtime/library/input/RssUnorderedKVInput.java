@@ -60,6 +60,8 @@ import org.apache.tez.runtime.library.common.shuffle.impl.SimpleFetchedInputAllo
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
+
 /**
  * {@link RssUnorderedKVInput} provides unordered key value input by
  * bringing together (shuffling) a set of distributed data and providing a
@@ -190,12 +192,12 @@ public class RssUnorderedKVInput extends AbstractLogicalInput {
 
         @Override
         public Object getCurrentKey() throws IOException {
-          throw new RuntimeException("No data available in Input");
+          throw new RssException("No data available in Input");
         }
 
         @Override
         public Object getCurrentValue() throws IOException {
-          throw new RuntimeException("No data available in Input");
+          throw new RssException("No data available in Input");
         }
       };
     }
@@ -207,7 +209,7 @@ public class RssUnorderedKVInput extends AbstractLogicalInput {
     ShuffleEventHandler inputEventHandlerLocalRef;
     synchronized (this) {
       if (getNumPhysicalInputs() == 0) {
-        throw new RuntimeException("No input events expected as numInputs is 0");
+        throw new RssException("No input events expected as numInputs is 0");
       }
       if (!isStarted.get()) {
         if (firstEventReceivedTime == -1) {
