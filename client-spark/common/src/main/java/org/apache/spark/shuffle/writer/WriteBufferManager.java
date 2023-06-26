@@ -216,12 +216,14 @@ public class WriteBufferManager extends MemoryConsumer {
     if (serializedDataLength == 0) {
       return null;
     }
+    List<ShuffleBlockInfo> shuffleBlockInfos =
+            addPartitionData(partitionId, serializedData, serializedDataLength, start);
     // records is a row based semantic, when in columnar shuffle records num should be taken from ColumnarBatch
     // that is handled by rss shuffle writer implementation
     if (isRowBased) {
       shuffleWriteMetrics.incRecordsWritten(1L);
     }
-    return addPartitionData(partitionId, serializedData, serializedDataLength, start);
+    return shuffleBlockInfos;
   }
 
   // transform all [partition, records] to [partition, ShuffleBlockInfo] and clear cache

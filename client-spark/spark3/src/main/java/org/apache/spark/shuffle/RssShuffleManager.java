@@ -91,7 +91,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final String clientType;
   private final long heartbeatInterval;
   private final long heartbeatTimeout;
-  protected AtomicReference<String> id = new AtomicReference<>();
+  private AtomicReference<String> id = new AtomicReference<>();
   private final int dataReplica;
   private final int dataReplicaWrite;
   private final int dataReplicaRead;
@@ -108,7 +108,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private String user;
   private String uuid;
   private Set<String> failedTaskIds = Sets.newConcurrentHashSet();
-  protected DataPusher dataPusher;
+  private DataPusher dataPusher;
 
   private final Map<Integer, Integer> shuffleIdToPartitionNum = Maps.newConcurrentMap();
   private final Map<Integer, Integer> shuffleIdToNumMapTasks = Maps.newConcurrentMap();
