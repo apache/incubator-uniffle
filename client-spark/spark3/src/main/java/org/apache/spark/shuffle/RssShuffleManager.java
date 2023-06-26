@@ -91,6 +91,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final String clientType;
   private final long heartbeatInterval;
   private final long heartbeatTimeout;
+  protected AtomicReference<String> id = new AtomicReference<>();
   private final int dataReplica;
   private final int dataReplicaWrite;
   private final int dataReplicaRead;
@@ -107,6 +108,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private String user;
   private String uuid;
   private Set<String> failedTaskIds = Sets.newConcurrentHashSet();
+  protected DataPusher dataPusher;
 
   private final Map<Integer, Integer> shuffleIdToPartitionNum = Maps.newConcurrentMap();
   private final Map<Integer, Integer> shuffleIdToNumMapTasks = Maps.newConcurrentMap();
@@ -116,10 +118,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   /**
    * used by columnar rss shuffle writer implementation
    */
-  protected AtomicReference<String> id = new AtomicReference<>();
   protected SparkConf sparkConf;
   protected ShuffleWriteClient shuffleWriteClient;
-  protected DataPusher dataPusher;
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
@@ -385,11 +385,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
     RssShuffleHandle<K, V, ?> rssHandle = (RssShuffleHandle<K, V, ?>) handle;
-    // todo: this implement is tricky, we should refactor it
-    if (id.get() == null) {
-      id.compareAndSet(null, rssHandle.getAppId());
-      dataPusher.setRssAppId(id.get());
-    }
+    setPusherAppId(rssHandle);
     int shuffleId = rssHandle.getShuffleId();
     String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
     BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
@@ -407,6 +403,14 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     return new RssShuffleWriter<>(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(), bufferManager,
         writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle,
         (Function<String, Boolean>) this::markFailedTask);
+  }
+
+  public void setPusherAppId(RssShuffleHandle rssShuffleHandle) {
+    // todo: this implement is tricky, we should refactor it
+    if (id.get() == null) {
+      id.compareAndSet(null, rssShuffleHandle.getAppId());
+      dataPusher.setRssAppId(id.get());
+    }
   }
 
   @Override

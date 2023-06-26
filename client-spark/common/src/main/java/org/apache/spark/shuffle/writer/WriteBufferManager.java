@@ -187,11 +187,6 @@ public class WriteBufferManager extends MemoryConsumer {
       wb.addRecord(serializedData, serializedDataLength);
       buffers.put(partitionId, wb);
     }
-    // records is a row based semantic, when in columnar shuffle records num should be taken from ColumnarBatch
-    // that is handled by rss shuffle writer implementation
-    if (isRowBased) {
-      shuffleWriteMetrics.incRecordsWritten(1L);
-    }
 
     // check buffer size > spill threshold
     if (usedBytes.get() - inSendListBytes.get() > spillSize) {
@@ -220,6 +215,11 @@ public class WriteBufferManager extends MemoryConsumer {
     int serializedDataLength = arrayOutputStream.size();
     if (serializedDataLength == 0) {
       return null;
+    }
+    // records is a row based semantic, when in columnar shuffle records num should be taken from ColumnarBatch
+    // that is handled by rss shuffle writer implementation
+    if (isRowBased) {
+      shuffleWriteMetrics.incRecordsWritten(1L);
     }
     return addPartitionData(partitionId, serializedData, serializedDataLength, start);
   }
