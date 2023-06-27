@@ -62,7 +62,7 @@ public class ClientUtils {
       String storageType,
       ShuffleWriteClient shuffleWriteClient) {
     RemoteStorageInfo remoteStorage = defaultRemoteStorage;
-    if (requireRemoteStorage(storageType)) {
+    if (StorageType.withRemoteStorage(StorageType.valueOf(storageType))) {
       if (remoteStorage.isEmpty() && dynamicConfEnabled) {
         // fallback to dynamic conf on coordinator
         remoteStorage = shuffleWriteClient.fetchRemoteStorage(appId);
@@ -72,13 +72,6 @@ public class ClientUtils {
       }
     }
     return remoteStorage;
-  }
-
-  private static boolean requireRemoteStorage(String storageType) {
-    return StorageType.MEMORY_HDFS.name().equals(storageType)
-        || StorageType.MEMORY_LOCALFILE_HDFS.name().equals(storageType)
-        || StorageType.HDFS.name().equals(storageType)
-        || StorageType.LOCALFILE_HDFS.name().equals(storageType);
   }
 
   @SuppressWarnings("rawtypes")
