@@ -142,7 +142,7 @@ public class WriteBufferManager extends MemoryConsumer {
     this.requireMemoryRetryMax = bufferManagerOptions.getRequireMemoryRetryMax();
     this.arrayOutputStream = new WrappedByteArrayOutputStream(serializerBufferSize);
     // in columnar shuffle, the serializer here is never used
-    this.isRowBased = (serializer != null);
+    this.isRowBased = rssConf.getBoolean(RssSparkConfig.RSS_ROW_BASED);
     if (isRowBased) {
       this.instance = serializer.newInstance();
       this.serializeStream = instance.serializeStream(arrayOutputStream);
