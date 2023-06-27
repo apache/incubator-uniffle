@@ -49,9 +49,9 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
         false, "Help for the Uniffle Admin CLI.");
     coordinatorHost = new Option(shortPrefix + "s", longPrefix + "coordinatorHost",
         true, "This is coordinator server host.");
-    coordinatorPort = new Option(shortPrefix + "p", longPrefix + "port",
+    coordinatorPort = new Option(shortPrefix + "p", longPrefix + "coordinatorPort",
         true, "This is coordinator server port.");
-    ssl = new Option("l", longPrefix + "ssl", false, "use SSL");
+    ssl = new Option(null, longPrefix + "ssl", false, "use SSL.");
 
     allOptions.addOption(refreshCheckerCli);
     allOptions.addOption(coordinatorHost);
