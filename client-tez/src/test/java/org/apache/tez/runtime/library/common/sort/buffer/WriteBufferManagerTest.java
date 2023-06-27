@@ -195,7 +195,6 @@ public class WriteBufferManagerTest {
     double sendThreshold = 0.2f;
     int batch = 50;
     int numMaps = 1;
-    String storageType = "MEMORY";
     RssConf rssConf = new RssConf();
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = new HashMap<>();
     long sendCheckInterval = 500L;
@@ -209,7 +208,7 @@ public class WriteBufferManagerTest {
         comparator, maxSegmentSize, keySerializer,
         valSerializer, maxBufferSize, memoryThreshold,
         sendThreshold, batch, rssConf, partitionToServers,
-        numMaps, isMemoryShuffleEnabled(storageType),
+        numMaps, false,
         sendCheckInterval, sendCheckTimeout, bitmapSplitNum, shuffleId, true);
 
     Random random = new Random();
@@ -221,6 +220,7 @@ public class WriteBufferManagerTest {
       int partitionId = random.nextInt(50);
       bufferManager.addRecord(partitionId, new BytesWritable(key), new BytesWritable(value));
     }
+    bufferManager.waitSendFinished();
 
     assertTrue(bufferManager.getWaitSendBuffers().isEmpty());
     assertEquals(writeClient.mockedShuffleServer.getFinishBlockSize(),

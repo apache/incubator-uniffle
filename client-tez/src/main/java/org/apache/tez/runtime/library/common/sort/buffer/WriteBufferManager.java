@@ -276,12 +276,6 @@ public class WriteBufferManager<K,V> {
       sendBuffersToServers();
     }
     long start = System.currentTimeMillis();
-    long commitDuration = 0;
-    if (!isMemoryShuffleEnabled) {
-      long s = System.currentTimeMillis();
-      sendCommit();
-      commitDuration = System.currentTimeMillis() - s;
-    }
     while (true) {
       if (failedBlockIds.size() > 0) {
         String errorMsg = "Send failed: failed because " + failedBlockIds.size()
@@ -301,6 +295,12 @@ public class WriteBufferManager<K,V> {
         LOG.error(errorMsg);
         throw new RssException(errorMsg);
       }
+    }
+    long commitDuration = 0;
+    if (!isMemoryShuffleEnabled) {
+      long s = System.currentTimeMillis();
+      sendCommit();
+      commitDuration = System.currentTimeMillis() - s;
     }
     start = System.currentTimeMillis();
     TezVertexID tezVertexID = tezTaskAttemptID.getTaskID().getVertexID();
