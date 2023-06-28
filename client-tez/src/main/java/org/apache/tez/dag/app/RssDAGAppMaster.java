@@ -26,9 +26,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.Options;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -54,12 +52,21 @@ import org.apache.tez.common.TezClassLoader;
 import org.apache.tez.common.TezCommonUtils;
 import org.apache.tez.common.TezUtilsInternal;
 import org.apache.tez.common.VersionInfo;
+import org.apache.tez.dag.api.InputDescriptor;
+import org.apache.tez.dag.api.OutputDescriptor;
 import org.apache.tez.dag.api.TezConfiguration;
 import org.apache.tez.dag.api.TezConstants;
 import org.apache.tez.dag.api.TezException;
+import org.apache.tez.dag.api.TezUncheckedException;
 import org.apache.tez.dag.api.records.DAGProtos;
 import org.apache.tez.dag.api.records.DAGProtos.AMPluginDescriptorProto;
+import org.apache.tez.dag.app.dag.DAG;
+import org.apache.tez.dag.app.dag.DAGState;
+import org.apache.tez.dag.app.dag.impl.DAGImpl;
+import org.apache.tez.dag.app.dag.impl.Edge;
 import org.apache.tez.dag.library.vertexmanager.ShuffleVertexManager;
+import org.apache.tez.state.OnStateChangedCallback;
+import org.apache.tez.state.StateMachineTez;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,6 +166,13 @@ public class RssDAGAppMaster extends DAGAppMaster {
   }
 
   @Override
+  protected DAG createDAG(DAGProtos.DAGPlan dagPB) {
+    DAGImpl dag = createDAG(dagPB, null);
+    registerStateEnteredCallback(dag);
+    return dag;
+  }
+
+  @Override
   public String submitDAGToAppMaster(DAGProtos.DAGPlan dagPlan, Map<String, LocalResource> additionalResources)
           throws TezException {
 
@@ -228,15 +242,21 @@ public class RssDAGAppMaster extends DAGAppMaster {
       String jobUserName = System
               .getenv(ApplicationConstants.Environment.USER.name());
 
-      // Command line options
-      Options opts = new Options();
-      opts.addOption(TezConstants.TEZ_SESSION_MODE_CLI_OPTION,
-              false, "Run Tez Application Master in Session mode");
+      boolean sessionModeCliOption = false;
+      for (int i = 0; i < args.length; i++) {
+        if (args[i].startsWith("-D")) {
+          String[] property = args[i].split("=");
+          if (property.length < 2) {
+            System.setProperty(property[0], "");
+          } else {
+            System.setProperty(property[0], property[1]);
+          }
+        } else if (args[i].contains("--session") || args[i].contains("-s")) {
+          sessionModeCliOption = true;
+        }
+      }
 
-      CommandLine cliParser = new GnuParser().parse(opts, args);
-      boolean sessionModeCliOption = cliParser.hasOption(TezConstants.TEZ_SESSION_MODE_CLI_OPTION);
-
-      LOG.info("Creating DAGAppMaster for "
+      LOG.info("Creating RssDAGAppMaster for "
               + "applicationId=" + applicationAttemptId.getApplicationId()
               + ", attemptNum=" + applicationAttemptId.getAttemptId()
               + ", AMContainerId=" + containerId
@@ -294,7 +314,7 @@ public class RssDAGAppMaster extends DAGAppMaster {
       initAndStartRSSClient(appMaster, conf, applicationAttemptId);
       initAndStartAppMaster(appMaster, conf);
     } catch (Throwable t) {
-      LOG.error("Error starting DAGAppMaster", t);
+      LOG.error("Error starting RssDAGAppMaster", t);
       System.exit(1);
     }
   }
@@ -358,8 +378,55 @@ public class RssDAGAppMaster extends DAGAppMaster {
         }
       }
 
-      RssDAGAppMaster.LOG.info("MRAppMaster received a signal. Signaling RMCommunicator and JobHistoryEventHandler.");
+      RssDAGAppMaster.LOG.info(
+          "RssDAGAppMaster received a signal. Signaling RMCommunicator and JobHistoryEventHandler.");
       this.appMaster.stop();
+    }
+  }
+
+  @VisibleForTesting
+  public static void registerStateEnteredCallback(DAGImpl dag) {
+    StateMachineTez
+        stateMachine = (StateMachineTez) getPrivateField(dag, "stateMachine");
+    stateMachine.registerStateEnteredCallback(DAGState.INITED, new DagInitialCallback());
+  }
+
+  static class DagInitialCallback implements OnStateChangedCallback<DAGState, DAGImpl> {
+
+    @Override
+    public void onStateChanged(DAGImpl dag, DAGState dagState) {
+      try {
+        Map<String, Edge> edges = (Map<String, Edge>) getPrivateField(dag, "edges");
+        for (Map.Entry<String, Edge> entry : edges.entrySet()) {
+          Edge edge = entry.getValue();
+
+          OutputDescriptor outputDescriptor = edge.getEdgeProperty().getEdgeSource();
+          Field outputClassNameField = outputDescriptor.getClass().getSuperclass().getDeclaredField("className");
+          outputClassNameField.setAccessible(true);
+          String outputClassName = (String) outputClassNameField.get(outputDescriptor);
+          String rssOutputClassName = RssTezUtils.replaceRssOutputClassName(outputClassName);
+          outputClassNameField.set(outputDescriptor, rssOutputClassName);
+
+          InputDescriptor inputDescriptor = edge.getEdgeProperty().getEdgeDestination();
+          Field inputClassNameField = outputDescriptor.getClass().getSuperclass().getDeclaredField("className");
+          inputClassNameField.setAccessible(true);
+          String inputClassName = (String) outputClassNameField.get(inputDescriptor);
+          String rssInputClassName = RssTezUtils.replaceRssInputClassName(inputClassName);
+          outputClassNameField.set(inputDescriptor, rssInputClassName);
+        }
+      } catch (Exception e) {
+        throw new TezUncheckedException(e);
+      }
+    }
+  }
+
+  private static Object getPrivateField(Object object, String name) {
+    try {
+      Field f = object.getClass().getDeclaredField(name);
+      f.setAccessible(true);
+      return f.get(object);
+    } catch (Exception e) {
+      throw new RssException(e);
     }
   }
 }

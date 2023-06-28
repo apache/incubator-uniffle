@@ -27,6 +27,24 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 import org.apache.tez.runtime.library.api.TezRuntimeConfiguration;
 import org.apache.tez.runtime.library.common.InputAttemptIdentifier;
+import org.apache.tez.runtime.library.input.ConcatenatedMergedKeyValueInput;
+import org.apache.tez.runtime.library.input.ConcatenatedMergedKeyValuesInput;
+import org.apache.tez.runtime.library.input.OrderedGroupedInputLegacy;
+import org.apache.tez.runtime.library.input.OrderedGroupedKVInput;
+import org.apache.tez.runtime.library.input.OrderedGroupedMergedKVInput;
+import org.apache.tez.runtime.library.input.RssConcatenatedMergedKeyValueInput;
+import org.apache.tez.runtime.library.input.RssConcatenatedMergedKeyValuesInput;
+import org.apache.tez.runtime.library.input.RssOrderedGroupedInputLegacy;
+import org.apache.tez.runtime.library.input.RssOrderedGroupedKVInput;
+import org.apache.tez.runtime.library.input.RssOrderedGroupedMergedKVInput;
+import org.apache.tez.runtime.library.input.RssUnorderedKVInput;
+import org.apache.tez.runtime.library.input.UnorderedKVInput;
+import org.apache.tez.runtime.library.output.OrderedPartitionedKVOutput;
+import org.apache.tez.runtime.library.output.RssOrderedPartitionedKVOutput;
+import org.apache.tez.runtime.library.output.RssUnorderedKVOutput;
+import org.apache.tez.runtime.library.output.RssUnorderedPartitionedKVOutput;
+import org.apache.tez.runtime.library.output.UnorderedKVOutput;
+import org.apache.tez.runtime.library.output.UnorderedPartitionedKVOutput;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -323,6 +341,56 @@ public class RssTezUtils {
         String workerStr = splits[1];
         parseRssWorkerFromHostInfo(rssWorker, workerStr);
       }
+    }
+  }
+
+  public static String replaceRssOutputClassName(String className) {
+    if (className.equals(OrderedPartitionedKVOutput.class.getName())) {
+      LOG.info("Output class name will transient from {} to {}", className,
+          RssOrderedPartitionedKVOutput.class.getName());
+      return RssOrderedPartitionedKVOutput.class.getName();
+    } else if (className.equals(UnorderedKVOutput.class.getName())) {
+      LOG.info("Output class name will transient from {} to {}", className,
+          RssUnorderedKVOutput.class.getName());
+      return RssUnorderedKVOutput.class.getName();
+    } else if (className.equals(UnorderedPartitionedKVOutput.class.getName())) {
+      LOG.info("Output class name will transient from {} to {}", className,
+          RssUnorderedPartitionedKVOutput.class.getName());
+      return RssUnorderedPartitionedKVOutput.class.getName();
+    } else {
+      LOG.info("Unexpected kv output class name {}.", className);
+      return className;
+    }
+  }
+
+  public static String replaceRssInputClassName(String className) {
+    if (className.equals(OrderedGroupedKVInput.class.getName())) {
+      LOG.info("Input class name will transient from {} to {}", className,
+          RssOrderedGroupedKVInput.class.getName());
+      return RssOrderedGroupedKVInput.class.getName();
+    } else if (className.equals(OrderedGroupedMergedKVInput.class.getName())) {
+      LOG.info("Input class name will transient from {} to {}", className,
+          RssOrderedGroupedMergedKVInput.class.getName());
+      return RssOrderedGroupedMergedKVInput.class.getName();
+    } else if (className.equals(OrderedGroupedInputLegacy.class.getName())) {
+      LOG.info("Input class name will transient from {} to {}", className,
+          RssOrderedGroupedInputLegacy.class.getName());
+      return RssOrderedGroupedInputLegacy.class.getName();
+    } else if (className.equals(UnorderedKVInput.class.getName())) {
+      LOG.info("Input class name will transient from {} to {}", className,
+          RssUnorderedKVInput.class.getName());
+      return RssUnorderedKVInput.class.getName();
+    } else if (className.equals(ConcatenatedMergedKeyValueInput.class.getName())) {
+      LOG.info("Input class name will transient from {} to {}", className,
+          RssConcatenatedMergedKeyValueInput.class.getName());
+      return RssConcatenatedMergedKeyValueInput.class.getName();
+    } else if (className.equals(ConcatenatedMergedKeyValuesInput.class.getName())) {
+      LOG.info("Input class name will transient from {} to {}", className,
+          RssConcatenatedMergedKeyValuesInput.class.getName());
+      return RssConcatenatedMergedKeyValuesInput.class.getName();
+    } else {
+      LOG.info("Unexpected kv input class name {}.", className);
+      return className;
     }
   }
 }
