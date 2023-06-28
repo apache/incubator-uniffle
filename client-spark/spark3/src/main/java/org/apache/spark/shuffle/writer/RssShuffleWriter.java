@@ -67,10 +67,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final int shuffleId;
   private final WriteBufferManager bufferManager;
   private final String taskId;
-  private final long taskAttemptId;
   private final int numMaps;
   private final ShuffleDependency<K, V, C> shuffleDependency;
-  private final ShuffleWriteMetrics shuffleWriteMetrics;
   private final Partitioner partitioner;
   private final RssShuffleManager shuffleManager;
   private final boolean shouldPartition;
@@ -84,6 +82,12 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final long[] partitionLengths;
   private boolean isMemoryShuffleEnabled;
   private final Function<String, Boolean> taskFailureCallback;
+
+  /**
+   * used by columnar rss shuffle writer implementation
+   */
+  protected final long taskAttemptId;
+  protected final ShuffleWriteMetrics shuffleWriteMetrics;
 
   public RssShuffleWriter(
       String appId,
@@ -213,7 +217,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     return new long[0];
   }
 
-  private void processShuffleBlockInfos(List<ShuffleBlockInfo> shuffleBlockInfoList, Set<Long> blockIds) {
+  protected void processShuffleBlockInfos(List<ShuffleBlockInfo> shuffleBlockInfoList, Set<Long> blockIds) {
     if (shuffleBlockInfoList != null && !shuffleBlockInfoList.isEmpty()) {
       shuffleBlockInfoList.forEach(sbi -> {
         long blockId = sbi.getBlockId();

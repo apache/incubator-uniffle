@@ -92,14 +92,12 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final long heartbeatInterval;
   private final long heartbeatTimeout;
   private AtomicReference<String> id = new AtomicReference<>();
-  private SparkConf sparkConf;
   private final int dataReplica;
   private final int dataReplicaWrite;
   private final int dataReplicaRead;
   private final boolean dataReplicaSkipEnabled;
   private final int dataTransferPoolSize;
   private final int dataCommitPoolSize;
-  private ShuffleWriteClient shuffleWriteClient;
   private final Map<String, Set<Long>> taskToSuccessBlockIds;
   private final Map<String, Set<Long>> taskToFailedBlockIds;
   private ScheduledExecutorService heartBeatScheduledExecutorService;
@@ -116,6 +114,12 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final Map<Integer, Integer> shuffleIdToNumMapTasks = Maps.newConcurrentMap();
   private ShuffleManagerGrpcService service;
   private GrpcServer shuffleManagerServer;
+
+  /**
+   * used by columnar rss shuffle writer implementation
+   */
+  protected SparkConf sparkConf;
+  protected ShuffleWriteClient shuffleWriteClient;
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
@@ -381,11 +385,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
     RssShuffleHandle<K, V, ?> rssHandle = (RssShuffleHandle<K, V, ?>) handle;
-    // todo: this implement is tricky, we should refactor it
-    if (id.get() == null) {
-      id.compareAndSet(null, rssHandle.getAppId());
-      dataPusher.setRssAppId(id.get());
-    }
+    setPusherAppId(rssHandle);
     int shuffleId = rssHandle.getShuffleId();
     String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
     BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
@@ -403,6 +403,14 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     return new RssShuffleWriter<>(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(), bufferManager,
         writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle,
         (Function<String, Boolean>) this::markFailedTask);
+  }
+
+  public void setPusherAppId(RssShuffleHandle rssShuffleHandle) {
+    // todo: this implement is tricky, we should refactor it
+    if (id.get() == null) {
+      id.compareAndSet(null, rssShuffleHandle.getAppId());
+      dataPusher.setRssAppId(id.get());
+    }
   }
 
   @Override
@@ -804,10 +812,10 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     }
   }
 
-  static class WriteMetrics extends ShuffleWriteMetrics {
+  public static class WriteMetrics extends ShuffleWriteMetrics {
     private ShuffleWriteMetricsReporter reporter;
 
-    WriteMetrics(ShuffleWriteMetricsReporter reporter) {
+    public WriteMetrics(ShuffleWriteMetricsReporter reporter) {
       this.reporter = reporter;
     }
 
