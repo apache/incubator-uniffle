@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.config.RssConf;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -182,9 +183,11 @@ public class WriteBufferManagerTest {
     SparkConf conf = getConf();
     TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
+    RssConf rssConf = RssSparkConfig.toRssConf(conf);
+    rssConf.set(RssSparkConfig.RSS_ROW_BASED, false);
     WriteBufferManager wbm = new WriteBufferManager(
             0, 0, bufferOptions, null,
-            Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(), RssSparkConfig.toRssConf(conf));
+            Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(), rssConf);
     WriteBufferManager spyManager = spy(wbm);
     doReturn(512L).when(spyManager).acquireMemory(anyLong());
 
@@ -195,6 +198,7 @@ public class WriteBufferManagerTest {
     assertEquals(0, spyManager.getBuffers().size());
     assertEquals(1, shuffleBlockInfos.size());
     assertEquals(128, shuffleBlockInfos.get(0).getUncompressLength());
+    assertEquals(0, spyManager.getShuffleWriteMetrics().recordsWritten());
   }
 
   @Test

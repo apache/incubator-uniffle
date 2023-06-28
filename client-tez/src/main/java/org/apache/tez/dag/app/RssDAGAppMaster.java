@@ -77,7 +77,7 @@ public class RssDAGAppMaster extends DAGAppMaster {
 
   private DAGProtos.PlanLocalResource rssConfFileLocalResource;
   final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-          ThreadUtils.getThreadFactory("AppHeartbeat-%d")
+          ThreadUtils.getThreadFactory("AppHeartbeat")
   );
 
   public RssDAGAppMaster(ApplicationAttemptId applicationAttemptId, ContainerId containerId,

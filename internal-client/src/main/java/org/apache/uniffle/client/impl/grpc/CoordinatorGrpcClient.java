@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.protobuf.BoolValue;
 import com.google.protobuf.Empty;
 import io.grpc.ManagedChannel;
 import io.grpc.StatusRuntimeException;
@@ -117,7 +116,6 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       int eventNumInFlush,
       long timeout,
       Set<String> tags,
-      boolean isHealthy,
       ServerStatus serverStatus,
       Map<String, StorageInfo> storageInfo,
       int nettyPort) {
@@ -131,7 +129,6 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             .setAvailableMemory(availableMemory)
             .setEventNumInFlush(eventNumInFlush)
             .addAllTags(tags)
-            .setIsHealthy(BoolValue.newBuilder().setValue(isHealthy).build())
             .setStatusValue(serverStatus.ordinal())
             .putAllStorageInfo(StorageInfoUtils.toProto(storageInfo))
             .build();
@@ -197,7 +194,6 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         request.getEventNumInFlush(),
         request.getTimeout(),
         request.getTags(),
-        request.isHealthy(),
         request.getServerStatus(),
         request.getStorageInfo(),
         request.getNettyPort());

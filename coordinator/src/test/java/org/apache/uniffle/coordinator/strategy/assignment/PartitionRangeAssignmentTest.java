@@ -40,7 +40,7 @@ public class PartitionRangeAssignmentTest {
     for (int i = 0; i < 9; i = i + 3) {
       PartitionRange range = new PartitionRange(i, i + 2);
       List<ServerNode> nodes = Collections.singletonList(new ServerNode(
-          String.valueOf(i), "127.0.0." + i, i / 3, 0, 0, 0, 0, Sets.newHashSet("test"), true));
+          String.valueOf(i), "127.0.0." + i, i / 3, 0, 0, 0, 0, Sets.newHashSet("test")));
       sortedMap.put(range, nodes);
     }
 

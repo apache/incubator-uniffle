@@ -89,8 +89,7 @@ public class ContinuousSelectPartitionStrategyTest {
           5L,
           resources.get(i),
           5,
-          tags,
-          true);
+          tags);
       serverNodes.add(node);
     }
     return serverNodes;

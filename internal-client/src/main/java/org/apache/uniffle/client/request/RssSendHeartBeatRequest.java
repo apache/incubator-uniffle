@@ -35,7 +35,6 @@ public class RssSendHeartBeatRequest {
   private final int eventNumInFlush;
   private final Set<String> tags;
   private final long timeout;
-  private final boolean isHealthy;
   private final ServerStatus serverStatus;
   private final Map<String, StorageInfo> storageInfo;
   private final int nettyPort;
@@ -50,7 +49,6 @@ public class RssSendHeartBeatRequest {
       int eventNumInFlush,
       long timeout,
       Set<String> tags,
-      boolean isHealthy,
       ServerStatus serverStatus,
       Map<String, StorageInfo> storageInfo,
       int nettyPort) {
@@ -63,7 +61,6 @@ public class RssSendHeartBeatRequest {
     this.eventNumInFlush = eventNumInFlush;
     this.tags = tags;
     this.timeout = timeout;
-    this.isHealthy = isHealthy;
     this.serverStatus = serverStatus;
     this.storageInfo = storageInfo;
     this.nettyPort = nettyPort;
@@ -103,10 +100,6 @@ public class RssSendHeartBeatRequest {
 
   public Set<String> getTags() {
     return tags;
-  }
-
-  public boolean isHealthy() {
-    return isHealthy;
   }
 
   public ServerStatus getServerStatus() {

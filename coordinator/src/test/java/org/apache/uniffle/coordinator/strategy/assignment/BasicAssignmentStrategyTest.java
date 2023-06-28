@@ -68,7 +68,7 @@ public class BasicAssignmentStrategyTest {
   public void testAssign() {
     for (int i = 0; i < 20; ++i) {
       clusterManager.add(new ServerNode(String.valueOf(i), "127.0.0." + i, 0, 0, 0,
-          20 - i, 0, tags, true));
+          20 - i, 0, tags));
     }
 
     PartitionRangeAssignment pra = strategy.assign(100, 10, 2, tags, -1, -1);
@@ -95,7 +95,7 @@ public class BasicAssignmentStrategyTest {
   public void testRandomAssign() {
     for (int i = 0; i < 20; ++i) {
       clusterManager.add(new ServerNode(String.valueOf(i), "127.0.0." + i, 0, 0, 0,
-          0, 0, tags, true));
+          0, 0, tags));
     }
     PartitionRangeAssignment pra = strategy.assign(100, 10, 2, tags, -1, -1);
     SortedMap<PartitionRange, List<ServerNode>> assignments = pra.getAssignments();
@@ -118,11 +118,11 @@ public class BasicAssignmentStrategyTest {
   @Test
   public void testAssignWithDifferentNodeNum() {
     final ServerNode sn1 = new ServerNode("sn1", "", 0, 0, 0,
-        20, 0, tags, true);
+        20, 0, tags);
     final ServerNode sn2 = new ServerNode("sn2", "", 0, 0, 0,
-        10, 0, tags, true);
+        10, 0, tags);
     final ServerNode sn3 = new ServerNode("sn3", "", 0, 0, 0,
-        0, 0, tags, true);
+        0, 0, tags);
 
     clusterManager.add(sn1);
     PartitionRangeAssignment pra = strategy.assign(100, 10, 2, tags, -1, -1);
@@ -161,7 +161,7 @@ public class BasicAssignmentStrategyTest {
 
     for (int i = 0; i < 20; ++i) {
       clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
-          20 - i, 0, serverTags, true));
+          20 - i, 0, serverTags));
     }
 
     /**
@@ -231,7 +231,7 @@ public class BasicAssignmentStrategyTest {
     serverTags = Sets.newHashSet("tag-2");
     for (int i = 0; i < shuffleNodesMax - 1; ++i) {
       clusterManager.add(new ServerNode("t2-" + i, "", 0, 0, 0,
-          20 - i, 0, serverTags, true));
+          20 - i, 0, serverTags));
     }
     pra = strategy.assign(100, 10, 1, serverTags, shuffleNodesMax, -1);
     assertEquals(
@@ -283,8 +283,7 @@ public class BasicAssignmentStrategyTest {
           5L,
           resources.get(i),
           5,
-          tags,
-          true);
+          tags);
       clusterManager.add(node);
     }
   }

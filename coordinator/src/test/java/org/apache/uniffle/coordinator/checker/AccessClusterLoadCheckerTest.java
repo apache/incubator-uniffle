@@ -30,6 +30,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.coordinator.AccessManager;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.ClusterManager;
@@ -75,8 +76,7 @@ public class AccessClusterLoadCheckerTest {
         20,
         1000,
         0,
-        null,
-        true);
+        null);
     ServerNode node2 = new ServerNode(
         "1",
         "1",
@@ -85,8 +85,7 @@ public class AccessClusterLoadCheckerTest {
         20,
         1000,
         0,
-        null,
-        true);
+        null);
     nodes.add(node1);
     nodes.add(node2);
 
@@ -155,7 +154,7 @@ public class AccessClusterLoadCheckerTest {
         30,
         0,
         null,
-        false);
+        ServerStatus.UNHEALTHY);
     serverNodeList.add(node1);
     final String filePath = Objects.requireNonNull(
         getClass().getClassLoader().getResource("coordinator.conf")).getFile();
@@ -178,8 +177,7 @@ public class AccessClusterLoadCheckerTest {
         40,
         10,
         0,
-        null,
-        true);
+        null);
     serverNodeList.add(node2);
     ServerNode node3 = new ServerNode(
         "1",
@@ -189,8 +187,7 @@ public class AccessClusterLoadCheckerTest {
         25,
         20,
         0,
-        null,
-        true);
+        null);
     serverNodeList.add(node3);
     assertFalse(accessClusterLoadChecker.check(new AccessInfo("test")).isSuccess());
     ServerNode node4 = new ServerNode(
@@ -201,8 +198,7 @@ public class AccessClusterLoadCheckerTest {
         25,
         25,
         0,
-        null,
-        true);
+        null);
     serverNodeList.add(node4);
     assertTrue(accessClusterLoadChecker.check(new AccessInfo("test")).isSuccess());
   }

@@ -135,7 +135,7 @@ public class SimpleClusterManager implements ClusterManager {
           sn.setStatus(ServerStatus.LOST);
           lostNodes.add(sn);
           unhealthyNodes.remove(sn);
-        } else if (!sn.isHealthy()) {
+        } else if (ServerStatus.UNHEALTHY.equals(sn.getStatus())) {
           LOG.warn("Found server {} was unhealthy, will not assign it.", sn);
           unhealthyNodes.add(sn);
           lostNodes.remove(sn);
@@ -242,7 +242,7 @@ public class SimpleClusterManager implements ClusterManager {
       }
       if (!excludeNodes.contains(node.getId())
           && node.getTags().containsAll(requiredTags)
-          && node.isHealthy()) {
+          && ServerStatus.ACTIVE.equals(node.getStatus())) {
         availableNodes.add(node);
       }
     }
