@@ -122,7 +122,7 @@ public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrate
       }
 
       if (nodes.size() < expectNum) {
-        LOG.warn("Can't get expected servers [" + expectNum + "] and found only [" + nodes.size() + "]");
+        LOG.warn("Can't get expected servers [{}] and found only [{}]", expectNum, nodes.size());
         expectNum = nodes.size();
       }
 

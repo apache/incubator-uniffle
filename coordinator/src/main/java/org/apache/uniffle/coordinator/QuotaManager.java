@@ -66,7 +66,7 @@ public class QuotaManager {
       try {
         hadoopFileSystem = HadoopFilesystemProvider.getFilesystem(new Path(quotaFilePath), new Configuration());
       } catch (Exception e) {
-        LOG.error("Cannot init remoteFS on path : " + quotaFilePath, e);
+        LOG.error("Cannot init remoteFS on path : {}", quotaFilePath, e);
       }
       // Threads that update the number of submitted applications
       ScheduledExecutorService scheduledExecutorService =
