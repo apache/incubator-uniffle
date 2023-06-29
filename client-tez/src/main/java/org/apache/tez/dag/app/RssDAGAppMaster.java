@@ -18,6 +18,7 @@
 package org.apache.tez.dag.app;
 
 import java.lang.reflect.Field;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +47,9 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.hadoop.yarn.util.SystemClock;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.helpers.Loader;
+import org.apache.log4j.helpers.OptionConverter;
 import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.common.TezClassLoader;
@@ -74,6 +78,8 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ThreadUtils;
 
+import static org.apache.log4j.LogManager.CONFIGURATOR_CLASS_KEY;
+import static org.apache.log4j.LogManager.DEFAULT_CONFIGURATION_KEY;
 import static org.apache.tez.common.TezCommonUtils.TEZ_SYSTEM_SUB_DIR;
 
 public class RssDAGAppMaster extends DAGAppMaster {
@@ -220,6 +226,24 @@ public class RssDAGAppMaster extends DAGAppMaster {
    */
   public static void main(String[] args) {
     try {
+      // We use trick way to introduce RssDAGAppMaster by the config tez.am.launch.cmd-opts.
+      // It means some property which is set by command line will be ingored, so we must reload it.
+      boolean sessionModeCliOption = false;
+      for (int i = 0; i < args.length; i++) {
+        if (args[i].startsWith("-D")) {
+          String[] property = args[i].split("=");
+          if (property.length < 2) {
+            System.setProperty(property[0].substring(2), "");
+          } else {
+            System.setProperty(property[0].substring(2), property[1]);
+          }
+        } else if (args[i].contains("--session") || args[i].contains("-s")) {
+          sessionModeCliOption = true;
+        }
+      }
+      // Load the log4j config is only init in static code block of LogManager, so we must reconfigure.
+      reconfigureLog4j();
+
       // Install the tez class loader, which can be used add new resources
       TezClassLoader.setupTezClassLoader();
       Thread.setDefaultUncaughtExceptionHandler(new YarnUncaughtExceptionHandler());
@@ -241,20 +265,6 @@ public class RssDAGAppMaster extends DAGAppMaster {
 
       String jobUserName = System
               .getenv(ApplicationConstants.Environment.USER.name());
-
-      boolean sessionModeCliOption = false;
-      for (int i = 0; i < args.length; i++) {
-        if (args[i].startsWith("-D")) {
-          String[] property = args[i].split("=");
-          if (property.length < 2) {
-            System.setProperty(property[0], "");
-          } else {
-            System.setProperty(property[0], property[1]);
-          }
-        } else if (args[i].contains("--session") || args[i].contains("-s")) {
-          sessionModeCliOption = true;
-        }
-      }
 
       LOG.info("Creating RssDAGAppMaster for "
               + "applicationId=" + applicationAttemptId.getApplicationId()
@@ -428,5 +438,12 @@ public class RssDAGAppMaster extends DAGAppMaster {
     } catch (Exception e) {
       throw new RssException(e);
     }
+  }
+
+  private static void reconfigureLog4j() {
+    String configuratorClassName = OptionConverter.getSystemProperty(CONFIGURATOR_CLASS_KEY, null);
+    String configurationOptionStr = OptionConverter.getSystemProperty(DEFAULT_CONFIGURATION_KEY, null);
+    URL url = Loader.getResource(configurationOptionStr);
+    OptionConverter.selectAndConfigure(url, configuratorClassName, LogManager.getLoggerRepository());
   }
 }
