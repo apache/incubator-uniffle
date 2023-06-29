@@ -120,8 +120,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     final int requiredShuffleServerNumber = request.getAssignmentShuffleServerNumber();
     final int estimateTaskConcurrency = request.getEstimateTaskConcurrency();
 
-    LOG.info("Request of getShuffleAssignments for appId[{}], shuffleId[{}], partitionNum[{}], " +
-        " partitionNumPerRange[{}], replica[{}], requiredTags[{}], requiredShuffleServerNumber[{}]",
+    LOG.info("Request of getShuffleAssignments for appId[{}], shuffleId[{}], partitionNum[{}], "
+        + " partitionNumPerRange[{}], replica[{}], requiredTags[{}], requiredShuffleServerNumber[{}]",
         appId, shuffleId, partitionNum, partitionNumPerRange, replica,
         requiredTags, requiredShuffleServerNumber);
 
