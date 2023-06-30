@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.nio.charset.Charset;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hbase.thirdparty.javax.ws.rs.Consumes;
@@ -48,7 +49,7 @@ public class JsonConverter implements MessageBodyReader<Object>, MessageBodyWrit
   public void writeTo(Object t, Class<?> type, Type genericType, Annotation[] annotations,
                       MediaType mediaType, MultivaluedMap<String, Object> httpHeaders,
                       OutputStream entityStream) throws IOException, WebApplicationException {
-    objectMapper.writeValue(new OutputStreamWriter(entityStream), t);
+    objectMapper.writeValue(new OutputStreamWriter(entityStream, Charset.defaultCharset()), t);
   }
 
   public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations,
