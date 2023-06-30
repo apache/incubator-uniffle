@@ -22,23 +22,20 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Set;
 import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.exporter.common.TextFormat;
 import org.apache.hbase.thirdparty.javax.ws.rs.GET;
 import org.apache.hbase.thirdparty.javax.ws.rs.Path;
 import org.apache.hbase.thirdparty.javax.ws.rs.PathParam;
 import org.apache.hbase.thirdparty.javax.ws.rs.QueryParam;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 
-import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.exporter.common.TextFormat;
-
 import org.apache.uniffle.common.exception.InvalidRequestException;
 
 @Path("/prometheus/metrics")
 public class PrometheusMetricResource {
-  @Context
-  private HttpServletRequest httpRequest;
   @Context
   private HttpServletResponse httpServletResponse;
   @Context
