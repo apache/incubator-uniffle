@@ -146,8 +146,14 @@
       <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.owlike</groupId>
-      <artifactId>genson</artifactId>
+      <groupId>org.apache.hbase.thirdparty</groupId>
+      <artifactId>hbase-shaded-jersey</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.ws.rs</groupId>
+      <artifactId>jakarta.ws.rs-api</artifactId>
+      <version>2.1.6</version>
+      <scope>compile</scope>
     </dependency>
   </dependencies>
 

@@ -20,20 +20,17 @@ package org.apache.uniffle.coordinator.web.resource;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.hbase.thirdparty.javax.ws.rs.GET;
+import org.apache.hbase.thirdparty.javax.ws.rs.POST;
+import org.apache.hbase.thirdparty.javax.ws.rs.Path;
+import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
+import org.apache.hbase.thirdparty.javax.ws.rs.QueryParam;
+import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
+import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.coordinator.ClusterManager;
@@ -44,8 +41,6 @@ import org.apache.uniffle.coordinator.web.request.DecommissionRequest;
 
 @Produces({ MediaType.APPLICATION_JSON })
 public class ServerResource {
-  @Context
-  private HttpServletRequest httpRequest;
   @Context
   protected ServletContext servletContext;
 
@@ -61,24 +56,16 @@ public class ServerResource {
     } else {
       serverList = clusterManager.getServerList(Collections.emptySet());
     }
-    serverList = serverList.stream().filter(new Predicate<ServerNode>() {
-      @Override
-      public boolean test(ServerNode server) {
-        if (id != null && !id.equals(server.getId())) {
-          return false;
-        }
-        if (status != null && !server.getStatus().toString().equals(status)) {
-          return false;
-        }
-        return true;
+    serverList = serverList.stream().filter(server -> {
+      if (id != null && !id.equals(server.getId())) {
+        return false;
       }
+      if (status != null && !server.getStatus().toString().equals(status)) {
+        return false;
+      }
+      return true;
     }).collect(Collectors.toList());
-    serverList.sort(Comparator.comparing(new Function<ServerNode, String>() {
-      @Override
-      public String apply(ServerNode serverNode) {
-        return serverNode.getId();
-      }
-    }));
+    serverList.sort(Comparator.comparing(ServerNode::getId));
     return Response.success(serverList);
   }
 
@@ -91,9 +78,7 @@ public class ServerResource {
     }
     ClusterManager clusterManager = getClusterManager();
     try {
-      for (String serverId : params.getServerIds()) {
-        clusterManager.cancelDecommission(serverId);
-      }
+      params.getServerIds().forEach(clusterManager::cancelDecommission);
     } catch (Exception e) {
       return Response.fail(e.getMessage());
     }
@@ -109,9 +94,7 @@ public class ServerResource {
     }
     ClusterManager clusterManager = getClusterManager();
     try {
-      for (String serverId : params.getServerIds()) {
-        clusterManager.decommission(serverId);
-      }
+      params.getServerIds().forEach(clusterManager::decommission);
     } catch (Exception e) {
       return Response.fail(e.getMessage());
     }

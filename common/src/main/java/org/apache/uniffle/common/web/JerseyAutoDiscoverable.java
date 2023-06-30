@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.web.resource;
+package org.apache.uniffle.common.web;
 
-import org.apache.hbase.thirdparty.javax.ws.rs.Path;
-import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
-import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
+import javax.annotation.Priority;
 
-@Path("api")
-@Produces({ MediaType.APPLICATION_JSON })
-public class APIResource {
-  @Path("server")
-  public Class<ServerResource> getServerResource() {
-    return ServerResource.class;
-  }
+import org.apache.hbase.thirdparty.javax.ws.rs.core.Configuration;
+import org.apache.hbase.thirdparty.javax.ws.rs.core.FeatureContext;
+import org.apache.hbase.thirdparty.org.glassfish.jersey.internal.spi.AutoDiscoverable;
 
-  @Path("admin")
-  public Class<AdminResource> getAdminResource() {
-    return AdminResource.class;
+@Priority(AutoDiscoverable.DEFAULT_PRIORITY - 100)
+public class JerseyAutoDiscoverable implements AutoDiscoverable {
+  public void configure(FeatureContext context) {
+    Configuration config = context.getConfiguration();
+    if (!config.isRegistered(JsonConverter.class)) {
+      context.register(JsonConverter.class);
+    }
   }
 }
