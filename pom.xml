@@ -699,6 +699,11 @@
         <artifactId>hbase-shaded-jersey</artifactId>
         <version>${hbase.thirdparty.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.hbase.thirdparty</groupId>
+        <artifactId>hbase-shaded-jackson-jaxrs-json-provider</artifactId>
+        <version>${hbase.thirdparty.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 

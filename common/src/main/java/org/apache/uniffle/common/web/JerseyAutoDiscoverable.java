@@ -19,6 +19,7 @@ package org.apache.uniffle.common.web;
 
 import javax.annotation.Priority;
 
+import org.apache.hbase.thirdparty.com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.Configuration;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.FeatureContext;
 import org.apache.hbase.thirdparty.org.glassfish.jersey.internal.spi.AutoDiscoverable;
@@ -27,8 +28,8 @@ import org.apache.hbase.thirdparty.org.glassfish.jersey.internal.spi.AutoDiscove
 public class JerseyAutoDiscoverable implements AutoDiscoverable {
   public void configure(FeatureContext context) {
     Configuration config = context.getConfiguration();
-    if (!config.isRegistered(JsonConverter.class)) {
-      context.register(JsonConverter.class);
+    if (!config.isRegistered(JacksonJsonProvider.class)) {
+      context.register(JacksonJsonProvider.class);
     }
   }
 }
