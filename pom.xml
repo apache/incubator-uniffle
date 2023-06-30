@@ -55,7 +55,6 @@
     <javax.annotation.version>1.3.2</javax.annotation.version>
     <jetty.version>9.3.24.v20180605</jetty.version>
     <hbase.thirdparty.version>4.1.4</hbase.thirdparty.version>
-    <jersey.version>1.9</jersey.version>
     <junit.jupiter.version>5.8.2</junit.jupiter.version>
     <junit.platform.version>1.8.2</junit.platform.version>
     <system.stubs.version>2.0.1</system.stubs.version>
@@ -696,11 +695,6 @@
         <version>${jetty.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.sun.jersey</groupId>
-        <artifactId>jersey-bundle</artifactId>
-        <version>${jersey.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.apache.hbase.thirdparty</groupId>
         <artifactId>hbase-shaded-jersey</artifactId>
         <version>${hbase.thirdparty.version}</version>
@@ -1033,6 +1027,7 @@
             <exclude>DISCLAIMER-WIP</exclude>
             <exclude>NOTICE</exclude>
             <exclude>**/target/**</exclude>
+            <exclude>**/src/main/resources/META-INF/services/*</exclude>
             <exclude>src/test/resources/empty</exclude>
             <exclude>**/dependency-reduced-pom.xml</exclude>
             <exclude>.github/PULL_REQUEST_TEMPLATE</exclude>
