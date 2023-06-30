@@ -23,11 +23,8 @@ import java.security.PrivilegedExceptionAction;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.ipc.RPC;
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
@@ -38,22 +35,13 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
 
+import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS;
+import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT;
+
 public class UmbilicalUtils {
   private static final Logger LOG = LoggerFactory.getLogger(UmbilicalUtils.class);
 
   private UmbilicalUtils() {
-  }
-
-  /**
-   *
-   * @return Get Application Master host and port from config file
-   */
-  private static Pair<String, Integer> getAmHostPort() {
-    JobConf conf = new JobConf(RssTezConfig.RSS_CONF_FILE);
-    String host = conf.get(RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS, "null host");
-    int port = conf.getInt(RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT, -1);
-    LOG.info("Got RssConf am info, host is: {}, port is: {}", host, port);
-    return new ImmutablePair<>(host, port);
   }
 
   /**
@@ -74,8 +62,9 @@ public class UmbilicalUtils {
             int shuffleId) throws IOException, InterruptedException, TezException {
     UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(applicationId.toString());
 
-    Pair<String, Integer> amHostPort = getAmHostPort();
-    final InetSocketAddress address = NetUtils.createSocketAddrForHost(amHostPort.getLeft(), amHostPort.getRight());
+    String host = conf.get(RSS_AM_SHUFFLE_MANAGER_ADDRESS);
+    int port = conf.getInt(RSS_AM_SHUFFLE_MANAGER_PORT, -1);
+    final InetSocketAddress address = NetUtils.createSocketAddrForHost(host, port);
     TezRemoteShuffleUmbilicalProtocol umbilical = taskOwner
         .doAs(new PrivilegedExceptionAction<TezRemoteShuffleUmbilicalProtocol>() {
           @Override
@@ -92,7 +81,7 @@ public class UmbilicalUtils {
         .getShuffleAssignmentsInfo()
         .getPartitionToServers();
     LOG.info("RequestShuffleServer applicationId:{}, taskAttemptId:{}, host:{}, port:{}, shuffleId:{}, worker:{}",
-        applicationId, taskAttemptId, amHostPort.getLeft(), amHostPort.getRight(), shuffleId, partitionToServers);
+        applicationId, taskAttemptId, host, port, shuffleId, partitionToServers);
     return partitionToServers;
   }
 

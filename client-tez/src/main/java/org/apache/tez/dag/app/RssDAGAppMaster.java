@@ -17,10 +17,9 @@
 
 package org.apache.tez.dag.app;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
@@ -29,12 +28,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.mapreduce.JobSubmissionFiles;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.ShutdownHookManager;
@@ -42,7 +35,6 @@ import org.apache.hadoop.yarn.YarnUncaughtExceptionHandler;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
-import org.apache.hadoop.yarn.api.records.LocalResource;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.ConverterUtils;
@@ -54,13 +46,12 @@ import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.common.TezClassLoader;
 import org.apache.tez.common.TezCommonUtils;
+import org.apache.tez.common.TezUtils;
 import org.apache.tez.common.TezUtilsInternal;
 import org.apache.tez.common.VersionInfo;
 import org.apache.tez.dag.api.InputDescriptor;
 import org.apache.tez.dag.api.OutputDescriptor;
-import org.apache.tez.dag.api.TezConfiguration;
 import org.apache.tez.dag.api.TezConstants;
-import org.apache.tez.dag.api.TezException;
 import org.apache.tez.dag.api.TezUncheckedException;
 import org.apache.tez.dag.api.records.DAGProtos;
 import org.apache.tez.dag.api.records.DAGProtos.AMPluginDescriptorProto;
@@ -80,15 +71,15 @@ import org.apache.uniffle.common.util.ThreadUtils;
 
 import static org.apache.log4j.LogManager.CONFIGURATOR_CLASS_KEY;
 import static org.apache.log4j.LogManager.DEFAULT_CONFIGURATION_KEY;
-import static org.apache.tez.common.TezCommonUtils.TEZ_SYSTEM_SUB_DIR;
+import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS;
+import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT;
 
 public class RssDAGAppMaster extends DAGAppMaster {
   private static final Logger LOG = LoggerFactory.getLogger(RssDAGAppMaster.class);
   private ShuffleWriteClient shuffleWriteClient;
   private TezRemoteShuffleManager tezRemoteShuffleManager;
-  private static final String rssConfFileLocalResourceName = "rss_conf.xml";
+  private Map<String, String> clusterClientConf;
 
-  private DAGProtos.PlanLocalResource rssConfFileLocalResource;
   final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
           ThreadUtils.getThreadFactory("AppHeartbeat")
   );
@@ -99,6 +90,12 @@ public class RssDAGAppMaster extends DAGAppMaster {
           Credentials credentials, String jobUserName, AMPluginDescriptorProto pluginDescriptorProto) {
     super(applicationAttemptId, containerId, nmHost, nmPort, nmHttpPort, clock, appSubmitTime, isSession,
             workingDirectory, localDirs, logDirs, clientVersion, credentials, jobUserName, pluginDescriptorProto);
+  }
+
+  @Override
+  public synchronized void serviceInit(Configuration conf) throws Exception {
+    super.serviceInit(conf);
+    initAndStartRSSClient(this, conf);
   }
 
   public ShuffleWriteClient getShuffleWriteClient() {
@@ -117,15 +114,17 @@ public class RssDAGAppMaster extends DAGAppMaster {
     this.tezRemoteShuffleManager = tezRemoteShuffleManager;
   }
 
+  public Map<String, String> getClusterClientConf() {
+    return clusterClientConf;
+  }
+
   /**
    * Init and Start Rss Client
    * @param appMaster
    * @param conf
-   * @param applicationAttemptId
    * @throws Exception
    */
-  public static void initAndStartRSSClient(final RssDAGAppMaster appMaster, Configuration conf,
-          ApplicationAttemptId applicationAttemptId) throws Exception {
+  public static void initAndStartRSSClient(final RssDAGAppMaster appMaster, Configuration conf) throws Exception {
 
     ShuffleWriteClient client = RssTezUtils.createShuffleClient(conf);
     appMaster.setShuffleWriteClient(client);
@@ -134,7 +133,7 @@ public class RssDAGAppMaster extends DAGAppMaster {
     LOG.info("Registering coordinators {}", coordinators);
     client.registerCoordinators(coordinators);
 
-    String strAppAttemptId = applicationAttemptId.toString();
+    String strAppAttemptId = appMaster.getAttemptID().toString();
     long heartbeatInterval = conf.getLong(RssTezConfig.RSS_HEARTBEAT_INTERVAL,
             RssTezConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
     long heartbeatTimeout = conf.getLong(RssTezConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
@@ -158,15 +157,13 @@ public class RssDAGAppMaster extends DAGAppMaster {
     appMaster.getTezRemoteShuffleManager().initialize();
     appMaster.getTezRemoteShuffleManager().start();
 
-    TezConfiguration extraConf = new TezConfiguration(false);
-    extraConf.clear();
-
-    String strAppId = applicationAttemptId.getApplicationId().toString();
-    extraConf.set(RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS,
-            appMaster.getTezRemoteShuffleManager().address.getHostName());
-    extraConf.setInt(RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT,
-            appMaster.getTezRemoteShuffleManager().address.getPort());
-    writeExtraConf(appMaster, conf, extraConf, strAppId);
+    // apply dynamic configuration
+    boolean dynamicConfEnabled = conf.getBoolean(RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
+        RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
+    if (dynamicConfEnabled) {
+      appMaster.clusterClientConf = client.fetchClientConf(
+          conf.getInt(RssTezConfig.RSS_ACCESS_TIMEOUT_MS, RssTezConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
+    }
 
     mayCloseTezSlowStart(conf);
   }
@@ -174,50 +171,8 @@ public class RssDAGAppMaster extends DAGAppMaster {
   @Override
   protected DAG createDAG(DAGProtos.DAGPlan dagPB) {
     DAGImpl dag = createDAG(dagPB, null);
-    registerStateEnteredCallback(dag);
+    registerStateEnteredCallback(dag, this);
     return dag;
-  }
-
-  @Override
-  public String submitDAGToAppMaster(DAGProtos.DAGPlan dagPlan, Map<String, LocalResource> additionalResources)
-          throws TezException {
-
-    addAdditionalResource(dagPlan, getRssConfFileLocalResource());
-
-    return super.submitDAGToAppMaster(dagPlan, additionalResources);
-  }
-
-  public DAGProtos.PlanLocalResource getRssConfFileLocalResource() {
-    return rssConfFileLocalResource;
-  }
-
-  public static void addAdditionalResource(DAGProtos.DAGPlan dagPlan, DAGProtos.PlanLocalResource additionalResource)
-          throws TezException {
-    List<DAGProtos.PlanLocalResource> planLocalResourceList = dagPlan.getLocalResourceList();
-
-    if (planLocalResourceList == null) {
-      LOG.warn("planLocalResourceList is null, add new list");
-      planLocalResourceList = new ArrayList<>();
-    } else {
-      planLocalResourceList = new ArrayList<>(planLocalResourceList);
-    }
-
-    try {
-      planLocalResourceList.add(additionalResource);
-      Field field = DAGProtos.DAGPlan.class.getDeclaredField("localResource_");
-      field.setAccessible(true);
-      field.set(dagPlan, planLocalResourceList);
-      field.setAccessible(false);
-    } catch (Exception e) {
-      LOG.error("submitDAGToAppMaster reflect error", e);
-      throw new TezException(e.getMessage());
-    }
-
-    if (LOG.isDebugEnabled()) {
-      for (DAGProtos.PlanLocalResource localResource : dagPlan.getLocalResourceList()) {
-        LOG.debug("localResource: {}", localResource.toString());
-      }
-    }
   }
 
   /**
@@ -321,42 +276,10 @@ public class RssDAGAppMaster extends DAGAppMaster {
         }
       }
 
-      initAndStartRSSClient(appMaster, conf, applicationAttemptId);
       initAndStartAppMaster(appMaster, conf);
     } catch (Throwable t) {
       LOG.error("Error starting RssDAGAppMaster", t);
       System.exit(1);
-    }
-  }
-
-  static void writeExtraConf(final RssDAGAppMaster appMaster, Configuration conf,
-          TezConfiguration extraConf, String strAppId) {
-    try {
-      Path baseStagingPath = TezCommonUtils.getTezBaseStagingPath(conf);
-      Path tezStagingDir = new Path(new Path(baseStagingPath, TEZ_SYSTEM_SUB_DIR), strAppId);
-
-      FileSystem fs = tezStagingDir.getFileSystem(conf);
-      Path rssConfFilePath = new Path(tezStagingDir, RssTezConfig.RSS_CONF_FILE);
-
-      try (FSDataOutputStream out =
-                   FileSystem.create(fs, rssConfFilePath,
-                           new FsPermission(JobSubmissionFiles.JOB_FILE_PERMISSION))) {
-        extraConf.writeXml(out);
-      }
-      FileStatus rsrcStat = fs.getFileStatus(rssConfFilePath);
-
-      appMaster.rssConfFileLocalResource = DAGProtos.PlanLocalResource.newBuilder()
-              .setName(appMaster.rssConfFileLocalResourceName)
-              .setUri(rsrcStat.getPath().toString())
-              .setSize(rsrcStat.getLen())
-              .setTimeStamp(rsrcStat.getModificationTime())
-              .setType(DAGProtos.PlanLocalResourceType.FILE)
-              .setVisibility(DAGProtos.PlanLocalResourceVisibility.APPLICATION)
-              .build();
-      LOG.info("Upload extra conf success!");
-    } catch (Exception e) {
-      LOG.error("Upload extra conf exception!", e);
-      throw new RssException("Upload extra conf exception ", e);
     }
   }
 
@@ -395,21 +318,41 @@ public class RssDAGAppMaster extends DAGAppMaster {
   }
 
   @VisibleForTesting
-  public static void registerStateEnteredCallback(DAGImpl dag) {
-    StateMachineTez
-        stateMachine = (StateMachineTez) getPrivateField(dag, "stateMachine");
-    stateMachine.registerStateEnteredCallback(DAGState.INITED, new DagInitialCallback());
+  public static void registerStateEnteredCallback(DAGImpl dag, RssDAGAppMaster appMaster) {
+    StateMachineTez stateMachine = (StateMachineTez) getPrivateField(dag, "stateMachine");
+    stateMachine.registerStateEnteredCallback(DAGState.INITED, new DagInitialCallback(appMaster));
   }
 
   static class DagInitialCallback implements OnStateChangedCallback<DAGState, DAGImpl> {
 
+    private RssDAGAppMaster appMaster;
+    
+    DagInitialCallback(RssDAGAppMaster appMaster) {
+      this.appMaster = appMaster;
+    } 
+
     @Override
     public void onStateChanged(DAGImpl dag, DAGState dagState) {
       try {
+        // get rss config from client
+        Configuration filterRssConf = RssTezUtils.filterRssConf(appMaster.getConfig());
         Map<String, Edge> edges = (Map<String, Edge>) getPrivateField(dag, "edges");
         for (Map.Entry<String, Edge> entry : edges.entrySet()) {
           Edge edge = entry.getValue();
 
+          // add user defined config to edge source conf
+          Configuration edgeSourceConf =
+              TezUtils.createConfFromUserPayload(edge.getEdgeProperty().getEdgeSource().getUserPayload());
+          edgeSourceConf.set(RSS_AM_SHUFFLE_MANAGER_ADDRESS,
+              this.appMaster.getTezRemoteShuffleManager().getAddress().getHostName());
+          edgeSourceConf.setInt(RSS_AM_SHUFFLE_MANAGER_PORT,
+              this.appMaster.getTezRemoteShuffleManager().getAddress().getPort());
+          edgeSourceConf.addResource(filterRssConf);
+          RssTezUtils.applyDynamicClientConf(edgeSourceConf, this.appMaster.getClusterClientConf());
+          edge.getEdgeProperty().getEdgeSource()
+              .setUserPayload(TezUtils.createUserPayloadFromConf(edgeSourceConf));
+
+          // rename output class name
           OutputDescriptor outputDescriptor = edge.getEdgeProperty().getEdgeSource();
           Field outputClassNameField = outputDescriptor.getClass().getSuperclass().getDeclaredField("className");
           outputClassNameField.setAccessible(true);
@@ -417,6 +360,19 @@ public class RssDAGAppMaster extends DAGAppMaster {
           String rssOutputClassName = RssTezUtils.replaceRssOutputClassName(outputClassName);
           outputClassNameField.set(outputDescriptor, rssOutputClassName);
 
+          // add user defined config to edge destination conf
+          Configuration edgeDestinationConf =
+              TezUtils.createConfFromUserPayload(edge.getEdgeProperty().getEdgeSource().getUserPayload());
+          edgeDestinationConf.set(RSS_AM_SHUFFLE_MANAGER_ADDRESS,
+              this.appMaster.getTezRemoteShuffleManager().getAddress().getHostName());
+          edgeDestinationConf.setInt(RSS_AM_SHUFFLE_MANAGER_PORT,
+              this.appMaster.getTezRemoteShuffleManager().getAddress().getPort());
+          edgeDestinationConf.addResource(filterRssConf);
+          RssTezUtils.applyDynamicClientConf(edgeDestinationConf, this.appMaster.getClusterClientConf());
+          edge.getEdgeProperty().getEdgeDestination()
+              .setUserPayload(TezUtils.createUserPayloadFromConf(edgeDestinationConf));
+
+          // rename input class name
           InputDescriptor inputDescriptor = edge.getEdgeProperty().getEdgeDestination();
           Field inputClassNameField = outputDescriptor.getClass().getSuperclass().getDeclaredField("className");
           inputClassNameField.setAccessible(true);
@@ -424,7 +380,8 @@ public class RssDAGAppMaster extends DAGAppMaster {
           String rssInputClassName = RssTezUtils.replaceRssInputClassName(inputClassName);
           outputClassNameField.set(inputDescriptor, rssInputClassName);
         }
-      } catch (Exception e) {
+      } catch (IOException | IllegalAccessException | NoSuchFieldException e) {
+        LOG.error("Reconfigure failed after dag was inited, caused by {}", e);
         throw new TezUncheckedException(e);
       }
     }

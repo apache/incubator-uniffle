@@ -393,4 +393,40 @@ public class RssTezUtils {
       return className;
     }
   }
+
+  public static void applyDynamicClientConf(Configuration conf, Map<String, String> confItems) {
+    if (conf == null) {
+      LOG.warn("Tez conf is null");
+      return;
+    }
+
+    if (confItems == null || confItems.isEmpty()) {
+      LOG.warn("Empty conf items");
+      return;
+    }
+
+    for (Map.Entry<String, String> kv : confItems.entrySet()) {
+      String tezConfKey = kv.getKey();
+      if (!tezConfKey.startsWith(RssTezConfig.TEZ_RSS_CONFIG_PREFIX)) {
+        tezConfKey = RssTezConfig.TEZ_RSS_CONFIG_PREFIX + tezConfKey;
+      }
+      String tezConfVal = kv.getValue();
+      if (StringUtils.isEmpty(conf.get(tezConfKey, ""))
+          || RssTezConfig.RSS_MANDATORY_CLUSTER_CONF.contains(tezConfKey)) {
+        LOG.warn("Use conf dynamic conf {} = {}", tezConfKey, tezConfVal);
+        conf.set(tezConfKey, tezConfVal);
+      }
+    }
+  }
+
+  public static Configuration filterRssConf(Configuration extraConf) {
+    Configuration conf = new Configuration();
+    for (Map.Entry<String, String> entry : extraConf) {
+      String key = entry.getKey();
+      if (key.startsWith(RssTezConfig.TEZ_RSS_CONFIG_PREFIX)) {
+        conf.set(entry.getKey(), entry.getValue());
+      }
+    }
+    return conf;
+  }
 }

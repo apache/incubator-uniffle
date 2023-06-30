@@ -17,13 +17,16 @@
 
 package org.apache.tez.dag.app;
 
-import java.util.ArrayList;
+import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
@@ -31,6 +34,7 @@ import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.tez.common.AsyncDispatcher;
+import org.apache.tez.common.TezUtils;
 import org.apache.tez.common.security.ACLManager;
 import org.apache.tez.dag.api.DAG;
 import org.apache.tez.dag.api.DataSourceDescriptor;
@@ -41,13 +45,12 @@ import org.apache.tez.dag.api.EdgeManagerPluginOnDemand;
 import org.apache.tez.dag.api.InputDescriptor;
 import org.apache.tez.dag.api.InputInitializerDescriptor;
 import org.apache.tez.dag.api.ProcessorDescriptor;
-import org.apache.tez.dag.api.TezException;
+import org.apache.tez.dag.api.UserPayload;
 import org.apache.tez.dag.api.Vertex;
 import org.apache.tez.dag.api.records.DAGProtos;
 import org.apache.tez.dag.app.dag.DAGState;
 import org.apache.tez.dag.app.dag.event.DAGEvent;
 import org.apache.tez.dag.app.dag.event.DAGEventType;
-import org.apache.tez.dag.app.dag.impl.AMUserCodeException;
 import org.apache.tez.dag.app.dag.impl.DAGImpl;
 import org.apache.tez.dag.history.HistoryEventHandler;
 import org.apache.tez.dag.records.TezDAGID;
@@ -69,8 +72,12 @@ import org.apache.tez.runtime.library.processor.SimpleProcessor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.storage.util.StorageType;
+
+import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS;
+import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT;
+import static org.apache.tez.common.RssTezConfig.RSS_STORAGE_TYPE;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -78,37 +85,7 @@ import static org.mockito.Mockito.when;
 public class RssDAGAppMasterTest {
 
   @Test
-  public void testAddAdditionalResource() throws TezException {
-    DAGProtos.DAGPlan dagPlan = DAGProtos.DAGPlan.getDefaultInstance();
-    List<DAGProtos.PlanLocalResource> originalResources = dagPlan.getLocalResourceList();
-    if (originalResources == null) {
-      originalResources = new ArrayList<>();
-    } else {
-      originalResources = new ArrayList<>(originalResources);
-    }
-
-    DAGProtos.PlanLocalResource additionalResource = DAGProtos.PlanLocalResource.newBuilder()
-            .setName("rss_conf.xml")
-            .setUri("/data1/test")
-            .setSize(12)
-            .setTimeStamp(System.currentTimeMillis())
-            .setType(DAGProtos.PlanLocalResourceType.FILE)
-            .setVisibility(DAGProtos.PlanLocalResourceVisibility.APPLICATION)
-            .build();
-
-    RssDAGAppMaster.addAdditionalResource(dagPlan, additionalResource);
-    List<DAGProtos.PlanLocalResource> newResources = dagPlan.getLocalResourceList();
-
-    originalResources.add(additionalResource);
-
-    assertEquals(originalResources.size(), newResources.size());
-    for (int i = 0; i < originalResources.size(); i++) {
-      assertEquals(originalResources.get(i), newResources.get(i));
-    }
-  }
-
-  @Test
-  public void testRenameRssIOClassName() throws Exception {
+  public void testHookAfterDagInited() throws Exception {
     // 1 Init and mock some basic module
     AppContext appContext = mock(AppContext.class);
     ApplicationAttemptId appAttemptId = ApplicationAttemptId.newInstance(ApplicationId.newInstance(1, 1), 1);
@@ -122,6 +99,20 @@ public class RssDAGAppMasterTest {
     doReturn(historyEventHandler).when(appContext).getHistoryHandler();
     ACLManager aclManager = new ACLManager("amUser");
     doReturn(aclManager).when(appContext).getAMACLManager();
+    RssDAGAppMaster appMaster = mock(RssDAGAppMaster.class);
+    TezRemoteShuffleManager shuffleManager = mock(TezRemoteShuffleManager.class);
+    InetSocketAddress address = NetUtils.createSocketAddrForHost("host", 0);
+    when(shuffleManager.getAddress()).thenReturn(address);
+    when(appMaster.getTezRemoteShuffleManager()).thenReturn(shuffleManager);
+    Configuration clientConf = new Configuration(false);
+    clientConf.set(RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    clientConf.set("tez.config1", "value1");
+    clientConf.set("config2", "value2");
+    Map<String, String> dynamicConf = new HashMap();
+    dynamicConf.put(RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    dynamicConf.put("tez.config3", "value3");
+    when(appMaster.getClusterClientConf()).thenReturn(dynamicConf);
+    when(appMaster.getConfig()).thenReturn(clientConf);
 
     // 2 init dispatcher
     AsyncDispatcher dispatcher = new AsyncDispatcher("core");
@@ -136,7 +127,7 @@ public class RssDAGAppMasterTest {
     when(appContext.getCurrentDAG()).thenReturn(dagImpl);
 
     // 4 register call back function
-    RssDAGAppMaster.registerStateEnteredCallback(dagImpl);
+    RssDAGAppMaster.registerStateEnteredCallback(dagImpl, appMaster);
 
     // 5 register DAGEvent, init and start dispatcher
     EventHandler<DAGEvent> dagEventDispatcher = new EventHandler<DAGEvent>() {
@@ -164,16 +155,38 @@ public class RssDAGAppMasterTest {
     verfiyInput(dagImpl, "vertex4", RssUnorderedKVInput.class.getName());
   }
 
-  public static void verfiyInput(DAGImpl dag, String name, String expectedInputClassName) throws AMUserCodeException {
+  public static void verfiyInput(DAGImpl dag, String name, String expectedInputClassName) throws Exception {
+    // 1 verfiy rename rss io class name
     List<InputSpec> inputSpecs = dag.getVertex(name).getInputSpecList(0);
     Assertions.assertEquals(1, inputSpecs.size());
     Assertions.assertEquals(expectedInputClassName, inputSpecs.get(0).getInputDescriptor().getClassName());
+    // 2 verfiy the address and port of shuffle manager 
+    UserPayload payload = inputSpecs.get(0).getInputDescriptor().getUserPayload();
+    Configuration conf = TezUtils.createConfFromUserPayload(payload);
+    Assertions.assertEquals("host", conf.get(RSS_AM_SHUFFLE_MANAGER_ADDRESS));
+    Assertions.assertEquals(0, conf.getInt(RSS_AM_SHUFFLE_MANAGER_PORT, -1));
+    // 3 verfiy the config
+    Assertions.assertEquals(StorageType.LOCALFILE.name(), conf.get(RSS_STORAGE_TYPE));
+    Assertions.assertEquals("value1", conf.get("tez.config1"));
+    Assertions.assertEquals("value3", conf.get("tez.config3"));
+    Assertions.assertNull(conf.get("tez.config2"));
   }
 
-  public static void verfiyOutput(DAGImpl dag, String name, String expectedOutputClassName) throws AMUserCodeException {
+  public static void verfiyOutput(DAGImpl dag, String name, String expectedOutputClassName) throws Exception {
+    // 1 verfiy rename rss io class name
     List<OutputSpec> outputSpecs = dag.getVertex(name).getOutputSpecList(0);
     Assertions.assertEquals(1, outputSpecs.size());
     Assertions.assertEquals(expectedOutputClassName, outputSpecs.get(0).getOutputDescriptor().getClassName());
+    // 2 verfiy the address and port of shuffle manager
+    UserPayload payload = outputSpecs.get(0).getOutputDescriptor().getUserPayload();
+    Configuration conf = TezUtils.createConfFromUserPayload(payload);
+    Assertions.assertEquals("host", conf.get(RSS_AM_SHUFFLE_MANAGER_ADDRESS));
+    Assertions.assertEquals(0, conf.getInt(RSS_AM_SHUFFLE_MANAGER_PORT, -1));
+    // 3 verfiy the config
+    Assertions.assertEquals(StorageType.LOCALFILE.name(), conf.get(RSS_STORAGE_TYPE));
+    Assertions.assertEquals("value1", conf.get("tez.config1"));
+    Assertions.assertEquals("value3", conf.get("tez.config3"));
+    Assertions.assertNull(conf.get("tez.config2"));
   }
 
   private static DAG createDAG(String dageName, Configuration conf) {
