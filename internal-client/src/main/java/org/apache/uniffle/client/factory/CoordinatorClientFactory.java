@@ -35,7 +35,15 @@ public class CoordinatorClientFactory {
 
   private ClientType clientType;
 
-  public CoordinatorClientFactory(ClientType clientType) {
+  private static class LazyHolder {
+    static final CoordinatorClientFactory INSTANCE = new CoordinatorClientFactory();
+  }
+
+  public static CoordinatorClientFactory getInstance() {
+    return LazyHolder.INSTANCE;
+  }
+
+  public void setCoordinatorClientType(ClientType clientType) {
     this.clientType = clientType;
   }
 

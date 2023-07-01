@@ -172,12 +172,12 @@ public class AccessClusterTest extends CoordinatorTestBase {
     shuffleServer.start();
     Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
 
-    CoordinatorClient client =
-        new CoordinatorClientFactory(ClientType.GRPC)
-            .createCoordinatorClient(LOCALHOST, COORDINATOR_PORT_1 + 13);
-    request =
-        new RssAccessClusterRequest(
-            accessId, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, "user");
+    CoordinatorClientFactory coordinatorClientFactory = CoordinatorClientFactory.getInstance();
+    coordinatorClientFactory.setCoordinatorClientType(ClientType.GRPC);
+    CoordinatorClient client = coordinatorClientFactory.createCoordinatorClient(LOCALHOST, COORDINATOR_PORT_1 + 13);
+
+    request = new RssAccessClusterRequest(accessId,
+        Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, "user");
     response = client.accessCluster(request);
     assertEquals(StatusCode.INTERNAL_ERROR, response.getStatusCode());
     assertTrue(response.getMessage().startsWith("UNAVAILABLE: io exception"));

@@ -57,8 +57,8 @@ public class RegisterHeartBeat {
     this.heartBeatInitialDelay = conf.getLong(ShuffleServerConf.SERVER_HEARTBEAT_DELAY);
     this.heartBeatInterval = conf.getLong(ShuffleServerConf.SERVER_HEARTBEAT_INTERVAL);
     this.coordinatorQuorum = conf.getString(ShuffleServerConf.RSS_COORDINATOR_QUORUM);
-    CoordinatorClientFactory factory =
-        new CoordinatorClientFactory(conf.get(ShuffleServerConf.RSS_CLIENT_TYPE));
+    CoordinatorClientFactory factory = CoordinatorClientFactory.getInstance();
+    factory.setCoordinatorClientType(conf.get(ShuffleServerConf.RSS_CLIENT_TYPE));
     this.coordinatorClients = factory.createCoordinatorClient(this.coordinatorQuorum);
     this.shuffleServer = shuffleServer;
     this.heartBeatExecutorService =

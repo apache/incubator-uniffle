@@ -161,9 +161,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     this.clientType = clientType;
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
-    this.coordinatorClientFactory = new CoordinatorClientFactory(ClientType.valueOf(clientType));
-    this.heartBeatExecutorService =
-        ThreadUtils.getDaemonFixedThreadPool(heartBeatThreadNum, "client-heartbeat");
+    this.coordinatorClientFactory = CoordinatorClientFactory.getInstance();
+    coordinatorClientFactory.setCoordinatorClientType(ClientType.valueOf(clientType));
+    this.heartBeatExecutorService = ThreadUtils.getDaemonFixedThreadPool(heartBeatThreadNum, "client-heartbeat");
     this.replica = replica;
     this.replicaWrite = replicaWrite;
     this.replicaRead = replicaRead;
