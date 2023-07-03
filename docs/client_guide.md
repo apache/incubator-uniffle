@@ -110,7 +110,7 @@ In development mode, you can append client jar (rss-client-tez-XXXXX-shaded.jar)
 | Property Name              |Default| Description                  |
 |----------------------------|---|------------------------------|
 | tez.am.launch.cmd-opts     |-XX:+PrintGCDetails -verbose:gc -XX:+PrintGCTimeStamps -XX:+UseNUMA -XX:+UseParallelGC org.apache.tez.dag.app.RssDAGAppMaster| enable remote shuffle service |
-| tez.rss.coordinator.quorum |<coordinatorIp1>:19999,<coordinatorIp2>:19999|coordinator address|
+| tez.rss.coordinator.quorum |coordinatorIp1:19999,coordinatorIp2:19999|coordinator address|
 
 Note that the RssDAGAppMaster will automatically disable slow start (i.e., `tez.shuffle-vertex-manager.min-src-fraction=1`, `tez.shuffle-vertex-manager.max-src-fraction=1`).
 
