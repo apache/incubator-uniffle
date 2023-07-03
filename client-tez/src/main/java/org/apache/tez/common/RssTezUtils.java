@@ -420,7 +420,7 @@ public class RssTezUtils {
   }
 
   public static Configuration filterRssConf(Configuration extraConf) {
-    Configuration conf = new Configuration();
+    Configuration conf = new Configuration(false);
     for (Map.Entry<String, String> entry : extraConf) {
       String key = entry.getKey();
       if (key.startsWith(RssTezConfig.TEZ_RSS_CONFIG_PREFIX)) {
