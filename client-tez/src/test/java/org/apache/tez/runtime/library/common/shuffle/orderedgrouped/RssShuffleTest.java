@@ -34,6 +34,10 @@ import org.apache.tez.common.counters.TezCounters;
 import org.apache.tez.common.security.JobTokenIdentifier;
 import org.apache.tez.common.security.JobTokenSecretManager;
 import org.apache.tez.dag.api.TezConfiguration;
+import org.apache.tez.dag.records.TezDAGID;
+import org.apache.tez.dag.records.TezTaskAttemptID;
+import org.apache.tez.dag.records.TezTaskID;
+import org.apache.tez.dag.records.TezVertexID;
 import org.apache.tez.runtime.api.ExecutionContext;
 import org.apache.tez.runtime.api.InputContext;
 import org.apache.tez.runtime.api.TaskFailureType;
@@ -86,7 +90,7 @@ public class RssShuffleTest {
         InputContext inputContext = createTezInputContext();
         TezConfiguration conf = new TezConfiguration();
         conf.setLong(Constants.TEZ_RUNTIME_TASK_MEMORY, 300000L);
-        RssShuffle shuffle = new RssShuffle(inputContext, conf, 1, 3000000L);
+        RssShuffle shuffle = new RssShuffle(inputContext, conf, 1, 3000000L, 0);
         try {
           shuffle.run();
           ShuffleScheduler scheduler = shuffle.rssScheduler;
@@ -127,7 +131,7 @@ public class RssShuffleTest {
         InputContext inputContext = createTezInputContext();
         TezConfiguration conf = new TezConfiguration();
         conf.setLong(Constants.TEZ_RUNTIME_TASK_MEMORY, 300000L);
-        RssShuffle shuffle = new RssShuffle(inputContext, conf, 1, 3000000L);
+        RssShuffle shuffle = new RssShuffle(inputContext, conf, 1, 3000000L, 0);
         try {
           shuffle.run();
           ShuffleScheduler scheduler = shuffle.rssScheduler;
@@ -160,6 +164,9 @@ public class RssShuffleTest {
     doReturn(applicationId).when(inputContext).getApplicationId();
     doReturn("Map 1").when(inputContext).getSourceVertexName();
     doReturn("Reducer 1").when(inputContext).getTaskVertexName();
+    String uniqueId = String.format("%s_%05d", TezTaskAttemptID.getInstance(
+        TezTaskID.getInstance(TezVertexID.getInstance(TezDAGID.getInstance(applicationId, 1), 1), 1), 1), 1);
+    doReturn(uniqueId).when(inputContext).getUniqueIdentifier();
     when(inputContext.getCounters()).thenReturn(new TezCounters());
     ExecutionContext executionContext = new ExecutionContextImpl("localhost");
     doReturn(executionContext).when(inputContext).getExecutionContext();

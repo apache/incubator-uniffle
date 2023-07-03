@@ -65,6 +65,8 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 
 import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS;
 import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT;
+import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_DESTINATION_VERTEX_ID;
+import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
 
 /**
  * {@link RssUnorderedPartitionedKVOutput} is an {@link AbstractLogicalOutput} which
@@ -132,7 +134,7 @@ public class RssUnorderedPartitionedKVOutput extends AbstractLogicalOutput {
     final InetSocketAddress address = NetUtils.createSocketAddrForHost(host, port);
 
     UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(this.applicationId.toString());
-    TezRemoteShuffleUmbilicalProtocol umbilical = taskOwner
+    final TezRemoteShuffleUmbilicalProtocol umbilical = taskOwner
         .doAs(new PrivilegedExceptionAction<TezRemoteShuffleUmbilicalProtocol>() {
           @Override
           public TezRemoteShuffleUmbilicalProtocol run() throws Exception {
@@ -144,7 +146,11 @@ public class RssUnorderedPartitionedKVOutput extends AbstractLogicalOutput {
         });
     TezVertexID tezVertexID = taskAttemptId.getTaskID().getVertexID();
     TezDAGID tezDAGID = tezVertexID.getDAGId();
-    this.shuffleId = RssTezUtils.computeShuffleId(tezDAGID.getId(), this.taskVertexName, this.destinationVertexName);
+    int sourceVertexId = this.conf.getInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, -1);
+    int destinationVertexId = this.conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1);
+    assert sourceVertexId != -1;
+    assert destinationVertexId != -1;
+    this.shuffleId = RssTezUtils.computeShuffleId(tezDAGID.getId(), sourceVertexId, destinationVertexId);
     GetShuffleServerRequest request = new GetShuffleServerRequest(this.taskAttemptId, this.mapNum,
         this.numOutputs, this.shuffleId);
     GetShuffleServerResponse response = umbilical.getShuffleAssignments(request);

@@ -39,6 +39,8 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_DESTINATION_VERTEX_ID;
+import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -86,6 +88,8 @@ public class RssOrderedGroupedKVInputTest {
     doReturn(executionContext).when(inputContext).getExecutionContext();
 
     Configuration conf = new TezConfiguration();
+    conf.setInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, 1);
+    conf.setInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, 2);
     UserPayload payLoad = TezUtils.createUserPayloadFromConf(conf);
     String[] workingDirs = new String[]{"workDir1"};
     TezCounters counters = new TezCounters();

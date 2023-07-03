@@ -147,9 +147,9 @@ public class RssTezUtilsTest {
   @Test
   public void testComputeShuffleId() {
     int dagId = 1;
-    String upVertexName = "Map 1";
-    String downVertexName = "Reducer 2";
-    assertEquals(1001602, RssTezUtils.computeShuffleId(dagId, upVertexName, downVertexName));
+    int upVertexId  = 1;
+    int downVertexID = 2;
+    assertEquals(1001002, RssTezUtils.computeShuffleId(dagId, upVertexId, downVertexID));
   }
 
   @Test

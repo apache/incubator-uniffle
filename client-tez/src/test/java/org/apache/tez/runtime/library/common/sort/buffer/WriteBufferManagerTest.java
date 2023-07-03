@@ -83,7 +83,7 @@ public class WriteBufferManagerTest {
     long sendCheckInterval = 500L;
     long sendCheckTimeout = 5;
     int bitmapSplitNum = 1;
-    int shuffleId = getShuffleId(tezTaskAttemptID, "Map 1", "Reducer 2");
+    int shuffleId = getShuffleId(tezTaskAttemptID, 1, 2);
 
     WriteBufferManager<BytesWritable, BytesWritable> bufferManager =
         new WriteBufferManager(tezTaskAttemptID, maxMemSize, appId,
@@ -138,7 +138,7 @@ public class WriteBufferManagerTest {
     long sendCheckInterval = 500L;
     long sendCheckTimeout = 60 * 1000 * 10L;
     int bitmapSplitNum = 1;
-    int shuffleId = getShuffleId(tezTaskAttemptID, "Map 1", "Reducer 2");
+    int shuffleId = getShuffleId(tezTaskAttemptID, 1, 2);
 
     WriteBufferManager<BytesWritable, BytesWritable> bufferManager =
         new WriteBufferManager(tezTaskAttemptID, maxMemSize, appId,
@@ -200,7 +200,7 @@ public class WriteBufferManagerTest {
     long sendCheckInterval = 500L;
     long sendCheckTimeout = 60 * 1000 * 10L;
     int bitmapSplitNum = 1;
-    int shuffleId = getShuffleId(tezTaskAttemptID, "Map 1", "Reducer 2");
+    int shuffleId = getShuffleId(tezTaskAttemptID, 1, 2);
 
     WriteBufferManager<BytesWritable, BytesWritable> bufferManager =
         new WriteBufferManager(tezTaskAttemptID, maxMemSize, appId,
@@ -227,9 +227,9 @@ public class WriteBufferManagerTest {
         writeClient.mockedShuffleServer.getFlushBlockSize());
   }
 
-  private int getShuffleId(TezTaskAttemptID tezTaskAttemptID, String upVertexName, String downVertexName) {
+  private int getShuffleId(TezTaskAttemptID tezTaskAttemptID, int upVertexId, int downVertexId) {
     TezVertexID tezVertexID = tezTaskAttemptID.getTaskID().getVertexID();
-    int shuffleId = RssTezUtils.computeShuffleId(tezVertexID.getDAGId().getId(), upVertexName, downVertexName);
+    int shuffleId = RssTezUtils.computeShuffleId(tezVertexID.getDAGId().getId(), upVertexId, downVertexId);
     return shuffleId;
   }
 
