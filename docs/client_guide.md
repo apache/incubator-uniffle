@@ -97,6 +97,22 @@ The jar for MapReduce is located in <RSS_HOME>/jars/client/mr/rss-client-mr-XXXX
 Note that the RssMRAppMaster will automatically disable slow start (i.e., `mapreduce.job.reduce.slowstart.completedmaps=1`)
 and job recovery (i.e., `yarn.app.mapreduce.am.job.recovery.enable=false`)
 
+### Deploy Tez Client Plugin
+
+1. Append client jar to pacakge which is set by 'tez.lib.uris'.
+
+In production mode, you can append client jar (rss-client-tez-XXXXX-shaded.jar) to package which is set by 'tez.lib.uris'.
+
+In development mode, you can append client jar (rss-client-tez-XXXXX-shaded.jar) to HADOOP_CLASSPATH.
+
+2. Update tez-site.xml to enable Uniffle.
+
+| Property Name              |Default| Description                  |
+|----------------------------|---|------------------------------|
+| tez.am.launch.cmd-opts     |-XX:+PrintGCDetails -verbose:gc -XX:+PrintGCTimeStamps -XX:+UseNUMA -XX:+UseParallelGC org.apache.tez.dag.app.RssDAGAppMaster| enable remote shuffle service |
+| tez.rss.coordinator.quorum |coordinatorIp1:19999,coordinatorIp2:19999|coordinator address|
+
+Note that the RssDAGAppMaster will automatically disable slow start (i.e., `tez.shuffle-vertex-manager.min-src-fraction=1`, `tez.shuffle-vertex-manager.max-src-fraction=1`).
 
 ## Configuration
 
