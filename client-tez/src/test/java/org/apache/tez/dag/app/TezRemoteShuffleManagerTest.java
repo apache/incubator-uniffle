@@ -102,8 +102,8 @@ public class TezRemoteShuffleManagerTest {
       tezRemoteShuffleManager.initialize();
       tezRemoteShuffleManager.start();
 
-      String host = tezRemoteShuffleManager.address.getHostString();
-      int port = tezRemoteShuffleManager.address.getPort();
+      String host = tezRemoteShuffleManager.getAddress().getHostString();
+      int port = tezRemoteShuffleManager.getAddress().getPort();
       final InetSocketAddress address = NetUtils.createSocketAddrForHost(host, port);
 
       String tokenIdentifier = appId.toString();

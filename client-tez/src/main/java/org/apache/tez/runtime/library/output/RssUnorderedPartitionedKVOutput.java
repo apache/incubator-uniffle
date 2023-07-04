@@ -34,13 +34,11 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceAudience.Public;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.ipc.RPC;
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.tez.common.GetShuffleServerRequest;
 import org.apache.tez.common.GetShuffleServerResponse;
-import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.common.TezCommonUtils;
 import org.apache.tez.common.TezRemoteShuffleUmbilicalProtocol;
@@ -65,6 +63,8 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
 
+import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS;
+import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT;
 
 /**
  * {@link RssUnorderedPartitionedKVOutput} is an {@link AbstractLogicalOutput} which
@@ -112,18 +112,6 @@ public class RssUnorderedPartitionedKVOutput extends AbstractLogicalOutput {
     LOG.info("Initialized RssUnOrderedPartitionedKVOutput.");
   }
 
-  private void getRssConf() {
-    try {
-      JobConf conf = new JobConf(RssTezConfig.RSS_CONF_FILE);
-      this.host = conf.get(RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS, "null host");
-      this.port = conf.getInt(RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT, -1);
-
-      LOG.info("Got RssConf am info : host is {}, port is {}", host, port);
-    } catch (Exception e) {
-      LOG.warn("debugRssConf error: ", e);
-    }
-  }
-
   @Override
   public List<Event> initialize() throws Exception {
     this.startTime = System.nanoTime();
@@ -135,13 +123,12 @@ public class RssUnorderedPartitionedKVOutput extends AbstractLogicalOutput {
     getContext().requestInitialMemory(memRequestSize, memoryUpdateCallbackHandler);
     LOG.info("Got initialMemory.");
 
-    getRssConf();
-
     this.sendEmptyPartitionDetails = conf.getBoolean(
       TezRuntimeConfiguration.TEZ_RUNTIME_EMPTY_PARTITION_INFO_VIA_EVENTS_ENABLED,
       TezRuntimeConfiguration.TEZ_RUNTIME_EMPTY_PARTITION_INFO_VIA_EVENTS_ENABLED_DEFAULT);
 
-
+    this.host = this.conf.get(RSS_AM_SHUFFLE_MANAGER_ADDRESS);
+    this.port = this.conf.getInt(RSS_AM_SHUFFLE_MANAGER_PORT, -1);
     final InetSocketAddress address = NetUtils.createSocketAddrForHost(host, port);
 
     UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(this.applicationId.toString());

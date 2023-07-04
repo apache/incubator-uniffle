@@ -1609,7 +1609,8 @@ class RssShuffleScheduler extends ShuffleScheduler {
           shuffleServerInfoList,
           readerJobConf,
           new TezIdHelper(),
-          expectedTaskIdsBitmapFilterEnable);
+          expectedTaskIdsBitmapFilterEnable,
+          RssTezConfig.toRssConf(conf));
 
       ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
       RssTezShuffleDataFetcher fetcher = new RssTezShuffleDataFetcher(

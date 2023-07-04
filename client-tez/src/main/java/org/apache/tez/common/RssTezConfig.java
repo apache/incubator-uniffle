@@ -18,7 +18,9 @@
 package org.apache.tez.common;
 
 import java.util.Map;
+import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.hadoop.conf.Configuration;
 
 import org.apache.uniffle.client.util.RssClientConfig;
@@ -153,8 +155,6 @@ public class RssTezConfig {
   public static final int RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE =
       RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE;
 
-  public static final String RSS_CONF_FILE = "rss_conf.xml";
-
   public static final String RSS_REMOTE_STORAGE_PATH =
       TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_STORAGE_PATH;
 
@@ -168,6 +168,12 @@ public class RssTezConfig {
   public static final Boolean RSS_AM_SLOW_START_ENABLE_DEFAULT = false;
 
   public static final String RSS_REDUCE_INITIAL_MEMORY = TEZ_RSS_CONFIG_PREFIX + "rss.reduce.initial.memory";
+
+  public static final String RSS_ACCESS_TIMEOUT_MS = TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ACCESS_TIMEOUT_MS;
+  public static final int RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE = RssClientConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE;
+
+  public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
+      ImmutableSet.of(RSS_STORAGE_TYPE, RSS_REMOTE_STORAGE_PATH);
 
   public static RssConf toRssConf(Configuration jobConf) {
     RssConf rssConf = new RssConf();
