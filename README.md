@@ -22,7 +22,7 @@ It provides the ability to push shuffle data into centralized storage service,
 changing the shuffle style from "local file pull-like style" to "remote block push-like style".
 It brings in several advantages like supporting disaggregated storage deployment,
 super large shuffle jobs, and high elasticity.
-Currently it supports [Apache Spark][1] and [Apache Hadoop MapReduce][2] and [Apache Tez][3].
+Currently it supports [Apache Spark][1], [Apache Hadoop MapReduce][2] and [Apache Tez][3].
 
 [1]: https://spark.apache.org
 [2]: https://hadoop.apache.org
