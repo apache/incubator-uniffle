@@ -287,23 +287,15 @@ public class RssTezUtils {
     }
   }
 
-  public static long convertTaskAttemptIdToLong(TezTaskAttemptID taskAttemptID, int appAttemptId) {
+  public static long convertTaskAttemptIdToLong(TezTaskAttemptID taskAttemptID) {
     long lowBytes = taskAttemptID.getTaskID().getId();
     if (lowBytes > Constants.MAX_TASK_ATTEMPT_ID) {
       throw new RssException("TaskAttempt " + taskAttemptID + " low bytes " + lowBytes + " exceed");
     }
-    if (appAttemptId < 1) {
-      throw new RssException("appAttemptId  " + appAttemptId + " is wrong");
-    }
-    long highBytes = (long) taskAttemptID.getId() - (appAttemptId - 1) * 1000;
+    long highBytes = taskAttemptID.getId();
     if (highBytes > MAX_ATTEMPT_ID || highBytes < 0) {
       throw new RssException(
-          "TaskAttempt "
-              + taskAttemptID
-              + " high bytes "
-              + highBytes
-              + " exceed, appAttemptId:"
-              + appAttemptId);
+          "TaskAttempt " + taskAttemptID + " high bytes " + highBytes + " exceed.");
     }
     long id =
         (highBytes << (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH))
@@ -323,7 +315,7 @@ public class RssTezUtils {
     for (InputAttemptIdentifier inputAttemptIdentifier : successMapTaskAttempts) {
       String pathComponent = inputAttemptIdentifier.getPathComponent();
       TezTaskAttemptID mapTaskAttemptID = IdUtils.convertTezTaskAttemptID(pathComponent);
-      long rssTaskId = RssTezUtils.convertTaskAttemptIdToLong(mapTaskAttemptID, appAttemptId);
+      long rssTaskId = RssTezUtils.convertTaskAttemptIdToLong(mapTaskAttemptID);
       long mapTaskId = mapTaskAttemptID.getTaskID().getId();
 
       LOG.info(

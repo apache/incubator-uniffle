@@ -55,7 +55,7 @@ public class RssTezUtilsTest {
 
     boolean isException = false;
     try {
-      RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptId, 1);
+      RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptId);
     } catch (RssException e) {
       isException = true;
     }
@@ -65,7 +65,7 @@ public class RssTezUtilsTest {
     tezTaskAttemptId = TezTaskAttemptID.getInstance(taskId, 2);
     isException = false;
     try {
-      RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptId, 1);
+      RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptId);
     } catch (RssException e) {
       isException = true;
     }
@@ -79,7 +79,7 @@ public class RssTezUtilsTest {
     TezVertexID vId = TezVertexID.getInstance(dagId, 35);
     TezTaskID tId = TezTaskID.getInstance(vId, 389);
     TezTaskAttemptID tezTaskAttemptId = TezTaskAttemptID.getInstance(tId, 2);
-    long taskAttemptId = RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptId, 1);
+    long taskAttemptId = RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptId);
     long blockId = RssTezUtils.getBlockId(1, taskAttemptId, 0);
     long newTaskAttemptId = RssTezUtils.getTaskAttemptId(blockId);
     assertEquals(taskAttemptId, newTaskAttemptId);
@@ -95,7 +95,7 @@ public class RssTezUtilsTest {
     TezVertexID vId = TezVertexID.getInstance(dagId, 35);
     TezTaskID tId = TezTaskID.getInstance(vId, 389);
     TezTaskAttemptID tezTaskAttemptId = TezTaskAttemptID.getInstance(tId, 2);
-    long taskAttemptId = RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptId, 1);
+    long taskAttemptId = RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptId);
     long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;
     for (int partitionId = 0; partitionId <= 3000; partitionId++) {
       for (int seqNo = 0; seqNo <= 10; seqNo++) {

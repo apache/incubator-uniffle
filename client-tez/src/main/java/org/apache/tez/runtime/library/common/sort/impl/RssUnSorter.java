@@ -29,7 +29,6 @@ import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.util.ConverterUtils;
-import org.apache.tez.common.IdUtils;
 import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.dag.records.TezTaskAttemptID;
@@ -83,8 +82,7 @@ public class RssUnSorter extends ExternalSorter {
         conf.getDouble(
             RssTezConfig.RSS_CLIENT_SORT_MEMORY_USE_THRESHOLD,
             RssTezConfig.RSS_CLIENT_DEFAULT_SORT_MEMORY_USE_THRESHOLD);
-    long taskAttemptId =
-        RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptID, IdUtils.getAppAttemptId());
+    long taskAttemptId = RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptID);
     long maxSegmentSize =
         conf.getLong(
             RssTezConfig.RSS_CLIENT_MAX_BUFFER_SIZE,
