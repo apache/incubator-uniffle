@@ -216,6 +216,16 @@ MR_CLIENT_JAR="${RSS_HOME}/client-mr/core/target/shaded/rss-client-mr-${VERSION}
 echo "copy $MR_CLIENT_JAR to ${MR_CLIENT_JAR_DIR}"
 cp $MR_CLIENT_JAR $MR_CLIENT_JAR_DIR
 
+BUILD_COMMAND_TEZ=("$MVN" clean package -Ptez,$HADOOP_PROFILE_ID -pl client-tez -DskipTests -am $@)
+echo -e "\nBuilding with..."
+echo -e "\$ ${BUILD_COMMAND_TEZ[@]}\n"
+"${BUILD_COMMAND_TEZ[@]}"
+TEZ_CLIENT_JAR_DIR="${CLIENT_JAR_DIR}/tez"
+mkdir -p $TEZ_CLIENT_JAR_DIR
+TEZ_CLIENT_JAR="${RSS_HOME}/client-tez/target/shaded/rss-client-tez-${VERSION}-shaded.jar"
+echo "copy $TEZ_CLIENT_JAR to ${TEZ_CLIENT_JAR_DIR}"
+cp $TEZ_CLIENT_JAR $TEZ_CLIENT_JAR_DIR
+
 cp -r bin $DISTDIR
 cp -r conf $DISTDIR
 

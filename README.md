@@ -22,7 +22,7 @@ It provides the ability to push shuffle data into centralized storage service,
 changing the shuffle style from "local file pull-like style" to "remote block push-like style".
 It brings in several advantages like supporting disaggregated storage deployment,
 super large shuffle jobs, and high elasticity.
-Currently it supports [Apache Spark][1] and [Apache Hadoop MapReduce][2] and [Apache Tez][3].
+Currently it supports [Apache Spark][1], [Apache Hadoop MapReduce][2] and [Apache Tez][3].
 
 [1]: https://spark.apache.org
 [2]: https://hadoop.apache.org
@@ -97,13 +97,21 @@ Build against Spark 3.2.0
 
     mvn -DskipTests clean package -Pspark3.2.0
 
-Build against Hadoop 2.8.5
+Build against Hadoop MapReduce 2.8.5
 
     mvn -DskipTests clean package -Pmr,hadoop2.8
 
-Build against Hadoop 3.2.1
+Build against Hadoop MapReduce 3.2.1
 
     mvn -DskipTests clean package -Pmr,hadoop3.2
+
+Build against Tez 0.9.1
+
+    mvn -DskipTests clean package -Ptez
+
+Build against Tez 0.9.1 and Hadoop 3.2.1
+
+    mvn -DskipTests clean package -Ptez,hadoop3.2
 
 To package the Uniffle, run:
 
