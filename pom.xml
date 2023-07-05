@@ -1684,6 +1684,7 @@
       <id>tez</id>
       <modules>
         <module>client-tez</module>
+        <module>integration-test/tez</module>
       </modules>
       <properties>
         <tez.version>0.9.1</tez.version>
@@ -1694,21 +1695,89 @@
             <groupId>org.apache.tez</groupId>
             <artifactId>tez-common</artifactId>
             <version>${tez.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-annotations</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-api</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-common</artifactId>
+              </exclusion>
+            </exclusions>
           </dependency>
           <dependency>
             <groupId>org.apache.tez</groupId>
             <artifactId>tez-runtime-library</artifactId>
             <version>${tez.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-annotations</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-api</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-common</artifactId>
+              </exclusion>
+            </exclusions>
           </dependency>
           <dependency>
             <groupId>org.apache.tez</groupId>
             <artifactId>tez-runtime-internals</artifactId>
             <version>${tez.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-annotations</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-api</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-common</artifactId>
+              </exclusion>
+            </exclusions>
           </dependency>
           <dependency>
             <groupId>org.apache.tez</groupId>
             <artifactId>tez-dag</artifactId>
             <version>${tez.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-annotations</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-api</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-common</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-client</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-server-common</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-server-web-proxy</artifactId>
+              </exclusion>
+            </exclusions>
           </dependency>
           <dependency>
             <groupId>org.apache.tez</groupId>
@@ -1717,9 +1786,43 @@
             <exclusions>
               <exclusion>
                 <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-annotations</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-api</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-common</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-auth</artifactId>
               </exclusion>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-hdfs</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-client</artifactId>
+              </exclusion>
             </exclusions>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.tez</groupId>
+            <artifactId>tez-tests</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+            <version>${tez.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-integration-common-test</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
           </dependency>
           <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -1735,6 +1838,18 @@
                 <artifactId>httpclient</artifactId>
               </exclusion>
             </exclusions>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-yarn-api</artifactId>
+            <version>${hadoop.version}</version>
+            <scope>test</scope>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-yarn-server-common</artifactId>
+            <version>${hadoop.version}</version>
+            <scope>test</scope>
           </dependency>
           <dependency>
             <groupId>com.google.protobuf</groupId>
