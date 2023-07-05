@@ -97,13 +97,21 @@ Build against Spark 3.2.0
 
     mvn -DskipTests clean package -Pspark3.2.0
 
-Build against Hadoop 2.8.5
+Build against Hadoop MapReduce 2.8.5
 
     mvn -DskipTests clean package -Pmr,hadoop2.8
 
-Build against Hadoop 3.2.1
+Build against Hadoop MapReduce 3.2.1
 
     mvn -DskipTests clean package -Pmr,hadoop3.2
+
+Build against Tez 0.9.1
+
+    mvn -DskipTests clean package -Ptez
+
+Build against Tez 0.9.1 and Hadoop 3.2.1
+
+    mvn -DskipTests clean package -Ptez,hadoop3.2
 
 To package the Uniffle, run:
 
