@@ -73,6 +73,8 @@ import static org.apache.log4j.LogManager.CONFIGURATOR_CLASS_KEY;
 import static org.apache.log4j.LogManager.DEFAULT_CONFIGURATION_KEY;
 import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS;
 import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT;
+import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_DESTINATION_VERTEX_ID;
+import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
 
 public class RssDAGAppMaster extends DAGAppMaster {
   private static final Logger LOG = LoggerFactory.getLogger(RssDAGAppMaster.class);
@@ -339,10 +341,14 @@ public class RssDAGAppMaster extends DAGAppMaster {
         Map<String, Edge> edges = (Map<String, Edge>) getPrivateField(dag, "edges");
         for (Map.Entry<String, Edge> entry : edges.entrySet()) {
           Edge edge = entry.getValue();
+          int sourceVertexId = dag.getVertex(edge.getSourceVertexName()).getVertexId().getId();
+          int destinationVertexId = dag.getVertex(edge.getDestinationVertexName()).getVertexId().getId();
 
           // add user defined config to edge source conf
           Configuration edgeSourceConf =
               TezUtils.createConfFromUserPayload(edge.getEdgeProperty().getEdgeSource().getUserPayload());
+          edgeSourceConf.setInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, sourceVertexId);
+          edgeSourceConf.setInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, destinationVertexId);
           edgeSourceConf.set(RSS_AM_SHUFFLE_MANAGER_ADDRESS,
               this.appMaster.getTezRemoteShuffleManager().getAddress().getHostName());
           edgeSourceConf.setInt(RSS_AM_SHUFFLE_MANAGER_PORT,
@@ -363,6 +369,8 @@ public class RssDAGAppMaster extends DAGAppMaster {
           // add user defined config to edge destination conf
           Configuration edgeDestinationConf =
               TezUtils.createConfFromUserPayload(edge.getEdgeProperty().getEdgeSource().getUserPayload());
+          edgeDestinationConf.setInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, sourceVertexId);
+          edgeDestinationConf.setInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, destinationVertexId);
           edgeDestinationConf.set(RSS_AM_SHUFFLE_MANAGER_ADDRESS,
               this.appMaster.getTezRemoteShuffleManager().getAddress().getHostName());
           edgeDestinationConf.setInt(RSS_AM_SHUFFLE_MANAGER_PORT,

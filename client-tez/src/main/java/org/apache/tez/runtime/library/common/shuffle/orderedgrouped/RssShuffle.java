@@ -107,7 +107,7 @@ public class RssShuffle implements ExceptionReporter {
    Usage: Create instance, RssShuffle
    */
   public RssShuffle(InputContext inputContext, Configuration conf, int numInputs,
-                 long initialMemoryAvailable) throws IOException {
+                 long initialMemoryAvailable, int shuffleId) throws IOException {
     this.inputContext = inputContext;
     this.conf = conf;
 
@@ -178,7 +178,8 @@ public class RssShuffle implements ExceptionReporter {
             codec,
             ifileReadAhead,
             ifileReadAheadLength,
-            srcNameTrimmed);
+            srcNameTrimmed,
+            shuffleId);
 
     this.mergePhaseTime = inputContext.getCounters().findCounter(TaskCounter.MERGE_PHASE_TIME);
     this.shufflePhaseTime = inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_PHASE_TIME);

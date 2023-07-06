@@ -175,6 +175,10 @@ public class RssTezConfig {
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
       ImmutableSet.of(RSS_STORAGE_TYPE, RSS_REMOTE_STORAGE_PATH);
 
+  public static final String RSS_SHUFFLE_SOURCE_VERTEX_ID = TEZ_RSS_CONFIG_PREFIX + "rss.shuffle.source.vertex.id";
+  public static final String RSS_SHUFFLE_DESTINATION_VERTEX_ID = 
+      TEZ_RSS_CONFIG_PREFIX + "rss.shuffle.destination.vertex.id";
+
   public static RssConf toRssConf(Configuration jobConf) {
     RssConf rssConf = new RssConf();
     for (Map.Entry<String, String> entry : jobConf) {

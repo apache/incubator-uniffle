@@ -261,7 +261,7 @@ public class RssShuffleManagerTest {
           boolean ifileReadAheadEnabled, int ifileReadAheadLength, CompressionCodec codec,
           FetchedInputAllocator inputAllocator) throws IOException {
       super(inputContext, conf, numInputs, bufferSize, ifileReadAheadEnabled,
-          ifileReadAheadLength, codec, inputAllocator);
+          ifileReadAheadLength, codec, inputAllocator, 0);
     }
 
     @Override

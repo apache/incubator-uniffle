@@ -200,24 +200,14 @@ public class RssTezUtils {
   /**
    *
    * @param tezDagID Get from tez InputContext, represent dag id.
-   * @param upVertexName Up stream vertex name of the task, like "Map 1" or "Reducer 2".
-   * @param downVertexName The vertex name of task, like "Map 1" or "Reducer 2".
-   * @return The shuffle id. First convert upVertexName of String type to int, by invoke mapVertexId() method,
-   * Then convert downVertexName of String type to int, by invoke mapVertexId() method.
-   * Finally compute shuffle id by pass tezDagID, upVertexId, downVertexId and invoke computeShuffleId() method.
-   * By map vertex name of String type to int type, we can compute shuffle id.
+   * @param upVertexId Up stream vertex id of the task.
+   * @param downVertexId The vertex id of task.
+   * @return The shuffle id.
    */
-  public static int computeShuffleId(int tezDagID, String upVertexName, String downVertexName) {
-    int upVertexId = mapVertexId(upVertexName);
-    int downVertexId = mapVertexId(downVertexName);
-    int shuffleId = computeShuffleId(tezDagID, upVertexId, downVertexId);
-    LOG.info("Compute Shuffle Id, upVertexName:{}, id:{}, downVertexName:{}, id:{}, shuffleId:{}",
-        upVertexName, upVertexId, downVertexName, downVertexId, shuffleId);
+  public static int computeShuffleId(int tezDagID, int upVertexId, int downVertexId) {
+    int shuffleId = tezDagID * (SHUFFLE_ID_MAGIC * SHUFFLE_ID_MAGIC)  + upVertexId * SHUFFLE_ID_MAGIC + downVertexId;
+    LOG.info("Compute Shuffle Id:{}, up vertex id:{}, down vertex id:{}", shuffleId, upVertexId, downVertexId);
     return shuffleId;
-  }
-
-  private static int computeShuffleId(int tezDagID, int upTezVertexID, int downTezVertexID) {
-    return tezDagID * (SHUFFLE_ID_MAGIC * SHUFFLE_ID_MAGIC)  + upTezVertexID * SHUFFLE_ID_MAGIC + downTezVertexID;
   }
 
   /**

@@ -245,6 +245,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
   private final int dagId;
   private final boolean asyncHttp;
   private final boolean sslShuffle;
+  private final int shuffleId;
 
   private final TezCounter ioErrsCounter;
   private final TezCounter wrongLengthErrsCounter;
@@ -300,7 +301,8 @@ class RssShuffleScheduler extends ShuffleScheduler {
             CompressionCodec codec,
             boolean ifileReadAhead,
             int ifileReadAheadLength,
-            String srcNameTrimmed) throws IOException {
+            String srcNameTrimmed,
+            int shuffleId) throws IOException {
     super(inputContext, conf, numberOfInputs, exceptionReporter, mergeManager, allocator, startTime, codec,
             ifileReadAhead, ifileReadAheadLength, srcNameTrimmed);
     this.inputContext = inputContext;
@@ -324,6 +326,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
     this.ifileReadAhead = ifileReadAhead;
     this.ifileReadAheadLength = ifileReadAheadLength;
     this.srcNameTrimmed = srcNameTrimmed;
+    this.shuffleId = shuffleId;
     this.codec = codec;
     int configuredNumFetchers =
             conf.getInt(
@@ -483,7 +486,6 @@ class RssShuffleScheduler extends ShuffleScheduler {
 
   @Override
   public void start() throws Exception {
-    int shuffleId = InputContextUtils.computeShuffleId(this.inputContext);
     TezTaskAttemptID tezTaskAttemptID = InputContextUtils.getTezTaskAttemptID(this.inputContext);
     this.partitionToServers = UmbilicalUtils.requestShuffleServer(
         inputContext.getApplicationId(), conf, tezTaskAttemptID, shuffleId);
@@ -1575,7 +1577,6 @@ class RssShuffleScheduler extends ShuffleScheduler {
 
     ShuffleWriteClient writeClient = RssTezUtils.createShuffleClient(conf);
     String clientType = "";
-    int shuffleId = InputContextUtils.computeShuffleId(inputContext);
     Roaring64NavigableMap blockIdBitmap = writeClient.getShuffleResult(
             clientType, shuffleServerInfoSet, applicationId, shuffleId, mapHost.getPartitionId());
     writeClient.close();

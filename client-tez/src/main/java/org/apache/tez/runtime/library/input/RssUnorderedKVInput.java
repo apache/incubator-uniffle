@@ -35,12 +35,16 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.hadoop.util.ReflectionUtils;
+import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.common.TezUtils;
 import org.apache.tez.common.TezUtilsInternal;
 import org.apache.tez.common.counters.TaskCounter;
 import org.apache.tez.common.counters.TezCounter;
 import org.apache.tez.dag.api.TezConfiguration;
+import org.apache.tez.dag.records.TezDAGID;
+import org.apache.tez.dag.records.TezTaskAttemptID;
+import org.apache.tez.dag.records.TezVertexID;
 import org.apache.tez.runtime.api.AbstractLogicalInput;
 import org.apache.tez.runtime.api.Event;
 import org.apache.tez.runtime.api.InputContext;
@@ -61,6 +65,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.exception.RssException;
+
+import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_DESTINATION_VERTEX_ID;
+import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
 
 /**
  * {@link RssUnorderedKVInput} provides unordered key value input by
@@ -85,6 +92,7 @@ public class RssUnorderedKVInput extends AbstractLogicalInput {
 
   private SimpleFetchedInputAllocator inputManager;
   private ShuffleEventHandler inputEventHandler;
+  private int shuffleId;
 
   public RssUnorderedKVInput(InputContext inputContext, int numPhysicalInputs) {
     super(inputContext, numPhysicalInputs);
@@ -112,6 +120,16 @@ public class RssUnorderedKVInput extends AbstractLogicalInput {
     this.conf.setStrings(TezRuntimeFrameworkConfigs.LOCAL_DIRS, getContext().getWorkDirs());
     this.inputRecordCounter = getContext().getCounters().findCounter(
         TaskCounter.INPUT_RECORDS_PROCESSED);
+
+    TezTaskAttemptID taskAttemptId = TezTaskAttemptID.fromString(
+        RssTezUtils.uniqueIdentifierToAttemptId(getContext().getUniqueIdentifier()));
+    TezVertexID tezVertexID = taskAttemptId.getTaskID().getVertexID();
+    TezDAGID tezDAGID = tezVertexID.getDAGId();
+    int sourceVertexId = this.conf.getInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, -1);
+    int destinationVertexId = this.conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1);
+    assert sourceVertexId != -1;
+    assert destinationVertexId != -1;
+    this.shuffleId = RssTezUtils.computeShuffleId(tezDAGID.getId(), sourceVertexId, destinationVertexId);
     return Collections.emptyList();
   }
 
@@ -154,7 +172,7 @@ public class RssUnorderedKVInput extends AbstractLogicalInput {
           memoryUpdateCallbackHandler.getMemoryAssigned());
 
       this.rssShuffleManager = new RssShuffleManager(getContext(), conf, getNumPhysicalInputs(), ifileBufferSize,
-          ifileReadAhead, ifileReadAheadLength, codec, inputManager);
+          ifileReadAhead, ifileReadAheadLength, codec, inputManager, shuffleId);
 
       this.inputEventHandler = new ShuffleInputEventHandlerImpl(getContext(), rssShuffleManager,
           inputManager, codec, ifileReadAhead, ifileReadAheadLength, compositeFetch);

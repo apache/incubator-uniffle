@@ -76,6 +76,8 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS;
 import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT;
+import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_DESTINATION_VERTEX_ID;
+import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
 import static org.apache.tez.common.RssTezConfig.RSS_STORAGE_TYPE;
 import static org.apache.tez.runtime.library.api.TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_READAHEAD_BYTES;
 import static org.awaitility.Awaitility.await;
@@ -148,15 +150,16 @@ public class RssDAGAppMasterTest {
     await().atMost(2, TimeUnit.SECONDS).until(() -> dagImpl.getState().equals(DAGState.INITED));
 
     // 8 verify I/O for vertexImpl
-    verfiyOutput(dagImpl, "vertex1", RssOrderedPartitionedKVOutput.class.getName());
-    verfiyInput(dagImpl, "vertex2", RssOrderedGroupedKVInput.class.getName());
-    verfiyOutput(dagImpl, "vertex2", RssUnorderedKVOutput.class.getName());
-    verfiyInput(dagImpl, "vertex3", RssUnorderedKVInput.class.getName());
-    verfiyOutput(dagImpl, "vertex3", RssUnorderedPartitionedKVOutput.class.getName());
-    verfiyInput(dagImpl, "vertex4", RssUnorderedKVInput.class.getName());
+    verfiyOutput(dagImpl, "vertex1", RssOrderedPartitionedKVOutput.class.getName(), 0, 1);
+    verfiyInput(dagImpl, "vertex2", RssOrderedGroupedKVInput.class.getName(), 0, 1);
+    verfiyOutput(dagImpl, "vertex2", RssUnorderedKVOutput.class.getName(), 1, 2);
+    verfiyInput(dagImpl, "vertex3", RssUnorderedKVInput.class.getName(), 1, 2);
+    verfiyOutput(dagImpl, "vertex3", RssUnorderedPartitionedKVOutput.class.getName(), 2, 3);
+    verfiyInput(dagImpl, "vertex4", RssUnorderedKVInput.class.getName(), 2, 3);
   }
 
-  public static void verfiyInput(DAGImpl dag, String name, String expectedInputClassName) throws Exception {
+  public static void verfiyInput(DAGImpl dag, String name, String expectedInputClassName,
+                                 int expectedSourceVertexId, int expectedDestinationVertexId) throws Exception {
     // 1 verfiy rename rss io class name
     List<InputSpec> inputSpecs = dag.getVertex(name).getInputSpecList(0);
     Assertions.assertEquals(1, inputSpecs.size());
@@ -176,9 +179,13 @@ public class RssDAGAppMasterTest {
     // should not deliver to Input/Output.
     Assertions.assertEquals(12345, conf.getInt(TEZ_RUNTIME_IFILE_READAHEAD_BYTES, -1));
     Assertions.assertNull(conf.get("tez.config.from.client"));
+    // 4 verfiy vertex id
+    Assertions.assertEquals(expectedSourceVertexId, conf.getInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, -1));
+    Assertions.assertEquals(expectedDestinationVertexId, conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1));
   }
 
-  public static void verfiyOutput(DAGImpl dag, String name, String expectedOutputClassName) throws Exception {
+  public static void verfiyOutput(DAGImpl dag, String name, String expectedOutputClassName,
+                                  int expectedSourceVertexId, int expectedDestinationVertexId) throws Exception {
     // 1 verfiy rename rss io class name
     List<OutputSpec> outputSpecs = dag.getVertex(name).getOutputSpecList(0);
     Assertions.assertEquals(1, outputSpecs.size());
@@ -193,6 +200,9 @@ public class RssDAGAppMasterTest {
     Assertions.assertEquals("value1", conf.get("tez.config1"));
     Assertions.assertEquals("value3", conf.get("tez.config3"));
     Assertions.assertNull(conf.get("tez.config2"));
+    // 4 verfiy vertex id
+    Assertions.assertEquals(expectedSourceVertexId, conf.getInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, -1));
+    Assertions.assertEquals(expectedDestinationVertexId, conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1));
   }
 
   private static DAG createDAG(String dageName, Configuration conf) {

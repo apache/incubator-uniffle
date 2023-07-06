@@ -112,6 +112,7 @@ public class RssShuffleManager extends ShuffleManager {
 
   private final InputContext inputContext;
   private final int numInputs;
+  private final int shuffleId;
 
   private final DecimalFormat mbpsFormat = new DecimalFormat("0.00");
 
@@ -227,12 +228,13 @@ public class RssShuffleManager extends ShuffleManager {
 
   public RssShuffleManager(InputContext inputContext, Configuration conf, int numInputs,
           int bufferSize, boolean ifileReadAheadEnabled, int ifileReadAheadLength,
-          CompressionCodec codec, FetchedInputAllocator inputAllocator) throws IOException {
+          CompressionCodec codec, FetchedInputAllocator inputAllocator, int shuffleId) throws IOException {
     super(inputContext, conf, numInputs, bufferSize, ifileReadAheadEnabled, ifileReadAheadLength, codec,
         inputAllocator);
     this.inputContext = inputContext;
     this.conf = conf;
     this.numInputs = numInputs;
+    this.shuffleId = shuffleId;
 
     this.shuffledInputsCounter = inputContext.getCounters().findCounter(TaskCounter.NUM_SHUFFLED_INPUTS);
     this.failedShufflesCounter = inputContext.getCounters().findCounter(TaskCounter.NUM_FAILED_SHUFFLE_INPUTS);
@@ -343,7 +345,6 @@ public class RssShuffleManager extends ShuffleManager {
 
   @Override
   public void run() throws IOException {
-    int shuffleId = InputContextUtils.computeShuffleId(this.inputContext);
     TezTaskAttemptID tezTaskAttemptId = InputContextUtils.getTezTaskAttemptID(this.inputContext);
     this.partitionToServers = UmbilicalUtils.requestShuffleServer(
           this.inputContext.getApplicationId(), this.conf, tezTaskAttemptId, shuffleId);
@@ -501,7 +502,7 @@ public class RssShuffleManager extends ShuffleManager {
                     partition, partitionToServers.get(partition), partitionToServers);
 
                 RssTezFetcherTask fetcher = new RssTezFetcherTask(RssShuffleManager.this, inputContext,
-                    conf, inputManager, partition, partitionToInput.get(partition),
+                    conf, inputManager, partition, shuffleId, partitionToInput.get(partition),
                     new HashSet<ShuffleServerInfo>(partitionToServers.get(partition)),
                     rssAllBlockIdBitmapMap, rssSuccessBlockIdBitmapMap, numInputs, partitionToServers.size());
                 rssRunningFetchers.add(fetcher);

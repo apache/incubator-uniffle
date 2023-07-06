@@ -29,16 +29,4 @@ public class InputContextUtils {
     String uniqueIdentifier = inputContext.getUniqueIdentifier();
     return TezTaskAttemptID.fromString(uniqueIdentifier.substring(0, uniqueIdentifier.length() - 6));
   }
-
-  /**
-   *
-   * @param inputContext
-   * @return Compute shuffle id using InputContext
-   */
-  public static int computeShuffleId(InputContext inputContext) {
-    int dagIdentifier = inputContext.getDagIdentifier();
-    String sourceVertexName = inputContext.getSourceVertexName();
-    String taskVertexName = inputContext.getTaskVertexName();
-    return RssTezUtils.computeShuffleId(dagIdentifier, sourceVertexName, taskVertexName);
-  }
 }
