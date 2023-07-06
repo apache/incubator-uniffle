@@ -22,10 +22,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
 
 import io.prometheus.client.Collector;
-import io.prometheus.client.CollectorRegistry;
 import org.apache.hbase.thirdparty.javax.ws.rs.GET;
 import org.apache.hbase.thirdparty.javax.ws.rs.Path;
 import org.apache.hbase.thirdparty.javax.ws.rs.PathParam;
@@ -34,12 +32,8 @@ import org.apache.hbase.thirdparty.javax.ws.rs.QueryParam;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
-import org.apache.uniffle.common.exception.InvalidRequestException;
-
 @Path("/metrics")
-public class MetricResource {
-  @Context
-  private HttpServletRequest httpRequest;
+public class MetricResource extends BaseMetricResource {
   @Context
   protected ServletContext servletContext;
 
@@ -50,22 +44,13 @@ public class MetricResource {
       @PathParam("type") String type,
       @QueryParam("name[]") Set<String> names) {
     Enumeration<Collector.MetricFamilySamples> mfs =
-        getCollectorRegistry(type).filteredMetricFamilySamples(names);
+        getCollectorRegistry(servletContext, type).filteredMetricFamilySamples(names);
     List<Collector.MetricFamilySamples.Sample> metrics = new LinkedList<>();
     while (mfs.hasMoreElements()) {
       Collector.MetricFamilySamples metricFamilySamples = mfs.nextElement();
       metrics.addAll(metricFamilySamples.samples);
     }
     return new MetricsJsonObj(metrics, System.currentTimeMillis());
-  }
-
-  private CollectorRegistry getCollectorRegistry(String type) {
-    CollectorRegistry registry = (CollectorRegistry) servletContext.getAttribute(
-        CollectorRegistry.class.getCanonicalName() + "#" + type);
-    if (registry == null) {
-      throw new InvalidRequestException(String.format("Metric type[%s] not supported", type));
-    }
-    return registry;
   }
 
   private static class MetricsJsonObj {

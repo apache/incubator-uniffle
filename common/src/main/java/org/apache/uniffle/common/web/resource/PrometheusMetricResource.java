@@ -24,7 +24,6 @@ import java.util.Set;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletResponse;
 
-import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
 import org.apache.hbase.thirdparty.javax.ws.rs.GET;
 import org.apache.hbase.thirdparty.javax.ws.rs.Path;
@@ -32,10 +31,8 @@ import org.apache.hbase.thirdparty.javax.ws.rs.PathParam;
 import org.apache.hbase.thirdparty.javax.ws.rs.QueryParam;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 
-import org.apache.uniffle.common.exception.InvalidRequestException;
-
 @Path("/prometheus/metrics")
-public class PrometheusMetricResource {
+public class PrometheusMetricResource extends BaseMetricResource {
   @Context
   private HttpServletResponse httpServletResponse;
   @Context
@@ -51,20 +48,11 @@ public class PrometheusMetricResource {
     Writer writer = new BufferedWriter(httpServletResponse.getWriter());
 
     try {
-      TextFormat.write004(writer, getCollectorRegistry(type).filteredMetricFamilySamples(names));
+      TextFormat.write004(writer, getCollectorRegistry(servletContext, type).filteredMetricFamilySamples(names));
       writer.flush();
     } finally {
       writer.close();
     }
     return null;
-  }
-
-  private CollectorRegistry getCollectorRegistry(String type) {
-    CollectorRegistry registry = (CollectorRegistry) servletContext.getAttribute(
-        CollectorRegistry.class.getCanonicalName() + "#" + type);
-    if (registry == null) {
-      throw new InvalidRequestException(String.format("Metric type[%s] not supported", type));
-    }
-    return registry;
   }
 }

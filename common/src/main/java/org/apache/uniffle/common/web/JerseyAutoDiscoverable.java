@@ -25,6 +25,7 @@ import org.apache.hbase.thirdparty.org.glassfish.jersey.internal.spi.AutoDiscove
 
 @Priority(AutoDiscoverable.DEFAULT_PRIORITY - 100)
 public class JerseyAutoDiscoverable implements AutoDiscoverable {
+  @Override
   public void configure(FeatureContext context) {
     Configuration config = context.getConfiguration();
     if (!config.isRegistered(JsonConverter.class)) {
