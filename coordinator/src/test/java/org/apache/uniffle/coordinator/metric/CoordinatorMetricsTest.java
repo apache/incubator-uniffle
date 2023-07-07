@@ -100,6 +100,16 @@ public class CoordinatorMetricsTest {
   }
 
   @Test
+  public void testCoordinatorMetricsWithNames() throws Exception {
+    String content = TestUtils.httpGet(SERVER_METRICS_URL
+        + "?name[]=total_app_num&name[]=running_app_num");
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode actualObj = mapper.readTree(content);
+    assertEquals(2, actualObj.size());
+    assertEquals(2, actualObj.get("metrics").size());
+  }
+
+  @Test
   public void testJvmMetrics() throws Exception {
     String content = TestUtils.httpGet(SERVER_JVM_URL);
     ObjectMapper mapper = new ObjectMapper();

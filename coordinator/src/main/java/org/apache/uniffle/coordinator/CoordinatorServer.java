@@ -35,17 +35,12 @@ import org.apache.uniffle.common.rpc.ServerInterface;
 import org.apache.uniffle.common.security.SecurityConfig;
 import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.util.RssUtils;
-import org.apache.uniffle.common.web.CommonMetricsServlet;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategy;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategyFactory;
 import org.apache.uniffle.coordinator.util.CoordinatorUtils;
-import org.apache.uniffle.coordinator.web.servlet.CancelDecommissionServlet;
-import org.apache.uniffle.coordinator.web.servlet.DecommissionServlet;
-import org.apache.uniffle.coordinator.web.servlet.NodesServlet;
-import org.apache.uniffle.coordinator.web.servlet.admin.RefreshCheckerServlet;
 
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_ENABLE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE;
@@ -157,8 +152,6 @@ public class CoordinatorServer extends ReconfigurableBase {
     int port = coordinatorConf.getInteger(CoordinatorConf.RPC_SERVER_PORT);
     id = ip + "-" + port;
     LOG.info("Start to initialize coordinator {}", id);
-    jettyServer = new JettyServer(coordinatorConf);
-    registerRESTAPI();
     // register metrics first to avoid NPE problem when add dynamic metrics
     registerMetrics();
     coordinatorConf.setString(CoordinatorUtils.COORDINATOR_ID, id);
@@ -175,7 +168,6 @@ public class CoordinatorServer extends ReconfigurableBase {
     }
     SecurityContextFactory.get().init(securityConfig);
 
-
     // load default hadoop configuration
     Configuration hadoopConf = new Configuration();
     ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(coordinatorConf, hadoopConf);
@@ -189,22 +181,18 @@ public class CoordinatorServer extends ReconfigurableBase {
         applicationManager.getQuotaManager(), hadoopConf);
     CoordinatorFactory coordinatorFactory = new CoordinatorFactory(this);
     server = coordinatorFactory.getServer();
-  }
-
-  private void registerRESTAPI() throws Exception {
-    LOG.info("Register REST API");
-    jettyServer.addServlet(
-        new NodesServlet(this),
-        "/api/server/nodes");
-    jettyServer.addServlet(
-        new DecommissionServlet(this),
-        "/api/server/decommission");
-    jettyServer.addServlet(
-        new CancelDecommissionServlet(this),
-        "/api/server/cancelDecommission");
-    jettyServer.addServlet(
-        new RefreshCheckerServlet(this),
-        "/api/admin/refreshChecker");
+    jettyServer = new JettyServer(coordinatorConf);
+    // register packages and instances for jersey
+    jettyServer.addResourcePackages("org.apache.uniffle.coordinator.web.resource",
+        "org.apache.uniffle.common.web.resource");
+    jettyServer.registerInstance(ClusterManager.class, clusterManager);
+    jettyServer.registerInstance(AccessManager.class, accessManager);
+    jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#server",
+        CoordinatorMetrics.getCollectorRegistry());
+    jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#grpc",
+        grpcMetrics.getCollectorRegistry());
+    jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#jvm",
+        JvmMetrics.getCollectorRegistry());
   }
 
   private void registerMetrics() throws Exception {
@@ -216,26 +204,6 @@ public class CoordinatorServer extends ReconfigurableBase {
     boolean verbose = coordinatorConf.getBoolean(CoordinatorConf.RSS_JVM_METRICS_VERBOSE_ENABLE);
     CollectorRegistry jvmCollectorRegistry = new CollectorRegistry(true);
     JvmMetrics.register(jvmCollectorRegistry, verbose);
-
-    LOG.info("Add metrics servlet");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(CoordinatorMetrics.getCollectorRegistry()),
-        "/metrics/server");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(grpcMetrics.getCollectorRegistry()),
-        "/metrics/grpc");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(JvmMetrics.getCollectorRegistry()),
-        "/metrics/jvm");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(CoordinatorMetrics.getCollectorRegistry(), true),
-        "/prometheus/metrics/server");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(grpcMetrics.getCollectorRegistry(), true),
-        "/prometheus/metrics/grpc");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(JvmMetrics.getCollectorRegistry(), true),
-        "/prometheus/metrics/jvm");
 
     metricReporter = MetricReporterFactory.getMetricReporter(coordinatorConf,  id);
     if (metricReporter != null) {

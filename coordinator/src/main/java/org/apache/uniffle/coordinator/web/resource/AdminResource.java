@@ -15,36 +15,46 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.web.servlet.admin;
+package org.apache.uniffle.coordinator.web.resource;
 
 import java.util.List;
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import org.apache.hbase.thirdparty.javax.ws.rs.GET;
+import org.apache.hbase.thirdparty.javax.ws.rs.Path;
+import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
+import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
+import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.coordinator.CoordinatorServer;
+import org.apache.uniffle.coordinator.AccessManager;
+import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.coordinator.access.checker.AccessChecker;
 import org.apache.uniffle.coordinator.web.Response;
-import org.apache.uniffle.coordinator.web.servlet.BaseServlet;
 
-public class RefreshCheckerServlet extends BaseServlet {
+@Produces({MediaType.APPLICATION_JSON})
+public class AdminResource {
+  private static final Logger LOG = LoggerFactory.getLogger(AdminResource.class);
+  @Context
+  private HttpServletRequest httpRequest;
+  @Context
+  protected ServletContext servletContext;
 
-  private static final Logger LOG = LoggerFactory.getLogger(RefreshCheckerServlet.class);
-  private final CoordinatorServer coordinator;
-
-  public RefreshCheckerServlet(CoordinatorServer coordinator) {
-    this.coordinator = coordinator;
-  }
-
-  @Override
-  protected Response handleGet(HttpServletRequest req, HttpServletResponse resp) {
-    List<AccessChecker> accessCheckers = coordinator.getAccessManager().getAccessCheckers();
+  @GET
+  @Path("/refreshChecker")
+  public Response<List<ServerNode>> refreshChecker() {
+    List<AccessChecker> accessCheckers = getAccessManager().getAccessCheckers();
     LOG.info(
         "The access checker {} has been refreshed, you can add the checker via rss.coordinator.access.checkers.",
         accessCheckers);
     accessCheckers.forEach(AccessChecker::refreshAccessChecker);
     return Response.success(null);
+  }
+
+  private AccessManager getAccessManager() {
+    return (AccessManager) servletContext.getAttribute(
+        AccessManager.class.getCanonicalName());
   }
 }

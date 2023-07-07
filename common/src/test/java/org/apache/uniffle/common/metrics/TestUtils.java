@@ -49,6 +49,7 @@ public class TestUtils {
     HttpURLConnection con = (HttpURLConnection) url.openConnection();
     con.setDoOutput(true);
     con.setRequestMethod("POST");
+    con.setRequestProperty("Content-type", "application/json");
     StringBuilder content = new StringBuilder();
     try (OutputStream outputStream = con.getOutputStream();) {
       outputStream.write(postData.getBytes());
