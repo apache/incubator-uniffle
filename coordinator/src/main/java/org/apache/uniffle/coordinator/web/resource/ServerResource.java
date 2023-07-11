@@ -53,14 +53,13 @@ public class ServerResource extends BaseResource {
 
   @GET
   @Path("/nodes")
-  public Response<List<ServerNode>> nodes(@QueryParam("id") String id) {
-    return nodes(id, null);
+  public Response<List<ServerNode>> nodes() {
+    return nodes(null);
   }
 
   @GET
   @Path("/nodes/{status}")
   public Response<List<ServerNode>> nodes(
-      @QueryParam("id") String id,
       @PathParam("status") String status) {
     ClusterManager clusterManager = getClusterManager();
     List<ServerNode> serverList;
@@ -72,9 +71,6 @@ public class ServerResource extends BaseResource {
       serverList = clusterManager.getServerList(Collections.emptySet());
     }
     serverList = serverList.stream().filter(server -> {
-      if (id != null && !id.equals(server.getId())) {
-        return false;
-      }
       if (status != null && !server.getStatus().toString().equals(status)) {
         return false;
       }

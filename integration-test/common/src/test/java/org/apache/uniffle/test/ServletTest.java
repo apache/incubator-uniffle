@@ -137,15 +137,6 @@ public class ServletTest extends IntegrationTestBase {
     assertEquals(ServerStatus.ACTIVE.toString(), serverList.get(0).get("status"));
     assertEquals(SHUFFLE_SERVER_PORT + 1, Integer.parseInt(serverList.get(1).get("grpcPort").toString()));
     assertEquals(ServerStatus.ACTIVE.toString(), serverList.get(1).get("status"));
-
-    // Only fetch one server.
-    ShuffleServer shuffleServer = shuffleServers.get(0);
-    content = TestUtils.httpGet(NODES_URL + "?id=" + shuffleServer.getId());
-    response = objectMapper.readValue(content, new TypeReference<Response<List<HashMap<String, Object>>>>() {
-    });
-    serverList = response.getData();
-    assertEquals(1, serverList.size());
-    assertEquals(shuffleServer.getId(), serverList.get(0).get("id"));
   }
 
   @Test

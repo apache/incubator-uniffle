@@ -167,7 +167,6 @@ PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, whi
 
 > |name|type|data type|description|
 > |----|----|---------|-----------|
-> |id|required|string|shuffle server id, eg:127.0.0.1-19999|
 > |status|optional|string|Shuffle server status, eg:ACTIVE, DECOMMISSIONING, DECOMMISSIONED|
 
 ##### Example cURL
