@@ -44,6 +44,10 @@ public class TestUtils {
     return content.toString();
   }
 
+  public static String httpPost(String urlString) throws IOException {
+    return httpPost(urlString, null);
+  }
+
   public static String httpPost(String urlString, String postData) throws IOException {
     URL url = new URL(urlString);
     HttpURLConnection con = (HttpURLConnection) url.openConnection();
@@ -51,8 +55,10 @@ public class TestUtils {
     con.setRequestMethod("POST");
     con.setRequestProperty("Content-type", "application/json");
     StringBuilder content = new StringBuilder();
-    try (OutputStream outputStream = con.getOutputStream();) {
-      outputStream.write(postData.getBytes());
+    try (OutputStream outputStream = con.getOutputStream()) {
+      if (postData != null) {
+        outputStream.write(postData.getBytes());
+      }
       try (BufferedReader in = new BufferedReader(
           new InputStreamReader(con.getInputStream()));) {
         String inputLine;

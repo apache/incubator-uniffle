@@ -138,24 +138,43 @@ PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, whi
 |rss.metrics.prometheus.pushgateway.jobname|-| The job name under which metrics will be pushed.                                                                                                                                                                                                                                                                                      |
 |rss.metrics.prometheus.pushgateway.report.interval.seconds|10| The interval in seconds for the reporter to report metrics.                                                                                                                                                                                                                                                                                     |
 
-## RESTful API(beta)
+## RESTful API
 
-### Fetch Shuffle servers
+### Fetch single shuffle server
 
 <details>
- <summary><code>GET</code> <code><b>/api/server/nodes</b></code> </summary>
+ <summary><code>GET</code> <code><b>/api/server/{id}</b></code> </summary>
 
 ##### Parameters
 
 > |name|type|data type|description|
 > |----|----|---------|-----------|
-> |id|required|string|shuffle server id, eg:127.0.0.1:19999|
+> |id|required|string|shuffle server id, eg:127.0.0.1-19999|
+##### Example cURL
+
+> ```bash
+>  curl -X GET http://localhost:19998/api/server/127.0.0.1-19999
+> ```
+</details>
+
+
+### Fetch shuffle servers
+
+<details>
+ <summary><code>GET</code> <code><b>/api/server/nodes/{status}</b></code> </summary>
+
+##### Parameters
+
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |id|required|string|shuffle server id, eg:127.0.0.1-19999|
 > |status|optional|string|Shuffle server status, eg:ACTIVE, DECOMMISSIONING, DECOMMISSIONED|
 
 ##### Example cURL
 
 > ```bash
 >  curl -X GET http://localhost:19998/api/server/nodes
+>  curl -X GET http://localhost:19998/api/server/nodes/ACTIVE
 > ```
 </details>
 
@@ -168,12 +187,31 @@ PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, whi
 
 > |name|type| data type         |description|
 > |----|-------------------|---------|-----------|
-> |serverIds|required| array |Shuffle server array, eg:["127.0.0.1:19999"]|
+> |serverIds|required| array |Shuffle server array, eg:["127.0.0.1-19999"]|
 > 
 ##### Example cURL
 
 > ```bash
 >  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/decommission  -d '{"serverIds:": ["127.0.0.1:19999"]}'
+> ```
+</details>
+
+
+### Decommission single shuffle server
+
+<details>
+ <summary><code>POST</code> <code><b>/api/server/{id}/decommission</b></code> </summary>
+
+##### Parameters
+
+> | name |type| data type | description                          |
+> |------|-------------------|-----------|--------------------------------------|
+> | id   |required| string    | Shuffle server id, eg:127.0.0.1-19999 |
+>
+##### Example cURL
+
+> ```bash
+>  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/127.0.0.1-19999/decommission
 > ```
 </details>
 
@@ -193,5 +231,24 @@ PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, whi
 
 > ```bash
 >  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/cancelDecommission  -d '{"serverIds:": ["127.0.0.1:19999"]}'
+> ```
+</details>
+
+
+### Cancel decommission single shuffle server
+
+<details>
+ <summary><code>POST</code> <code><b>/api/server/{id}/cancelDecommission</b></code> </summary>
+
+##### Parameters
+
+> |name|type| data type | description                             |
+> |----|-------------------|--------|-----------------------------------------|
+> |serverIds|required| string | Shuffle server id, eg:"127.0.0.1-19999" |
+>
+##### Example cURL
+
+> ```bash
+>  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/127.0.0.1-19999/cancelDecommission
 > ```
 </details>
