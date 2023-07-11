@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CoordinatorMetricsTest {
 
-  private static final String METRICS_URL = "http://127.0.0.1:12345/metrics/";
+  private static final String METRICS_URL = "http://127.0.0.1:12345/metrics";
   private static final String SERVER_METRICS_URL = "http://127.0.0.1:12345/metrics/server";
   private static final String SERVER_JVM_URL = "http://127.0.0.1:12345/metrics/jvm";
   private static final String SERVER_GRPC_URL = "http://127.0.0.1:12345/metrics/grpc";
