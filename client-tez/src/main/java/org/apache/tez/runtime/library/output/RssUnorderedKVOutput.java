@@ -118,6 +118,8 @@ public class RssUnorderedKVOutput extends AbstractLogicalOutput {
   public List<Event> initialize() throws Exception {
     this.startTime = System.nanoTime();
     this.conf = TezUtils.createConfFromUserPayload(getContext().getUserPayload());
+    this.conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_PARTITIONER_CLASS,
+        UnorderedKVOutput.CustomPartitioner.class.getName());
     this.memoryUpdateCallbackHandler = new MemoryUpdateCallbackHandler();
 
     long memRequestSize = RssTezUtils.getInitialMemoryRequirement(conf, getContext().getTotalMemoryAvailableToTask());
