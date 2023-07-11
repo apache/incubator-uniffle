@@ -48,6 +48,7 @@ public class ShuffleDataFlushEvent {
   private final List<Runnable> cleanupCallbackChains;
 
   private boolean ownedByHugePartition = false;
+  private long startPendingTime;
 
   public ShuffleDataFlushEvent(
       long eventId,
@@ -124,6 +125,7 @@ public class ShuffleDataFlushEvent {
 
   public void markPended() {
     isPended = true;
+    startPendingTime = System.currentTimeMillis();
   }
 
   public Storage getUnderStorage() {
@@ -172,5 +174,9 @@ public class ShuffleDataFlushEvent {
 
   public void markOwnedByHugePartition() {
     this.ownedByHugePartition = true;
+  }
+
+  public long getStartPendingTime() {
+    return startPendingTime;
   }
 }

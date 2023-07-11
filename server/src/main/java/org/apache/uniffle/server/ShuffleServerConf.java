@@ -75,11 +75,17 @@ public class ShuffleServerConf extends RssBaseConf {
       .defaultValue(10 * 1000L)
       .withDescription("Heartbeat interval to Coordinator (ms)");
 
-  public static final ConfigOption<Integer> SERVER_FLUSH_THREAD_POOL_SIZE = ConfigOptions
-      .key("rss.server.flush.threadPool.size")
+  public static final ConfigOption<Integer> SERVER_FLUSH_LOCALFILE_THREAD_POOL_SIZE = ConfigOptions
+      .key("rss.server.flush.localfile.threadPool.size")
       .intType()
       .defaultValue(10)
       .withDescription("thread pool for flush data to file");
+
+  public static final ConfigOption<Integer> SERVER_FLUSH_HADOOP_THREAD_POOL_SIZE = ConfigOptions
+      .key("rss.server.flush.hadoop.threadPool.size")
+      .intType()
+      .defaultValue(10)
+      .withDescription("thread pool for flush data to hadoop storage");
 
   public static final ConfigOption<Integer> SERVER_FLUSH_THREAD_POOL_QUEUE_SIZE = ConfigOptions
       .key("rss.server.flush.threadPool.queue.size")
