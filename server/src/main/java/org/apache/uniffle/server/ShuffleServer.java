@@ -49,6 +49,7 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.netty.StreamServer;
@@ -214,6 +215,9 @@ public class ShuffleServer {
         grpcMetrics.getCollectorRegistry());
     jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#jvm",
         JvmMetrics.getCollectorRegistry());
+    jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#all",
+        new CoalescedCollectorRegistry(ShuffleServerMetrics.getCollectorRegistry(),
+            grpcMetrics.getCollectorRegistry(), JvmMetrics.getCollectorRegistry()));
 
     SecurityConfig securityConfig = null;
     if (shuffleServerConf.getBoolean(RSS_SECURITY_HADOOP_KERBEROS_ENABLE)) {

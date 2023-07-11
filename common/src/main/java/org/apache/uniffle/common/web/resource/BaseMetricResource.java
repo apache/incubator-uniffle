@@ -26,6 +26,9 @@ import org.apache.uniffle.common.exception.InvalidRequestException;
 public abstract class BaseMetricResource {
 
   protected CollectorRegistry getCollectorRegistry(ServletContext servletContext, String type) {
+    if (type == null) {
+      type = "all";
+    }
     CollectorRegistry registry = (CollectorRegistry) servletContext.getAttribute(
         CollectorRegistry.class.getCanonicalName() + "#" + type);
     if (registry == null) {
