@@ -67,7 +67,7 @@ import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER
 public class TezRemoteShuffleManager implements ServicePluginLifecycle {
   private static final Logger LOG = LoggerFactory.getLogger(TezRemoteShuffleManager.class);
 
-  protected InetSocketAddress address;
+  private InetSocketAddress address;
 
   protected volatile Server server;
   private String tokenIdentifier;
@@ -100,6 +100,10 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
   @Override
   public void shutdown() throws Exception {
     server.stop();
+  }
+
+  public InetSocketAddress getAddress() {
+    return address;
   }
 
   private class TezRemoteShuffleUmbilicalProtocolImpl implements TezRemoteShuffleUmbilicalProtocol {

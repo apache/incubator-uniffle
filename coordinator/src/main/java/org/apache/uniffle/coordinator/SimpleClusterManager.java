@@ -131,7 +131,7 @@ public class SimpleClusterManager implements ClusterManager {
       long timestamp = System.currentTimeMillis();
       for (ServerNode sn : servers.values()) {
         if (timestamp - sn.getTimestamp() > heartbeatTimeout) {
-          LOG.warn("Heartbeat timeout detect, " + sn + " will be removed from node list.");
+          LOG.warn("Heartbeat timeout detect, {} will be removed from node list.", sn);
           sn.setStatus(ServerStatus.LOST);
           lostNodes.add(sn);
           unhealthyNodes.remove(sn);
@@ -191,7 +191,7 @@ public class SimpleClusterManager implements ClusterManager {
     } catch (FileNotFoundException fileNotFoundException) {
       excludeNodes = Sets.newConcurrentHashSet();
     } catch (Exception e) {
-      LOG.warn("Error when updating exclude nodes, the exclude nodes file path: " + path, e);
+      LOG.warn("Error when updating exclude nodes, the exclude nodes file path: {}.", path, e);
     }
     int newlyExcludeNodesNumber = excludeNodes.size();
     if (newlyExcludeNodesNumber != originalExcludeNodesNumber) {
@@ -212,7 +212,7 @@ public class SimpleClusterManager implements ClusterManager {
     }
     // update exclude nodes and last modify time
     excludeNodes = nodes;
-    LOG.info("Updated exclude nodes and " + excludeNodes.size() + " nodes were marked as exclude nodes");
+    LOG.info("Updated exclude nodes and {} nodes were marked as exclude nodes", excludeNodes.size());
   }
 
   @Override
@@ -369,7 +369,7 @@ public class SimpleClusterManager implements ClusterManager {
   public void reconfigure(RssConf conf) {
     int nodeMax = conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
     if (nodeMax != shuffleNodesMax) {
-      LOG.warn("Coordinator update new shuffleNodesMax " + nodeMax);
+      LOG.warn("Coordinator update new shuffleNodesMax {}", nodeMax);
       shuffleNodesMax = nodeMax;
     }
   }

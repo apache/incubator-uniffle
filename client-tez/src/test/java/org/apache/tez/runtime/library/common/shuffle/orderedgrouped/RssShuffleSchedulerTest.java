@@ -886,7 +886,7 @@ public class RssShuffleSchedulerTest {
             boolean ifileReadAhead, int ifileReadAheadLength,
             String srcNameTrimmed, boolean fetcherShouldWait) throws IOException {
       super(inputContext, conf, numberOfInputs, shuffle, mergeManager, allocator, startTime, codec,
-          ifileReadAhead, ifileReadAheadLength, srcNameTrimmed);
+          ifileReadAhead, ifileReadAheadLength, srcNameTrimmed, 0);
       this.fetcherShouldWait = fetcherShouldWait;
       this.reporter = shuffle;
       this.inputContext = inputContext;

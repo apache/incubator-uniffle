@@ -90,6 +90,7 @@ public class WriteBufferManager extends MemoryConsumer {
   private Function<AddBlockEvent, CompletableFuture<Long>> spillFunc;
   private long sendSizeLimit;
   private int memorySpillTimeoutSec;
+  private boolean isRowBased;
 
   public WriteBufferManager(
       int shuffleId,
@@ -141,7 +142,8 @@ public class WriteBufferManager extends MemoryConsumer {
     this.requireMemoryRetryMax = bufferManagerOptions.getRequireMemoryRetryMax();
     this.arrayOutputStream = new WrappedByteArrayOutputStream(serializerBufferSize);
     // in columnar shuffle, the serializer here is never used
-    if (serializer != null) {
+    this.isRowBased = rssConf.getBoolean(RssSparkConfig.RSS_ROW_BASED);
+    if (isRowBased) {
       this.instance = serializer.newInstance();
       this.serializeStream = instance.serializeStream(arrayOutputStream);
     }
@@ -185,7 +187,6 @@ public class WriteBufferManager extends MemoryConsumer {
       wb.addRecord(serializedData, serializedDataLength);
       buffers.put(partitionId, wb);
     }
-    shuffleWriteMetrics.incRecordsWritten(1L);
 
     // check buffer size > spill threshold
     if (usedBytes.get() - inSendListBytes.get() > spillSize) {
@@ -215,7 +216,14 @@ public class WriteBufferManager extends MemoryConsumer {
     if (serializedDataLength == 0) {
       return null;
     }
-    return addPartitionData(partitionId, serializedData, serializedDataLength, start);
+    List<ShuffleBlockInfo> shuffleBlockInfos =
+            addPartitionData(partitionId, serializedData, serializedDataLength, start);
+    // records is a row based semantic, when in columnar shuffle records num should be taken from ColumnarBatch
+    // that is handled by rss shuffle writer implementation
+    if (isRowBased) {
+      shuffleWriteMetrics.incRecordsWritten(1L);
+    }
+    return shuffleBlockInfos;
   }
 
   // transform all [partition, records] to [partition, ShuffleBlockInfo] and clear cache

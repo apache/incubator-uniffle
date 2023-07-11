@@ -49,7 +49,7 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
-import org.apache.uniffle.common.web.CommonMetricsServlet;
+import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.netty.StreamServer;
@@ -207,6 +207,17 @@ public class ShuffleServer {
 
     jettyServer = new JettyServer(shuffleServerConf);
     registerMetrics();
+    // register packages and instances for jersey
+    jettyServer.addResourcePackages("org.apache.uniffle.common.web.resource");
+    jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#server",
+        ShuffleServerMetrics.getCollectorRegistry());
+    jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#grpc",
+        grpcMetrics.getCollectorRegistry());
+    jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#jvm",
+        JvmMetrics.getCollectorRegistry());
+    jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#all",
+        new CoalescedCollectorRegistry(ShuffleServerMetrics.getCollectorRegistry(),
+            grpcMetrics.getCollectorRegistry(), JvmMetrics.getCollectorRegistry()));
 
     SecurityConfig securityConfig = null;
     if (shuffleServerConf.getBoolean(RSS_SECURITY_HADOOP_KERBEROS_ENABLE)) {
@@ -275,26 +286,6 @@ public class ShuffleServer {
     CollectorRegistry jvmCollectorRegistry = new CollectorRegistry(true);
     boolean verbose = shuffleServerConf.getBoolean(ShuffleServerConf.RSS_JVM_METRICS_VERBOSE_ENABLE);
     JvmMetrics.register(jvmCollectorRegistry, verbose);
-
-    LOG.info("Add metrics servlet");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(ShuffleServerMetrics.getCollectorRegistry()),
-        "/metrics/server");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(grpcMetrics.getCollectorRegistry()),
-        "/metrics/grpc");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(JvmMetrics.getCollectorRegistry()),
-        "/metrics/jvm");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(ShuffleServerMetrics.getCollectorRegistry(), true),
-        "/prometheus/metrics/server");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(grpcMetrics.getCollectorRegistry(), true),
-        "/prometheus/metrics/grpc");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(JvmMetrics.getCollectorRegistry(), true),
-        "/prometheus/metrics/jvm");
   }
 
   private void initMetricsReporter() throws Exception {

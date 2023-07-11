@@ -71,7 +71,7 @@ public class ClientConfManager implements Closeable {
       throw new IllegalStateException(msg);
     }
     updateClientConfInternal();
-    LOG.info("Load client conf from " + pathStr + " successfully");
+    LOG.info("Load client conf from {} successfully", pathStr);
 
     int updateIntervalS = conf.getInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC);
     updateClientConfSES = ThreadUtils.getDaemonSingleThreadScheduledExecutor("ClientConfManager");
@@ -93,7 +93,7 @@ public class ClientConfManager implements Closeable {
         LOG.warn("Client conf file not found with {}", path);
       }
     } catch (Exception e) {
-      LOG.warn("Error when update client conf with " + path, e);
+      LOG.warn("Error when update client conf with {}.", path, e);
     }
   }
 

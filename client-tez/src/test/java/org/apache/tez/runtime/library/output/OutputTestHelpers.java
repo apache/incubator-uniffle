@@ -21,6 +21,8 @@ import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.tez.common.TezUtils;
 import org.apache.tez.common.counters.TezCounters;
 import org.apache.tez.runtime.api.MemoryUpdateCallback;
@@ -38,6 +40,10 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 public class OutputTestHelpers {
+
+  public static final ApplicationId APP_ID = ApplicationId.newInstance(1681717153064L, 3601637);
+  public static final ApplicationAttemptId APP_ATTEMPT_ID = ApplicationAttemptId.newInstance(APP_ID, 1);
+
   /**
    * help to create output context
    */
@@ -64,6 +70,7 @@ public class OutputTestHelpers {
     OutputStatisticsReporter statsReporter = mock(OutputStatisticsReporter.class);
     doReturn(statsReporter).when(ctx).getStatisticsReporter();
     doReturn(new ExecutionContextImpl("localhost")).when(ctx).getExecutionContext();
+    doReturn(APP_ID).when(ctx).getApplicationId();
     return ctx;
   }
 }

@@ -28,7 +28,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.tez.common.CallableWithNdc;
 import org.apache.tez.common.IdUtils;
-import org.apache.tez.common.InputContextUtils;
 import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.runtime.api.InputContext;
@@ -73,10 +72,10 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
   private final int readBufferSize;
   private final int partitionNumPerRange;
   private final int partitionNum;
-
+  private final int shuffleId;
 
   public RssTezFetcherTask(FetcherCallback fetcherCallback, InputContext inputContext, Configuration conf,
-            FetchedInputAllocator inputManager, int partition,
+            FetchedInputAllocator inputManager, int partition, int shuffleId,
             List<InputAttemptIdentifier> inputs, Set<ShuffleServerInfo> serverInfoList,
             Map<Integer, Roaring64NavigableMap> rssAllBlockIdBitmapMap,
             Map<Integer, Roaring64NavigableMap> rssSuccessBlockIdBitmapMap,
@@ -88,6 +87,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
     this.inputManager = inputManager;
     this.partition = partition;  // partition id to fetch
     this.inputs = inputs;
+    this.shuffleId = shuffleId;
 
     this.serverInfoSet = serverInfoList;
     this.rssAllBlockIdBitmapMap = rssAllBlockIdBitmapMap;
@@ -116,10 +116,6 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
 
   @Override
   protected FetchResult callInternal() throws Exception {
-    // get assigned RSS servers
-    // just get blockIds from RSS servers
-    int shuffleId = InputContextUtils.computeShuffleId(inputContext);
-
     ShuffleWriteClient writeClient = RssTezUtils.createShuffleClient(this.conf);
     LOG.info("WriteClient getShuffleResult, clientType:{}, serverInfoSet:{}, appId:{}, shuffleId:{}, partition:{}",
         clientType, serverInfoSet, appId, shuffleId, partition);
@@ -147,7 +143,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
       boolean expectedTaskIdsBitmapFilterEnable = serverInfoSet.size() > 1;
       CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
           appId,
-          InputContextUtils.computeShuffleId(inputContext),
+          shuffleId,
           partition,
           basePath,
           partitionNumPerRange,

@@ -172,7 +172,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
       ShuffleDataFlushEvent event = createShuffleDataFlushEvent(appId, 1, 1, 1, null);
       manager.addToFlushQueue(event);
     });
-    waitForFlush(manager, appId, 1, 10 * 5);
+    waitForFlush(manager, appId, 1, 20 * 5);
 
     FileStatus[] fileStatuses = fs.listStatus(new Path(HDFS_URI + "/rss/test/" + appId + "/1/1-1"));
     long actual = Arrays.stream(fileStatuses).filter(x -> x.getPath().getName().endsWith("data")).count();
@@ -583,39 +583,56 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
   }
 
   @Test
-  public void processPendingEventsTest(@TempDir File tempDir) throws Exception {
-    shuffleServerConf.set(RssBaseConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.toString());
+  public void defaultFlushEventHandlerTest(@TempDir File tempDir) throws Exception {
+    shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 10000L);
+    shuffleServerConf.set(RssBaseConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS.toString());
     shuffleServerConf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
     shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
-    shuffleServerConf.set(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC, 5L);
-    StorageManager storageManager =
-        StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
-    ShuffleFlushManager manager =
-        new ShuffleFlushManager(shuffleServerConf, mockShuffleServer, storageManager);
-    ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(1, "1", 1, 1, 1, 100, null, null, null);
-    assertEquals(0, manager.getPendingEventsSize());
-    manager.addPendingEvents(event);
-    Thread.sleep(1000);
-    assertEquals(0, manager.getPendingEventsSize());
-    do {
-      Thread.sleep(1 * 1000);
-    } while (manager.getEventNumInFlush() != 0);
+    shuffleServerConf.set(ShuffleServerConf.SERVER_FLUSH_HADOOP_THREAD_POOL_SIZE, 1);
+    shuffleServerConf.set(ShuffleServerConf.SERVER_FLUSH_LOCALFILE_THREAD_POOL_SIZE, 1);
+    shuffleServerConf.setString(ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
+            LocalStorageManagerFallbackStrategy.class.getCanonicalName());
 
-    List<ShufflePartitionedBlock> blocks =
-        Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
+    StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
+    String appId = "fallbackWrittenWhenMultiStorageManagerEnableTest";
+    storageManager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage.getPath()));
+
+    ShuffleFlushManager flushManager = new ShuffleFlushManager(
+            shuffleServerConf,
+            mockShuffleServer,
+            storageManager
+    );
+
+    ShuffleServerMetrics.counterLocalFileEventFlush.clear();
+    ShuffleServerMetrics.counterHadoopEventFlush.clear();
+    // case1: normally written to local storage
+    ShuffleDataFlushEvent event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100);
+    flushManager.addToFlushQueue(event);
+    waitForFlush(flushManager, appId, 1, 5);
+    assertEquals(0, event.getRetryTimes());
+    assertEquals(1, ShuffleServerMetrics.counterLocalFileEventFlush.get());
+
+    // case2: huge event is written to cold storage directly
+    event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100000);
+    flushManager.addToFlushQueue(event);
+    waitForFlush(flushManager, appId, 1, 10);
+    assertEquals(0, event.getRetryTimes());
+    assertEquals(1, ShuffleServerMetrics.counterHadoopEventFlush.get());
+
+    // case3: local disk is full or corrupted, fallback to HDFS
+    List<ShufflePartitionedBlock> blocks = Lists.newArrayList(
+            new ShufflePartitionedBlock(100000, 1000, 1, 1, 1L, (byte[]) null)
+    );
     ShuffleDataFlushEvent bigEvent = new ShuffleDataFlushEvent(1, "1", 1, 1, 1, 100, blocks, null, null);
-    bigEvent.setUnderStorage(storageManager.selectStorage(event));
-    storageManager.updateWriteMetrics(bigEvent, 0);
+    bigEvent.setUnderStorage(((MultiStorageManager) storageManager).getWarmStorageManager().selectStorage(event));
+    ((MultiStorageManager) storageManager).getWarmStorageManager().updateWriteMetrics(bigEvent, 0);
 
-    manager.addPendingEvents(event);
-    manager.addPendingEvents(event);
-    manager.addPendingEvents(event);
-    Thread.sleep(1000);
-    assertTrue(2 <= manager.getPendingEventsSize());
-    int eventNum = (int) ShuffleServerMetrics.counterTotalDroppedEventNum.get();
-    Thread.sleep(6 * 1000);
-    assertEquals(eventNum + 3, (int) ShuffleServerMetrics.counterTotalDroppedEventNum.get());
-    assertEquals(0, manager.getPendingEventsSize());
+    event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100);
+    flushManager.addToFlushQueue(event);
+    waitForFlush(flushManager, appId, 1, 15);
+    assertEquals(1, event.getRetryTimes());
+    assertEquals(2, ShuffleServerMetrics.counterLocalFileEventFlush.get());
+    assertEquals(2, ShuffleServerMetrics.counterHadoopEventFlush.get());
   }
 
   private void validateLocalMetadata(StorageManager storageManager, Long size) {

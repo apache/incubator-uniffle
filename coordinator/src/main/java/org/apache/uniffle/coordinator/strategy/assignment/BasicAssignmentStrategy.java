@@ -67,7 +67,7 @@ public class BasicAssignmentStrategy extends AbstractAssignmentStrategy {
     Collections.shuffle(servers);
     Collections.sort(servers);
     if (expectedNum > servers.size()) {
-      LOG.warn("Can't get expected servers [" + expectedNum + "] and found only [" + servers.size() + "]");
+      LOG.warn("Can't get expected servers [{}] and found only [{}]", expectedNum, servers.size());
       return servers;
     }
 

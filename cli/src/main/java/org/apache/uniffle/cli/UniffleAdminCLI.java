@@ -34,7 +34,9 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
 
   private final Options allOptions;
   private final Option refreshCheckerCli;
-  private final Option help;
+  private final Option coordinatorHost;
+  private final Option coordinatorPort;
+  private final Option ssl;
 
   public UniffleAdminCLI(String shortPrefix, String longPrefix) {
     allOptions = new Options();
@@ -42,11 +44,8 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
         false, "This is an admin command that will refresh access checker.");
     help = new Option(shortPrefix + "h", longPrefix + "help",
         false, "Help for the Uniffle Admin CLI.");
-
+    
     allOptions.addOption(refreshCheckerCli);
-    allOptions.addOption(coordinatorHost);
-    allOptions.addOption(coordinatorPort);
-    allOptions.addOption(ssl);
     allOptions.addOption(help);
   }
 
@@ -57,6 +56,11 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
 
   public int run(String[] args) throws UniffleCliArgsException {
     final CommandLine cmd = parseCommandLineOptions(args, true);
+
+    if (args != null && args.length < 1) {
+      printUsage();
+      return 1;
+    }
 
     if (cmd.hasOption(help.getOpt())) {
       printUsage();

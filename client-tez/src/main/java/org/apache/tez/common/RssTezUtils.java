@@ -27,6 +27,24 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 import org.apache.tez.runtime.library.api.TezRuntimeConfiguration;
 import org.apache.tez.runtime.library.common.InputAttemptIdentifier;
+import org.apache.tez.runtime.library.input.ConcatenatedMergedKeyValueInput;
+import org.apache.tez.runtime.library.input.ConcatenatedMergedKeyValuesInput;
+import org.apache.tez.runtime.library.input.OrderedGroupedInputLegacy;
+import org.apache.tez.runtime.library.input.OrderedGroupedKVInput;
+import org.apache.tez.runtime.library.input.OrderedGroupedMergedKVInput;
+import org.apache.tez.runtime.library.input.RssConcatenatedMergedKeyValueInput;
+import org.apache.tez.runtime.library.input.RssConcatenatedMergedKeyValuesInput;
+import org.apache.tez.runtime.library.input.RssOrderedGroupedInputLegacy;
+import org.apache.tez.runtime.library.input.RssOrderedGroupedKVInput;
+import org.apache.tez.runtime.library.input.RssOrderedGroupedMergedKVInput;
+import org.apache.tez.runtime.library.input.RssUnorderedKVInput;
+import org.apache.tez.runtime.library.input.UnorderedKVInput;
+import org.apache.tez.runtime.library.output.OrderedPartitionedKVOutput;
+import org.apache.tez.runtime.library.output.RssOrderedPartitionedKVOutput;
+import org.apache.tez.runtime.library.output.RssUnorderedKVOutput;
+import org.apache.tez.runtime.library.output.RssUnorderedPartitionedKVOutput;
+import org.apache.tez.runtime.library.output.UnorderedKVOutput;
+import org.apache.tez.runtime.library.output.UnorderedPartitionedKVOutput;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -182,24 +200,14 @@ public class RssTezUtils {
   /**
    *
    * @param tezDagID Get from tez InputContext, represent dag id.
-   * @param upVertexName Up stream vertex name of the task, like "Map 1" or "Reducer 2".
-   * @param downVertexName The vertex name of task, like "Map 1" or "Reducer 2".
-   * @return The shuffle id. First convert upVertexName of String type to int, by invoke mapVertexId() method,
-   * Then convert downVertexName of String type to int, by invoke mapVertexId() method.
-   * Finally compute shuffle id by pass tezDagID, upVertexId, downVertexId and invoke computeShuffleId() method.
-   * By map vertex name of String type to int type, we can compute shuffle id.
+   * @param upVertexId Up stream vertex id of the task.
+   * @param downVertexId The vertex id of task.
+   * @return The shuffle id.
    */
-  public static int computeShuffleId(int tezDagID, String upVertexName, String downVertexName) {
-    int upVertexId = mapVertexId(upVertexName);
-    int downVertexId = mapVertexId(downVertexName);
-    int shuffleId = computeShuffleId(tezDagID, upVertexId, downVertexId);
-    LOG.info("Compute Shuffle Id, upVertexName:{}, id:{}, downVertexName:{}, id:{}, shuffleId:{}",
-        upVertexName, upVertexId, downVertexName, downVertexId, shuffleId);
+  public static int computeShuffleId(int tezDagID, int upVertexId, int downVertexId) {
+    int shuffleId = tezDagID * (SHUFFLE_ID_MAGIC * SHUFFLE_ID_MAGIC)  + upVertexId * SHUFFLE_ID_MAGIC + downVertexId;
+    LOG.info("Compute Shuffle Id:{}, up vertex id:{}, down vertex id:{}", shuffleId, upVertexId, downVertexId);
     return shuffleId;
-  }
-
-  private static int computeShuffleId(int tezDagID, int upTezVertexID, int downTezVertexID) {
-    return tezDagID * (SHUFFLE_ID_MAGIC * SHUFFLE_ID_MAGIC)  + upTezVertexID * SHUFFLE_ID_MAGIC + downTezVertexID;
   }
 
   /**
@@ -324,5 +332,91 @@ public class RssTezUtils {
         parseRssWorkerFromHostInfo(rssWorker, workerStr);
       }
     }
+  }
+
+  public static String replaceRssOutputClassName(String className) {
+    if (className.equals(OrderedPartitionedKVOutput.class.getName())) {
+      LOG.info("Output class name will transient from {} to {}", className,
+          RssOrderedPartitionedKVOutput.class.getName());
+      return RssOrderedPartitionedKVOutput.class.getName();
+    } else if (className.equals(UnorderedKVOutput.class.getName())) {
+      LOG.info("Output class name will transient from {} to {}", className,
+          RssUnorderedKVOutput.class.getName());
+      return RssUnorderedKVOutput.class.getName();
+    } else if (className.equals(UnorderedPartitionedKVOutput.class.getName())) {
+      LOG.info("Output class name will transient from {} to {}", className,
+          RssUnorderedPartitionedKVOutput.class.getName());
+      return RssUnorderedPartitionedKVOutput.class.getName();
+    } else {
+      LOG.info("Unexpected kv output class name {}.", className);
+      return className;
+    }
+  }
+
+  public static String replaceRssInputClassName(String className) {
+    if (className.equals(OrderedGroupedKVInput.class.getName())) {
+      LOG.info("Input class name will transient from {} to {}", className,
+          RssOrderedGroupedKVInput.class.getName());
+      return RssOrderedGroupedKVInput.class.getName();
+    } else if (className.equals(OrderedGroupedMergedKVInput.class.getName())) {
+      LOG.info("Input class name will transient from {} to {}", className,
+          RssOrderedGroupedMergedKVInput.class.getName());
+      return RssOrderedGroupedMergedKVInput.class.getName();
+    } else if (className.equals(OrderedGroupedInputLegacy.class.getName())) {
+      LOG.info("Input class name will transient from {} to {}", className,
+          RssOrderedGroupedInputLegacy.class.getName());
+      return RssOrderedGroupedInputLegacy.class.getName();
+    } else if (className.equals(UnorderedKVInput.class.getName())) {
+      LOG.info("Input class name will transient from {} to {}", className,
+          RssUnorderedKVInput.class.getName());
+      return RssUnorderedKVInput.class.getName();
+    } else if (className.equals(ConcatenatedMergedKeyValueInput.class.getName())) {
+      LOG.info("Input class name will transient from {} to {}", className,
+          RssConcatenatedMergedKeyValueInput.class.getName());
+      return RssConcatenatedMergedKeyValueInput.class.getName();
+    } else if (className.equals(ConcatenatedMergedKeyValuesInput.class.getName())) {
+      LOG.info("Input class name will transient from {} to {}", className,
+          RssConcatenatedMergedKeyValuesInput.class.getName());
+      return RssConcatenatedMergedKeyValuesInput.class.getName();
+    } else {
+      LOG.info("Unexpected kv input class name {}.", className);
+      return className;
+    }
+  }
+
+  public static void applyDynamicClientConf(Configuration conf, Map<String, String> confItems) {
+    if (conf == null) {
+      LOG.warn("Tez conf is null");
+      return;
+    }
+
+    if (confItems == null || confItems.isEmpty()) {
+      LOG.warn("Empty conf items");
+      return;
+    }
+
+    for (Map.Entry<String, String> kv : confItems.entrySet()) {
+      String tezConfKey = kv.getKey();
+      if (!tezConfKey.startsWith(RssTezConfig.TEZ_RSS_CONFIG_PREFIX)) {
+        tezConfKey = RssTezConfig.TEZ_RSS_CONFIG_PREFIX + tezConfKey;
+      }
+      String tezConfVal = kv.getValue();
+      if (StringUtils.isEmpty(conf.get(tezConfKey, ""))
+          || RssTezConfig.RSS_MANDATORY_CLUSTER_CONF.contains(tezConfKey)) {
+        LOG.warn("Use conf dynamic conf {} = {}", tezConfKey, tezConfVal);
+        conf.set(tezConfKey, tezConfVal);
+      }
+    }
+  }
+
+  public static Configuration filterRssConf(Configuration extraConf) {
+    Configuration conf = new Configuration(false);
+    for (Map.Entry<String, String> entry : extraConf) {
+      String key = entry.getKey();
+      if (key.startsWith(RssTezConfig.TEZ_RSS_CONFIG_PREFIX)) {
+        conf.set(entry.getKey(), entry.getValue());
+      }
+    }
+    return conf;
   }
 }
