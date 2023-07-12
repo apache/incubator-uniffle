@@ -15,25 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common.web.resource;
+package org.apache.uniffle.test;
 
-import javax.servlet.ServletContext;
+import org.apache.hadoop.util.Tool;
+import org.apache.tez.examples.SortMergeJoinExample;
+import org.junit.jupiter.api.Test;
 
-import io.prometheus.client.CollectorRegistry;
+public class TezSortMergeJoinTest extends TezJoinIntegrationTestBase {
 
-import org.apache.uniffle.common.exception.InvalidRequestException;
+  private static final String SORT_MERGE_JOIN_OUTPUT_PATH = "sort_merge_join_output";
 
-public abstract class BaseMetricResource {
+  @Test
+  public void sortMergeJoinTest() throws Exception {
+    generateInputFile();
+    run(getTestArgs(""));
+  }
 
-  protected CollectorRegistry getCollectorRegistry(ServletContext servletContext, String type) {
-    if (type == null) {
-      type = "all";
-    }
-    CollectorRegistry registry = (CollectorRegistry) servletContext.getAttribute(
-        CollectorRegistry.class.getCanonicalName() + "#" + type);
-    if (registry == null) {
-      throw new InvalidRequestException(String.format("Metric type[%s] not supported", type));
-    }
-    return registry;
+  @Override
+  public Tool getTestTool() {
+    return new SortMergeJoinExample();
+  }
+
+  @Override
+  public String[] getTestArgs(String uniqueOutputName) {
+    return new String[] {STREAM_INPUT_PATH, HASH_INPUT_PATH, "2", SORT_MERGE_JOIN_OUTPUT_PATH};
+  }
+
+  @Override
+  public String getOutputDir(String uniqueOutputName) {
+    return SORT_MERGE_JOIN_OUTPUT_PATH;
   }
 }

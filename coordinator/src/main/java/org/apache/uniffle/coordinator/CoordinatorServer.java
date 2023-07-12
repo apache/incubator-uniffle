@@ -35,6 +35,7 @@ import org.apache.uniffle.common.rpc.ServerInterface;
 import org.apache.uniffle.common.security.SecurityConfig;
 import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
@@ -193,6 +194,9 @@ public class CoordinatorServer extends ReconfigurableBase {
         grpcMetrics.getCollectorRegistry());
     jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#jvm",
         JvmMetrics.getCollectorRegistry());
+    jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#all",
+        new CoalescedCollectorRegistry(CoordinatorMetrics.getCollectorRegistry(),
+            grpcMetrics.getCollectorRegistry(), JvmMetrics.getCollectorRegistry()));
   }
 
   private void registerMetrics() throws Exception {

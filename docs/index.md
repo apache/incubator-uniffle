@@ -29,13 +29,14 @@ to store shuffle data on remote servers.
 
 More advanced details for Uniffle users are available in the following:
 
-- [Uniffle Coordinator Guide](coordinator_guide.html)
+- [Uniffle Coordinator Guide](coordinator_guide.md)
 
-- [Uniffle Shuffle Server Guide](server_guide.html)
+- [Uniffle Shuffle Server Guide](server_guide.md)
 
-- [Uniffle Shuffle Client Guide](client_guide.html)
+- [Uniffle Shuffle Client Guide](client_guide.md)
 
-
+- [Metrics Guide](metrics_guide.md)
+- 
 Here you can read API docs for Uniffle along with its submodules.
 
 - [Java API (Javadoc)](apidocs/index.html)

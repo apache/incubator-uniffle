@@ -33,13 +33,19 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
 @Path("/metrics")
+@Produces({ MediaType.APPLICATION_JSON })
 public class MetricResource extends BaseMetricResource {
   @Context
   protected ServletContext servletContext;
 
   @GET
+  @Path("/")
+  public MetricsJsonObj metrics(@QueryParam("name[]") Set<String> names) {
+    return metrics(null, names);
+  }
+
+  @GET
   @Path("/{type}")
-  @Produces({ MediaType.APPLICATION_JSON })
   public MetricsJsonObj metrics(
       @PathParam("type") String type,
       @QueryParam("name[]") Set<String> names) {
