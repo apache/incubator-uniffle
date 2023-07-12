@@ -19,7 +19,9 @@ package org.apache.uniffle.coordinator.web.resource;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.servlet.ServletContext;
 
@@ -33,9 +35,12 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
 import org.apache.uniffle.common.ServerStatus;
+import org.apache.uniffle.coordinator.Application;
+import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.ClusterManager;
 import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.coordinator.web.Response;
+import org.apache.uniffle.coordinator.web.request.ApplicationRequest;
 import org.apache.uniffle.coordinator.web.request.CancelDecommissionRequest;
 import org.apache.uniffle.coordinator.web.request.DecommissionRequest;
 
@@ -101,8 +106,30 @@ public class ServerResource {
     return Response.success(null);
   }
 
+  @POST
+  @Path("/application")
+  @Produces({ MediaType.APPLICATION_JSON })
+  public Response<Object> application(ApplicationRequest params) {
+    Set<String> filterApplications = new HashSet<>();
+    if (params != null && CollectionUtils.isNotEmpty(params.getApplications())) {
+      filterApplications = params.getApplications();
+    }
+    try {
+      ApplicationManager applicationManager = getApplicationManager();
+      Set<Application> applicationSet = applicationManager.getApplications(filterApplications);
+      return Response.success(applicationSet);
+    } catch (Exception e) {
+      return Response.fail(e.getMessage());
+    }
+  }
+
   private ClusterManager getClusterManager() {
     return (ClusterManager) servletContext.getAttribute(
             ClusterManager.class.getCanonicalName());
+  }
+
+  private ApplicationManager getApplicationManager() {
+    return (ApplicationManager) servletContext.getAttribute(
+        ApplicationManager.class.getCanonicalName());
   }
 }

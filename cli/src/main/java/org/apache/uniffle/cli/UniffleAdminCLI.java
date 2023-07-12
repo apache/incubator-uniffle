@@ -34,9 +34,7 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
 
   private final Options allOptions;
   private final Option refreshCheckerCli;
-  private final Option coordinatorHost;
-  private final Option coordinatorPort;
-  private final Option ssl;
+  private final Option help;
 
   public UniffleAdminCLI(String shortPrefix, String longPrefix) {
     allOptions = new Options();

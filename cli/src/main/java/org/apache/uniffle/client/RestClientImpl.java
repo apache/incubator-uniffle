@@ -50,7 +50,8 @@ public class RestClientImpl implements RestClient {
   private static final Logger LOG = LoggerFactory.getLogger(RestClientImpl.class);
   private CloseableHttpClient httpclient;
   private String baseUrl;
-  final ObjectMapper mapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
+  private final ObjectMapper mapper =
+      new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
   public RestClientImpl(String baseUrl, CloseableHttpClient httpclient) {
     this.httpclient = httpclient;

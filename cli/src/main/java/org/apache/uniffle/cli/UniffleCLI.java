@@ -19,7 +19,6 @@ package org.apache.uniffle.cli;
 
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -102,18 +101,19 @@ public class UniffleCLI extends AbstractCustomCommandLine {
 
     if (cmd.hasOption(uniffleApplicationCli.getOpt())) {
       LOG.info("uniffle-client-cli : get applications");
-      PrintWriter writer = new PrintWriter(new OutputStreamWriter(
-          System.out, Charset.forName(StandardCharsets.UTF_8.name())));
-      FormattingCLIUtils formattingCLIUtils = new FormattingCLIUtils("Uniflle Applications")
-          .addHeaders(APPLICATIONS_HEADER);
-      List<Application> applications = getApplications(cmd);
-      if (applications != null) {
-        applications.forEach(app -> formattingCLIUtils.addLine(app.getApplicationId(),
-            app.getUser(), app.getLastHeartBeatTime(), app.getRemoteStoragePath()));
+
+      try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8))) {
+        FormattingCLIUtils formattingCLIUtils = new FormattingCLIUtils("Uniflle Applications")
+            .addHeaders(APPLICATIONS_HEADER);
+        List<Application> applications = getApplications(cmd);
+        if (applications != null) {
+          applications.forEach(app -> formattingCLIUtils.addLine(app.getApplicationId(),
+              app.getUser(), app.getLastHeartBeatTime(), app.getRemoteStoragePath()));
+        }
+        writer.print(formattingCLIUtils.render());
+        writer.flush();
+        return 0;
       }
-      writer.print(formattingCLIUtils.render());
-      writer.flush();
-      return 0;
     }
 
     return 1;
