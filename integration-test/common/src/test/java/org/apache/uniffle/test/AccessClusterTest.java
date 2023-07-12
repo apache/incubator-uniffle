@@ -172,9 +172,9 @@ public class AccessClusterTest extends CoordinatorTestBase {
     shuffleServer.start();
     Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
 
-    CoordinatorClientFactory coordinatorClientFactory = CoordinatorClientFactory.getInstance();
-    coordinatorClientFactory.setCoordinatorClientType(ClientType.GRPC);
-    CoordinatorClient client = coordinatorClientFactory.createCoordinatorClient(LOCALHOST, COORDINATOR_PORT_1 + 13);
+    CoordinatorClientFactory factory = CoordinatorClientFactory.getInstance();
+    factory.setCoordinatorClientType(ClientType.GRPC);
+    CoordinatorClient client = factory.createCoordinatorClient(LOCALHOST, COORDINATOR_PORT_1 + 13);
 
     request = new RssAccessClusterRequest(accessId,
         Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, "user");
