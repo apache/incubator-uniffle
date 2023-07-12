@@ -34,13 +34,8 @@ import org.apache.uniffle.common.util.JavaUtils;
 
 public class CoordinatorClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorClientFactory.class);
-  private Map<String, Map<String, CoordinatorClient>> clients;
-
+  private Map<String, Map<String, CoordinatorClient>> clients = JavaUtils.newConcurrentMap();
   private ClientType clientType;
-
-  private CoordinatorClientFactory() {
-    clients = JavaUtils.newConcurrentMap();
-  }
 
   private static class LazyHolder {
     static final CoordinatorClientFactory INSTANCE = new CoordinatorClientFactory();
@@ -94,7 +89,7 @@ public class CoordinatorClientFactory {
     return coordinatorClients;
   }
 
-  public synchronized List<CoordinatorClient> getOrCreateCoordinatorClient(String clientType, String coordinators) {
+  public List<CoordinatorClient> getOrCreateCoordinatorClient(String clientType, String coordinators) {
     String[] coordinatorList = coordinators.trim().split(",");
     if (coordinatorList.length == 0) {
       String msg = "Invalid " + coordinators;
@@ -103,27 +98,26 @@ public class CoordinatorClientFactory {
     }
     List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
     for (String coordinator: coordinatorList) {
-      clients.putIfAbsent(clientType, JavaUtils.newConcurrentMap());
+      clients.computeIfAbsent(clientType, key -> JavaUtils.newConcurrentMap());
       Map<String, CoordinatorClient> typeToClients = clients.get(clientType);
       CoordinatorClient coordinatorClient = typeToClients.get(coordinator);
-      if (coordinatorClient == null) {
-        LOG.info("Start to create coordinator clients from {}", coordinator);
-        String[] ipPort = coordinator.trim().split(":");
-        if (ipPort.length != 2) {
-          String msg = "Invalid coordinator format " + Arrays.toString(ipPort);
-          LOG.error(msg);
-          throw new RssException(msg);
-        }
-
-        String host = ipPort[0];
-        int port = Integer.parseInt(ipPort[1]);
-
-        CoordinatorClient newClient = createCoordinatorClient(host, port);
-        coordinatorClients.add(newClient);
-        typeToClients.put(coordinator, newClient);
-      } else {
+      if (coordinatorClient != null) {
         coordinatorClients.add(coordinatorClient);
+        continue;
       }
+      LOG.info("Start to create coordinator clients from {}", coordinator);
+      String[] ipPort = coordinator.trim().split(":");
+      if (ipPort.length != 2) {
+        String msg = "Invalid coordinator format " + Arrays.toString(ipPort);
+        LOG.error(msg);
+        throw new RssException(msg);
+      }
+      String host = ipPort[0];
+      int port = Integer.parseInt(ipPort[1]);
+      CoordinatorClient newClient = createCoordinatorClient(host, port);
+      coordinatorClients.add(newClient);
+      typeToClients.put(coordinator, newClient);
+      clients.put(clientType, typeToClients);
     }
     return coordinatorClients;
   }

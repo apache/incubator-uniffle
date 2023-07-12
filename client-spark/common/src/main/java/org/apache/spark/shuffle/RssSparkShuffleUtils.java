@@ -57,6 +57,7 @@ import org.apache.uniffle.common.util.Constants;
 import static org.apache.uniffle.common.util.Constants.DRIVER_HOST;
 
 public class RssSparkShuffleUtils {
+
   private static final Logger LOG = LoggerFactory.getLogger(RssSparkShuffleUtils.class);
 
   public static final ClassTag<ShuffleHandleInfo> SHUFFLE_HANDLER_INFO_CLASS_TAG =
@@ -103,6 +104,11 @@ public class RssSparkShuffleUtils {
   }
 
   public static List<CoordinatorClient> createCoordinatorClients(SparkConf sparkConf) {
+    if (sparkConf == null) {
+      LOG.warn("Spark conf is null");
+      return null;
+    }
+
     String clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
     String coordinators = sparkConf.get(RssSparkConfig.RSS_COORDINATOR_QUORUM);
     CoordinatorClientFactory factory = CoordinatorClientFactory.getInstance();
