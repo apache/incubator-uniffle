@@ -44,10 +44,11 @@ import org.apache.tez.common.ServicePluginLifecycle;
 import org.apache.tez.common.ShuffleAssignmentsInfoWritable;
 import org.apache.tez.common.TezRemoteShuffleUmbilicalProtocol;
 import org.apache.tez.common.security.JobTokenIdentifier;
+import org.apache.tez.common.security.JobTokenSecretManager;
 import org.apache.tez.dag.api.TezConfiguration;
 import org.apache.tez.dag.api.TezException;
 import org.apache.tez.dag.api.TezUncheckedException;
-import org.apache.tez.dag.app.security.authorize.TezAMPolicyProvider;
+import org.apache.tez.dag.app.security.authorize.RssTezAMPolicyProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -247,6 +248,8 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
         rssAmRpcBindPort = 0;
       }
 
+      JobTokenSecretManager jobTokenSecretManager = new JobTokenSecretManager();
+      jobTokenSecretManager.addTokenForJob(tokenIdentifier, sessionToken);
       server = new RPC.Builder(conf)
               .setProtocol(TezRemoteShuffleUmbilicalProtocol.class)
               .setBindAddress(rssAmRpcBindAddress)
@@ -256,13 +259,14 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
                       conf.getInt(TezConfiguration.TEZ_AM_TASK_LISTENER_THREAD_COUNT,
                               TezConfiguration.TEZ_AM_TASK_LISTENER_THREAD_COUNT_DEFAULT))
               .setPortRangeConfig(TezConfiguration.TEZ_AM_TASK_AM_PORT_RANGE)
+              .setSecretManager(jobTokenSecretManager)
               .build();
 
       // Enable service authorization?
       if (conf.getBoolean(
               CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHORIZATION,
               false)) {
-        refreshServiceAcls(conf, new TezAMPolicyProvider());
+        refreshServiceAcls(conf, new RssTezAMPolicyProvider());
       }
 
       server.start();

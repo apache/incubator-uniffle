@@ -30,6 +30,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.yarn.YarnUncaughtExceptionHandler;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
@@ -49,6 +50,8 @@ import org.apache.tez.common.TezCommonUtils;
 import org.apache.tez.common.TezUtils;
 import org.apache.tez.common.TezUtilsInternal;
 import org.apache.tez.common.VersionInfo;
+import org.apache.tez.common.security.JobTokenIdentifier;
+import org.apache.tez.common.security.TokenCache;
 import org.apache.tez.dag.api.InputDescriptor;
 import org.apache.tez.dag.api.OutputDescriptor;
 import org.apache.tez.dag.api.TezConstants;
@@ -154,8 +157,9 @@ public class RssDAGAppMaster extends DAGAppMaster {
             heartbeatInterval,
             TimeUnit.MILLISECONDS);
 
-    appMaster.setTezRemoteShuffleManager(new TezRemoteShuffleManager(strAppAttemptId, null, conf,
-            strAppAttemptId, client));
+    Token<JobTokenIdentifier> sessionToken = TokenCache.getSessionToken(appMaster.getContext().getAppCredentials());
+    appMaster.setTezRemoteShuffleManager(
+        new TezRemoteShuffleManager(appMaster.getAppID().toString(), sessionToken, conf, strAppAttemptId, client));
     appMaster.getTezRemoteShuffleManager().initialize();
     appMaster.getTezRemoteShuffleManager().start();
 

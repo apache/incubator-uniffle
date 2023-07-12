@@ -35,7 +35,10 @@ import org.apache.hadoop.classification.InterfaceAudience.Public;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.net.NetUtils;
+import org.apache.hadoop.security.Credentials;
+import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.tez.common.GetShuffleServerRequest;
 import org.apache.tez.common.GetShuffleServerResponse;
@@ -43,6 +46,8 @@ import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.common.TezCommonUtils;
 import org.apache.tez.common.TezRemoteShuffleUmbilicalProtocol;
 import org.apache.tez.common.TezUtils;
+import org.apache.tez.common.security.JobTokenIdentifier;
+import org.apache.tez.common.security.TokenCache;
 import org.apache.tez.dag.api.TezConfiguration;
 import org.apache.tez.dag.records.TezDAGID;
 import org.apache.tez.dag.records.TezTaskAttemptID;
@@ -134,6 +139,10 @@ public class RssUnorderedPartitionedKVOutput extends AbstractLogicalOutput {
     final InetSocketAddress address = NetUtils.createSocketAddrForHost(host, port);
 
     UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(this.applicationId.toString());
+    Credentials credentials = UserGroupInformation.getCurrentUser().getCredentials();
+    Token<JobTokenIdentifier> jobToken = TokenCache.getSessionToken(credentials);
+    SecurityUtil.setTokenService(jobToken, address);
+    taskOwner.addToken(jobToken);
     final TezRemoteShuffleUmbilicalProtocol umbilical = taskOwner
         .doAs(new PrivilegedExceptionAction<TezRemoteShuffleUmbilicalProtocol>() {
           @Override
