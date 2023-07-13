@@ -32,12 +32,7 @@ public class ShufflePartitionedBlock {
   private long taskAttemptId;
 
   public ShufflePartitionedBlock(
-      int length,
-      int uncompressLength,
-      long crc,
-      long blockId,
-      long taskAttemptId,
-      byte[] data) {
+      int length, int uncompressLength, long crc, long blockId, long taskAttemptId, byte[] data) {
     this.length = length;
     this.crc = crc;
     this.blockId = blockId;
@@ -47,12 +42,7 @@ public class ShufflePartitionedBlock {
   }
 
   public ShufflePartitionedBlock(
-      int length,
-      int uncompressLength,
-      long crc,
-      long blockId,
-      long taskAttemptId,
-      ByteBuf data) {
+      int length, int uncompressLength, long crc, long blockId, long taskAttemptId, ByteBuf data) {
     this.length = length;
     this.crc = crc;
     this.blockId = blockId;
@@ -133,8 +123,16 @@ public class ShufflePartitionedBlock {
 
   @Override
   public String toString() {
-    return "ShufflePartitionedBlock{blockId[" + blockId + "], length[" + length
-        + "], uncompressLength[" + uncompressLength + "], crc[" + crc + "], taskAttemptId[" + taskAttemptId + "]}";
+    return "ShufflePartitionedBlock{blockId["
+        + blockId
+        + "], length["
+        + length
+        + "], uncompressLength["
+        + uncompressLength
+        + "], crc["
+        + crc
+        + "], taskAttemptId["
+        + taskAttemptId
+        + "]}";
   }
-
 }

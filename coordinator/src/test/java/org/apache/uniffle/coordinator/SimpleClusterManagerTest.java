@@ -70,7 +70,8 @@ public class SimpleClusterManagerTest {
     CoordinatorConf coordinatorConf = new CoordinatorConf();
     coordinatorConf.set(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_ENABLED, true);
     coordinatorConf.set(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_DURATION, 20 * 1000L);
-    try (SimpleClusterManager manager = new SimpleClusterManager(coordinatorConf, new Configuration())) {
+    try (SimpleClusterManager manager =
+        new SimpleClusterManager(coordinatorConf, new Configuration())) {
       assertFalse(manager.isReadyForServe());
 
       manager.setStartTime(System.currentTimeMillis() - 30 * 1000L);
@@ -84,27 +85,22 @@ public class SimpleClusterManagerTest {
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
     try (SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration())) {
 
-      ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-          10, grpcTags);
-      ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-          10, grpcTags);
-      ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-          11, grpcTags);
+      ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20, 10, grpcTags);
+      ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21, 10, grpcTags);
+      ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20, 11, grpcTags);
       clusterManager.add(sn1);
       clusterManager.add(sn2);
       clusterManager.add(sn3);
       List<ServerNode> serverNodes = clusterManager.getServerList(grpcTags);
       assertEquals(3, serverNodes.size());
       Set<String> expectedIds = Sets.newHashSet("sn1", "sn2", "sn3");
-      assertEquals(expectedIds, serverNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
+      assertEquals(
+          expectedIds, serverNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
 
       // tag changes
-      sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-          10, Sets.newHashSet("new_tag"));
-      sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-          10, Sets.newHashSet("test", "new_tag"));
-      ServerNode sn4 = new ServerNode("sn4", "ip", 0, 100L, 51L, 20,
-          10, grpcTags);
+      sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20, 10, Sets.newHashSet("new_tag"));
+      sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21, 10, Sets.newHashSet("test", "new_tag"));
+      ServerNode sn4 = new ServerNode("sn4", "ip", 0, 100L, 51L, 20, 10, grpcTags);
       clusterManager.add(sn1);
       clusterManager.add(sn2);
       clusterManager.add(sn4);
@@ -135,35 +131,40 @@ public class SimpleClusterManagerTest {
     CoordinatorConf coordinatorConf = new CoordinatorConf();
     // Shorten the heartbeat time
     coordinatorConf.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 300L);
-    SimpleClusterManager clusterManager = new SimpleClusterManager(coordinatorConf, new Configuration());
-    ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-        10, grpcTags);
-    ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-        10, grpcTags);
-    ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-        11, grpcTags);
+    SimpleClusterManager clusterManager =
+        new SimpleClusterManager(coordinatorConf, new Configuration());
+    ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20, 10, grpcTags);
+    ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21, 10, grpcTags);
+    ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20, 11, grpcTags);
     clusterManager.add(sn1);
     clusterManager.add(sn2);
     clusterManager.add(sn3);
     Set<String> expectedIds = Sets.newHashSet("sn1", "sn2", "sn3");
-    await().atMost(1, TimeUnit.SECONDS).until(() -> { 
-          Set<String> lostServerList = clusterManager.getLostServerList().stream()
-              .map(ServerNode::getId).collect(Collectors.toSet());
-          return CollectionUtils.isEqualCollection(lostServerList, expectedIds);
-        }
-    );
+    await()
+        .atMost(1, TimeUnit.SECONDS)
+        .until(
+            () -> {
+              Set<String> lostServerList =
+                  clusterManager.getLostServerList().stream()
+                      .map(ServerNode::getId)
+                      .collect(Collectors.toSet());
+              return CollectionUtils.isEqualCollection(lostServerList, expectedIds);
+            });
     // re-register sn3
-    sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-        11, grpcTags);
+    sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20, 11, grpcTags);
     clusterManager.add(sn3);
     Set<String> expectedIdsre = Sets.newHashSet("sn1", "sn2");
-    await().atMost(1, TimeUnit.SECONDS).until(() -> { 
-      // Retrieve listed ServerNode List
-      Set<String> lostServerListre = clusterManager.getLostServerList().stream()
-          .map(ServerNode::getId).collect(Collectors.toSet());
-          return CollectionUtils.isEqualCollection(lostServerListre, expectedIdsre);
-        }
-    );
+    await()
+        .atMost(1, TimeUnit.SECONDS)
+        .until(
+            () -> {
+              // Retrieve listed ServerNode List
+              Set<String> lostServerListre =
+                  clusterManager.getLostServerList().stream()
+                      .map(ServerNode::getId)
+                      .collect(Collectors.toSet());
+              return CollectionUtils.isEqualCollection(lostServerListre, expectedIdsre);
+            });
   }
 
   @Test
@@ -171,41 +172,50 @@ public class SimpleClusterManagerTest {
     CoordinatorConf coordinatorConf = new CoordinatorConf();
     // Shorten the heartbeat time
     coordinatorConf.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 300L);
-    SimpleClusterManager clusterManager = new SimpleClusterManager(coordinatorConf, new Configuration());
-    ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-        10, grpcTags);
-    ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-        10, grpcTags);
-    ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-        11, grpcTags, ServerStatus.UNHEALTHY);
-    ServerNode sn4 = new ServerNode("sn4", "ip", 0, 100L, 50L, 20,
-        11, grpcTags, ServerStatus.UNHEALTHY);
+    SimpleClusterManager clusterManager =
+        new SimpleClusterManager(coordinatorConf, new Configuration());
+    ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20, 10, grpcTags);
+    ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21, 10, grpcTags);
+    ServerNode sn3 =
+        new ServerNode("sn3", "ip", 0, 100L, 50L, 20, 11, grpcTags, ServerStatus.UNHEALTHY);
+    ServerNode sn4 =
+        new ServerNode("sn4", "ip", 0, 100L, 50L, 20, 11, grpcTags, ServerStatus.UNHEALTHY);
     clusterManager.add(sn1);
     clusterManager.add(sn2);
     clusterManager.add(sn3);
     clusterManager.add(sn4);
     // Analog timeout registration
     Set<String> expectedIds = Sets.newHashSet("sn3", "sn4");
-    await().atMost(1, TimeUnit.SECONDS).until(() -> { 
-      Set<String> unhealthyServerList = clusterManager.getUnhealthyServerList().stream()
-          .map(ServerNode::getId).collect(Collectors.toSet());
-      return CollectionUtils.isEqualCollection(unhealthyServerList, expectedIds);
-    });
+    await()
+        .atMost(1, TimeUnit.SECONDS)
+        .until(
+            () -> {
+              Set<String> unhealthyServerList =
+                  clusterManager.getUnhealthyServerList().stream()
+                      .map(ServerNode::getId)
+                      .collect(Collectors.toSet());
+              return CollectionUtils.isEqualCollection(unhealthyServerList, expectedIds);
+            });
     // Register unhealthy node sn3 again
-    sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-        11, grpcTags, ServerStatus.UNHEALTHY);
+    sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20, 11, grpcTags, ServerStatus.UNHEALTHY);
     clusterManager.add(sn3);
     Set<String> expectedIdsre = Sets.newHashSet("sn3");
-    await().atMost(1, TimeUnit.SECONDS).until(() -> { 
-      Set<String> unhealthyServerListre = clusterManager.getUnhealthyServerList().stream()
-          .map(ServerNode::getId).collect(Collectors.toSet());
-      return CollectionUtils.isEqualCollection(unhealthyServerListre, expectedIdsre);
-    });
+    await()
+        .atMost(1, TimeUnit.SECONDS)
+        .until(
+            () -> {
+              Set<String> unhealthyServerListre =
+                  clusterManager.getUnhealthyServerList().stream()
+                      .map(ServerNode::getId)
+                      .collect(Collectors.toSet());
+              return CollectionUtils.isEqualCollection(unhealthyServerListre, expectedIdsre);
+            });
     // At this point verify that sn4 is in the lost list
     List<ServerNode> lostremoveunhealthy = clusterManager.getLostServerList();
     Set<String> expectedIdlostremoveunhealthy = Sets.newHashSet("sn1", "sn2", "sn4");
-    assertEquals(expectedIdlostremoveunhealthy, lostremoveunhealthy.stream()
-        .map(ServerNode::getId).collect(Collectors.toSet()));
+    assertEquals(
+        expectedIdlostremoveunhealthy,
+        lostremoveunhealthy.stream().map(ServerNode::getId).collect(Collectors.toSet()));
   }
 
   @Test
@@ -214,14 +224,46 @@ public class SimpleClusterManagerTest {
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
     try (SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration())) {
 
-      ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-          10, nettyTags, ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
-      ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-          10, nettyTags, ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
-      ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-          11, nettyTags, ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
-      ServerNode sn4 = new ServerNode("sn4", "ip", 0, 100L, 50L, 20,
-          11, grpcTags);
+      ServerNode sn1 =
+          new ServerNode(
+              "sn1",
+              "ip",
+              0,
+              100L,
+              50L,
+              20,
+              10,
+              nettyTags,
+              ServerStatus.ACTIVE,
+              JavaUtils.newConcurrentMap(),
+              1);
+      ServerNode sn2 =
+          new ServerNode(
+              "sn2",
+              "ip",
+              0,
+              100L,
+              50L,
+              21,
+              10,
+              nettyTags,
+              ServerStatus.ACTIVE,
+              JavaUtils.newConcurrentMap(),
+              1);
+      ServerNode sn3 =
+          new ServerNode(
+              "sn3",
+              "ip",
+              0,
+              100L,
+              50L,
+              20,
+              11,
+              nettyTags,
+              ServerStatus.ACTIVE,
+              JavaUtils.newConcurrentMap(),
+              1);
+      ServerNode sn4 = new ServerNode("sn4", "ip", 0, 100L, 50L, 20, 11, grpcTags);
       clusterManager.add(sn1);
       clusterManager.add(sn2);
       clusterManager.add(sn3);
@@ -240,13 +282,33 @@ public class SimpleClusterManagerTest {
       assertEquals(3, tagToNodes.size());
 
       // tag changes
-      sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-          10, Sets.newHashSet("new_tag"), ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
-      sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-          10, Sets.newHashSet("test", "new_tag"),
-          ServerStatus.ACTIVE, JavaUtils.newConcurrentMap(), 1);
-      sn4 = new ServerNode("sn4", "ip", 0, 100L, 51L, 20,
-          10, grpcTags);
+      sn1 =
+          new ServerNode(
+              "sn1",
+              "ip",
+              0,
+              100L,
+              50L,
+              20,
+              10,
+              Sets.newHashSet("new_tag"),
+              ServerStatus.ACTIVE,
+              JavaUtils.newConcurrentMap(),
+              1);
+      sn2 =
+          new ServerNode(
+              "sn2",
+              "ip",
+              0,
+              100L,
+              50L,
+              21,
+              10,
+              Sets.newHashSet("test", "new_tag"),
+              ServerStatus.ACTIVE,
+              JavaUtils.newConcurrentMap(),
+              1);
+      sn4 = new ServerNode("sn4", "ip", 0, 100L, 51L, 20, 10, grpcTags);
       clusterManager.add(sn1);
       clusterManager.add(sn2);
       clusterManager.add(sn4);
@@ -274,12 +336,10 @@ public class SimpleClusterManagerTest {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
     try (SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration())) {
-      ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-          10, testTags, ServerStatus.UNHEALTHY);
-      ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-          10, testTags);
-      ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-          11, testTags);
+      ServerNode sn1 =
+          new ServerNode("sn1", "ip", 0, 100L, 50L, 20, 10, testTags, ServerStatus.UNHEALTHY);
+      ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21, 10, testTags);
+      ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20, 11, testTags);
       clusterManager.add(sn1);
       clusterManager.add(sn2);
       clusterManager.add(sn3);
@@ -318,16 +378,19 @@ public class SimpleClusterManagerTest {
       List<ServerNode> serverNodes = clusterManager.getServerList(testTags);
       assertEquals(2, serverNodes.size());
       Set<String> expectedIds = Sets.newHashSet("sn0", "sn1");
-      assertEquals(expectedIds,
-          serverNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
-      await().atMost(1, TimeUnit.SECONDS).until(() -> clusterManager.getServerList(testTags).isEmpty());
+      assertEquals(
+          expectedIds, serverNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
+      await()
+          .atMost(1, TimeUnit.SECONDS)
+          .until(() -> clusterManager.getServerList(testTags).isEmpty());
 
       addNode("sn2", clusterManager);
       serverNodes = clusterManager.getServerList(testTags);
       assertEquals(1, serverNodes.size());
       assertEquals("sn2", serverNodes.get(0).getId());
-      await().atMost(1, TimeUnit.SECONDS).until(() -> clusterManager.getServerList(testTags).isEmpty());
-
+      await()
+          .atMost(1, TimeUnit.SECONDS)
+          .until(() -> clusterManager.getServerList(testTags).isEmpty());
     }
   }
 
@@ -336,12 +399,9 @@ public class SimpleClusterManagerTest {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 30 * 1000L);
     try (SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration())) {
-      ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20,
-          10, testTags);
-      ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21,
-          10, testTags);
-      ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20,
-          11, testTags);
+      ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20, 10, testTags);
+      ServerNode sn2 = new ServerNode("sn2", "ip", 0, 100L, 50L, 21, 10, testTags);
+      ServerNode sn3 = new ServerNode("sn3", "ip", 0, 100L, 50L, 20, 11, testTags);
       clusterManager.add(sn1);
       clusterManager.add(sn2);
       clusterManager.add(sn3);
@@ -355,27 +415,25 @@ public class SimpleClusterManagerTest {
       List<ServerNode> serverList = clusterManager.getServerList(testTags);
       Assertions.assertEquals(2, tagToNodes.get(testTags.iterator().next()).size());
       Assertions.assertEquals(2, serverList.size());
-
     }
   }
 
   @Test
   public void updateExcludeNodesTest() throws Exception {
-    String excludeNodesFolder = (new File(ClassLoader.getSystemResource("empty").getFile())).getParent();
+    String excludeNodesFolder =
+        (new File(ClassLoader.getSystemResource("empty").getFile())).getParent();
     String excludeNodesPath = excludeNodesFolder + "/excludeNodes";
     CoordinatorConf ssc = new CoordinatorConf();
-    ssc.setString(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH, URI.create(excludeNodesPath).toString());
+    ssc.setString(
+        CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH,
+        URI.create(excludeNodesPath).toString());
     ssc.setLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL, 1000);
 
     try (SimpleClusterManager scm = new SimpleClusterManager(ssc, new Configuration())) {
-      scm.add(new ServerNode("node1-1999", "ip", 0, 100L, 50L, 20,
-          10, testTags));
-      scm.add(new ServerNode("node2-1999", "ip", 0, 100L, 50L, 20,
-          10, testTags));
-      scm.add(new ServerNode("node3-1999", "ip", 0, 100L, 50L, 20,
-          10, testTags));
-      scm.add(new ServerNode("node4-1999", "ip", 0, 100L, 50L, 20,
-          10, testTags));
+      scm.add(new ServerNode("node1-1999", "ip", 0, 100L, 50L, 20, 10, testTags));
+      scm.add(new ServerNode("node2-1999", "ip", 0, 100L, 50L, 20, 10, testTags));
+      scm.add(new ServerNode("node3-1999", "ip", 0, 100L, 50L, 20, 10, testTags));
+      scm.add(new ServerNode("node4-1999", "ip", 0, 100L, 50L, 20, 10, testTags));
       assertTrue(scm.getExcludeNodes().isEmpty());
 
       final Set<String> nodes = Sets.newHashSet("node1-1999", "node2-1999");
@@ -384,15 +442,21 @@ public class SimpleClusterManagerTest {
       List<ServerNode> availableNodes = scm.getServerList(testTags);
       assertEquals(2, availableNodes.size());
       Set<String> remainNodes = Sets.newHashSet("node3-1999", "node4-1999");
-      assertEquals(remainNodes, availableNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
+      assertEquals(
+          remainNodes, availableNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
 
       final Set<String> nodes2 = Sets.newHashSet("node3-1999", "node4-1999");
       writeExcludeHosts(excludeNodesPath, nodes2);
       await().atMost(3, TimeUnit.SECONDS).until(() -> scm.getExcludeNodes().equals(nodes2));
       assertEquals(nodes2, scm.getExcludeNodes());
 
-      final Set<String> comments = Sets.newHashSet("# The contents of the first comment", "node3-1999",
-          "# The contents of the second comment", "node4-1999", "# The content of the third comment");
+      final Set<String> comments =
+          Sets.newHashSet(
+              "# The contents of the first comment",
+              "node3-1999",
+              "# The contents of the second comment",
+              "node4-1999",
+              "# The content of the third comment");
       final Set<String> noComments = Sets.newHashSet("node3-1999", "node4-1999");
       writeExcludeHosts(excludeNodesPath, comments);
       await().atMost(3, TimeUnit.SECONDS).until(() -> scm.getExcludeNodes().equals(noComments));
@@ -418,7 +482,8 @@ public class SimpleClusterManagerTest {
 
       remainNodes = Sets.newHashSet("node1-1999", "node2-1999", "node3-1999", "node4-1999");
       availableNodes = scm.getServerList(testTags);
-      assertEquals(remainNodes, availableNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
+      assertEquals(
+          remainNodes, availableNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
     }
   }
 

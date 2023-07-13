@@ -88,22 +88,28 @@ public class JettyServer {
   private ExecutorThreadPool createThreadPool(RssBaseConf conf) {
     int corePoolSize = conf.getInteger(RssBaseConf.JETTY_CORE_POOL_SIZE);
     int maxPoolSize = conf.getInteger(RssBaseConf.JETTY_MAX_POOL_SIZE);
-    ExecutorThreadPool pool = new ExecutorThreadPool(
-        new ThreadPoolExecutor(corePoolSize, maxPoolSize, 60L, TimeUnit.SECONDS,
-            new LinkedBlockingQueue<>(), ThreadUtils.getThreadFactory("Jetty")));
+    ExecutorThreadPool pool =
+        new ExecutorThreadPool(
+            new ThreadPoolExecutor(
+                corePoolSize,
+                maxPoolSize,
+                60L,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(),
+                ThreadUtils.getThreadFactory("Jetty")));
     return pool;
   }
 
   private void addHttpConnector(int port, HttpConfiguration httpConfig, long idleTimeout) {
-    ServerConnector httpConnector = new ServerConnector(server,
-        new HttpConnectionFactory(httpConfig));
+    ServerConnector httpConnector =
+        new ServerConnector(server, new HttpConnectionFactory(httpConfig));
     httpConnector.setPort(port);
     httpConnector.setIdleTimeout(idleTimeout);
     server.addConnector(httpConnector);
   }
 
-  private void addHttpsConnector(
-      HttpConfiguration httpConfig, RssBaseConf conf) throws FileNotFoundException {
+  private void addHttpsConnector(HttpConfiguration httpConfig, RssBaseConf conf)
+      throws FileNotFoundException {
     LOG.info("Create https connector");
     Path keystorePath = Paths.get(conf.get(RssBaseConf.JETTY_SSL_KEYSTORE_PATH)).toAbsolutePath();
     if (!Files.exists(keystorePath)) {
@@ -122,9 +128,11 @@ public class JettyServer {
     HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
     httpsConfig.addCustomizer(new SecureRequestCustomizer());
 
-    ServerConnector sslConnector = new ServerConnector(server,
-        new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-        new HttpConnectionFactory(httpsConfig));
+    ServerConnector sslConnector =
+        new ServerConnector(
+            server,
+            new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
+            new HttpConnectionFactory(httpsConfig));
     sslConnector.setPort(securePort);
 
     server.addConnector(sslConnector);
@@ -139,8 +147,8 @@ public class JettyServer {
 
   public void addResourcePackages(String... packages) {
     reourcePackages.addAll(Arrays.asList(packages));
-    servletHolder.setInitParameter(ServerProperties.PROVIDER_PACKAGES,
-        String.join(",", reourcePackages));
+    servletHolder.setInitParameter(
+        ServerProperties.PROVIDER_PACKAGES, String.join(",", reourcePackages));
   }
 
   public void registerInstance(Class<?> clazz, Object instance) {

@@ -33,7 +33,8 @@ public class RssReportShuffleFetchFailureResponse extends ClientResponse {
   }
 
   public ReportShuffleFetchFailureResponse toProto() {
-    ReportShuffleFetchFailureResponse.Builder builder = ReportShuffleFetchFailureResponse.newBuilder();
+    ReportShuffleFetchFailureResponse.Builder builder =
+        ReportShuffleFetchFailureResponse.newBuilder();
     return builder
         .setStatus(getStatusCode().toProto())
         .setMsg(getMessage())
@@ -41,13 +42,12 @@ public class RssReportShuffleFetchFailureResponse extends ClientResponse {
         .build();
   }
 
-  public static RssReportShuffleFetchFailureResponse fromProto(ReportShuffleFetchFailureResponse response) {
+  public static RssReportShuffleFetchFailureResponse fromProto(
+      ReportShuffleFetchFailureResponse response) {
     return new RssReportShuffleFetchFailureResponse(
         // todo: [issue#780] add fromProto for StatusCode issue
         StatusCode.valueOf(response.getStatus().name()),
         response.getMsg(),
-        response.getReSubmitWholeStage()
-    );
+        response.getReSubmitWholeStage());
   }
-
 }

@@ -149,8 +149,7 @@ public class ShuffleDataFlushEvent {
     return ret;
   }
 
-  public void addCleanupCallback(
-      Runnable cleanupCallback) {
+  public void addCleanupCallback(Runnable cleanupCallback) {
     if (cleanupCallback != null) {
       cleanupCallbackChains.add(cleanupCallback);
     }
@@ -158,14 +157,22 @@ public class ShuffleDataFlushEvent {
 
   @Override
   public String toString() {
-    return "ShuffleDataFlushEvent: eventId=" + eventId
-        + ", appId=" + appId
-        + ", shuffleId=" + shuffleId
-        + ", startPartition=" + startPartition
-        + ", endPartition=" + endPartition
-        + ", retryTimes=" + retryTimes
-        + ", underStorage=" + (underStorage == null ? null : underStorage.getClass().getSimpleName())
-        + ", isPended=" + isPended;
+    return "ShuffleDataFlushEvent: eventId="
+        + eventId
+        + ", appId="
+        + appId
+        + ", shuffleId="
+        + shuffleId
+        + ", startPartition="
+        + startPartition
+        + ", endPartition="
+        + endPartition
+        + ", retryTimes="
+        + retryTimes
+        + ", underStorage="
+        + (underStorage == null ? null : underStorage.getClass().getSimpleName())
+        + ", isPended="
+        + isPended;
   }
 
   public boolean isOwnedByHugePartition() {

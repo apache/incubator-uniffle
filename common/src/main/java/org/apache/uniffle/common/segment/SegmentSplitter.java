@@ -25,5 +25,4 @@ import org.apache.uniffle.common.ShuffleIndexResult;
 public interface SegmentSplitter {
 
   List<ShuffleDataSegment> split(ShuffleIndexResult shuffleIndexResult);
-
 }

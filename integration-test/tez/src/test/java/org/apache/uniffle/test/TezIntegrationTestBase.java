@@ -60,7 +60,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class TezIntegrationTestBase extends IntegrationTestBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(TezIntegrationTestBase.class);
-  private static String TEST_ROOT_DIR = "target" + Path.SEPARATOR + TezWordCountTest.class.getName() + "-tmpDir";
+  private static String TEST_ROOT_DIR =
+      "target" + Path.SEPARATOR + TezWordCountTest.class.getName() + "-tmpDir";
 
   private Path remoteStagingDir = null;
   protected static MiniTezCluster miniTezCluster;
@@ -84,7 +85,7 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
     createShuffleServer(shuffleServerConf);
     startServers();
   }
-  
+
   @AfterAll
   public static void tearDown() throws Exception {
     if (miniTezCluster != null) {
@@ -96,7 +97,8 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
 
   @BeforeEach
   public void setup() throws Exception {
-    remoteStagingDir = fs.makeQualified(new Path(TEST_ROOT_DIR, String.valueOf(new Random().nextInt(100000))));
+    remoteStagingDir =
+        fs.makeQualified(new Path(TEST_ROOT_DIR, String.valueOf(new Random().nextInt(100000))));
     TezClientUtils.ensureStagingDirExists(conf, remoteStagingDir);
   }
 
@@ -113,7 +115,7 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
     updateCommonConfiguration(appConf);
     runTezApp(appConf, getTestTool(), getTestArgs("origin"));
     final String originPath = getOutputDir("origin");
-    
+
     // 2 Run Tez examples based on rss
     appConf = new TezConfiguration(miniTezCluster.getConfig());
     updateRssConfiguration(appConf);
@@ -151,7 +153,7 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
     appConf.setInt(TezConfiguration.TEZ_TASK_RESOURCE_MEMORY_MB, 512);
     appConf.set(TezConfiguration.TEZ_TASK_LAUNCH_CMD_OPTS, " -Xmx384m");
   }
-  
+
   public void updateRssConfiguration(Configuration appConf) throws Exception {
     appConf.set(TezConfiguration.TEZ_AM_STAGING_DIR, remoteStagingDir.toString());
     appConf.setInt(TezConfiguration.TEZ_AM_RESOURCE_MEMORY_MB, 512);
@@ -160,10 +162,11 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
     appConf.set(TezConfiguration.TEZ_TASK_LAUNCH_CMD_OPTS, " -Xmx384m");
     appConf.set(RssTezConfig.RSS_COORDINATOR_QUORUM, COORDINATOR_QUORUM);
     appConf.set(RssTezConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
-    appConf.set(TezConfiguration.TEZ_AM_LAUNCH_CMD_OPTS, TezConfiguration.TEZ_AM_LAUNCH_CMD_OPTS_DEFAULT + " " 
-        + RssDAGAppMaster.class.getName());
+    appConf.set(
+        TezConfiguration.TEZ_AM_LAUNCH_CMD_OPTS,
+        TezConfiguration.TEZ_AM_LAUNCH_CMD_OPTS_DEFAULT + " " + RssDAGAppMaster.class.getName());
   }
-  
+
   protected static void appendAndUploadRssJars(TezConfiguration tezConf) throws IOException {
     String uris = tezConf.get(TEZ_LIB_URIS);
     Assertions.assertNotNull(uris);
@@ -181,7 +184,7 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
         break;
       }
     }
-    
+
     // upload rss jars
     Path testRootDir =
         fs.makeQualified(new Path("target", TezIntegrationTestBase.class.getName() + "-tmpDir"));
@@ -192,7 +195,7 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
     // update tez.lib.uris
     tezConf.set(TEZ_LIB_URIS, uris + "," + appRemoteJar);
   }
-  
+
   protected void runTezApp(TezConfiguration tezConf, Tool tool, String[] args) throws Exception {
     assertEquals(0, ToolRunner.run(tezConf, tool, args), tool.getClass().getName() + " failed");
   }
@@ -280,7 +283,7 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
       }
     }
     assertEquals(originFileList.size(), rssFileList.size());
-    
+
     // 2 Load original result and rss result to hashmap
     Map<String, Integer> originalResults = new HashMap<>();
     for (int i = 0; i < originFileList.size(); i++) {
@@ -309,14 +312,19 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
         }
       }
     }
-    
+
     // 3 Compare the hashmap
-    Assertions.assertEquals(originalResults.size(), rssResults.size(),
+    Assertions.assertEquals(
+        originalResults.size(),
+        rssResults.size(),
         "The size of cartesian product set is not equal");
     for (Map.Entry<String, Integer> entry : originalResults.entrySet()) {
-      Assertions.assertTrue(rssResults.containsKey(entry.getKey()),
+      Assertions.assertTrue(
+          rssResults.containsKey(entry.getKey()),
           entry.getKey() + " is not found in rss cartesian product result");
-      Assertions.assertEquals(entry.getValue(), rssResults.get(entry.getKey()),
+      Assertions.assertEquals(
+          entry.getValue(),
+          rssResults.get(entry.getKey()),
           "the value of " + entry.getKey() + " is not equal to in rss cartesian product result");
     }
   }

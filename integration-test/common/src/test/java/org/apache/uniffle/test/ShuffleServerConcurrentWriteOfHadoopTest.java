@@ -66,7 +66,8 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
-    shuffleServerConf.setInteger(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, MAX_CONCURRENCY);
+    shuffleServerConf.setInteger(
+        ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, MAX_CONCURRENCY);
     shuffleServerConf.setBoolean(shuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED, true);
     shuffleServerConf.setLong(shuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD, 1024 * 1024L);
     createShuffleServer(shuffleServerConf);
@@ -75,54 +76,49 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
 
   private static Stream<Arguments> clientConcurrencyAndExpectedProvider() {
     return Stream.of(
-        Arguments.of(-1, MAX_CONCURRENCY),
-        Arguments.of(MAX_CONCURRENCY + 1, MAX_CONCURRENCY + 1)
-    );
+        Arguments.of(-1, MAX_CONCURRENCY), Arguments.of(MAX_CONCURRENCY + 1, MAX_CONCURRENCY + 1));
   }
 
   @ParameterizedTest
   @MethodSource("clientConcurrencyAndExpectedProvider")
-  public void testConcurrentWrite2Hadoop(int clientSpecifiedConcurrency, int expectedConcurrency) throws Exception {
+  public void testConcurrentWrite2Hadoop(int clientSpecifiedConcurrency, int expectedConcurrency)
+      throws Exception {
     String appId = "testConcurrentWrite2Hadoop_" + new Random().nextInt();
     String dataBasePath = HDFS_URI + "rss/test";
-    RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest(
-        appId,
-        0,
-        Lists.newArrayList(new PartitionRange(0, 1)),
-        new RemoteStorageInfo(dataBasePath),
-        StringUtils.EMPTY,
-        ShuffleDataDistributionType.NORMAL,
-        clientSpecifiedConcurrency
-    );
+    RssRegisterShuffleRequest rrsr =
+        new RssRegisterShuffleRequest(
+            appId,
+            0,
+            Lists.newArrayList(new PartitionRange(0, 1)),
+            new RemoteStorageInfo(dataBasePath),
+            StringUtils.EMPTY,
+            ShuffleDataDistributionType.NORMAL,
+            clientSpecifiedConcurrency);
     shuffleServerClient.registerShuffle(rrsr);
 
     List<Roaring64NavigableMap> bitmaps = new ArrayList<>();
     Map<Long, byte[]> expectedDataList = new HashMap<>();
-    IntStream.range(0, 20).forEach(x -> {
-      Roaring64NavigableMap bitmap = Roaring64NavigableMap.bitmapOf();
-      bitmaps.add(bitmap);
+    IntStream.range(0, 20)
+        .forEach(
+            x -> {
+              Roaring64NavigableMap bitmap = Roaring64NavigableMap.bitmapOf();
+              bitmaps.add(bitmap);
 
-      Map<Long, byte[]> expectedData = Maps.newHashMap();
+              Map<Long, byte[]> expectedData = Maps.newHashMap();
 
-      List<ShuffleBlockInfo> blocks = createShuffleBlockList(
-          0,
-          0,
-          0,
-          1,
-          1024 * 1025,
-          bitmap,
-          expectedData,
-          mockSSI
-      );
-      expectedDataList.putAll(expectedData);
+              List<ShuffleBlockInfo> blocks =
+                  createShuffleBlockList(0, 0, 0, 1, 1024 * 1025, bitmap, expectedData, mockSSI);
+              expectedDataList.putAll(expectedData);
 
-      Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
-      partitionToBlocks.put(0, blocks);
-      Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
-      shuffleToBlocks.put(0, partitionToBlocks);
-      RssSendShuffleDataRequest rssdr = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
-      shuffleServerClient.sendShuffleData(rssdr);
-    });
+              Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
+              partitionToBlocks.put(0, blocks);
+              Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks =
+                  Maps.newHashMap();
+              shuffleToBlocks.put(0, partitionToBlocks);
+              RssSendShuffleDataRequest rssdr =
+                  new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
+              shuffleServerClient.sendShuffleData(rssdr);
+            });
 
     RssSendCommitRequest rscr = new RssSendCommitRequest(appId, 0);
     shuffleServerClient.sendCommit(rscr);
@@ -132,39 +128,40 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
 
     // Check the concurrent hdfs file creation
     FileStatus[] fileStatuses = fs.listStatus(new Path(dataBasePath + "/" + appId + "/0/0-1"));
-    long actual = Arrays
-        .stream(fileStatuses)
-        .filter(x -> x.getPath().getName().endsWith(SHUFFLE_DATA_FILE_SUFFIX))
-        .count();
+    long actual =
+        Arrays.stream(fileStatuses)
+            .filter(x -> x.getPath().getName().endsWith(SHUFFLE_DATA_FILE_SUFFIX))
+            .count();
     assertEquals(expectedConcurrency, actual);
 
     ShuffleServerInfo ssi = new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT);
     Roaring64NavigableMap blocksBitmap = Roaring64NavigableMap.bitmapOf();
-    bitmaps.stream().forEach(x -> {
-      Iterator<Long> iterator = x.iterator();
-      while (iterator.hasNext()) {
-        blocksBitmap.add(iterator.next());
-      }
-    });
+    bitmaps.stream()
+        .forEach(
+            x -> {
+              Iterator<Long> iterator = x.iterator();
+              while (iterator.hasNext()) {
+                blocksBitmap.add(iterator.next());
+              }
+            });
 
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(
-        StorageType.HDFS.name(),
-        appId,
-        0,
-        0,
-        100,
-        2,
-        10,
-        1000,
-        dataBasePath,
-        blocksBitmap,
-        Roaring64NavigableMap.bitmapOf(0),
-        Lists.newArrayList(ssi),
-        new Configuration(),
-        new DefaultIdHelper()
-    );
+    ShuffleReadClientImpl readClient =
+        new ShuffleReadClientImpl(
+            StorageType.HDFS.name(),
+            appId,
+            0,
+            0,
+            100,
+            2,
+            10,
+            1000,
+            dataBasePath,
+            blocksBitmap,
+            Roaring64NavigableMap.bitmapOf(0),
+            Lists.newArrayList(ssi),
+            new Configuration(),
+            new DefaultIdHelper());
 
     validateResult(readClient, expectedDataList, blocksBitmap);
   }
 }
-

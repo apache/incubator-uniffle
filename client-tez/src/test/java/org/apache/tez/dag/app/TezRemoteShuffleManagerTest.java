@@ -94,12 +94,13 @@ public class TezRemoteShuffleManagerTest {
       serverToPartitionRanges.put(work3, Arrays.asList(range0, range1, range2, range3));
       serverToPartitionRanges.put(work4, Arrays.asList(range0, range1, range3, range4));
 
-      ShuffleAssignmentsInfo shuffleAssignmentsInfo = new ShuffleAssignmentsInfo(partitionToServers,
-              serverToPartitionRanges);
+      ShuffleAssignmentsInfo shuffleAssignmentsInfo =
+          new ShuffleAssignmentsInfo(partitionToServers, serverToPartitionRanges);
 
       ShuffleWriteClient client = mock(ShuffleWriteClient.class);
-      when(client.getShuffleAssignments(anyString(), anyInt(), anyInt(), anyInt(), anySet(), anyInt(), anyInt()))
-              .thenReturn(shuffleAssignmentsInfo);
+      when(client.getShuffleAssignments(
+              anyString(), anyInt(), anyInt(), anyInt(), anySet(), anyInt(), anyInt()))
+          .thenReturn(shuffleAssignmentsInfo);
 
       ApplicationId appId = ApplicationId.newInstance(9999, 72);
 
@@ -109,8 +110,9 @@ public class TezRemoteShuffleManagerTest {
       String tokenIdentifier = appId.toString();
       Token<JobTokenIdentifier> sessionToken = new Token(identifier, secretManager);
       secretManager.addTokenForJob(tokenIdentifier, sessionToken);
-      TezRemoteShuffleManager tezRemoteShuffleManager = new TezRemoteShuffleManager(appId.toString(), sessionToken,
-              conf, appId.toString(), client);
+      TezRemoteShuffleManager tezRemoteShuffleManager =
+          new TezRemoteShuffleManager(
+              appId.toString(), sessionToken, conf, appId.toString(), client);
       tezRemoteShuffleManager.initialize();
       tezRemoteShuffleManager.start();
 
@@ -120,14 +122,18 @@ public class TezRemoteShuffleManagerTest {
 
       UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(tokenIdentifier);
 
-      TezRemoteShuffleUmbilicalProtocol umbilical = taskOwner.doAs(
-          new PrivilegedExceptionAction<TezRemoteShuffleUmbilicalProtocol>() {
-            @Override
-            public TezRemoteShuffleUmbilicalProtocol run() throws Exception {
-              return RPC.getProxy(TezRemoteShuffleUmbilicalProtocol.class,
-                      TezRemoteShuffleUmbilicalProtocol.versionID, address, conf);
-            }
-          });
+      TezRemoteShuffleUmbilicalProtocol umbilical =
+          taskOwner.doAs(
+              new PrivilegedExceptionAction<TezRemoteShuffleUmbilicalProtocol>() {
+                @Override
+                public TezRemoteShuffleUmbilicalProtocol run() throws Exception {
+                  return RPC.getProxy(
+                      TezRemoteShuffleUmbilicalProtocol.class,
+                      TezRemoteShuffleUmbilicalProtocol.versionID,
+                      address,
+                      conf);
+                }
+              });
 
       TezDAGID dagId = TezDAGID.getInstance(appId, 1);
       TezVertexID vId = TezVertexID.getInstance(dagId, 35);
@@ -139,11 +145,17 @@ public class TezRemoteShuffleManagerTest {
       int reduceNum = shuffleAssignmentsInfo.getPartitionToServers().size();
 
       String errorMessage = "failed to get Shuffle Assignments";
-      GetShuffleServerRequest request = new GetShuffleServerRequest(taId, mapNum, reduceNum, shuffleId);
+      GetShuffleServerRequest request =
+          new GetShuffleServerRequest(taId, mapNum, reduceNum, shuffleId);
       GetShuffleServerResponse response = umbilical.getShuffleAssignments(request);
       assertEquals(0, response.getStatus(), errorMessage);
-      assertEquals(reduceNum, response.getShuffleAssignmentsInfoWritable().getShuffleAssignmentsInfo()
-              .getPartitionToServers().size());
+      assertEquals(
+          reduceNum,
+          response
+              .getShuffleAssignmentsInfoWritable()
+              .getShuffleAssignmentsInfo()
+              .getPartitionToServers()
+              .size());
 
     } catch (Exception e) {
       e.printStackTrace();
@@ -185,11 +197,12 @@ public class TezRemoteShuffleManagerTest {
       serverToPartitionRanges.put(work3, Arrays.asList(range0, range1, range2, range3));
       serverToPartitionRanges.put(work4, Arrays.asList(range0, range1, range3, range4));
 
-      ShuffleAssignmentsInfo shuffleAssignmentsInfo = new ShuffleAssignmentsInfo(partitionToServers,
-          serverToPartitionRanges);
+      ShuffleAssignmentsInfo shuffleAssignmentsInfo =
+          new ShuffleAssignmentsInfo(partitionToServers, serverToPartitionRanges);
 
       ShuffleWriteClient client = mock(ShuffleWriteClient.class);
-      when(client.getShuffleAssignments(anyString(), anyInt(), anyInt(), anyInt(), anySet(), anyInt(), anyInt()))
+      when(client.getShuffleAssignments(
+              anyString(), anyInt(), anyInt(), anyInt(), anySet(), anyInt(), anyInt()))
           .thenReturn(shuffleAssignmentsInfo);
 
       ApplicationId appId = ApplicationId.newInstance(9999, 72);
@@ -203,8 +216,9 @@ public class TezRemoteShuffleManagerTest {
       Credentials credentials = new Credentials();
       TokenCache.setSessionToken(sessionToken, credentials);
       secretManager.addTokenForJob(tokenIdentifier, sessionToken);
-      TezRemoteShuffleManager tezRemoteShuffleManager = new TezRemoteShuffleManager(appId.toString(), sessionToken,
-          conf, appId.toString(), client);
+      TezRemoteShuffleManager tezRemoteShuffleManager =
+          new TezRemoteShuffleManager(
+              appId.toString(), sessionToken, conf, appId.toString(), client);
       tezRemoteShuffleManager.initialize();
       tezRemoteShuffleManager.start();
 
@@ -217,14 +231,18 @@ public class TezRemoteShuffleManagerTest {
       Token<JobTokenIdentifier> jobToken = TokenCache.getSessionToken(credentials);
       SecurityUtil.setTokenService(jobToken, address);
       taskOwner.addToken(jobToken);
-      TezRemoteShuffleUmbilicalProtocol umbilical = taskOwner.doAs(
-          new PrivilegedExceptionAction<TezRemoteShuffleUmbilicalProtocol>() {
-            @Override
-            public TezRemoteShuffleUmbilicalProtocol run() throws Exception {
-              return RPC.getProxy(TezRemoteShuffleUmbilicalProtocol.class,
-                  TezRemoteShuffleUmbilicalProtocol.versionID, address, conf);
-            }
-          });
+      TezRemoteShuffleUmbilicalProtocol umbilical =
+          taskOwner.doAs(
+              new PrivilegedExceptionAction<TezRemoteShuffleUmbilicalProtocol>() {
+                @Override
+                public TezRemoteShuffleUmbilicalProtocol run() throws Exception {
+                  return RPC.getProxy(
+                      TezRemoteShuffleUmbilicalProtocol.class,
+                      TezRemoteShuffleUmbilicalProtocol.versionID,
+                      address,
+                      conf);
+                }
+              });
 
       TezDAGID dagId = TezDAGID.getInstance(appId, 1);
       TezVertexID vId = TezVertexID.getInstance(dagId, 35);
@@ -236,11 +254,17 @@ public class TezRemoteShuffleManagerTest {
       int reduceNum = shuffleAssignmentsInfo.getPartitionToServers().size();
 
       String errorMessage = "failed to get Shuffle Assignments";
-      GetShuffleServerRequest request = new GetShuffleServerRequest(taId, mapNum, reduceNum, shuffleId);
+      GetShuffleServerRequest request =
+          new GetShuffleServerRequest(taId, mapNum, reduceNum, shuffleId);
       GetShuffleServerResponse response = umbilical.getShuffleAssignments(request);
       assertEquals(0, response.getStatus(), errorMessage);
-      assertEquals(reduceNum, response.getShuffleAssignmentsInfoWritable().getShuffleAssignmentsInfo()
-          .getPartitionToServers().size());
+      assertEquals(
+          reduceNum,
+          response
+              .getShuffleAssignmentsInfoWritable()
+              .getShuffleAssignmentsInfo()
+              .getPartitionToServers()
+              .size());
 
     } catch (Exception e) {
       e.printStackTrace();

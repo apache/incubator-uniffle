@@ -31,8 +31,10 @@ import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 public abstract class AbstractStorage implements Storage {
 
-  private Map<String, Map<String, ShuffleWriteHandler>> writerHandlers = JavaUtils.newConcurrentMap();
-  private Map<String, Map<String, CreateShuffleWriteHandlerRequest>> requests = JavaUtils.newConcurrentMap();
+  private Map<String, Map<String, ShuffleWriteHandler>> writerHandlers =
+      JavaUtils.newConcurrentMap();
+  private Map<String, Map<String, CreateShuffleWriteHandlerRequest>> requests =
+      JavaUtils.newConcurrentMap();
   private Map<String, Map<String, ServerReadHandler>> readerHandlers = JavaUtils.newConcurrentMap();
 
   abstract ShuffleWriteHandler newWriteHandler(CreateShuffleWriteHandlerRequest request);
@@ -42,11 +44,9 @@ public abstract class AbstractStorage implements Storage {
     writerHandlers.computeIfAbsent(request.getAppId(), key -> JavaUtils.newConcurrentMap());
     requests.computeIfAbsent(request.getAppId(), key -> JavaUtils.newConcurrentMap());
     Map<String, ShuffleWriteHandler> map = writerHandlers.get(request.getAppId());
-    String partitionKey = RssUtils.generatePartitionKey(
-        request.getAppId(),
-        request.getShuffleId(),
-        request.getStartPartition()
-    );
+    String partitionKey =
+        RssUtils.generatePartitionKey(
+            request.getAppId(), request.getShuffleId(), request.getStartPartition());
     map.computeIfAbsent(partitionKey, key -> newWriteHandler(request));
     Map<String, CreateShuffleWriteHandlerRequest> requestMap = requests.get(request.getAppId());
     requestMap.putIfAbsent(partitionKey, request);
@@ -57,15 +57,11 @@ public abstract class AbstractStorage implements Storage {
   public ServerReadHandler getOrCreateReadHandler(CreateShuffleReadHandlerRequest request) {
     readerHandlers.computeIfAbsent(request.getAppId(), key -> JavaUtils.newConcurrentMap());
     Map<String, ServerReadHandler> map = readerHandlers.get(request.getAppId());
-    int[] range = ShuffleStorageUtils.getPartitionRange(
-        request.getPartitionId(),
-        request.getPartitionNumPerRange(),
-        request.getPartitionNum());
-    String partitionKey = RssUtils.generatePartitionKey(
-        request.getAppId(),
-        request.getShuffleId(),
-        range[0]
-    );
+    int[] range =
+        ShuffleStorageUtils.getPartitionRange(
+            request.getPartitionId(), request.getPartitionNumPerRange(), request.getPartitionNum());
+    String partitionKey =
+        RssUtils.generatePartitionKey(request.getAppId(), request.getShuffleId(), range[0]);
     map.computeIfAbsent(partitionKey, key -> newReadHandler(request));
     return map.get(partitionKey);
   }

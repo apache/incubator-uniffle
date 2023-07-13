@@ -35,8 +35,10 @@ public class StatusCodeTest {
     assertEquals(-1, StatusCode.UNKNOWN.statusCode());
     assertEquals(StatusCode.fromCode(-2), StatusCode.UNKNOWN);
     assertEquals(StatusCode.fromCode(Integer.MAX_VALUE), StatusCode.UNKNOWN);
-    List<RssProtos.StatusCode> protoStatusCode = Arrays.stream(RssProtos.StatusCode.values())
-        .filter(s -> !RssProtos.StatusCode.UNRECOGNIZED.equals(s)).collect(Collectors.toList());
+    List<RssProtos.StatusCode> protoStatusCode =
+        Arrays.stream(RssProtos.StatusCode.values())
+            .filter(s -> !RssProtos.StatusCode.UNRECOGNIZED.equals(s))
+            .collect(Collectors.toList());
 
     for (RssProtos.StatusCode statusCode : protoStatusCode) {
       try {
@@ -45,8 +47,10 @@ public class StatusCodeTest {
         fail(e.getMessage());
       }
     }
-    List<StatusCode> statusCodes = Arrays.stream(StatusCode.values())
-        .filter(s -> !StatusCode.UNKNOWN.equals(s)).collect(Collectors.toList());
+    List<StatusCode> statusCodes =
+        Arrays.stream(StatusCode.values())
+            .filter(s -> !StatusCode.UNKNOWN.equals(s))
+            .collect(Collectors.toList());
 
     for (StatusCode statusCode : statusCodes) {
       try {

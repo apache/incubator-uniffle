@@ -54,7 +54,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ShuffleFlushManagerOnKerberizedHadoopTest extends KerberizedHadoopBase {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ShuffleFlushManagerOnKerberizedHadoopTest.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ShuffleFlushManagerOnKerberizedHadoopTest.class);
 
   private ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
 
@@ -93,9 +94,7 @@ public class ShuffleFlushManagerOnKerberizedHadoopTest extends KerberizedHadoopB
     for (Map.Entry<String, String> entry : kerberizedHadoop.getConf()) {
       confMap.put(entry.getKey(), entry.getValue());
     }
-    remoteStorage = new RemoteStorageInfo(
-        storedPath, confMap
-    );
+    remoteStorage = new RemoteStorageInfo(storedPath, confMap);
   }
 
   @Test
@@ -112,11 +111,9 @@ public class ShuffleFlushManagerOnKerberizedHadoopTest extends KerberizedHadoopB
     storageManager.registerRemoteStorage(appId2, remoteStorage);
     ShuffleFlushManager manager =
         new ShuffleFlushManager(shuffleServerConf, mockShuffleServer, storageManager);
-    ShuffleDataFlushEvent event1 =
-        createShuffleDataFlushEvent(appId1, 1, 0, 1, null);
+    ShuffleDataFlushEvent event1 = createShuffleDataFlushEvent(appId1, 1, 0, 1, null);
     manager.addToFlushQueue(event1);
-    ShuffleDataFlushEvent event2 =
-        createShuffleDataFlushEvent(appId2, 1, 0, 1, null);
+    ShuffleDataFlushEvent event2 = createShuffleDataFlushEvent(appId2, 1, 0, 1, null);
     manager.addToFlushQueue(event2);
     waitForFlush(manager, appId1, 1, 5);
     waitForFlush(manager, appId2, 1, 5);
@@ -127,21 +124,23 @@ public class ShuffleFlushManagerOnKerberizedHadoopTest extends KerberizedHadoopB
     int size = storage.getHandlerSize();
     assertEquals(2, size);
 
-    FileStatus[] fileStatus = kerberizedHadoop.getFileSystem()
-        .listStatus(new Path(remoteStorage.getPath() + "/" + appId1 + "/"));
+    FileStatus[] fileStatus =
+        kerberizedHadoop
+            .getFileSystem()
+            .listStatus(new Path(remoteStorage.getPath() + "/" + appId1 + "/"));
     for (FileStatus fileState : fileStatus) {
       assertEquals("alex", fileState.getOwner());
     }
     assertTrue(fileStatus.length > 0);
     manager.removeResources(appId1);
 
-    assertTrue(((HadoopStorageManager)storageManager).getAppIdToStorages().containsKey(appId1));
-    storageManager.removeResources(
-        new AppPurgeEvent(appId1, "alex", Arrays.asList(1))
-    );
-    assertFalse(((HadoopStorageManager)storageManager).getAppIdToStorages().containsKey(appId1));
+    assertTrue(((HadoopStorageManager) storageManager).getAppIdToStorages().containsKey(appId1));
+    storageManager.removeResources(new AppPurgeEvent(appId1, "alex", Arrays.asList(1)));
+    assertFalse(((HadoopStorageManager) storageManager).getAppIdToStorages().containsKey(appId1));
     try {
-      kerberizedHadoop.getFileSystem().listStatus(new Path(remoteStorage.getPath() + "/" + appId1 + "/"));
+      kerberizedHadoop
+          .getFileSystem()
+          .listStatus(new Path(remoteStorage.getPath() + "/" + appId1 + "/"));
       fail("Exception should be thrown");
     } catch (FileNotFoundException fnfe) {
       // expected exception
@@ -154,11 +153,9 @@ public class ShuffleFlushManagerOnKerberizedHadoopTest extends KerberizedHadoopB
     size = storage.getHandlerSize();
     assertEquals(1, size);
     manager.removeResources(appId2);
-    assertTrue(((HadoopStorageManager)storageManager).getAppIdToStorages().containsKey(appId2));
-    storageManager.removeResources(
-        new AppPurgeEvent(appId2, "alex", Arrays.asList(1))
-    );
-    assertFalse(((HadoopStorageManager)storageManager).getAppIdToStorages().containsKey(appId2));
+    assertTrue(((HadoopStorageManager) storageManager).getAppIdToStorages().containsKey(appId2));
+    storageManager.removeResources(new AppPurgeEvent(appId2, "alex", Arrays.asList(1)));
+    assertFalse(((HadoopStorageManager) storageManager).getAppIdToStorages().containsKey(appId2));
     assertEquals(0, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     size = storage.getHandlerSize();
     assertEquals(0, size);

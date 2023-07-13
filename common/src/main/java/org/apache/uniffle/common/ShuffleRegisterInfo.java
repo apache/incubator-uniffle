@@ -24,7 +24,8 @@ public class ShuffleRegisterInfo {
   private ShuffleServerInfo shuffleServerInfo;
   private List<PartitionRange> partitionRanges;
 
-  public ShuffleRegisterInfo(ShuffleServerInfo shuffleServerInfo, List<PartitionRange> partitionRanges) {
+  public ShuffleRegisterInfo(
+      ShuffleServerInfo shuffleServerInfo, List<PartitionRange> partitionRanges) {
     this.shuffleServerInfo = shuffleServerInfo;
     this.partitionRanges = partitionRanges;
   }
@@ -53,6 +54,9 @@ public class ShuffleRegisterInfo {
 
   @Override
   public String toString() {
-    return "ShuffleRegisterInfo: shuffleServerInfo[" + shuffleServerInfo.getId() + "], " + partitionRanges;
+    return "ShuffleRegisterInfo: shuffleServerInfo["
+        + shuffleServerInfo.getId()
+        + "], "
+        + partitionRanges;
   }
 }

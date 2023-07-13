@@ -19,10 +19,7 @@ package org.apache.uniffle.common;
 
 import java.util.Objects;
 
-/**
- * Class for partition range: [start, end]
- * Note: both inclusive
- */
+/** Class for partition range: [start, end] Note: both inclusive */
 public class PartitionRange implements Comparable<PartitionRange> {
 
   private final int start;

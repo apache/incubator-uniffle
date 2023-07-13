@@ -37,7 +37,6 @@ public class ClientConfManagerKerberlizedHadoopTest extends KerberizedHadoopBase
         kerberizedHadoop.getSchemeAndAuthorityPrefix(),
         cfgFile,
         kerberizedHadoop.getFileSystem(),
-        kerberizedHadoop.getConf()
-    );
+        kerberizedHadoop.getConf());
   }
 }

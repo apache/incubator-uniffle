@@ -46,64 +46,81 @@ import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT;
 public class UmbilicalUtils {
   private static final Logger LOG = LoggerFactory.getLogger(UmbilicalUtils.class);
 
-  private UmbilicalUtils() {
-  }
+  private UmbilicalUtils() {}
 
   /**
-   *
    * @param applicationId Application Id of this task
-   * @param conf  Configuration
+   * @param conf Configuration
    * @param taskAttemptId task Attempt Id
-   * @param shuffleId   computed using dagId, up dagName, down dagName by RssTezUtils.computeShuffleId() method.
+   * @param shuffleId computed using dagId, up dagName, down dagName by
+   *     RssTezUtils.computeShuffleId() method.
    * @return Shuffle Server Info by request Application Master
    * @throws IOException
    * @throws InterruptedException
    * @throws TezException
    */
   private static Map<Integer, List<ShuffleServerInfo>> doRequestShuffleServer(
-            ApplicationId applicationId,
-            Configuration conf,
-            TezTaskAttemptID taskAttemptId,
-            int shuffleId) throws IOException, InterruptedException, TezException {
+      ApplicationId applicationId,
+      Configuration conf,
+      TezTaskAttemptID taskAttemptId,
+      int shuffleId)
+      throws IOException, InterruptedException, TezException {
     String host = conf.get(RSS_AM_SHUFFLE_MANAGER_ADDRESS);
     int port = conf.getInt(RSS_AM_SHUFFLE_MANAGER_PORT, -1);
     final InetSocketAddress address = NetUtils.createSocketAddrForHost(host, port);
 
-    UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(applicationId.toString());
+    UserGroupInformation taskOwner =
+        UserGroupInformation.createRemoteUser(applicationId.toString());
     Credentials credentials = UserGroupInformation.getCurrentUser().getCredentials();
     Token<JobTokenIdentifier> jobToken = TokenCache.getSessionToken(credentials);
     SecurityUtil.setTokenService(jobToken, address);
     taskOwner.addToken(jobToken);
-    TezRemoteShuffleUmbilicalProtocol umbilical = taskOwner
-        .doAs(new PrivilegedExceptionAction<TezRemoteShuffleUmbilicalProtocol>() {
-          @Override
-          public TezRemoteShuffleUmbilicalProtocol run() throws Exception {
-            return RPC.getProxy(TezRemoteShuffleUmbilicalProtocol.class,
-                TezRemoteShuffleUmbilicalProtocol.versionID,
-                address, conf);
-          }
-        });
-    GetShuffleServerRequest request = new GetShuffleServerRequest(taskAttemptId, 200, 200, shuffleId);
+    TezRemoteShuffleUmbilicalProtocol umbilical =
+        taskOwner.doAs(
+            new PrivilegedExceptionAction<TezRemoteShuffleUmbilicalProtocol>() {
+              @Override
+              public TezRemoteShuffleUmbilicalProtocol run() throws Exception {
+                return RPC.getProxy(
+                    TezRemoteShuffleUmbilicalProtocol.class,
+                    TezRemoteShuffleUmbilicalProtocol.versionID,
+                    address,
+                    conf);
+              }
+            });
+    GetShuffleServerRequest request =
+        new GetShuffleServerRequest(taskAttemptId, 200, 200, shuffleId);
 
     GetShuffleServerResponse response = umbilical.getShuffleAssignments(request);
-    Map<Integer, List<ShuffleServerInfo>>  partitionToServers = response.getShuffleAssignmentsInfoWritable()
-        .getShuffleAssignmentsInfo()
-        .getPartitionToServers();
-    LOG.info("RequestShuffleServer applicationId:{}, taskAttemptId:{}, host:{}, port:{}, shuffleId:{}, worker:{}",
-        applicationId, taskAttemptId, host, port, shuffleId, partitionToServers);
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers =
+        response
+            .getShuffleAssignmentsInfoWritable()
+            .getShuffleAssignmentsInfo()
+            .getPartitionToServers();
+    LOG.info(
+        "RequestShuffleServer applicationId:{}, taskAttemptId:{}, host:{}, port:{}, shuffleId:{}, worker:{}",
+        applicationId,
+        taskAttemptId,
+        host,
+        port,
+        shuffleId,
+        partitionToServers);
     return partitionToServers;
   }
 
   public static Map<Integer, List<ShuffleServerInfo>> requestShuffleServer(
-          ApplicationId applicationId,
-          Configuration conf,
-          TezTaskAttemptID taskAttemptId,
-          int shuffleId) {
+      ApplicationId applicationId,
+      Configuration conf,
+      TezTaskAttemptID taskAttemptId,
+      int shuffleId) {
     try {
       return doRequestShuffleServer(applicationId, conf, taskAttemptId, shuffleId);
     } catch (IOException | InterruptedException | TezException e) {
-      LOG.error("Failed to requestShuffleServer, applicationId:{}, taskAttemptId:{}, shuffleId:{}, worker:{}",
-          applicationId, taskAttemptId, shuffleId, e);
+      LOG.error(
+          "Failed to requestShuffleServer, applicationId:{}, taskAttemptId:{}, shuffleId:{}, worker:{}",
+          applicationId,
+          taskAttemptId,
+          shuffleId,
+          e);
     }
     return null;
   }

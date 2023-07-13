@@ -34,7 +34,7 @@ import static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_PORT;
 public class ShuffleServerManagerTestBase {
   protected ShuffleManagerClientFactory factory = ShuffleManagerClientFactory.getInstance();
   protected ShuffleManagerGrpcClient client;
-  protected static final  String LOCALHOST = "localhost";
+  protected static final String LOCALHOST = "localhost";
   protected GrpcServer shuffleManagerServer;
 
   protected RssShuffleManagerInterface getShuffleManager() {
@@ -52,13 +52,12 @@ public class ShuffleServerManagerTestBase {
     return new ShuffleManagerServerFactory(getShuffleManager(), getConf()).getServer();
   }
 
-
   @BeforeEach
   public void createServerAndClient() throws Exception {
     shuffleManagerServer = createShuffleManagerServer();
     shuffleManagerServer.start();
     int port = shuffleManagerServer.getPort();
-    client =  factory.createShuffleManagerClient(ClientType.GRPC, LOCALHOST, port);
+    client = factory.createShuffleManagerClient(ClientType.GRPC, LOCALHOST, port);
   }
 
   @AfterEach

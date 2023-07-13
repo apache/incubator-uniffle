@@ -54,8 +54,8 @@ public class HadoopFilesystemProviderTest extends KerberizedHadoopBase {
     removeHadoopSecurityContext();
 
     try {
-      FileSystem fileSystem = HadoopFilesystemProvider.getFilesystem(new Path("/hdfs"),
-              kerberizedHadoop.getConf());
+      FileSystem fileSystem =
+          HadoopFilesystemProvider.getFilesystem(new Path("/hdfs"), kerberizedHadoop.getConf());
       fileSystem.mkdirs(new Path("/hdfs/HadoopFilesystemProviderTest"));
     } catch (AccessControlException e) {
       // ignore
@@ -68,22 +68,25 @@ public class HadoopFilesystemProviderTest extends KerberizedHadoopBase {
 
     // case1: it should throw exception when user is empty or null.
     try {
-      FileSystem fileSystem = HadoopFilesystemProvider.getFilesystem(null, new Path("/hdfs"),
-              kerberizedHadoop.getConf());
+      FileSystem fileSystem =
+          HadoopFilesystemProvider.getFilesystem(
+              null, new Path("/hdfs"), kerberizedHadoop.getConf());
     } catch (Exception e) {
       assertTrue(e.getMessage().contains("User must be not null or empty"));
     }
 
     // case2: it should return the proxy user's filesystem
-    FileSystem fileSystem = HadoopFilesystemProvider.getFilesystem("alex", new Path("/alex"),
-            kerberizedHadoop.getConf());
+    FileSystem fileSystem =
+        HadoopFilesystemProvider.getFilesystem(
+            "alex", new Path("/alex"), kerberizedHadoop.getConf());
     Path alexPath = new Path("/alex/HadoopFilesystemProviderTest-testGetSecuredFilesystem");
     assertTrue(fileSystem.mkdirs(alexPath));
 
     assertEquals("alex", fileSystem.getFileStatus(alexPath).getOwner());
 
     // case3: it should return the login user's filesystem
-    fileSystem = HadoopFilesystemProvider.getFilesystem(new Path("/hdfs"), kerberizedHadoop.getConf());
+    fileSystem =
+        HadoopFilesystemProvider.getFilesystem(new Path("/hdfs"), kerberizedHadoop.getConf());
     Path hdfsPath = new Path("/hdfs/HadoopFilesystemProviderTest-testGetSecuredFilesystem");
     assertTrue(fileSystem.mkdirs(hdfsPath));
 
@@ -96,8 +99,10 @@ public class HadoopFilesystemProviderTest extends KerberizedHadoopBase {
 
     // write file by proxy user.
     String fileContent = "hello world";
-    Path filePath = new Path("/alex/HadoopFilesystemProviderTest-testWriteAndReadBySecuredFilesystem.file");
-    FileSystem writeFs = HadoopFilesystemProvider.getFilesystem("alex", filePath, kerberizedHadoop.getConf());
+    Path filePath =
+        new Path("/alex/HadoopFilesystemProviderTest-testWriteAndReadBySecuredFilesystem.file");
+    FileSystem writeFs =
+        HadoopFilesystemProvider.getFilesystem("alex", filePath, kerberizedHadoop.getConf());
 
     boolean ok = writeFs.exists(new org.apache.hadoop.fs.Path("/alex"));
     assertTrue(ok);
@@ -112,16 +117,18 @@ public class HadoopFilesystemProviderTest extends KerberizedHadoopBase {
     assertEquals("alex", writeFs.getFileStatus(filePath).getOwner());
 
     // Read content from HDFS by alex user directly
-    UserGroupInformation readerUGI = UserGroupInformation.loginUserFromKeytabAndReturnUGI(
-        kerberizedHadoop.getAlexPrincipal() + "@" + kerberizedHadoop.getKdc().getRealm(),
-        kerberizedHadoop.getAlexKeytab()
-    );
-    readerUGI.doAs((PrivilegedExceptionAction<Object>) () -> {
-      FileSystem fs = FileSystem.get(kerberizedHadoop.getConf());
-      FSDataInputStream inputStream = fs.open(filePath);
-      String fetchedResult = IOUtils.toString(inputStream);
-      assertEquals(fileContent, fetchedResult);
-      return null;
-    });
+    UserGroupInformation readerUGI =
+        UserGroupInformation.loginUserFromKeytabAndReturnUGI(
+            kerberizedHadoop.getAlexPrincipal() + "@" + kerberizedHadoop.getKdc().getRealm(),
+            kerberizedHadoop.getAlexKeytab());
+    readerUGI.doAs(
+        (PrivilegedExceptionAction<Object>)
+            () -> {
+              FileSystem fs = FileSystem.get(kerberizedHadoop.getConf());
+              FSDataInputStream inputStream = fs.open(filePath);
+              String fetchedResult = IOUtils.toString(inputStream);
+              assertEquals(fileContent, fetchedResult);
+              return null;
+            });
   }
 }

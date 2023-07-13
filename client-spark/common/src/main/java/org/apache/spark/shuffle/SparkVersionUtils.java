@@ -40,7 +40,6 @@ public class SparkVersionUtils {
     MINOR_VERSION = minorVersion;
   }
 
-
   public static boolean isSpark2() {
     return MAJOR_VERSION == 2;
   }
@@ -48,5 +47,4 @@ public class SparkVersionUtils {
   public static boolean isSpark3() {
     return MAJOR_VERSION == 3;
   }
-
 }

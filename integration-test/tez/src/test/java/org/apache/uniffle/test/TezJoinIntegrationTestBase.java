@@ -33,17 +33,23 @@ public class TezJoinIntegrationTestBase extends TezIntegrationTestBase {
   protected static final String HASH_INPUT_FILE_SIZE = "500000";
   protected static final String JOIN_EXPECTED_PATH = "join_expected";
   protected static final String NUM_TASKS = "2";
-  
+
   protected void generateInputFile() throws Exception {
     fs.delete(new Path(STREAM_INPUT_PATH), true);
     fs.delete(new Path(HASH_INPUT_PATH), true);
     fs.delete(new Path(JOIN_EXPECTED_PATH), true);
-    String[] args = {STREAM_INPUT_PATH, STREAM_INPUT_FILE_SIZE, HASH_INPUT_PATH, HASH_INPUT_FILE_SIZE, 
-        JOIN_EXPECTED_PATH, NUM_TASKS};
+    String[] args = {
+      STREAM_INPUT_PATH,
+      STREAM_INPUT_FILE_SIZE,
+      HASH_INPUT_PATH,
+      HASH_INPUT_FILE_SIZE,
+      JOIN_EXPECTED_PATH,
+      NUM_TASKS
+    };
     JoinDataGen dataGen = new JoinDataGen();
     TezConfiguration appConf = new TezConfiguration(miniTezCluster.getConfig());
     updateCommonConfiguration(appConf);
-    assertEquals(0, ToolRunner.run(appConf, dataGen, args),  "JoinDataGen failed");
+    assertEquals(0, ToolRunner.run(appConf, dataGen, args), "JoinDataGen failed");
   }
 
   @Override
@@ -52,7 +58,7 @@ public class TezJoinIntegrationTestBase extends TezIntegrationTestBase {
     JoinValidate validate = new JoinValidate();
     TezConfiguration appConf = new TezConfiguration(miniTezCluster.getConfig());
     updateCommonConfiguration(appConf);
-    assertEquals(0, ToolRunner.run(appConf, validate, args),  "JoinValidate failed");
+    assertEquals(0, ToolRunner.run(appConf, validate, args), "JoinValidate failed");
   }
 
   public void run(String[] overrideArgs) throws Exception {
@@ -61,7 +67,7 @@ public class TezJoinIntegrationTestBase extends TezIntegrationTestBase {
     updateRssConfiguration(appConf);
     appendAndUploadRssJars(appConf);
     runTezApp(appConf, getTestTool(), overrideArgs);
-    
+
     // 2 check the result
     verifyResults(JOIN_EXPECTED_PATH, getOutputDir(""));
   }

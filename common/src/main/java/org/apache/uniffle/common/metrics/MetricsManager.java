@@ -45,9 +45,8 @@ public class MetricsManager {
       this.collectorRegistry = collectorRegistry;
     }
     this.defaultLabelNames = defaultLabels.keySet().toArray(new String[0]);
-    this.defaultLabelValues = Arrays.stream(defaultLabelNames)
-        .map(defaultLabels::get)
-        .toArray(String[]::new);
+    this.defaultLabelValues =
+        Arrays.stream(defaultLabelNames).map(defaultLabels::get).toArray(String[]::new);
   }
 
   public CollectorRegistry getCollectorRegistry() {
@@ -85,7 +84,12 @@ public class MetricsManager {
   }
 
   public Histogram addHistogram(String name, String help, double[] buckets, String[] labels) {
-    return Histogram.build().name(name).buckets(buckets).labelNames(labels).help(help).register(collectorRegistry);
+    return Histogram.build()
+        .name(name)
+        .buckets(buckets)
+        .labelNames(labels)
+        .help(help)
+        .register(collectorRegistry);
   }
 
   public Summary addSummary(String name) {

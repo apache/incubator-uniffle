@@ -31,18 +31,17 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.util.JavaUtils;
 
 /**
- *  Metadata has three dimensions from top to down including disk, shuffle, partition.
- *  And each dimension contains two aspects, status data and indicator data.
- *  Disk status data contains writable flag, Shuffle status data contains stable, uploading, deleting flag.
- *  Disk indicator data contains size, fileNum, shuffleNum, Shuffle indicator contains size, partition list,
- *  uploaded partition list and uploaded size.
+ * Metadata has three dimensions from top to down including disk, shuffle, partition. And each
+ * dimension contains two aspects, status data and indicator data. Disk status data contains
+ * writable flag, Shuffle status data contains stable, uploading, deleting flag. Disk indicator data
+ * contains size, fileNum, shuffleNum, Shuffle indicator contains size, partition list, uploaded
+ * partition list and uploaded size.
  */
 public class LocalStorageMeta {
 
   private static final Logger LOG = LoggerFactory.getLogger(LocalStorageMeta.class);
   private final AtomicLong size = new AtomicLong(0L);
   private final Map<String, ShuffleMeta> shuffleMetaMap = JavaUtils.newConcurrentMap();
-
 
   public void updateDiskSize(long delta) {
     size.addAndGet(delta);
@@ -95,20 +94,15 @@ public class LocalStorageMeta {
   }
 
   /**
-   *  If the method is implemented as below:
+   * If the method is implemented as below:
    *
-   *     if (shuffleMetaMap.contains(shuffleId)) {
-   *        // `Time A`
-   *        return shuffleMetaMap.get(shuffleId)
-   *     } else {
-   *        shuffleMetaMap.putIfAbsent(shuffleId, newMeta)
-   *        return newMeta
-   *    }
+   * <p>if (shuffleMetaMap.contains(shuffleId)) { // `Time A` return shuffleMetaMap.get(shuffleId) }
+   * else { shuffleMetaMap.putIfAbsent(shuffleId, newMeta) return newMeta }
    *
-   *  Because if shuffleMetaMap remove shuffleId at `Time A` in another thread,
-   *  shuffleMetaMap.get(shuffleId) will return null.
-   *  We need to guarantee that this method is thread safe, and won't return null.
-   **/
+   * <p>Because if shuffleMetaMap remove shuffleId at `Time A` in another thread,
+   * shuffleMetaMap.get(shuffleId) will return null. We need to guarantee that this method is thread
+   * safe, and won't return null.
+   */
   public void createMetadataIfNotExist(String shuffleKey) {
     ShuffleMeta meta = new ShuffleMeta();
     ShuffleMeta oldMeta = shuffleMetaMap.putIfAbsent(shuffleKey, meta);
@@ -150,6 +144,5 @@ public class LocalStorageMeta {
     public void updateLastReadTs() {
       lastReadTs.set(System.currentTimeMillis());
     }
-
   }
 }

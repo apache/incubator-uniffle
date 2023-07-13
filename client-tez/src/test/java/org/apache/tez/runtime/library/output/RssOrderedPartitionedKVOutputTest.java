@@ -17,7 +17,6 @@
 
 package org.apache.tez.runtime.library.output;
 
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
@@ -61,14 +60,15 @@ public class RssOrderedPartitionedKVOutputTest {
   public void setup() throws IOException {
     conf = new Configuration();
     localFs = FileSystem.getLocal(conf);
-    workingDir = new Path(System.getProperty("test.build.data",
-        System.getProperty("java.io.tmpdir", "/tmp")),
-        RssOrderedPartitionedKVOutputTest.class.getName()).makeQualified(
-        localFs.getUri(), localFs.getWorkingDirectory());
+    workingDir =
+        new Path(
+                System.getProperty("test.build.data", System.getProperty("java.io.tmpdir", "/tmp")),
+                RssOrderedPartitionedKVOutputTest.class.getName())
+            .makeQualified(localFs.getUri(), localFs.getWorkingDirectory());
     conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_KEY_CLASS, Text.class.getName());
     conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_VALUE_CLASS, Text.class.getName());
-    conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_PARTITIONER_CLASS,
-        HashPartitioner.class.getName());
+    conf.set(
+        TezRuntimeConfiguration.TEZ_RUNTIME_PARTITIONER_CLASS, HashPartitioner.class.getName());
     conf.setStrings(TezRuntimeFrameworkConfigs.LOCAL_DIRS, workingDir.toString());
   }
 
@@ -82,7 +82,8 @@ public class RssOrderedPartitionedKVOutputTest {
   public void testNonStartedOutput() throws Exception {
     OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
     int numPartitions = 10;
-    RssOrderedPartitionedKVOutput output = new RssOrderedPartitionedKVOutput(outputContext, numPartitions);
+    RssOrderedPartitionedKVOutput output =
+        new RssOrderedPartitionedKVOutput(outputContext, numPartitions);
     List<Event> events = output.close();
     assertEquals(2, events.size());
     Event event1 = events.get(0);
@@ -94,13 +95,12 @@ public class RssOrderedPartitionedKVOutputTest {
     ShuffleUserPayloads.DataMovementEventPayloadProto shufflePayload =
         ShuffleUserPayloads.DataMovementEventPayloadProto.parseFrom(ByteString.copyFrom(bb));
     assertTrue(shufflePayload.hasEmptyPartitions());
-    byte[] emptyPartitions = TezCommonUtils.decompressByteStringToByteArray(shufflePayload
-        .getEmptyPartitions());
+    byte[] emptyPartitions =
+        TezCommonUtils.decompressByteStringToByteArray(shufflePayload.getEmptyPartitions());
     BitSet emptyPartionsBitSet = TezUtilsInternal.fromByteArray(emptyPartitions);
     assertEquals(numPartitions, emptyPartionsBitSet.cardinality());
     for (int i = 0; i < numPartitions; i++) {
       assertTrue(emptyPartionsBitSet.get(i));
     }
   }
-
 }

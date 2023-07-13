@@ -75,11 +75,14 @@ public class JettyServerTest {
       assertEquals(expectStatus, ((ExitException) e).getStatus());
     }
 
-    final Thread t = new Thread(null, () -> {
-      throw new AssertionError("TestUncaughtException");
-    }, "testThread");
+    final Thread t =
+        new Thread(
+            null,
+            () -> {
+              throw new AssertionError("TestUncaughtException");
+            },
+            "testThread");
     t.start();
     t.join();
   }
-
 }

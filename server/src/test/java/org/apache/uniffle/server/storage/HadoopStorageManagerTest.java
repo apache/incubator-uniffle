@@ -59,10 +59,8 @@ public class HadoopStorageManagerTest {
     final String remoteStoragePath1 = "hdfs://path1";
     String appId = "testRemoveResources_appId";
     hadoopStorageManager.registerRemoteStorage(
-        appId,
-        new RemoteStorageInfo(remoteStoragePath1, ImmutableMap.of("k1", "v1", "k2", "v2"))
-    );
-    Map<String, HadoopStorage> appStorageMap =  hadoopStorageManager.getAppIdToStorages();
+        appId, new RemoteStorageInfo(remoteStoragePath1, ImmutableMap.of("k1", "v1", "k2", "v2")));
+    Map<String, HadoopStorage> appStorageMap = hadoopStorageManager.getAppIdToStorages();
 
     // case1
     assertEquals(1, appStorageMap.size());
@@ -88,18 +86,12 @@ public class HadoopStorageManagerTest {
     final String remoteStoragePath2 = "hdfs://path2";
     final String remoteStoragePath3 = "hdfs://path3";
     hadoopStorageManager.registerRemoteStorage(
-        "app1",
-        new RemoteStorageInfo(remoteStoragePath1, ImmutableMap.of("k1", "v1", "k2", "v2"))
-    );
+        "app1", new RemoteStorageInfo(remoteStoragePath1, ImmutableMap.of("k1", "v1", "k2", "v2")));
     hadoopStorageManager.registerRemoteStorage(
-        "app2",
-        new RemoteStorageInfo(remoteStoragePath2, ImmutableMap.of("k3", "v3"))
-    );
+        "app2", new RemoteStorageInfo(remoteStoragePath2, ImmutableMap.of("k3", "v3")));
     hadoopStorageManager.registerRemoteStorage(
-        "app3",
-        new RemoteStorageInfo(remoteStoragePath3, Maps.newHashMap())
-    );
-    Map<String, HadoopStorage> appStorageMap =  hadoopStorageManager.getAppIdToStorages();
+        "app3", new RemoteStorageInfo(remoteStoragePath3, Maps.newHashMap()));
+    Map<String, HadoopStorage> appStorageMap = hadoopStorageManager.getAppIdToStorages();
     assertEquals(3, appStorageMap.size());
     assertEquals(Sets.newHashSet("app1", "app2", "app3"), appStorageMap.keySet());
     HadoopStorage hs1 = hadoopStorageManager.getAppIdToStorages().get("app1");
@@ -119,4 +111,3 @@ public class HadoopStorageManagerTest {
     assertNull(hs3.getConf().get("k3"));
   }
 }
-

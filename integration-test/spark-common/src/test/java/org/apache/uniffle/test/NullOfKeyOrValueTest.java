@@ -28,8 +28,8 @@ import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.Test;
 
 /**
- * This class is to test whether the RSS keep consistent with the vanilla spark shuffle when
- * the key or value is null.
+ * This class is to test whether the RSS keep consistent with the vanilla spark shuffle when the key
+ * or value is null.
  */
 public class NullOfKeyOrValueTest extends SimpleTestBase {
 
@@ -43,17 +43,16 @@ public class NullOfKeyOrValueTest extends SimpleTestBase {
     // take a rest to make sure shuffle server is registered
     Thread.sleep(4000);
     JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
-    JavaPairRDD<String, Integer> javaPairRDD = jsc.parallelizePairs(
-        Lists.newArrayList(
-            new Tuple2<>("cat1", null),
-            new Tuple2<>("dog", 22),
-            new Tuple2<>("cat", 33),
-            new Tuple2<>("pig", 44),
-            new Tuple2<>(null, 55),
-            new Tuple2<>("cat", 66)
-        ),
-        2
-    );
+    JavaPairRDD<String, Integer> javaPairRDD =
+        jsc.parallelizePairs(
+            Lists.newArrayList(
+                new Tuple2<>("cat1", null),
+                new Tuple2<>("dog", 22),
+                new Tuple2<>("cat", 33),
+                new Tuple2<>("pig", 44),
+                new Tuple2<>(null, 55),
+                new Tuple2<>("cat", 66)),
+            2);
     return javaPairRDD.collectAsMap();
   }
 }

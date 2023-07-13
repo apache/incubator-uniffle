@@ -36,12 +36,19 @@ public class UniffleCLI extends AbstractCustomCommandLine {
 
   public UniffleCLI(String shortPrefix, String longPrefix) {
     allOptions = new Options();
-    uniffleClientCli = new Option(shortPrefix + "c", longPrefix + "cli",
-        true, "This is an client cli command that will print args.");
-    uniffleAdminCli = new Option(shortPrefix + "a", longPrefix + "admin",
-        true, "This is an admin command that will print args.");
-    help = new Option(shortPrefix + "h", longPrefix + "help",
-        false, "Help for the Uniffle CLI.");
+    uniffleClientCli =
+        new Option(
+            shortPrefix + "c",
+            longPrefix + "cli",
+            true,
+            "This is an client cli command that will print args.");
+    uniffleAdminCli =
+        new Option(
+            shortPrefix + "a",
+            longPrefix + "admin",
+            true,
+            "This is an admin command that will print args.");
+    help = new Option(shortPrefix + "h", longPrefix + "help", false, "Help for the Uniffle CLI.");
     allOptions.addOption(uniffleClientCli);
     allOptions.addOption(uniffleAdminCli);
     allOptions.addOption(help);

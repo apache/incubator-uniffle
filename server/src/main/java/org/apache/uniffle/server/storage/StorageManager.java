@@ -50,7 +50,7 @@ public interface StorageManager {
   void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo);
 
   Checker getStorageChecker();
-  
+
   boolean canWrite(ShuffleDataFlushEvent event);
 
   // todo: add an interface that check storage isHealthy
@@ -58,9 +58,10 @@ public interface StorageManager {
   void checkAndClearLeakedShuffleData(Collection<String> appIds);
 
   /**
-   * Report a map of storage mount point -> storage info mapping. For local storages, the mount point will be the device
-   * name of the base dir belongs to. For remote storage, the mount point would be the base dir with protocol schema,
-   * such as hdfs://path/to/some/base/dir.
+   * Report a map of storage mount point -> storage info mapping. For local storages, the mount
+   * point will be the device name of the base dir belongs to. For remote storage, the mount point
+   * would be the base dir with protocol schema, such as hdfs://path/to/some/base/dir.
+   *
    * @return a map of storage mount point -> storage info.
    */
   Map<String, StorageInfo> getStorageInfo();
