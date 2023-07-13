@@ -17,6 +17,7 @@
 
 package org.apache.spark.shuffle.writer;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -248,21 +249,24 @@ public class WriteBufferManager extends MemoryConsumer {
 
   // transform records to shuffleBlock
   protected ShuffleBlockInfo createShuffleBlock(int partitionId, WriterBuffer wb) {
-    byte[] data = wb.getData();
-    final int uncompressLength = data.length;
-    byte[] compressed = data;
+    ByteBuffer data = wb.getData();
+    final int uncompressLength = data.remaining();
+    ByteBuffer compressed = data;
+    int compressedLength = uncompressLength;
     if (codec != null) {
-      long start = System.currentTimeMillis();
-      compressed = codec.compress(data);
+      final long start = System.currentTimeMillis();
+      compressed = ByteBuffer.allocate(codec.maxCompressedLength(uncompressLength));
+      compressedLength = codec.compress(data, compressed);
+      compressed.flip();
       compressTime += System.currentTimeMillis() - start;
     }
     final long crc32 = ChecksumUtils.getCrc32(compressed);
     final long blockId = ClientUtils.getBlockId(partitionId, taskAttemptId, getNextSeqNo(partitionId));
-    uncompressedDataLen += data.length;
-    shuffleWriteMetrics.incBytesWritten(compressed.length);
+    uncompressedDataLen += uncompressLength;
+    shuffleWriteMetrics.incBytesWritten(compressedLength);
     // add memory to indicate bytes which will be sent to shuffle server
     inSendListBytes.addAndGet(wb.getMemoryUsed());
-    return new ShuffleBlockInfo(shuffleId, partitionId, blockId, compressed.length, crc32,
+    return new ShuffleBlockInfo(shuffleId, partitionId, blockId, compressedLength, crc32,
         compressed, partitionToServers.get(partitionId), uncompressLength, wb.getMemoryUsed(), taskAttemptId);
   }
 

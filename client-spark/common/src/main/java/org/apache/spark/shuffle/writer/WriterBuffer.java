@@ -17,9 +17,11 @@
 
 package org.apache.spark.shuffle.writer;
 
-import java.util.List;
+import java.nio.ByteBuffer;
 
-import com.google.common.collect.Lists;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,56 +29,44 @@ public class WriterBuffer {
 
   private static final Logger LOG = LoggerFactory.getLogger(WriterBuffer.class);
   private long copyTime = 0;
-  private byte[] buffer;
+  private ByteBuf buffer;
   private int bufferSize;
-  private int nextOffset = 0;
-  private List<WrappedBuffer> buffers = Lists.newArrayList();
+  private int bufferUsedSize = 0;
+  private CompositeByteBuf compositeByteBuf;
   private int dataLength = 0;
   private int memoryUsed = 0;
 
   public WriterBuffer(int bufferSize) {
     this.bufferSize = bufferSize;
+    compositeByteBuf = Unpooled.compositeBuffer();
   }
 
   public void addRecord(byte[] recordBuffer, int length) {
     if (askForMemory(length)) {
       // buffer has data already, add buffer to list
-      if (nextOffset > 0) {
-        buffers.add(new WrappedBuffer(buffer, nextOffset));
-        nextOffset = 0;
+      if (bufferUsedSize > 0 && buffer.readableBytes() > 0) {
+        compositeByteBuf.addComponent(true, buffer);
       }
       int newBufferSize = Math.max(length, bufferSize);
-      buffer = new byte[newBufferSize];
+      buffer = Unpooled.buffer(newBufferSize);
+      bufferUsedSize = 0;
       memoryUsed += newBufferSize;
     }
-
-    try {
-      System.arraycopy(recordBuffer, 0, buffer, nextOffset, length);
-    } catch (Exception e) {
-      LOG.error("Unexpected exception for System.arraycopy, length[" + length + "], nextOffset["
-          + nextOffset + "], bufferSize[" + bufferSize + "]");
-      throw e;
-    }
-
-    nextOffset += length;
+    buffer.writeBytes(Unpooled.wrappedBuffer(recordBuffer, 0, length));
+    bufferUsedSize += length;
     dataLength += length;
   }
 
   public boolean askForMemory(long length) {
-    return buffer == null || nextOffset + length > bufferSize;
+    return buffer == null || bufferUsedSize + length > bufferSize;
   }
 
-  public byte[] getData() {
-    byte[] data = new byte[dataLength];
-    int offset = 0;
-    long start = System.currentTimeMillis();
-    for (WrappedBuffer wrappedBuffer : buffers) {
-      System.arraycopy(wrappedBuffer.getBuffer(), 0, data, offset, wrappedBuffer.getSize());
-      offset += wrappedBuffer.getSize();
-    }
-    // nextOffset is the length of current buffer used
-    System.arraycopy(buffer, 0, data, offset, nextOffset);
+  public ByteBuffer getData() {
+    final long start = System.currentTimeMillis();
+    compositeByteBuf.addComponent(true, buffer);
+    final ByteBuffer data = compositeByteBuf.nioBuffer();
     copyTime += System.currentTimeMillis() - start;
+    buffer.clear();
     return data;
   }
 
@@ -90,24 +80,5 @@ public class WriterBuffer {
 
   public int getMemoryUsed() {
     return memoryUsed;
-  }
-
-  private static final class WrappedBuffer {
-
-    byte[] buffer;
-    int size;
-
-    WrappedBuffer(byte[] buffer, int size) {
-      this.buffer = buffer;
-      this.size = size;
-    }
-
-    public byte[] getBuffer() {
-      return buffer;
-    }
-
-    public int getSize() {
-      return size;
-    }
   }
 }
