@@ -81,6 +81,10 @@ To build it, run:
 
     mvn -DskipTests clean package
 
+To fix code style issues, run:
+
+    mvn spotless:apply -Pspark3 -Pspark2 -Ptez -Pmr -Phadoop2.8
+
 Build against profile Spark 2 (2.4.6)
 
     mvn -DskipTests clean package -Pspark2

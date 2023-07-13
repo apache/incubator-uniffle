@@ -62,6 +62,7 @@
     <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
+    <spotless-maven-plugin.version>2.30.0</spotless-maven-plugin.version>
     <metrics.version>3.1.0</metrics.version>
     <mockito.version>3.12.4</mockito.version>
     <netty.version>4.1.68.Final</netty.version>
@@ -853,6 +854,42 @@
           <groupId>org.apache.rat</groupId>
           <artifactId>apache-rat-plugin</artifactId>
           <version>0.13</version>
+        </plugin>
+        <plugin>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>${spotless-maven-plugin.version}</version>
+          <configuration>
+            <java>
+              <toggleOffOn />
+              <googleJavaFormat>
+                <version>1.7</version>
+              </googleJavaFormat>
+
+              <importOrder>
+                <wildcardsLast>false</wildcardsLast> <!-- Optional, default false. Sort wildcard import after specific imports -->
+                <!-- you can use an empty string for all the imports you didn't specify explicitly, '|' to join group without blank line, and '\#` prefix for static imports. -->
+                <order>java|javax,scala,,org.apache.uniffle,\#</order>
+              </importOrder>
+              <removeUnusedImports />
+
+              <formatAnnotations />
+              <!-- make sure every file has the following copyright header. -->
+              <licenseHeader>
+                <file>${execution.root}/.baseline/copyright/apache-license-header.txt</file>
+              </licenseHeader>
+            </java>
+          </configuration>
+          <executions>
+            <execution>
+              <!-- Runs in compile phase to fail fast in case of formatting issues.-->
+              <id>spotless-check</id>
+              <phase>compile</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
       </plugins>
     </pluginManagement>
