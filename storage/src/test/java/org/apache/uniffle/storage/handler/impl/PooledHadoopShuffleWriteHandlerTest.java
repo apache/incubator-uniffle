@@ -47,7 +47,8 @@ public class PooledHadoopShuffleWriteHandlerTest {
       this.execution = runnable;
     }
 
-    FakedShuffleWriteHandler(List<Integer> initializedList, List<Integer> invokedList, int index, Runnable runnable) {
+    FakedShuffleWriteHandler(
+        List<Integer> initializedList, List<Integer> invokedList, int index, Runnable runnable) {
       initializedList.add(index);
       this.invokedList = invokedList;
       this.index = index;
@@ -69,17 +70,22 @@ public class PooledHadoopShuffleWriteHandlerTest {
     CopyOnWriteArrayList<Integer> invokedList = new CopyOnWriteArrayList<>();
     CopyOnWriteArrayList<Integer> initializedList = new CopyOnWriteArrayList<>();
 
-    PooledHadoopShuffleWriteHandler handler = new PooledHadoopShuffleWriteHandler(
-        deque,
-        maxConcurrency,
-        index -> new FakedShuffleWriteHandler(initializedList, invokedList, index, () -> {
-          try {
-            Thread.sleep(10);
-          } catch (Exception e) {
-            // ignore
-          }
-        })
-    );
+    PooledHadoopShuffleWriteHandler handler =
+        new PooledHadoopShuffleWriteHandler(
+            deque,
+            maxConcurrency,
+            index ->
+                new FakedShuffleWriteHandler(
+                    initializedList,
+                    invokedList,
+                    index,
+                    () -> {
+                      try {
+                        Thread.sleep(10);
+                      } catch (Exception e) {
+                        // ignore
+                      }
+                    }));
 
     // case1: no race condition
     for (int i = 0; i < 10; i++) {
@@ -91,15 +97,17 @@ public class PooledHadoopShuffleWriteHandlerTest {
     invokedList.clear();
     CountDownLatch latch = new CountDownLatch(100);
     for (int i = 0; i < 100; i++) {
-      new Thread(() -> {
-        try {
-          handler.write(Collections.emptyList());
-        } catch (Exception e) {
-          // ignore
-        } finally {
-          latch.countDown();
-        }
-      }).start();
+      new Thread(
+              () -> {
+                try {
+                  handler.write(Collections.emptyList());
+                } catch (Exception e) {
+                  // ignore
+                } finally {
+                  latch.countDown();
+                }
+              })
+          .start();
     }
     latch.await();
     assertEquals(100, invokedList.size());
@@ -114,14 +122,16 @@ public class PooledHadoopShuffleWriteHandlerTest {
     LinkedBlockingDeque<ShuffleWriteHandler> deque = new LinkedBlockingDeque<>(concurrency);
     for (int i = 0; i < concurrency; i++) {
       deque.addFirst(
-          new FakedShuffleWriteHandler(invokedIndexes, i, () -> {
-            try {
-              Thread.sleep(100);
-            } catch (InterruptedException interruptedException) {
-              // ignore
-            }
-          })
-      );
+          new FakedShuffleWriteHandler(
+              invokedIndexes,
+              i,
+              () -> {
+                try {
+                  Thread.sleep(100);
+                } catch (InterruptedException interruptedException) {
+                  // ignore
+                }
+              }));
     }
     PooledHadoopShuffleWriteHandler handler = new PooledHadoopShuffleWriteHandler(deque);
 
@@ -139,29 +149,34 @@ public class PooledHadoopShuffleWriteHandlerTest {
     LinkedBlockingDeque<ShuffleWriteHandler> deque = new LinkedBlockingDeque<>(concurrency);
     for (int i = 0; i < concurrency; i++) {
       deque.addFirst(
-          new FakedShuffleWriteHandler(invokedIndexes, i, () -> {
-            try {
-              Thread.sleep(1000);
-            } catch (InterruptedException interruptedException) {
-              // ignore
-            }
-          })
-      );
+          new FakedShuffleWriteHandler(
+              invokedIndexes,
+              i,
+              () -> {
+                try {
+                  Thread.sleep(1000);
+                } catch (InterruptedException interruptedException) {
+                  // ignore
+                }
+              }));
     }
     PooledHadoopShuffleWriteHandler handler = new PooledHadoopShuffleWriteHandler(deque);
 
     ExecutorService executorService = Executors.newFixedThreadPool(concurrency);
     for (int i = 0; i < concurrency; i++) {
-      executorService.submit(() -> {
-        try {
-          handler.write(Collections.emptyList());
-        } catch (Exception e) {
-          // ignore
-          e.printStackTrace();
-        }
-      });
+      executorService.submit(
+          () -> {
+            try {
+              handler.write(Collections.emptyList());
+            } catch (Exception e) {
+              // ignore
+              e.printStackTrace();
+            }
+          });
     }
-    Awaitility.await().timeout(2, TimeUnit.SECONDS).until(() -> invokedIndexes.size() == concurrency);
+    Awaitility.await()
+        .timeout(2, TimeUnit.SECONDS)
+        .until(() -> invokedIndexes.size() == concurrency);
     executorService.shutdownNow();
   }
 }

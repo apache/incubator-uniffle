@@ -100,15 +100,20 @@ public class QuorumTest extends ShuffleReadWriteBase {
     shuffleServers.add(createServer(4, tmpDir));
 
     shuffleServerInfo0 =
-        new ShuffleServerInfo("127.0.0.1-20001", shuffleServers.get(0).getIp(), SHUFFLE_SERVER_PORT + 0);
+        new ShuffleServerInfo(
+            "127.0.0.1-20001", shuffleServers.get(0).getIp(), SHUFFLE_SERVER_PORT + 0);
     shuffleServerInfo1 =
-        new ShuffleServerInfo("127.0.0.1-20002", shuffleServers.get(1).getIp(), SHUFFLE_SERVER_PORT + 1);
+        new ShuffleServerInfo(
+            "127.0.0.1-20002", shuffleServers.get(1).getIp(), SHUFFLE_SERVER_PORT + 1);
     shuffleServerInfo2 =
-        new ShuffleServerInfo("127.0.0.1-20003", shuffleServers.get(2).getIp(), SHUFFLE_SERVER_PORT + 2);
+        new ShuffleServerInfo(
+            "127.0.0.1-20003", shuffleServers.get(2).getIp(), SHUFFLE_SERVER_PORT + 2);
     shuffleServerInfo3 =
-        new ShuffleServerInfo("127.0.0.1-20004", shuffleServers.get(3).getIp(), SHUFFLE_SERVER_PORT + 3);
+        new ShuffleServerInfo(
+            "127.0.0.1-20004", shuffleServers.get(3).getIp(), SHUFFLE_SERVER_PORT + 3);
     shuffleServerInfo4 =
-        new ShuffleServerInfo("127.0.0.1-20005", shuffleServers.get(4).getIp(), SHUFFLE_SERVER_PORT + 4);
+        new ShuffleServerInfo(
+            "127.0.0.1-20005", shuffleServers.get(4).getIp(), SHUFFLE_SERVER_PORT + 4);
     for (CoordinatorServer coordinator : coordinators) {
       coordinator.start();
     }
@@ -118,25 +123,36 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
     // simulator of failed servers
     fakedShuffleServerInfo0 =
-        new ShuffleServerInfo("127.0.0.1-20001", shuffleServers.get(0).getIp(), SHUFFLE_SERVER_PORT + 100);
+        new ShuffleServerInfo(
+            "127.0.0.1-20001", shuffleServers.get(0).getIp(), SHUFFLE_SERVER_PORT + 100);
     fakedShuffleServerInfo1 =
-        new ShuffleServerInfo("127.0.0.1-20002", shuffleServers.get(1).getIp(), SHUFFLE_SERVER_PORT + 200);
+        new ShuffleServerInfo(
+            "127.0.0.1-20002", shuffleServers.get(1).getIp(), SHUFFLE_SERVER_PORT + 200);
     fakedShuffleServerInfo2 =
-        new ShuffleServerInfo("127.0.0.1-20003", shuffleServers.get(2).getIp(), SHUFFLE_SERVER_PORT + 300);
+        new ShuffleServerInfo(
+            "127.0.0.1-20003", shuffleServers.get(2).getIp(), SHUFFLE_SERVER_PORT + 300);
     fakedShuffleServerInfo3 =
-        new ShuffleServerInfo("127.0.0.1-20004", shuffleServers.get(2).getIp(), SHUFFLE_SERVER_PORT + 400);
+        new ShuffleServerInfo(
+            "127.0.0.1-20004", shuffleServers.get(2).getIp(), SHUFFLE_SERVER_PORT + 400);
     fakedShuffleServerInfo4 =
-        new ShuffleServerInfo("127.0.0.1-20005", shuffleServers.get(2).getIp(), SHUFFLE_SERVER_PORT + 500);
+        new ShuffleServerInfo(
+            "127.0.0.1-20005", shuffleServers.get(2).getIp(), SHUFFLE_SERVER_PORT + 500);
 
     // spark.rss.data.replica=3
     // spark.rss.data.replica.write=2
     // spark.rss.data.replica.read=2
-    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-        .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo0)).adjustTimeout(200);
-    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-        .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo1)).adjustTimeout(200);
-    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-        .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(200);
+    ((ShuffleServerGrpcClient)
+            ShuffleServerClientFactory.getInstance()
+                .getShuffleServerClient("GRPC", shuffleServerInfo0))
+        .adjustTimeout(200);
+    ((ShuffleServerGrpcClient)
+            ShuffleServerClientFactory.getInstance()
+                .getShuffleServerClient("GRPC", shuffleServerInfo1))
+        .adjustTimeout(200);
+    ((ShuffleServerGrpcClient)
+            ShuffleServerClientFactory.getInstance()
+                .getShuffleServerClient("GRPC", shuffleServerInfo2))
+        .adjustTimeout(200);
 
     Thread.sleep(2000);
   }
@@ -159,14 +175,19 @@ public class QuorumTest extends ShuffleReadWriteBase {
     }
     cleanCluster();
     // we need recovery `rpcTime`, or some unit tests may fail
-    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-            .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo0)).adjustTimeout(60000);
-    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-            .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo1)).adjustTimeout(60000);
-    ((ShuffleServerGrpcClient)ShuffleServerClientFactory
-            .getInstance().getShuffleServerClient("GRPC", shuffleServerInfo2)).adjustTimeout(60000);
+    ((ShuffleServerGrpcClient)
+            ShuffleServerClientFactory.getInstance()
+                .getShuffleServerClient("GRPC", shuffleServerInfo0))
+        .adjustTimeout(60000);
+    ((ShuffleServerGrpcClient)
+            ShuffleServerClientFactory.getInstance()
+                .getShuffleServerClient("GRPC", shuffleServerInfo1))
+        .adjustTimeout(60000);
+    ((ShuffleServerGrpcClient)
+            ShuffleServerClientFactory.getInstance()
+                .getShuffleServerClient("GRPC", shuffleServerInfo2))
+        .adjustTimeout(60000);
   }
-
 
   @Test
   public void quorumConfigTest() throws Exception {
@@ -198,9 +219,16 @@ public class QuorumTest extends ShuffleReadWriteBase {
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
 
     // case1: When only 1 server is failed, the block sending should success
-    List<ShuffleBlockInfo> blocks = createShuffleBlockList(
-        0, 0, 0, 3, 25, blockIdBitmap,
-        expectedData, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, fakedShuffleServerInfo2));
+    List<ShuffleBlockInfo> blocks =
+        createShuffleBlockList(
+            0,
+            0,
+            0,
+            3,
+            25,
+            blockIdBitmap,
+            expectedData,
+            Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, fakedShuffleServerInfo2));
 
     SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
     Roaring64NavigableMap failedBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -215,19 +243,38 @@ public class QuorumTest extends ShuffleReadWriteBase {
     assertEquals(blockIdBitmap, succBlockIdBitmap);
 
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-        testAppId, 0, 0, 100, 1,
-        10, 1000, "", blockIdBitmap, taskIdBitmap,
-        Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, fakedShuffleServerInfo2),
-        null, new DefaultIdHelper());
+    ShuffleReadClientImpl readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, fakedShuffleServerInfo2),
+            null,
+            new DefaultIdHelper());
     // The data should be read
     validateResult(readClient, expectedData);
 
     // case2: When 2 servers are failed, the block sending should fail
     blockIdBitmap = Roaring64NavigableMap.bitmapOf();
-    blocks = createShuffleBlockList(
-      0, 0, 0, 3, 25, blockIdBitmap,
-      expectedData, Lists.newArrayList(shuffleServerInfo0, fakedShuffleServerInfo1, fakedShuffleServerInfo2));
+    blocks =
+        createShuffleBlockList(
+            0,
+            0,
+            0,
+            3,
+            25,
+            blockIdBitmap,
+            expectedData,
+            Lists.newArrayList(
+                shuffleServerInfo0, fakedShuffleServerInfo1, fakedShuffleServerInfo2));
     result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
     failedBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
     succBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -245,37 +292,73 @@ public class QuorumTest extends ShuffleReadWriteBase {
   }
 
   private void enableTimeout(MockedShuffleServer server, long timeout) {
-    ((MockedGrpcServer)server.getServer()).getService()
-        .enableMockedTimeout(timeout);
+    ((MockedGrpcServer) server.getServer()).getService().enableMockedTimeout(timeout);
   }
 
   private void disableTimeout(MockedShuffleServer server) {
-    ((MockedGrpcServer)server.getServer()).getService()
-        .disableMockedTimeout();
+    ((MockedGrpcServer) server.getServer()).getService().disableMockedTimeout();
   }
 
   static class MockedShuffleWriteClientImpl extends ShuffleWriteClientImpl {
-    MockedShuffleWriteClientImpl(String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
-        int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled, int dataTranferPoolSize,
-        int dataCommitPoolSize, int unregisterThreadPoolSize, int unregisterRequestTimeSec) {
-      super(clientType, retryMax, retryIntervalMax, heartBeatThreadNum, replica, replicaWrite, replicaRead,
-          replicaSkipEnabled, dataTranferPoolSize, dataCommitPoolSize, unregisterThreadPoolSize,
+    MockedShuffleWriteClientImpl(
+        String clientType,
+        int retryMax,
+        long retryIntervalMax,
+        int heartBeatThreadNum,
+        int replica,
+        int replicaWrite,
+        int replicaRead,
+        boolean replicaSkipEnabled,
+        int dataTranferPoolSize,
+        int dataCommitPoolSize,
+        int unregisterThreadPoolSize,
+        int unregisterRequestTimeSec) {
+      super(
+          clientType,
+          retryMax,
+          retryIntervalMax,
+          heartBeatThreadNum,
+          replica,
+          replicaWrite,
+          replicaRead,
+          replicaSkipEnabled,
+          dataTranferPoolSize,
+          dataCommitPoolSize,
+          unregisterThreadPoolSize,
           unregisterRequestTimeSec);
     }
 
-    public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList) {
+    public SendShuffleDataResult sendShuffleData(
+        String appId, List<ShuffleBlockInfo> shuffleBlockInfoList) {
       return super.sendShuffleData(appId, shuffleBlockInfoList, () -> false);
     }
   }
 
-  private void registerShuffleServer(String testAppId,
-      int replica, int replicaWrite, int replicaRead, boolean replicaSkip) {
+  private void registerShuffleServer(
+      String testAppId, int replica, int replicaWrite, int replicaRead, boolean replicaSkip) {
 
-    shuffleWriteClientImpl = new MockedShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1,
-      replica, replicaWrite, replicaRead, replicaSkip, 1, 1, 10, 10);
+    shuffleWriteClientImpl =
+        new MockedShuffleWriteClientImpl(
+            ClientType.GRPC.name(),
+            3,
+            1000,
+            1,
+            replica,
+            replicaWrite,
+            replicaRead,
+            replicaSkip,
+            1,
+            1,
+            10,
+            10);
 
-    List<ShuffleServerInfo> allServers = Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1,
-        shuffleServerInfo2, shuffleServerInfo3, shuffleServerInfo4);
+    List<ShuffleServerInfo> allServers =
+        Lists.newArrayList(
+            shuffleServerInfo0,
+            shuffleServerInfo1,
+            shuffleServerInfo2,
+            shuffleServerInfo3,
+            shuffleServerInfo4);
 
     for (int i = 0; i < replica; i++) {
       shuffleWriteClientImpl.registerShuffle(
@@ -285,8 +368,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
           Lists.newArrayList(new PartitionRange(0, 0)),
           new RemoteStorageInfo(""),
           ShuffleDataDistributionType.NORMAL,
-          1
-      );
+          1);
     }
   }
 
@@ -297,25 +379,37 @@ public class QuorumTest extends ShuffleReadWriteBase {
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
 
     // only 1 server is timout, the block sending should success
-    enableTimeout((MockedShuffleServer)shuffleServers.get(2), 500);
+    enableTimeout((MockedShuffleServer) shuffleServers.get(2), 500);
 
     // report result should success
     Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
     partitionToBlockIds.put(0, Lists.newArrayList(blockIdBitmap.stream().iterator()));
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
-    partitionToServers.put(0, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
-    shuffleWriteClientImpl.reportShuffleResult(partitionToServers, testAppId, 0, 0L,
-        partitionToBlockIds, 1);
-    Roaring64NavigableMap report = shuffleWriteClientImpl.getShuffleResult("GRPC",
-        Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
-        testAppId, 0, 0);
+    partitionToServers.put(
+        0, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    shuffleWriteClientImpl.reportShuffleResult(
+        partitionToServers, testAppId, 0, 0L, partitionToBlockIds, 1);
+    Roaring64NavigableMap report =
+        shuffleWriteClientImpl.getShuffleResult(
+            "GRPC",
+            Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
+            testAppId,
+            0,
+            0);
     assertEquals(report, blockIdBitmap);
 
     // data read should success
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    List<ShuffleBlockInfo> blocks = createShuffleBlockList(
-        0, 0, 0, 3, 25, blockIdBitmap,
-        expectedData, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    List<ShuffleBlockInfo> blocks =
+        createShuffleBlockList(
+            0,
+            0,
+            0,
+            3,
+            25,
+            blockIdBitmap,
+            expectedData,
+            Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
     SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
     Roaring64NavigableMap succBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
     for (Long blockId : result.getSuccessBlockIds()) {
@@ -325,28 +419,47 @@ public class QuorumTest extends ShuffleReadWriteBase {
     assertEquals(blockIdBitmap, succBlockIdBitmap);
 
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-        testAppId, 0, 0, 100, 1,
-        10, 1000, "", blockIdBitmap, taskIdBitmap,
-        Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2), null, new DefaultIdHelper());
+    ShuffleReadClientImpl readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
+            null,
+            new DefaultIdHelper());
     validateResult(readClient, expectedData);
   }
 
   @Test
   public void case2() throws Exception {
     String testAppId = "case2";
-    registerShuffleServer(testAppId, 3, 2, 2,true);
+    registerShuffleServer(testAppId, 3, 2, 2, true);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     // When 2 servers are timeout, the block sending should fail
-    enableTimeout((MockedShuffleServer)shuffleServers.get(1), 500);
-    enableTimeout((MockedShuffleServer)shuffleServers.get(2), 500);
+    enableTimeout((MockedShuffleServer) shuffleServers.get(1), 500);
+    enableTimeout((MockedShuffleServer) shuffleServers.get(2), 500);
 
-    List<ShuffleBlockInfo> blocks = createShuffleBlockList(
-        0, 0, 0, 3, 25, blockIdBitmap,
-        expectedData, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    List<ShuffleBlockInfo> blocks =
+        createShuffleBlockList(
+            0,
+            0,
+            0,
+            3,
+            25,
+            blockIdBitmap,
+            expectedData,
+            Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
     SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
     Roaring64NavigableMap failedBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
     for (Long blockId : result.getFailedBlockIds()) {
@@ -359,19 +472,23 @@ public class QuorumTest extends ShuffleReadWriteBase {
     Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
     partitionToBlockIds.put(0, Lists.newArrayList(blockIdBitmap.stream().iterator()));
-    partitionToServers.put(0, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    partitionToServers.put(
+        0, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
     try {
-      shuffleWriteClientImpl.reportShuffleResult(partitionToServers, testAppId, 0, 0L,
-          partitionToBlockIds, 1);
+      shuffleWriteClientImpl.reportShuffleResult(
+          partitionToServers, testAppId, 0, 0L, partitionToBlockIds, 1);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
       assertTrue(e.getMessage().startsWith("Quorum check of report shuffle result is failed"));
     }
     //  get result should also fail
     try {
-      shuffleWriteClientImpl.getShuffleResult("GRPC",
+      shuffleWriteClientImpl.getShuffleResult(
+          "GRPC",
           Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
-          testAppId, 0, 0);
+          testAppId,
+          0,
+          0);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
       assertTrue(e.getMessage().startsWith("Get shuffle result is failed"));
@@ -381,19 +498,26 @@ public class QuorumTest extends ShuffleReadWriteBase {
   @Test
   public void case3() throws Exception {
     String testAppId = "case3";
-    registerShuffleServer(testAppId,3, 2, 2, true);
-    disableTimeout((MockedShuffleServer)shuffleServers.get(0));
-    disableTimeout((MockedShuffleServer)shuffleServers.get(1));
-    disableTimeout((MockedShuffleServer)shuffleServers.get(2));
+    registerShuffleServer(testAppId, 3, 2, 2, true);
+    disableTimeout((MockedShuffleServer) shuffleServers.get(0));
+    disableTimeout((MockedShuffleServer) shuffleServers.get(1));
+    disableTimeout((MockedShuffleServer) shuffleServers.get(2));
 
     // When 1 server is timeout and 1 server is failed after sending, the block sending should fail
-    enableTimeout((MockedShuffleServer)shuffleServers.get(2), 500);
+    enableTimeout((MockedShuffleServer) shuffleServers.get(2), 500);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
-    List<ShuffleBlockInfo> blocks = createShuffleBlockList(
-        0, 0, 0, 3, 25, blockIdBitmap,
-        expectedData, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    List<ShuffleBlockInfo> blocks =
+        createShuffleBlockList(
+            0,
+            0,
+            0,
+            3,
+            25,
+            blockIdBitmap,
+            expectedData,
+            Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
     SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
     Roaring64NavigableMap failedBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap succBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -409,31 +533,44 @@ public class QuorumTest extends ShuffleReadWriteBase {
     Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
     partitionToBlockIds.put(0, Lists.newArrayList(blockIdBitmap.stream().iterator()));
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
-    partitionToServers.put(0, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
-    shuffleWriteClientImpl.reportShuffleResult(partitionToServers, testAppId, 0, 0L,
-        partitionToBlockIds, 1);
+    partitionToServers.put(
+        0, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    shuffleWriteClientImpl.reportShuffleResult(
+        partitionToServers, testAppId, 0, 0L, partitionToBlockIds, 1);
 
-    Roaring64NavigableMap report = shuffleWriteClientImpl.getShuffleResult("GRPC",
-        Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
-        testAppId, 0, 0);
+    Roaring64NavigableMap report =
+        shuffleWriteClientImpl.getShuffleResult(
+            "GRPC",
+            Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
+            testAppId,
+            0,
+            0);
     assertEquals(report, blockIdBitmap);
 
     // let this server be failed, the reading will be also be failed
     shuffleServers.get(1).stopServer();
     try {
-      report = shuffleWriteClientImpl.getShuffleResult("GRPC",
-        Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
-        testAppId, 0, 0);
+      report =
+          shuffleWriteClientImpl.getShuffleResult(
+              "GRPC",
+              Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
+              testAppId,
+              0,
+              0);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
       assertTrue(e.getMessage().startsWith("Get shuffle result is failed"));
     }
 
     // When the timeout of one server is recovered, the block sending should success
-    disableTimeout((MockedShuffleServer)shuffleServers.get(2));
-    report = shuffleWriteClientImpl.getShuffleResult("GRPC",
-      Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
-      testAppId, 0, 0);
+    disableTimeout((MockedShuffleServer) shuffleServers.get(2));
+    report =
+        shuffleWriteClientImpl.getShuffleResult(
+            "GRPC",
+            Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
+            testAppId,
+            0,
+            0);
     assertEquals(report, blockIdBitmap);
   }
 
@@ -442,24 +579,43 @@ public class QuorumTest extends ShuffleReadWriteBase {
     String testAppId = "case4";
     registerShuffleServer(testAppId, 3, 2, 2, true);
     // when 1 server is timeout, the sending multiple blocks should success
-    enableTimeout((MockedShuffleServer)shuffleServers.get(2), 500);
+    enableTimeout((MockedShuffleServer) shuffleServers.get(2), 500);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     for (int i = 0; i < 5; i++) {
-      List<ShuffleBlockInfo> blocks = createShuffleBlockList(
-          0, 0, 0, 3, 25, blockIdBitmap,
-          expectedData, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+      List<ShuffleBlockInfo> blocks =
+          createShuffleBlockList(
+              0,
+              0,
+              0,
+              3,
+              25,
+              blockIdBitmap,
+              expectedData,
+              Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
       SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
       assertTrue(result.getSuccessBlockIds().size() == 3);
       assertTrue(result.getFailedBlockIds().size() == 0);
     }
 
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-        testAppId, 0, 0, 100, 1,
-        10, 1000, "", blockIdBitmap, taskIdBitmap,
-        Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2), null, new DefaultIdHelper());
+    ShuffleReadClientImpl readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
+            null,
+            new DefaultIdHelper());
     validateResult(readClient, expectedData);
   }
 
@@ -471,20 +627,32 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
-    final List<ShuffleBlockInfo> blocks = createShuffleBlockList(
-        0, 0, 0, 3, 25, blockIdBitmap,
-        expectedData, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    final List<ShuffleBlockInfo> blocks =
+        createShuffleBlockList(
+            0,
+            0,
+            0,
+            3,
+            25,
+            blockIdBitmap,
+            expectedData,
+            Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
 
     // report result should success
     Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
     partitionToBlockIds.put(0, Lists.newArrayList(blockIdBitmap.stream().iterator()));
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
-    partitionToServers.put(0, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
-    shuffleWriteClientImpl.reportShuffleResult(partitionToServers, testAppId, 0, 0L,
-        partitionToBlockIds, 1);
-    Roaring64NavigableMap report = shuffleWriteClientImpl.getShuffleResult("GRPC",
-        Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
-        testAppId, 0, 0);
+    partitionToServers.put(
+        0, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    shuffleWriteClientImpl.reportShuffleResult(
+        partitionToServers, testAppId, 0, 0L, partitionToBlockIds, 1);
+    Roaring64NavigableMap report =
+        shuffleWriteClientImpl.getShuffleResult(
+            "GRPC",
+            Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
+            testAppId,
+            0,
+            0);
     assertEquals(report, blockIdBitmap);
 
     // data read should success
@@ -500,9 +668,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
     shuffleServers.get(1).stopServer();
     shuffleServers.set(1, createServer(1, tmpDir));
     shuffleServers.get(1).start();
-    report = shuffleWriteClientImpl.getShuffleResult("GRPC",
-      Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
-      testAppId, 0, 0);
+    report =
+        shuffleWriteClientImpl.getShuffleResult(
+            "GRPC",
+            Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
+            testAppId,
+            0,
+            0);
     assertEquals(report, blockIdBitmap);
 
     // when two servers are restarted, getShuffleResult should fail
@@ -510,9 +682,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
     shuffleServers.set(2, createServer(2, tmpDir));
     shuffleServers.get(2).start();
     try {
-      report = shuffleWriteClientImpl.getShuffleResult("GRPC",
-        Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
-        testAppId, 0, 0);
+      report =
+          shuffleWriteClientImpl.getShuffleResult(
+              "GRPC",
+              Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
+              testAppId,
+              0,
+              0);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
       assertTrue(e.getMessage().startsWith("Get shuffle result is failed"));
@@ -528,19 +704,40 @@ public class QuorumTest extends ShuffleReadWriteBase {
     Roaring64NavigableMap blockIdBitmap1 = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap blockIdBitmap2 = Roaring64NavigableMap.bitmapOf();
 
-    List<ShuffleBlockInfo> partition0 = createShuffleBlockList(
-        0, 0, 0, 3, 25, blockIdBitmap0,
-        expectedData, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
-    List<ShuffleBlockInfo> partition1 = createShuffleBlockList(
-        0, 0, 0, 3, 25, blockIdBitmap1,
-        expectedData, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
-    List<ShuffleBlockInfo> partition2 = createShuffleBlockList(
-        0, 0, 0, 3, 25, blockIdBitmap2,
-        expectedData, Lists.newArrayList(shuffleServerInfo2, shuffleServerInfo3, shuffleServerInfo4));
+    List<ShuffleBlockInfo> partition0 =
+        createShuffleBlockList(
+            0,
+            0,
+            0,
+            3,
+            25,
+            blockIdBitmap0,
+            expectedData,
+            Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    List<ShuffleBlockInfo> partition1 =
+        createShuffleBlockList(
+            0,
+            0,
+            0,
+            3,
+            25,
+            blockIdBitmap1,
+            expectedData,
+            Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    List<ShuffleBlockInfo> partition2 =
+        createShuffleBlockList(
+            0,
+            0,
+            0,
+            3,
+            25,
+            blockIdBitmap2,
+            expectedData,
+            Lists.newArrayList(shuffleServerInfo2, shuffleServerInfo3, shuffleServerInfo4));
 
     // server 0,1,2 are ok, server 3,4 are timout
-    enableTimeout((MockedShuffleServer)shuffleServers.get(3), 500);
-    enableTimeout((MockedShuffleServer)shuffleServers.get(4), 500);
+    enableTimeout((MockedShuffleServer) shuffleServers.get(3), 500);
+    enableTimeout((MockedShuffleServer) shuffleServers.get(4), 500);
 
     Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
     partitionToBlockIds.put(0, Lists.newArrayList(blockIdBitmap0.stream().iterator()));
@@ -548,14 +745,17 @@ public class QuorumTest extends ShuffleReadWriteBase {
     partitionToBlockIds.put(2, Lists.newArrayList(blockIdBitmap2.stream().iterator()));
 
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
-    partitionToServers.put(0, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
-    partitionToServers.put(1, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
-    partitionToServers.put(2, Lists.newArrayList(shuffleServerInfo2, shuffleServerInfo3, shuffleServerInfo4));
+    partitionToServers.put(
+        0, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    partitionToServers.put(
+        1, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    partitionToServers.put(
+        2, Lists.newArrayList(shuffleServerInfo2, shuffleServerInfo3, shuffleServerInfo4));
 
     // report result should fail because partition2 is failed to report server 3,4
     try {
-      shuffleWriteClientImpl.reportShuffleResult(partitionToServers, testAppId, 0, 0L,
-          partitionToBlockIds, 1);
+      shuffleWriteClientImpl.reportShuffleResult(
+          partitionToServers, testAppId, 0, 0L, partitionToBlockIds, 1);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
       assertTrue(e.getMessage().startsWith("Quorum check of report shuffle result is failed"));
@@ -573,33 +773,76 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
     // attempt to send data to "all servers", but only the server 0,1 receive data actually
     for (int i = 0; i < 5; i++) {
-      List<ShuffleBlockInfo> blocks = createShuffleBlockList(
-          0, 0, 0, 3, 25, blockIdBitmap,
-          expectedData, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+      List<ShuffleBlockInfo> blocks =
+          createShuffleBlockList(
+              0,
+              0,
+              0,
+              3,
+              25,
+              blockIdBitmap,
+              expectedData,
+              Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
       SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
       assertTrue(result.getSuccessBlockIds().size() == 3);
       assertTrue(result.getFailedBlockIds().size() == 0);
     }
 
     // we cannot read any blocks from server 2
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-        testAppId, 0, 0, 100, 1,
-        10, 1000, "", blockIdBitmap, taskIdBitmap,
-        Lists.newArrayList(shuffleServerInfo2), null, new DefaultIdHelper());
+    ShuffleReadClientImpl readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo2),
+            null,
+            new DefaultIdHelper());
     assertTrue(readClient.readShuffleBlockData() == null);
 
     // we can read blocks from server 0,1
-    readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-      testAppId, 0, 0, 100, 1,
-      10, 1000, "", blockIdBitmap, taskIdBitmap,
-      Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1), null, new DefaultIdHelper());
+    readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1),
+            null,
+            new DefaultIdHelper());
     validateResult(readClient, expectedData);
 
     // we can also read blocks from server 0,1,2
-    readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-      testAppId, 0, 0, 100, 1,
-      10, 1000, "", blockIdBitmap, taskIdBitmap,
-      Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2), null, new DefaultIdHelper());
+    readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
+            null,
+            new DefaultIdHelper());
     validateResult(readClient, expectedData);
   }
 
@@ -616,33 +859,76 @@ public class QuorumTest extends ShuffleReadWriteBase {
     // primary round: server 0/1
     // secondary round: server 2
     for (int i = 0; i < 5; i++) {
-      List<ShuffleBlockInfo> blocks = createShuffleBlockList(
-          0, 0, 0, 3, 25, blockIdBitmap,
-          expectedData, Lists.newArrayList(shuffleServerInfo0, fakedShuffleServerInfo1, shuffleServerInfo2));
+      List<ShuffleBlockInfo> blocks =
+          createShuffleBlockList(
+              0,
+              0,
+              0,
+              3,
+              25,
+              blockIdBitmap,
+              expectedData,
+              Lists.newArrayList(shuffleServerInfo0, fakedShuffleServerInfo1, shuffleServerInfo2));
       SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
       assertTrue(result.getSuccessBlockIds().size() == 3);
       assertTrue(result.getFailedBlockIds().size() == 0);
     }
 
     // we cannot read any blocks from server 1
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-        testAppId, 0, 0, 100, 1,
-        10, 1000, "", blockIdBitmap, taskIdBitmap,
-        Lists.newArrayList(shuffleServerInfo1), null, new DefaultIdHelper());
+    ShuffleReadClientImpl readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo1),
+            null,
+            new DefaultIdHelper());
     assertTrue(readClient.readShuffleBlockData() == null);
 
     // we can read blocks from server 2, which is sent in to secondary round
-    readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-      testAppId, 0, 0, 100, 1,
-      10, 1000, "", blockIdBitmap, taskIdBitmap,
-      Lists.newArrayList(shuffleServerInfo2), null, new DefaultIdHelper());
+    readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo2),
+            null,
+            new DefaultIdHelper());
     validateResult(readClient, expectedData);
 
     // we can read blocks from server 0,1,2
-    readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-      testAppId, 0, 0, 100, 1,
-      10, 1000, "", blockIdBitmap, taskIdBitmap,
-      Lists.newArrayList(shuffleServerInfo0, fakedShuffleServerInfo1, shuffleServerInfo2), null, new DefaultIdHelper());
+    readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo0, fakedShuffleServerInfo1, shuffleServerInfo2),
+            null,
+            new DefaultIdHelper());
     validateResult(readClient, expectedData);
   }
 
@@ -658,27 +944,62 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
     // attempt to send data to "all servers", but only the server 0,1,2 receive data actually
     for (int i = 0; i < 5; i++) {
-      List<ShuffleBlockInfo> blocks = createShuffleBlockList(
-          0, 0, 0, 3, 25, blockIdBitmap,
-          expectedData, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2,
-            shuffleServerInfo3, shuffleServerInfo4));
+      List<ShuffleBlockInfo> blocks =
+          createShuffleBlockList(
+              0,
+              0,
+              0,
+              3,
+              25,
+              blockIdBitmap,
+              expectedData,
+              Lists.newArrayList(
+                  shuffleServerInfo0,
+                  shuffleServerInfo1,
+                  shuffleServerInfo2,
+                  shuffleServerInfo3,
+                  shuffleServerInfo4));
       SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
       assertTrue(result.getSuccessBlockIds().size() == 3);
       assertTrue(result.getFailedBlockIds().size() == 0);
     }
 
     // we cannot read any blocks from server 3, 4
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-        testAppId, 0, 0, 100, 1,
-        10, 1000, "", blockIdBitmap, taskIdBitmap,
-        Lists.newArrayList(shuffleServerInfo3, shuffleServerInfo4), null, new DefaultIdHelper());
+    ShuffleReadClientImpl readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo3, shuffleServerInfo4),
+            null,
+            new DefaultIdHelper());
     assertTrue(readClient.readShuffleBlockData() == null);
 
     // we can also read blocks from server 0,1,2
-    readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-      testAppId, 0, 0, 100, 1,
-      10, 1000, "", blockIdBitmap, taskIdBitmap,
-      Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2), null, new DefaultIdHelper());
+    readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
+            null,
+            new DefaultIdHelper());
     validateResult(readClient, expectedData);
   }
 
@@ -692,29 +1013,65 @@ public class QuorumTest extends ShuffleReadWriteBase {
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
 
-    // attempt to send data to "all servers", but the secondary round is activated due to failures in primary round.
+    // attempt to send data to "all servers", but the secondary round is activated due to failures
+    // in primary round.
     for (int i = 0; i < 5; i++) {
-      List<ShuffleBlockInfo> blocks = createShuffleBlockList(
-          0, 0, 0, 3, 25, blockIdBitmap,
-          expectedData, Lists.newArrayList(shuffleServerInfo0, fakedShuffleServerInfo1, shuffleServerInfo2,
-            shuffleServerInfo3, shuffleServerInfo4));
+      List<ShuffleBlockInfo> blocks =
+          createShuffleBlockList(
+              0,
+              0,
+              0,
+              3,
+              25,
+              blockIdBitmap,
+              expectedData,
+              Lists.newArrayList(
+                  shuffleServerInfo0,
+                  fakedShuffleServerInfo1,
+                  shuffleServerInfo2,
+                  shuffleServerInfo3,
+                  shuffleServerInfo4));
       SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
       assertTrue(result.getSuccessBlockIds().size() == 3);
       assertTrue(result.getFailedBlockIds().size() == 0);
     }
 
     // we cannot read any blocks from server 1 due to failures
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-        testAppId, 0, 0, 100, 1,
-        10, 1000, "", blockIdBitmap, taskIdBitmap,
-        Lists.newArrayList(shuffleServerInfo1), null, new DefaultIdHelper());
+    ShuffleReadClientImpl readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo1),
+            null,
+            new DefaultIdHelper());
     assertTrue(readClient.readShuffleBlockData() == null);
 
     // we can also read blocks from server 3,4
-    readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-      testAppId, 0, 0, 100, 1,
-      10, 1000, "", blockIdBitmap, taskIdBitmap,
-      Lists.newArrayList(shuffleServerInfo3, shuffleServerInfo4), null, new DefaultIdHelper());
+    readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo3, shuffleServerInfo4),
+            null,
+            new DefaultIdHelper());
     validateResult(readClient, expectedData);
   }
 
@@ -730,28 +1087,63 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
     // attempt to send data to "all servers", but only the server 0,1,2 receive data actually
     for (int i = 0; i < 5; i++) {
-      List<ShuffleBlockInfo> blocks = createShuffleBlockList(
-          0, 0, 0, 3, 25, blockIdBitmap,
-          expectedData, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2,
-          shuffleServerInfo3, shuffleServerInfo4));
+      List<ShuffleBlockInfo> blocks =
+          createShuffleBlockList(
+              0,
+              0,
+              0,
+              3,
+              25,
+              blockIdBitmap,
+              expectedData,
+              Lists.newArrayList(
+                  shuffleServerInfo0,
+                  shuffleServerInfo1,
+                  shuffleServerInfo2,
+                  shuffleServerInfo3,
+                  shuffleServerInfo4));
       SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
       assertTrue(result.getSuccessBlockIds().size() == 3);
       assertTrue(result.getFailedBlockIds().size() == 0);
     }
 
     // we cannot read any blocks from server 4 because the secondary round is skipped
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-        testAppId, 0, 0, 100, 1,
-        10, 1000, "", blockIdBitmap, taskIdBitmap,
-        Lists.newArrayList(shuffleServerInfo4), null, new DefaultIdHelper());
+    ShuffleReadClientImpl readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo4),
+            null,
+            new DefaultIdHelper());
     assertTrue(readClient.readShuffleBlockData() == null);
 
     // we can read blocks from server 0,1,2,3
-    readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-      testAppId, 0, 0, 100, 1,
-      10, 1000, "", blockIdBitmap, taskIdBitmap,
-      Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2, shuffleServerInfo3),
-        null, new DefaultIdHelper());
+    readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(
+                shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2, shuffleServerInfo3),
+            null,
+            new DefaultIdHelper());
     validateResult(readClient, expectedData);
   }
 
@@ -765,41 +1157,84 @@ public class QuorumTest extends ShuffleReadWriteBase {
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
 
-
     for (int i = 0; i < 5; i++) {
-      List<ShuffleBlockInfo> blocks = createShuffleBlockList(
-          0, 0, 0, 3, 25, blockIdBitmap,
-          expectedData, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+      List<ShuffleBlockInfo> blocks =
+          createShuffleBlockList(
+              0,
+              0,
+              0,
+              3,
+              25,
+              blockIdBitmap,
+              expectedData,
+              Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
       SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
       assertTrue(result.getSuccessBlockIds().size() == 3);
       assertTrue(result.getFailedBlockIds().size() == 0);
     }
 
     // we can read blocks from server 0
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-        testAppId, 0, 0, 100, 1,
-        10, 1000, "", blockIdBitmap, taskIdBitmap,
-        Lists.newArrayList(shuffleServerInfo0), null, new DefaultIdHelper());
+    ShuffleReadClientImpl readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo0),
+            null,
+            new DefaultIdHelper());
     validateResult(readClient, expectedData);
 
     // we can also read blocks from server 1
-    readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-      testAppId, 0, 0, 100, 1,
-      10, 1000, "", blockIdBitmap, taskIdBitmap,
-      Lists.newArrayList(shuffleServerInfo1), null, new DefaultIdHelper());
+    readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo1),
+            null,
+            new DefaultIdHelper());
     validateResult(readClient, expectedData);
 
     // we can also read blocks from server 2
-    readClient = new ShuffleReadClientImpl(StorageType.MEMORY_LOCALFILE.name(),
-      testAppId, 0, 0, 100, 1,
-      10, 1000, "", blockIdBitmap, taskIdBitmap,
-      Lists.newArrayList(shuffleServerInfo2), null, new DefaultIdHelper());
+    readClient =
+        new ShuffleReadClientImpl(
+            StorageType.MEMORY_LOCALFILE.name(),
+            testAppId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            "",
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(shuffleServerInfo2),
+            null,
+            new DefaultIdHelper());
     validateResult(readClient, expectedData);
   }
 
-
-  protected void validateResult(ShuffleReadClientImpl readClient, Map<Long, byte[]> expectedData,
-                                Roaring64NavigableMap blockIdBitmap) {
+  protected void validateResult(
+      ShuffleReadClientImpl readClient,
+      Map<Long, byte[]> expectedData,
+      Roaring64NavigableMap blockIdBitmap) {
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();
     Roaring64NavigableMap matched = Roaring64NavigableMap.bitmapOf();
     while (csb != null && csb.getByteBuffer() != null) {

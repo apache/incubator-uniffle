@@ -66,7 +66,8 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
       if (frame == null) {
         break;
       }
-      // todo: An exception may be thrown during the decoding process, causing frame.release() to fail to be called
+      // todo: An exception may be thrown during the decoding process, causing frame.release() to
+      // fail to be called
       Message msg = Message.decode(curType, frame);
       frame.release();
       ctx.fireChannelRead(msg);

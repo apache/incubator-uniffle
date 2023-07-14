@@ -72,8 +72,8 @@ public abstract class MultiStorageFaultToleranceBase extends ShuffleReadWriteBas
     map.put(0, Lists.newArrayList(0));
     registerShuffle(appId, map);
     Roaring64NavigableMap blockBitmap = Roaring64NavigableMap.bitmapOf();
-    final List<ShuffleBlockInfo> blocks = createShuffleBlockList(
-        0, 0, 0, 40, 2 * 1024 * 1024, blockBitmap, expectedData);
+    final List<ShuffleBlockInfo> blocks =
+        createShuffleBlockList(0, 0, 0, 40, 2 * 1024 * 1024, blockBitmap, expectedData);
     makeChaos();
     sendSinglePartitionToShuffleServer(appId, 0, 0, 0, blocks);
     validateResult(appId, 0, 0, blockBitmap, Roaring64NavigableMap.bitmapOf(0), expectedData);
@@ -82,15 +82,19 @@ public abstract class MultiStorageFaultToleranceBase extends ShuffleReadWriteBas
   private void registerShuffle(String appId, Map<Integer, List<Integer>> registerMap) {
     for (Map.Entry<Integer, List<Integer>> entry : registerMap.entrySet()) {
       for (int partition : entry.getValue()) {
-        RssRegisterShuffleRequest rr = new RssRegisterShuffleRequest(appId, entry.getKey(),
-            Lists.newArrayList(new PartitionRange(partition, partition)), REMOTE_STORAGE);
+        RssRegisterShuffleRequest rr =
+            new RssRegisterShuffleRequest(
+                appId,
+                entry.getKey(),
+                Lists.newArrayList(new PartitionRange(partition, partition)),
+                REMOTE_STORAGE);
         shuffleServerClient.registerShuffle(rr);
       }
     }
   }
 
-  private void sendSinglePartitionToShuffleServer(String appId, int shuffle, int partition,
-                                                  long taskAttemptId, List<ShuffleBlockInfo> blocks) {
+  private void sendSinglePartitionToShuffleServer(
+      String appId, int shuffle, int partition, long taskAttemptId, List<ShuffleBlockInfo> blocks) {
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
     partitionToBlocks.put(partition, blocks);
@@ -105,16 +109,34 @@ public abstract class MultiStorageFaultToleranceBase extends ShuffleReadWriteBas
     Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
     Set<Long> expectBlockIds = getExpectBlockIds(blocks);
     partitionToBlockIds.put(shuffle, new ArrayList<>(expectBlockIds));
-    RssReportShuffleResultRequest rrp = new RssReportShuffleResultRequest(
-        appId, shuffle, taskAttemptId, partitionToBlockIds, 1);
+    RssReportShuffleResultRequest rrp =
+        new RssReportShuffleResultRequest(appId, shuffle, taskAttemptId, partitionToBlockIds, 1);
     shuffleServerClient.reportShuffleResult(rrp);
   }
 
-  protected void validateResult(String appId, int shuffleId, int partitionId, Roaring64NavigableMap blockBitmap,
-                                Roaring64NavigableMap taskBitmap, Map<Long, byte[]> expectedData) {
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE_HDFS.name(),
-        appId, shuffleId, partitionId, 100, 1, 10, 1000, REMOTE_STORAGE, blockBitmap, taskBitmap,
-        Lists.newArrayList(new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT)), conf, new DefaultIdHelper());
+  protected void validateResult(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      Roaring64NavigableMap blockBitmap,
+      Roaring64NavigableMap taskBitmap,
+      Map<Long, byte[]> expectedData) {
+    ShuffleReadClientImpl readClient =
+        new ShuffleReadClientImpl(
+            StorageType.LOCALFILE_HDFS.name(),
+            appId,
+            shuffleId,
+            partitionId,
+            100,
+            1,
+            10,
+            1000,
+            REMOTE_STORAGE,
+            blockBitmap,
+            taskBitmap,
+            Lists.newArrayList(new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT)),
+            conf,
+            new DefaultIdHelper());
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();
     Roaring64NavigableMap matched = Roaring64NavigableMap.bitmapOf();
     while (csb != null && csb.getByteBuffer() != null) {

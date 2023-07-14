@@ -27,19 +27,22 @@ import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 
 public abstract class AbstractStorageManagerFallbackStrategy {
-  private static final Logger LOG = LoggerFactory.getLogger(AbstractStorageManagerFallbackStrategy.class);
+  private static final Logger LOG =
+      LoggerFactory.getLogger(AbstractStorageManagerFallbackStrategy.class);
   protected ShuffleServerConf conf;
 
   public AbstractStorageManagerFallbackStrategy(ShuffleServerConf conf) {
     this.conf = conf;
   }
-  
+
   public abstract StorageManager tryFallback(
       StorageManager current, ShuffleDataFlushEvent event, StorageManager... candidates);
 
   protected StorageManager findNextStorageManager(
-      StorageManager current, Set<Class<? extends StorageManager>> excludeTypes,
-      ShuffleDataFlushEvent event, StorageManager... candidates) {
+      StorageManager current,
+      Set<Class<? extends StorageManager>> excludeTypes,
+      ShuffleDataFlushEvent event,
+      StorageManager... candidates) {
     int nextIdx = -1;
     for (int i = 0; i < candidates.length; i++) {
       if (current == candidates[i]) {

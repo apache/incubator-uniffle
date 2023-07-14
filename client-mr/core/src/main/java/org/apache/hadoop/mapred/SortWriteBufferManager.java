@@ -142,30 +142,36 @@ public class SortWriteBufferManager<K, V> {
     this.isMemoryShuffleEnabled = isMemoryShuffleEnabled;
     this.sendThreshold = sendThreshold;
     this.maxBufferSize = maxBufferSize;
-    this.sendExecutorService  = ThreadUtils.getDaemonFixedThreadPool(sendThreadNum, "send-thread");
+    this.sendExecutorService = ThreadUtils.getDaemonFixedThreadPool(sendThreadNum, "send-thread");
     this.rssConf = rssConf;
     this.codec = Codec.newInstance(rssConf);
   }
 
   // todo: Single Buffer should also have its size limit
-  public void addRecord(int partitionId, K key, V value) throws IOException,InterruptedException {
+  public void addRecord(int partitionId, K key, V value) throws IOException, InterruptedException {
     memoryLock.lock();
     try {
       while (memoryUsedSize.get() > maxMemSize) {
-        LOG.warn("memoryUsedSize {} is more than {}, inSendListBytes {}",
-            memoryUsedSize, maxMemSize, inSendListBytes);
+        LOG.warn(
+            "memoryUsedSize {} is more than {}, inSendListBytes {}",
+            memoryUsedSize,
+            maxMemSize,
+            inSendListBytes);
         full.await();
       }
     } finally {
       memoryLock.unlock();
     }
 
-    buffers.computeIfAbsent(partitionId, k -> {
-      SortWriteBuffer<K, V> sortWriterBuffer = new SortWriteBuffer(
-              partitionId, comparator, maxSegmentSize, keySerializer, valSerializer);
-      waitSendBuffers.add(sortWriterBuffer);
-      return sortWriterBuffer;
-    });
+    buffers.computeIfAbsent(
+        partitionId,
+        k -> {
+          SortWriteBuffer<K, V> sortWriterBuffer =
+              new SortWriteBuffer(
+                  partitionId, comparator, maxSegmentSize, keySerializer, valSerializer);
+          waitSendBuffers.add(sortWriterBuffer);
+          return sortWriterBuffer;
+        });
 
     SortWriteBuffer<K, V> buffer = buffers.get(partitionId);
     long length = buffer.addRecord(key, value);
@@ -197,12 +203,13 @@ public class SortWriteBufferManager<K, V> {
 
   // Only for test
   void sendBuffersToServers() {
-    waitSendBuffers.sort(new Comparator<SortWriteBuffer<K, V>>() {
-      @Override
-      public int compare(SortWriteBuffer<K, V> o1, SortWriteBuffer<K, V> o2) {
-        return o2.getDataLength() - o1.getDataLength();
-      }
-    });
+    waitSendBuffers.sort(
+        new Comparator<SortWriteBuffer<K, V>>() {
+          @Override
+          public int compare(SortWriteBuffer<K, V> o1, SortWriteBuffer<K, V> o2) {
+            return o2.getDataLength() - o1.getDataLength();
+          }
+        });
     int sendSize = Math.min(batch, waitSendBuffers.size());
     Iterator<SortWriteBuffer<K, V>> iterator = waitSendBuffers.iterator();
     int index = 0;
@@ -222,37 +229,39 @@ public class SortWriteBufferManager<K, V> {
     buffer.clear();
     shuffleBlocks.add(block);
     allBlockIds.add(block.getBlockId());
-    partitionToBlocks.computeIfAbsent(block.getPartitionId(), key ->  Lists.newArrayList());
+    partitionToBlocks.computeIfAbsent(block.getPartitionId(), key -> Lists.newArrayList());
     partitionToBlocks.get(block.getPartitionId()).add(block.getBlockId());
   }
 
   private void sendShuffleBlocks(List<ShuffleBlockInfo> shuffleBlocks) {
-    sendExecutorService.submit(new Runnable() {
-      @Override
-      public void run() {
-        long size = 0;
-        try {
-          for (ShuffleBlockInfo block : shuffleBlocks) {
-            size += block.getFreeMemory();
+    sendExecutorService.submit(
+        new Runnable() {
+          @Override
+          public void run() {
+            long size = 0;
+            try {
+              for (ShuffleBlockInfo block : shuffleBlocks) {
+                size += block.getFreeMemory();
+              }
+              SendShuffleDataResult result =
+                  shuffleWriteClient.sendShuffleData(appId, shuffleBlocks, () -> false);
+              successBlockIds.addAll(result.getSuccessBlockIds());
+              failedBlockIds.addAll(result.getFailedBlockIds());
+            } catch (Throwable t) {
+              LOG.warn("send shuffle data exception ", t);
+            } finally {
+              try {
+                memoryLock.lock();
+                LOG.debug("memoryUsedSize {} decrease {}", memoryUsedSize, size);
+                memoryUsedSize.addAndGet(-size);
+                inSendListBytes.addAndGet(-size);
+                full.signalAll();
+              } finally {
+                memoryLock.unlock();
+              }
+            }
           }
-          SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(appId, shuffleBlocks, () -> false);
-          successBlockIds.addAll(result.getSuccessBlockIds());
-          failedBlockIds.addAll(result.getFailedBlockIds());
-        } catch (Throwable t) {
-          LOG.warn("send shuffle data exception ", t);
-        } finally {
-          try {
-            memoryLock.lock();
-            LOG.debug("memoryUsedSize {} decrease {}", memoryUsedSize, size);
-            memoryUsedSize.addAndGet(-size);
-            inSendListBytes.addAndGet(-size);
-            full.signalAll();
-          } finally {
-            memoryLock.unlock();
-          }
-        }
-      }
-    });
+        });
   }
 
   public void waitSendFinished() {
@@ -264,7 +273,8 @@ public class SortWriteBufferManager<K, V> {
       // if failed when send data to shuffle server, mark task as failed
       if (failedBlockIds.size() > 0) {
         String errorMsg =
-            "Send failed: failed because " + failedBlockIds.size()
+            "Send failed: failed because "
+                + failedBlockIds.size()
                 + " blocks can't be sent to shuffle server.";
         LOG.error(errorMsg);
         throw new RssException(errorMsg);
@@ -279,8 +289,11 @@ public class SortWriteBufferManager<K, V> {
       Uninterruptibles.sleepUninterruptibly(sendCheckInterval, TimeUnit.MILLISECONDS);
       if (System.currentTimeMillis() - start > sendCheckTimeout) {
         String errorMsg =
-            "Timeout: failed because " + allBlockIds.size()
-                + " blocks can't be sent to shuffle server in " + sendCheckTimeout + " ms.";
+            "Timeout: failed because "
+                + allBlockIds.size()
+                + " blocks can't be sent to shuffle server in "
+                + sendCheckTimeout
+                + " ms.";
         LOG.error(errorMsg);
         throw new RssException(errorMsg);
       }
@@ -293,13 +306,21 @@ public class SortWriteBufferManager<K, V> {
     }
 
     start = System.currentTimeMillis();
-    shuffleWriteClient.reportShuffleResult(partitionToServers, appId, 0,
-        taskAttemptId, partitionToBlocks, bitmapSplitNum);
-    LOG.info("Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
-        taskAttemptId, bitmapSplitNum, (System.currentTimeMillis() - start));
-    LOG.info("Task uncompressed data length {} compress time cost {} ms, commit time cost {} ms,"
+    shuffleWriteClient.reportShuffleResult(
+        partitionToServers, appId, 0, taskAttemptId, partitionToBlocks, bitmapSplitNum);
+    LOG.info(
+        "Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
+        taskAttemptId,
+        bitmapSplitNum,
+        (System.currentTimeMillis() - start));
+    LOG.info(
+        "Task uncompressed data length {} compress time cost {} ms, commit time cost {} ms,"
             + " copy time cost {} ms, sort time cost {} ms",
-        uncompressedDataLen, compressTime, commitDuration, copyTime, sortTime);
+        uncompressedDataLen,
+        compressTime,
+        commitDuration,
+        copyTime,
+        sortTime);
   }
 
   // transform records to shuffleBlock
@@ -313,12 +334,22 @@ public class SortWriteBufferManager<K, V> {
     final byte[] compressed = codec.compress(data);
     final long crc32 = ChecksumUtils.getCrc32(compressed);
     compressTime += System.currentTimeMillis() - start;
-    final long blockId = RssMRUtils.getBlockId(partitionId, taskAttemptId, getNextSeqNo(partitionId));
+    final long blockId =
+        RssMRUtils.getBlockId(partitionId, taskAttemptId, getNextSeqNo(partitionId));
     uncompressedDataLen += data.length;
     // add memory to indicate bytes which will be sent to shuffle server
     inSendListBytes.addAndGet(wb.getDataLength());
-    return new ShuffleBlockInfo(0, partitionId, blockId, compressed.length, crc32,
-        compressed, partitionToServers.get(partitionId), uncompressLength, wb.getDataLength(), taskAttemptId);
+    return new ShuffleBlockInfo(
+        0,
+        partitionId,
+        blockId,
+        compressed.length,
+        crc32,
+        compressed,
+        partitionToServers.get(partitionId),
+        uncompressLength,
+        wb.getDataLength(),
+        taskAttemptId);
   }
 
   protected void sendCommit() {
@@ -329,14 +360,18 @@ public class SortWriteBufferManager<K, V> {
         serverInfos.add(serverInfo);
       }
     }
-    Future<Boolean> future = executor.submit(
-        () -> shuffleWriteClient.sendCommit(serverInfos, appId, 0, numMaps));
+    Future<Boolean> future =
+        executor.submit(() -> shuffleWriteClient.sendCommit(serverInfos, appId, 0, numMaps));
     long start = System.currentTimeMillis();
     int currentWait = 200;
     int maxWait = 5000;
     while (!future.isDone()) {
-      LOG.info("Wait commit to shuffle server for task[" + taskAttemptId + "] cost "
-          + (System.currentTimeMillis() - start) + " ms");
+      LOG.info(
+          "Wait commit to shuffle server for task["
+              + taskAttemptId
+              + "] cost "
+              + (System.currentTimeMillis() - start)
+              + " ms");
       Uninterruptibles.sleepUninterruptibly(currentWait, TimeUnit.MILLISECONDS);
       currentWait = Math.min(currentWait * 2, maxWait);
     }

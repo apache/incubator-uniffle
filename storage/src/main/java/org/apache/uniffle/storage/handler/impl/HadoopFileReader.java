@@ -65,8 +65,15 @@ public class HadoopFileReader implements FileReader, Closeable {
       fsDataInputStream.readFully(buf);
       return buf;
     } catch (Exception e) {
-      LOG.warn("Can't read data for path:" + path + " with offset["
-          + offset + "], length[" + length + "]", e);
+      LOG.warn(
+          "Can't read data for path:"
+              + path
+              + " with offset["
+              + offset
+              + "], length["
+              + length
+              + "]",
+          e);
     }
     return new byte[0];
   }
@@ -89,7 +96,15 @@ public class HadoopFileReader implements FileReader, Closeable {
       buffer.flip();
       return buffer;
     } catch (Exception e) {
-      LOG.warn("Can't read buffer data for path:" + path + " with offset[" + offset + "], length[" + length + "]", e);
+      LOG.warn(
+          "Can't read buffer data for path:"
+              + path
+              + " with offset["
+              + offset
+              + "], length["
+              + length
+              + "]",
+          e);
       return ByteBuffer.allocateDirect(0);
     }
   }

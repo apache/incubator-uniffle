@@ -79,7 +79,11 @@ public class RssTezShuffleDataFetcherTest {
   private static final Logger LOG = LoggerFactory.getLogger(RssTezShuffleDataFetcherTest.class);
 
   enum TestWithComparator {
-    LONG, INT, BYTES, TEZ_BYTES, TEXT
+    LONG,
+    INT,
+    BYTES,
+    TEZ_BYTES,
+    TEXT
   }
 
   Configuration conf;
@@ -91,7 +95,7 @@ public class RssTezShuffleDataFetcherTest {
   final boolean expectedTestResult;
 
   int mergeFactor;
-  //For storing original data
+  // For storing original data
   final ListMultimap<Writable, Writable> originalData;
 
   TezRawKeyValueIterator rawKeyValueIterator;
@@ -114,7 +118,8 @@ public class RssTezShuffleDataFetcherTest {
     mergeFactor = 2;
     conf = new Configuration();
     conf.setInt(TezRuntimeConfiguration.TEZ_RUNTIME_IO_SORT_FACTOR, mergeFactor);
-    conf.setClass(TezRuntimeConfiguration.TEZ_RUNTIME_KEY_COMPARATOR_CLASS,
+    conf.setClass(
+        TezRuntimeConfiguration.TEZ_RUNTIME_KEY_COMPARATOR_CLASS,
         Class.forName("org.apache.tez.runtime.library.common.comparator.TezBytesComparator"),
         Class.forName("org.apache.hadoop.io.WritableComparator"));
     baseDir = new Path(".", this.getClass().getName());
@@ -147,7 +152,7 @@ public class RssTezShuffleDataFetcherTest {
   /**
    * Tests whether data in valuesIterator matches with sorted input data set.
    *
-   * Returns a list of value counts for each key.
+   * <p>Returns a list of value counts for each key.
    *
    * @param valuesIterator
    * @return List
@@ -159,27 +164,29 @@ public class RssTezShuffleDataFetcherTest {
     // sort original data based on comparator
     ListMultimap<Writable, Writable> sortedMap =
         new ImmutableListMultimap.Builder<Writable, Writable>()
-            .orderKeysBy(this.comparator).putAll(originalData).build();
+            .orderKeysBy(this.comparator)
+            .putAll(originalData)
+            .build();
 
     Set<Map.Entry<Writable, Writable>> oriKeySet = Sets.newSet();
     oriKeySet.addAll(sortedMap.entries());
 
-    //Iterate through sorted data and valuesIterator for verification
+    // Iterate through sorted data and valuesIterator for verification
     for (Map.Entry<Writable, Writable> entry : oriKeySet) {
       assertTrue(valuesIterator.moveToNext());
       Writable oriKey = entry.getKey();
-      //Verify if the key and the original key are same
+      // Verify if the key and the original key are same
       if (!oriKey.equals((Writable) valuesIterator.getKey())) {
         result = false;
         break;
       }
 
       int valueCount = 0;
-      //Verify values
+      // Verify values
       Iterator<Writable> vItr = valuesIterator.getValues().iterator();
       for (Writable val : sortedMap.get(oriKey)) {
         assertTrue(vItr.hasNext());
-        //Verify if the values are same
+        // Verify if the values are same
         if (!val.equals((Writable) vItr.next())) {
           result = false;
           break;
@@ -206,40 +213,51 @@ public class RssTezShuffleDataFetcherTest {
     ShuffleReadClient shuffleReadClient = new MockedShuffleReadClient(bytesData);
 
     FileSystem localFS = FileSystem.getLocal(this.conf);
-    LocalDirAllocator localDirAllocator = new LocalDirAllocator(TezRuntimeFrameworkConfigs.LOCAL_DIRS);
+    LocalDirAllocator localDirAllocator =
+        new LocalDirAllocator(TezRuntimeFrameworkConfigs.LOCAL_DIRS);
 
     InputContext inputContext = createTezInputContext();
 
     Combiner combiner = TezRuntimeUtils.instantiateCombiner(conf, inputContext);
 
-    MergeManager mergeManager = new MergeManager(
-        this.conf,
-        localFS,
-        localDirAllocator,
-        inputContext,
-        combiner,
-        null,
-        null,
-        null,
-        null,
-        1024 * 1024 * 256,
-        null,
-        false,
-        0);
+    MergeManager mergeManager =
+        new MergeManager(
+            this.conf,
+            localFS,
+            localDirAllocator,
+            inputContext,
+            combiner,
+            null,
+            null,
+            null,
+            null,
+            1024 * 1024 * 256,
+            null,
+            false,
+            0);
 
-
-    RssTezShuffleDataFetcher fetcher = new RssTezShuffleDataFetcher(
-        new InputAttemptIdentifier(1, 0),
-        9,
-        mergeManager, new TezCounters(), shuffleReadClient, 3,
-        RssTezConfig.toRssConf(conf), null);
+    RssTezShuffleDataFetcher fetcher =
+        new RssTezShuffleDataFetcher(
+            new InputAttemptIdentifier(1, 0),
+            9,
+            mergeManager,
+            new TezCounters(),
+            shuffleReadClient,
+            3,
+            RssTezConfig.toRssConf(conf),
+            null);
 
     fetcher.fetchAllRssBlocks();
 
     rawKeyValueIterator = mergeManager.close(true);
 
-    return new ValuesIterator(rawKeyValueIterator, comparator,
-        keyClass, valClass, conf, (TezCounter) new GenericCounter("inputKeyCounter", "y3"),
+    return new ValuesIterator(
+        rawKeyValueIterator,
+        comparator,
+        keyClass,
+        valClass,
+        conf,
+        (TezCounter) new GenericCounter("inputKeyCounter", "y3"),
         (TezCounter) new GenericCounter("inputValueCounter", "y4"));
   }
 
@@ -274,11 +292,24 @@ public class RssTezShuffleDataFetcherTest {
     Serializer keySerializer = serializationFactory.getSerializer(keyClass);
     Serializer valueSerializer = serializationFactory.getSerializer(valClass);
 
-    LocalDirAllocator localDirAllocator = new LocalDirAllocator(TezRuntimeFrameworkConfigs.LOCAL_DIRS);
+    LocalDirAllocator localDirAllocator =
+        new LocalDirAllocator(TezRuntimeFrameworkConfigs.LOCAL_DIRS);
     InputContext context = createTezInputContext();
-    MergeManager mergeManager = new MergeManager(conf, fs, localDirAllocator,
-          context, null, null, null, null,
-        null, 1024 * 1024 * 10, null, false, -1);
+    MergeManager mergeManager =
+        new MergeManager(
+            conf,
+            fs,
+            localDirAllocator,
+            context,
+            null,
+            null,
+            null,
+            null,
+            null,
+            1024 * 1024 * 10,
+            null,
+            false,
+            -1);
 
     DataOutputBuffer keyBuf = new DataOutputBuffer();
     DataOutputBuffer valBuf = new DataOutputBuffer();
@@ -291,7 +322,7 @@ public class RssTezShuffleDataFetcherTest {
       BoundedByteArrayOutputStream bout = new BoundedByteArrayOutputStream(1024 * 1024 * 10);
       InMemoryWriter writer = new InMemoryWriter(bout);
       Map<Writable, Writable> data = createData();
-      //write data
+      // write data
       for (Map.Entry<Writable, Writable> entry : data.entrySet()) {
         keySerializer.serialize(entry.getKey());
         valueSerializer.serialize(entry.getValue());
@@ -319,7 +350,9 @@ public class RssTezShuffleDataFetcherTest {
     doReturn(1).when(inputContext).getInputIndex();
     doReturn("srcVertex").when(inputContext).getSourceVertexName();
     doReturn(1).when(inputContext).getTaskVertexIndex();
-    doReturn(UserPayload.create(ByteBuffer.wrap(new byte[1024]))).when(inputContext).getUserPayload();
+    doReturn(UserPayload.create(ByteBuffer.wrap(new byte[1024])))
+        .when(inputContext)
+        .getUserPayload();
     doReturn("test_input").when(inputContext).getUniqueIdentifier();
     return inputContext;
   }
@@ -334,17 +367,17 @@ public class RssTezShuffleDataFetcherTest {
     return map;
   }
 
-
   static class MockedShuffleReadClient implements ShuffleReadClient {
     List<CompressedShuffleBlock> blocks;
     int index = 0;
 
     MockedShuffleReadClient(List<byte[]> data) {
       this.blocks = new LinkedList<>();
-      data.forEach(bytes -> {
-        byte[] compressed = codec.compress(bytes);
-        blocks.add(new CompressedShuffleBlock(ByteBuffer.wrap(compressed), bytes.length));
-      });
+      data.forEach(
+          bytes -> {
+            byte[] compressed = codec.compress(bytes);
+            blocks.add(new CompressedShuffleBlock(ByteBuffer.wrap(compressed), bytes.length));
+          });
     }
 
     @Override
@@ -357,15 +390,12 @@ public class RssTezShuffleDataFetcherTest {
     }
 
     @Override
-    public void checkProcessedBlockIds() {
-    }
+    public void checkProcessedBlockIds() {}
 
     @Override
-    public void close() {
-    }
+    public void close() {}
 
     @Override
-    public void logStatics() {
-    }
+    public void logStatics() {}
   }
 }

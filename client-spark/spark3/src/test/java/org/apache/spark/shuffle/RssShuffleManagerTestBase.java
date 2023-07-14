@@ -39,7 +39,8 @@ public class RssShuffleManagerTestBase {
 
   @BeforeAll
   public static void setUp() {
-    mockedStaticRssShuffleUtils = mockStatic(RssSparkShuffleUtils.class, Mockito.CALLS_REAL_METHODS);
+    mockedStaticRssShuffleUtils =
+        mockStatic(RssSparkShuffleUtils.class, Mockito.CALLS_REAL_METHODS);
   }
 
   @AfterAll
@@ -49,8 +50,8 @@ public class RssShuffleManagerTestBase {
 
   protected CoordinatorClient createCoordinatorClient(StatusCode status) {
     CoordinatorClient mockedCoordinatorClient = mock(CoordinatorClient.class);
-    when(mockedCoordinatorClient.accessCluster(any())).thenReturn(
-        new RssAccessClusterResponse(status, ""));
+    when(mockedCoordinatorClient.accessCluster(any()))
+        .thenReturn(new RssAccessClusterResponse(status, ""));
     return mockedCoordinatorClient;
   }
 
@@ -61,7 +62,5 @@ public class RssShuffleManagerTestBase {
     mockedStaticRssShuffleUtils
         .when(() -> RssSparkShuffleUtils.createCoordinatorClients(any()))
         .thenReturn(coordinatorClients);
-
   }
-
 }

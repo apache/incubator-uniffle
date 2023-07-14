@@ -47,8 +47,8 @@ public class GetShuffleServerRequestTest {
     int partitionNum = 20;
     int shuffleId = 1998;
 
-    GetShuffleServerRequest request = new GetShuffleServerRequest(tezTaskAttemptID, startIndex,
-            partitionNum, shuffleId);
+    GetShuffleServerRequest request =
+        new GetShuffleServerRequest(tezTaskAttemptID, startIndex, partitionNum, shuffleId);
 
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     DataOutput out = new DataOutputStream(bos);

@@ -36,11 +36,14 @@ import io.netty.util.internal.SystemPropertyUtil;
 
 import org.apache.uniffle.common.exception.RssException;
 
-/** copy from spark, In order to override the createPooledByteBufAllocator method,
- * the property DEFAULT_TINY_CACHE_SIZE does not exist in netty>4.1.47. */
+/**
+ * copy from spark, In order to override the createPooledByteBufAllocator method, the property
+ * DEFAULT_TINY_CACHE_SIZE does not exist in netty>4.1.47.
+ */
 public class NettyUtils {
 
-  private static final int DEFAULT_TINY_CACHE_SIZE = SystemPropertyUtil.getInt("io.netty.allocator.tinyCacheSize", 512);
+  private static final int DEFAULT_TINY_CACHE_SIZE =
+      SystemPropertyUtil.getInt("io.netty.allocator.tinyCacheSize", 512);
 
   /** Creates a new ThreadFactory which prefixes each thread with the given name. */
   public static ThreadFactory createThreadFactory(String threadPoolPrefix) {
@@ -102,15 +105,13 @@ public class NettyUtils {
   }
 
   /**
-   * Create a pooled ByteBuf allocator but disables the thread-local cache. Thread-local caches
-   * are disabled for TransportClients because the ByteBufs are allocated by the event loop thread,
-   * but released by the executor thread rather than the event loop thread. Those thread-local
-   * caches actually delay the recycling of buffers, leading to larger memory usage.
+   * Create a pooled ByteBuf allocator but disables the thread-local cache. Thread-local caches are
+   * disabled for TransportClients because the ByteBufs are allocated by the event loop thread, but
+   * released by the executor thread rather than the event loop thread. Those thread-local caches
+   * actually delay the recycling of buffers, leading to larger memory usage.
    */
   public static PooledByteBufAllocator createPooledByteBufAllocator(
-      boolean allowDirectBufs,
-      boolean allowCache,
-      int numCores) {
+      boolean allowDirectBufs, boolean allowCache, int numCores) {
     if (numCores == 0) {
       numCores = Runtime.getRuntime().availableProcessors();
     }
@@ -122,8 +123,7 @@ public class NettyUtils {
         getPrivateStaticField("DEFAULT_MAX_ORDER"),
         allowCache ? DEFAULT_TINY_CACHE_SIZE : 0,
         allowCache ? getPrivateStaticField("DEFAULT_SMALL_CACHE_SIZE") : 0,
-        allowCache ? getPrivateStaticField("DEFAULT_NORMAL_CACHE_SIZE") : 0
-    );
+        allowCache ? getPrivateStaticField("DEFAULT_NORMAL_CACHE_SIZE") : 0);
   }
 
   /** Used to get defaults from Netty's private static fields. */

@@ -38,13 +38,13 @@ public class ExitUtils {
   }
 
   /**
-   *
-   * @param status  exit status
+   * @param status exit status
    * @param message terminate message
    * @param throwable throwable caused terminate
-   * @param logger  logger of the caller
+   * @param logger logger of the caller
    */
-  public static void terminate(int status, String message, Throwable throwable, Logger logger) throws ExitException {
+  public static void terminate(int status, String message, Throwable throwable, Logger logger)
+      throws ExitException {
     if (logger != null) {
       final String s = "Terminating with exit status " + status + ": " + message;
       if (status == 0) {
@@ -64,5 +64,4 @@ public class ExitUtils {
   public static void disableSystemExit() {
     isSystemExitDisabled = true;
   }
-
 }

@@ -40,7 +40,8 @@ public class CoordinatorFactory {
       return GrpcServer.Builder.newBuilder()
           .conf(conf)
           .grpcMetrics(coordinatorServer.getGrpcMetrics())
-          .addService(new CoordinatorGrpcService(coordinatorServer)).build();
+          .addService(new CoordinatorGrpcService(coordinatorServer))
+          .build();
     } else {
       throw new UnsupportedOperationException("Unsupported server type " + type);
     }

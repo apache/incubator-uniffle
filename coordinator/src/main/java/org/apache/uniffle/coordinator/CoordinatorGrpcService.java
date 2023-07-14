@@ -64,9 +64,7 @@ import org.apache.uniffle.proto.RssProtos.ShuffleServerHeartBeatResponse;
 import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
 import org.apache.uniffle.proto.RssProtos.StatusCode;
 
-/**
- * Implementation class for services defined in protobuf
- */
+/** Implementation class for services defined in protobuf */
 public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorServerImplBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorGrpcService.class);
@@ -79,30 +77,24 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
 
   @Override
   public void getShuffleServerList(
-      Empty request,
-      StreamObserver<GetShuffleServerListResponse> responseObserver) {
-    final GetShuffleServerListResponse response = GetShuffleServerListResponse
-        .newBuilder()
-        .addAllServers(
-            coordinatorServer
-                .getClusterManager()
-                .list().stream()
-                .map(ServerNode::convertToGrpcProto)
-                .collect(Collectors.toList()))
-        .build();
+      Empty request, StreamObserver<GetShuffleServerListResponse> responseObserver) {
+    final GetShuffleServerListResponse response =
+        GetShuffleServerListResponse.newBuilder()
+            .addAllServers(
+                coordinatorServer.getClusterManager().list().stream()
+                    .map(ServerNode::convertToGrpcProto)
+                    .collect(Collectors.toList()))
+            .build();
     responseObserver.onNext(response);
     responseObserver.onCompleted();
   }
 
   @Override
   public void getShuffleServerNum(
-      Empty request,
-      StreamObserver<GetShuffleServerNumResponse> responseObserver) {
+      Empty request, StreamObserver<GetShuffleServerNumResponse> responseObserver) {
     final int num = coordinatorServer.getClusterManager().getNodesNum();
-    final GetShuffleServerNumResponse response = GetShuffleServerNumResponse
-        .newBuilder()
-        .setNum(num)
-        .build();
+    final GetShuffleServerNumResponse response =
+        GetShuffleServerNumResponse.newBuilder().setNum(num).build();
     responseObserver.onNext(response);
     responseObserver.onCompleted();
   }
@@ -120,10 +112,16 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     final int requiredShuffleServerNumber = request.getAssignmentShuffleServerNumber();
     final int estimateTaskConcurrency = request.getEstimateTaskConcurrency();
 
-    LOG.info("Request of getShuffleAssignments for appId[{}], shuffleId[{}], partitionNum[{}], "
-        + " partitionNumPerRange[{}], replica[{}], requiredTags[{}], requiredShuffleServerNumber[{}]",
-        appId, shuffleId, partitionNum, partitionNumPerRange, replica,
-        requiredTags, requiredShuffleServerNumber);
+    LOG.info(
+        "Request of getShuffleAssignments for appId[{}], shuffleId[{}], partitionNum[{}], "
+            + " partitionNumPerRange[{}], replica[{}], requiredTags[{}], requiredShuffleServerNumber[{}]",
+        appId,
+        shuffleId,
+        partitionNum,
+        partitionNumPerRange,
+        replica,
+        requiredTags,
+        requiredShuffleServerNumber);
 
     GetShuffleAssignmentsResponse response;
     try {
@@ -134,21 +132,32 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       final PartitionRangeAssignment pra =
           coordinatorServer
               .getAssignmentStrategy()
-              .assign(partitionNum, partitionNumPerRange, replica, requiredTags,
-                  requiredShuffleServerNumber, estimateTaskConcurrency);
-      response =
-          CoordinatorUtils.toGetShuffleAssignmentsResponse(pra);
+              .assign(
+                  partitionNum,
+                  partitionNumPerRange,
+                  replica,
+                  requiredTags,
+                  requiredShuffleServerNumber,
+                  estimateTaskConcurrency);
+      response = CoordinatorUtils.toGetShuffleAssignmentsResponse(pra);
       logAssignmentResult(appId, shuffleId, pra);
       responseObserver.onNext(response);
     } catch (Exception e) {
-      LOG.error("Errors on getting shuffle assignments for app: {}, shuffleId: {}, partitionNum: {}, "
-          + "partitionNumPerRange: {}, replica: {}, requiredTags: {}",
-          appId, shuffleId, partitionNum, partitionNumPerRange, replica, requiredTags, e);
-      response = GetShuffleAssignmentsResponse
-          .newBuilder()
-          .setStatus(StatusCode.INTERNAL_ERROR)
-          .setRetMsg(e.getMessage())
-          .build();
+      LOG.error(
+          "Errors on getting shuffle assignments for app: {}, shuffleId: {}, partitionNum: {}, "
+              + "partitionNumPerRange: {}, replica: {}, requiredTags: {}",
+          appId,
+          shuffleId,
+          partitionNum,
+          partitionNumPerRange,
+          replica,
+          requiredTags,
+          e);
+      response =
+          GetShuffleAssignmentsResponse.newBuilder()
+              .setStatus(StatusCode.INTERNAL_ERROR)
+              .setRetMsg(e.getMessage())
+              .build();
       responseObserver.onNext(response);
     } finally {
       responseObserver.onCompleted();
@@ -161,11 +170,11 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       StreamObserver<ShuffleServerHeartBeatResponse> responseObserver) {
     final ServerNode serverNode = toServerNode(request);
     coordinatorServer.getClusterManager().add(serverNode);
-    final ShuffleServerHeartBeatResponse response = ShuffleServerHeartBeatResponse
-        .newBuilder()
-        .setRetMsg("")
-        .setStatus(StatusCode.SUCCESS)
-        .build();
+    final ShuffleServerHeartBeatResponse response =
+        ShuffleServerHeartBeatResponse.newBuilder()
+            .setRetMsg("")
+            .setStatus(StatusCode.SUCCESS)
+            .build();
     LOG.debug("Got heartbeat from {}", serverNode);
     responseObserver.onNext(response);
     responseObserver.onCompleted();
@@ -173,12 +182,11 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
 
   @Override
   public void checkServiceAvailable(
-      Empty request,
-      StreamObserver<CheckServiceAvailableResponse> responseObserver) {
-    final CheckServiceAvailableResponse response = CheckServiceAvailableResponse
-        .newBuilder()
-        .setAvailable(coordinatorServer.getClusterManager().getNodesNum() > 0)
-        .build();
+      Empty request, StreamObserver<CheckServiceAvailableResponse> responseObserver) {
+    final CheckServiceAvailableResponse response =
+        CheckServiceAvailableResponse.newBuilder()
+            .setAvailable(coordinatorServer.getClusterManager().getNodesNum() > 0)
+            .build();
     responseObserver.onNext(response);
     responseObserver.onCompleted();
   }
@@ -192,30 +200,27 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     final ShuffleServerId shuffleServer = request.getServer();
     final String operation = request.getOperation();
     LOG.info(clientHost + ":" + clientPort + "->" + operation + "->" + shuffleServer);
-    final ReportShuffleClientOpResponse response = ReportShuffleClientOpResponse
-        .newBuilder()
-        .setRetMsg("")
-        .setStatus(StatusCode.SUCCESS)
-        .build();
+    final ReportShuffleClientOpResponse response =
+        ReportShuffleClientOpResponse.newBuilder()
+            .setRetMsg("")
+            .setStatus(StatusCode.SUCCESS)
+            .build();
     responseObserver.onNext(response);
     responseObserver.onCompleted();
   }
 
   @Override
   public void appHeartbeat(
-      AppHeartBeatRequest request,
-      StreamObserver<AppHeartBeatResponse> responseObserver) {
+      AppHeartBeatRequest request, StreamObserver<AppHeartBeatResponse> responseObserver) {
     String appId = request.getAppId();
     coordinatorServer.getApplicationManager().refreshAppId(appId);
     LOG.debug("Got heartbeat from application: {}", appId);
-    AppHeartBeatResponse response = AppHeartBeatResponse
-        .newBuilder()
-        .setRetMsg("")
-        .setStatus(StatusCode.SUCCESS)
-        .build();
+    AppHeartBeatResponse response =
+        AppHeartBeatResponse.newBuilder().setRetMsg("").setStatus(StatusCode.SUCCESS).build();
 
     if (Context.current().isCancelled()) {
-      responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
+      responseObserver.onError(
+          Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
       LOG.warn("Cancelled by client {} for after deadline.", appId);
       return;
     }
@@ -226,20 +231,17 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
 
   @Override
   public void registerApplicationInfo(
-      ApplicationInfoRequest request,
-      StreamObserver<ApplicationInfoResponse> responseObserver) {
+      ApplicationInfoRequest request, StreamObserver<ApplicationInfoResponse> responseObserver) {
     String appId = request.getAppId();
     String user = request.getUser();
     coordinatorServer.getApplicationManager().registerApplicationInfo(appId, user);
     LOG.debug("Got a registered application info: {}", appId);
-    ApplicationInfoResponse response = ApplicationInfoResponse
-        .newBuilder()
-        .setRetMsg("")
-        .setStatus(StatusCode.SUCCESS)
-        .build();
+    ApplicationInfoResponse response =
+        ApplicationInfoResponse.newBuilder().setRetMsg("").setStatus(StatusCode.SUCCESS).build();
 
     if (Context.current().isCancelled()) {
-      responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
+      responseObserver.onError(
+          Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
       LOG.warn("Cancelled by client {} for after deadline.", appId);
       return;
     }
@@ -249,32 +251,33 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
   }
 
   @Override
-  public void accessCluster(AccessClusterRequest request, StreamObserver<AccessClusterResponse> responseObserver) {
+  public void accessCluster(
+      AccessClusterRequest request, StreamObserver<AccessClusterResponse> responseObserver) {
     StatusCode statusCode = StatusCode.SUCCESS;
     AccessClusterResponse response;
     AccessManager accessManager = coordinatorServer.getAccessManager();
 
     AccessInfo accessInfo =
-            new AccessInfo(
-                request.getAccessId(),
-                Sets.newHashSet(request.getTagsList()),
-                request.getExtraPropertiesMap(),
-                request.getUser()
-            );
+        new AccessInfo(
+            request.getAccessId(),
+            Sets.newHashSet(request.getTagsList()),
+            request.getExtraPropertiesMap(),
+            request.getUser());
     AccessCheckResult result = accessManager.handleAccessRequest(accessInfo);
     if (!result.isSuccess()) {
       statusCode = StatusCode.ACCESS_DENIED;
     }
 
-    response = AccessClusterResponse
-        .newBuilder()
-        .setStatus(statusCode)
-        .setRetMsg(result.getMsg())
-        .setUuid(result.getUuid())
-        .build();
+    response =
+        AccessClusterResponse.newBuilder()
+            .setStatus(statusCode)
+            .setRetMsg(result.getMsg())
+            .setUuid(result.getUuid())
+            .build();
 
     if (Context.current().isCancelled()) {
-      responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
+      responseObserver.onError(
+          Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
       LOG.warn("Cancelled by client {} for after deadline.", accessInfo);
       return;
     }
@@ -284,11 +287,15 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
   }
 
   @Override
-  public void fetchClientConf(Empty empty, StreamObserver<FetchClientConfResponse> responseObserver) {
+  public void fetchClientConf(
+      Empty empty, StreamObserver<FetchClientConfResponse> responseObserver) {
     FetchClientConfResponse response;
-    FetchClientConfResponse.Builder builder = FetchClientConfResponse.newBuilder().setStatus(StatusCode.SUCCESS);
-    boolean dynamicConfEnabled = coordinatorServer.getCoordinatorConf().getBoolean(
-        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED);
+    FetchClientConfResponse.Builder builder =
+        FetchClientConfResponse.newBuilder().setStatus(StatusCode.SUCCESS);
+    boolean dynamicConfEnabled =
+        coordinatorServer
+            .getCoordinatorConf()
+            .getBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED);
     if (dynamicConfEnabled) {
       ClientConfManager clientConfManager = coordinatorServer.getClientConfManager();
       for (Map.Entry<String, String> kv : clientConfManager.getClientConf().entrySet()) {
@@ -299,7 +306,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     response = builder.build();
 
     if (Context.current().isCancelled()) {
-      responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
+      responseObserver.onError(
+          Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
       LOG.warn("Fetch client conf cancelled by client for after deadline.");
       return;
     }
@@ -324,11 +332,17 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         rsBuilder.setPath(rsInfo.getPath());
         for (Map.Entry<String, String> entry : rsInfo.getConfItems().entrySet()) {
           rsBuilder.addRemoteStorageConf(
-              RemoteStorageConfItem.newBuilder().setKey(entry.getKey()).setValue(entry.getValue()).build());
+              RemoteStorageConfItem.newBuilder()
+                  .setKey(entry.getKey())
+                  .setValue(entry.getValue())
+                  .build());
         }
       }
-      response = FetchRemoteStorageResponse.newBuilder()
-          .setStatus(status).setRemoteStorage(rsBuilder.build()).build();
+      response =
+          FetchRemoteStorageResponse.newBuilder()
+              .setStatus(status)
+              .setRemoteStorage(rsBuilder.build())
+              .build();
     } catch (Exception e) {
       status = StatusCode.INTERNAL_ERROR;
       response = FetchRemoteStorageResponse.newBuilder().setStatus(status).build();
@@ -336,7 +350,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     }
 
     if (Context.current().isCancelled()) {
-      responseObserver.onError(Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
+      responseObserver.onError(
+          Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
       LOG.warn("Fetch client conf cancelled by client for after deadline.");
       return;
     }
@@ -355,27 +370,30 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         }
       }
       if (!nodeIds.isEmpty()) {
-        LOG.info("Shuffle Servers of assignment for appId[{}], shuffleId[{}] are {}",
-            appId, shuffleId, nodeIds);
+        LOG.info(
+            "Shuffle Servers of assignment for appId[{}], shuffleId[{}] are {}",
+            appId,
+            shuffleId,
+            nodeIds);
       }
     }
   }
 
   private ServerNode toServerNode(ShuffleServerHeartBeatRequest request) {
-    ServerStatus serverStatus = request.hasStatus() ? ServerStatus.fromProto(request.getStatus()) : ServerStatus.ACTIVE;
+    ServerStatus serverStatus =
+        request.hasStatus() ? ServerStatus.fromProto(request.getStatus()) : ServerStatus.ACTIVE;
     boolean isHealthy = true;
     if (request.hasIsHealthy()) {
       isHealthy = request.getIsHealthy().getValue();
-      /**
-       * Compatible with  older version
-       */
+      /** Compatible with older version */
       if (isHealthy) {
         serverStatus = ServerStatus.ACTIVE;
       } else {
         serverStatus = ServerStatus.UNHEALTHY;
       }
     }
-    return new ServerNode(request.getServerId().getId(),
+    return new ServerNode(
+        request.getServerId().getId(),
         request.getServerId().getIp(),
         request.getServerId().getPort(),
         request.getUsedMemory(),

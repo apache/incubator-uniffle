@@ -34,7 +34,8 @@ class ShuffleManagerClientFactoryTest {
     // only grpc type is supported currently
     ShuffleManagerClient c = factory.createShuffleManagerClient(ClientType.GRPC, "localhost", 1234);
     assertNotNull(c);
-    assertThrows(UnsupportedOperationException.class,
+    assertThrows(
+        UnsupportedOperationException.class,
         () -> factory.createShuffleManagerClient(ClientType.GRPC_NETTY, "localhost", 1234));
   }
 }

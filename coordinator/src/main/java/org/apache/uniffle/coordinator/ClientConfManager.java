@@ -51,8 +51,9 @@ public class ClientConfManager implements Closeable {
   private static final String WHITESPACE_REGEX = "\\s+";
   private ApplicationManager applicationManager;
 
-  public ClientConfManager(CoordinatorConf conf, Configuration hadoopConf,
-      ApplicationManager applicationManager) throws Exception {
+  public ClientConfManager(
+      CoordinatorConf conf, Configuration hadoopConf, ApplicationManager applicationManager)
+      throws Exception {
     if (conf.getBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED)) {
       this.applicationManager = applicationManager;
       init(conf, hadoopConf);
@@ -73,7 +74,8 @@ public class ClientConfManager implements Closeable {
     updateClientConfInternal();
     LOG.info("Load client conf from {} successfully", pathStr);
 
-    int updateIntervalS = conf.getInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC);
+    int updateIntervalS =
+        conf.getInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC);
     updateClientConfSES = ThreadUtils.getDaemonSingleThreadScheduledExecutor("ClientConfManager");
     updateClientConfSES.scheduleAtFixedRate(
         this::updateClientConf, 0, updateIntervalS, TimeUnit.SECONDS);
@@ -117,7 +119,9 @@ public class ClientConfManager implements Closeable {
           if (CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key().equals(confKV[0])) {
             hasRemoteStorageConf = true;
             remoteStoragePath = confKV[1];
-          } else if (CoordinatorConf.COORDINATOR_REMOTE_STORAGE_CLUSTER_CONF.key().equals(confKV[0])) {
+          } else if (CoordinatorConf.COORDINATOR_REMOTE_STORAGE_CLUSTER_CONF
+              .key()
+              .equals(confKV[0])) {
             remoteStorageConf = confKV[1];
           } else {
             newClientConf.put(confKV[0], confKV[1]);

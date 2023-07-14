@@ -25,7 +25,8 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 
 public class NettyProtocolTestUtils {
 
-  private static boolean compareShuffleBlockInfo(ShuffleBlockInfo blockInfo1, ShuffleBlockInfo blockInfo2) {
+  private static boolean compareShuffleBlockInfo(
+      ShuffleBlockInfo blockInfo1, ShuffleBlockInfo blockInfo2) {
     return blockInfo1.getPartitionId() == blockInfo2.getPartitionId()
         && blockInfo1.getBlockId() == blockInfo2.getBlockId()
         && blockInfo1.getLength() == blockInfo2.getLength()
@@ -38,7 +39,8 @@ public class NettyProtocolTestUtils {
         && blockInfo1.getShuffleServerInfos().equals(blockInfo2.getShuffleServerInfos());
   }
 
-  private static boolean compareBlockList(List<ShuffleBlockInfo> list1, List<ShuffleBlockInfo> list2) {
+  private static boolean compareBlockList(
+      List<ShuffleBlockInfo> list1, List<ShuffleBlockInfo> list2) {
     if (list1 == null || list2 == null || list1.size() != list2.size()) {
       return false;
     }
@@ -50,8 +52,8 @@ public class NettyProtocolTestUtils {
     return true;
   }
 
-  private static boolean comparePartitionToBlockList(Map<Integer, List<ShuffleBlockInfo>> m1,
-      Map<Integer, List<ShuffleBlockInfo>> m2) {
+  private static boolean comparePartitionToBlockList(
+      Map<Integer, List<ShuffleBlockInfo>> m1, Map<Integer, List<ShuffleBlockInfo>> m2) {
     if (m1 == null || m2 == null || m1.size() != m2.size()) {
       return false;
     }
@@ -65,19 +67,20 @@ public class NettyProtocolTestUtils {
     return true;
   }
 
-  public static boolean compareSendShuffleDataRequest(SendShuffleDataRequest req1,
-      SendShuffleDataRequest req2) {
+  public static boolean compareSendShuffleDataRequest(
+      SendShuffleDataRequest req1, SendShuffleDataRequest req2) {
     if (req1 == req2) {
       return true;
     }
     if (req1 == null || req2 == null) {
       return false;
     }
-    boolean isEqual = req1.getRequestId() == req2.getRequestId()
-        && req1.getShuffleId() == req2.getShuffleId()
-        && req1.getRequireId() == req2.getRequireId()
-        && req1.getTimestamp() == req2.getTimestamp()
-        && req1.getAppId().equals(req2.getAppId());
+    boolean isEqual =
+        req1.getRequestId() == req2.getRequestId()
+            && req1.getShuffleId() == req2.getShuffleId()
+            && req1.getRequireId() == req2.getRequireId()
+            && req1.getTimestamp() == req2.getTimestamp()
+            && req1.getAppId().equals(req2.getAppId());
     if (!isEqual) {
       return false;
     }

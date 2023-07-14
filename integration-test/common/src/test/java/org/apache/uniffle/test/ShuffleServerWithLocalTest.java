@@ -85,14 +85,21 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
   @Test
   public void localWriteReadTest() throws Exception {
     String testAppId = "localWriteReadTest";
-    RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest(testAppId, 0,
-        Lists.newArrayList(new PartitionRange(0, 0)), "");
+    RssRegisterShuffleRequest rrsr =
+        new RssRegisterShuffleRequest(
+            testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), "");
     shuffleServerClient.registerShuffle(rrsr);
-    rrsr = new RssRegisterShuffleRequest(testAppId, 0, Lists.newArrayList(new PartitionRange(1, 1)), "");
+    rrsr =
+        new RssRegisterShuffleRequest(
+            testAppId, 0, Lists.newArrayList(new PartitionRange(1, 1)), "");
     shuffleServerClient.registerShuffle(rrsr);
-    rrsr = new RssRegisterShuffleRequest(testAppId, 0, Lists.newArrayList(new PartitionRange(2, 2)), "");
+    rrsr =
+        new RssRegisterShuffleRequest(
+            testAppId, 0, Lists.newArrayList(new PartitionRange(2, 2)), "");
     shuffleServerClient.registerShuffle(rrsr);
-    rrsr = new RssRegisterShuffleRequest(testAppId, 0, Lists.newArrayList(new PartitionRange(3, 3)), "");
+    rrsr =
+        new RssRegisterShuffleRequest(
+            testAppId, 0, Lists.newArrayList(new PartitionRange(3, 3)), "");
     shuffleServerClient.registerShuffle(rrsr);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
@@ -103,8 +110,8 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
     shuffleToBlocks.put(0, partitionToBlocks);
 
-    RssSendShuffleDataRequest rssdr = new RssSendShuffleDataRequest(
-        testAppId, 3, 1000, shuffleToBlocks);
+    RssSendShuffleDataRequest rssdr =
+        new RssSendShuffleDataRequest(testAppId, 3, 1000, shuffleToBlocks);
     shuffleServerClient.sendShuffleData(rssdr);
     RssSendCommitRequest rscr = new RssSendCommitRequest(testAppId, 0);
     shuffleServerClient.sendCommit(rscr);
@@ -115,31 +122,27 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
     final Set<Long> expectedBlockIds2 = transBitmapToSet(bitmaps[1]);
     final Set<Long> expectedBlockIds3 = transBitmapToSet(bitmaps[2]);
     final Set<Long> expectedBlockIds4 = transBitmapToSet(bitmaps[3]);
-    ShuffleDataResult sdr  = readShuffleData(
-        shuffleServerClient, testAppId, 0, 0, 1,
-        4, 1000, 0);
+    ShuffleDataResult sdr = readShuffleData(shuffleServerClient, testAppId, 0, 0, 1, 4, 1000, 0);
     validateResult(sdr, expectedBlockIds1, expectedData, 0);
-    sdr  = readShuffleData(
-        shuffleServerClient, testAppId, 0, 1, 1,
-        4, 1000, 0);
+    sdr = readShuffleData(shuffleServerClient, testAppId, 0, 1, 1, 4, 1000, 0);
     validateResult(sdr, expectedBlockIds2, expectedData, 1);
-    sdr  = readShuffleData(
-        shuffleServerClient, testAppId, 0, 2, 1,
-        4, 1000, 0);
+    sdr = readShuffleData(shuffleServerClient, testAppId, 0, 2, 1, 4, 1000, 0);
     validateResult(sdr, expectedBlockIds3, expectedData, 2);
-    sdr  = readShuffleData(
-        shuffleServerClient, testAppId, 0, 3, 1,
-        4, 1000, 0);
+    sdr = readShuffleData(shuffleServerClient, testAppId, 0, 3, 1, 4, 1000, 0);
     validateResult(sdr, expectedBlockIds4, expectedData, 3);
 
-    assertNotNull(shuffleServers.get(0).getShuffleTaskManager()
-        .getPartitionsToBlockIds().get(testAppId));
+    assertNotNull(
+        shuffleServers.get(0).getShuffleTaskManager().getPartitionsToBlockIds().get(testAppId));
     Thread.sleep(8000);
-    assertNull(shuffleServers.get(0).getShuffleTaskManager().getPartitionsToBlockIds().get(testAppId));
+    assertNull(
+        shuffleServers.get(0).getShuffleTaskManager().getPartitionsToBlockIds().get(testAppId));
   }
 
-  protected void validateResult(ShuffleDataResult sdr, Set<Long> expectedBlockIds,
-      Map<Long, byte[]> expectedData, long expectedTaskAttemptId) {
+  protected void validateResult(
+      ShuffleDataResult sdr,
+      Set<Long> expectedBlockIds,
+      Map<Long, byte[]> expectedData,
+      long expectedTaskAttemptId) {
     byte[] buffer = sdr.getData();
     List<BufferSegment> bufferSegments = sdr.getBufferSegments();
     int matched = 0;

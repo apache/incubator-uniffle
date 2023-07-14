@@ -61,32 +61,38 @@ public class RegisterHeartBeat {
         new CoordinatorClientFactory(conf.get(ShuffleServerConf.RSS_CLIENT_TYPE));
     this.coordinatorClients = factory.createCoordinatorClient(this.coordinatorQuorum);
     this.shuffleServer = shuffleServer;
-    this.heartBeatExecutorService = ThreadUtils.getDaemonFixedThreadPool(
-        conf.getInteger(ShuffleServerConf.SERVER_HEARTBEAT_THREAD_NUM), "sendHeartBeat");
+    this.heartBeatExecutorService =
+        ThreadUtils.getDaemonFixedThreadPool(
+            conf.getInteger(ShuffleServerConf.SERVER_HEARTBEAT_THREAD_NUM), "sendHeartBeat");
   }
 
   public void startHeartBeat() {
-    LOG.info("Start heartbeat to coordinator {} after {}ms and interval is {}ms",
-        coordinatorQuorum, heartBeatInitialDelay, heartBeatInterval);
-    Runnable runnable = () -> {
-      try {
-        sendHeartBeat(
-            shuffleServer.getId(),
-            shuffleServer.getIp(),
-            shuffleServer.getGrpcPort(),
-            shuffleServer.getUsedMemory(),
-            shuffleServer.getPreAllocatedMemory(),
-            shuffleServer.getAvailableMemory(),
-            shuffleServer.getEventNumInFlush(),
-            shuffleServer.getTags(),
-            shuffleServer.getServerStatus(),
-            shuffleServer.getStorageManager().getStorageInfo(),
-            shuffleServer.getNettyPort());
-      } catch (Exception e) {
-        LOG.warn("Error happened when send heart beat to coordinator");
-      }
-    };
-    service.scheduleAtFixedRate(runnable, heartBeatInitialDelay, heartBeatInterval, TimeUnit.MILLISECONDS);
+    LOG.info(
+        "Start heartbeat to coordinator {} after {}ms and interval is {}ms",
+        coordinatorQuorum,
+        heartBeatInitialDelay,
+        heartBeatInterval);
+    Runnable runnable =
+        () -> {
+          try {
+            sendHeartBeat(
+                shuffleServer.getId(),
+                shuffleServer.getIp(),
+                shuffleServer.getGrpcPort(),
+                shuffleServer.getUsedMemory(),
+                shuffleServer.getPreAllocatedMemory(),
+                shuffleServer.getAvailableMemory(),
+                shuffleServer.getEventNumInFlush(),
+                shuffleServer.getTags(),
+                shuffleServer.getServerStatus(),
+                shuffleServer.getStorageManager().getStorageInfo(),
+                shuffleServer.getNettyPort());
+          } catch (Exception e) {
+            LOG.warn("Error happened when send heart beat to coordinator");
+          }
+        };
+    service.scheduleAtFixedRate(
+        runnable, heartBeatInitialDelay, heartBeatInterval, TimeUnit.MILLISECONDS);
   }
 
   @VisibleForTesting
@@ -104,23 +110,24 @@ public class RegisterHeartBeat {
       int nettyPort) {
     boolean sendSuccessfully = false;
     // use `rss.server.heartbeat.interval` as the timeout option
-    RssSendHeartBeatRequest request = new RssSendHeartBeatRequest(
-        id,
-        ip,
-        grpcPort,
-        usedMemory,
-        preAllocatedMemory,
-        availableMemory,
-        eventNumInFlush,
-        heartBeatInterval,
-        tags,
-        serverStatus,
-        localStorageInfo,
-        nettyPort);
-    List<Future<RssSendHeartBeatResponse>> respFutures = coordinatorClients
-        .stream()
-        .map(client -> heartBeatExecutorService.submit(() -> client.sendHeartBeat(request)))
-        .collect(Collectors.toList());
+    RssSendHeartBeatRequest request =
+        new RssSendHeartBeatRequest(
+            id,
+            ip,
+            grpcPort,
+            usedMemory,
+            preAllocatedMemory,
+            availableMemory,
+            eventNumInFlush,
+            heartBeatInterval,
+            tags,
+            serverStatus,
+            localStorageInfo,
+            nettyPort);
+    List<Future<RssSendHeartBeatResponse>> respFutures =
+        coordinatorClients.stream()
+            .map(client -> heartBeatExecutorService.submit(() -> client.sendHeartBeat(request)))
+            .collect(Collectors.toList());
 
     String msg = "";
     for (Future<RssSendHeartBeatResponse> rf : respFutures) {

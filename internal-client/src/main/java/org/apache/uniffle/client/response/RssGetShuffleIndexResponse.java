@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.rpc.StatusCode;
 
-public class RssGetShuffleIndexResponse extends ClientResponse  {
+public class RssGetShuffleIndexResponse extends ClientResponse {
   private final ShuffleIndexResult shuffleIndexResult;
 
   public RssGetShuffleIndexResponse(StatusCode statusCode, ByteBuffer data, long dataFileLen) {
@@ -33,5 +33,4 @@ public class RssGetShuffleIndexResponse extends ClientResponse  {
   public ShuffleIndexResult getShuffleIndexResult() {
     return shuffleIndexResult;
   }
-
 }

@@ -67,8 +67,8 @@ public class BasicAssignmentStrategyTest {
   @Test
   public void testAssign() {
     for (int i = 0; i < 20; ++i) {
-      clusterManager.add(new ServerNode(String.valueOf(i), "127.0.0." + i, 0, 0, 0,
-          20 - i, 0, tags));
+      clusterManager.add(
+          new ServerNode(String.valueOf(i), "127.0.0." + i, 0, 0, 0, 20 - i, 0, tags));
     }
 
     PartitionRangeAssignment pra = strategy.assign(100, 10, 2, tags, -1, -1);
@@ -94,8 +94,7 @@ public class BasicAssignmentStrategyTest {
   @Test
   public void testRandomAssign() {
     for (int i = 0; i < 20; ++i) {
-      clusterManager.add(new ServerNode(String.valueOf(i), "127.0.0." + i, 0, 0, 0,
-          0, 0, tags));
+      clusterManager.add(new ServerNode(String.valueOf(i), "127.0.0." + i, 0, 0, 0, 0, 0, tags));
     }
     PartitionRangeAssignment pra = strategy.assign(100, 10, 2, tags, -1, -1);
     SortedMap<PartitionRange, List<ServerNode>> assignments = pra.getAssignments();
@@ -117,12 +116,9 @@ public class BasicAssignmentStrategyTest {
 
   @Test
   public void testAssignWithDifferentNodeNum() {
-    final ServerNode sn1 = new ServerNode("sn1", "", 0, 0, 0,
-        20, 0, tags);
-    final ServerNode sn2 = new ServerNode("sn2", "", 0, 0, 0,
-        10, 0, tags);
-    final ServerNode sn3 = new ServerNode("sn3", "", 0, 0, 0,
-        0, 0, tags);
+    final ServerNode sn1 = new ServerNode("sn1", "", 0, 0, 0, 20, 0, tags);
+    final ServerNode sn2 = new ServerNode("sn2", "", 0, 0, 0, 10, 0, tags);
+    final ServerNode sn3 = new ServerNode("sn3", "", 0, 0, 0, 0, 0, tags);
 
     clusterManager.add(sn1);
     PartitionRangeAssignment pra = strategy.assign(100, 10, 2, tags, -1, -1);
@@ -160,101 +156,87 @@ public class BasicAssignmentStrategyTest {
     Set<String> serverTags = Sets.newHashSet("tag-1");
 
     for (int i = 0; i < 20; ++i) {
-      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
-          20 - i, 0, serverTags));
+      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0, 20 - i, 0, serverTags));
     }
 
     /**
-     * case1: user specify the illegal shuffle node num(<0)
-     * it will use the default shuffle nodes num when having enough servers.
+     * case1: user specify the illegal shuffle node num(<0) it will use the default shuffle nodes
+     * num when having enough servers.
      */
     PartitionRangeAssignment pra = strategy.assign(100, 10, 1, serverTags, -1, -1);
     assertEquals(
         shuffleNodesMax,
-        pra.getAssignments()
-            .values()
-            .stream()
+        pra.getAssignments().values().stream()
             .flatMap(Collection::stream)
             .collect(Collectors.toSet())
-            .size()
-    );
+            .size());
 
     /**
-     * case2: user specify the illegal shuffle node num(==0)
-     * it will use the default shuffle nodes num when having enough servers.
+     * case2: user specify the illegal shuffle node num(==0) it will use the default shuffle nodes
+     * num when having enough servers.
      */
     pra = strategy.assign(100, 10, 1, serverTags, 0, -1);
     assertEquals(
         shuffleNodesMax,
-        pra.getAssignments()
-            .values()
-            .stream()
+        pra.getAssignments().values().stream()
             .flatMap(Collection::stream)
             .collect(Collectors.toSet())
-            .size()
-    );
+            .size());
 
     /**
-     * case3: user specify the illegal shuffle node num(>default max limitation)
-     * it will use the default shuffle nodes num when having enough servers
+     * case3: user specify the illegal shuffle node num(>default max limitation) it will use the
+     * default shuffle nodes num when having enough servers
      */
     pra = strategy.assign(100, 10, 1, serverTags, shuffleNodesMax + 10, -1);
     assertEquals(
         shuffleNodesMax,
-        pra.getAssignments()
-            .values()
-            .stream()
+        pra.getAssignments().values().stream()
             .flatMap(Collection::stream)
             .collect(Collectors.toSet())
-            .size()
-    );
+            .size());
 
     /**
-     * case4: user specify the legal shuffle node num,
-     * it will use the customized shuffle nodes num when having enough servers
+     * case4: user specify the legal shuffle node num, it will use the customized shuffle nodes num
+     * when having enough servers
      */
     pra = strategy.assign(100, 10, 1, serverTags, shuffleNodesMax - 1, -1);
     assertEquals(
         shuffleNodesMax - 1,
-        pra.getAssignments()
-            .values()
-            .stream()
+        pra.getAssignments().values().stream()
             .flatMap(Collection::stream)
             .collect(Collectors.toSet())
-            .size()
-    );
+            .size());
 
     /**
-     * case5: user specify the legal shuffle node num, but cluster don't have enough servers,
-     * it will return the remaining servers.
+     * case5: user specify the legal shuffle node num, but cluster don't have enough servers, it
+     * will return the remaining servers.
      */
     serverTags = Sets.newHashSet("tag-2");
     for (int i = 0; i < shuffleNodesMax - 1; ++i) {
-      clusterManager.add(new ServerNode("t2-" + i, "", 0, 0, 0,
-          20 - i, 0, serverTags));
+      clusterManager.add(new ServerNode("t2-" + i, "", 0, 0, 0, 20 - i, 0, serverTags));
     }
     pra = strategy.assign(100, 10, 1, serverTags, shuffleNodesMax, -1);
     assertEquals(
         shuffleNodesMax - 1,
-        pra.getAssignments()
-            .values()
-            .stream()
+        pra.getAssignments().values().stream()
             .flatMap(Collection::stream)
             .collect(Collectors.toSet())
-            .size()
-    );
+            .size());
   }
 
   @Test
   public void testWithContinuousSelectPartitionStrategy() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
-    ssc.set(CoordinatorConf.COORDINATOR_SELECT_PARTITION_STRATEGY,
+    ssc.set(
+        CoordinatorConf.COORDINATOR_SELECT_PARTITION_STRATEGY,
         AbstractAssignmentStrategy.SelectPartitionStrategyName.CONTINUOUS);
     ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, shuffleNodesMax);
     clusterManager = new SimpleClusterManager(ssc, new Configuration());
     strategy = new BasicAssignmentStrategy(clusterManager, ssc);
-    List<Long> list = Lists.newArrayList(20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L,
-        20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L);
+    List<Long> list =
+        Lists.newArrayList(
+            20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L,
+            20L, 20L, 20L);
     updateServerResource(list);
     PartitionRangeAssignment assignment = strategy.assign(100, 1, 2, tags, 5, 20);
     List<Long> expect = Lists.newArrayList(40L, 40L, 40L, 40L, 40L);
@@ -275,20 +257,22 @@ public class BasicAssignmentStrategyTest {
 
   void updateServerResource(List<Long> resources) {
     for (int i = 0; i < resources.size(); i++) {
-      ServerNode node = new ServerNode(
-          String.valueOf((char)('a' + i)),
-          "127.0.0." + i,
-          0,
-          10L,
-          5L,
-          resources.get(i),
-          5,
-          tags);
+      ServerNode node =
+          new ServerNode(
+              String.valueOf((char) ('a' + i)),
+              "127.0.0." + i,
+              0,
+              10L,
+              5L,
+              resources.get(i),
+              5,
+              tags);
       clusterManager.add(node);
     }
   }
 
-  private void valid(List<Long> expect, SortedMap<PartitionRange, List<ServerNode>> partitionToServerNodes) {
+  private void valid(
+      List<Long> expect, SortedMap<PartitionRange, List<ServerNode>> partitionToServerNodes) {
     // Unable to match exactly, the order of the server is disordered
     int actualPartitionNum = 0;
     Set<ServerNode> serverNodes = Sets.newHashSet();

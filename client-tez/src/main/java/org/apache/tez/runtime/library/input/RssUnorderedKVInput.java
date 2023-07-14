@@ -1,13 +1,12 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -70,10 +69,9 @@ import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_DESTINATION_VERTEX_
 import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
 
 /**
- * {@link RssUnorderedKVInput} provides unordered key value input by
- * bringing together (shuffling) a set of distributed data and providing a
- * unified view to that data. There are no ordering constraints applied by
- * this input.
+ * {@link RssUnorderedKVInput} provides unordered key value input by bringing together (shuffling) a
+ * set of distributed data and providing a unified view to that data. There are no ordering
+ * constraints applied by this input.
  */
 @Public
 public class RssUnorderedKVInput extends AbstractLogicalInput {
@@ -84,6 +82,7 @@ public class RssUnorderedKVInput extends AbstractLogicalInput {
   private final BlockingQueue<Event> pendingEvents = new LinkedBlockingQueue<>();
   private long firstEventReceivedTime = -1;
   private MemoryUpdateCallbackHandler memoryUpdateCallbackHandler;
+
   @SuppressWarnings("rawtypes")
   private UnorderedKVReader kvReader;
 
@@ -108,8 +107,9 @@ public class RssUnorderedKVInput extends AbstractLogicalInput {
       getContext().requestInitialMemory(0L, null);
       isStarted.set(true);
       getContext().inputIsReady();
-      LOG.info("input fetch not required since there are 0 physical inputs for input vertex: "
-          + getContext().getSourceVertexName());
+      LOG.info(
+          "input fetch not required since there are 0 physical inputs for input vertex: "
+              + getContext().getSourceVertexName());
       return Collections.emptyList();
     } else {
       long initialMemReq = getInitialMemoryReq();
@@ -118,18 +118,20 @@ public class RssUnorderedKVInput extends AbstractLogicalInput {
     }
 
     this.conf.setStrings(TezRuntimeFrameworkConfigs.LOCAL_DIRS, getContext().getWorkDirs());
-    this.inputRecordCounter = getContext().getCounters().findCounter(
-        TaskCounter.INPUT_RECORDS_PROCESSED);
+    this.inputRecordCounter =
+        getContext().getCounters().findCounter(TaskCounter.INPUT_RECORDS_PROCESSED);
 
-    TezTaskAttemptID taskAttemptId = TezTaskAttemptID.fromString(
-        RssTezUtils.uniqueIdentifierToAttemptId(getContext().getUniqueIdentifier()));
+    TezTaskAttemptID taskAttemptId =
+        TezTaskAttemptID.fromString(
+            RssTezUtils.uniqueIdentifierToAttemptId(getContext().getUniqueIdentifier()));
     TezVertexID tezVertexID = taskAttemptId.getTaskID().getVertexID();
     TezDAGID tezDAGID = tezVertexID.getDAGId();
     int sourceVertexId = this.conf.getInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, -1);
     int destinationVertexId = this.conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1);
     assert sourceVertexId != -1;
     assert destinationVertexId != -1;
-    this.shuffleId = RssTezUtils.computeShuffleId(tezDAGID.getId(), sourceVertexId, destinationVertexId);
+    this.shuffleId =
+        RssTezUtils.computeShuffleId(tezDAGID.getId(), sourceVertexId, destinationVertexId);
     return Collections.emptyList();
   }
 
@@ -140,54 +142,83 @@ public class RssUnorderedKVInput extends AbstractLogicalInput {
       memoryUpdateCallbackHandler.validateUpdateReceived();
       CompressionCodec codec;
       if (ConfigUtils.isIntermediateInputCompressed(conf)) {
-        Class<? extends CompressionCodec> codecClass = ConfigUtils
-            .getIntermediateInputCompressorClass(conf, DefaultCodec.class);
+        Class<? extends CompressionCodec> codecClass =
+            ConfigUtils.getIntermediateInputCompressorClass(conf, DefaultCodec.class);
         codec = ReflectionUtils.newInstance(codecClass, conf);
       } else {
         codec = null;
       }
 
-      boolean ifileReadAhead = conf.getBoolean(TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_READAHEAD,
-          TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_READAHEAD_DEFAULT);
+      boolean ifileReadAhead =
+          conf.getBoolean(
+              TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_READAHEAD,
+              TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_READAHEAD_DEFAULT);
       int ifileReadAheadLength = 0;
       int ifileBufferSize = 0;
 
       if (ifileReadAhead) {
-        ifileReadAheadLength = conf.getInt(TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_READAHEAD_BYTES,
-            TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_READAHEAD_BYTES_DEFAULT);
+        ifileReadAheadLength =
+            conf.getInt(
+                TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_READAHEAD_BYTES,
+                TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_READAHEAD_BYTES_DEFAULT);
       }
-      ifileBufferSize = conf.getInt("io.file.buffer.size",
-          TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_BUFFER_SIZE_DEFAULT);
+      ifileBufferSize =
+          conf.getInt(
+              "io.file.buffer.size", TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_BUFFER_SIZE_DEFAULT);
 
-      LOG.info("RssUnorderedKVInput, totalMemoryAvailable:{}, available memory:{}",
-          getContext().getTotalMemoryAvailableToTask(), memoryUpdateCallbackHandler.getMemoryAssigned());
-
-      boolean compositeFetch = ShuffleUtils.isTezShuffleHandler(conf);
-
-      this.inputManager = new RssSimpleFetchedInputAllocator(
-          TezUtilsInternal.cleanVertexName(getContext().getSourceVertexName()),
-          getContext().getUniqueIdentifier(),
-          getContext().getDagIdentifier(), conf,
+      LOG.info(
+          "RssUnorderedKVInput, totalMemoryAvailable:{}, available memory:{}",
           getContext().getTotalMemoryAvailableToTask(),
           memoryUpdateCallbackHandler.getMemoryAssigned());
 
-      this.rssShuffleManager = new RssShuffleManager(getContext(), conf, getNumPhysicalInputs(), ifileBufferSize,
-          ifileReadAhead, ifileReadAheadLength, codec, inputManager, shuffleId);
+      boolean compositeFetch = ShuffleUtils.isTezShuffleHandler(conf);
 
-      this.inputEventHandler = new ShuffleInputEventHandlerImpl(getContext(), rssShuffleManager,
-          inputManager, codec, ifileReadAhead, ifileReadAheadLength, compositeFetch);
+      this.inputManager =
+          new RssSimpleFetchedInputAllocator(
+              TezUtilsInternal.cleanVertexName(getContext().getSourceVertexName()),
+              getContext().getUniqueIdentifier(),
+              getContext().getDagIdentifier(),
+              conf,
+              getContext().getTotalMemoryAvailableToTask(),
+              memoryUpdateCallbackHandler.getMemoryAssigned());
+
+      this.rssShuffleManager =
+          new RssShuffleManager(
+              getContext(),
+              conf,
+              getNumPhysicalInputs(),
+              ifileBufferSize,
+              ifileReadAhead,
+              ifileReadAheadLength,
+              codec,
+              inputManager,
+              shuffleId);
+
+      this.inputEventHandler =
+          new ShuffleInputEventHandlerImpl(
+              getContext(),
+              rssShuffleManager,
+              inputManager,
+              codec,
+              ifileReadAhead,
+              ifileReadAheadLength,
+              compositeFetch);
 
       ////// End of Initial configuration
 
       this.rssShuffleManager.run();
-      this.kvReader = createReader(inputRecordCounter, codec,
-          ifileBufferSize, ifileReadAhead, ifileReadAheadLength);
+      this.kvReader =
+          createReader(
+              inputRecordCounter, codec, ifileBufferSize, ifileReadAhead, ifileReadAheadLength);
       List<Event> pending = new LinkedList<>();
       pendingEvents.drainTo(pending);
       if (pending.size() > 0) {
         if (LOG.isDebugEnabled()) {
-          LOG.debug(getContext().getSourceVertexName() + ": " + "NoAutoStart delay in processing first event: "
-              + (System.currentTimeMillis() - firstEventReceivedTime));
+          LOG.debug(
+              getContext().getSourceVertexName()
+                  + ": "
+                  + "NoAutoStart delay in processing first event: "
+                  + (System.currentTimeMillis() - firstEventReceivedTime));
         }
         inputEventHandler.handleEvents(pending);
       }
@@ -254,27 +285,37 @@ public class RssUnorderedKVInput extends AbstractLogicalInput {
       this.rssShuffleManager.shutdown();
     }
 
-    long dataSize = getContext().getCounters()
-        .findCounter(TaskCounter.SHUFFLE_BYTES_DECOMPRESSED).getValue();
+    long dataSize =
+        getContext().getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_DECOMPRESSED).getValue();
     getContext().getStatisticsReporter().reportDataSize(dataSize);
-    long inputRecords = getContext().getCounters()
-        .findCounter(TaskCounter.INPUT_RECORDS_PROCESSED).getValue();
+    long inputRecords =
+        getContext().getCounters().findCounter(TaskCounter.INPUT_RECORDS_PROCESSED).getValue();
     getContext().getStatisticsReporter().reportItemsProcessed(inputRecords);
     return null;
   }
 
   private long getInitialMemoryReq() {
-    return SimpleFetchedInputAllocator.getInitialMemoryReq(conf,
-        getContext().getTotalMemoryAvailableToTask());
+    return SimpleFetchedInputAllocator.getInitialMemoryReq(
+        conf, getContext().getTotalMemoryAvailableToTask());
   }
 
-
   @SuppressWarnings("rawtypes")
-  private UnorderedKVReader createReader(TezCounter inputRecordCounter, CompressionCodec codec,
-                                         int ifileBufferSize, boolean ifileReadAheadEnabled, int ifileReadAheadLength)
+  private UnorderedKVReader createReader(
+      TezCounter inputRecordCounter,
+      CompressionCodec codec,
+      int ifileBufferSize,
+      boolean ifileReadAheadEnabled,
+      int ifileReadAheadLength)
       throws IOException {
-    return new UnorderedKVReader(rssShuffleManager, conf, null, ifileReadAheadEnabled,
-        0, ifileBufferSize, inputRecordCounter, getContext());
+    return new UnorderedKVReader(
+        rssShuffleManager,
+        conf,
+        null,
+        ifileReadAheadEnabled,
+        0,
+        ifileBufferSize,
+        inputRecordCounter,
+        getContext());
   }
 
   private static final Set<String> CONF_KEYS = new HashSet<>();

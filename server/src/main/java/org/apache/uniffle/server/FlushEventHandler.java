@@ -17,30 +17,10 @@
 
 package org.apache.uniffle.server;
 
-import java.util.concurrent.Executor;
+public interface FlushEventHandler {
+  void handle(ShuffleDataFlushEvent event);
 
-import org.apache.uniffle.server.storage.StorageManager;
+  int getEventNumInFlush();
 
-public class TestShuffleFlushManager extends ShuffleFlushManager {
-  public TestShuffleFlushManager(ShuffleServerConf shuffleServerConf, String shuffleServerId,
-                                 ShuffleServer shuffleServer, StorageManager storageManager) {
-    super(shuffleServerConf, shuffleServer, storageManager);
-  }
-
-  @Override
-  protected void eventLoop() {
-    // do nothing
-  }
-
-  @Override
-  protected Executor createFlushEventExecutor() {
-    return Runnable::run;
-  }
-
-  public void flush() {
-    while (!flushQueue.isEmpty()) {
-      processNextEvent();
-    }
-  }
-
+  void stop();
 }

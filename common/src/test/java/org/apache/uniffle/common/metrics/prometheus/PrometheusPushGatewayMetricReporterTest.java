@@ -50,8 +50,7 @@ public class PrometheusPushGatewayMetricReporterTest {
 
   @Test
   public void testParseIncompleteGroupingKey() {
-    Map<String, String> groupingKey =
-        PrometheusPushGatewayMetricReporter.parseGroupingKey("k1=");
+    Map<String, String> groupingKey = PrometheusPushGatewayMetricReporter.parseGroupingKey("k1=");
     assertTrue(groupingKey.isEmpty());
 
     groupingKey = PrometheusPushGatewayMetricReporter.parseGroupingKey("=v1");
@@ -64,7 +63,8 @@ public class PrometheusPushGatewayMetricReporterTest {
   @Test
   public void test() throws Exception {
     RssConf conf = new RssConf();
-    conf.setString(RssBaseConf.RSS_METRICS_REPORTER_CLASS,
+    conf.setString(
+        RssBaseConf.RSS_METRICS_REPORTER_CLASS,
         PrometheusPushGatewayMetricReporter.class.getCanonicalName());
     conf.setString(PrometheusPushGatewayMetricReporter.PUSHGATEWAY_ADDR, "");
     conf.setString(PrometheusPushGatewayMetricReporter.GROUPING_KEY, "a=1;b=2");
@@ -79,13 +79,15 @@ public class PrometheusPushGatewayMetricReporterTest {
     CountDownLatch countDownLatch = new CountDownLatch(1);
     Counter counter1 = metricsManager.addCounter("counter1");
     counter1.inc();
-    PushGateway pushGateway = new CustomPushGateway((registry, job, groupingKey) -> {
-      countDownLatch.countDown();
-      assertEquals(jobName, job);
-      assertEquals(3, groupingKey.size());
-      assertEquals(instanceId, groupingKey.get("instance"));
-      assertEquals(1, counter1.get());
-    });
+    PushGateway pushGateway =
+        new CustomPushGateway(
+            (registry, job, groupingKey) -> {
+              countDownLatch.countDown();
+              assertEquals(jobName, job);
+              assertEquals(3, groupingKey.size());
+              assertEquals(instanceId, groupingKey.get("instance"));
+              assertEquals(1, counter1.get());
+            });
     ((PrometheusPushGatewayMetricReporter) metricReporter).setPushGateway(pushGateway);
     metricReporter.start();
     countDownLatch.await(20, TimeUnit.SECONDS);
@@ -102,7 +104,8 @@ public class PrometheusPushGatewayMetricReporterTest {
     }
 
     @Override
-    public void push(CollectorRegistry registry, String job, Map<String, String> groupingKey) throws IOException {
+    public void push(CollectorRegistry registry, String job, Map<String, String> groupingKey)
+        throws IOException {
       callback.apply(registry, job, groupingKey);
     }
   }

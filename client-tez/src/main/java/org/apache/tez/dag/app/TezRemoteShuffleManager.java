@@ -44,10 +44,11 @@ import org.apache.tez.common.ServicePluginLifecycle;
 import org.apache.tez.common.ShuffleAssignmentsInfoWritable;
 import org.apache.tez.common.TezRemoteShuffleUmbilicalProtocol;
 import org.apache.tez.common.security.JobTokenIdentifier;
+import org.apache.tez.common.security.JobTokenSecretManager;
 import org.apache.tez.dag.api.TezConfiguration;
 import org.apache.tez.dag.api.TezException;
 import org.apache.tez.dag.api.TezUncheckedException;
-import org.apache.tez.dag.app.security.authorize.TezAMPolicyProvider;
+import org.apache.tez.dag.app.security.authorize.RssTezAMPolicyProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,8 +78,12 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
   private ShuffleWriteClient rssClient;
   private String appId;
 
-  public TezRemoteShuffleManager(String tokenIdentifier, Token<JobTokenIdentifier> sessionToken,
-          Configuration conf, String appId, ShuffleWriteClient rssClient) {
+  public TezRemoteShuffleManager(
+      String tokenIdentifier,
+      Token<JobTokenIdentifier> sessionToken,
+      Configuration conf,
+      String appId,
+      ShuffleWriteClient rssClient) {
     this.tokenIdentifier = tokenIdentifier;
     this.sessionToken = sessionToken;
     this.conf = conf;
@@ -88,9 +93,7 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
   }
 
   @Override
-  public void initialize() throws Exception {
-
-  }
+  public void initialize() throws Exception {}
 
   @Override
   public void start() throws Exception {
@@ -115,15 +118,15 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
     }
 
     @Override
-    public ProtocolSignature getProtocolSignature(String protocol, long clientVersion,
-            int clientMethodsHash) throws IOException {
-      return ProtocolSignature.getProtocolSignature(this, protocol,
-              clientVersion, clientMethodsHash);
+    public ProtocolSignature getProtocolSignature(
+        String protocol, long clientVersion, int clientMethodsHash) throws IOException {
+      return ProtocolSignature.getProtocolSignature(
+          this, protocol, clientVersion, clientMethodsHash);
     }
 
     @Override
     public GetShuffleServerResponse getShuffleAssignments(GetShuffleServerRequest request)
-            throws IOException, TezException {
+        throws IOException, TezException {
 
       GetShuffleServerResponse response = new GetShuffleServerResponse();
       if (request != null) {
@@ -151,7 +154,8 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
           } else {
             response.setStatus(0);
             response.setRetMsg("");
-            response.setShuffleAssignmentsInfoWritable(new ShuffleAssignmentsInfoWritable(shuffleAssignmentsInfo));
+            response.setShuffleAssignmentsInfoWritable(
+                new ShuffleAssignmentsInfoWritable(shuffleAssignmentsInfo));
             shuffleIdToShuffleAssignsInfo.put(shuffleId, shuffleAssignmentsInfo);
           }
         }
@@ -166,11 +170,17 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
 
   private ShuffleAssignmentsInfo getShuffleWorks(int partitionNum, int shuffleId) {
     ShuffleAssignmentsInfo shuffleAssignmentsInfo;
-    int requiredAssignmentShuffleServersNum = RssTezUtils.getRequiredShuffleServerNumber(conf, 200, partitionNum);
-    // retryInterval must bigger than `rss.server.heartbeat.timeout`, or maybe it will return the same result
-    long retryInterval = conf.getLong(RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL,
+    int requiredAssignmentShuffleServersNum =
+        RssTezUtils.getRequiredShuffleServerNumber(conf, 200, partitionNum);
+    // retryInterval must bigger than `rss.server.heartbeat.timeout`, or maybe it will return the
+    // same result
+    long retryInterval =
+        conf.getLong(
+            RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL,
             RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE);
-    int retryTimes = conf.getInt(RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES,
+    int retryTimes =
+        conf.getInt(
+            RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES,
             RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE);
 
     // Get the configured server assignment tags and it will also add default shuffle version tag.
@@ -182,51 +192,61 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
     }
     assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
 
-
     // get remote storage from coordinator if necessary
-    boolean dynamicConfEnabled = conf.getBoolean(RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
+    boolean dynamicConfEnabled =
+        conf.getBoolean(
+            RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
             RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
     RemoteStorageInfo defaultRemoteStorage =
-            new RemoteStorageInfo(conf.get(RssTezConfig.RSS_REMOTE_STORAGE_PATH, ""));
+        new RemoteStorageInfo(conf.get(RssTezConfig.RSS_REMOTE_STORAGE_PATH, ""));
     String storageType = conf.get(RssTezConfig.RSS_STORAGE_TYPE);
     boolean testMode = conf.getBoolean(RssTezConfig.RSS_TEST_MODE_ENABLE, false);
     ClientUtils.validateTestModeConf(testMode, storageType);
-    RemoteStorageInfo remoteStorage = ClientUtils.fetchRemoteStorage(
+    RemoteStorageInfo remoteStorage =
+        ClientUtils.fetchRemoteStorage(
             appId, defaultRemoteStorage, dynamicConfEnabled, storageType, rssClient);
 
     try {
-      shuffleAssignmentsInfo = RetryUtils.retry(() -> {
-        ShuffleAssignmentsInfo shuffleAssignments =
-                rssClient.getShuffleAssignments(
+      shuffleAssignmentsInfo =
+          RetryUtils.retry(
+              () -> {
+                ShuffleAssignmentsInfo shuffleAssignments =
+                    rssClient.getShuffleAssignments(
                         appId,
                         shuffleId,
                         partitionNum,
                         1,
                         Sets.newHashSet(assignmentTags),
                         requiredAssignmentShuffleServersNum,
-                        -1
-                );
+                        -1);
 
-        Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
-                shuffleAssignments.getServerToPartitionRanges();
+                Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
+                    shuffleAssignments.getServerToPartitionRanges();
 
-        if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
-          return null;
-        }
-        LOG.info("Start to register shuffle");
-        long start = System.currentTimeMillis();
-        serverToPartitionRanges.entrySet().forEach(entry -> rssClient.registerShuffle(
-                entry.getKey(),
-                appId,
-                shuffleId,
-                entry.getValue(),
-                remoteStorage,
-                ShuffleDataDistributionType.NORMAL,
-                RssTezConfig.toRssConf(conf).get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE)
-        ));
-        LOG.info("Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
-        return shuffleAssignments;
-      }, retryInterval, retryTimes);
+                if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
+                  return null;
+                }
+                LOG.info("Start to register shuffle");
+                long start = System.currentTimeMillis();
+                serverToPartitionRanges
+                    .entrySet()
+                    .forEach(
+                        entry ->
+                            rssClient.registerShuffle(
+                                entry.getKey(),
+                                appId,
+                                shuffleId,
+                                entry.getValue(),
+                                remoteStorage,
+                                ShuffleDataDistributionType.NORMAL,
+                                RssTezConfig.toRssConf(conf)
+                                    .get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE)));
+                LOG.info(
+                    "Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
+                return shuffleAssignments;
+              },
+              retryInterval,
+              retryTimes);
     } catch (Throwable throwable) {
       LOG.error("registerShuffle failed!", throwable);
       throw new RssException("registerShuffle failed!", throwable);
@@ -247,37 +267,39 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
         rssAmRpcBindPort = 0;
       }
 
-      server = new RPC.Builder(conf)
+      JobTokenSecretManager jobTokenSecretManager = new JobTokenSecretManager();
+      jobTokenSecretManager.addTokenForJob(tokenIdentifier, sessionToken);
+      server =
+          new RPC.Builder(conf)
               .setProtocol(TezRemoteShuffleUmbilicalProtocol.class)
               .setBindAddress(rssAmRpcBindAddress)
               .setPort(rssAmRpcBindPort)
               .setInstance(tezRemoteShuffleUmbilical)
               .setNumHandlers(
-                      conf.getInt(TezConfiguration.TEZ_AM_TASK_LISTENER_THREAD_COUNT,
-                              TezConfiguration.TEZ_AM_TASK_LISTENER_THREAD_COUNT_DEFAULT))
+                  conf.getInt(
+                      TezConfiguration.TEZ_AM_TASK_LISTENER_THREAD_COUNT,
+                      TezConfiguration.TEZ_AM_TASK_LISTENER_THREAD_COUNT_DEFAULT))
               .setPortRangeConfig(TezConfiguration.TEZ_AM_TASK_AM_PORT_RANGE)
+              .setSecretManager(jobTokenSecretManager)
               .build();
 
       // Enable service authorization?
-      if (conf.getBoolean(
-              CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHORIZATION,
-              false)) {
-        refreshServiceAcls(conf, new TezAMPolicyProvider());
+      if (conf.getBoolean(CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHORIZATION, false)) {
+        refreshServiceAcls(conf, new RssTezAMPolicyProvider());
       }
 
       server.start();
       InetSocketAddress serverBindAddress = NetUtils.getConnectAddress(server);
-      this.address = NetUtils.createSocketAddrForHost(
-              serverBindAddress.getAddress().getCanonicalHostName(),
-              serverBindAddress.getPort());
+      this.address =
+          NetUtils.createSocketAddrForHost(
+              serverBindAddress.getAddress().getCanonicalHostName(), serverBindAddress.getPort());
       LOG.info("Instantiated TezRemoteShuffleManager RPC at " + this.address);
     } catch (IOException e) {
       throw new TezUncheckedException(e);
     }
   }
 
-  private void refreshServiceAcls(Configuration configuration,
-          PolicyProvider policyProvider) {
+  private void refreshServiceAcls(Configuration configuration, PolicyProvider policyProvider) {
     this.server.refreshServiceAcl(configuration, policyProvider);
   }
 }

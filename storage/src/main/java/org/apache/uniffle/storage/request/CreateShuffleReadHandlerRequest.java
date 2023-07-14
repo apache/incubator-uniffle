@@ -52,8 +52,7 @@ public class CreateShuffleReadHandlerRequest {
 
   private IdHelper idHelper;
 
-  public CreateShuffleReadHandlerRequest() {
-  }
+  public CreateShuffleReadHandlerRequest() {}
 
   public RssBaseConf getRssBaseConf() {
     return rssBaseConf;

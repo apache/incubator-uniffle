@@ -31,14 +31,13 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.util.Constants;
 
-
 public class MemoryClientReadHandler extends AbstractClientReadHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(MemoryClientReadHandler.class);
   private long lastBlockId = Constants.INVALID_BLOCK_ID;
   private ShuffleServerClient shuffleServerClient;
   private Roaring64NavigableMap expectTaskIds;
-  
+
   public MemoryClientReadHandler(
       String appId,
       int shuffleId,
@@ -58,14 +57,9 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
   public ShuffleDataResult readShuffleData() {
     ShuffleDataResult result = null;
 
-    RssGetInMemoryShuffleDataRequest request = new RssGetInMemoryShuffleDataRequest(
-        appId,
-        shuffleId,
-        partitionId,
-        lastBlockId,
-        readBufferSize,
-        expectTaskIds
-    );
+    RssGetInMemoryShuffleDataRequest request =
+        new RssGetInMemoryShuffleDataRequest(
+            appId, shuffleId, partitionId, lastBlockId, readBufferSize, expectTaskIds);
 
     try {
       RssGetInMemoryShuffleDataResponse response =
@@ -75,8 +69,11 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
       throw e;
     } catch (Exception e) {
       // todo: fault tolerance solution should be added
-      throw new RssFetchFailedException("Failed to read in memory shuffle data with "
-          + shuffleServerClient.getClientInfo() + " due to " + e);
+      throw new RssFetchFailedException(
+          "Failed to read in memory shuffle data with "
+              + shuffleServerClient.getClientInfo()
+              + " due to "
+              + e);
     }
 
     // update lastBlockId for next rpc call

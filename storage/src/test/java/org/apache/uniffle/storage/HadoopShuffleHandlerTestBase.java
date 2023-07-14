@@ -47,16 +47,22 @@ public class HadoopShuffleHandlerTestBase {
 
   public static void writeTestData(
       HadoopShuffleWriteHandler writeHandler,
-      int num, int length, long taskAttemptId,
-      Map<Long, byte[]> expectedData) throws Exception {
+      int num,
+      int length,
+      long taskAttemptId,
+      Map<Long, byte[]> expectedData)
+      throws Exception {
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList();
     for (int i = 0; i < num; i++) {
       byte[] buf = new byte[length];
       new Random().nextBytes(buf);
-      long blockId = (ATOMIC_LONG.getAndIncrement()
-          << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH)) + taskAttemptId;
-      blocks.add(new ShufflePartitionedBlock(
-          length, length, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, buf));
+      long blockId =
+          (ATOMIC_LONG.getAndIncrement()
+                  << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
+              + taskAttemptId;
+      blocks.add(
+          new ShufflePartitionedBlock(
+              length, length, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, buf));
       expectedData.put(blockId, buf);
     }
     writeHandler.write(blocks);
@@ -65,27 +71,39 @@ public class HadoopShuffleHandlerTestBase {
   public static void writeTestData(
       HadoopFileWriter writer,
       int partitionId,
-      int num, int length, long taskAttemptId,
+      int num,
+      int length,
+      long taskAttemptId,
       Map<Long, byte[]> expectedData,
       Map<Integer, List<ShufflePartitionedBlock>> expectedBlocks,
       Map<Integer, List<FileBasedShuffleSegment>> expectedIndexSegments,
-      boolean doWrite) throws Exception {
+      boolean doWrite)
+      throws Exception {
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList();
     List<FileBasedShuffleSegment> segments = Lists.newArrayList();
     for (int i = 0; i < num; i++) {
       byte[] buf = new byte[length];
       new Random().nextBytes(buf);
-      long blockId = (ATOMIC_LONG.getAndIncrement()
-          << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH)) + taskAttemptId;
-      blocks.add(new ShufflePartitionedBlock(
-          length, length, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, buf));
+      long blockId =
+          (ATOMIC_LONG.getAndIncrement()
+                  << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
+              + taskAttemptId;
+      blocks.add(
+          new ShufflePartitionedBlock(
+              length, length, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, buf));
       expectedData.put(blockId, buf);
     }
     expectedBlocks.put(partitionId, blocks);
     long offset = 0;
     for (ShufflePartitionedBlock spb : blocks) {
-      FileBasedShuffleSegment segment = new FileBasedShuffleSegment(
-          spb.getBlockId(), offset, spb.getLength(), spb.getUncompressLength(), spb.getCrc(), 1);
+      FileBasedShuffleSegment segment =
+          new FileBasedShuffleSegment(
+              spb.getBlockId(),
+              offset,
+              spb.getLength(),
+              spb.getUncompressLength(),
+              spb.getCrc(),
+              1);
       offset += spb.getLength();
       segments.add(segment);
       if (doWrite) {
@@ -120,7 +138,8 @@ public class HadoopShuffleHandlerTestBase {
     return segmentNum;
   }
 
-  public static void checkData(ShuffleDataResult shuffleDataResult, Map<Long, byte[]> expectedData) {
+  public static void checkData(
+      ShuffleDataResult shuffleDataResult, Map<Long, byte[]> expectedData) {
 
     byte[] buffer = shuffleDataResult.getData();
     List<BufferSegment> bufferSegments = shuffleDataResult.getBufferSegments();
@@ -139,5 +158,4 @@ public class HadoopShuffleHandlerTestBase {
     HadoopFileReader reader = new HadoopFileReader(path, hadoopConf);
     return reader;
   }
-
 }
