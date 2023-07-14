@@ -36,24 +36,23 @@ import org.apache.uniffle.coordinator.web.Response;
 @Produces({MediaType.APPLICATION_JSON})
 public class AdminResource extends BaseResource {
   private static final Logger LOG = LoggerFactory.getLogger(AdminResource.class);
-  @Context
-  protected ServletContext servletContext;
+  @Context protected ServletContext servletContext;
 
   @GET
   @Path("/refreshChecker")
   public Response<List<ServerNode>> refreshChecker() {
-    return execute(() -> {
-      List<AccessChecker> accessCheckers = getAccessManager().getAccessCheckers();
-      LOG.info(
-          "The access checker {} has been refreshed, you can add the checker via rss.coordinator.access.checkers.",
-          accessCheckers);
-      accessCheckers.forEach(AccessChecker::refreshAccessChecker);
-      return null;
-    });
+    return execute(
+        () -> {
+          List<AccessChecker> accessCheckers = getAccessManager().getAccessCheckers();
+          LOG.info(
+              "The access checker {} has been refreshed, you can add the checker via rss.coordinator.access.checkers.",
+              accessCheckers);
+          accessCheckers.forEach(AccessChecker::refreshAccessChecker);
+          return null;
+        });
   }
 
   private AccessManager getAccessManager() {
-    return (AccessManager) servletContext.getAttribute(
-        AccessManager.class.getCanonicalName());
+    return (AccessManager) servletContext.getAttribute(AccessManager.class.getCanonicalName());
   }
 }

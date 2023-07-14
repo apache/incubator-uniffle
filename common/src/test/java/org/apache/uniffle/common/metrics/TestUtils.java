@@ -26,16 +26,14 @@ import java.net.URL;
 
 public class TestUtils {
 
-  private TestUtils() {
-  }
+  private TestUtils() {}
 
   public static String httpGet(String urlString) throws IOException {
     URL url = new URL(urlString);
     HttpURLConnection con = (HttpURLConnection) url.openConnection();
     con.setRequestMethod("GET");
     StringBuilder content = new StringBuilder();
-    try (BufferedReader in = new BufferedReader(
-        new InputStreamReader(con.getInputStream()));) {
+    try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream())); ) {
       String inputLine;
       while ((inputLine = in.readLine()) != null) {
         content.append(inputLine);
@@ -59,8 +57,7 @@ public class TestUtils {
       if (postData != null) {
         outputStream.write(postData.getBytes());
       }
-      try (BufferedReader in = new BufferedReader(
-          new InputStreamReader(con.getInputStream()));) {
+      try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream())); ) {
         String inputLine;
         while ((inputLine = in.readLine()) != null) {
           content.append(inputLine);

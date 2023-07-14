@@ -40,10 +40,9 @@ import org.apache.uniffle.coordinator.web.Response;
 import org.apache.uniffle.coordinator.web.request.CancelDecommissionRequest;
 import org.apache.uniffle.coordinator.web.request.DecommissionRequest;
 
-@Produces({ MediaType.APPLICATION_JSON })
+@Produces({MediaType.APPLICATION_JSON})
 public class ServerResource extends BaseResource {
-  @Context
-  protected ServletContext servletContext;
+  @Context protected ServletContext servletContext;
 
   @GET
   @Path("/nodes/{id}")
@@ -53,8 +52,7 @@ public class ServerResource extends BaseResource {
 
   @GET
   @Path("/nodes")
-  public Response<List<ServerNode>> nodes(
-      @QueryParam("status") String status) {
+  public Response<List<ServerNode>> nodes(@QueryParam("status") String status) {
     ClusterManager clusterManager = getClusterManager();
     List<ServerNode> serverList;
     if (ServerStatus.UNHEALTHY.name().equalsIgnoreCase(status)) {
@@ -64,12 +62,16 @@ public class ServerResource extends BaseResource {
     } else {
       serverList = clusterManager.getServerList(Collections.emptySet());
     }
-    serverList = serverList.stream().filter(server -> {
-      if (status != null && !server.getStatus().toString().equals(status)) {
-        return false;
-      }
-      return true;
-    }).collect(Collectors.toList());
+    serverList =
+        serverList.stream()
+            .filter(
+                server -> {
+                  if (status != null && !server.getStatus().toString().equals(status)) {
+                    return false;
+                  }
+                  return true;
+                })
+            .collect(Collectors.toList());
     serverList.sort(Comparator.comparing(ServerNode::getId));
     return Response.success(serverList);
   }
@@ -77,46 +79,49 @@ public class ServerResource extends BaseResource {
   @POST
   @Path("/cancelDecommission")
   public Response<Object> cancelDecommission(CancelDecommissionRequest params) {
-    return execute(() -> {
-      assert CollectionUtils.isNotEmpty(params.getServerIds())
-          : "Parameter[serverIds] should not be null!";
-      params.getServerIds().forEach(getClusterManager()::cancelDecommission);
-      return null;
-    });
+    return execute(
+        () -> {
+          assert CollectionUtils.isNotEmpty(params.getServerIds())
+              : "Parameter[serverIds] should not be null!";
+          params.getServerIds().forEach(getClusterManager()::cancelDecommission);
+          return null;
+        });
   }
 
   @POST
   @Path("/{id}/cancelDecommission")
   public Response<Object> cancelDecommission(@PathParam("id") String serverId) {
-    return execute(() -> {
-      getClusterManager().cancelDecommission(serverId);
-      return null;
-    });
+    return execute(
+        () -> {
+          getClusterManager().cancelDecommission(serverId);
+          return null;
+        });
   }
 
   @POST
   @Path("/decommission")
   public Response<Object> decommission(DecommissionRequest params) {
-    return execute(() -> {
-      assert CollectionUtils.isNotEmpty(params.getServerIds())
-          : "Parameter[serverIds] should not be null!";
-      params.getServerIds().forEach(getClusterManager()::decommission);
-      return null;
-    });
+    return execute(
+        () -> {
+          assert CollectionUtils.isNotEmpty(params.getServerIds())
+              : "Parameter[serverIds] should not be null!";
+          params.getServerIds().forEach(getClusterManager()::decommission);
+          return null;
+        });
   }
 
   @POST
   @Path("/{id}/decommission")
-  @Produces({ MediaType.APPLICATION_JSON })
+  @Produces({MediaType.APPLICATION_JSON})
   public Response<Object> decommission(@PathParam("id") String serverId) {
-    return execute(() -> {
-      getClusterManager().decommission(serverId);
-      return null;
-    });
+    return execute(
+        () -> {
+          getClusterManager().decommission(serverId);
+          return null;
+        });
   }
 
   private ClusterManager getClusterManager() {
-    return (ClusterManager) servletContext.getAttribute(
-            ClusterManager.class.getCanonicalName());
+    return (ClusterManager) servletContext.getAttribute(ClusterManager.class.getCanonicalName());
   }
 }
