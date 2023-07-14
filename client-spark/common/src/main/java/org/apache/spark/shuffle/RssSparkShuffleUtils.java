@@ -112,7 +112,7 @@ public class RssSparkShuffleUtils {
     String clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
     String coordinators = sparkConf.get(RssSparkConfig.RSS_COORDINATOR_QUORUM);
     CoordinatorClientFactory factory = CoordinatorClientFactory.getInstance();
-    return factory.getOrCreateCoordinatorClient(clientType, coordinators);
+    return factory.getOrCreateCoordinatorClients(clientType, coordinators);
   }
 
   public static void applyDynamicClientConf(SparkConf sparkConf, Map<String, String> confItems) {

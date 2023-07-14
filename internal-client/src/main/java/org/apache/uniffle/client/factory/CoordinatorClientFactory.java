@@ -20,7 +20,6 @@ package org.apache.uniffle.client.factory;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -35,7 +34,6 @@ import org.apache.uniffle.common.util.JavaUtils;
 public class CoordinatorClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorClientFactory.class);
   private Map<String, Map<String, CoordinatorClient>> clients = JavaUtils.newConcurrentMap();
-  private ClientType clientType;
 
   private static class LazyHolder {
     static final CoordinatorClientFactory INSTANCE = new CoordinatorClientFactory();
@@ -45,51 +43,28 @@ public class CoordinatorClientFactory {
     return LazyHolder.INSTANCE;
   }
 
-  public void setCoordinatorClientType(ClientType clientType) {
-    this.clientType = clientType;
-  }
-
-  public CoordinatorClient createCoordinatorClient(String host, int port) {
-    if (clientType.equals(ClientType.GRPC) || clientType.equals(ClientType.GRPC_NETTY)) {
-      return new CoordinatorGrpcClient(host, port);
-    } else {
-      throw new UnsupportedOperationException("Unsupported client type " + clientType);
-    }
-  }
-
-  public List<CoordinatorClient> createCoordinatorClient(String coordinators) {
-    LOG.info("Start to create coordinator clients from {}", coordinators);
-    List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
-    String[] coordinatorList = coordinators.trim().split(",");
-    if (coordinatorList.length == 0) {
-      String msg = "Invalid " + coordinators;
-      LOG.error(msg);
-      throw new RssException(msg);
-    }
-
-    for (String coordinator : coordinatorList) {
-      String[] ipPort = coordinator.trim().split(":");
-      if (ipPort.length != 2) {
-        String msg = "Invalid coordinator format " + Arrays.toString(ipPort);
-        LOG.error(msg);
-        throw new RssException(msg);
+  public CoordinatorClient getOrCreateCoordinatorClient(String type, String host, int port) {
+    String coordinator = host.concat(String.valueOf(port));
+    Map<String, CoordinatorClient> typeToClients = clients.get(type);
+    if (typeToClients != null) {
+      CoordinatorClient coordinatorClient = typeToClients.get(coordinator);
+      if (coordinatorClient != null) {
+        return coordinatorClient;
       }
-
-      String host = ipPort[0];
-      int port = Integer.parseInt(ipPort[1]);
-      CoordinatorClient coordinatorClient = createCoordinatorClient(host, port);
-      coordinatorClients.add(coordinatorClient);
-      LOG.info("Add coordinator client {}", coordinatorClient.getDesc());
     }
-    LOG.info(
-        "Finish create coordinator clients {}",
-        coordinatorClients.stream()
-            .map(CoordinatorClient::getDesc)
-            .collect(Collectors.joining(", ")));
-    return coordinatorClients;
+
+    switch (ClientType.valueOf(type)) {
+      case GRPC:
+        CoordinatorClient grpcClient = new CoordinatorGrpcClient(host, port);
+        typeToClients.put(coordinator, grpcClient);
+        clients.put(type, typeToClients);
+        return grpcClient;
+      default :
+        throw new UnsupportedOperationException("Unsupported client type " + type);
+    }
   }
 
-  public List<CoordinatorClient> getOrCreateCoordinatorClient(String clientType, String coordinators) {
+  public List<CoordinatorClient> getOrCreateCoordinatorClients(String type, String coordinators) {
     String[] coordinatorList = coordinators.trim().split(",");
     if (coordinatorList.length == 0) {
       String msg = "Invalid " + coordinators;
@@ -97,9 +72,9 @@ public class CoordinatorClientFactory {
       throw new RssException(msg);
     }
     List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
-    for (String coordinator: coordinatorList) {
-      clients.computeIfAbsent(clientType, key -> JavaUtils.newConcurrentMap());
-      Map<String, CoordinatorClient> typeToClients = clients.get(clientType);
+    for (String coordinator : coordinatorList) {
+      clients.computeIfAbsent(type, key -> JavaUtils.newConcurrentMap());
+      Map<String, CoordinatorClient> typeToClients = clients.get(type);
       CoordinatorClient coordinatorClient = typeToClients.get(coordinator);
       if (coordinatorClient != null) {
         coordinatorClients.add(coordinatorClient);
@@ -114,10 +89,8 @@ public class CoordinatorClientFactory {
       }
       String host = ipPort[0];
       int port = Integer.parseInt(ipPort[1]);
-      CoordinatorClient newClient = createCoordinatorClient(host, port);
+      CoordinatorClient newClient = getOrCreateCoordinatorClient(type, host, port);
       coordinatorClients.add(newClient);
-      typeToClients.put(coordinator, newClient);
-      clients.put(clientType, typeToClients);
     }
     return coordinatorClients;
   }
