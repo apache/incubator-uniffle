@@ -29,6 +29,7 @@ import org.apache.hbase.thirdparty.javax.ws.rs.POST;
 import org.apache.hbase.thirdparty.javax.ws.rs.Path;
 import org.apache.hbase.thirdparty.javax.ws.rs.PathParam;
 import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
+import org.apache.hbase.thirdparty.javax.ws.rs.QueryParam;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
@@ -45,21 +46,15 @@ public class ServerResource extends BaseResource {
   protected ServletContext servletContext;
 
   @GET
-  @Path("/{id}")
+  @Path("/nodes/{id}")
   public Response<ServerNode> node(@PathParam("id") String id) {
     return execute(() -> getClusterManager().getServerNodeById(id));
   }
 
   @GET
   @Path("/nodes")
-  public Response<List<ServerNode>> nodes() {
-    return nodes(null);
-  }
-
-  @GET
-  @Path("/nodes/{status}")
   public Response<List<ServerNode>> nodes(
-      @PathParam("status") String status) {
+      @QueryParam("status") String status) {
     ClusterManager clusterManager = getClusterManager();
     List<ServerNode> serverList;
     if (ServerStatus.UNHEALTHY.name().equalsIgnoreCase(status)) {
