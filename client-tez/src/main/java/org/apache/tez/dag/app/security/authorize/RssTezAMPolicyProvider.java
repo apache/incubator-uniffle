@@ -26,8 +26,9 @@ public class RssTezAMPolicyProvider extends PolicyProvider {
 
   private static final Service[] tezApplicationMasterServices =
       new Service[] {
-          new Service(TezConstants.TEZ_AM_SECURITY_SERVICE_AUTHORIZATION_TASK_UMBILICAL,
-              TezRemoteShuffleUmbilicalProtocol.class)
+        new Service(
+            TezConstants.TEZ_AM_SECURITY_SERVICE_AUTHORIZATION_TASK_UMBILICAL,
+            TezRemoteShuffleUmbilicalProtocol.class)
       };
 
   @Override

@@ -74,8 +74,8 @@ import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_DESTINATION_VERTEX_
 import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
 
 /**
- * {@link RssOrderedPartitionedKVOutput} is an {@link AbstractLogicalOutput} which
- * support remote shuffle.
+ * {@link RssOrderedPartitionedKVOutput} is an {@link AbstractLogicalOutput} which support remote
+ * shuffle.
  */
 @Public
 public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
@@ -100,7 +100,6 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
   private String destinationVertexName;
   private int shuffleId;
 
-
   public RssOrderedPartitionedKVOutput(OutputContext outputContext, int numPhysicalOutputs) {
     super(outputContext, numPhysicalOutputs);
     this.outputContext = outputContext;
@@ -108,8 +107,9 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
     this.numOutputs = getNumPhysicalOutputs();
     this.mapNum = outputContext.getVertexParallelism();
     this.applicationId = outputContext.getApplicationId();
-    this.taskAttemptId = TezTaskAttemptID.fromString(
-      RssTezUtils.uniqueIdentifierToAttemptId(outputContext.getUniqueIdentifier()));
+    this.taskAttemptId =
+        TezTaskAttemptID.fromString(
+            RssTezUtils.uniqueIdentifierToAttemptId(outputContext.getUniqueIdentifier()));
     this.taskVertexName = outputContext.getTaskVertexName();
     this.destinationVertexName = outputContext.getDestinationVertexName();
     LOG.info("taskAttemptId is {}", taskAttemptId.toString());
@@ -124,55 +124,63 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
     this.conf = TezUtils.createConfFromUserPayload(getContext().getUserPayload());
     this.memoryUpdateCallbackHandler = new MemoryUpdateCallbackHandler();
 
-    long memRequestSize = RssTezUtils.getInitialMemoryRequirement(conf, getContext().getTotalMemoryAvailableToTask());
+    long memRequestSize =
+        RssTezUtils.getInitialMemoryRequirement(conf, getContext().getTotalMemoryAvailableToTask());
     LOG.info("memRequestSize is {}", memRequestSize);
     getContext().requestInitialMemory(memRequestSize, memoryUpdateCallbackHandler);
     LOG.info("Got initialMemory.");
 
-    this.sendEmptyPartitionDetails = conf.getBoolean(
-        TezRuntimeConfiguration.TEZ_RUNTIME_EMPTY_PARTITION_INFO_VIA_EVENTS_ENABLED,
-        TezRuntimeConfiguration.TEZ_RUNTIME_EMPTY_PARTITION_INFO_VIA_EVENTS_ENABLED_DEFAULT);
+    this.sendEmptyPartitionDetails =
+        conf.getBoolean(
+            TezRuntimeConfiguration.TEZ_RUNTIME_EMPTY_PARTITION_INFO_VIA_EVENTS_ENABLED,
+            TezRuntimeConfiguration.TEZ_RUNTIME_EMPTY_PARTITION_INFO_VIA_EVENTS_ENABLED_DEFAULT);
 
     this.host = this.conf.get(RSS_AM_SHUFFLE_MANAGER_ADDRESS);
     this.port = this.conf.getInt(RSS_AM_SHUFFLE_MANAGER_PORT, -1);
     final InetSocketAddress address = NetUtils.createSocketAddrForHost(host, port);
 
-    UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(this.applicationId.toString());
+    UserGroupInformation taskOwner =
+        UserGroupInformation.createRemoteUser(this.applicationId.toString());
     Credentials credentials = UserGroupInformation.getCurrentUser().getCredentials();
     Token<JobTokenIdentifier> jobToken = TokenCache.getSessionToken(credentials);
     SecurityUtil.setTokenService(jobToken, address);
     taskOwner.addToken(jobToken);
-    final TezRemoteShuffleUmbilicalProtocol umbilical = taskOwner
-        .doAs(new PrivilegedExceptionAction<TezRemoteShuffleUmbilicalProtocol>() {
-          @Override
-          public TezRemoteShuffleUmbilicalProtocol run() throws Exception {
-            return RPC.getProxy(TezRemoteShuffleUmbilicalProtocol.class,
-              TezRemoteShuffleUmbilicalProtocol.versionID,
-              address, conf);
-          }
-        });
+    final TezRemoteShuffleUmbilicalProtocol umbilical =
+        taskOwner.doAs(
+            new PrivilegedExceptionAction<TezRemoteShuffleUmbilicalProtocol>() {
+              @Override
+              public TezRemoteShuffleUmbilicalProtocol run() throws Exception {
+                return RPC.getProxy(
+                    TezRemoteShuffleUmbilicalProtocol.class,
+                    TezRemoteShuffleUmbilicalProtocol.versionID,
+                    address,
+                    conf);
+              }
+            });
     TezVertexID tezVertexID = taskAttemptId.getTaskID().getVertexID();
     TezDAGID tezDAGID = tezVertexID.getDAGId();
     int sourceVertexId = this.conf.getInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, -1);
     int destinationVertexId = this.conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1);
     assert sourceVertexId != -1;
     assert destinationVertexId != -1;
-    this.shuffleId = RssTezUtils.computeShuffleId(tezDAGID.getId(), sourceVertexId, destinationVertexId);
-    GetShuffleServerRequest request = new GetShuffleServerRequest(this.taskAttemptId, this.mapNum,
-        this.numOutputs, this.shuffleId);
+    this.shuffleId =
+        RssTezUtils.computeShuffleId(tezDAGID.getId(), sourceVertexId, destinationVertexId);
+    GetShuffleServerRequest request =
+        new GetShuffleServerRequest(
+            this.taskAttemptId, this.mapNum, this.numOutputs, this.shuffleId);
     GetShuffleServerResponse response = umbilical.getShuffleAssignments(request);
-    this.partitionToServers = response.getShuffleAssignmentsInfoWritable()
-        .getShuffleAssignmentsInfo()
-        .getPartitionToServers();
+    this.partitionToServers =
+        response
+            .getShuffleAssignmentsInfoWritable()
+            .getShuffleAssignmentsInfo()
+            .getPartitionToServers();
 
     LOG.info("Got response from am.");
     return Collections.emptyList();
   }
 
   @Override
-  public void handleEvents(List<Event> list) {
-
-  }
+  public void handleEvents(List<Event> list) {}
 
   @Override
   public List<Event> close() throws Exception {
@@ -184,9 +192,11 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
       returnEvents.addAll(generateEvents());
       sorter = null;
     } else {
-      LOG.warn(getContext().getDestinationVertexName()
-          + ": Attempting to close output {} of type {} before it was started. Generating empty events",
-          getContext().getDestinationVertexName(), this.getClass().getSimpleName());
+      LOG.warn(
+          getContext().getDestinationVertexName()
+              + ": Attempting to close output {} of type {} before it was started. Generating empty events",
+          getContext().getDestinationVertexName(),
+          this.getClass().getSimpleName());
       returnEvents = generateEmptyEvents();
     }
     LOG.info("RssOrderedPartitionedKVOutput close.");
@@ -197,9 +207,16 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
   public void start() throws Exception {
     if (!isStarted.get()) {
       memoryUpdateCallbackHandler.validateUpdateReceived();
-      sorter = new RssSorter(taskAttemptId, getContext(), conf, mapNum, numOutputs,
-          memoryUpdateCallbackHandler.getMemoryAssigned(), shuffleId,
-          partitionToServers);
+      sorter =
+          new RssSorter(
+              taskAttemptId,
+              getContext(),
+              conf,
+              mapNum,
+              numOutputs,
+              memoryUpdateCallbackHandler.getMemoryAssigned(),
+              shuffleId,
+              partitionToServers);
       LOG.info("Initialized RssSorter.");
       isStarted.set(true);
     }
@@ -226,8 +243,10 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
     List<Event> eventList = Lists.newLinkedList();
     boolean isLastEvent = true;
 
-    String auxiliaryService = conf.get(TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID,
-        TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID_DEFAULT);
+    String auxiliaryService =
+        conf.get(
+            TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID,
+            TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID_DEFAULT);
 
     int[] numRecordsPerPartition = ((RssSorter) sorter).getNumRecordsPerPartition();
 
@@ -236,10 +255,20 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
 
     LOG.info("RssTezPerPartitionRecord is initialized");
 
-    ShuffleUtils.generateEventOnSpill(eventList, true, isLastEvent,
-        getContext(), 0, rssTezPerPartitionRecord,
-        getNumPhysicalOutputs(), sendEmptyPartitionDetails, getContext().getUniqueIdentifier(),
-        sorter.getPartitionStats(), sorter.reportDetailedPartitionStats(), auxiliaryService, deflater);
+    ShuffleUtils.generateEventOnSpill(
+        eventList,
+        true,
+        isLastEvent,
+        getContext(),
+        0,
+        rssTezPerPartitionRecord,
+        getNumPhysicalOutputs(),
+        sendEmptyPartitionDetails,
+        getContext().getUniqueIdentifier(),
+        sorter.getPartitionStats(),
+        sorter.reportDetailedPartitionStats(),
+        auxiliaryService,
+        deflater);
     LOG.info("Generate events.");
 
     return eventList;
@@ -247,12 +276,8 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
 
   private List<Event> generateEmptyEvents() throws IOException {
     List<Event> eventList = Lists.newArrayList();
-    ShuffleUtils.generateEventsForNonStartedOutput(eventList,
-        getNumPhysicalOutputs(),
-        getContext(),
-        true,
-        true,
-        deflater);
+    ShuffleUtils.generateEventsForNonStartedOutput(
+        eventList, getNumPhysicalOutputs(), getContext(), true, true, deflater);
     LOG.info("Generate empty events.");
     return eventList;
   }
@@ -290,5 +315,4 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
   public static Set<String> getConfigurationKeySet() {
     return Collections.unmodifiableSet(confKeys);
   }
-
 }

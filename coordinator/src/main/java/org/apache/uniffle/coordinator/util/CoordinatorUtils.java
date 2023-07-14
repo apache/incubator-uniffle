@@ -44,9 +44,7 @@ public class CoordinatorUtils {
       PartitionRangeAssignment pra) {
     List<RssProtos.PartitionRangeAssignment> praList = pra.convertToGrpcProto();
 
-    return GetShuffleAssignmentsResponse.newBuilder()
-               .addAllAssignments(praList)
-               .build();
+    return GetShuffleAssignmentsResponse.newBuilder().addAllAssignments(praList).build();
   }
 
   public static int nextIdx(int idx, int size) {
@@ -59,28 +57,27 @@ public class CoordinatorUtils {
 
   /**
    * Assign multiple adjacent partitionRanges to several servers, The result returned is a double
-   * PartitionRange list, the first list will be assigned to server1,
-   * the second list will be assigned to server2, and so on.
-   * Suppose totalPartitionNum=52, partitionNumPerRange=2, serverNum=5, estimateTaskConcurrency=20
-   * The final result generated is:
-   * server1: [0,1] [2,3] [4,5] [6,7] [40,41] [42,43]
-   * server2: [8,9] [10,11] [12,13] [14,15] [44,45]
-   * server3: [16,17] [18,19] [20,21] [22,23] [46,47]
-   * server4: [24,25] [26,27] [28,29] [30,31] [48,49]
-   * server5: [32,33] [34,35] [36,37] [38,39] [50,51]
+   * PartitionRange list, the first list will be assigned to server1, the second list will be
+   * assigned to server2, and so on. Suppose totalPartitionNum=52, partitionNumPerRange=2,
+   * serverNum=5, estimateTaskConcurrency=20 The final result generated is: server1: [0,1] [2,3]
+   * [4,5] [6,7] [40,41] [42,43] server2: [8,9] [10,11] [12,13] [14,15] [44,45] server3: [16,17]
+   * [18,19] [20,21] [22,23] [46,47] server4: [24,25] [26,27] [28,29] [30,31] [48,49] server5:
+   * [32,33] [34,35] [36,37] [38,39] [50,51]
    */
-  public static List<List<PartitionRange>> generateRangesGroup(int totalPartitionNum, int partitionNumPerRange,
-      int serverNum, int estimateTaskConcurrency) {
+  public static List<List<PartitionRange>> generateRangesGroup(
+      int totalPartitionNum, int partitionNumPerRange, int serverNum, int estimateTaskConcurrency) {
     List<List<PartitionRange>> res = Lists.newArrayList();
     if (totalPartitionNum <= 0 || partitionNumPerRange <= 0) {
       return res;
     }
     estimateTaskConcurrency = Math.min(totalPartitionNum, estimateTaskConcurrency);
-    int rangePerGroup = estimateTaskConcurrency > serverNum * partitionNumPerRange
-                            ? Math.floorDiv(estimateTaskConcurrency, serverNum * partitionNumPerRange) : 1;
+    int rangePerGroup =
+        estimateTaskConcurrency > serverNum * partitionNumPerRange
+            ? Math.floorDiv(estimateTaskConcurrency, serverNum * partitionNumPerRange)
+            : 1;
     int totalRanges = (int) Math.ceil(totalPartitionNum * 1.0 / partitionNumPerRange);
     int groupCount = 0;
-    int round =  Math.floorDiv(totalRanges, rangePerGroup * serverNum);
+    int round = Math.floorDiv(totalRanges, rangePerGroup * serverNum);
     int remainRange = totalRanges % (rangePerGroup * serverNum);
     int lastRoundRangePerGroup = Math.floorDiv(remainRange, serverNum);
     int lastRoundRemainRange = remainRange % serverNum;
@@ -96,11 +93,11 @@ public class CoordinatorUtils {
       boolean isLastRound = groupCount >= round * serverNum;
       int groupIndexInRound = groupCount % serverNum;
       if ((!isLastRound && rangeInGroupCount == rangePerGroup)
-              || (isLastRound
-                      && ((groupIndexInRound < lastRoundRemainRange
-                               && rangeInGroupCount == lastRoundRangePerGroup + 1)
-                              || (groupIndexInRound >= lastRoundRemainRange
-                                      && rangeInGroupCount == lastRoundRangePerGroup)))) {
+          || (isLastRound
+              && ((groupIndexInRound < lastRoundRemainRange
+                      && rangeInGroupCount == lastRoundRangePerGroup + 1)
+                  || (groupIndexInRound >= lastRoundRemainRange
+                      && rangeInGroupCount == lastRoundRangePerGroup)))) {
         res.add(Lists.newArrayList(rangeGroup));
         rangeGroup.clear();
         rangeInGroupCount = 0;
@@ -114,7 +111,8 @@ public class CoordinatorUtils {
     return res;
   }
 
-  public static List<PartitionRange> generateRanges(int totalPartitionNum, int partitionNumPerRange) {
+  public static List<PartitionRange> generateRanges(
+      int totalPartitionNum, int partitionNumPerRange) {
     List<PartitionRange> ranges = new ArrayList<>();
     if (totalPartitionNum <= 0 || partitionNumPerRange <= 0) {
       return ranges;

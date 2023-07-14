@@ -44,7 +44,11 @@ public class HadoopShuffleDeleteHandler implements ShuffleDeleteHandler {
       int times = 0;
       int retryMax = 5;
       long start = System.currentTimeMillis();
-      LOG.info("Try delete shuffle data in Hadoop FS for appId[{}] of user[{}] with {}",appId, user, path);
+      LOG.info(
+          "Try delete shuffle data in Hadoop FS for appId[{}] of user[{}] with {}",
+          appId,
+          user,
+          path);
       while (!isSuccess && times < retryMax) {
         try {
           FileSystem fileSystem = HadoopFilesystemProvider.getFilesystem(user, path, hadoopConf);
@@ -52,7 +56,8 @@ public class HadoopShuffleDeleteHandler implements ShuffleDeleteHandler {
           isSuccess = true;
         } catch (Exception e) {
           times++;
-          LOG.warn("Can't delete shuffle data for appId[" + appId + "] with " + times + " times", e);
+          LOG.warn(
+              "Can't delete shuffle data for appId[" + appId + "] with " + times + " times", e);
           try {
             Thread.sleep(1000);
           } catch (Exception ex) {
@@ -61,11 +66,23 @@ public class HadoopShuffleDeleteHandler implements ShuffleDeleteHandler {
         }
       }
       if (isSuccess) {
-        LOG.info("Delete shuffle data in Hadoop FS for appId[" + appId + "] with " + path + " successfully in "
-            + (System.currentTimeMillis() - start) + " ms");
+        LOG.info(
+            "Delete shuffle data in Hadoop FS for appId["
+                + appId
+                + "] with "
+                + path
+                + " successfully in "
+                + (System.currentTimeMillis() - start)
+                + " ms");
       } else {
-        LOG.info("Failed to delete shuffle data in Hadoop FS for appId[" + appId + "] with " + path + " in "
-            + (System.currentTimeMillis() - start) + " ms");
+        LOG.info(
+            "Failed to delete shuffle data in Hadoop FS for appId["
+                + appId
+                + "] with "
+                + path
+                + " in "
+                + (System.currentTimeMillis() - start)
+                + " ms");
       }
     }
   }

@@ -43,32 +43,41 @@ public class DataPusherTest {
     private SendShuffleDataResult fakedShuffleDataResult;
 
     FakedShuffleWriteClient() {
-      this(
-          "GRPC",
-          1,
-          1,
-          10,
-          1,
-          1,
-          1,
-          false,
-          1,
-          1,
-          1,
-          1
-      );
+      this("GRPC", 1, 1, 10, 1, 1, 1, false, 1, 1, 1, 1);
     }
 
-    private FakedShuffleWriteClient(String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
-        int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled, int dataTransferPoolSize,
-        int dataCommitPoolSize, int unregisterThreadPoolSize, int unregisterRequestTimeSec) {
-      super(clientType, retryMax, retryIntervalMax, heartBeatThreadNum, replica, replicaWrite, replicaRead,
-          replicaSkipEnabled, dataTransferPoolSize, dataCommitPoolSize, unregisterThreadPoolSize,
+    private FakedShuffleWriteClient(
+        String clientType,
+        int retryMax,
+        long retryIntervalMax,
+        int heartBeatThreadNum,
+        int replica,
+        int replicaWrite,
+        int replicaRead,
+        boolean replicaSkipEnabled,
+        int dataTransferPoolSize,
+        int dataCommitPoolSize,
+        int unregisterThreadPoolSize,
+        int unregisterRequestTimeSec) {
+      super(
+          clientType,
+          retryMax,
+          retryIntervalMax,
+          heartBeatThreadNum,
+          replica,
+          replicaWrite,
+          replicaRead,
+          replicaSkipEnabled,
+          dataTransferPoolSize,
+          dataCommitPoolSize,
+          unregisterThreadPoolSize,
           unregisterRequestTimeSec);
     }
 
     @Override
-    public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList,
+    public SendShuffleDataResult sendShuffleData(
+        String appId,
+        List<ShuffleBlockInfo> shuffleBlockInfoList,
         Supplier<Boolean> needCancelRequest) {
       return fakedShuffleDataResult;
     }
@@ -86,28 +95,18 @@ public class DataPusherTest {
     Map<String, Set<Long>> taskToFailedBlockIds = Maps.newConcurrentMap();
     Set<String> failedTaskIds = new HashSet<>();
 
-    DataPusher dataPusher = new DataPusher(
-        shuffleWriteClient,
-        taskToSuccessBlockIds,
-        taskToFailedBlockIds,
-        failedTaskIds,
-        1,
-        2
-    );
+    DataPusher dataPusher =
+        new DataPusher(
+            shuffleWriteClient, taskToSuccessBlockIds, taskToFailedBlockIds, failedTaskIds, 1, 2);
     dataPusher.setRssAppId("testSendData_appId");
 
     // sync send
-    AddBlockEvent event = new AddBlockEvent("taskId", Arrays.asList(
-        new ShuffleBlockInfo(
-            1, 1, 1, 1, 1, new byte[1], null, 1, 100, 1
-        ))
-    );
+    AddBlockEvent event =
+        new AddBlockEvent(
+            "taskId",
+            Arrays.asList(new ShuffleBlockInfo(1, 1, 1, 1, 1, new byte[1], null, 1, 100, 1)));
     shuffleWriteClient.setFakedShuffleDataResult(
-        new SendShuffleDataResult(
-            Sets.newHashSet(1L, 2L),
-            Sets.newHashSet(3L, 4L)
-        )
-    );
+        new SendShuffleDataResult(Sets.newHashSet(1L, 2L), Sets.newHashSet(3L, 4L)));
     CompletableFuture<Long> future = dataPusher.send(event);
     long memoryFree = future.get();
     assertEquals(100, memoryFree);

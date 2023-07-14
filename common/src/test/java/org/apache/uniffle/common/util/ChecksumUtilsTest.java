@@ -65,7 +65,6 @@ public class ChecksumUtilsTest {
       outputStream.write(data);
     }
 
-
     // test direct ByteBuffer
     Path path = Paths.get(file.getAbsolutePath());
     FileChannel fileChannel = FileChannel.open(path);
@@ -86,7 +85,6 @@ public class ChecksumUtilsTest {
     assertEquals(length, bytesRead);
     buffer.flip();
     assertEquals(expectedChecksum, ChecksumUtils.getCrc32(buffer));
-
   }
 
   @Test

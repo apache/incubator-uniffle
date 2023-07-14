@@ -38,34 +38,8 @@ public class ShuffleServerInternalGrpcService extends ShuffleServerInternalImplB
     RssProtos.DecommissionResponse response;
     try {
       shuffleServer.decommission();
-      response = RssProtos.DecommissionResponse
-          .newBuilder()
-          .setStatus(StatusCode.SUCCESS.toProto())
-          .build();
-    } catch (Exception e) {
-      StatusCode statusCode = StatusCode.INTERNAL_ERROR;
-      if (e instanceof InvalidRequestException) {
-        statusCode = StatusCode.INVALID_REQUEST;
-      }
-      response = RssProtos.DecommissionResponse
-          .newBuilder()
-          .setStatus(statusCode.toProto())
-          .setRetMsg(e.getMessage())
-          .build();
-    }
-    responseObserver.onNext(response);
-    responseObserver.onCompleted();
-  }
-
-  @Override
-  public void cancelDecommission(
-          RssProtos.CancelDecommissionRequest request,
-          StreamObserver<RssProtos.CancelDecommissionResponse> responseObserver) {
-    RssProtos.CancelDecommissionResponse response;
-    try {
-      shuffleServer.cancelDecommission();
-      response = RssProtos.CancelDecommissionResponse
-              .newBuilder()
+      response =
+          RssProtos.DecommissionResponse.newBuilder()
               .setStatus(StatusCode.SUCCESS.toProto())
               .build();
     } catch (Exception e) {
@@ -73,8 +47,34 @@ public class ShuffleServerInternalGrpcService extends ShuffleServerInternalImplB
       if (e instanceof InvalidRequestException) {
         statusCode = StatusCode.INVALID_REQUEST;
       }
-      response = RssProtos.CancelDecommissionResponse
-              .newBuilder()
+      response =
+          RssProtos.DecommissionResponse.newBuilder()
+              .setStatus(statusCode.toProto())
+              .setRetMsg(e.getMessage())
+              .build();
+    }
+    responseObserver.onNext(response);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void cancelDecommission(
+      RssProtos.CancelDecommissionRequest request,
+      StreamObserver<RssProtos.CancelDecommissionResponse> responseObserver) {
+    RssProtos.CancelDecommissionResponse response;
+    try {
+      shuffleServer.cancelDecommission();
+      response =
+          RssProtos.CancelDecommissionResponse.newBuilder()
+              .setStatus(StatusCode.SUCCESS.toProto())
+              .build();
+    } catch (Exception e) {
+      StatusCode statusCode = StatusCode.INTERNAL_ERROR;
+      if (e instanceof InvalidRequestException) {
+        statusCode = StatusCode.INVALID_REQUEST;
+      }
+      response =
+          RssProtos.CancelDecommissionResponse.newBuilder()
               .setStatus(statusCode.toProto())
               .setRetMsg(e.getMessage())
               .build();

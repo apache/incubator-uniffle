@@ -24,7 +24,8 @@ public class RssGetShuffleResultForMultiPartRequest {
   private int shuffleId;
   private Set<Integer> partitions;
 
-  public RssGetShuffleResultForMultiPartRequest(String appId, int shuffleId, Set<Integer> partitions) {
+  public RssGetShuffleResultForMultiPartRequest(
+      String appId, int shuffleId, Set<Integer> partitions) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitions = partitions;

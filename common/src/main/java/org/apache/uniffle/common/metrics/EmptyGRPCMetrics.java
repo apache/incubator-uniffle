@@ -24,6 +24,5 @@ public class EmptyGRPCMetrics extends GRPCMetrics {
   }
 
   @Override
-  public void registerMetrics() {
-  }
+  public void registerMetrics() {}
 }

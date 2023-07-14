@@ -43,11 +43,11 @@ public abstract class TransportClientTestBase {
       try {
         shuffleServer.start();
       } catch (IOException e) {
-        throw new RuntimeException(String.format("start mock server on port %s failed", shuffleServer.port), e);
+        throw new RuntimeException(
+            String.format("start mock server on port %s failed", shuffleServer.port), e);
       }
     }
   }
-
 
   @AfterAll
   public static void shutdownServers() throws Exception {
@@ -74,15 +74,17 @@ public abstract class TransportClientTestBase {
 
       try {
         bootstrap = new ServerBootstrap();
-        bootstrap.group(bossGroup, workerGroup)
+        bootstrap
+            .group(bossGroup, workerGroup)
             .channel(NioServerSocketChannel.class)
-            .childHandler(new ChannelInitializer<SocketChannel>() {
-              @Override
-              public void initChannel(SocketChannel ch) throws Exception {
-                ChannelPipeline p = ch.pipeline();
-                p.addLast(new MockEchoServerHandler());
-              }
-            });
+            .childHandler(
+                new ChannelInitializer<SocketChannel>() {
+                  @Override
+                  public void initChannel(SocketChannel ch) throws Exception {
+                    ChannelPipeline p = ch.pipeline();
+                    p.addLast(new MockEchoServerHandler());
+                  }
+                });
         channelFuture = bootstrap.bind(port).sync();
       } catch (InterruptedException e) {
         stop();

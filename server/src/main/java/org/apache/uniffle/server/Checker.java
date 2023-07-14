@@ -19,8 +19,7 @@ package org.apache.uniffle.server;
 
 public abstract class Checker {
 
-  Checker(ShuffleServerConf conf) {
-  }
+  Checker(ShuffleServerConf conf) {}
 
   abstract boolean checkIsHealthy();
 }

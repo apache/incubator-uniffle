@@ -32,9 +32,7 @@ import org.apache.uniffle.coordinator.access.AccessCheckResult;
 import org.apache.uniffle.coordinator.access.AccessInfo;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
-/**
- * This checker limits the number of apps that different users can submit.
- */
+/** This checker limits the number of apps that different users can submit. */
 public class AccessQuotaChecker extends AbstractAccessChecker {
   private static final Logger LOG = LoggerFactory.getLogger(AccessQuotaChecker.class);
 
@@ -57,10 +55,17 @@ public class AccessQuotaChecker extends AbstractAccessChecker {
     final String user = accessInfo.getUser();
     // low version client user attribute is an empty string
     if (!"".equals(user) && quotaManager.checkQuota(user, uuid)) {
-      String msg = "Denied by AccessQuotaChecker => "
-          + "User: " + user + ", current app num is: " + quotaManager.getCurrentUserAndApp().get(user).size()
-          + ", default app num is: " + quotaManager.getDefaultUserApps().get(user)
-          + ". We will reject this app[uuid=" + uuid + "].";
+      String msg =
+          "Denied by AccessQuotaChecker => "
+              + "User: "
+              + user
+              + ", current app num is: "
+              + quotaManager.getCurrentUserAndApp().get(user).size()
+              + ", default app num is: "
+              + quotaManager.getDefaultUserApps().get(user)
+              + ". We will reject this app[uuid="
+              + uuid
+              + "].";
       LOG.error(msg);
       CoordinatorMetrics.counterTotalQuotaDeniedRequest.inc();
       return new AccessCheckResult(false, msg);
@@ -69,7 +74,5 @@ public class AccessQuotaChecker extends AbstractAccessChecker {
   }
 
   @Override
-  public void close() throws IOException {
-
-  }
+  public void close() throws IOException {}
 }

@@ -54,7 +54,9 @@ public class HealthCheckTest extends CoordinatorTestBase {
     assertConf(conf);
     conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(), "");
     assertConf(conf);
-    conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(), LocalStorageChecker.class.getCanonicalName());
+    conf.setString(
+        ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(),
+        LocalStorageChecker.class.getCanonicalName());
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("s1"));
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     assertConf(conf);
@@ -80,21 +82,29 @@ public class HealthCheckTest extends CoordinatorTestBase {
   @Test
   public void checkTest() throws Exception {
     ShuffleServerConf conf = new ShuffleServerConf();
-    AtomicReference<ServerStatus> serverStatusAtomicReference = new AtomicReference(ServerStatus.ACTIVE);
-    conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(), HealthyMockChecker.class.getCanonicalName());
+    AtomicReference<ServerStatus> serverStatusAtomicReference =
+        new AtomicReference(ServerStatus.ACTIVE);
+    conf.setString(
+        ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(),
+        HealthyMockChecker.class.getCanonicalName());
     HealthCheck checker = new HealthCheck(serverStatusAtomicReference, conf, Lists.newArrayList());
     checker.check();
     assertEquals(ServerStatus.ACTIVE, checker.getServerStatus());
     assertEquals(0, ShuffleServerMetrics.gaugeIsHealthy.get());
 
-    conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(), UnHealthyMockChecker.class.getCanonicalName());
+    conf.setString(
+        ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(),
+        UnHealthyMockChecker.class.getCanonicalName());
     checker = new HealthCheck(serverStatusAtomicReference, conf, Lists.newArrayList());
     checker.check();
     assertEquals(ServerStatus.UNHEALTHY, checker.getServerStatus());
     assertEquals(1, ShuffleServerMetrics.gaugeIsHealthy.get());
 
-    conf.setString(ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(),
-        UnHealthyMockChecker.class.getCanonicalName() + "," + HealthyMockChecker.class.getCanonicalName());
+    conf.setString(
+        ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(),
+        UnHealthyMockChecker.class.getCanonicalName()
+            + ","
+            + HealthyMockChecker.class.getCanonicalName());
     checker = new HealthCheck(serverStatusAtomicReference, conf, Lists.newArrayList());
     checker.check();
     assertEquals(ServerStatus.UNHEALTHY, checker.getServerStatus());

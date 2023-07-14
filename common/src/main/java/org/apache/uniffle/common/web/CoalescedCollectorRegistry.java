@@ -37,9 +37,10 @@ public class CoalescedCollectorRegistry extends CollectorRegistry {
   }
 
   @Override
-  public Enumeration<Collector.MetricFamilySamples> filteredMetricFamilySamples(Set<String> includedNames) {
-    return new CoalescedEnumeration((index) -> registries[index]
-        .filteredMetricFamilySamples(includedNames));
+  public Enumeration<Collector.MetricFamilySamples> filteredMetricFamilySamples(
+      Set<String> includedNames) {
+    return new CoalescedEnumeration(
+        (index) -> registries[index].filteredMetricFamilySamples(includedNames));
   }
 
   @Override

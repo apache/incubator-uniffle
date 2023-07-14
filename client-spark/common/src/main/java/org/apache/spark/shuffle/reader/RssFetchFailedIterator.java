@@ -55,9 +55,7 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
     private String reportServerHost;
     private int reportServerPort;
 
-    private Builder() {
-
-    }
+    private Builder() {}
 
     Builder appId(String appId) {
       this.appId = appId;
@@ -100,9 +98,11 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
     return new Builder();
   }
 
-  private static ShuffleManagerClient createShuffleManagerClient(String host, int port) throws IOException {
+  private static ShuffleManagerClient createShuffleManagerClient(String host, int port)
+      throws IOException {
     ClientType grpc = ClientType.GRPC;
-    // host is passed from spark.driver.bindAddress, which would be set when SparkContext is constructed.
+    // host is passed from spark.driver.bindAddress, which would be set when SparkContext is
+    // constructed.
     return ShuffleManagerClientFactory.getInstance().createShuffleManagerClient(grpc, host, port);
   }
 
@@ -111,13 +111,20 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
     int port = builder.reportServerPort;
     // todo: reuse this manager client if this is a bottleneck.
     try (ShuffleManagerClient client = createShuffleManagerClient(driver, port)) {
-      RssReportShuffleFetchFailureRequest req = new RssReportShuffleFetchFailureRequest(
-          builder.appId, builder.shuffleId, builder.stageAttemptId, builder.partitionId, e.getMessage());
-      RssReportShuffleFetchFailureResponse response =  client.reportShuffleFetchFailure(req);
+      RssReportShuffleFetchFailureRequest req =
+          new RssReportShuffleFetchFailureRequest(
+              builder.appId,
+              builder.shuffleId,
+              builder.stageAttemptId,
+              builder.partitionId,
+              e.getMessage());
+      RssReportShuffleFetchFailureResponse response = client.reportShuffleFetchFailure(req);
       if (response.getReSubmitWholeStage()) {
-        // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1 is provided.
+        // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1 is
+        // provided.
         FetchFailedException ffe =
-            RssSparkShuffleUtils.createFetchFailedException(builder.shuffleId, -1, builder.partitionId, e);
+            RssSparkShuffleUtils.createFetchFailedException(
+                builder.shuffleId, -1, builder.partitionId, e);
         return new RssException(ffe);
       }
     } catch (IOException ioe) {
@@ -143,5 +150,4 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
       throw generateFetchFailedIfNecessary(e);
     }
   }
-
 }

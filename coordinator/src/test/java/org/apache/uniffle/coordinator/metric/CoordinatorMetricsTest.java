@@ -56,7 +56,8 @@ public class CoordinatorMetricsTest {
 
     CoordinatorConf coordinatorConf = new CoordinatorConf();
     coordinatorConf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 10);
-    coordinatorConf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
+    coordinatorConf.set(
+        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
     coordinatorConf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
     coordinatorConf.set(RssBaseConf.JETTY_HTTP_PORT, 12345);
     coordinatorConf.set(RssBaseConf.JETTY_CORE_POOL_SIZE, 128);
@@ -105,8 +106,8 @@ public class CoordinatorMetricsTest {
 
   @Test
   public void testCoordinatorMetricsWithNames() throws Exception {
-    String content = TestUtils.httpGet(SERVER_METRICS_URL
-        + "?name[]=total_app_num&name[]=running_app_num");
+    String content =
+        TestUtils.httpGet(SERVER_METRICS_URL + "?name[]=total_app_num&name[]=running_app_num");
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());

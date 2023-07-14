@@ -52,15 +52,18 @@ public class ShuffleFlushManager {
   private final ShuffleServerConf shuffleServerConf;
   private Configuration hadoopConf;
   // appId -> shuffleId -> committed shuffle blockIds
-  private Map<String, Map<Integer, Roaring64NavigableMap>> committedBlockIds = JavaUtils.newConcurrentMap();
+  private Map<String, Map<Integer, Roaring64NavigableMap>> committedBlockIds =
+      JavaUtils.newConcurrentMap();
   private final int retryMax;
 
   private final StorageManager storageManager;
   private final long pendingEventTimeoutSec;
   private FlushEventHandler eventHandler;
 
-  public ShuffleFlushManager(ShuffleServerConf shuffleServerConf, ShuffleServer shuffleServer,
-                             StorageManager storageManager) {
+  public ShuffleFlushManager(
+      ShuffleServerConf shuffleServerConf,
+      ShuffleServer shuffleServer,
+      StorageManager storageManager) {
     this.shuffleServer = shuffleServer;
     this.shuffleServerConf = shuffleServerConf;
     this.storageManager = storageManager;
@@ -71,7 +74,8 @@ public class ShuffleFlushManager {
 
     storageBasePaths = RssUtils.getConfiguredLocalDirs(shuffleServerConf);
     pendingEventTimeoutSec = shuffleServerConf.getLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC);
-    eventHandler = new DefaultFlushEventHandler(shuffleServerConf, storageManager, this::processEvent);
+    eventHandler =
+        new DefaultFlushEventHandler(shuffleServerConf, storageManager, this::processEvent);
   }
 
   public void addToFlushQueue(ShuffleDataFlushEvent event) {
@@ -85,7 +89,10 @@ public class ShuffleFlushManager {
       boolean writeSuccess = flushToFile(event);
       if (writeSuccess || event.getRetryTimes() > retryMax) {
         if (event.getRetryTimes() > retryMax) {
-          LOG.error("Failed to write data for {} in {} times, shuffle data will be lost", event, retryMax);
+          LOG.error(
+              "Failed to write data for {} in {} times, shuffle data will be lost",
+              event,
+              retryMax);
           if (event.getUnderStorage() != null) {
             ShuffleServerMetrics.incStorageFailedCounter(event.getUnderStorage().getStorageHost());
           }
@@ -94,10 +101,15 @@ public class ShuffleFlushManager {
         if (shuffleServer != null) {
           long duration = System.currentTimeMillis() - start;
           if (writeSuccess) {
-            LOG.debug("Flush to file success in {} ms and release {} bytes", duration, event.getSize());
+            LOG.debug(
+                "Flush to file success in {} ms and release {} bytes", duration, event.getSize());
           } else {
             ShuffleServerMetrics.counterTotalFailedWrittenEventNum.inc();
-            LOG.error("Flush to file for {} failed in {} ms and release {} bytes", event, duration, event.getSize());
+            LOG.error(
+                "Flush to file for {} failed in {} ms and release {} bytes",
+                event,
+                duration,
+                event.getSize());
           }
         }
       }
@@ -114,7 +126,8 @@ public class ShuffleFlushManager {
 
     try {
       if (!event.isValid()) {
-        LOG.warn("AppId {} was removed already, event {} should be dropped", event.getAppId(), event);
+        LOG.warn(
+            "AppId {} was removed already, event {} should be dropped", event.getAppId(), event);
         return true;
       }
 
@@ -131,10 +144,13 @@ public class ShuffleFlushManager {
       }
 
       if (event.isPended()
-              && System.currentTimeMillis() - event.getStartPendingTime() > pendingEventTimeoutSec * 1000L) {
+          && System.currentTimeMillis() - event.getStartPendingTime()
+              > pendingEventTimeoutSec * 1000L) {
         ShuffleServerMetrics.counterTotalDroppedEventNum.inc();
-        LOG.error("Flush event cannot be flushed for {} sec, the event {} is dropped",
-            pendingEventTimeoutSec, event);
+        LOG.error(
+            "Flush event cannot be flushed for {} sec, the event {} is dropped",
+            pendingEventTimeoutSec,
+            event);
         return true;
       }
 
@@ -143,7 +159,9 @@ public class ShuffleFlushManager {
         //       to unify following logic of multiple different storage managers
         if (event.getRetryTimes() <= retryMax) {
           if (event.isPended()) {
-            LOG.error("Drop this event directly due to already having entered pending queue. event: {}", event);
+            LOG.error(
+                "Drop this event directly due to already having entered pending queue. event: {}",
+                event);
             return true;
           }
           event.increaseRetryTimes();
@@ -154,23 +172,24 @@ public class ShuffleFlushManager {
         return false;
       }
 
-      String user = StringUtils.defaultString(
-          shuffleServer.getShuffleTaskManager().getUserByAppId(event.getAppId()),
-          StringUtils.EMPTY
-      );
+      String user =
+          StringUtils.defaultString(
+              shuffleServer.getShuffleTaskManager().getUserByAppId(event.getAppId()),
+              StringUtils.EMPTY);
       int maxConcurrencyPerPartitionToWrite = getMaxConcurrencyPerPartitionWrite(event);
-      CreateShuffleWriteHandlerRequest request = new CreateShuffleWriteHandlerRequest(
-          storageType,
-          event.getAppId(),
-          event.getShuffleId(),
-          event.getStartPartition(),
-          event.getEndPartition(),
-          storageBasePaths.toArray(new String[storageBasePaths.size()]),
-          getShuffleServerId(),
-          hadoopConf,
-          storageDataReplica,
-          user,
-          maxConcurrencyPerPartitionToWrite);
+      CreateShuffleWriteHandlerRequest request =
+          new CreateShuffleWriteHandlerRequest(
+              storageType,
+              event.getAppId(),
+              event.getShuffleId(),
+              event.getStartPartition(),
+              event.getEndPartition(),
+              storageBasePaths.toArray(new String[storageBasePaths.size()]),
+              getShuffleServerId(),
+              hadoopConf,
+              storageDataReplica,
+              user,
+              maxConcurrencyPerPartitionToWrite);
       ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
       writeSuccess = storageManager.write(storage, handler, event);
       if (writeSuccess) {
@@ -178,7 +197,9 @@ public class ShuffleFlushManager {
         ShuffleServerMetrics.incStorageSuccessCounter(storage.getStorageHost());
       } else if (event.getRetryTimes() <= retryMax) {
         if (event.isPended()) {
-          LOG.error("Drop this event directly due to already having entered pending queue. event: {}", event);
+          LOG.error(
+              "Drop this event directly due to already having entered pending queue. event: {}",
+              event);
         }
         event.increaseRetryTimes();
         ShuffleServerMetrics.incStorageRetryCounter(storage.getStorageHost());
@@ -194,7 +215,8 @@ public class ShuffleFlushManager {
   }
 
   private int getMaxConcurrencyPerPartitionWrite(ShuffleDataFlushEvent event) {
-    ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(event.getAppId());
+    ShuffleTaskInfo taskInfo =
+        shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(event.getAppId());
     // For some tests.
     if (taskInfo == null) {
       LOG.warn("Should not happen that shuffle task info of {} is null.", event.getAppId());
@@ -207,7 +229,8 @@ public class ShuffleFlushManager {
     return shuffleServerConf.getString(ShuffleServerConf.SHUFFLE_SERVER_ID, "shuffleServerId");
   }
 
-  private void updateCommittedBlockIds(String appId, int shuffleId, List<ShufflePartitionedBlock> blocks) {
+  private void updateCommittedBlockIds(
+      String appId, int shuffleId, List<ShufflePartitionedBlock> blocks) {
     if (blocks == null || blocks.size() == 0) {
       return;
     }
@@ -230,7 +253,12 @@ public class ShuffleFlushManager {
     }
     Roaring64NavigableMap blockIds = shuffleIdToBlockIds.get(shuffleId);
     if (blockIds == null) {
-      LOG.warn("Unexpected value when getCommittedBlockIds for appId[" + appId + "], shuffleId[" + shuffleId + "]");
+      LOG.warn(
+          "Unexpected value when getCommittedBlockIds for appId["
+              + appId
+              + "], shuffleId["
+              + shuffleId
+              + "]");
       return Roaring64NavigableMap.bitmapOf();
     }
     return blockIds;

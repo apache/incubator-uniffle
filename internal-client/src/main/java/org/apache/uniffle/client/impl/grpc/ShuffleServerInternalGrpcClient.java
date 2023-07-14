@@ -31,7 +31,8 @@ import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.ShuffleServerInternalGrpc;
 
-public class ShuffleServerInternalGrpcClient extends GrpcClient implements ShuffleServerInternalClient {
+public class ShuffleServerInternalGrpcClient extends GrpcClient
+    implements ShuffleServerInternalClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerInternalGrpcClient.class);
   private static final long RPC_TIMEOUT_DEFAULT_MS = 60000;
@@ -46,7 +47,8 @@ public class ShuffleServerInternalGrpcClient extends GrpcClient implements Shuff
     this(host, port, maxRetryAttempts, true);
   }
 
-  public ShuffleServerInternalGrpcClient(String host, int port, int maxRetryAttempts, boolean usePlaintext) {
+  public ShuffleServerInternalGrpcClient(
+      String host, int port, int maxRetryAttempts, boolean usePlaintext) {
     super(host, port, maxRetryAttempts, usePlaintext);
     // todo Add ClientInterceptor for authentication
     blockingStub = ShuffleServerInternalGrpc.newBlockingStub(channel);
@@ -58,19 +60,20 @@ public class ShuffleServerInternalGrpcClient extends GrpcClient implements Shuff
 
   @Override
   public RssDecommissionResponse decommission(RssDecommissionRequest request) {
-    RssProtos.DecommissionRequest protoRequest =
-        RssProtos.DecommissionRequest.newBuilder().build();
+    RssProtos.DecommissionRequest protoRequest = RssProtos.DecommissionRequest.newBuilder().build();
     RssProtos.DecommissionResponse rpcResponse = getBlockingStub().decommission(protoRequest);
     return new RssDecommissionResponse(
         StatusCode.fromProto(rpcResponse.getStatus()), rpcResponse.getRetMsg());
   }
 
   @Override
-  public RssCancelDecommissionResponse cancelDecommission(RssCancelDecommissionRequest rssCancelDecommissionRequest) {
+  public RssCancelDecommissionResponse cancelDecommission(
+      RssCancelDecommissionRequest rssCancelDecommissionRequest) {
     RssProtos.CancelDecommissionRequest protoRequest =
-            RssProtos.CancelDecommissionRequest.newBuilder().build();
-    RssProtos.CancelDecommissionResponse rpcResponse = getBlockingStub().cancelDecommission(protoRequest);
+        RssProtos.CancelDecommissionRequest.newBuilder().build();
+    RssProtos.CancelDecommissionResponse rpcResponse =
+        getBlockingStub().cancelDecommission(protoRequest);
     return new RssCancelDecommissionResponse(
-            StatusCode.fromProto(rpcResponse.getStatus()), rpcResponse.getRetMsg());
+        StatusCode.fromProto(rpcResponse.getStatus()), rpcResponse.getRetMsg());
   }
 }

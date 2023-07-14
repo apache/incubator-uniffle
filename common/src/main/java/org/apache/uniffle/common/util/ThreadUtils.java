@@ -32,9 +32,7 @@ import org.slf4j.LoggerFactory;
 public class ThreadUtils {
   private static final Logger LOGGER = LoggerFactory.getLogger(ThreadUtils.class);
 
-  /**
-   * Provide a general method to create a thread factory to make the code more standardized
-   */
+  /** Provide a general method to create a thread factory to make the code more standardized */
   public static ThreadFactory getThreadFactory(String factoryName) {
     return new ThreadFactoryBuilder().setDaemon(true).setNameFormat(factoryName + "-%d").build();
   }
@@ -46,17 +44,21 @@ public class ThreadUtils {
 
   /**
    * Encapsulation of the ScheduledExecutorService
+   *
    * @param factoryName Prefix name of each thread from this threadPool
    * @return ScheduledExecutorService
    */
-  public static ScheduledExecutorService getDaemonSingleThreadScheduledExecutor(String factoryName) {
-    ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1, getThreadFactory(factoryName));
+  public static ScheduledExecutorService getDaemonSingleThreadScheduledExecutor(
+      String factoryName) {
+    ScheduledThreadPoolExecutor executor =
+        new ScheduledThreadPoolExecutor(1, getThreadFactory(factoryName));
     executor.setRemoveOnCancelPolicy(true);
     return executor;
   }
 
   /**
    * Encapsulation of the newFixedThreadPool
+   *
    * @param threadNum Number of core threads
    * @param factoryName Prefix name of each thread from this threadPool
    * @return ExecutorService
@@ -65,21 +67,18 @@ public class ThreadUtils {
     return Executors.newFixedThreadPool(threadNum, getThreadFactory(factoryName));
   }
 
-  /**
-   * Encapsulation of the newSingleThreadExecutor
-   */
+  /** Encapsulation of the newSingleThreadExecutor */
   public static ExecutorService getDaemonSingleThreadExecutor(String factoryName) {
     return Executors.newSingleThreadExecutor(getThreadFactory(factoryName));
   }
 
-  /**
-   * Encapsulation of the newCachedThreadPool
-   */
+  /** Encapsulation of the newCachedThreadPool */
   public static ExecutorService getDaemonCachedThreadPool(String factoryName) {
     return Executors.newCachedThreadPool(getThreadFactory(factoryName));
   }
 
-  public static void shutdownThreadPool(ExecutorService threadPool, int waitSec) throws InterruptedException {
+  public static void shutdownThreadPool(ExecutorService threadPool, int waitSec)
+      throws InterruptedException {
     if (threadPool == null) {
       return;
     }

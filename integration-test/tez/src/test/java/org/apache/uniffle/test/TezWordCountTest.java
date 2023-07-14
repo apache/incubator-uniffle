@@ -32,7 +32,8 @@ public class TezWordCountTest extends TezIntegrationTestBase {
   private String inputPath = "word_count_input";
   private String outputPath = "word_count_output";
   private List<String> wordTable =
-      Lists.newArrayList("apple", "banana", "fruit", "cherry", "Chinese", "America", "Japan", "tomato");
+      Lists.newArrayList(
+          "apple", "banana", "fruit", "cherry", "Chinese", "America", "Japan", "tomato");
 
   @Test
   public void wordCountTest() throws Exception {

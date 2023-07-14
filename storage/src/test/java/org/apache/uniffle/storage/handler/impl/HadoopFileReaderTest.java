@@ -53,7 +53,8 @@ public class HadoopFileReaderTest extends HadoopTestBase {
     Path path = new Path(HDFS_URI, "createStreamFirstTest");
 
     assertFalse(fs.isFile(path));
-    Throwable ise = assertThrows(IllegalStateException.class, () -> new HadoopFileReader(path, conf));
+    Throwable ise =
+        assertThrows(IllegalStateException.class, () -> new HadoopFileReader(path, conf));
     assertTrue(ise.getMessage().startsWith(HDFS_URI + "createStreamFirstTest don't exist"));
   }
 
@@ -69,7 +70,8 @@ public class HadoopFileReaderTest extends HadoopTestBase {
     try (HadoopFileWriter writer = new HadoopFileWriter(fs, path, conf)) {
       writer.writeData(data);
     }
-    FileBasedShuffleSegment segment = new FileBasedShuffleSegment(23, offset, length, length, 0xdeadbeef, 1);
+    FileBasedShuffleSegment segment =
+        new FileBasedShuffleSegment(23, offset, length, length, 0xdeadbeef, 1);
     try (HadoopFileReader reader = new HadoopFileReader(path, conf)) {
       byte[] actual = reader.read(segment.getOffset(), segment.getLength());
       long crc22 = ChecksumUtils.getCrc32(actual);

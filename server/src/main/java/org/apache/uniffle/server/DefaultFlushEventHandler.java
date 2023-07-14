@@ -49,7 +49,9 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
 
   private volatile boolean stopped = false;
 
-  public DefaultFlushEventHandler(ShuffleServerConf conf, StorageManager storageManager,
+  public DefaultFlushEventHandler(
+      ShuffleServerConf conf,
+      StorageManager storageManager,
       Consumer<ShuffleDataFlushEvent> eventConsumer) {
     this.shuffleServerConf = conf;
     this.storageType = StorageType.valueOf(shuffleServerConf.get(RssBaseConf.RSS_STORAGE_TYPE));
@@ -81,11 +83,14 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
 
   protected void initFlushEventExecutor() {
     if (StorageType.withLocalfile(storageType)) {
-      int poolSize = shuffleServerConf.getInteger(ShuffleServerConf.SERVER_FLUSH_LOCALFILE_THREAD_POOL_SIZE);
-      localFileThreadPoolExecutor = createFlushEventExecutor(poolSize, "LocalFileFlushEventThreadPool");
+      int poolSize =
+          shuffleServerConf.getInteger(ShuffleServerConf.SERVER_FLUSH_LOCALFILE_THREAD_POOL_SIZE);
+      localFileThreadPoolExecutor =
+          createFlushEventExecutor(poolSize, "LocalFileFlushEventThreadPool");
     }
     if (StorageType.withHadoop(storageType)) {
-      int poolSize = shuffleServerConf.getInteger(ShuffleServerConf.SERVER_FLUSH_HADOOP_THREAD_POOL_SIZE);
+      int poolSize =
+          shuffleServerConf.getInteger(ShuffleServerConf.SERVER_FLUSH_HADOOP_THREAD_POOL_SIZE);
       hadoopThreadPoolExecutor = createFlushEventExecutor(poolSize, "HadoopFlushEventThreadPool");
     }
     startEventProcessor();
@@ -122,11 +127,16 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
   }
 
   protected Executor createFlushEventExecutor(int poolSize, String threadFactoryName) {
-    int waitQueueSize = shuffleServerConf.getInteger(
-        ShuffleServerConf.SERVER_FLUSH_THREAD_POOL_QUEUE_SIZE);
+    int waitQueueSize =
+        shuffleServerConf.getInteger(ShuffleServerConf.SERVER_FLUSH_THREAD_POOL_QUEUE_SIZE);
     BlockingQueue<Runnable> waitQueue = Queues.newLinkedBlockingQueue(waitQueueSize);
     long keepAliveTime = shuffleServerConf.getLong(ShuffleServerConf.SERVER_FLUSH_THREAD_ALIVE);
-    return new ThreadPoolExecutor(poolSize, poolSize, keepAliveTime, TimeUnit.SECONDS, waitQueue,
+    return new ThreadPoolExecutor(
+        poolSize,
+        poolSize,
+        keepAliveTime,
+        TimeUnit.SECONDS,
+        waitQueue,
         ThreadUtils.getThreadFactory(threadFactoryName));
   }
 

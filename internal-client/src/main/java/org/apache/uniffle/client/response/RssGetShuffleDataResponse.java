@@ -33,5 +33,4 @@ public class RssGetShuffleDataResponse extends ClientResponse {
   public ByteBuffer getShuffleData() {
     return shuffleData;
   }
-
 }

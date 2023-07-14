@@ -42,37 +42,33 @@ public class RssShuffleManagerTest extends RssShuffleManagerTestBase {
     sparkConf.set(SPARK_ADAPTIVE_EXECUTION_ENABLED_KEY, "true");
     assertEquals(
         ShuffleDataDistributionType.LOCAL_ORDER,
-        RssShuffleManager.getDataDistributionType(sparkConf)
-    );
+        RssShuffleManager.getDataDistributionType(sparkConf));
 
     // case2
     sparkConf = new SparkConf();
     sparkConf.set(SPARK_ADAPTIVE_EXECUTION_ENABLED_KEY, "false");
     assertEquals(
         RssClientConf.DATA_DISTRIBUTION_TYPE.defaultValue(),
-        RssShuffleManager.getDataDistributionType(sparkConf)
-    );
+        RssShuffleManager.getDataDistributionType(sparkConf));
 
     // case3
     sparkConf = new SparkConf();
     sparkConf.set(SPARK_ADAPTIVE_EXECUTION_ENABLED_KEY, "true");
-    sparkConf.set("spark." + RssClientConf.DATA_DISTRIBUTION_TYPE.key(), ShuffleDataDistributionType.NORMAL.name());
+    sparkConf.set(
+        "spark." + RssClientConf.DATA_DISTRIBUTION_TYPE.key(),
+        ShuffleDataDistributionType.NORMAL.name());
     assertEquals(
-        ShuffleDataDistributionType.NORMAL,
-        RssShuffleManager.getDataDistributionType(sparkConf)
-    );
+        ShuffleDataDistributionType.NORMAL, RssShuffleManager.getDataDistributionType(sparkConf));
 
     // case4
     sparkConf = new SparkConf();
     sparkConf.set(SPARK_ADAPTIVE_EXECUTION_ENABLED_KEY, "true");
     sparkConf.set(
         "spark." + RssClientConf.DATA_DISTRIBUTION_TYPE.key(),
-        ShuffleDataDistributionType.LOCAL_ORDER.name()
-    );
+        ShuffleDataDistributionType.LOCAL_ORDER.name());
     assertEquals(
         ShuffleDataDistributionType.LOCAL_ORDER,
-        RssShuffleManager.getDataDistributionType(sparkConf)
-    );
+        RssShuffleManager.getDataDistributionType(sparkConf));
 
     // case5
     sparkConf = new SparkConf();
@@ -80,13 +76,11 @@ public class RssShuffleManagerTest extends RssShuffleManagerTestBase {
     if (aqeEnable) {
       assertEquals(
           ShuffleDataDistributionType.LOCAL_ORDER,
-          RssShuffleManager.getDataDistributionType(sparkConf)
-      );
+          RssShuffleManager.getDataDistributionType(sparkConf));
     } else {
       assertEquals(
           RssClientConf.DATA_DISTRIBUTION_TYPE.defaultValue(),
-          RssShuffleManager.getDataDistributionType(sparkConf)
-      );
+          RssShuffleManager.getDataDistributionType(sparkConf));
     }
   }
 
@@ -122,7 +116,5 @@ public class RssShuffleManagerTest extends RssShuffleManagerTestBase {
     assertEquals(shuffleManager.getMaxFetchFailures(), 2);
     // by default, the appId is null
     assertNull(shuffleManager.getAppId());
-
   }
-
 }

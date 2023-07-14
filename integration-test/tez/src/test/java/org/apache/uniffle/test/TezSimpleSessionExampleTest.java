@@ -36,11 +36,12 @@ import org.junit.jupiter.api.Test;
 import org.apache.uniffle.common.exception.RssException;
 
 public class TezSimpleSessionExampleTest extends TezIntegrationTestBase {
-  
+
   private String inputPath = "simple_session_input";
   private String outputPath = "simple_session_output";
-  private List<String> wordTable = Lists.newArrayList("apple", "banana", "fruit", "cherry", 
-      "Chinese", "America", "Japan", "tomato");
+  private List<String> wordTable =
+      Lists.newArrayList(
+          "apple", "banana", "fruit", "cherry", "Chinese", "America", "Japan", "tomato");
 
   @Test
   public void simpleSessionExampleTest() throws Exception {
@@ -67,8 +68,8 @@ public class TezSimpleSessionExampleTest extends TezIntegrationTestBase {
   }
 
   private void generateInputFile(String inputPath) throws Exception {
-    // For ordered word count, the key of last ordered sorter is the summation of word, the value is 
-    // the word. So it means this key may not be unique. Because Sorter can only make sure key is 
+    // For ordered word count, the key of last ordered sorter is the summation of word, the value is
+    // the word. So it means this key may not be unique. Because Sorter can only make sure key is
     // sorted, so the second column (word column) may be not sorted.
     // To keep pace with verifyResults, here make sure summation of word is unique number.
     FSDataOutputStream outputStream = fs.create(new Path(inputPath));
@@ -102,17 +103,41 @@ public class TezSimpleSessionExampleTest extends TezIntegrationTestBase {
   @Override
   public String[] getTestArgs(String uniqueOutputName) {
     return new String[] {
-        inputPath + ".0" + "," + inputPath + ".1" + "," + inputPath + ".2",
-        outputPath + "/" + uniqueOutputName + ".0" + "," + outputPath + "/" + uniqueOutputName 
-            + ".1" + "," + outputPath + "/" + uniqueOutputName + ".2",
-        "2"
+      inputPath + ".0" + "," + inputPath + ".1" + "," + inputPath + ".2",
+      outputPath
+          + "/"
+          + uniqueOutputName
+          + ".0"
+          + ","
+          + outputPath
+          + "/"
+          + uniqueOutputName
+          + ".1"
+          + ","
+          + outputPath
+          + "/"
+          + uniqueOutputName
+          + ".2",
+      "2"
     };
   }
 
   @Override
   public String getOutputDir(String uniqueOutputName) {
-    return outputPath + "/" + uniqueOutputName + ".0" + "," + outputPath + "/" + uniqueOutputName 
-        + ".1" + "," + outputPath + "/" + uniqueOutputName + ".2";
+    return outputPath
+        + "/"
+        + uniqueOutputName
+        + ".0"
+        + ","
+        + outputPath
+        + "/"
+        + uniqueOutputName
+        + ".1"
+        + ","
+        + outputPath
+        + "/"
+        + uniqueOutputName
+        + ".2";
   }
 
   @Override

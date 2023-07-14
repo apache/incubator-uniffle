@@ -39,7 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
 public class LocalStorageTest {
 
   private static File testBaseDir;
@@ -47,7 +46,7 @@ public class LocalStorageTest {
   private static String mountPoint;
 
   @BeforeAll
-  public static void setUp(@TempDir File tempDir) throws IOException  {
+  public static void setUp(@TempDir File tempDir) throws IOException {
     testBaseDir = new File(tempDir, "test");
     testBaseDirWithoutPermission = new File(tempDir, "test-no-permission");
     testBaseDir.mkdir();
@@ -65,7 +64,8 @@ public class LocalStorageTest {
   }
 
   private LocalStorage createTestStorage(File baseDir) {
-    return LocalStorage.newBuilder().basePath(baseDir.getAbsolutePath())
+    return LocalStorage.newBuilder()
+        .basePath(baseDir.getAbsolutePath())
         .highWaterMarkOfWrite(95)
         .lowWaterMarkOfWrite(80)
         .capacity(100)
@@ -90,7 +90,9 @@ public class LocalStorageTest {
 
   @Test
   public void getCapacityInitTest() {
-    LocalStorage item = LocalStorage.newBuilder().basePath(testBaseDir.getAbsolutePath())
+    LocalStorage item =
+        LocalStorage.newBuilder()
+            .basePath(testBaseDir.getAbsolutePath())
             .highWaterMarkOfWrite(95)
             .lowWaterMarkOfWrite(80)
             .capacity(-1)
@@ -117,9 +119,11 @@ public class LocalStorageTest {
     // base dir is configured to a wrong file instead of dir
     File emptyFile = new File(newBaseDir, "empty_file");
     assertTrue(emptyFile.createNewFile());
-    assertThrows(RuntimeException.class, () -> {
-      createTestStorage(emptyFile);
-    });
+    assertThrows(
+        RuntimeException.class,
+        () -> {
+          createTestStorage(emptyFile);
+        });
 
     // not existed base dir should work
     File notExisted = new File(newBaseDir, "not_existed");
@@ -128,22 +132,24 @@ public class LocalStorageTest {
 
   @Test
   public void diskStorageInfoTest() {
-    LocalStorage item = LocalStorage.newBuilder()
-        .basePath(testBaseDir.getAbsolutePath())
-        .highWaterMarkOfWrite(95)
-        .lowWaterMarkOfWrite(80)
-        .capacity(100)
-        .build();
+    LocalStorage item =
+        LocalStorage.newBuilder()
+            .basePath(testBaseDir.getAbsolutePath())
+            .highWaterMarkOfWrite(95)
+            .lowWaterMarkOfWrite(80)
+            .capacity(100)
+            .build();
     assertEquals(mountPoint, item.getMountPoint());
     assertNull(item.getStorageMedia());
 
-    LocalStorage itemWithStorageType = LocalStorage.newBuilder()
-        .basePath(testBaseDir.getAbsolutePath())
-        .highWaterMarkOfWrite(95)
-        .lowWaterMarkOfWrite(80)
-        .capacity(100)
-        .localStorageMedia(StorageMedia.SSD)
-        .build();
+    LocalStorage itemWithStorageType =
+        LocalStorage.newBuilder()
+            .basePath(testBaseDir.getAbsolutePath())
+            .highWaterMarkOfWrite(95)
+            .lowWaterMarkOfWrite(80)
+            .capacity(100)
+            .localStorageMedia(StorageMedia.SSD)
+            .build();
     assertEquals(StorageMedia.SSD, itemWithStorageType.getStorageMedia());
   }
 
@@ -153,9 +159,9 @@ public class LocalStorageTest {
     String appId = "writeHandlerTest";
     assertFalse(item.containsWriteHandler(appId, 0, 1));
     String[] storageBasePaths = {testBaseDir.getAbsolutePath()};
-    CreateShuffleWriteHandlerRequest request = new CreateShuffleWriteHandlerRequest(
-        StorageType.LOCALFILE.name(), appId, 0, 1, 1, storageBasePaths,
-        "ss1", null, 1, null);
+    CreateShuffleWriteHandlerRequest request =
+        new CreateShuffleWriteHandlerRequest(
+            StorageType.LOCALFILE.name(), appId, 0, 1, 1, storageBasePaths, "ss1", null, 1, null);
     item.getOrCreateWriteHandler(request);
     assertTrue(item.containsWriteHandler(appId, 0, 1));
   }

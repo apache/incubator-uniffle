@@ -33,15 +33,16 @@ import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 /**
- * The {@link PooledHadoopShuffleWriteHandler} is a wrapper of underlying multiple
- * {@link HadoopShuffleWriteHandler} to support concurrency control of writing single
- * partition to multi files.
+ * The {@link PooledHadoopShuffleWriteHandler} is a wrapper of underlying multiple {@link
+ * HadoopShuffleWriteHandler} to support concurrency control of writing single partition to multi
+ * files.
  *
- * By leveraging {@link LinkedBlockingDeque}, it will always write the same file when
- * no race condition, which is good for reducing file numbers for Hadoop FS.
+ * <p>By leveraging {@link LinkedBlockingDeque}, it will always write the same file when no race
+ * condition, which is good for reducing file numbers for Hadoop FS.
  */
 public class PooledHadoopShuffleWriteHandler implements ShuffleWriteHandler {
-  private static final Logger LOGGER = LoggerFactory.getLogger(PooledHadoopShuffleWriteHandler.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(PooledHadoopShuffleWriteHandler.class);
 
   private final LinkedBlockingDeque<ShuffleWriteHandler> queue;
   private final int maxConcurrency;
@@ -80,25 +81,27 @@ public class PooledHadoopShuffleWriteHandler implements ShuffleWriteHandler {
       int concurrency) {
     this.maxConcurrency = concurrency;
     this.queue = new LinkedBlockingDeque<>(maxConcurrency);
-    this.basePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
-        ShuffleStorageUtils.getShuffleDataPath(appId, shuffleId, startPartition, endPartition));
-
-    this.createWriterFunc = index -> {
-      try {
-        return new HadoopShuffleWriteHandler(
-            appId,
-            shuffleId,
-            startPartition,
-            endPartition,
+    this.basePath =
+        ShuffleStorageUtils.getFullShuffleDataFolder(
             storageBasePath,
-            fileNamePrefix + "_" + index,
-            hadoopConf,
-            user
-        );
-      } catch (Exception e) {
-        throw new RssException("Errors on initializing Hadoop FS writer handler.", e);
-      }
-    };
+            ShuffleStorageUtils.getShuffleDataPath(appId, shuffleId, startPartition, endPartition));
+
+    this.createWriterFunc =
+        index -> {
+          try {
+            return new HadoopShuffleWriteHandler(
+                appId,
+                shuffleId,
+                startPartition,
+                endPartition,
+                storageBasePath,
+                fileNamePrefix + "_" + index,
+                hadoopConf,
+                user);
+          } catch (Exception e) {
+            throw new RssException("Errors on initializing Hadoop FS writer handler.", e);
+          }
+        };
   }
 
   @Override

@@ -89,7 +89,8 @@ public class NettyUtils {
     return "<unknown remote>";
   }
 
-  public static ChannelFuture writeResponseMsg(ChannelHandlerContext ctx, Message msg, boolean doWriteType) {
+  public static ChannelFuture writeResponseMsg(
+      ChannelHandlerContext ctx, Message msg, boolean doWriteType) {
     ByteBuf responseMsgBuf = ctx.alloc().buffer(msg.encodedLength());
     try {
       if (doWriteType) {

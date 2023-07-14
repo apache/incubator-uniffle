@@ -37,10 +37,8 @@ import org.apache.uniffle.coordinator.web.Response;
 @Produces({MediaType.APPLICATION_JSON})
 public class AdminResource {
   private static final Logger LOG = LoggerFactory.getLogger(AdminResource.class);
-  @Context
-  private HttpServletRequest httpRequest;
-  @Context
-  protected ServletContext servletContext;
+  @Context private HttpServletRequest httpRequest;
+  @Context protected ServletContext servletContext;
 
   @GET
   @Path("/refreshChecker")
@@ -54,7 +52,6 @@ public class AdminResource {
   }
 
   private AccessManager getAccessManager() {
-    return (AccessManager) servletContext.getAttribute(
-        AccessManager.class.getCanonicalName());
+    return (AccessManager) servletContext.getAttribute(AccessManager.class.getCanonicalName());
   }
 }

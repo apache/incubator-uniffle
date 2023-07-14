@@ -42,10 +42,9 @@ public class ZstdCodec extends Codec {
   @Override
   public void decompress(ByteBuffer src, int uncompressedLen, ByteBuffer dst, int dstOffset) {
     if (src.isDirect() && dst.isDirect()) {
-      long size = Zstd.decompressDirectByteBuffer(
-          dst, dstOffset, uncompressedLen,
-          src, src.position(), src.limit() - src.position()
-      );
+      long size =
+          Zstd.decompressDirectByteBuffer(
+              dst, dstOffset, uncompressedLen, src, src.position(), src.limit() - src.position());
       if (size != uncompressedLen) {
         throw new RssException(
             "This should not happen that the decompressed data size is not equals to original size.");
@@ -55,13 +54,17 @@ public class ZstdCodec extends Codec {
 
     if (!src.isDirect() && !dst.isDirect()) {
       Zstd.decompressByteArray(
-          dst.array(), dstOffset, uncompressedLen,
-          src.array(), src.position(), src.limit() - src.position()
-      );
+          dst.array(),
+          dstOffset,
+          uncompressedLen,
+          src.array(),
+          src.position(),
+          src.limit() - src.position());
       return;
     }
 
-    throw new IllegalStateException("Zstd only supports the same type of bytebuffer decompression.");
+    throw new IllegalStateException(
+        "Zstd only supports the same type of bytebuffer decompression.");
   }
 
   @Override
@@ -77,8 +80,16 @@ public class ZstdCodec extends Codec {
       }
       if (!src.isDirect() && !dest.isDirect()) {
         int destOff = dest.position();
-        int compressedSize = (int) Zstd.compressByteArray(dest.array(), dest.position(), dest.remaining(), src.array(),
-            src.position(), src.remaining(), compressionLevel);
+        int compressedSize =
+            (int)
+                Zstd.compressByteArray(
+                    dest.array(),
+                    dest.position(),
+                    dest.remaining(),
+                    src.array(),
+                    src.position(),
+                    src.remaining(),
+                    compressionLevel);
         dest.position(destOff + compressedSize);
         return compressedSize;
       }

@@ -31,10 +31,11 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.ServerStatus;
 
 /**
- * HealthCheck will check every server whether it has the ability to process shuffle data. Currently, we only support
- * disk checker. If enough disks don't have enough disk space, server will become unhealthy, and only enough disks
- * have enough disk space, server will become healthy again.
- **/
+ * HealthCheck will check every server whether it has the ability to process shuffle data.
+ * Currently, we only support disk checker. If enough disks don't have enough disk space, server
+ * will become unhealthy, and only enough disks have enough disk space, server will become healthy
+ * again.
+ */
 public class HealthCheck {
 
   private static final Logger LOG = LoggerFactory.getLogger(HealthCheck.class);
@@ -68,20 +69,21 @@ public class HealthCheck {
         throw new IllegalArgumentException("The checkers init fail");
       }
     }
-    this.thread = new Thread(() -> {
-      while (!isStop) {
-        try {
-          check();
-          Uninterruptibles.sleepUninterruptibly(checkIntervalMs, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-          LOG.error("HealthCheck encounter the exception", e);
-        }
-      }
-    });
+    this.thread =
+        new Thread(
+            () -> {
+              while (!isStop) {
+                try {
+                  check();
+                  Uninterruptibles.sleepUninterruptibly(checkIntervalMs, TimeUnit.MILLISECONDS);
+                } catch (Exception e) {
+                  LOG.error("HealthCheck encounter the exception", e);
+                }
+              }
+            });
     thread.setName("HealthCheckService");
     thread.setDaemon(true);
   }
-
 
   public void check() {
     for (Checker checker : checkers) {

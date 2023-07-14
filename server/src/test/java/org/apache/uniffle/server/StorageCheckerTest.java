@@ -198,7 +198,7 @@ public class StorageCheckerTest {
 
   private class MockNoSpaceStorageChecker extends LocalStorageChecker {
 
-    private final List<MockNoSpaceStorageInfo> mockNoSpaceStorageInfos  = Lists.newArrayList();
+    private final List<MockNoSpaceStorageInfo> mockNoSpaceStorageInfos = Lists.newArrayList();
 
     MockNoSpaceStorageChecker(ShuffleServerConf conf, List<LocalStorage> storages) {
       super(conf, storages);
@@ -257,5 +257,4 @@ public class StorageCheckerTest {
       }
     }
   }
-
 }

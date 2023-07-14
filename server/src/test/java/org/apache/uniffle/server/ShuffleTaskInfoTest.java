@@ -52,16 +52,20 @@ public class ShuffleTaskInfoTest {
     final CyclicBarrier barrier = new CyclicBarrier(n);
     final CountDownLatch countDownLatch = new CountDownLatch(n);
     ExecutorService executorService = Executors.newFixedThreadPool(n);
-    IntStream.range(0, n).forEach(i -> executorService.submit(() -> {
-      try {
-        barrier.await();
-        shuffleTaskInfo.markHugePartition(i, i);
-      } catch (Exception e) {
-        // ignore
-      } finally {
-        countDownLatch.countDown();
-      }
-    }));
+    IntStream.range(0, n)
+        .forEach(
+            i ->
+                executorService.submit(
+                    () -> {
+                      try {
+                        barrier.await();
+                        shuffleTaskInfo.markHugePartition(i, i);
+                      } catch (Exception e) {
+                        // ignore
+                      } finally {
+                        countDownLatch.countDown();
+                      }
+                    }));
     countDownLatch.await();
     assertEquals(1, ShuffleServerMetrics.counterTotalAppWithHugePartitionNum.get());
     assertEquals(1, ShuffleServerMetrics.gaugeAppWithHugePartitionNum.get());
@@ -74,16 +78,20 @@ public class ShuffleTaskInfoTest {
     barrier.reset();
     CountDownLatch latch = new CountDownLatch(n);
     ShuffleTaskInfo taskInfo = new ShuffleTaskInfo("hugePartitionConcurrentTest_appId");
-    IntStream.range(0, n).forEach(i -> executorService.submit(() -> {
-      try {
-        barrier.await();
-        taskInfo.markHugePartition(1, 1);
-      } catch (Exception e) {
-        // ignore
-      } finally {
-        latch.countDown();
-      }
-    }));
+    IntStream.range(0, n)
+        .forEach(
+            i ->
+                executorService.submit(
+                    () -> {
+                      try {
+                        barrier.await();
+                        taskInfo.markHugePartition(1, 1);
+                      } catch (Exception e) {
+                        // ignore
+                      } finally {
+                        latch.countDown();
+                      }
+                    }));
     latch.await();
     assertEquals(1, ShuffleServerMetrics.counterTotalAppWithHugePartitionNum.get());
     assertEquals(1, ShuffleServerMetrics.gaugeAppWithHugePartitionNum.get());
@@ -128,9 +136,6 @@ public class ShuffleTaskInfoTest {
     size = shuffleTaskInfo.getPartitionDataSize(0, 0);
     assertEquals(1500, size);
 
-    assertEquals(
-        1500,
-        shuffleTaskInfo.getTotalDataSize()
-    );
+    assertEquals(1500, shuffleTaskInfo.getTotalDataSize());
   }
 }

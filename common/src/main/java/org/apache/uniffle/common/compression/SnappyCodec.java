@@ -38,23 +38,28 @@ public class SnappyCodec extends Codec {
   public void decompress(ByteBuffer src, int uncompressedLen, ByteBuffer dest, int destOffset) {
     try {
       if (!src.isDirect() && !dest.isDirect()) {
-        int size = Snappy.uncompress(src.array(), src.position(), src.limit() - src.position(), dest.array(),
-            destOffset);
+        int size =
+            Snappy.uncompress(
+                src.array(),
+                src.position(),
+                src.limit() - src.position(),
+                dest.array(),
+                destOffset);
         if (size != uncompressedLen) {
           throw new RssException(
-            "This should not happen that the decompressed data size is not equals to original size.");
+              "This should not happen that the decompressed data size is not equals to original size.");
         }
         return;
       }
       if (src.isDirect() && dest.isDirect()) {
         if (destOffset != 0) {
           throw new RssException(
-            "Snappy decompression does not support non-zero offset for destination direct ByteBuffer");
+              "Snappy decompression does not support non-zero offset for destination direct ByteBuffer");
         }
         int size = Snappy.uncompress(src, dest);
         if (size != uncompressedLen) {
           throw new RssException(
-            "This should not happen that the decompressed data size is not equals to original size.");
+              "This should not happen that the decompressed data size is not equals to original size.");
         }
         return;
       }
@@ -62,7 +67,8 @@ public class SnappyCodec extends Codec {
       throw new RssException("Failed to uncompress by Snappy", e);
     }
 
-    throw new IllegalStateException("Snappy only supports the same type of bytebuffer decompression.");
+    throw new IllegalStateException(
+        "Snappy only supports the same type of bytebuffer decompression.");
   }
 
   @Override
@@ -86,15 +92,21 @@ public class SnappyCodec extends Codec {
       }
       if (!src.isDirect() && !dest.isDirect()) {
         int destOff = dest.position();
-        int compressedSize = Snappy.compress(src.array(), src.position(), src.limit() - src.position(), dest.array(),
-            dest.position());
+        int compressedSize =
+            Snappy.compress(
+                src.array(),
+                src.position(),
+                src.limit() - src.position(),
+                dest.array(),
+                dest.position());
         dest.position(destOff + compressedSize);
         return compressedSize;
       }
     } catch (Exception e) {
       throw new RssException("Failed to compress by Snappy", e);
     }
-    throw new IllegalStateException("Snappy only supports the same type of bytebuffer compression.");
+    throw new IllegalStateException(
+        "Snappy only supports the same type of bytebuffer compression.");
   }
 
   @Override
