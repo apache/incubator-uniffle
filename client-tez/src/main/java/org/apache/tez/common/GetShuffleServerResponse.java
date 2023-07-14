@@ -49,8 +49,7 @@ public class GetShuffleServerResponse implements Writable {
     return shuffleAssignmentsInfoWritable;
   }
 
-  public void setShuffleAssignmentsInfoWritable(
-      ShuffleAssignmentsInfoWritable shuffleAssignmentsInfoWritable) {
+  public void setShuffleAssignmentsInfoWritable(ShuffleAssignmentsInfoWritable shuffleAssignmentsInfoWritable) {
     this.shuffleAssignmentsInfoWritable = shuffleAssignmentsInfoWritable;
   }
 

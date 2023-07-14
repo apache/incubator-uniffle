@@ -51,29 +51,18 @@ public class LocalFileServerReadHandlerTest {
     ByteBuffer byteBuffer = ByteBuffer.allocate(expectTotalBlockNum * 40);
     Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
 
-    // We simulate the generation of 4 block index files and 3 block data files to test
-    // LocalFileClientReadHandler
-    List<ShufflePartitionedBlock> blocks =
-        LocalFileHandlerTestBase.generateBlocks(expectTotalBlockNum, blockSize);
-    LocalFileHandlerTestBase.writeTestData(
-        blocks,
-        shuffleBlocks -> {
-          int offset = 0;
-          for (ShufflePartitionedBlock block : shuffleBlocks) {
-            FileBasedShuffleSegment segment =
-                new FileBasedShuffleSegment(
-                    block.getBlockId(),
-                    offset,
-                    block.getLength(),
-                    block.getUncompressLength(),
-                    block.getCrc(),
-                    block.getTaskAttemptId());
-            offset += block.getLength();
-            LocalFileHandlerTestBase.writeIndex(byteBuffer, segment);
-          }
-        },
-        expectedData,
-        new HashSet<>());
+    // We simulate the generation of 4 block index files and 3 block data files to test LocalFileClientReadHandler
+    List<ShufflePartitionedBlock> blocks = LocalFileHandlerTestBase.generateBlocks(expectTotalBlockNum, blockSize);
+    LocalFileHandlerTestBase.writeTestData(blocks, shuffleBlocks -> {
+      int offset = 0;
+      for (ShufflePartitionedBlock block : shuffleBlocks) {
+        FileBasedShuffleSegment segment = new FileBasedShuffleSegment(
+            block.getBlockId(), offset, block.getLength(), block.getUncompressLength(),
+            block.getCrc(), block.getTaskAttemptId());
+        offset += block.getLength();
+        LocalFileHandlerTestBase.writeIndex(byteBuffer, segment);
+      }
+    }, expectedData, new HashSet<>());
     byteBuffer.rewind();
 
     blocks.forEach(block -> expectBlockIds.addLong(block.getBlockId()));
@@ -85,20 +74,16 @@ public class LocalFileServerReadHandlerTest {
 
     int actualWriteDataBlock = expectTotalBlockNum - 1;
     int actualFileLen = blockSize * actualWriteDataBlock;
-    RssGetShuffleIndexResponse response =
-        new RssGetShuffleIndexResponse(StatusCode.SUCCESS, byteBuffer, actualFileLen);
+    RssGetShuffleIndexResponse response = new RssGetShuffleIndexResponse(StatusCode.SUCCESS,
+        byteBuffer, actualFileLen);
     Mockito.doReturn(response).when(mockShuffleServerClient).getShuffleIndex(Mockito.any());
 
     int readBufferSize = 13;
     int bytesPerSegment = ((readBufferSize / blockSize) + 1) * blockSize;
-    List<Long> actualWriteBlockIds =
-        blocks.stream()
-            .map(ShufflePartitionedBlock::getBlockId)
-            .limit(actualWriteDataBlock)
-            .collect(Collectors.toList());
-    List<byte[]> segments =
-        LocalFileHandlerTestBase.calcSegmentBytes(
-            expectedData, bytesPerSegment, actualWriteBlockIds);
+    List<Long> actualWriteBlockIds = blocks.stream().map(ShufflePartitionedBlock::getBlockId)
+        .limit(actualWriteDataBlock).collect(Collectors.toList());
+    List<byte[]> segments = LocalFileHandlerTestBase.calcSegmentBytes(expectedData,
+        bytesPerSegment, actualWriteBlockIds);
 
     // first segment include 2 blocks
     ArgumentMatcher<RssGetShuffleDataRequest> segment1Match =
@@ -111,28 +96,13 @@ public class LocalFileServerReadHandlerTest {
     RssGetShuffleDataResponse segment2Response =
         new RssGetShuffleDataResponse(StatusCode.SUCCESS, ByteBuffer.wrap(segments.get(1)));
 
-    Mockito.doReturn(segment1Response)
-        .when(mockShuffleServerClient)
-        .getShuffleData(Mockito.argThat(segment1Match));
-    Mockito.doReturn(segment2Response)
-        .when(mockShuffleServerClient)
-        .getShuffleData(Mockito.argThat(segment2Match));
+    Mockito.doReturn(segment1Response).when(mockShuffleServerClient).getShuffleData(Mockito.argThat(segment1Match));
+    Mockito.doReturn(segment2Response).when(mockShuffleServerClient).getShuffleData(Mockito.argThat(segment2Match));
 
-    Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
-    LocalFileClientReadHandler handler =
-        new LocalFileClientReadHandler(
-            appId,
-            partitionId,
-            shuffleId,
-            -1,
-            1,
-            1,
-            readBufferSize,
-            expectBlockIds,
-            processBlockIds,
-            mockShuffleServerClient,
-            ShuffleDataDistributionType.NORMAL,
-            Roaring64NavigableMap.bitmapOf());
+    Roaring64NavigableMap processBlockIds =  Roaring64NavigableMap.bitmapOf();
+    LocalFileClientReadHandler handler = new LocalFileClientReadHandler(appId, partitionId, shuffleId, -1, 1, 1,
+        readBufferSize, expectBlockIds, processBlockIds, mockShuffleServerClient,
+        ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf());
     int totalSegment = ((blockSize * actualWriteDataBlock) / bytesPerSegment) + 1;
     int readBlocks = 0;
     for (int i = 0; i < totalSegment; i++) {
@@ -142,4 +112,5 @@ public class LocalFileServerReadHandlerTest {
     }
     assertEquals(actualWriteDataBlock, readBlocks);
   }
+
 }

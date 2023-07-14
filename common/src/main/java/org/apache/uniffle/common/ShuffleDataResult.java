@@ -47,8 +47,7 @@ public class ShuffleDataResult {
   }
 
   public ShuffleDataResult(ByteBuffer data, List<BufferSegment> bufferSegments) {
-    this.buffer =
-        new NettyManagedBuffer(data != null ? Unpooled.wrappedBuffer(data) : Unpooled.EMPTY_BUFFER);
+    this.buffer = new NettyManagedBuffer(data != null ? Unpooled.wrappedBuffer(data) : Unpooled.EMPTY_BUFFER);
     this.bufferSegments = bufferSegments;
   }
 
@@ -88,9 +87,6 @@ public class ShuffleDataResult {
   }
 
   public boolean isEmpty() {
-    return bufferSegments == null
-        || bufferSegments.isEmpty()
-        || buffer == null
-        || buffer.size() == 0;
+    return bufferSegments == null || bufferSegments.isEmpty() || buffer == null || buffer.size() == 0;
   }
 }

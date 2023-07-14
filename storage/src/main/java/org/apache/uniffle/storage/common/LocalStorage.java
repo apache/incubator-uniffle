@@ -55,6 +55,7 @@ public class LocalStorage extends AbstractStorage {
   private boolean isSpaceEnough = true;
   private volatile boolean isCorrupted = false;
 
+
   private LocalStorage(Builder builder) {
     this.basePath = builder.basePath;
     this.highWaterMarkOfWrite = builder.highWaterMarkOfWrite;
@@ -69,7 +70,7 @@ public class LocalStorage extends AbstractStorage {
       // clean the directory if it's data left from previous ran.
       FileUtils.cleanDirectory(baseFolder);
       FileStore store = Files.getFileStore(baseFolder.toPath());
-      this.mountPoint = store.name();
+      this.mountPoint =  store.name();
     } catch (IOException ioe) {
       LOG.warn("Init base directory " + basePath + " fail, the disk should be corrupted", ioe);
       throw new RssException(ioe);
@@ -77,20 +78,13 @@ public class LocalStorage extends AbstractStorage {
     if (capacity < 0L) {
       long totalSpace = baseFolder.getTotalSpace();
       this.capacity = (long) (totalSpace * builder.ratio);
-      LOG.info(
-          "The `rss.server.disk.capacity` is not specified nor negative, the "
-              + "ratio(`rss.server.disk.capacity.ratio`:{}) * disk space({}) is used, ",
-          builder.ratio,
-          totalSpace);
+      LOG.info("The `rss.server.disk.capacity` is not specified nor negative, the "
+          + "ratio(`rss.server.disk.capacity.ratio`:{}) * disk space({}) is used, ", builder.ratio, totalSpace);
     } else {
       long freeSpace = baseFolder.getFreeSpace();
       if (freeSpace < capacity) {
-        throw new IllegalArgumentException(
-            "The Disk of "
-                + basePath
-                + " Available Capacity "
-                + freeSpace
-                + " is smaller than configuration");
+        throw new IllegalArgumentException("The Disk of " + basePath + " Available Capacity " + freeSpace
+            + " is smaller than configuration");
       }
     }
   }
@@ -107,8 +101,7 @@ public class LocalStorage extends AbstractStorage {
 
   @Override
   public void updateWriteMetrics(StorageWriteMetrics metrics) {
-    updateWrite(
-        RssUtils.generateShuffleKey(metrics.getAppId(), metrics.getShuffleId()),
+    updateWrite(RssUtils.generateShuffleKey(metrics.getAppId(), metrics.getShuffleId()),
         metrics.getDataSize(),
         metrics.getPartitions());
   }
@@ -122,13 +115,13 @@ public class LocalStorage extends AbstractStorage {
 
   @Override
   ShuffleWriteHandler newWriteHandler(CreateShuffleWriteHandlerRequest request) {
-    return new LocalFileWriteHandler(
-        request.getAppId(),
+    return new LocalFileWriteHandler(request.getAppId(),
         request.getShuffleId(),
         request.getStartPartition(),
         request.getEndPartition(),
         basePath,
-        request.getFileNamePrefix());
+        request.getFileNamePrefix()
+    );
   }
 
   @Override
@@ -205,11 +198,8 @@ public class LocalStorage extends AbstractStorage {
     try {
       metaData.updateDiskSize(-metaData.getShuffleSize(shuffleKey));
       metaData.remoteShuffle(shuffleKey);
-      LOG.info(
-          "Finish remove resource of {}, disk size is {} and {} shuffle metadata",
-          shuffleKey,
-          metaData.getDiskSize(),
-          metaData.getShuffleMetaSet().size());
+      LOG.info("Finish remove resource of {}, disk size is {} and {} shuffle metadata",
+          shuffleKey, metaData.getDiskSize(), metaData.getShuffleMetaSet().size());
     } catch (Exception e) {
       LOG.error("Fail to update disk size", e);
     }
@@ -251,7 +241,8 @@ public class LocalStorage extends AbstractStorage {
     private String basePath;
     private StorageMedia media;
 
-    private Builder() {}
+    private Builder() {
+    }
 
     public Builder capacity(long capacity) {
       this.capacity = capacity;

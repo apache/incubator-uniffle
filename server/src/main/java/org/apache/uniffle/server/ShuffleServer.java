@@ -49,7 +49,6 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
-import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.netty.StreamServer;
@@ -67,7 +66,9 @@ import static org.apache.uniffle.common.config.RssBaseConf.RSS_TEST_MODE_ENABLE;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_CHECK_INTERVAL;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_SHUTDOWN;
 
-/** Server that manages startup/shutdown of a {@code Greeter} server. */
+/**
+ * Server that manages startup/shutdown of a {@code Greeter} server.
+ */
 public class ShuffleServer {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServer.class);
@@ -105,7 +106,9 @@ public class ShuffleServer {
     }
   }
 
-  /** Main launches the server from the command line. */
+  /**
+   * Main launches the server from the command line.
+   */
   public static void main(String[] args) throws Exception {
     Arguments arguments = new Arguments();
     CommandLine commandLine = new CommandLine(arguments);
@@ -137,20 +140,18 @@ public class ShuffleServer {
     initMetricsReporter();
 
     registerHeartBeat.startHeartBeat();
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread() {
-              @Override
-              public void run() {
-                LOG.info("*** shutting down gRPC server since JVM is shutting down");
-                try {
-                  stopServer();
-                } catch (Exception e) {
-                  LOG.error(e.getMessage());
-                }
-                LOG.info("*** server shut down");
-              }
-            });
+    Runtime.getRuntime().addShutdownHook(new Thread() {
+      @Override
+      public void run() {
+        LOG.info("*** shutting down gRPC server since JVM is shutting down");
+        try {
+          stopServer();
+        } catch (Exception e) {
+          LOG.error(e.getMessage());
+        }
+        LOG.info("*** server shut down");
+      }
+    });
     running = true;
     LOG.info("Shuffle server start successfully!");
   }
@@ -191,11 +192,9 @@ public class ShuffleServer {
   private void initialization() throws Exception {
     boolean testMode = shuffleServerConf.getBoolean(RSS_TEST_MODE_ENABLE);
     String storageType = shuffleServerConf.getString(RSS_STORAGE_TYPE);
-    if (!testMode
-        && (StorageType.LOCALFILE.name().equals(storageType)
+    if (!testMode && (StorageType.LOCALFILE.name().equals(storageType)
             || (StorageType.HDFS.name()).equals(storageType))) {
-      throw new IllegalArgumentException(
-          "RSS storage type about LOCALFILE and HADOOP should be used in test mode, "
+      throw new IllegalArgumentException("RSS storage type about LOCALFILE and HADOOP should be used in test mode, "
               + "because of the poor performance of these two types.");
     }
     ip = RssUtils.getHostIp();
@@ -209,30 +208,21 @@ public class ShuffleServer {
     registerMetrics();
     // register packages and instances for jersey
     jettyServer.addResourcePackages("org.apache.uniffle.common.web.resource");
-    jettyServer.registerInstance(
-        CollectorRegistry.class.getCanonicalName() + "#server",
+    jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#server",
         ShuffleServerMetrics.getCollectorRegistry());
-    jettyServer.registerInstance(
-        CollectorRegistry.class.getCanonicalName() + "#grpc", grpcMetrics.getCollectorRegistry());
-    jettyServer.registerInstance(
-        CollectorRegistry.class.getCanonicalName() + "#jvm", JvmMetrics.getCollectorRegistry());
-    jettyServer.registerInstance(
-        CollectorRegistry.class.getCanonicalName() + "#all",
-        new CoalescedCollectorRegistry(
-            ShuffleServerMetrics.getCollectorRegistry(),
-            grpcMetrics.getCollectorRegistry(),
-            JvmMetrics.getCollectorRegistry()));
+    jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#grpc",
+        grpcMetrics.getCollectorRegistry());
+    jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#jvm",
+        JvmMetrics.getCollectorRegistry());
 
     SecurityConfig securityConfig = null;
     if (shuffleServerConf.getBoolean(RSS_SECURITY_HADOOP_KERBEROS_ENABLE)) {
-      securityConfig =
-          SecurityConfig.newBuilder()
-              .krb5ConfPath(shuffleServerConf.getString(RSS_SECURITY_HADOOP_KRB5_CONF_FILE))
-              .keytabFilePath(shuffleServerConf.getString(RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE))
-              .principal(shuffleServerConf.getString(RSS_SECURITY_HADOOP_KERBEROS_PRINCIPAL))
-              .reloginIntervalSec(
-                  shuffleServerConf.getLong(RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC))
-              .build();
+      securityConfig = SecurityConfig.newBuilder()
+          .krb5ConfPath(shuffleServerConf.getString(RSS_SECURITY_HADOOP_KRB5_CONF_FILE))
+          .keytabFilePath(shuffleServerConf.getString(RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE))
+          .principal(shuffleServerConf.getString(RSS_SECURITY_HADOOP_KERBEROS_PRINCIPAL))
+          .reloginIntervalSec(shuffleServerConf.getLong(RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC))
+          .build();
     }
     SecurityContextFactory.get().init(securityConfig);
 
@@ -250,9 +240,8 @@ public class ShuffleServer {
     registerHeartBeat = new RegisterHeartBeat(this);
     shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, this, storageManager);
     shuffleBufferManager = new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager);
-    shuffleTaskManager =
-        new ShuffleTaskManager(
-            shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager);
+    shuffleTaskManager = new ShuffleTaskManager(shuffleServerConf, shuffleFlushManager,
+        shuffleBufferManager, storageManager);
     nettyServerEnabled = shuffleServerConf.get(ShuffleServerConf.NETTY_SERVER_PORT) >= 0;
     if (nettyServerEnabled) {
       streamServer = new StreamServer(this);
@@ -291,8 +280,7 @@ public class ShuffleServer {
     grpcMetrics = new ShuffleServerGrpcMetrics(tags);
     grpcMetrics.register(new CollectorRegistry(true));
     CollectorRegistry jvmCollectorRegistry = new CollectorRegistry(true);
-    boolean verbose =
-        shuffleServerConf.getBoolean(ShuffleServerConf.RSS_JVM_METRICS_VERBOSE_ENABLE);
+    boolean verbose = shuffleServerConf.getBoolean(ShuffleServerConf.RSS_JVM_METRICS_VERBOSE_ENABLE);
     JvmMetrics.register(jvmCollectorRegistry, verbose);
   }
 
@@ -306,7 +294,9 @@ public class ShuffleServer {
     }
   }
 
-  /** Await termination on the main thread since the grpc library uses daemon threads. */
+  /**
+   * Await termination on the main thread since the grpc library uses daemon threads.
+   */
   private void blockUntilShutdown() throws InterruptedException {
     server.blockUntilShutdown();
   }
@@ -355,9 +345,7 @@ public class ShuffleServer {
         }
         break;
       }
-      LOG.info(
-          "Shuffle server is decommissioning, remaining {} applications not finished.",
-          remainApplicationNum);
+      LOG.info("Shuffle server is decommissioning, remaining {} applications not finished.", remainApplicationNum);
       try {
         Thread.sleep(checkInterval);
       } catch (InterruptedException e) {
@@ -367,8 +355,8 @@ public class ShuffleServer {
     }
     remainApplicationNum = shuffleTaskManager.getAppIds().size();
     if (remainApplicationNum > 0) {
-      LOG.info(
-          "Decommission exiting, remaining {} applications not finished.", remainApplicationNum);
+      LOG.info("Decommission exiting, remaining {} applications not finished.",
+          remainApplicationNum);
     }
   }
 

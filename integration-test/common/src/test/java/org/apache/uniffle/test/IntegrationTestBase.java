@@ -95,10 +95,9 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
       CoordinatorConf coordinatorConf, Map<String, String> dynamicConf) throws Exception {
     File file = createDynamicConfFile(dynamicConf);
     coordinatorConf.setBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
-    coordinatorConf.setString(
-        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, file.getAbsolutePath());
-    coordinatorConf.setInteger(
-        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 5);
+    coordinatorConf.setString(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH,
+        file.getAbsolutePath());
+    coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 5);
   }
 
   protected static ShuffleServerConf getShuffleServerConf() throws Exception {
@@ -139,7 +138,8 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
   }
 
   protected static void createAndStartServers(
-      ShuffleServerConf shuffleServerConf, CoordinatorConf coordinatorConf) throws Exception {
+      ShuffleServerConf shuffleServerConf,
+      CoordinatorConf coordinatorConf) throws Exception {
     createCoordinatorServer(coordinatorConf);
     createShuffleServer(shuffleServerConf);
     startServers();
@@ -151,8 +151,8 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     return dynamicConfFile;
   }
 
-  protected static void writeRemoteStorageConf(File cfgFile, Map<String, String> dynamicConf)
-      throws Exception {
+  protected static void writeRemoteStorageConf(
+      File cfgFile, Map<String, String> dynamicConf) throws Exception {
     // sleep 2 secs to make sure the modified time will be updated
     Thread.sleep(2000);
     FileWriter fileWriter = new FileWriter(cfgFile);

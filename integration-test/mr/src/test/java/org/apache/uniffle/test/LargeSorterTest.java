@@ -56,9 +56,7 @@ public class LargeSorterTest extends MRIntegrationTestBase {
   protected void updateRssConfiguration(Configuration jobConf) {
     jobConf.setInt(LargeSorter.NUM_MAP_TASKS, 1);
     jobConf.setInt(LargeSorter.MBS_PER_MAP, 256);
-    jobConf.set(
-        MRJobConfig.MR_AM_COMMAND_OPTS,
-        "-XX:+TraceClassLoading org.apache.uniffle.test.FailoverAppMaster");
+    jobConf.set(MRJobConfig.MR_AM_COMMAND_OPTS, "-XX:+TraceClassLoading org.apache.uniffle.test.FailoverAppMaster");
   }
 
   @Override

@@ -31,7 +31,8 @@ public class JvmMetrics {
   private static CollectorRegistry collectorRegistry;
   private static boolean initialized = false;
 
-  public JvmMetrics() {}
+  public JvmMetrics() {
+  }
 
   public static CollectorRegistry getCollectorRegistry() {
     return collectorRegistry;
@@ -39,10 +40,12 @@ public class JvmMetrics {
 
   public static void register() {
     register(CollectorRegistry.defaultRegistry, false);
+
   }
 
   public static void register(CollectorRegistry collectorRegistry) {
     register(collectorRegistry, false);
+
   }
 
   public static synchronized void register(CollectorRegistry collectorRegistry, boolean verbose) {
@@ -55,6 +58,7 @@ public class JvmMetrics {
       }
       initialized = true;
     }
+
   }
 
   private static void registerDefault(CollectorRegistry registry) {
@@ -75,4 +79,5 @@ public class JvmMetrics {
     (new ClassLoadingExports()).register(registry);
     (new VersionInfoExports()).register(registry);
   }
+
 }

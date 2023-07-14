@@ -1,12 +1,13 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,15 +32,16 @@ import org.apache.tez.runtime.api.Reader;
 import org.apache.tez.runtime.library.api.KeyValueReader;
 
 /**
- * Implements a {@link MergedLogicalInput} that merges the incoming inputs (e.g. from a {@link
- * GroupInputEdge} and provide a unified view of the input. It concatenates all the inputs to
- * provide a unified view
+ * Implements a {@link MergedLogicalInput} that merges the incoming inputs
+ * (e.g. from a {@link GroupInputEdge} and provide a unified view of the 
+ * input. It concatenates all the inputs to provide a unified view
  */
 @Public
 public class RssConcatenatedMergedKeyValueInput extends MergedLogicalInput {
   private ConcatenatedMergedKeyValueReader concatenatedMergedKeyValueReader;
 
-  public RssConcatenatedMergedKeyValueInput(MergedInputContext context, List<Input> inputs) {
+  public RssConcatenatedMergedKeyValueInput(MergedInputContext context,
+                                            List<Input> inputs) {
     super(context, inputs);
   }
 
@@ -59,8 +61,8 @@ public class RssConcatenatedMergedKeyValueInput extends MergedLogicalInput {
         try {
           Reader reader = getInputs().get(currentReaderIndex).getReader();
           if (!(reader instanceof KeyValueReader)) {
-            throw new TezUncheckedException(
-                "Expected KeyValueReader. " + "Got: " + reader.getClass().getName());
+            throw new TezUncheckedException("Expected KeyValueReader. "
+                + "Got: " + reader.getClass().getName());
           }
           currentReader = (KeyValueReader) reader;
           currentReaderIndex++;
@@ -93,7 +95,10 @@ public class RssConcatenatedMergedKeyValueInput extends MergedLogicalInput {
     }
   }
 
-  /** Provides a {@link KeyValueReader} that iterates over the concatenated input data */
+  /**
+   * Provides a {@link KeyValueReader} that iterates over the 
+   * concatenated input data
+   */
   @Override
   public KeyValueReader getReader() throws Exception {
     concatenatedMergedKeyValueReader = new ConcatenatedMergedKeyValueReader();

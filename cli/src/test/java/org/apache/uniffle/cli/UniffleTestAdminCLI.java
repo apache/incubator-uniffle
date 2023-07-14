@@ -36,15 +36,16 @@ public class UniffleTestAdminCLI {
   public void testAdminRefreshCLI() throws UniffleCliArgsException, IOException {
 
     UniffleRestClient client = Mockito.mock(UniffleRestClient.class, Answers.RETURNS_DEEP_STUBS);
-    Mockito.when(
-            client.getHttpClient().get(Mockito.anyString(), Mockito.anyMap(), Mockito.anyString()))
+    Mockito.when(client.getHttpClient().get(Mockito.anyString(), Mockito.anyMap(), Mockito.anyString()))
         .thenReturn("OK");
     UniffleAdminCLI uniffleAdminCLI = new UniffleAdminCLI("", "", client);
     String[] args = {"-r"};
     assertEquals(0, uniffleAdminCLI.run(args));
-    Mockito.verify(client.getHttpClient(), Mockito.times(1))
-        .get("/api/admin/refreshChecker", new HashMap<>(), null);
+    Mockito.verify(client.getHttpClient(),
+        Mockito.times(1)).get("/api/admin/refreshChecker",
+           new HashMap<>(), null);
   }
+
 
   @Test
   public void testMissingClientCLI() throws UniffleCliArgsException, IOException {
@@ -52,4 +53,5 @@ public class UniffleTestAdminCLI {
     String[] args = {"-r"};
     assertThrows(UniffleCliArgsException.class, () -> uniffleAdminCLI.run(args));
   }
+
 }

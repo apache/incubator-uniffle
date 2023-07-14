@@ -35,8 +35,8 @@ import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 /**
- * HadoopShuffleFileReadHandler is a shuffle-specific file read handler, it contains two
- * HadoopFileReader instances created by using the index file and its indexed data file.
+ * HadoopShuffleFileReadHandler is a shuffle-specific file read handler, it contains two HadoopFileReader
+ * instances created by using the index file and its indexed data file.
  */
 public class HadoopShuffleReadHandler extends DataSkippableReadHandler {
   private static final Logger LOG = LoggerFactory.getLogger(HadoopShuffleReadHandler.class);
@@ -57,22 +57,12 @@ public class HadoopShuffleReadHandler extends DataSkippableReadHandler {
       Configuration conf,
       ShuffleDataDistributionType distributionType,
       Roaring64NavigableMap expectTaskIds,
-      boolean offHeapEnabled)
-      throws Exception {
-    super(
-        appId,
-        shuffleId,
-        partitionId,
-        readBufferSize,
-        expectBlockIds,
-        processBlockIds,
-        distributionType,
-        expectTaskIds);
+      boolean offHeapEnabled) throws Exception {
+    super(appId, shuffleId, partitionId, readBufferSize, expectBlockIds, processBlockIds,
+        distributionType, expectTaskIds);
     this.filePrefix = filePrefix;
-    this.indexReader =
-        createHadoopReader(ShuffleStorageUtils.generateIndexFileName(filePrefix), conf);
-    this.dataReader =
-        createHadoopReader(ShuffleStorageUtils.generateDataFileName(filePrefix), conf);
+    this.indexReader = createHadoopReader(ShuffleStorageUtils.generateIndexFileName(filePrefix), conf);
+    this.dataReader = createHadoopReader(ShuffleStorageUtils.generateDataFileName(filePrefix), conf);
     this.offHeapEnabled = offHeapEnabled;
   }
 
@@ -85,20 +75,9 @@ public class HadoopShuffleReadHandler extends DataSkippableReadHandler {
       int readBufferSize,
       Roaring64NavigableMap expectBlockIds,
       Roaring64NavigableMap processBlockIds,
-      Configuration conf)
-      throws Exception {
-    this(
-        appId,
-        shuffleId,
-        partitionId,
-        filePrefix,
-        readBufferSize,
-        expectBlockIds,
-        processBlockIds,
-        conf,
-        ShuffleDataDistributionType.NORMAL,
-        Roaring64NavigableMap.bitmapOf(),
-        false);
+      Configuration conf) throws Exception {
+    this(appId, shuffleId, partitionId, filePrefix, readBufferSize, expectBlockIds,
+        processBlockIds, conf, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf(), false);
   }
 
   @Override
@@ -115,14 +94,11 @@ public class HadoopShuffleReadHandler extends DataSkippableReadHandler {
       int segmentNumber = indexDataLength / FileBasedShuffleSegment.SEGMENT_SIZE;
       int expectedLen = segmentNumber * FileBasedShuffleSegment.SEGMENT_SIZE;
       if (indexDataLength != expectedLen) {
-        LOG.warn(
-            "Maybe the index file: {} is being written due to the shuffle-buffer flushing.",
-            filePrefix);
+        LOG.warn("Maybe the index file: {} is being written due to the shuffle-buffer flushing.", filePrefix);
         indexData.limit(expectedLen);
       }
       long dateFileLen = getDataFileLen();
-      LOG.info(
-          "Read index files {}.index for {} ms", filePrefix, System.currentTimeMillis() - start);
+      LOG.info("Read index files {}.index for {} ms", filePrefix, System.currentTimeMillis() - start);
       return new ShuffleIndexResult(indexData, dateFileLen);
     } catch (Exception e) {
       LOG.info("Fail to read index files {}.index", filePrefix, e);
@@ -131,8 +107,7 @@ public class HadoopShuffleReadHandler extends DataSkippableReadHandler {
   }
 
   protected ShuffleDataResult readShuffleData(ShuffleDataSegment shuffleDataSegment) {
-    // Here we make an assumption that the rest of the file is corrupted, if an unexpected data is
-    // read.
+    // Here we make an assumption that the rest of the file is corrupted, if an unexpected data is read.
     int expectedLength = shuffleDataSegment.getLength();
     if (expectedLength <= 0) {
       LOG.warn("Invalid data segment is {} from file {}.data", shuffleDataSegment, filePrefix);
@@ -147,24 +122,15 @@ public class HadoopShuffleReadHandler extends DataSkippableReadHandler {
     }
     int length = data.limit() - data.position();
     if (length == 0) {
-      LOG.warn(
-          "Fail to read expected[{}] data, actual[{}] and segment is {} from file {}.data",
-          expectedLength,
-          length,
-          shuffleDataSegment,
-          filePrefix);
+      LOG.warn("Fail to read expected[{}] data, actual[{}] and segment is {} from file {}.data",
+          expectedLength, length, shuffleDataSegment, filePrefix);
       return null;
     }
 
-    ShuffleDataResult shuffleDataResult =
-        new ShuffleDataResult(data, shuffleDataSegment.getBufferSegments());
+    ShuffleDataResult shuffleDataResult = new ShuffleDataResult(data, shuffleDataSegment.getBufferSegments());
     if (shuffleDataResult.isEmpty()) {
-      LOG.warn(
-          "Shuffle data is empty, expected length {}, data length {}, segment {} in file {}.data",
-          expectedLength,
-          length,
-          shuffleDataSegment,
-          filePrefix);
+      LOG.warn("Shuffle data is empty, expected length {}, data length {}, segment {} in file {}.data",
+          expectedLength, length, shuffleDataSegment, filePrefix);
       return null;
     }
 
@@ -174,11 +140,8 @@ public class HadoopShuffleReadHandler extends DataSkippableReadHandler {
   protected byte[] readShuffleData(long offset, int expectedLength) {
     byte[] data = dataReader.read(offset, expectedLength);
     if (data.length != expectedLength) {
-      LOG.warn(
-          "Fail to read expected[{}] data, actual[{}] from file {}.data",
-          expectedLength,
-          data.length,
-          filePrefix);
+      LOG.warn("Fail to read expected[{}] data, actual[{}] from file {}.data",
+          expectedLength, data.length, filePrefix);
       return new byte[0];
     }
     return data;
@@ -188,11 +151,8 @@ public class HadoopShuffleReadHandler extends DataSkippableReadHandler {
     ByteBuffer data = dataReader.readAsByteBuffer(offset, expectedLength);
     int length = data.limit() - data.position();
     if (length != expectedLength) {
-      LOG.warn(
-          "Fail to read byte buffer expected[{}] data, actual[{}] from file {}.data",
-          expectedLength,
-          length,
-          filePrefix);
+      LOG.warn("Fail to read byte buffer expected[{}] data, actual[{}] from file {}.data",
+          expectedLength, length, filePrefix);
       return ByteBuffer.allocateDirect(0);
     }
     return data;
@@ -202,9 +162,7 @@ public class HadoopShuffleReadHandler extends DataSkippableReadHandler {
     try {
       return dataReader.getFileLen();
     } catch (IOException ioException) {
-      LOG.error(
-          "getDataFileLen failed for " + ShuffleStorageUtils.generateDataFileName(filePrefix),
-          ioException);
+      LOG.error("getDataFileLen failed for " +  ShuffleStorageUtils.generateDataFileName(filePrefix), ioException);
       return -1;
     }
   }
@@ -225,8 +183,8 @@ public class HadoopShuffleReadHandler extends DataSkippableReadHandler {
     }
   }
 
-  protected HadoopFileReader createHadoopReader(String fileName, Configuration hadoopConf)
-      throws Exception {
+  protected HadoopFileReader createHadoopReader(
+      String fileName, Configuration hadoopConf) throws Exception {
     Path path = new Path(fileName);
     return new HadoopFileReader(path, hadoopConf);
   }
@@ -234,4 +192,5 @@ public class HadoopShuffleReadHandler extends DataSkippableReadHandler {
   public List<ShuffleDataSegment> getShuffleDataSegments() {
     return shuffleDataSegments;
   }
+
 }

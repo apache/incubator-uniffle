@@ -71,8 +71,8 @@ public class ShuffleAssignmentsInfoWritableTest {
     serverToPartitionRanges.put(work3, Arrays.asList(range0, range1, range2, range3));
     serverToPartitionRanges.put(work4, Arrays.asList(range0, range1, range3, range4));
 
-    ShuffleAssignmentsInfo info =
-        new ShuffleAssignmentsInfo(partitionToServers, serverToPartitionRanges);
+
+    ShuffleAssignmentsInfo info = new ShuffleAssignmentsInfo(partitionToServers, serverToPartitionRanges);
     ShuffleAssignmentsInfoWritable infoWritable = new ShuffleAssignmentsInfoWritable(info);
 
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -85,10 +85,9 @@ public class ShuffleAssignmentsInfoWritableTest {
     deSerInfoWritable.readFields(in);
 
     {
-      Map<Integer, List<ShuffleServerInfo>> base =
-          infoWritable.getShuffleAssignmentsInfo().getPartitionToServers();
-      Map<Integer, List<ShuffleServerInfo>> deSer =
-          deSerInfoWritable.getShuffleAssignmentsInfo().getPartitionToServers();
+      Map<Integer, List<ShuffleServerInfo>> base = infoWritable.getShuffleAssignmentsInfo().getPartitionToServers();
+      Map<Integer, List<ShuffleServerInfo>> deSer = deSerInfoWritable.getShuffleAssignmentsInfo()
+              .getPartitionToServers();
 
       assertEquals(base.size(), deSer.size());
       for (Integer partitionId : base.keySet()) {
@@ -96,10 +95,10 @@ public class ShuffleAssignmentsInfoWritableTest {
       }
     }
     {
-      Map<ShuffleServerInfo, List<PartitionRange>> base =
-          infoWritable.getShuffleAssignmentsInfo().getServerToPartitionRanges();
-      Map<ShuffleServerInfo, List<PartitionRange>> deSer =
-          deSerInfoWritable.getShuffleAssignmentsInfo().getServerToPartitionRanges();
+      Map<ShuffleServerInfo, List<PartitionRange>> base = infoWritable.getShuffleAssignmentsInfo()
+              .getServerToPartitionRanges();
+      Map<ShuffleServerInfo, List<PartitionRange>> deSer = deSerInfoWritable.getShuffleAssignmentsInfo()
+              .getServerToPartitionRanges();
 
       assertEquals(base.size(), deSer.size());
       for (ShuffleServerInfo serverInfo : base.keySet()) {

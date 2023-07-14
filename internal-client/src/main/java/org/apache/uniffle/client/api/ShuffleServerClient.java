@@ -59,8 +59,7 @@ public interface ShuffleServerClient {
 
   RssGetShuffleResultResponse getShuffleResult(RssGetShuffleResultRequest request);
 
-  RssGetShuffleResultResponse getShuffleResultForMultiPart(
-      RssGetShuffleResultForMultiPartRequest request);
+  RssGetShuffleResultResponse getShuffleResultForMultiPart(RssGetShuffleResultForMultiPartRequest request);
 
   RssGetShuffleIndexResponse getShuffleIndex(RssGetShuffleIndexRequest request);
 

@@ -44,21 +44,20 @@ public class KerberizedHadoopBase {
 
   public static void initHadoopSecurityContext() throws Exception {
     // init the security context
-    SecurityConfig securityConfig =
-        SecurityConfig.newBuilder()
-            .keytabFilePath(kerberizedHadoop.getHdfsKeytab())
-            .principal(kerberizedHadoop.getHdfsPrincipal())
-            .reloginIntervalSec(1000)
-            .build();
+    SecurityConfig securityConfig = SecurityConfig
+        .newBuilder()
+        .keytabFilePath(kerberizedHadoop.getHdfsKeytab())
+        .principal(kerberizedHadoop.getHdfsPrincipal())
+        .reloginIntervalSec(1000)
+        .build();
     SecurityContextFactory.get().init(securityConfig);
 
-    assertEquals(
-        HadoopSecurityContext.class, SecurityContextFactory.get().getSecurityContext().getClass());
+    assertEquals(HadoopSecurityContext.class, SecurityContextFactory.get().getSecurityContext().getClass());
   }
 
   public static void removeHadoopSecurityContext() throws Exception {
     SecurityContextFactory.get().init(null);
-    assertEquals(
-        NoOpSecurityContext.class, SecurityContextFactory.get().getSecurityContext().getClass());
+    assertEquals(NoOpSecurityContext.class, SecurityContextFactory.get().getSecurityContext().getClass());
   }
 }
+

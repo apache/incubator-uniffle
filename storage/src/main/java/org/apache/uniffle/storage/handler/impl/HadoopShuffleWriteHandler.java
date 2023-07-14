@@ -58,14 +58,11 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
       int endPartition,
       String storageBasePath,
       String fileNamePrefix,
-      Configuration hadoopConf)
-      throws Exception {
+      Configuration hadoopConf) throws Exception {
     this.hadoopConf = hadoopConf;
     this.fileNamePrefix = fileNamePrefix;
-    this.basePath =
-        ShuffleStorageUtils.getFullShuffleDataFolder(
-            storageBasePath,
-            ShuffleStorageUtils.getShuffleDataPath(appId, shuffleId, startPartition, endPartition));
+    this.basePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
+        ShuffleStorageUtils.getShuffleDataPath(appId, shuffleId, startPartition, endPartition));
     initialize();
   }
 
@@ -77,13 +74,10 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
       String storageBasePath,
       String fileNamePrefix,
       Configuration hadoopConf,
-      String user)
-      throws Exception {
+      String user) throws Exception {
     this.hadoopConf = hadoopConf;
     this.fileNamePrefix = fileNamePrefix;
-    this.basePath =
-        ShuffleStorageUtils.getFullShuffleDataFolder(
-            storageBasePath,
+    this.basePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
             ShuffleStorageUtils.getShuffleDataPath(appId, shuffleId, startPartition, endPartition));
     this.user = user;
     initialize();
@@ -109,33 +103,26 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
   }
 
   @Override
-  public void write(List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
+  public void write(
+      List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
     final long start = System.currentTimeMillis();
     writeLock.lock();
     try {
       final long ss = System.currentTimeMillis();
       // Write to HDFS will be failed with lease problem, and can't write the same file again
       // change the prefix of file name if write failed before
-      String dataFileName =
-          ShuffleStorageUtils.generateDataFileName(fileNamePrefix + "_" + failTimes);
-      String indexFileName =
-          ShuffleStorageUtils.generateIndexFileName(fileNamePrefix + "_" + failTimes);
+      String dataFileName = ShuffleStorageUtils.generateDataFileName(fileNamePrefix + "_" + failTimes);
+      String indexFileName = ShuffleStorageUtils.generateIndexFileName(fileNamePrefix + "_" + failTimes);
       try (HadoopFileWriter dataWriter = createWriter(dataFileName);
-          HadoopFileWriter indexWriter = createWriter(indexFileName)) {
+           HadoopFileWriter indexWriter = createWriter(indexFileName)) {
         for (ShufflePartitionedBlock block : shuffleBlocks) {
           long blockId = block.getBlockId();
           long crc = block.getCrc();
           long startOffset = dataWriter.nextOffset();
           dataWriter.writeData(ByteBufUtils.readBytes(block.getData()));
 
-          FileBasedShuffleSegment segment =
-              new FileBasedShuffleSegment(
-                  blockId,
-                  startOffset,
-                  block.getLength(),
-                  block.getUncompressLength(),
-                  crc,
-                  block.getTaskAttemptId());
+          FileBasedShuffleSegment segment = new FileBasedShuffleSegment(
+              blockId, startOffset, block.getLength(), block.getUncompressLength(), crc, block.getTaskAttemptId());
           indexWriter.writeIndex(segment);
         }
         LOG.debug(
@@ -143,14 +130,7 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
             (System.currentTimeMillis() - ss),
             fileNamePrefix);
       } catch (IOException e) {
-        LOG.warn(
-            "Write failed with "
-                + shuffleBlocks.size()
-                + " blocks for "
-                + fileNamePrefix
-                + "_"
-                + failTimes,
-            e);
+        LOG.warn("Write failed with " + shuffleBlocks.size() + " blocks for " + fileNamePrefix + "_" + failTimes, e);
         failTimes++;
         throw new RssException(e);
       }

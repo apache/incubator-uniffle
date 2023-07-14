@@ -46,7 +46,7 @@ public interface ClusterManager extends Closeable, Reconfigurable {
    * @return list of lost nodes
    */
   List<ServerNode> getLostServerList();
-
+  
   /**
    * Get unhealthy nodes from the cluster
    *
@@ -54,15 +54,21 @@ public interface ClusterManager extends Closeable, Reconfigurable {
    */
   List<ServerNode> getUnhealthyServerList();
 
-  /** @return number of server nodes in the cluster */
+  /**
+   * @return number of server nodes in the cluster
+   */
   int getNodesNum();
 
-  /** @return list all server nodes in the cluster */
+  /**
+   * @return list all server nodes in the cluster
+   */
   List<ServerNode> list();
 
   int getShuffleNodesMax();
 
-  /** @return whether to be ready for serving */
+  /**
+   * @return whether to be ready for serving
+   */
   boolean isReadyForServe();
 
   ServerNode getServerNodeById(String serverId);

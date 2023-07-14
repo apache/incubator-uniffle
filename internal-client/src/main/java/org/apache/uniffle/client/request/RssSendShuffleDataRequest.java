@@ -29,10 +29,7 @@ public class RssSendShuffleDataRequest {
   private long retryIntervalMax;
   private Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks;
 
-  public RssSendShuffleDataRequest(
-      String appId,
-      int retryMax,
-      long retryIntervalMax,
+  public RssSendShuffleDataRequest(String appId, int retryMax, long retryIntervalMax,
       Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks) {
     this.appId = appId;
     this.retryMax = retryMax;

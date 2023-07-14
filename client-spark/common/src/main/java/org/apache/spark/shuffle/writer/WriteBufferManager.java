@@ -111,7 +111,8 @@ public class WriteBufferManager extends MemoryConsumer {
         taskMemoryManager,
         shuffleWriteMetrics,
         rssConf,
-        null);
+        null
+    );
   }
 
   public WriteBufferManager(
@@ -146,25 +147,25 @@ public class WriteBufferManager extends MemoryConsumer {
       this.instance = serializer.newInstance();
       this.serializeStream = instance.serializeStream(arrayOutputStream);
     }
-    boolean compress =
-        rssConf.getBoolean(
-            RssSparkConfig.SPARK_SHUFFLE_COMPRESS_KEY.substring(
-                RssSparkConfig.SPARK_RSS_CONFIG_PREFIX.length()),
-            RssSparkConfig.SPARK_SHUFFLE_COMPRESS_DEFAULT);
+    boolean compress = rssConf.getBoolean(RssSparkConfig.SPARK_SHUFFLE_COMPRESS_KEY
+            .substring(RssSparkConfig.SPARK_RSS_CONFIG_PREFIX.length()),
+        RssSparkConfig.SPARK_SHUFFLE_COMPRESS_DEFAULT);
     this.codec = compress ? Codec.newInstance(rssConf) : null;
     this.spillFunc = spillFunc;
     this.sendSizeLimit = rssConf.get(RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMITATION);
     this.memorySpillTimeoutSec = rssConf.get(RssSparkConfig.RSS_MEMORY_SPILL_TIMEOUT);
   }
 
-  /** add serialized columnar data directly when integrate with gluten */
+  /**
+   * add serialized columnar data directly when integrate with gluten
+   */
   public List<ShuffleBlockInfo> addPartitionData(int partitionId, byte[] serializedData) {
     return addPartitionData(
-        partitionId, serializedData, serializedData.length, System.currentTimeMillis());
+            partitionId, serializedData, serializedData.length, System.currentTimeMillis());
   }
 
   public List<ShuffleBlockInfo> addPartitionData(
-      int partitionId, byte[] serializedData, int serializedDataLength, long start) {
+          int partitionId, byte[] serializedData, int serializedDataLength, long start) {
     List<ShuffleBlockInfo> result = Lists.newArrayList();
     if (buffers.containsKey(partitionId)) {
       WriterBuffer wb = buffers.get(partitionId);
@@ -176,16 +177,9 @@ public class WriteBufferManager extends MemoryConsumer {
         result.add(createShuffleBlock(partitionId, wb));
         copyTime += wb.getCopyTime();
         buffers.remove(partitionId);
-        LOG.debug(
-            "Single buffer is full for shuffleId["
-                + shuffleId
-                + "] partition["
-                + partitionId
-                + "] with memoryUsed["
-                + wb.getMemoryUsed()
-                + "], dataLength["
-                + wb.getDataLength()
-                + "]");
+        LOG.debug("Single buffer is full for shuffleId[" + shuffleId
+            + "] partition[" + partitionId + "] with memoryUsed[" + wb.getMemoryUsed()
+            + "], dataLength[" + wb.getDataLength() + "]");
       }
     } else {
       requestMemory(Math.max(bufferSegmentSize, serializedDataLength));
@@ -223,9 +217,8 @@ public class WriteBufferManager extends MemoryConsumer {
       return null;
     }
     List<ShuffleBlockInfo> shuffleBlockInfos =
-        addPartitionData(partitionId, serializedData, serializedDataLength, start);
-    // records is a row based semantic, when in columnar shuffle records num should be taken from
-    // ColumnarBatch
+            addPartitionData(partitionId, serializedData, serializedDataLength, start);
+    // records is a row based semantic, when in columnar shuffle records num should be taken from ColumnarBatch
     // that is handled by rss shuffle writer implementation
     if (isRowBased) {
       shuffleWriteMetrics.incRecordsWritten(1L);
@@ -240,7 +233,7 @@ public class WriteBufferManager extends MemoryConsumer {
     long memoryUsed = 0;
     Iterator<Entry<Integer, WriterBuffer>> iterator = buffers.entrySet().iterator();
     while (iterator.hasNext()) {
-      Entry<Integer, WriterBuffer> entry = iterator.next();
+      Entry<Integer, WriterBuffer>  entry = iterator.next();
       WriterBuffer wb = entry.getValue();
       dataSize += wb.getDataLength();
       memoryUsed += wb.getMemoryUsed();
@@ -248,16 +241,8 @@ public class WriteBufferManager extends MemoryConsumer {
       iterator.remove();
       copyTime += wb.getCopyTime();
     }
-    LOG.info(
-        "Flush total buffer for shuffleId["
-            + shuffleId
-            + "] with allocated["
-            + allocatedBytes
-            + "], dataSize["
-            + dataSize
-            + "], memoryUsed["
-            + memoryUsed
-            + "]");
+    LOG.info("Flush total buffer for shuffleId[" + shuffleId + "] with allocated["
+        + allocatedBytes + "], dataSize[" + dataSize + "], memoryUsed[" + memoryUsed + "]");
     return result;
   }
 
@@ -272,23 +257,13 @@ public class WriteBufferManager extends MemoryConsumer {
       compressTime += System.currentTimeMillis() - start;
     }
     final long crc32 = ChecksumUtils.getCrc32(compressed);
-    final long blockId =
-        ClientUtils.getBlockId(partitionId, taskAttemptId, getNextSeqNo(partitionId));
+    final long blockId = ClientUtils.getBlockId(partitionId, taskAttemptId, getNextSeqNo(partitionId));
     uncompressedDataLen += data.length;
     shuffleWriteMetrics.incBytesWritten(compressed.length);
     // add memory to indicate bytes which will be sent to shuffle server
     inSendListBytes.addAndGet(wb.getMemoryUsed());
-    return new ShuffleBlockInfo(
-        shuffleId,
-        partitionId,
-        blockId,
-        compressed.length,
-        crc32,
-        compressed,
-        partitionToServers.get(partitionId),
-        uncompressLength,
-        wb.getMemoryUsed(),
-        taskAttemptId);
+    return new ShuffleBlockInfo(shuffleId, partitionId, blockId, compressed.length, crc32,
+        compressed, partitionToServers.get(partitionId), uncompressLength, wb.getMemoryUsed(), taskAttemptId);
   }
 
   // it's run in single thread, and is not thread safe
@@ -313,15 +288,9 @@ public class WriteBufferManager extends MemoryConsumer {
     allocatedBytes.addAndGet(gotMem);
     int retry = 0;
     while (allocatedBytes.get() - usedBytes.get() < leastMem) {
-      LOG.info(
-          "Can't get memory for now, sleep and try["
-              + retry
-              + "] again, request["
-              + askExecutorMemory
-              + "], got["
-              + gotMem
-              + "] less than "
-              + leastMem);
+      LOG.info("Can't get memory for now, sleep and try[" + retry
+          + "] again, request[" + askExecutorMemory + "], got[" + gotMem + "] less than "
+          + leastMem);
       try {
         Thread.sleep(requireMemoryInterval);
       } catch (InterruptedException ie) {
@@ -331,19 +300,11 @@ public class WriteBufferManager extends MemoryConsumer {
       allocatedBytes.addAndGet(gotMem);
       retry++;
       if (retry > requireMemoryRetryMax) {
-        String message =
-            "Can't get memory to cache shuffle data, request["
-                + askExecutorMemory
-                + "], got["
-                + gotMem
-                + "],"
-                + " WriteBufferManager allocated["
-                + allocatedBytes
-                + "] task used["
-                + used
-                + "]. It may be caused by shuffle server is full of data"
-                + " or consider to optimize 'spark.executor.memory',"
-                + " 'spark.rss.writer.buffer.spill.size'.";
+        String message = "Can't get memory to cache shuffle data, request[" + askExecutorMemory
+            + "], got[" + gotMem + "]," + " WriteBufferManager allocated[" + allocatedBytes
+            + "] task used[" + used + "]. It may be caused by shuffle server is full of data"
+            + " or consider to optimize 'spark.executor.memory',"
+            + " 'spark.rss.writer.buffer.spill.size'.";
         LOG.error(message);
         throw new RssException(message);
       }
@@ -361,34 +322,26 @@ public class WriteBufferManager extends MemoryConsumer {
       shuffleBlockInfosPerEvent.add(sbi);
       // split shuffle data according to the size
       if (totalSize > sendSizeLimit) {
-        LOG.debug(
-            "Build event with "
-                + shuffleBlockInfosPerEvent.size()
-                + " blocks and "
-                + totalSize
-                + " bytes");
+        LOG.debug("Build event with " + shuffleBlockInfosPerEvent.size()
+            + " blocks and " + totalSize + " bytes");
         // Use final temporary variables for closures
         final long _memoryUsed = memoryUsed;
         events.add(
-            new AddBlockEvent(
-                taskId, shuffleBlockInfosPerEvent, () -> freeAllocatedMemory(_memoryUsed)));
+            new AddBlockEvent(taskId, shuffleBlockInfosPerEvent, () -> freeAllocatedMemory(_memoryUsed))
+        );
         shuffleBlockInfosPerEvent = Lists.newArrayList();
         totalSize = 0;
         memoryUsed = 0;
       }
     }
     if (!shuffleBlockInfosPerEvent.isEmpty()) {
-      LOG.debug(
-          "Build event with "
-              + shuffleBlockInfosPerEvent.size()
-              + " blocks and "
-              + totalSize
-              + " bytes");
+      LOG.debug("Build event with " + shuffleBlockInfosPerEvent.size()
+          + " blocks and " + totalSize + " bytes");
       // Use final temporary variables for closures
       final long _memoryUsed = memoryUsed;
       events.add(
-          new AddBlockEvent(
-              taskId, shuffleBlockInfosPerEvent, () -> freeAllocatedMemory(_memoryUsed)));
+          new AddBlockEvent(taskId, shuffleBlockInfosPerEvent, () -> freeAllocatedMemory(_memoryUsed))
+      );
     }
     return events;
   }
@@ -447,21 +400,10 @@ public class WriteBufferManager extends MemoryConsumer {
   }
 
   public String getManagerCostInfo() {
-    return "WriteBufferManager cost copyTime["
-        + copyTime
-        + "], writeTime["
-        + writeTime
-        + "], serializeTime["
-        + serializeTime
-        + "], compressTime["
-        + compressTime
-        + "], estimateTime["
-        + estimateTime
-        + "], requireMemoryTime["
-        + requireMemoryTime
-        + "], uncompressedDataLen["
-        + uncompressedDataLen
-        + "]";
+    return "WriteBufferManager cost copyTime[" + copyTime + "], writeTime[" + writeTime + "], serializeTime["
+        + serializeTime + "], compressTime[" + compressTime + "], estimateTime["
+        + estimateTime + "], requireMemoryTime[" + requireMemoryTime
+        + "], uncompressedDataLen[" + uncompressedDataLen + "]";
   }
 
   @VisibleForTesting
@@ -470,7 +412,8 @@ public class WriteBufferManager extends MemoryConsumer {
   }
 
   @VisibleForTesting
-  public void setSpillFunc(Function<AddBlockEvent, CompletableFuture<Long>> spillFunc) {
+  public void setSpillFunc(
+      Function<AddBlockEvent, CompletableFuture<Long>> spillFunc) {
     this.spillFunc = spillFunc;
   }
 

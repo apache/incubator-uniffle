@@ -21,9 +21,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.nio.file.Files;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CoordinatorMetricsTest {
 
-  private static final String METRICS_URL = "http://127.0.0.1:12345/metrics";
   private static final String SERVER_METRICS_URL = "http://127.0.0.1:12345/metrics/server";
   private static final String SERVER_JVM_URL = "http://127.0.0.1:12345/metrics/jvm";
   private static final String SERVER_GRPC_URL = "http://127.0.0.1:12345/metrics/grpc";
@@ -56,8 +52,7 @@ public class CoordinatorMetricsTest {
 
     CoordinatorConf coordinatorConf = new CoordinatorConf();
     coordinatorConf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 10);
-    coordinatorConf.set(
-        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
+    coordinatorConf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
     coordinatorConf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
     coordinatorConf.set(RssBaseConf.JETTY_HTTP_PORT, 12345);
     coordinatorConf.set(RssBaseConf.JETTY_CORE_POOL_SIZE, 128);
@@ -106,8 +101,8 @@ public class CoordinatorMetricsTest {
 
   @Test
   public void testCoordinatorMetricsWithNames() throws Exception {
-    String content =
-        TestUtils.httpGet(SERVER_METRICS_URL + "?name[]=total_app_num&name[]=running_app_num");
+    String content = TestUtils.httpGet(SERVER_METRICS_URL
+        + "?name[]=total_app_num&name[]=running_app_num");
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
@@ -129,20 +124,6 @@ public class CoordinatorMetricsTest {
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
     assertEquals(9, actualObj.get("metrics").size());
-  }
-
-  @Test
-  public void testAllMetrics() throws Exception {
-    String content = TestUtils.httpGet(METRICS_URL);
-    ObjectMapper mapper = new ObjectMapper();
-    JsonNode actualObj = mapper.readTree(content);
-    assertEquals(2, actualObj.size());
-    Iterator<JsonNode> metrics = actualObj.get("metrics").elements();
-    Set<String> metricNames = new HashSet<>();
-    metrics.forEachRemaining((metric) -> metricNames.add(metric.get("name").textValue()));
-    assertTrue(metricNames.contains("total_app_num"));
-    assertTrue(metricNames.contains("grpc_total"));
-    assertTrue(metricNames.contains("jvm_info"));
   }
 
   private static void writeRemoteStorageConf(File cfgFile, String value) throws Exception {

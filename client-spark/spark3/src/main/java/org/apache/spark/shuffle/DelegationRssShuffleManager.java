@@ -90,16 +90,12 @@ public class DelegationRssShuffleManager implements ShuffleManager {
         LOG.info("Use RssShuffleManager");
         return shuffleManager;
       } catch (Exception exception) {
-        LOG.warn(
-            "Fail to create RssShuffleManager, fallback to SortShuffleManager {}",
-            exception.getMessage());
+        LOG.warn("Fail to create RssShuffleManager, fallback to SortShuffleManager {}", exception.getMessage());
       }
     }
 
     try {
-      shuffleManager =
-          RssSparkShuffleUtils.loadShuffleManager(
-              Constants.SORT_SHUFFLE_MANAGER_NAME, sparkConf, true);
+      shuffleManager = RssSparkShuffleUtils.loadShuffleManager(Constants.SORT_SHUFFLE_MANAGER_NAME, sparkConf, true);
       sparkConf.set(RssSparkConfig.RSS_ENABLED.key(), "false");
       sparkConf.set("spark.shuffle.manager", "sort");
       LOG.info("Use SortShuffleManager");
@@ -119,55 +115,33 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS);
     int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_TIMES);
 
-    int assignmentShuffleNodesNum =
-        sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER);
+    int assignmentShuffleNodesNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER);
     Map<String, String> extraProperties = Maps.newHashMap();
-    extraProperties.put(
-        ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, String.valueOf(assignmentShuffleNodesNum));
+    extraProperties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, String.valueOf(assignmentShuffleNodesNum));
 
     for (CoordinatorClient coordinatorClient : coordinatorClients) {
       Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
       boolean canAccess;
       try {
-        canAccess =
-            RetryUtils.retry(
-                () -> {
-                  RssAccessClusterResponse response =
-                      coordinatorClient.accessCluster(
-                          new RssAccessClusterRequest(
-                              accessId, assignmentTags, accessTimeoutMs, extraProperties, user));
-                  if (response.getStatusCode() == StatusCode.SUCCESS) {
-                    LOG.warn(
-                        "Success to access cluster {} using {}",
-                        coordinatorClient.getDesc(),
-                        accessId);
-                    uuid = response.getUuid();
-                    return true;
-                  } else if (response.getStatusCode() == StatusCode.ACCESS_DENIED) {
-                    throw new RssException(
-                        "Request to access cluster "
-                            + coordinatorClient.getDesc()
-                            + " is denied using "
-                            + accessId
-                            + " for "
-                            + response.getMessage());
-                  } else {
-                    throw new RssException(
-                        "Fail to reach cluster "
-                            + coordinatorClient.getDesc()
-                            + " for "
-                            + response.getMessage());
-                  }
-                },
-                retryInterval,
-                retryTimes);
+        canAccess = RetryUtils.retry(() -> {
+          RssAccessClusterResponse response = coordinatorClient.accessCluster(new RssAccessClusterRequest(
+              accessId, assignmentTags, accessTimeoutMs, extraProperties, user));
+          if (response.getStatusCode() == StatusCode.SUCCESS) {
+            LOG.warn("Success to access cluster {} using {}", coordinatorClient.getDesc(), accessId);
+            uuid = response.getUuid();
+            return true;
+          } else if (response.getStatusCode() == StatusCode.ACCESS_DENIED) {
+            throw new RssException("Request to access cluster " + coordinatorClient.getDesc() + " is denied using "
+                + accessId + " for " + response.getMessage());
+          } else {
+            throw new RssException("Fail to reach cluster " + coordinatorClient.getDesc()
+                + " for " + response.getMessage());
+          }
+        }, retryInterval, retryTimes);
         return canAccess;
       } catch (Throwable e) {
-        LOG.warn(
-            "Fail to access cluster {} using {} for {}",
-            coordinatorClient.getDesc(),
-            accessId,
-            e.getMessage());
+        LOG.warn("Fail to access cluster {} using {} for {}",
+            coordinatorClient.getDesc(), accessId, e.getMessage());
       }
     }
 
@@ -184,9 +158,8 @@ public class DelegationRssShuffleManager implements ShuffleManager {
       LOG.info("Use RssShuffleManager");
     } else {
       try {
-        shuffleManager =
-            RssSparkShuffleUtils.loadShuffleManager(
-                Constants.SORT_SHUFFLE_MANAGER_NAME, sparkConf, false);
+        shuffleManager = RssSparkShuffleUtils.loadShuffleManager(
+            Constants.SORT_SHUFFLE_MANAGER_NAME, sparkConf, false);
         LOG.info("Use SortShuffleManager");
       } catch (Exception e) {
         throw new RssException(e.getMessage());
@@ -200,14 +173,16 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   }
 
   @Override
-  public <K, V, C> ShuffleHandle registerShuffle(
-      int shuffleId, ShuffleDependency<K, V, C> dependency) {
+  public <K, V, C> ShuffleHandle registerShuffle(int shuffleId, ShuffleDependency<K, V, C> dependency) {
     return delegate.registerShuffle(shuffleId, dependency);
   }
 
   @Override
   public <K, V> ShuffleWriter<K, V> getWriter(
-      ShuffleHandle handle, long mapId, TaskContext context, ShuffleWriteMetricsReporter metrics) {
+      ShuffleHandle handle,
+      long mapId,
+      TaskContext context,
+      ShuffleWriteMetricsReporter metrics) {
     return delegate.getWriter(handle, mapId, context, metrics);
   }
 
@@ -218,7 +193,8 @@ public class DelegationRssShuffleManager implements ShuffleManager {
       int endPartition,
       TaskContext context,
       ShuffleReadMetricsReporter metrics) {
-    return delegate.getReader(handle, startPartition, endPartition, context, metrics);
+    return delegate.getReader(handle,
+        startPartition, endPartition, context, metrics);
   }
 
   // The interface is only used for compatibility with spark 3.1.2
@@ -232,27 +208,22 @@ public class DelegationRssShuffleManager implements ShuffleManager {
       ShuffleReadMetricsReporter metrics) {
     ShuffleReader<K, C> reader = null;
     try {
-      reader =
-          (ShuffleReader<K, C>)
-              delegate
-                  .getClass()
-                  .getDeclaredMethod(
-                      "getReader",
-                      ShuffleHandle.class,
-                      int.class,
-                      int.class,
-                      int.class,
-                      int.class,
-                      TaskContext.class,
-                      ShuffleReadMetricsReporter.class)
-                  .invoke(
-                      handle,
-                      startMapIndex,
-                      endMapIndex,
-                      startPartition,
-                      endPartition,
-                      context,
-                      metrics);
+      reader = (ShuffleReader<K, C>)delegate.getClass().getDeclaredMethod(
+          "getReader",
+          ShuffleHandle.class,
+          int.class,
+          int.class,
+          int.class,
+          int.class,
+          TaskContext.class,
+          ShuffleReadMetricsReporter.class).invoke(
+          handle,
+          startMapIndex,
+          endMapIndex,
+          startPartition,
+          endPartition,
+          context,
+          metrics);
     } catch (Exception e) {
       throw new RssException(e);
     }
@@ -270,27 +241,22 @@ public class DelegationRssShuffleManager implements ShuffleManager {
       ShuffleReadMetricsReporter metrics) {
     ShuffleReader<K, C> reader = null;
     try {
-      reader =
-          (ShuffleReader<K, C>)
-              delegate
-                  .getClass()
-                  .getDeclaredMethod(
-                      "getReaderForRange",
-                      ShuffleHandle.class,
-                      int.class,
-                      int.class,
-                      int.class,
-                      int.class,
-                      TaskContext.class,
-                      ShuffleReadMetricsReporter.class)
-                  .invoke(
-                      handle,
-                      startMapIndex,
-                      endMapIndex,
-                      startPartition,
-                      endPartition,
-                      context,
-                      metrics);
+      reader = (ShuffleReader<K, C>)delegate.getClass().getDeclaredMethod(
+          "getReaderForRange",
+          ShuffleHandle.class,
+          int.class,
+          int.class,
+          int.class,
+          int.class,
+          TaskContext.class,
+          ShuffleReadMetricsReporter.class).invoke(
+          handle,
+          startMapIndex,
+          endMapIndex,
+          startPartition,
+          endPartition,
+          context,
+          metrics);
     } catch (Exception e) {
       throw new RssException(e);
     }

@@ -55,7 +55,8 @@ public class CreateShuffleWriteHandlerRequest {
         conf,
         storageDataReplica,
         user,
-        1);
+        1
+    );
   }
 
   public CreateShuffleWriteHandlerRequest(

@@ -39,13 +39,9 @@ public class ExitUtilsTest {
       assertEquals(testExitMessage, e.getMessage());
     }
 
-    final Thread t =
-        new Thread(
-            null,
-            () -> {
-              throw new AssertionError("TestUncaughtException");
-            },
-            "testThread");
+    final Thread t = new Thread(null, () -> {
+      throw new AssertionError("TestUncaughtException");
+    }, "testThread");
     t.start();
     t.join();
   }

@@ -92,22 +92,20 @@ public class HadoopStorageManager extends SingleStorageManager {
         storage.removeHandlers(appId);
         appIdToStorages.remove(appId);
       }
-      ShuffleDeleteHandler deleteHandler =
-          ShuffleHandlerFactory.getInstance()
-              .createShuffleDeleteHandler(
-                  new CreateShuffleDeleteHandlerRequest(
-                      StorageType.HDFS.name(), storage.getConf()));
+      ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory
+          .getInstance()
+          .createShuffleDeleteHandler(
+              new CreateShuffleDeleteHandlerRequest(StorageType.HDFS.name(), storage.getConf())
+          );
 
-      String basicPath =
-          ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);
+      String basicPath = ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);
       List<String> deletePaths = new ArrayList<>();
 
       if (event instanceof AppPurgeEvent) {
         deletePaths.add(basicPath);
       } else {
         for (Integer shuffleId : event.getShuffleIds()) {
-          deletePaths.add(
-              ShuffleStorageUtils.getFullShuffleDataFolder(basicPath, String.valueOf(shuffleId)));
+          deletePaths.add(ShuffleStorageUtils.getFullShuffleDataFolder(basicPath, String.valueOf(shuffleId)));
         }
       }
       deleteHandler.delete(deletePaths.toArray(new String[0]), appId, event.getUser());
@@ -124,24 +122,23 @@ public class HadoopStorageManager extends SingleStorageManager {
   @Override
   public void registerRemoteStorage(String appId, RemoteStorageInfo remoteStorageInfo) {
     String remoteStorage = remoteStorageInfo.getPath();
-    pathToStorages.computeIfAbsent(
-        remoteStorage,
-        key -> {
-          Map<String, String> remoteStorageConf = remoteStorageInfo.getConfItems();
-          Configuration remoteStorageHadoopConf = new Configuration(hadoopConf);
-          if (remoteStorageConf != null && remoteStorageConf.size() > 0) {
-            for (Map.Entry<String, String> entry : remoteStorageConf.entrySet()) {
-              remoteStorageHadoopConf.setStrings(entry.getKey(), entry.getValue());
-            }
-          }
-          HadoopStorage hadoopStorage = new HadoopStorage(remoteStorage, remoteStorageHadoopConf);
-          return hadoopStorage;
-        });
+    pathToStorages.computeIfAbsent(remoteStorage, key -> {
+      Map<String, String> remoteStorageConf = remoteStorageInfo.getConfItems();
+      Configuration remoteStorageHadoopConf = new Configuration(hadoopConf);
+      if (remoteStorageConf != null && remoteStorageConf.size() > 0) {
+        for (Map.Entry<String, String> entry : remoteStorageConf.entrySet()) {
+          remoteStorageHadoopConf.setStrings(entry.getKey(), entry.getValue());
+        }
+      }
+      HadoopStorage hadoopStorage = new HadoopStorage(remoteStorage, remoteStorageHadoopConf);
+      return hadoopStorage;
+    });
     appIdToStorages.computeIfAbsent(appId, key -> pathToStorages.get(remoteStorage));
   }
 
   @Override
-  public void checkAndClearLeakedShuffleData(Collection<String> appIds) {}
+  public void checkAndClearLeakedShuffleData(Collection<String> appIds) {
+  }
 
   @Override
   public Map<String, StorageInfo> getStorageInfo() {
@@ -154,10 +151,8 @@ public class HadoopStorageManager extends SingleStorageManager {
       synchronized (this) {
         FileSystem fs;
         try {
-          List<Path> appStoragePath =
-              pathToStorages.keySet().stream()
-                  .map(basePath -> new Path(basePath + Constants.KEY_SPLIT_CHAR + appId))
-                  .collect(Collectors.toList());
+          List<Path> appStoragePath = pathToStorages.keySet().stream().map(
+              basePath -> new Path(basePath + Constants.KEY_SPLIT_CHAR + appId)).collect(Collectors.toList());
           for (Path path : appStoragePath) {
             fs = HadoopFilesystemProvider.getFilesystem(path, hadoopConf);
             if (fs.isDirectory(path)) {

@@ -26,7 +26,8 @@ import org.apache.spark.shuffle.writer.DataPusher;
 
 public class TestUtils {
 
-  private TestUtils() {}
+  private TestUtils() {
+  }
 
   public static RssShuffleManager createShuffleManager(
       SparkConf conf,

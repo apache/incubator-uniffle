@@ -36,7 +36,8 @@ public class AdminRestApiTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private UniffleRestClient uniffleRestClient;
 
-  @InjectMocks private AdminRestApi adminRestApi;
+  @InjectMocks
+  private AdminRestApi adminRestApi;
 
   @BeforeEach
   public void setup() throws Exception {
@@ -45,13 +46,13 @@ public class AdminRestApiTest {
 
   @Test
   public void testRunRefreshAccessChecker() throws UniffleCliArgsException {
-    Mockito.when(
-            uniffleRestClient
-                .getHttpClient()
-                .get(Mockito.anyString(), Mockito.anyMap(), Mockito.anyString()))
+    Mockito.when(uniffleRestClient.getHttpClient()
+            .get(Mockito.anyString(), Mockito.anyMap(), Mockito.anyString()))
         .thenReturn("OK");
     String result = adminRestApi.refreshAccessChecker();
-    Mockito.verify(uniffleRestClient.getHttpClient(), Mockito.times(1))
-        .get("/api/admin/refreshChecker", new HashMap<>(), null);
+    Mockito.verify(uniffleRestClient.getHttpClient(),
+        Mockito.times(1)).get("/api/admin/refreshChecker",
+           new HashMap<>(), null);
   }
+
 }

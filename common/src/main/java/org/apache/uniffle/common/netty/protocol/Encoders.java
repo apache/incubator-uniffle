@@ -61,11 +61,8 @@ public class Encoders {
   }
 
   public static int encodeLengthOfShuffleBlockInfo(ShuffleBlockInfo shuffleBlockInfo) {
-    int encodeLength =
-        4 * Long.BYTES
-            + 4 * Integer.BYTES
-            + ByteBufUtils.encodedLength(shuffleBlockInfo.getData())
-            + Integer.BYTES;
+    int encodeLength = 4 * Long.BYTES + 4 * Integer.BYTES
+        + ByteBufUtils.encodedLength(shuffleBlockInfo.getData()) + Integer.BYTES;
     for (ShuffleServerInfo shuffleServerInfo : shuffleBlockInfo.getShuffleServerInfos()) {
       encodeLength += encodeLengthOfShuffleServerInfo(shuffleServerInfo);
     }
@@ -95,4 +92,5 @@ public class Encoders {
   public static int encodeLengthOfBufferSegments(List<BufferSegment> bufferSegments) {
     return Integer.BYTES + bufferSegments.size() * (3 * Long.BYTES + 3 * Integer.BYTES);
   }
+
 }

@@ -50,7 +50,7 @@ public class RssTezUtilsTest {
     ApplicationId appId = ApplicationId.newInstance(9999, 72);
     TezDAGID dagId = TezDAGID.getInstance(appId, 1);
     TezVertexID vId = TezVertexID.getInstance(dagId, 35);
-    TezTaskID taskId = TezTaskID.getInstance(vId, (int) taskAttemptId);
+    TezTaskID taskId = TezTaskID.getInstance(vId, (int)taskAttemptId);
     TezTaskAttemptID tezTaskAttemptId = TezTaskAttemptID.getInstance(taskId, 3);
 
     boolean isException = false;
@@ -61,7 +61,7 @@ public class RssTezUtilsTest {
     }
     assertTrue(isException);
 
-    taskId = TezTaskID.getInstance(vId, (int) (1 << 21));
+    taskId = TezTaskID.getInstance(vId, (int)(1 << 21));
     tezTaskAttemptId = TezTaskAttemptID.getInstance(taskId, 2);
     isException = false;
     try {
@@ -100,8 +100,7 @@ public class RssTezUtilsTest {
     for (int partitionId = 0; partitionId <= 3000; partitionId++) {
       for (int seqNo = 0; seqNo <= 10; seqNo++) {
         long blockId = RssTezUtils.getBlockId(Long.valueOf(partitionId), taskAttemptId, seqNo);
-        int newPartitionId =
-            Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask);
+        int newPartitionId = Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask);
         assertEquals(partitionId, newPartitionId);
       }
     }
@@ -121,7 +120,7 @@ public class RssTezUtilsTest {
     assertEquals(200, RssTezUtils.estimateTaskConcurrency(jobConf, mapNum, reduceNum));
 
     jobConf.setDouble("mapreduce.rss.estimate.task.concurrency.dynamic.factor", 0.5);
-    assertEquals(200, RssTezUtils.estimateTaskConcurrency(jobConf, mapNum, reduceNum));
+    assertEquals(200, RssTezUtils.estimateTaskConcurrency(jobConf,mapNum, reduceNum));
   }
 
   @Test
@@ -144,18 +143,18 @@ public class RssTezUtilsTest {
     assertEquals(3, RssTezUtils.getRequiredShuffleServerNumber(jobConf, mapNum, reduceNum));
   }
 
+
   @Test
   public void testComputeShuffleId() {
     int dagId = 1;
-    int upVertexId = 1;
+    int upVertexId  = 1;
     int downVertexID = 2;
     assertEquals(1001002, RssTezUtils.computeShuffleId(dagId, upVertexId, downVertexID));
   }
 
   @Test
   public void testTaskIdStrToTaskId() {
-    assertEquals(
-        0, RssTezUtils.taskIdStrToTaskId("attempt_1680867852986_0012_1_01_000000_0_10003"));
+    assertEquals(0, RssTezUtils.taskIdStrToTaskId("attempt_1680867852986_0012_1_01_000000_0_10003"));
   }
 
   @Test
@@ -174,8 +173,7 @@ public class RssTezUtilsTest {
     Map<Integer, Set<ShuffleServerInfo>> rssWorker = new HashMap<>();
     int shuffleId = 1001602;
     // 0_1_2_3 is consist of partition id.
-    String hostnameInfo =
-        "localhost;1001602=172.19.193.152:19999+0_1_2_3,172.19.193.153:19999+2_3_4_5";
+    String hostnameInfo = "localhost;1001602=172.19.193.152:19999+0_1_2_3,172.19.193.153:19999+2_3_4_5";
     RssTezUtils.parseRssWorker(rssWorker, shuffleId, hostnameInfo);
 
     assertEquals(6, rssWorker.size());
@@ -194,7 +192,7 @@ public class RssTezUtilsTest {
     shuffleServerInfo = rssWorker.get(partitionId);
     assertNull(shuffleServerInfo);
 
-    Integer[] expectPartitionArr = new Integer[] {0, 1, 2, 3, 4, 5};
+    Integer[] expectPartitionArr = new Integer[]{0, 1, 2, 3, 4, 5};
     assertTrue(Arrays.equals(expectPartitionArr, rssWorker.keySet().toArray(new Integer[0])));
   }
 

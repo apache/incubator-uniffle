@@ -59,9 +59,8 @@ public class AccessCandidatesCheckerTest {
   public void test(@TempDir File tempDir) throws Exception {
     File cfgFile = File.createTempFile("tmp", ".conf", tempDir);
     final String cfgFileName = cfgFile.getAbsolutePath();
-    final String filePath =
-        Objects.requireNonNull(getClass().getClassLoader().getResource("coordinator.conf"))
-            .getFile();
+    final String filePath = Objects.requireNonNull(
+        getClass().getClassLoader().getResource("coordinator.conf")).getFile();
     CoordinatorConf conf = new CoordinatorConf(filePath);
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, tempDir.toURI().toString());
     String checkerClassName = AccessCandidatesChecker.class.getName();
@@ -75,11 +74,8 @@ public class AccessCandidatesCheckerTest {
       expectedException = e;
     }
     assertNotNull(expectedException);
-    assertTrue(
-        expectedException
-            .getMessage()
-            .contains(
-                "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
+    assertTrue(expectedException.getMessage().contains(
+        "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, cfgFile.toURI().toString());
     expectedException = null;
     try {
@@ -88,11 +84,8 @@ public class AccessCandidatesCheckerTest {
       expectedException = e;
     }
     assertNotNull(expectedException);
-    assertTrue(
-        expectedException
-            .getMessage()
-            .contains(
-                "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
+    assertTrue(expectedException.getMessage().contains(
+        "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
 
     // load the config at the beginning
     FileWriter fileWriter = new FileWriter(cfgFile);
@@ -102,10 +95,9 @@ public class AccessCandidatesCheckerTest {
     printWriter.println("2 ");
     printWriter.flush();
     printWriter.close();
-    AccessManager accessManager =
-        new AccessManager(conf, null, applicationManager.getQuotaManager(), new Configuration());
-    AccessCandidatesChecker checker =
-        (AccessCandidatesChecker) accessManager.getAccessCheckers().get(0);
+    AccessManager accessManager = new AccessManager(conf, null, applicationManager.getQuotaManager(),
+        new Configuration());
+    AccessCandidatesChecker checker = (AccessCandidatesChecker) accessManager.getAccessCheckers().get(0);
     sleep(1200);
     assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
     assertTrue(checker.check(new AccessInfo("9527")).isSuccess());

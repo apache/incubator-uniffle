@@ -33,7 +33,8 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 
 public class LocalFileClientReadHandler extends DataSkippableReadHandler {
-  private static final Logger LOG = LoggerFactory.getLogger(LocalFileClientReadHandler.class);
+  private static final Logger LOG = LoggerFactory.getLogger(
+      LocalFileClientReadHandler.class);
   private final int partitionNumPerRange;
   private final int partitionNum;
   private ShuffleServerClient shuffleServerClient;
@@ -52,20 +53,17 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
       ShuffleDataDistributionType distributionType,
       Roaring64NavigableMap expectTaskIds) {
     super(
-        appId,
-        shuffleId,
-        partitionId,
-        readBufferSize,
-        expectBlockIds,
-        processBlockIds,
-        distributionType,
-        expectTaskIds);
+        appId, shuffleId, partitionId, readBufferSize, expectBlockIds,
+        processBlockIds, distributionType, expectTaskIds
+    );
     this.shuffleServerClient = shuffleServerClient;
     this.partitionNumPerRange = partitionNumPerRange;
     this.partitionNum = partitionNum;
   }
 
-  /** Only for test */
+  /**
+   * Only for test
+   */
   public LocalFileClientReadHandler(
       String appId,
       int shuffleId,
@@ -78,40 +76,24 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
       Roaring64NavigableMap processBlockIds,
       ShuffleServerClient shuffleServerClient) {
     this(
-        appId,
-        shuffleId,
-        partitionId,
-        indexReadLimit,
-        partitionNumPerRange,
-        partitionNum,
-        readBufferSize,
-        expectBlockIds,
-        processBlockIds,
-        shuffleServerClient,
-        ShuffleDataDistributionType.NORMAL,
-        Roaring64NavigableMap.bitmapOf());
+        appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange,
+        partitionNum, readBufferSize, expectBlockIds, processBlockIds,
+        shuffleServerClient, ShuffleDataDistributionType.NORMAL, Roaring64NavigableMap.bitmapOf()
+    );
   }
 
   @Override
   public ShuffleIndexResult readShuffleIndex() {
     ShuffleIndexResult shuffleIndexResult = null;
-    RssGetShuffleIndexRequest request =
-        new RssGetShuffleIndexRequest(
-            appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
+    RssGetShuffleIndexRequest request = new RssGetShuffleIndexRequest(
+        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
     try {
       shuffleIndexResult = shuffleServerClient.getShuffleIndex(request).getShuffleIndexResult();
     } catch (RssFetchFailedException e) {
       throw e;
     } catch (Exception e) {
-      throw new RssFetchFailedException(
-          "Failed to read shuffle index for appId["
-              + appId
-              + "], shuffleId["
-              + shuffleId
-              + "], partitionId["
-              + partitionId
-              + "]",
-          e);
+      throw new RssFetchFailedException("Failed to read shuffle index for appId[" + appId + "], shuffleId["
+        + shuffleId + "], partitionId[" + partitionId + "]", e);
     }
     return shuffleIndexResult;
   }
@@ -121,44 +103,23 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
     ShuffleDataResult result = null;
     int expectedLength = shuffleDataSegment.getLength();
     if (expectedLength <= 0) {
-      throw new RssException(
-          "Failed to read shuffle data for appId["
-              + appId
-              + "], shuffleId["
-              + shuffleId
-              + "], partitionId["
-              + partitionId
-              + "], "
-              + "the length field in the index segment is "
-              + expectedLength
-              + " <= 0!");
+      throw new RssException("Failed to read shuffle data for appId[" + appId + "], shuffleId["
+          + shuffleId + "], partitionId[" + partitionId + "], "
+          + "the length field in the index segment is " + expectedLength + " <= 0!");
     }
-    RssGetShuffleDataRequest request =
-        new RssGetShuffleDataRequest(
-            appId,
-            shuffleId,
-            partitionId,
-            partitionNumPerRange,
-            partitionNum,
-            shuffleDataSegment.getOffset(),
-            expectedLength);
+    RssGetShuffleDataRequest request = new RssGetShuffleDataRequest(
+        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum,
+        shuffleDataSegment.getOffset(), expectedLength);
     try {
       RssGetShuffleDataResponse response = shuffleServerClient.getShuffleData(request);
-      result =
-          new ShuffleDataResult(response.getShuffleData(), shuffleDataSegment.getBufferSegments());
+      result = new ShuffleDataResult(response.getShuffleData(), shuffleDataSegment.getBufferSegments());
     } catch (Exception e) {
-      throw new RssException(
-          "Failed to read shuffle data with "
-              + shuffleServerClient.getClientInfo()
-              + " due to "
-              + e.getMessage());
+      throw new RssException("Failed to read shuffle data with "
+          + shuffleServerClient.getClientInfo() + " due to " + e.getMessage());
     }
     if (result.getData().length != expectedLength) {
-      throw new RssException(
-          "Wrong data length expect "
-              + result.getData().length
-              + " but actual is "
-              + expectedLength);
+      throw new RssException("Wrong data length expect " + result.getData().length
+          + " but actual is " + expectedLength);
     }
     return result;
   }

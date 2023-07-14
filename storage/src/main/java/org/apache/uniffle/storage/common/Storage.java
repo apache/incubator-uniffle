@@ -24,6 +24,7 @@ import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 
+
 public interface Storage {
 
   boolean canWrite();
@@ -32,8 +33,7 @@ public interface Storage {
 
   void updateReadMetrics(StorageReadMetrics metrics);
 
-  ShuffleWriteHandler getOrCreateWriteHandler(CreateShuffleWriteHandlerRequest request)
-      throws IOException;
+  ShuffleWriteHandler getOrCreateWriteHandler(CreateShuffleWriteHandlerRequest request) throws IOException;
 
   ServerReadHandler getOrCreateReadHandler(CreateShuffleReadHandlerRequest request);
 

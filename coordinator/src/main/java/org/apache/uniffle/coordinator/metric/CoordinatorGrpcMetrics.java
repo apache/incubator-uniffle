@@ -29,7 +29,8 @@ public class CoordinatorGrpcMetrics extends GRPCMetrics {
   private static final String GRPC_HEARTBEAT = "grpc_heartbeat";
   private static final String GRPC_GET_SHUFFLE_ASSIGNMENTS_TOTAL =
       "grpc_get_shuffle_assignments_total";
-  private static final String GRPC_HEARTBEAT_TOTAL = "grpc_heartbeat_total";
+  private static final String GRPC_HEARTBEAT_TOTAL =
+      "grpc_heartbeat_total";
 
   public CoordinatorGrpcMetrics() {
     super(Constants.COORDINATOR_TAG);
@@ -38,13 +39,9 @@ public class CoordinatorGrpcMetrics extends GRPCMetrics {
   @Override
   public void registerMetrics() {
     gaugeMap.putIfAbsent(HEARTBEAT_METHOD, metricsManager.addLabeledGauge(GRPC_HEARTBEAT));
-    gaugeMap.putIfAbsent(
-        GET_SHUFFLE_ASSIGNMENTS_METHOD,
-        metricsManager.addLabeledGauge(GRPC_GET_SHUFFLE_ASSIGNMENTS));
-    counterMap.putIfAbsent(
-        HEARTBEAT_METHOD, metricsManager.addLabeledCounter(GRPC_HEARTBEAT_TOTAL));
-    counterMap.putIfAbsent(
-        GET_SHUFFLE_ASSIGNMENTS_METHOD,
+    gaugeMap.putIfAbsent(GET_SHUFFLE_ASSIGNMENTS_METHOD, metricsManager.addLabeledGauge(GRPC_GET_SHUFFLE_ASSIGNMENTS));
+    counterMap.putIfAbsent(HEARTBEAT_METHOD, metricsManager.addLabeledCounter(GRPC_HEARTBEAT_TOTAL));
+    counterMap.putIfAbsent(GET_SHUFFLE_ASSIGNMENTS_METHOD,
         metricsManager.addLabeledCounter(GRPC_GET_SHUFFLE_ASSIGNMENTS_TOTAL));
   }
 }

@@ -58,11 +58,11 @@ public class RepartitionWithLocalFileRssTest extends RepartitionTest {
   }
 
   @Override
-  public void updateRssStorage(SparkConf sparkConf) {}
+  public void updateRssStorage(SparkConf sparkConf) {
+  }
 
   /**
    * Test different compression types with localfile rss mode.
-   *
    * @throws Exception
    */
   @Override
@@ -77,7 +77,11 @@ public class RepartitionWithLocalFileRssTest extends RepartitionTest {
 
     updateSparkConfWithRss(sparkConf);
     updateSparkConfCustomer(sparkConf);
-    for (Codec.Type type : new Codec.Type[] {Codec.Type.NOOP, Codec.Type.ZSTD, Codec.Type.LZ4}) {
+    for (Codec.Type type :
+        new Codec.Type[]{
+            Codec.Type.NOOP,
+            Codec.Type.ZSTD,
+            Codec.Type.LZ4}) {
       sparkConf.set("spark." + COMPRESSION_TYPE.key().toLowerCase(), type.name());
       Map resultWithRss = runSparkApp(sparkConf, fileName);
       results.add(resultWithRss);

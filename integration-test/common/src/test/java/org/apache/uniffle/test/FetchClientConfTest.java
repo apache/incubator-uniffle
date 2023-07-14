@@ -58,8 +58,8 @@ public class FetchClientConfTest extends CoordinatorTestBase {
 
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
-    coordinatorConf.setString(
-        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, clientConfFile.getAbsolutePath());
+    coordinatorConf.setString(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH,
+        clientConfFile.getAbsolutePath());
     coordinatorConf.setInteger("rss.coordinator.dynamicClientConf.updateIntervalSec", 10);
     createCoordinatorServer(coordinatorConf);
     startServers();
@@ -76,8 +76,7 @@ public class FetchClientConfTest extends CoordinatorTestBase {
 
     // dynamic client conf is disabled by default
     coordinatorConf = getCoordinatorConf();
-    coordinatorConf.setString(
-        "rss.coordinator.dynamicClientConf.path", clientConfFile.getAbsolutePath());
+    coordinatorConf.setString("rss.coordinator.dynamicClientConf.path", clientConfFile.getAbsolutePath());
     coordinatorConf.setInteger("rss.coordinator.dynamicClientConf.updateIntervalSec", 10);
     createCoordinatorServer(coordinatorConf);
     startServers();
@@ -109,10 +108,8 @@ public class FetchClientConfTest extends CoordinatorTestBase {
 
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
-    coordinatorConf.setString(
-        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
-    coordinatorConf.setInteger(
-        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 3);
+    coordinatorConf.setString(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
+    coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 3);
     coordinatorConf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 1000);
     coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES, 1);
     createCoordinatorServer(coordinatorConf);
@@ -163,10 +160,8 @@ public class FetchClientConfTest extends CoordinatorTestBase {
 
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
-    coordinatorConf.setString(
-        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
-    coordinatorConf.setInteger(
-        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 2);
+    coordinatorConf.setString(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
+    coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 2);
     coordinatorConf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 1000);
     coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES, 1);
     coordinatorConf.set(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY, IO_SAMPLE);
@@ -208,7 +203,8 @@ public class FetchClientConfTest extends CoordinatorTestBase {
   }
 
   private void waitForUpdate(
-      Set<String> expectedAvailablePath, ApplicationManager applicationManager) throws Exception {
+      Set<String> expectedAvailablePath,
+      ApplicationManager applicationManager) throws Exception {
     int maxAttempt = 10;
     int attempt = 0;
     while (true) {
@@ -217,8 +213,7 @@ public class FetchClientConfTest extends CoordinatorTestBase {
       }
       Thread.sleep(1000);
       try {
-        assertEquals(
-            expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
+        assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
         break;
       } catch (Throwable e) {
         // ignore

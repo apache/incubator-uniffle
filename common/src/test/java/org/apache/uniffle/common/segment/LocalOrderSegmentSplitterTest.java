@@ -39,19 +39,18 @@ public class LocalOrderSegmentSplitterTest {
   public void testDiscontinuousMapTaskIds() {
     // case1
     Roaring64NavigableMap taskIds = Roaring64NavigableMap.bitmapOf(6, 7, 9);
-    byte[] data =
-        generateData(
-            Pair.of(8, 4),
-            Pair.of(8, 5),
-            Pair.of(8, 6),
-            Pair.of(8, 7),
-            Pair.of(8, 8),
-            Pair.of(8, 9),
-            Pair.of(8, 6),
-            Pair.of(8, 9));
-    List<ShuffleDataSegment> dataSegments1 =
-        new LocalOrderSegmentSplitter(taskIds, 1000)
-            .split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
+    byte[] data = generateData(
+        Pair.of(8, 4),
+        Pair.of(8, 5),
+        Pair.of(8, 6),
+        Pair.of(8, 7),
+        Pair.of(8, 8),
+        Pair.of(8, 9),
+        Pair.of(8, 6),
+        Pair.of(8, 9)
+    );
+    List<ShuffleDataSegment> dataSegments1 = new LocalOrderSegmentSplitter(taskIds, 1000)
+        .split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
 
     assertEquals(2, dataSegments1.size());
     assertEquals(16, dataSegments1.get(0).getOffset());
@@ -81,10 +80,14 @@ public class LocalOrderSegmentSplitterTest {
 
     // case2
     taskIds = Roaring64NavigableMap.bitmapOf(1, 2, 4);
-    data = generateData(Pair.of(1, 1), Pair.of(1, 2), Pair.of(1, 3), Pair.of(1, 4));
+    data = generateData(
+        Pair.of(1, 1),
+        Pair.of(1, 2),
+        Pair.of(1, 3),
+        Pair.of(1, 4)
+    );
     List<ShuffleDataSegment> dataSegments2 =
-        new LocalOrderSegmentSplitter(taskIds, 32)
-            .split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
+        new LocalOrderSegmentSplitter(taskIds, 32).split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments2.size());
     assertEquals(0, dataSegments2.get(0).getOffset());
     assertEquals(2, dataSegments2.get(0).getLength());
@@ -96,18 +99,17 @@ public class LocalOrderSegmentSplitterTest {
 
     // case3
     taskIds = Roaring64NavigableMap.bitmapOf(1, 2, 4);
-    data =
-        generateData(
-            Pair.of(1, 1),
-            Pair.of(1, 2),
-            Pair.of(1, 1),
-            Pair.of(1, 1),
-            Pair.of(1, 3),
-            Pair.of(1, 4),
-            Pair.of(1, 1));
+    data = generateData(
+        Pair.of(1, 1),
+        Pair.of(1, 2),
+        Pair.of(1, 1),
+        Pair.of(1, 1),
+        Pair.of(1, 3),
+        Pair.of(1, 4),
+        Pair.of(1, 1)
+    );
     List<ShuffleDataSegment> dataSegments3 =
-        new LocalOrderSegmentSplitter(taskIds, 3)
-            .split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
+        new LocalOrderSegmentSplitter(taskIds, 3).split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(3, dataSegments3.size());
     assertEquals(0, dataSegments3.get(0).getOffset());
     assertEquals(3, dataSegments3.get(0).getLength());
@@ -123,48 +125,51 @@ public class LocalOrderSegmentSplitterTest {
 
     // case4
     taskIds = Roaring64NavigableMap.bitmapOf(1, 3);
-    data = generateData(Pair.of(1, 1), Pair.of(1, 2), Pair.of(1, 3), Pair.of(1, 2), Pair.of(1, 4));
+    data = generateData(
+        Pair.of(1, 1),
+        Pair.of(1, 2),
+        Pair.of(1, 3),
+        Pair.of(1, 2),
+        Pair.of(1, 4)
+    );
     List<ShuffleDataSegment> dataSegments4 =
-        new LocalOrderSegmentSplitter(taskIds, 3)
-            .split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
+        new LocalOrderSegmentSplitter(taskIds, 3).split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments4.size());
   }
 
   /**
-   * When no spark skew optimization and LOCAL_ORDER is enabled, the LOCAL_ORDER split segments
-   * should be consistent with the NORMAL
+   * When no spark skew optimization and LOCAL_ORDER is enabled,
+   * the LOCAL_ORDER split segments should be consistent with the
+   * NORMAL
    */
   @ParameterizedTest()
   @ValueSource(ints = {-1, 32, 33, 48, 49, 57})
   public void testConsistentWithFixSizeSplitterWhenNoSkew(int realDataLength) {
     Roaring64NavigableMap taskIds = Roaring64NavigableMap.bitmapOf(1, 2, 3, 4, 5, 6);
-    byte[] data =
-        generateData(
-            Pair.of(8, 6),
-            Pair.of(8, 5),
-            Pair.of(8, 4),
-            Pair.of(8, 3),
-            Pair.of(8, 1),
-            Pair.of(8, 2),
-            Pair.of(8, 3),
-            Pair.of(8, 2),
-            Pair.of(8, 3),
-            Pair.of(8, 3),
-            Pair.of(8, 4),
-            Pair.of(8, 5));
-    List<ShuffleDataSegment> dataSegments1 =
-        new LocalOrderSegmentSplitter(taskIds, 32)
-            .split(new ShuffleIndexResult(ByteBuffer.wrap(data), realDataLength));
+    byte[] data = generateData(
+        Pair.of(8, 6),
+        Pair.of(8, 5),
+        Pair.of(8, 4),
+        Pair.of(8, 3),
+        Pair.of(8, 1),
+        Pair.of(8, 2),
+        Pair.of(8, 3),
+        Pair.of(8, 2),
+        Pair.of(8, 3),
+        Pair.of(8, 3),
+        Pair.of(8, 4),
+        Pair.of(8, 5)
+    );
+    List<ShuffleDataSegment> dataSegments1 = new LocalOrderSegmentSplitter(taskIds, 32)
+        .split(new ShuffleIndexResult(ByteBuffer.wrap(data), realDataLength));
 
-    List<ShuffleDataSegment> dataSegments2 =
-        new FixedSizeSegmentSplitter(32)
-            .split(new ShuffleIndexResult(ByteBuffer.wrap(data), realDataLength));
+    List<ShuffleDataSegment> dataSegments2 = new FixedSizeSegmentSplitter(32)
+        .split(new ShuffleIndexResult(ByteBuffer.wrap(data), realDataLength));
 
     checkConsistency(dataSegments1, dataSegments2);
   }
 
-  private void checkConsistency(
-      List<ShuffleDataSegment> dataSegments1, List<ShuffleDataSegment> dataSegments2) {
+  private void checkConsistency(List<ShuffleDataSegment> dataSegments1, List<ShuffleDataSegment> dataSegments2) {
     assertEquals(dataSegments1.size(), dataSegments2.size());
 
     for (int i = 0; i < dataSegments1.size(); i++) {
@@ -197,23 +202,22 @@ public class LocalOrderSegmentSplitterTest {
     /**
      * case1: (32, 5) (16, 1) (10, 1) (16, 2) (6, 1) (8, 1) (10, 3) (9, 1)
      *
-     * <p>It will skip the (32, 5) and merge others into one dataSegment when no exceeding the read
-     * buffer size.
+     * It will skip the (32, 5) and merge others into one dataSegment when no exceeding the
+     * read buffer size.
      */
     Roaring64NavigableMap taskIds = Roaring64NavigableMap.bitmapOf(1, 2);
     LocalOrderSegmentSplitter splitter = new LocalOrderSegmentSplitter(taskIds, 1000);
-    byte[] data =
-        generateData(
-            Pair.of(32, 5),
-            Pair.of(16, 1),
-            Pair.of(10, 1),
-            Pair.of(16, 2),
-            Pair.of(6, 1),
-            Pair.of(8, 1),
-            Pair.of(10, 3),
-            Pair.of(9, 1));
-    List<ShuffleDataSegment> dataSegments =
-        splitter.split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
+    byte[] data = generateData(
+        Pair.of(32, 5),
+        Pair.of(16, 1),
+        Pair.of(10, 1),
+        Pair.of(16, 2),
+        Pair.of(6, 1),
+        Pair.of(8, 1),
+        Pair.of(10, 3),
+        Pair.of(9, 1)
+    );
+    List<ShuffleDataSegment> dataSegments = splitter.split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments.size());
     assertEquals(32, dataSegments.get(0).getOffset());
     assertEquals(56, dataSegments.get(0).getLength());
@@ -244,12 +248,16 @@ public class LocalOrderSegmentSplitterTest {
     /**
      * case2: (16, 1) (16, 2) (6, 1)
      *
-     * <p>It will skip merging into one dataSegment when exceeding the read buffer size.
+     * It will skip merging into one dataSegment when exceeding the
+     * read buffer size.
      */
-    data = generateData(Pair.of(16, 1), Pair.of(15, 2), Pair.of(1, 1), Pair.of(6, 1));
-    dataSegments =
-        new LocalOrderSegmentSplitter(taskIds, 32)
-            .split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
+    data = generateData(
+        Pair.of(16, 1),
+        Pair.of(15, 2),
+        Pair.of(1, 1),
+        Pair.of(6, 1)
+    );
+    dataSegments = new LocalOrderSegmentSplitter(taskIds, 32).split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments.size());
     assertEquals(0, dataSegments.get(0).getOffset());
     assertEquals(32, dataSegments.get(0).getLength());
@@ -266,14 +274,19 @@ public class LocalOrderSegmentSplitterTest {
     splitter = new LocalOrderSegmentSplitter(taskIds, 32);
 
     /**
-     * (length, taskId) case1: (32, 1) (16, 1) (10, 2) (16, 1) (6, 1)
+     * (length, taskId)
+     * case1: (32, 1) (16, 1) (10, 2) (16, 1) (6, 1)
      *
-     * <p>(10, 2) will be dropped
+     *        (10, 2) will be dropped
      */
-    byte[] data =
-        generateData(Pair.of(32, 1), Pair.of(16, 1), Pair.of(10, 2), Pair.of(16, 1), Pair.of(6, 1));
-    List<ShuffleDataSegment> dataSegments =
-        splitter.split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
+    byte[] data = generateData(
+        Pair.of(32, 1),
+        Pair.of(16, 1),
+        Pair.of(10, 2),
+        Pair.of(16, 1),
+        Pair.of(6, 1)
+    );
+    List<ShuffleDataSegment> dataSegments = splitter.split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(3, dataSegments.size());
 
     assertEquals(0, dataSegments.get(0).getOffset());
@@ -288,10 +301,15 @@ public class LocalOrderSegmentSplitterTest {
     /**
      * case2: (32, 2) (16, 1) (10, 1) (16, 2) (6, 1)
      *
-     * <p>(32, 2) (16, 2) will be dropped
+     *        (32, 2) (16, 2) will be dropped
      */
-    data =
-        generateData(Pair.of(32, 2), Pair.of(16, 1), Pair.of(10, 1), Pair.of(16, 2), Pair.of(6, 1));
+    data = generateData(
+        Pair.of(32, 2),
+        Pair.of(16, 1),
+        Pair.of(10, 1),
+        Pair.of(16, 2),
+        Pair.of(6, 1)
+    );
     dataSegments = splitter.split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments.size());
 
@@ -304,12 +322,17 @@ public class LocalOrderSegmentSplitterTest {
     /**
      * case3: (32, 5) (16, 1) (10, 3) (16, 4) (6, 1)
      *
-     * <p>(32, 5) will be dropped
+     *        (32, 5) will be dropped
      */
     taskIds = Roaring64NavigableMap.bitmapOf(1, 2, 3, 4);
     splitter = new LocalOrderSegmentSplitter(taskIds, 32);
-    data =
-        generateData(Pair.of(32, 5), Pair.of(16, 1), Pair.of(10, 3), Pair.of(16, 4), Pair.of(6, 1));
+    data = generateData(
+        Pair.of(32, 5),
+        Pair.of(16, 1),
+        Pair.of(10, 3),
+        Pair.of(16, 4),
+        Pair.of(6, 1)
+    );
     dataSegments = splitter.split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments.size());
 
@@ -319,39 +342,41 @@ public class LocalOrderSegmentSplitterTest {
     assertEquals(74, dataSegments.get(1).getOffset());
     assertEquals(6, dataSegments.get(1).getLength());
 
-    /** case4 */
-    data =
-        generateData(
-            Pair.of(16, 229),
-            Pair.of(16, 230),
-            Pair.of(16, 221),
-            Pair.of(16, 229),
-            Pair.of(16, 230));
+    /**
+     * case4
+     */
+    data = generateData(
+        Pair.of(16, 229),
+        Pair.of(16, 230),
+        Pair.of(16, 221),
+        Pair.of(16, 229),
+        Pair.of(16, 230)
+    );
     taskIds = Roaring64NavigableMap.bitmapOf(230);
-    dataSegments =
-        new LocalOrderSegmentSplitter(taskIds, 10000)
-            .split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
+    dataSegments = new LocalOrderSegmentSplitter(taskIds, 10000).split(
+        new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments.size());
     assertEquals(16, dataSegments.get(0).getOffset());
     assertEquals(16, dataSegments.get(0).getLength());
     assertEquals(64, dataSegments.get(1).getOffset());
     assertEquals(16, dataSegments.get(1).getLength());
 
-    /** case5 */
-    data =
-        generateData(
-            Pair.of(1, 2),
-            Pair.of(1, 3),
-            Pair.of(1, 4),
-            Pair.of(1, 5),
-            Pair.of(1, 6),
-            Pair.of(1, 4),
-            Pair.of(1, 5),
-            Pair.of(1, 6));
+    /**
+     * case5
+     */
+    data = generateData(
+        Pair.of(1, 2),
+        Pair.of(1, 3),
+        Pair.of(1, 4),
+        Pair.of(1, 5),
+        Pair.of(1, 6),
+        Pair.of(1, 4),
+        Pair.of(1, 5),
+        Pair.of(1, 6)
+    );
     taskIds = Roaring64NavigableMap.bitmapOf(2, 3, 4);
-    dataSegments =
-        new LocalOrderSegmentSplitter(taskIds, 10000)
-            .split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
+    dataSegments = new LocalOrderSegmentSplitter(taskIds, 10000).split(
+        new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(2, dataSegments.size());
     assertEquals(0, dataSegments.get(0).getOffset());
     assertEquals(3, dataSegments.get(0).getLength());

@@ -27,22 +27,17 @@ public class GetLocalShuffleIndexResponse extends RpcResponse {
   private ByteBuf indexData;
   private long fileLength;
 
-  public GetLocalShuffleIndexResponse(
-      long requestId, StatusCode statusCode, byte[] indexData, long fileLength) {
+  public GetLocalShuffleIndexResponse(long requestId, StatusCode statusCode, byte[] indexData, long fileLength) {
     this(requestId, statusCode, null, indexData, fileLength);
   }
 
-  public GetLocalShuffleIndexResponse(
-      long requestId, StatusCode statusCode, String retMessage, byte[] indexData, long fileLength) {
+  public GetLocalShuffleIndexResponse(long requestId, StatusCode statusCode, String retMessage,
+      byte[] indexData, long fileLength) {
     this(requestId, statusCode, retMessage, Unpooled.wrappedBuffer(indexData), fileLength);
   }
 
-  public GetLocalShuffleIndexResponse(
-      long requestId,
-      StatusCode statusCode,
-      String retMessage,
-      ByteBuf indexData,
-      long fileLength) {
+  public GetLocalShuffleIndexResponse(long requestId, StatusCode statusCode, String retMessage,
+      ByteBuf indexData, long fileLength) {
     super(requestId, statusCode, retMessage);
     this.indexData = indexData;
     this.fileLength = fileLength;
@@ -67,8 +62,7 @@ public class GetLocalShuffleIndexResponse extends RpcResponse {
     String retMessage = ByteBufUtils.readLengthAndString(byteBuf);
     ByteBuf indexData = ByteBufUtils.readSlice(byteBuf);
     long fileLength = byteBuf.readLong();
-    return new GetLocalShuffleIndexResponse(
-        requestId, statusCode, retMessage, indexData, fileLength);
+    return new GetLocalShuffleIndexResponse(requestId, statusCode, retMessage, indexData, fileLength);
   }
 
   @Override

@@ -64,10 +64,8 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
       try {
         result = handler.readShuffleData();
       } catch (Exception e) {
-        LOG.warn(
-            "Failed to read a replica from [{}] due to ",
-            shuffleServerInfos.get(readHandlerIndex).getId(),
-            e);
+        LOG.warn("Failed to read a replica from [{}] due to ",
+            shuffleServerInfos.get(readHandlerIndex).getId(), e);
       }
       if (result != null && !result.isEmpty()) {
         return result;
@@ -76,10 +74,8 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
           RssUtils.checkProcessedBlockIds(blockIdBitmap, processedBlockIds);
           return result;
         } catch (RssException e) {
-          LOG.warn(
-              "Finished read from [{}], but haven't finished read all the blocks.",
-              shuffleServerInfos.get(readHandlerIndex).getId(),
-              e);
+          LOG.warn("Finished read from [{}], but haven't finished read all the blocks.",
+              shuffleServerInfos.get(readHandlerIndex).getId(), e);
         }
         readHandlerIndex++;
       }
@@ -89,9 +85,7 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
   @Override
   public void updateConsumedBlockInfo(BufferSegment bs, boolean isSkippedMetrics) {
     super.updateConsumedBlockInfo(bs, isSkippedMetrics);
-    handlers
-        .get(Math.min(readHandlerIndex, handlers.size() - 1))
-        .updateConsumedBlockInfo(bs, isSkippedMetrics);
+    handlers.get(Math.min(readHandlerIndex, handlers.size() - 1)).updateConsumedBlockInfo(bs, isSkippedMetrics);
   }
 
   @Override

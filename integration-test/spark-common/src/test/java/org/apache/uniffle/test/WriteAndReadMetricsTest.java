@@ -45,15 +45,9 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
     // take a rest to make sure shuffle server is registered
     Thread.sleep(3000);
 
-    Dataset<Row> df1 =
-        spark
-            .range(0, 100, 1, 10)
-            .select(
-                functions
-                    .when(functions.col("id").$less$eq(50), 1)
-                    .otherwise(functions.col("id"))
-                    .as("key1"),
-                functions.col("id").as("value1"));
+    Dataset<Row> df1 = spark.range(0, 100, 1, 10)
+        .select(functions.when(functions.col("id").$less$eq(50), 1)
+            .otherwise(functions.col("id")).as("key1"), functions.col("id").as("value1"));
     df1.createOrReplaceTempView("table1");
 
     List<?> list = spark.sql("select count(value1) from table1 group by key1").collectAsList();
@@ -74,27 +68,25 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
       throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
     AppStatusStore statestore = spark.sparkContext().statusStore();
     try {
-      return ((Seq<StageData>)
-              statestore
-                  .getClass()
-                  .getDeclaredMethod("stageData", int.class, boolean.class)
-                  .invoke(statestore, stageId, false))
-          .toList()
-          .head();
+      return ((Seq<StageData>)statestore
+          .getClass()
+          .getDeclaredMethod(
+              "stageData",
+              int.class,
+              boolean.class
+          ).invoke(statestore, stageId, false)).toList().head();
     } catch (Exception e) {
-      return ((Seq<StageData>)
-              statestore
-                  .getClass()
-                  .getDeclaredMethod(
-                      "stageData",
-                      int.class,
-                      boolean.class,
-                      List.class,
-                      boolean.class,
-                      double[].class)
-                  .invoke(statestore, stageId, false, new ArrayList<>(), true, new double[] {}))
-          .toList()
-          .head();
+      return ((Seq<StageData>)statestore
+          .getClass()
+          .getDeclaredMethod(
+              "stageData",
+              int.class,
+              boolean.class,
+              List.class,
+              boolean.class,
+              double[].class
+          ).invoke(
+              statestore, stageId, false, new ArrayList<>(), true, new double[]{})).toList().head();
     }
   }
 }

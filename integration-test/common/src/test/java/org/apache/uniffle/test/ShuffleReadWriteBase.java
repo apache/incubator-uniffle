@@ -43,20 +43,15 @@ import org.apache.uniffle.common.segment.SegmentSplitter;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.Constants;
 
+
 public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
 
   private static AtomicLong ATOMIC_LONG = new AtomicLong(0L);
   public static List<ShuffleServerInfo> mockSSI =
       Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
 
-  public static List<ShuffleBlockInfo> createShuffleBlockList(
-      int shuffleId,
-      int partitionId,
-      long taskAttemptId,
-      int blockNum,
-      int length,
-      Roaring64NavigableMap blockIdBitmap,
-      Map<Long, byte[]> dataMap,
+  public static List<ShuffleBlockInfo> createShuffleBlockList(int shuffleId, int partitionId, long taskAttemptId,
+      int blockNum, int length, Roaring64NavigableMap blockIdBitmap, Map<Long, byte[]> dataMap,
       List<ShuffleServerInfo> shuffleServerInfoList) {
     List<ShuffleBlockInfo> shuffleBlockInfoList = Lists.newArrayList();
     for (int i = 0; i < blockNum; i++) {
@@ -64,61 +59,41 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
       new Random().nextBytes(buf);
       long seqno = ATOMIC_LONG.getAndIncrement();
 
-      long blockId =
-          (seqno << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
-              + taskAttemptId;
+      long blockId = (seqno << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
+          + taskAttemptId;
       blockIdBitmap.addLong(blockId);
       dataMap.put(blockId, buf);
-      shuffleBlockInfoList.add(
-          new ShuffleBlockInfo(
-              shuffleId,
-              partitionId,
-              blockId,
-              length,
-              ChecksumUtils.getCrc32(buf),
-              buf,
-              shuffleServerInfoList,
-              length,
-              10,
-              taskAttemptId));
+      shuffleBlockInfoList.add(new ShuffleBlockInfo(
+          shuffleId, partitionId, blockId, length, ChecksumUtils.getCrc32(buf),
+          buf, shuffleServerInfoList, length, 10, taskAttemptId));
     }
     return shuffleBlockInfoList;
   }
 
-  public static List<ShuffleBlockInfo> createShuffleBlockList(
-      int shuffleId,
-      int partitionId,
-      long taskAttemptId,
-      int blockNum,
-      int length,
-      Roaring64NavigableMap blockIdBitmap,
-      Map<Long, byte[]> dataMap) {
+  public static List<ShuffleBlockInfo> createShuffleBlockList(int shuffleId, int partitionId, long taskAttemptId,
+                                                              int blockNum, int length,
+                                                              Roaring64NavigableMap blockIdBitmap,
+                                                              Map<Long, byte[]> dataMap) {
     List<ShuffleServerInfo> shuffleServerInfoList =
         Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
     return createShuffleBlockList(
-        shuffleId,
-        partitionId,
-        taskAttemptId,
-        blockNum,
-        length,
-        blockIdBitmap,
-        dataMap,
-        shuffleServerInfoList);
+        shuffleId, partitionId, taskAttemptId, blockNum, length, blockIdBitmap, dataMap, shuffleServerInfoList);
   }
 
   public static Map<Integer, List<ShuffleBlockInfo>> createTestData(
-      Roaring64NavigableMap[] bitmaps, Map<Long, byte[]> expectedData) {
+      Roaring64NavigableMap[] bitmaps,
+      Map<Long, byte[]> expectedData) {
     for (int i = 0; i < 4; i++) {
       bitmaps[i] = Roaring64NavigableMap.bitmapOf();
     }
-    List<ShuffleBlockInfo> blocks1 =
-        createShuffleBlockList(0, 0, 0, 3, 25, bitmaps[0], expectedData, mockSSI);
-    List<ShuffleBlockInfo> blocks2 =
-        createShuffleBlockList(0, 1, 1, 5, 25, bitmaps[1], expectedData, mockSSI);
-    List<ShuffleBlockInfo> blocks3 =
-        createShuffleBlockList(0, 2, 2, 4, 25, bitmaps[2], expectedData, mockSSI);
-    List<ShuffleBlockInfo> blocks4 =
-        createShuffleBlockList(0, 3, 3, 1, 25, bitmaps[3], expectedData, mockSSI);
+    List<ShuffleBlockInfo> blocks1 = createShuffleBlockList(
+        0, 0, 0, 3, 25, bitmaps[0], expectedData, mockSSI);
+    List<ShuffleBlockInfo> blocks2 = createShuffleBlockList(
+        0, 1, 1, 5, 25, bitmaps[1], expectedData, mockSSI);
+    List<ShuffleBlockInfo> blocks3 = createShuffleBlockList(
+        0, 2, 2, 4, 25, bitmaps[2], expectedData, mockSSI);
+    List<ShuffleBlockInfo> blocks4 = createShuffleBlockList(
+        0, 3, 3, 1, 25, bitmaps[3], expectedData, mockSSI);
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
     partitionToBlocks.put(0, blocks1);
     partitionToBlocks.put(1, blocks2);
@@ -150,11 +125,9 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
       int partitionNum,
       int readBufferSize) {
     // read index file
-    RssGetShuffleIndexRequest rgsir =
-        new RssGetShuffleIndexRequest(
-            appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
-    ShuffleIndexResult shuffleIndexResult =
-        shuffleServerClient.getShuffleIndex(rgsir).getShuffleIndexResult();
+    RssGetShuffleIndexRequest rgsir = new RssGetShuffleIndexRequest(
+        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
+    ShuffleIndexResult shuffleIndexResult = shuffleServerClient.getShuffleIndex(rgsir).getShuffleIndexResult();
     return new FixedSizeSegmentSplitter(readBufferSize).split(shuffleIndexResult);
   }
 
@@ -173,18 +146,13 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
 
     // read shuffle data
     ShuffleDataSegment segment = sds.get(segmentIndex);
-    RssGetShuffleDataRequest rgsdr =
-        new RssGetShuffleDataRequest(
-            appId,
-            shuffleId,
-            partitionId,
-            partitionNumPerRange,
-            partitionNum,
-            segment.getOffset(),
-            segment.getLength());
+    RssGetShuffleDataRequest rgsdr = new RssGetShuffleDataRequest(
+        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum,
+        segment.getOffset(), segment.getLength());
 
     return new ShuffleDataResult(
-        shuffleServerClient.getShuffleData(rgsdr).getShuffleData(), segment.getBufferSegments());
+        shuffleServerClient.getShuffleData(rgsdr).getShuffleData(),
+        segment.getBufferSegments());
   }
 
   public static ShuffleDataResult readShuffleData(
@@ -197,11 +165,9 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
       int readBufferSize,
       int segmentIndex,
       SegmentSplitter segmentSplitter) {
-    RssGetShuffleIndexRequest rgsir =
-        new RssGetShuffleIndexRequest(
-            appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
-    ShuffleIndexResult shuffleIndexResult =
-        shuffleServerClient.getShuffleIndex(rgsir).getShuffleIndexResult();
+    RssGetShuffleIndexRequest rgsir = new RssGetShuffleIndexRequest(
+        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
+    ShuffleIndexResult shuffleIndexResult = shuffleServerClient.getShuffleIndex(rgsir).getShuffleIndexResult();
     if (shuffleIndexResult == null) {
       return new ShuffleDataResult();
     }
@@ -212,19 +178,14 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
     }
 
     ShuffleDataSegment segment = sds.get(segmentIndex);
-    RssGetShuffleDataRequest rgsdr =
-        new RssGetShuffleDataRequest(
-            appId,
-            shuffleId,
-            partitionId,
-            partitionNumPerRange,
-            partitionNum,
-            segment.getOffset(),
-            segment.getLength());
+    RssGetShuffleDataRequest rgsdr = new RssGetShuffleDataRequest(
+        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum,
+        segment.getOffset(), segment.getLength());
 
     // read shuffle data
     return new ShuffleDataResult(
-        shuffleServerClient.getShuffleData(rgsdr).getShuffleData(), segment.getBufferSegments());
+        shuffleServerClient.getShuffleData(rgsdr).getShuffleData(),
+        segment.getBufferSegments());
   }
 
   public static ShuffleDataResult readShuffleData(
@@ -246,6 +207,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
         partitionNum,
         readBufferSize,
         segmentIndex,
-        new FixedSizeSegmentSplitter(readBufferSize));
+        new FixedSizeSegmentSplitter(readBufferSize)
+    );
   }
 }

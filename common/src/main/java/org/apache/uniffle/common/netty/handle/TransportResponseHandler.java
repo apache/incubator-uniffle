@@ -30,6 +30,7 @@ import org.apache.uniffle.common.netty.client.RpcResponseCallback;
 import org.apache.uniffle.common.netty.protocol.RpcResponse;
 import org.apache.uniffle.common.util.NettyUtils;
 
+
 public class TransportResponseHandler extends MessageHandler<RpcResponse> {
   private static final Logger logger = LoggerFactory.getLogger(TransportResponseHandler.class);
 
@@ -61,8 +62,7 @@ public class TransportResponseHandler extends MessageHandler<RpcResponse> {
   public void handle(RpcResponse message) throws Exception {
     RpcResponseCallback listener = outstandingRpcRequests.get(message.getRequestId());
     if (listener == null) {
-      logger.warn(
-          "Ignoring response from {} since it is not outstanding",
+      logger.warn("Ignoring response from {} since it is not outstanding",
           NettyUtils.getRemoteAddress(channel));
     } else {
       listener.onSuccess(message);
@@ -70,7 +70,9 @@ public class TransportResponseHandler extends MessageHandler<RpcResponse> {
   }
 
   @Override
-  public void channelActive() {}
+  public void channelActive() {
+
+  }
 
   @Override
   public void exceptionCaught(Throwable cause) {

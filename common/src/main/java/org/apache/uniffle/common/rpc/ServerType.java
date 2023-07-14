@@ -17,7 +17,9 @@
 
 package org.apache.uniffle.common.rpc;
 
-/** This should sync/match with how ClientType changes */
+/**
+ * This should sync/match with how ClientType changes
+ */
 public enum ServerType {
   GRPC,
   GRPC_NETTY,

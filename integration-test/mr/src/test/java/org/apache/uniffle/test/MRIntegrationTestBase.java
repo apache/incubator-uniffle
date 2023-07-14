@@ -62,11 +62,13 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     }
   }
 
-  private static Path TEST_ROOT_DIR =
-      localFs.makeQualified(new Path("target", TestMRJobs.class.getName() + "-tmpDir"));
+  private static Path TEST_ROOT_DIR = localFs.makeQualified(
+      new Path("target", TestMRJobs.class.getName() + "-tmpDir"));
   static Path APP_JAR = new Path(TEST_ROOT_DIR, "MRAppJar.jar");
-  private static final String OUTPUT_ROOT_DIR = "/tmp/" + TestMRJobs.class.getSimpleName();
-  private static final Path TEST_RESOURCES_DIR = new Path(TEST_ROOT_DIR, "localizedResources");
+  private static final String OUTPUT_ROOT_DIR = "/tmp/"
+      + TestMRJobs.class.getSimpleName();
+  private static final Path TEST_RESOURCES_DIR = new Path(TEST_ROOT_DIR,
+      "localizedResources");
 
   @BeforeAll
   public static void setUpMRYarn() throws IOException {
@@ -122,24 +124,19 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
 
   private void runRssApp(Configuration jobConf) throws Exception {
     URL url = MRIntegrationTestBase.class.getResource("/");
-    final String parentPath =
-        new Path(url.getPath()).getParent().getParent().getParent().getParent().toString();
+    final String parentPath = new Path(url.getPath()).getParent()
+        .getParent().getParent().getParent().toString();
     if (System.getenv("JAVA_HOME") == null) {
       throw new RuntimeException("We must set JAVA_HOME");
     }
-    jobConf.set(
-        MRJobConfig.MR_AM_COMMAND_OPTS,
+    jobConf.set(MRJobConfig.MR_AM_COMMAND_OPTS,
         "-XX:+TraceClassLoading org.apache.hadoop.mapreduce.v2.app.RssMRAppMaster");
-    jobConf.set(
-        MRJobConfig.REDUCE_JAVA_OPTS, "-XX:+TraceClassLoading -XX:MaxDirectMemorySize=419430400");
+    jobConf.set(MRJobConfig.REDUCE_JAVA_OPTS, "-XX:+TraceClassLoading -XX:MaxDirectMemorySize=419430400");
     jobConf.setInt(MRJobConfig.MAP_MEMORY_MB, 500);
     jobConf.setInt(MRJobConfig.REDUCE_MEMORY_MB, 2048);
     jobConf.setInt(MRJobConfig.IO_SORT_MB, 128);
-    jobConf.set(
-        MRJobConfig.MAP_OUTPUT_COLLECTOR_CLASS_ATTR,
-        "org.apache.hadoop.mapred.RssMapOutputCollector");
-    jobConf.set(
-        MRConfig.SHUFFLE_CONSUMER_PLUGIN, "org.apache.hadoop.mapreduce.task.reduce.RssShuffle");
+    jobConf.set(MRJobConfig.MAP_OUTPUT_COLLECTOR_CLASS_ATTR, "org.apache.hadoop.mapred.RssMapOutputCollector");
+    jobConf.set(MRConfig.SHUFFLE_CONSUMER_PLUGIN, "org.apache.hadoop.mapreduce.task.reduce.RssShuffle");
     jobConf.set(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED, "true");
 
     File file = new File(parentPath, "client-mr/core/target/shaded");
@@ -155,10 +152,8 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     String props = System.getProperty("java.class.path");
     String newProps = "";
     String[] splittedProps = props.split(":");
-    for (String prop : splittedProps) {
-      if (!prop.contains("classes")
-          && !prop.contains("grpc")
-          && !prop.contains("rss-")
+    for (String prop : splittedProps)  {
+      if (!prop.contains("classes") && !prop.contains("grpc") && !prop.contains("rss-")
           && !prop.contains("shuffle-storage")) {
         newProps = newProps + ":" + prop;
       } else if (prop.contains("mr") && prop.contains("integration-test")) {
@@ -168,24 +163,24 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     System.setProperty("java.class.path", newProps);
     Path newPath = new Path(HDFS_URI + "/rss.jar");
     FileUtil.copy(file, fs, newPath, false, jobConf);
-    DistributedCache.addFileToClassPath(new Path(newPath.toUri().getPath()), jobConf, fs);
-    jobConf.set(
-        MRJobConfig.MAPREDUCE_APPLICATION_CLASSPATH,
-        "$PWD/rss.jar/"
-            + localFile.getName()
-            + ","
-            + MRJobConfig.DEFAULT_MAPREDUCE_APPLICATION_CLASSPATH);
+    DistributedCache.addFileToClassPath(
+        new Path(newPath.toUri().getPath()), jobConf, fs);
+    jobConf.set(MRJobConfig.MAPREDUCE_APPLICATION_CLASSPATH,
+        "$PWD/rss.jar/" + localFile.getName() + "," + MRJobConfig.DEFAULT_MAPREDUCE_APPLICATION_CLASSPATH);
     jobConf.set(RssMRConfig.RSS_COORDINATOR_QUORUM, COORDINATOR_QUORUM);
     jobConf.set(RssMRConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
     updateRssConfiguration(jobConf);
     runMRApp(jobConf, getTestTool(), getTestArgs());
+
   }
 
   protected String[] getTestArgs() {
     return new String[0];
   }
 
-  protected void updateRssConfiguration(Configuration jobConf) {}
+  protected void updateRssConfiguration(Configuration jobConf) {
+
+  }
 
   private void runMRApp(Configuration conf, Tool tool, String[] args) throws Exception {
     assertEquals(0, ToolRunner.run(conf, tool, args), tool.getClass().getName() + " failed");
@@ -248,5 +243,6 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
       assertEquals(isNotEof1, isNotEof2);
     }
     assertEquals(originLen, rssLen);
+
   }
 }

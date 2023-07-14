@@ -48,10 +48,8 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
       String storageBasePath,
       String fileNamePrefix) {
     this.fileNamePrefix = fileNamePrefix;
-    this.basePath =
-        ShuffleStorageUtils.getFullShuffleDataFolder(
-            storageBasePath,
-            ShuffleStorageUtils.getShuffleDataPath(appId, shuffleId, startPartition, endPartition));
+    this.basePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
+        ShuffleStorageUtils.getShuffleDataPath(appId, shuffleId, startPartition, endPartition));
     createBasePath();
   }
 
@@ -69,19 +67,25 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
 
   // pick base path by hashcode
   private String pickBasePath(
-      String[] storageBasePaths, String appId, int shuffleId, int startPartition) {
+      String[] storageBasePaths,
+      String appId,
+      int shuffleId,
+      int startPartition) {
     if (storageBasePaths == null || storageBasePaths.length == 0) {
-      throw new RssException(
-          "Base path can't be empty, please check rss.storage.localFile.basePaths");
+      throw new RssException("Base path can't be empty, please check rss.storage.localFile.basePaths");
     }
-    int index =
-        ShuffleStorageUtils.getStorageIndex(
-            storageBasePaths.length, appId, shuffleId, startPartition);
+    int index = ShuffleStorageUtils.getStorageIndex(
+        storageBasePaths.length,
+        appId,
+        shuffleId,
+        startPartition
+    );
     return storageBasePaths[index];
   }
 
   @Override
-  public synchronized void write(List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
+  public synchronized void write(
+      List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
 
     // Ignore this write, if the shuffle directory is deleted after being uploaded in multi mode
     // or after its app heartbeat times out.
@@ -105,14 +109,8 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
         long startOffset = dataWriter.nextOffset();
         dataWriter.writeData(ByteBufUtils.readBytes(block.getData()));
 
-        FileBasedShuffleSegment segment =
-            new FileBasedShuffleSegment(
-                blockId,
-                startOffset,
-                block.getLength(),
-                block.getUncompressLength(),
-                crc,
-                block.getTaskAttemptId());
+        FileBasedShuffleSegment segment = new FileBasedShuffleSegment(
+            blockId, startOffset, block.getLength(), block.getUncompressLength(), crc, block.getTaskAttemptId());
         indexWriter.writeIndex(segment);
       }
       LOG.debug(
@@ -135,4 +133,5 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
   protected String getBasePath() {
     return basePath;
   }
+
 }

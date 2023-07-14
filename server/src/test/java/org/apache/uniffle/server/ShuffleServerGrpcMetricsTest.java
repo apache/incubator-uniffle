@@ -30,8 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ShuffleServerGrpcMetricsTest {
   @Test
   public void testLatencyMetrics() {
-    ShuffleServerGrpcMetrics metrics =
-        new ShuffleServerGrpcMetrics(Constants.SHUFFLE_SERVER_VERSION);
+    ShuffleServerGrpcMetrics metrics = new ShuffleServerGrpcMetrics(Constants.SHUFFLE_SERVER_VERSION);
     metrics.register(new CollectorRegistry(true));
     metrics.recordTransportTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, 1000);
     metrics.recordTransportTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, 500);
@@ -44,25 +43,19 @@ public class ShuffleServerGrpcMetricsTest {
     assertEquals(3, sendTimeSummaryTime.size());
     assertEquals(3, processTimeSummaryTime.size());
 
-    assertEquals(
-        1D, sendTimeSummaryTime.get(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD).get().sum);
-    assertEquals(
-        0.5D, sendTimeSummaryTime.get(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD).get().sum);
-    assertEquals(
-        0.2D,
-        sendTimeSummaryTime.get(ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD).get().sum);
+    assertEquals(1D, sendTimeSummaryTime.get(
+        ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD).get().sum);
+    assertEquals(0.5D, sendTimeSummaryTime.get(
+        ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD).get().sum);
+    assertEquals(0.2D, sendTimeSummaryTime.get(
+        ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD).get().sum);
 
-    assertEquals(
-        1D,
-        processTimeSummaryTime.get(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD).get().sum);
-    assertEquals(
-        0.5D,
-        processTimeSummaryTime.get(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD).get().sum);
-    assertEquals(
-        0.2D,
-        processTimeSummaryTime
-            .get(ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD)
-            .get()
-            .sum);
+    assertEquals(1D, processTimeSummaryTime.get(
+        ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD).get().sum);
+    assertEquals(0.5D, processTimeSummaryTime.get(
+        ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD).get().sum);
+    assertEquals(0.2D, processTimeSummaryTime.get(
+        ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD).get().sum);
   }
+
 }

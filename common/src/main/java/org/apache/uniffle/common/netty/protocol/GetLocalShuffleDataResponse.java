@@ -30,8 +30,7 @@ public class GetLocalShuffleDataResponse extends RpcResponse implements Transfer
 
   private ManagedBuffer buffer;
 
-  public GetLocalShuffleDataResponse(
-      long requestId, StatusCode statusCode, String retMessage, ManagedBuffer data) {
+  public GetLocalShuffleDataResponse(long requestId, StatusCode statusCode, String retMessage, ManagedBuffer data) {
     super(requestId, statusCode, retMessage);
     this.buffer = data;
   }
@@ -52,13 +51,13 @@ public class GetLocalShuffleDataResponse extends RpcResponse implements Transfer
     }
   }
 
+
   public static GetLocalShuffleDataResponse decode(ByteBuf byteBuf) {
     long requestId = byteBuf.readLong();
     StatusCode statusCode = StatusCode.fromCode(byteBuf.readInt());
     String retMessage = ByteBufUtils.readLengthAndString(byteBuf);
     ByteBuf data = ByteBufUtils.readSlice(byteBuf);
-    return new GetLocalShuffleDataResponse(
-        requestId, statusCode, retMessage, new NettyManagedBuffer(data));
+    return new GetLocalShuffleDataResponse(requestId, statusCode, retMessage, new NettyManagedBuffer(data));
   }
 
   @Override

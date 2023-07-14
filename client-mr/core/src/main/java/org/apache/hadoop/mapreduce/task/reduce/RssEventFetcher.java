@@ -33,7 +33,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.exception.RssException;
 
-public class RssEventFetcher<K, V> {
+public class RssEventFetcher<K,V> {
   private static final Log LOG = LogFactory.getLog(RssEventFetcher.class);
 
   private final TaskAttemptID reduce;
@@ -66,14 +66,15 @@ public class RssEventFetcher<K, V> {
     try {
       acceptMapCompletionEvents();
     } catch (Exception e) {
-      throw new RssException(
-          "Reduce: " + reduce + " fails to accept completion events due to: " + e.getMessage());
+      throw new RssException("Reduce: " + reduce
+          + " fails to accept completion events due to: "
+          + e.getMessage());
     }
 
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap mapIndexBitmap = Roaring64NavigableMap.bitmapOf();
     String errMsg = "TaskAttemptIDs are inconsistent with map tasks";
-    for (TaskAttemptID taskAttemptID : successMaps) {
+    for (TaskAttemptID taskAttemptID: successMaps) {
       if (!obsoleteMaps.contains(taskAttemptID)) {
         long rssTaskId = RssMRUtils.convertTaskAttemptIdToLong(taskAttemptID, appAttemptId);
         int mapIndex = taskAttemptID.getTaskID().getId();
@@ -128,17 +129,14 @@ public class RssEventFetcher<K, V> {
       case KILLED:
       case OBSOLETE:
         obsoleteMaps.add(event.getTaskAttemptId());
-        LOG.info(
-            "Ignoring obsolete output of "
-                + event.getTaskStatus()
-                + " map-task: '"
-                + event.getTaskAttemptId()
-                + "'");
+        LOG.info("Ignoring obsolete output of "
+            + event.getTaskStatus() + " map-task: '" + event.getTaskAttemptId() + "'");
         break;
 
       case TIPFAILED:
         tipFailedCount++;
-        LOG.info("Ignoring output of failed map TIP: '" + event.getTaskAttemptId() + "'");
+        LOG.info("Ignoring output of failed map TIP: '"
+            + event.getTaskAttemptId() + "'");
         break;
 
       default:
@@ -159,7 +157,8 @@ public class RssEventFetcher<K, V> {
               maxEventsToFetch,
               (org.apache.hadoop.mapred.TaskAttemptID) reduce);
       events = update.getMapTaskCompletionEvents();
-      LOG.debug("Got " + events.length + " map completion events from " + fromEventIdx);
+      LOG.debug("Got " + events.length + " map completion events from "
+          + fromEventIdx);
 
       assert !update.shouldReset() : "Unexpected legacy state";
 

@@ -48,7 +48,7 @@ public class LocalStorageChecker extends Checker {
   private final double diskMaxUsagePercentage;
   private final double diskRecoveryUsagePercentage;
   private final double minStorageHealthyPercentage;
-  private final List<StorageInfo> storageInfos = Lists.newArrayList();
+  private final List<StorageInfo> storageInfos  = Lists.newArrayList();
   private boolean isHealthy = true;
 
   public LocalStorageChecker(ShuffleServerConf conf, List<LocalStorage> storages) {
@@ -59,19 +59,15 @@ public class LocalStorageChecker extends Checker {
     }
     String storageType = conf.getString(ShuffleServerConf.RSS_STORAGE_TYPE);
     if (!ShuffleStorageUtils.containsLocalFile(storageType)) {
-      throw new IllegalArgumentException(
-          "Only StorageType contains LOCALFILE support storageChecker");
+      throw new IllegalArgumentException("Only StorageType contains LOCALFILE support storageChecker");
     }
     for (LocalStorage storage : storages) {
       storageInfos.add(new StorageInfo(storage));
     }
 
-    this.diskMaxUsagePercentage =
-        conf.getDouble(ShuffleServerConf.HEALTH_STORAGE_MAX_USAGE_PERCENTAGE);
-    this.diskRecoveryUsagePercentage =
-        conf.getDouble(ShuffleServerConf.HEALTH_STORAGE_RECOVERY_USAGE_PERCENTAGE);
-    this.minStorageHealthyPercentage =
-        conf.getDouble(ShuffleServerConf.HEALTH_MIN_STORAGE_PERCENTAGE);
+    this.diskMaxUsagePercentage = conf.getDouble(ShuffleServerConf.HEALTH_STORAGE_MAX_USAGE_PERCENTAGE);
+    this.diskRecoveryUsagePercentage = conf.getDouble(ShuffleServerConf.HEALTH_STORAGE_RECOVERY_USAGE_PERCENTAGE);
+    this.minStorageHealthyPercentage = conf.getDouble(ShuffleServerConf.HEALTH_MIN_STORAGE_PERCENTAGE);
   }
 
   @Override
@@ -81,25 +77,22 @@ public class LocalStorageChecker extends Checker {
     AtomicLong usedSpace = new AtomicLong(0L);
     AtomicInteger corruptedDirs = new AtomicInteger(0);
     CountDownLatch cdl = new CountDownLatch(storageInfos.size());
-    storageInfos
-        .parallelStream()
-        .forEach(
-            storageInfo -> {
-              if (!storageInfo.checkStorageReadAndWrite()) {
-                storageInfo.markCorrupted();
-                corruptedDirs.incrementAndGet();
-                cdl.countDown();
-                return;
-              }
+    storageInfos.parallelStream().forEach(storageInfo -> {
+      if (!storageInfo.checkStorageReadAndWrite()) {
+        storageInfo.markCorrupted();
+        corruptedDirs.incrementAndGet();
+        cdl.countDown();
+        return;
+      }
 
-              totalSpace.addAndGet(getTotalSpace(storageInfo.storageDir));
-              usedSpace.addAndGet(getUsedSpace(storageInfo.storageDir));
+      totalSpace.addAndGet(getTotalSpace(storageInfo.storageDir));
+      usedSpace.addAndGet(getUsedSpace(storageInfo.storageDir));
 
-              if (storageInfo.checkIsSpaceEnough()) {
-                num.incrementAndGet();
-              }
-              cdl.countDown();
-            });
+      if (storageInfo.checkIsSpaceEnough()) {
+        num.incrementAndGet();
+      }
+      cdl.countDown();
+    });
     try {
       cdl.await();
     } catch (InterruptedException e) {
@@ -109,8 +102,7 @@ public class LocalStorageChecker extends Checker {
     ShuffleServerMetrics.gaugeLocalStorageUsedSpace.set(usedSpace.get());
     ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.set(storageInfos.size());
     ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.set(corruptedDirs.get());
-    ShuffleServerMetrics.gaugeLocalStorageUsedSpaceRatio.set(
-        usedSpace.get() * 1.0 / totalSpace.get());
+    ShuffleServerMetrics.gaugeLocalStorageUsedSpaceRatio.set(usedSpace.get() * 1.0 / totalSpace.get());
 
     if (storageInfos.isEmpty()) {
       if (isHealthy) {
@@ -147,8 +139,7 @@ public class LocalStorageChecker extends Checker {
     return file.getTotalSpace() - file.getUsableSpace();
   }
 
-  // todo: This function will be integrated to MultiStorageManager, currently we only support disk
-  // check.
+  // todo: This function will be integrated to MultiStorageManager, currently we only support disk check.
   class StorageInfo {
 
     private final File storageDir;
@@ -221,7 +212,7 @@ public class LocalStorageChecker extends Checker {
       } catch (Exception e) {
         LOG.error("Storage read and write error. Storage dir: {}", storageDir, e);
         // avoid check bad track failure due to lack of disk space
-        if (e.getMessage() != null && DEVICE_NO_SPACE_ERROR_MESSAGE.equals(e.getMessage())) {
+        if (e.getMessage() !=  null && DEVICE_NO_SPACE_ERROR_MESSAGE.equals(e.getMessage())) {
           return true;
         }
         return false;

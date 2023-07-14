@@ -41,7 +41,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleServerTest {
 
-  @TempDir private File tempDir;
+  @TempDir
+  private File tempDir;
 
   @Test
   public void startTest() throws Exception {
@@ -70,13 +71,9 @@ public class ShuffleServerTest {
     }
     ss1.stopServer();
 
-    final Thread t =
-        new Thread(
-            null,
-            () -> {
-              throw new AssertionError("TestUncaughtException");
-            },
-            "testThread");
+    final Thread t = new Thread(null, () -> {
+      throw new AssertionError("TestUncaughtException");
+    }, "testThread");
     t.start();
     t.join();
   }
@@ -96,8 +93,7 @@ public class ShuffleServerTest {
     shuffleServer.cancelDecommission();
     ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
     String appId = "decommissionTest_appId_" + shutdown;
-    shuffleTaskManager.registerShuffle(
-        appId, 0, Lists.newArrayList(), new RemoteStorageInfo("/tmp"), "");
+    shuffleTaskManager.registerShuffle(appId, 0, Lists.newArrayList(), new RemoteStorageInfo("/tmp"), "");
     shuffleServer.decommission();
     assertEquals(ServerStatus.DECOMMISSIONING, shuffleServer.getServerStatus());
     // Shuffle server is decommissioning, but we can also decommission it again.
@@ -109,11 +105,11 @@ public class ShuffleServerTest {
     assertEquals(ServerStatus.ACTIVE, shuffleServer.getServerStatus());
     shuffleServer.decommission();
     if (shutdown) {
-      Awaitility.await().timeout(10, TimeUnit.SECONDS).until(() -> !shuffleServer.isRunning());
+      Awaitility.await().timeout(10, TimeUnit.SECONDS).until(
+          () -> !shuffleServer.isRunning());
     } else {
-      Awaitility.await()
-          .timeout(10, TimeUnit.SECONDS)
-          .until(() -> ServerStatus.DECOMMISSIONED.equals(shuffleServer.getServerStatus()));
+      Awaitility.await().timeout(10, TimeUnit.SECONDS).until(
+          () -> ServerStatus.DECOMMISSIONED.equals(shuffleServer.getServerStatus()));
       assertEquals(true, shuffleServer.isRunning());
       shuffleServer.stopServer();
     }
@@ -126,8 +122,7 @@ public class ShuffleServerTest {
     serverConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     serverConf.setInteger(ShuffleServerConf.JETTY_HTTP_PORT, 9528);
     serverConf.setString(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:0");
-    serverConf.set(
-        ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
+    serverConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
     serverConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     serverConf.setLong(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 100);
     serverConf.setLong(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY, 10);

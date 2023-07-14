@@ -30,13 +30,13 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.proto.RssProtos;
 
+
 public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
 
   private static final Logger LOG = LoggerFactory.getLogger(MockedShuffleServerGrpcService.class);
 
   // appId -> shuffleId -> partitionRequestNum
-  private Map<String, Map<Integer, AtomicInteger>> appToPartitionRequest =
-      JavaUtils.newConcurrentMap();
+  private Map<String, Map<Integer, AtomicInteger>> appToPartitionRequest = JavaUtils.newConcurrentMap();
 
   private long mockedTimeout = -1L;
 
@@ -71,8 +71,7 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
   }
 
   @Override
-  public void sendShuffleData(
-      RssProtos.SendShuffleDataRequest request,
+  public void sendShuffleData(RssProtos.SendShuffleDataRequest request,
       StreamObserver<RssProtos.SendShuffleDataResponse> responseObserver) {
     if (mockedTimeout > 0) {
       LOG.info("Add a mocked timeout on sendShuffleData");
@@ -82,9 +81,8 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
   }
 
   @Override
-  public void reportShuffleResult(
-      RssProtos.ReportShuffleResultRequest request,
-      StreamObserver<RssProtos.ReportShuffleResultResponse> responseObserver) {
+  public void reportShuffleResult(RssProtos.ReportShuffleResultRequest request,
+                              StreamObserver<RssProtos.ReportShuffleResultResponse> responseObserver) {
     if (mockedTimeout > 0) {
       LOG.info("Add a mocked timeout on reportShuffleResult");
       Uninterruptibles.sleepUninterruptibly(mockedTimeout, TimeUnit.MILLISECONDS);
@@ -93,9 +91,8 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
   }
 
   @Override
-  public void getShuffleResult(
-      RssProtos.GetShuffleResultRequest request,
-      StreamObserver<RssProtos.GetShuffleResultResponse> responseObserver) {
+  public void getShuffleResult(RssProtos.GetShuffleResultRequest request,
+                               StreamObserver<RssProtos.GetShuffleResultResponse> responseObserver) {
     if (mockedTimeout > 0) {
       LOG.info("Add a mocked timeout on getShuffleResult");
       Uninterruptibles.sleepUninterruptibly(mockedTimeout, TimeUnit.MILLISECONDS);
@@ -104,8 +101,7 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
   }
 
   @Override
-  public void getShuffleResultForMultiPart(
-      RssProtos.GetShuffleResultForMultiPartRequest request,
+  public void getShuffleResultForMultiPart(RssProtos.GetShuffleResultForMultiPartRequest request,
       StreamObserver<RssProtos.GetShuffleResultForMultiPartResponse> responseObserver) {
     if (mockedTimeout > 0) {
       LOG.info("Add a mocked timeout on getShuffleResult");
@@ -113,12 +109,10 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
     }
     if (recordGetShuffleResult) {
       List<Integer> requestPartitions = request.getPartitionsList();
-      Map<Integer, AtomicInteger> shuffleIdToPartitionRequestNum =
-          appToPartitionRequest.computeIfAbsent(
-              request.getAppId(), x -> JavaUtils.newConcurrentMap());
-      AtomicInteger partitionRequestNum =
-          shuffleIdToPartitionRequestNum.computeIfAbsent(
-              request.getShuffleId(), x -> new AtomicInteger(0));
+      Map<Integer, AtomicInteger> shuffleIdToPartitionRequestNum = appToPartitionRequest.computeIfAbsent(
+          request.getAppId(), x -> JavaUtils.newConcurrentMap());
+      AtomicInteger partitionRequestNum = shuffleIdToPartitionRequestNum.computeIfAbsent(
+          request.getShuffleId(), x -> new AtomicInteger(0));
       partitionRequestNum.addAndGet(requestPartitions.size());
     }
     super.getShuffleResultForMultiPart(request, responseObserver);
@@ -129,19 +123,17 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
   }
 
   @Override
-  public void getMemoryShuffleData(
-      RssProtos.GetMemoryShuffleDataRequest request,
-      StreamObserver<RssProtos.GetMemoryShuffleDataResponse> responseObserver) {
+  public void getMemoryShuffleData(RssProtos.GetMemoryShuffleDataRequest request,
+                                   StreamObserver<RssProtos.GetMemoryShuffleDataResponse> responseObserver) {
     if (numOfFailedReadRequest > 0) {
       int currentFailedReadRequest = failedReadRequest.getAndIncrement();
       if (currentFailedReadRequest < numOfFailedReadRequest) {
-        LOG.info(
-            "This request is failed as mocked failure, current/firstN: {}/{}",
-            currentFailedReadRequest,
-            numOfFailedReadRequest);
+        LOG.info("This request is failed as mocked failure, current/firstN: {}/{}",
+            currentFailedReadRequest, numOfFailedReadRequest);
         throw new RuntimeException("This request is failed as mocked failure");
       }
     }
     super.getMemoryShuffleData(request, responseObserver);
   }
+
 }

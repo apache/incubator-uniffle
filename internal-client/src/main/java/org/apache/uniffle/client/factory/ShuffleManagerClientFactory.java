@@ -30,10 +30,10 @@ public class ShuffleManagerClientFactory {
     return LazyHolder.INSTANCE;
   }
 
-  private ShuffleManagerClientFactory() {}
+  private ShuffleManagerClientFactory() {
+  }
 
-  public ShuffleManagerGrpcClient createShuffleManagerClient(
-      ClientType clientType, String host, int port) {
+  public ShuffleManagerGrpcClient createShuffleManagerClient(ClientType clientType, String host, int port) {
     if (ClientType.GRPC.equals(clientType)) {
       return new ShuffleManagerGrpcClient(host, port);
     } else {

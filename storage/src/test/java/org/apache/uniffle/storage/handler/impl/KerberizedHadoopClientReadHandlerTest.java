@@ -39,6 +39,9 @@ public class KerberizedHadoopClientReadHandlerTest extends KerberizedHadoopBase 
   @Test
   public void test() throws Exception {
     HadoopClientReadHandlerTest.createAndRunCases(
-        kerberizedHadoop.getSchemeAndAuthorityPrefix(), kerberizedHadoop.getConf(), "alex");
+        kerberizedHadoop.getSchemeAndAuthorityPrefix(),
+        kerberizedHadoop.getConf(),
+        "alex"
+    );
   }
 }

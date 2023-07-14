@@ -47,23 +47,23 @@ public class SortWriteBufferTest {
     BytesWritable value = new BytesWritable(valueStr.getBytes());
     JobConf jobConf = new JobConf(new Configuration());
     SerializationFactory serializationFactory = new SerializationFactory(jobConf);
-    Serializer<BytesWritable> keySerializer =
-        serializationFactory.getSerializer(BytesWritable.class);
-    Serializer<BytesWritable> valSerializer =
-        serializationFactory.getSerializer(BytesWritable.class);
+    Serializer<BytesWritable> keySerializer =  serializationFactory.getSerializer(BytesWritable.class);
+    Serializer<BytesWritable> valSerializer = serializationFactory.getSerializer(BytesWritable.class);
     SortWriteBuffer<BytesWritable, BytesWritable> buffer =
         new SortWriteBuffer<BytesWritable, BytesWritable>(
-            1, WritableComparator.get(BytesWritable.class), 1024L, keySerializer, valSerializer);
+            1,
+            WritableComparator.get(BytesWritable.class),
+            1024L,
+            keySerializer,
+            valSerializer);
 
     long recordLength = buffer.addRecord(key, value);
     assertEquals(20, buffer.getData().length);
     assertEquals(16, recordLength);
     assertEquals(1, buffer.getPartitionId());
     byte[] result = buffer.getData();
-    Deserializer<BytesWritable> keyDeserializer =
-        serializationFactory.getDeserializer(BytesWritable.class);
-    Deserializer<BytesWritable> valDeserializer =
-        serializationFactory.getDeserializer(BytesWritable.class);
+    Deserializer<BytesWritable> keyDeserializer = serializationFactory.getDeserializer(BytesWritable.class);
+    Deserializer<BytesWritable> valDeserializer = serializationFactory.getDeserializer(BytesWritable.class);
     ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(result);
     keyDeserializer.open(byteArrayInputStream);
     valDeserializer.open(byteArrayInputStream);
@@ -77,9 +77,12 @@ public class SortWriteBufferTest {
     BytesWritable valueRead = keyDeserializer.deserialize(null);
     assertEquals(value, valueRead);
 
-    buffer =
-        new SortWriteBuffer<BytesWritable, BytesWritable>(
-            1, WritableComparator.get(BytesWritable.class), 528L, keySerializer, valSerializer);
+    buffer = new SortWriteBuffer<BytesWritable, BytesWritable>(
+        1,
+        WritableComparator.get(BytesWritable.class),
+        528L,
+        keySerializer,
+        valSerializer);
     long start = buffer.getDataLength();
     assertEquals(0, start);
     keyStr = "key3";

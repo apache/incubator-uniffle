@@ -60,14 +60,18 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.ServerInterface;
 
+
 public class RssUtils {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RssUtils.class);
   public static final String RSS_LOCAL_DIR_KEY = "RSS_LOCAL_DIRS";
 
-  private RssUtils() {}
+  private RssUtils() {
+  }
 
-  /** Load properties present in the given file. */
+  /**
+   * Load properties present in the given file.
+   */
   public static Map<String, String> getPropertiesFromFile(String filename) {
     if (filename == null) {
       String rssHome = System.getenv("RSS_HOME");
@@ -95,13 +99,10 @@ public class RssUtils {
     LOGGER.info("Load config from {}", filename);
     final Map<String, String> result = new HashMap<>();
 
-    try (InputStreamReader inReader =
-        new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
+    try (InputStreamReader inReader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
       Properties properties = new Properties();
       properties.load(inReader);
-      properties
-          .stringPropertyNames()
-          .forEach(k -> result.put(k, properties.getProperty(k).trim()));
+      properties.stringPropertyNames().forEach(k -> result.put(k, properties.getProperty(k).trim()));
     } catch (IOException ignored) {
       LOGGER.error("Failed when loading rss properties from " + filename);
     }
@@ -134,53 +135,38 @@ public class RssUtils {
         InetAddress ia = ifa.getAddress();
         InetAddress brd = ifa.getBroadcast();
         if (brd == null || brd.isAnyLocalAddress()) {
-          LOGGER.info(
-              "ip {} was filtered, because it don't have effective broadcast address",
-              ia.getHostAddress());
+          LOGGER.info("ip {} was filtered, because it don't have effective broadcast address", ia.getHostAddress());
           continue;
         }
-        if (!ia.isLinkLocalAddress()
-            && !ia.isAnyLocalAddress()
-            && !ia.isLoopbackAddress()
-            && ia instanceof Inet4Address
-            && ia.isReachable(5000)) {
+        if (!ia.isLinkLocalAddress() && !ia.isAnyLocalAddress() && !ia.isLoopbackAddress()
+            && ia instanceof Inet4Address && ia.isReachable(5000)) {
           if (!ia.isSiteLocalAddress()) {
             return ia.getHostAddress();
           } else if (siteLocalAddress == null) {
-            LOGGER.info(
-                "ip {} was candidate, if there is no better choice, we will choose it",
-                ia.getHostAddress());
+            LOGGER.info("ip {} was candidate, if there is no better choice, we will choose it", ia.getHostAddress());
             siteLocalAddress = ia.getHostAddress();
           } else {
-            LOGGER.info(
-                "ip {} was filtered, because it's not first effect site local address",
-                ia.getHostAddress());
+            LOGGER.info("ip {} was filtered, because it's not first effect site local address", ia.getHostAddress());
           }
         } else if (!(ia instanceof Inet4Address)) {
           LOGGER.info("ip {} was filtered, because it's just a ipv6 address", ia.getHostAddress());
         } else if (ia.isLinkLocalAddress()) {
-          LOGGER.info(
-              "ip {} was filtered, because it's just a link local address", ia.getHostAddress());
+          LOGGER.info("ip {} was filtered, because it's just a link local address", ia.getHostAddress());
         } else if (ia.isAnyLocalAddress()) {
-          LOGGER.info(
-              "ip {} was filtered, because it's just a any local address", ia.getHostAddress());
+          LOGGER.info("ip {} was filtered, because it's just a any local address", ia.getHostAddress());
         } else if (ia.isLoopbackAddress()) {
-          LOGGER.info(
-              "ip {} was filtered, because it's just a loop back address", ia.getHostAddress());
+          LOGGER.info("ip {} was filtered, because it's just a loop back address", ia.getHostAddress());
         } else {
-          LOGGER.info(
-              "ip {} was filtered, because it's just not reachable address", ia.getHostAddress());
+          LOGGER.info("ip {} was filtered, because it's just not reachable address", ia.getHostAddress());
         }
       }
     }
     return siteLocalAddress;
   }
 
-  public static int startServiceOnPort(
-      ServerInterface service, String serviceName, int servicePort, RssBaseConf conf) {
+  public static int startServiceOnPort(ServerInterface service, String serviceName, int servicePort, RssBaseConf conf) {
     if (servicePort < 0 || servicePort > 65535) {
-      throw new IllegalArgumentException(
-          String.format("Bad service %s on port (%s)", serviceName, servicePort));
+      throw new IllegalArgumentException(String.format("Bad service %s on port (%s)", serviceName, servicePort));
     }
     int actualPort = servicePort;
     int maxRetries = conf.get(RssBaseConf.SERVER_PORT_MAX_RETRIES);
@@ -195,21 +181,19 @@ public class RssUtils {
         return actualPort;
       } catch (Exception e) {
         if (isServerPortBindCollision(e)) {
-          LOGGER.warn(
-              String.format(
-                  "%s:Service %s failed after %s retries (on a random free port (%s))!",
-                  e.getMessage(), serviceName, i + 1, actualPort));
+          LOGGER.warn(String.format("%s:Service %s failed after %s retries (on a random free port (%s))!",
+              e.getMessage(), serviceName, i + 1, actualPort));
         } else {
-          throw new RssException(
-              String.format("Failed to start service %s on port %s", serviceName, servicePort), e);
+          throw new RssException(String.format("Failed to start service %s on port %s", serviceName, servicePort), e);
         }
       }
     }
-    throw new RssException(
-        String.format("Failed to start service %s on port %s", serviceName, servicePort));
+    throw new RssException(String.format("Failed to start service %s on port %s", serviceName, servicePort));
   }
 
-  /** check whether the exception is caused by an address-port collision when binding. */
+  /**
+   * check whether the exception is caused by an address-port collision when binding.
+   */
   public static boolean isServerPortBindCollision(Throwable e) {
     if (e instanceof BindException) {
       if (e.getMessage() != null) {
@@ -217,12 +201,11 @@ public class RssUtils {
       }
       return isServerPortBindCollision(e.getCause());
     } else if (e instanceof MultiException) {
-      return !((MultiException) e)
-          .getThrowables().stream()
-              .noneMatch((Throwable throwable) -> isServerPortBindCollision(throwable));
+      return !((MultiException) e).getThrowables().stream()
+          .noneMatch((Throwable throwable) -> isServerPortBindCollision(throwable));
     } else if (e instanceof Errors.NativeIoException) {
       return (e.getMessage() != null && e.getMessage().startsWith("bind() failed: "))
-          || isServerPortBindCollision(e.getCause());
+              || isServerPortBindCollision(e.getCause());
     } else if (e instanceof IOException) {
       return (e.getMessage() != null && e.getMessage().startsWith("Failed to bind to address"))
           || isServerPortBindCollision(e.getCause());
@@ -233,9 +216,9 @@ public class RssUtils {
 
   public static int findRandomTcpPort(RssBaseConf baseConf) {
     int portRangeMin = baseConf.getInteger(RssBaseConf.RSS_RANDOM_PORT_MIN);
-    int portRangeMax = baseConf.getInteger(RssBaseConf.RSS_RANDOM_PORT_MAX);
+    int portRangeMax =  baseConf.getInteger(RssBaseConf.RSS_RANDOM_PORT_MAX);
     int portRange = portRangeMax - portRangeMin;
-    return portRangeMin + ThreadLocalRandom.current().nextInt(portRange + 1);
+    return  portRangeMin + ThreadLocalRandom.current().nextInt(portRange + 1);
   }
 
   public static byte[] serializeBitMap(Roaring64NavigableMap bitmap) throws IOException {
@@ -270,8 +253,7 @@ public class RssUtils {
   }
 
   public static String generatePartitionKey(String appId, Integer shuffleId, Integer partition) {
-    return String.join(
-        Constants.KEY_SPLIT_CHAR, appId, String.valueOf(shuffleId), String.valueOf(partition));
+    return String.join(Constants.KEY_SPLIT_CHAR, appId, String.valueOf(shuffleId), String.valueOf(partition));
   }
 
   @SuppressWarnings("unchecked")
@@ -309,12 +291,10 @@ public class RssUtils {
 
   public static void checkQuorumSetting(int replica, int replicaWrite, int replicaRead) {
     if (replica < 1 || replicaWrite > replica || replicaRead > replica) {
-      throw new RssException(
-          "Replica config is invalid, recommend replica.write + replica.read > replica");
+      throw new RssException("Replica config is invalid, recommend replica.write + replica.read > replica");
     }
     if (replicaWrite + replicaRead <= replica) {
-      throw new RssException(
-          "Replica config is unsafe, recommend replica.write + replica.read > replica");
+      throw new RssException("Replica config is unsafe, recommend replica.write + replica.read > replica");
     }
   }
 
@@ -362,23 +342,18 @@ public class RssUtils {
     return serverToPartitions;
   }
 
-  public static void checkProcessedBlockIds(
-      Roaring64NavigableMap blockIdBitmap, Roaring64NavigableMap processedBlockIds) {
+  public static void checkProcessedBlockIds(Roaring64NavigableMap blockIdBitmap,
+                                            Roaring64NavigableMap processedBlockIds) {
     Roaring64NavigableMap cloneBitmap;
     cloneBitmap = RssUtils.cloneBitMap(blockIdBitmap);
     cloneBitmap.and(processedBlockIds);
     if (!blockIdBitmap.equals(cloneBitmap)) {
-      throw new RssException(
-          "Blocks read inconsistent: expected "
-              + blockIdBitmap.getLongCardinality()
-              + " blocks, actual "
-              + cloneBitmap.getLongCardinality()
-              + " blocks");
+      throw new RssException("Blocks read inconsistent: expected " + blockIdBitmap.getLongCardinality()
+          + " blocks, actual " + cloneBitmap.getLongCardinality() + " blocks");
     }
   }
-
-  public static Roaring64NavigableMap generateTaskIdBitMap(
-      Roaring64NavigableMap blockIdBitmap, IdHelper idHelper) {
+  
+  public static Roaring64NavigableMap generateTaskIdBitMap(Roaring64NavigableMap blockIdBitmap, IdHelper idHelper) {
     Iterator<Long> iterator = blockIdBitmap.iterator();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf();
     while (iterator.hasNext()) {

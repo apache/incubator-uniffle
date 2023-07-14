@@ -31,7 +31,9 @@ public class RssFetchClientConfResponse extends ClientResponse {
   }
 
   public RssFetchClientConfResponse(
-      StatusCode statusCode, String message, Map<String, String> clientConf) {
+      StatusCode statusCode,
+      String message,
+      Map<String, String> clientConf) {
     super(statusCode, message);
     this.clientConf = clientConf;
   }

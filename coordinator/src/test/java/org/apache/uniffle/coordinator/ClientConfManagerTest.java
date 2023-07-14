@@ -60,9 +60,8 @@ public class ClientConfManagerTest {
   public void test(@TempDir File tempDir) throws Exception {
     File cfgFile = File.createTempFile("tmp", ".conf", tempDir);
     final String cfgFileName = cfgFile.getAbsolutePath();
-    final String filePath =
-        Objects.requireNonNull(getClass().getClassLoader().getResource("coordinator.conf"))
-            .getFile();
+    final String filePath = Objects.requireNonNull(
+        getClass().getClassLoader().getResource("coordinator.conf")).getFile();
     CoordinatorConf conf = new CoordinatorConf(filePath);
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, tempDir.toURI().toString());
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
@@ -79,8 +78,7 @@ public class ClientConfManagerTest {
     assertTrue(expectedException.getMessage().endsWith("is not a file."));
 
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
-    ClientConfManager clientConfManager =
-        new ClientConfManager(conf, new Configuration(), applicationManager);
+    ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
     assertEquals(0, clientConfManager.getClientConf().size());
 
     FileWriter fileWriter = new FileWriter(cfgFile);
@@ -152,20 +150,17 @@ public class ClientConfManagerTest {
     writeRemoteStorageConf(cfgFile, remotePath1);
 
     CoordinatorConf conf = new CoordinatorConf();
-    conf.set(
-        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, updateIntervalSec);
+    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, updateIntervalSec);
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
     conf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 60000);
     conf.setInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_ACCESS_TIMES, 1);
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
     ApplicationManager applicationManager = new ApplicationManager(conf);
 
-    final ClientConfManager clientConfManager =
-        new ClientConfManager(conf, new Configuration(), applicationManager);
+    final ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
     applicationManager.getSelectStorageStrategy().detectStorage();
     Set<String> expectedAvailablePath = Sets.newHashSet(remotePath1);
-    assertEquals(
-        expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
+    assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
     RemoteStorageInfo remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId1");
     assertEquals(remotePath1, remoteStorageInfo.getPath());
     assertTrue(remoteStorageInfo.getConfItems().isEmpty());
@@ -178,8 +173,7 @@ public class ClientConfManagerTest {
     assertEquals(remotePath3, remoteStorageInfo.getPath());
 
     String confItems = "host2,k1=v1,k2=v2;host3,k3=v3";
-    writeRemoteStorageConf(
-        cfgFile, remotePath2 + Constants.COMMA_SPLIT_CHAR + remotePath3, confItems);
+    writeRemoteStorageConf(cfgFile, remotePath2 + Constants.COMMA_SPLIT_CHAR + remotePath3, confItems);
     expectedAvailablePath = Sets.newHashSet(remotePath2, remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
     applicationManager.getSelectStorageStrategy().detectStorage();
@@ -190,20 +184,19 @@ public class ClientConfManagerTest {
     assertEquals("v2", remoteStorageInfo.getConfItems().get("k2"));
 
     confItems = "host1,keyTest1=test1,keyTest2=test2;host2,k1=deadbeaf";
-    writeRemoteStorageConf(
-        cfgFile, remotePath1 + Constants.COMMA_SPLIT_CHAR + remotePath2, confItems);
+    writeRemoteStorageConf(cfgFile, remotePath1 + Constants.COMMA_SPLIT_CHAR + remotePath2, confItems);
     expectedAvailablePath = Sets.newHashSet(remotePath1, remotePath2);
     waitForUpdate(expectedAvailablePath, applicationManager);
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId4");
     // one of remote storage will be chosen
     assertTrue(
         (remotePath1.equals(remoteStorageInfo.getPath())
-                    && (remoteStorageInfo.getConfItems().size() == 2)
-                    && (remoteStorageInfo.getConfItems().get("keyTest1").equals("test1")))
-                && (remoteStorageInfo.getConfItems().get("keyTest2").equals("test2"))
+                      && (remoteStorageInfo.getConfItems().size() == 2)
+                      && (remoteStorageInfo.getConfItems().get("keyTest1").equals("test1")))
+                      && (remoteStorageInfo.getConfItems().get("keyTest2").equals("test2"))
             || (remotePath2.equals(remoteStorageInfo.getPath())
-                    && remoteStorageInfo.getConfItems().size() == 1)
-                && remoteStorageInfo.getConfItems().get("k1").equals("deadbeaf"));
+                      && remoteStorageInfo.getConfItems().size() == 1)
+                      && remoteStorageInfo.getConfItems().get("k1").equals("deadbeaf"));
 
     clientConfManager.close();
   }
@@ -219,8 +212,7 @@ public class ClientConfManagerTest {
     writeRemoteStorageConf(cfgFile, remotePath1);
 
     CoordinatorConf conf = new CoordinatorConf();
-    conf.set(
-        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, updateIntervalSec);
+    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, updateIntervalSec);
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
     conf.setLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME, 60000);
@@ -233,13 +225,11 @@ public class ClientConfManagerTest {
         (LowestIOSampleCostSelectStorageStrategy) applicationManager.getSelectStorageStrategy();
     String testPath = "/test";
 
-    final ClientConfManager clientConfManager =
-        new ClientConfManager(conf, new Configuration(), applicationManager);
+    final ClientConfManager clientConfManager = new ClientConfManager(conf, new Configuration(), applicationManager);
     // the reason for sleep here is to ensure that threads can be scheduled normally, the same below
     applicationManager.getSelectStorageStrategy().detectStorage();
     Set<String> expectedAvailablePath = Sets.newHashSet(remotePath1);
-    assertEquals(
-        expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
+    assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
     selectStorageStrategy.sortPathByRankValue(remotePath1, testPath, System.currentTimeMillis());
     RemoteStorageInfo remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId1");
     assertEquals(remotePath1, remoteStorageInfo.getPath());
@@ -256,8 +246,7 @@ public class ClientConfManagerTest {
 
     String confItems = "host2,k1=v1,k2=v2;host3,k3=v3";
     final long current = System.currentTimeMillis();
-    writeRemoteStorageConf(
-        cfgFile, remotePath2 + Constants.COMMA_SPLIT_CHAR + remotePath3, confItems);
+    writeRemoteStorageConf(cfgFile, remotePath2 + Constants.COMMA_SPLIT_CHAR + remotePath3, confItems);
     expectedAvailablePath = Sets.newHashSet(remotePath2, remotePath3);
     waitForUpdate(expectedAvailablePath, applicationManager);
     selectStorageStrategy.sortPathByRankValue(remotePath2, testPath, current);
@@ -270,20 +259,19 @@ public class ClientConfManagerTest {
     assertEquals("v2", remoteStorageInfo.getConfItems().get("k2"));
 
     confItems = "host1,keyTest1=test1,keyTest2=test2;host2,k1=deadbeaf";
-    writeRemoteStorageConf(
-        cfgFile, remotePath1 + Constants.COMMA_SPLIT_CHAR + remotePath2, confItems);
+    writeRemoteStorageConf(cfgFile, remotePath1 + Constants.COMMA_SPLIT_CHAR + remotePath2, confItems);
     expectedAvailablePath = Sets.newHashSet(remotePath1, remotePath2);
     waitForUpdate(expectedAvailablePath, applicationManager);
     remoteStorageInfo = applicationManager.pickRemoteStorage("testAppId4");
     // one of remote storage will be chosen
     assertTrue(
         (remotePath1.equals(remoteStorageInfo.getPath())
-                    && (remoteStorageInfo.getConfItems().size() == 2)
-                    && (remoteStorageInfo.getConfItems().get("keyTest1").equals("test1")))
-                && (remoteStorageInfo.getConfItems().get("keyTest2").equals("test2"))
+            && (remoteStorageInfo.getConfItems().size() == 2)
+            && (remoteStorageInfo.getConfItems().get("keyTest1").equals("test1")))
+            && (remoteStorageInfo.getConfItems().get("keyTest2").equals("test2"))
             || (remotePath2.equals(remoteStorageInfo.getPath())
-                    && remoteStorageInfo.getConfItems().size() == 1)
-                && remoteStorageInfo.getConfItems().get("k1").equals("deadbeaf"));
+            && remoteStorageInfo.getConfItems().size() == 1)
+            && remoteStorageInfo.getConfItems().get("k1").equals("deadbeaf"));
 
     clientConfManager.close();
   }
@@ -292,23 +280,22 @@ public class ClientConfManagerTest {
     writeRemoteStorageConf(cfgFile, value, null);
   }
 
-  private void writeRemoteStorageConf(File cfgFile, String pathItems, String confItems)
-      throws Exception {
+  private void writeRemoteStorageConf(File cfgFile, String pathItems, String confItems) throws Exception {
     // sleep 2 secs to make sure the modified time will be updated
     Thread.sleep(2000);
     FileWriter fileWriter = new FileWriter(cfgFile);
     PrintWriter printWriter = new PrintWriter(fileWriter);
     printWriter.println(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key() + " " + pathItems);
     if (confItems != null) {
-      printWriter.println(
-          CoordinatorConf.COORDINATOR_REMOTE_STORAGE_CLUSTER_CONF.key() + " " + confItems);
+      printWriter.println(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_CLUSTER_CONF.key() + " " + confItems);
     }
     printWriter.flush();
     printWriter.close();
   }
 
   private void waitForUpdate(
-      Set<String> expectedAvailablePath, ApplicationManager applicationManager) throws Exception {
+      Set<String> expectedAvailablePath,
+      ApplicationManager applicationManager) throws Exception {
     int maxAttempt = 10;
     int attempt = 0;
     while (true) {
@@ -317,8 +304,7 @@ public class ClientConfManagerTest {
       }
       Thread.sleep(1000);
       try {
-        assertEquals(
-            expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
+        assertEquals(expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
         break;
       } catch (Throwable e) {
         // ignore

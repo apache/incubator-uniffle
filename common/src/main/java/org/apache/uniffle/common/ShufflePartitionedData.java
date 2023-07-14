@@ -31,11 +31,7 @@ public class ShufflePartitionedData {
 
   @Override
   public String toString() {
-    return "ShufflePartitionedData{partitionId="
-        + partitionId
-        + ", blockList="
-        + Arrays.toString(blockList)
-        + '}';
+    return "ShufflePartitionedData{partitionId=" + partitionId + ", blockList=" + Arrays.toString(blockList) + '}';
   }
 
   public int getPartitionId() {
@@ -48,7 +44,7 @@ public class ShufflePartitionedData {
 
   public ShufflePartitionedBlock[] getBlockList() {
     if (blockList == null) {
-      return new ShufflePartitionedBlock[] {};
+      return new ShufflePartitionedBlock[]{};
     }
     return blockList;
   }
@@ -63,4 +59,5 @@ public class ShufflePartitionedData {
     }
     return size;
   }
+
 }

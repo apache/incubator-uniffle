@@ -39,12 +39,8 @@ public class RssTezShuffleDataFetcher extends CallableWithNdc<Void> {
   private static final Logger LOG = LoggerFactory.getLogger(RssTezShuffleDataFetcher.class);
 
   private enum ShuffleErrors {
-    IO_ERROR,
-    WRONG_LENGTH,
-    BAD_ID,
-    WRONG_MAP,
-    CONNECTION,
-    WRONG_REDUCE
+    IO_ERROR, WRONG_LENGTH, BAD_ID, WRONG_MAP,
+    CONNECTION, WRONG_REDUCE
   }
 
   private static final String SHUFFLE_ERR_GRP_NAME = "Shuffle Errors";
@@ -61,7 +57,7 @@ public class RssTezShuffleDataFetcher extends CallableWithNdc<Void> {
   private long decompressTime = 0;
   private long serializeTime = 0;
   private long waitTime = 0;
-  private long copyTime = 0; // the sum of readTime + decompressTime + serializeTime + waitTime
+  private long copyTime = 0;  // the sum of readTime + decompressTime + serializeTime + waitTime
   private long unCompressionLength = 0;
   private final InputAttemptIdentifier inputAttemptIdentifier;
   private int uniqueMapId = 0;
@@ -76,30 +72,25 @@ public class RssTezShuffleDataFetcher extends CallableWithNdc<Void> {
 
   private final AtomicInteger issuedCnt = new AtomicInteger(0);
 
-  public RssTezShuffleDataFetcher(
-      InputAttemptIdentifier inputAttemptIdentifier,
-      Integer partitionId,
-      MergeManager merger,
-      TezCounters tezCounters,
-      ShuffleReadClient shuffleReadClient,
-      long totalBlockCount,
-      RssConf rssConf,
-      ExceptionReporter exceptionReporter) {
+  public RssTezShuffleDataFetcher(InputAttemptIdentifier inputAttemptIdentifier,
+        Integer partitionId,
+        MergeManager merger,
+        TezCounters tezCounters,
+        ShuffleReadClient shuffleReadClient,
+        long totalBlockCount,
+        RssConf rssConf,
+        ExceptionReporter exceptionReporter) {
     this.merger = merger;
     this.partitionId = partitionId;
     this.inputAttemptIdentifier = inputAttemptIdentifier;
     this.exceptionReporter = exceptionReporter;
-    ioErrs =
-        tezCounters.findCounter(
-            SHUFFLE_ERR_GRP_NAME, RssTezShuffleDataFetcher.ShuffleErrors.IO_ERROR.toString());
+    ioErrs = tezCounters.findCounter(SHUFFLE_ERR_GRP_NAME, RssTezShuffleDataFetcher.ShuffleErrors.IO_ERROR.toString());
     this.shuffleReadClient = shuffleReadClient;
     this.totalBlockCount = totalBlockCount;
 
     this.rssCodec = Codec.newInstance(rssConf);
-    LOG.info(
-        "RssTezShuffleDataFetcher, partitionId:{}, inputAttemptIdentifier:{}.",
-        this.partitionId,
-        this.inputAttemptIdentifier);
+    LOG.info("RssTezShuffleDataFetcher, partitionId:{}, inputAttemptIdentifier:{}.",
+        this.partitionId, this.inputAttemptIdentifier);
   }
 
   @Override
@@ -107,8 +98,8 @@ public class RssTezShuffleDataFetcher extends CallableWithNdc<Void> {
     try {
       fetchAllRssBlocks();
     } catch (InterruptedException ie) {
-      // might not be respected when fetcher is in progress / server is busy.  TEZ-711
-      // Set the status back
+      //might not be respected when fetcher is in progress / server is busy.  TEZ-711
+      //Set the status back
       LOG.warn(ie.getMessage(), ie);
       Thread.currentThread().interrupt();
       return null;
@@ -188,24 +179,11 @@ public class RssTezShuffleDataFetcher extends CallableWithNdc<Void> {
       shuffleReadClient.close();
       shuffleReadClient.checkProcessedBlockIds();
       shuffleReadClient.logStatics();
-      LOG.info(
-          "Reduce task "
-              + inputAttemptIdentifier
-              + " read block cnt: "
-              + copyBlockCount
-              + " cost "
-              + readTime
-              + " ms to fetch and "
-              + decompressTime
-              + " ms to decompress with unCompressionLength["
-              + unCompressionLength
-              + "] and "
-              + serializeTime
-              + " ms to serialize and "
-              + waitTime
-              + " ms to wait resource"
-              + ", copy time:"
-              + copyTime);
+      LOG.info("Reduce task " + inputAttemptIdentifier + " read block cnt: " + copyBlockCount
+              + " cost " + readTime + " ms to fetch and "
+              + decompressTime + " ms to decompress with unCompressionLength["
+              + unCompressionLength + "] and " + serializeTime + " ms to serialize and "
+              + waitTime + " ms to wait resource" + ", copy time:" + copyTime);
       stopFetch();
     }
   }
@@ -228,11 +206,8 @@ public class RssTezShuffleDataFetcher extends CallableWithNdc<Void> {
     MapOutput mapOutput = null;
     try {
       issuedCnt.incrementAndGet();
-      LOG.info(
-          "IssueMapOutputMerge, uncompressedData length:{}, issueCnt:{}, totalBlockCount:{}",
-          uncompressedData.length,
-          issuedCnt.get(),
-          totalBlockCount);
+      LOG.info("IssueMapOutputMerge, uncompressedData length:{}, issueCnt:{}, totalBlockCount:{}",
+          uncompressedData.length, issuedCnt.get(), totalBlockCount);
       mapOutput = merger.reserve(uniqueInputAttemptIdentifier, uncompressedData.length, 0, 1);
     } catch (IOException ioe) {
       // kill this reduce attempt
@@ -257,13 +232,8 @@ public class RssTezShuffleDataFetcher extends CallableWithNdc<Void> {
     } catch (Throwable t) {
       ioErrs.increment(1);
       mapOutput.abort();
-      throw new RssException(
-          "Reduce: "
-              + inputAttemptIdentifier
-              + " cannot write block to "
-              + mapOutput.getClass().getSimpleName()
-              + " due to: "
-              + t.getClass().getName());
+      throw new RssException("Reduce: " + inputAttemptIdentifier + " cannot write block to "
+              + mapOutput.getClass().getSimpleName() + " due to: " + t.getClass().getName());
     }
     return true;
   }
@@ -272,7 +242,8 @@ public class RssTezShuffleDataFetcher extends CallableWithNdc<Void> {
     return new InputAttemptIdentifier(uniqueMapId++, 0);
   }
 
-  private void updateStatus() {}
+  private void updateStatus() {
+  }
 
   @VisibleForTesting
   public int getRetryCount() {

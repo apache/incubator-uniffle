@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.security.SecurityContextFactory;
 
 /**
- * This HadoopFilesystemProvider will provide the only entrypoint to get the hadoop filesystem
- * whether the dfs cluster is kerberos enabled or not.
+ * This HadoopFilesystemProvider will provide the only entrypoint to get the hadoop filesystem whether
+ * the dfs cluster is kerberos enabled or not.
  */
 public class HadoopFilesystemProvider {
   private static final Logger LOGGER = LoggerFactory.getLogger(HadoopFilesystemProvider.class);
@@ -41,11 +41,11 @@ public class HadoopFilesystemProvider {
     return getFilesystem(
         SecurityContextFactory.get().getSecurityContext().getContextLoginUser(),
         path,
-        configuration);
+        configuration
+    );
   }
 
-  public static FileSystem getFilesystem(String user, Path path, Configuration configuration)
-      throws Exception {
+  public static FileSystem getFilesystem(String user, Path path, Configuration configuration) throws Exception {
     UserGroupInformation.AuthenticationMethod authenticationMethod =
         SecurityUtil.getAuthenticationMethod(configuration);
     boolean needSecurity = authenticationMethod != UserGroupInformation.AuthenticationMethod.SIMPLE;
@@ -54,7 +54,10 @@ public class HadoopFilesystemProvider {
 
     FileSystem fileSystem;
     if (needSecurity) {
-      fileSystem = SecurityContextFactory.get().getSecurityContext().runSecured(user, callable);
+      fileSystem = SecurityContextFactory
+          .get()
+          .getSecurityContext()
+          .runSecured(user, callable);
     } else {
       fileSystem = callable.call();
     }

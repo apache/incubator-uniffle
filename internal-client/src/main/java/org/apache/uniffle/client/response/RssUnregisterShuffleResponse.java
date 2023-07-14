@@ -24,4 +24,5 @@ public class RssUnregisterShuffleResponse extends ClientResponse {
   public RssUnregisterShuffleResponse(StatusCode statusCode) {
     super(statusCode);
   }
+
 }

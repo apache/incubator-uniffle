@@ -30,7 +30,6 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.yarn.YarnUncaughtExceptionHandler;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
@@ -50,8 +49,6 @@ import org.apache.tez.common.TezCommonUtils;
 import org.apache.tez.common.TezUtils;
 import org.apache.tez.common.TezUtilsInternal;
 import org.apache.tez.common.VersionInfo;
-import org.apache.tez.common.security.JobTokenIdentifier;
-import org.apache.tez.common.security.TokenCache;
 import org.apache.tez.dag.api.InputDescriptor;
 import org.apache.tez.dag.api.OutputDescriptor;
 import org.apache.tez.dag.api.TezConstants;
@@ -85,41 +82,16 @@ public class RssDAGAppMaster extends DAGAppMaster {
   private TezRemoteShuffleManager tezRemoteShuffleManager;
   private Map<String, String> clusterClientConf;
 
-  final ScheduledExecutorService scheduledExecutorService =
-      Executors.newSingleThreadScheduledExecutor(ThreadUtils.getThreadFactory("AppHeartbeat"));
+  final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
+          ThreadUtils.getThreadFactory("AppHeartbeat")
+  );
 
-  public RssDAGAppMaster(
-      ApplicationAttemptId applicationAttemptId,
-      ContainerId containerId,
-      String nmHost,
-      int nmPort,
-      int nmHttpPort,
-      Clock clock,
-      long appSubmitTime,
-      boolean isSession,
-      String workingDirectory,
-      String[] localDirs,
-      String[] logDirs,
-      String clientVersion,
-      Credentials credentials,
-      String jobUserName,
-      AMPluginDescriptorProto pluginDescriptorProto) {
-    super(
-        applicationAttemptId,
-        containerId,
-        nmHost,
-        nmPort,
-        nmHttpPort,
-        clock,
-        appSubmitTime,
-        isSession,
-        workingDirectory,
-        localDirs,
-        logDirs,
-        clientVersion,
-        credentials,
-        jobUserName,
-        pluginDescriptorProto);
+  public RssDAGAppMaster(ApplicationAttemptId applicationAttemptId, ContainerId containerId,
+          String nmHost, int nmPort, int nmHttpPort, Clock clock, long appSubmitTime, boolean isSession,
+          String workingDirectory, String[] localDirs, String[] logDirs, String clientVersion,
+          Credentials credentials, String jobUserName, AMPluginDescriptorProto pluginDescriptorProto) {
+    super(applicationAttemptId, containerId, nmHost, nmPort, nmHttpPort, clock, appSubmitTime, isSession,
+            workingDirectory, localDirs, logDirs, clientVersion, credentials, jobUserName, pluginDescriptorProto);
   }
 
   @Override
@@ -150,13 +122,11 @@ public class RssDAGAppMaster extends DAGAppMaster {
 
   /**
    * Init and Start Rss Client
-   *
    * @param appMaster
    * @param conf
    * @throws Exception
    */
-  public static void initAndStartRSSClient(final RssDAGAppMaster appMaster, Configuration conf)
-      throws Exception {
+  public static void initAndStartRSSClient(final RssDAGAppMaster appMaster, Configuration conf) throws Exception {
 
     ShuffleWriteClient client = RssTezUtils.createShuffleClient(conf);
     appMaster.setShuffleWriteClient(client);
@@ -166,44 +136,35 @@ public class RssDAGAppMaster extends DAGAppMaster {
     client.registerCoordinators(coordinators);
 
     String strAppAttemptId = appMaster.getAttemptID().toString();
-    long heartbeatInterval =
-        conf.getLong(
-            RssTezConfig.RSS_HEARTBEAT_INTERVAL, RssTezConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
+    long heartbeatInterval = conf.getLong(RssTezConfig.RSS_HEARTBEAT_INTERVAL,
+            RssTezConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
     long heartbeatTimeout = conf.getLong(RssTezConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
     client.registerApplicationInfo(strAppAttemptId, heartbeatTimeout, "user");
 
     appMaster.scheduledExecutorService.scheduleAtFixedRate(
-        () -> {
-          try {
-            client.sendAppHeartbeat(strAppAttemptId, heartbeatTimeout);
-            LOG.debug("Finish send heartbeat to coordinator and servers");
-          } catch (Exception e) {
-            LOG.warn("Fail to send heartbeat to coordinator and servers", e);
-          }
-        },
-        heartbeatInterval / 2,
-        heartbeatInterval,
-        TimeUnit.MILLISECONDS);
+            () -> {
+              try {
+                client.sendAppHeartbeat(strAppAttemptId, heartbeatTimeout);
+                LOG.debug("Finish send heartbeat to coordinator and servers");
+              } catch (Exception e) {
+                LOG.warn("Fail to send heartbeat to coordinator and servers", e);
+              }
+            },
+            heartbeatInterval / 2,
+            heartbeatInterval,
+            TimeUnit.MILLISECONDS);
 
-    Token<JobTokenIdentifier> sessionToken =
-        TokenCache.getSessionToken(appMaster.getContext().getAppCredentials());
-    appMaster.setTezRemoteShuffleManager(
-        new TezRemoteShuffleManager(
-            appMaster.getAppID().toString(), sessionToken, conf, strAppAttemptId, client));
+    appMaster.setTezRemoteShuffleManager(new TezRemoteShuffleManager(strAppAttemptId, null, conf,
+            strAppAttemptId, client));
     appMaster.getTezRemoteShuffleManager().initialize();
     appMaster.getTezRemoteShuffleManager().start();
 
     // apply dynamic configuration
-    boolean dynamicConfEnabled =
-        conf.getBoolean(
-            RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
-            RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
+    boolean dynamicConfEnabled = conf.getBoolean(RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
+        RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
     if (dynamicConfEnabled) {
-      appMaster.clusterClientConf =
-          client.fetchClientConf(
-              conf.getInt(
-                  RssTezConfig.RSS_ACCESS_TIMEOUT_MS,
-                  RssTezConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
+      appMaster.clusterClientConf = client.fetchClientConf(
+          conf.getInt(RssTezConfig.RSS_ACCESS_TIMEOUT_MS, RssTezConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
     }
 
     mayCloseTezSlowStart(conf);
@@ -218,7 +179,6 @@ public class RssDAGAppMaster extends DAGAppMaster {
 
   /**
    * main method
-   *
    * @param args
    */
   public static void main(String[] args) {
@@ -238,54 +198,45 @@ public class RssDAGAppMaster extends DAGAppMaster {
           sessionModeCliOption = true;
         }
       }
-      // Load the log4j config is only init in static code block of LogManager, so we must
-      // reconfigure.
+      // Load the log4j config is only init in static code block of LogManager, so we must reconfigure.
       reconfigureLog4j();
 
       // Install the tez class loader, which can be used add new resources
       TezClassLoader.setupTezClassLoader();
       Thread.setDefaultUncaughtExceptionHandler(new YarnUncaughtExceptionHandler());
       final String pid = System.getenv().get("JVM_PID");
-      String containerIdStr = System.getenv(ApplicationConstants.Environment.CONTAINER_ID.name());
-      String appSubmitTimeStr = System.getenv(ApplicationConstants.APP_SUBMIT_TIME_ENV);
+      String containerIdStr =
+              System.getenv(ApplicationConstants.Environment.CONTAINER_ID.name());
+      String appSubmitTimeStr =
+              System.getenv(ApplicationConstants.APP_SUBMIT_TIME_ENV);
       String clientVersion = System.getenv(TezConstants.TEZ_CLIENT_VERSION_ENV);
       if (clientVersion == null) {
         clientVersion = VersionInfo.UNKNOWN;
       }
 
-      Objects.requireNonNull(
-          appSubmitTimeStr, ApplicationConstants.APP_SUBMIT_TIME_ENV + " is null");
+      Objects.requireNonNull(appSubmitTimeStr,
+              ApplicationConstants.APP_SUBMIT_TIME_ENV + " is null");
 
       ContainerId containerId = ConverterUtils.toContainerId(containerIdStr);
       ApplicationAttemptId applicationAttemptId = containerId.getApplicationAttemptId();
 
-      String jobUserName = System.getenv(ApplicationConstants.Environment.USER.name());
+      String jobUserName = System
+              .getenv(ApplicationConstants.Environment.USER.name());
 
-      LOG.info(
-          "Creating RssDAGAppMaster for "
-              + "applicationId="
-              + applicationAttemptId.getApplicationId()
-              + ", attemptNum="
-              + applicationAttemptId.getAttemptId()
-              + ", AMContainerId="
-              + containerId
-              + ", jvmPid="
-              + pid
-              + ", userFromEnv="
-              + jobUserName
-              + ", cliSessionOption="
-              + sessionModeCliOption
-              + ", pwd="
-              + System.getenv(ApplicationConstants.Environment.PWD.name())
-              + ", localDirs="
-              + System.getenv(ApplicationConstants.Environment.LOCAL_DIRS.name())
-              + ", logDirs="
-              + System.getenv(ApplicationConstants.Environment.LOG_DIRS.name()));
+      LOG.info("Creating RssDAGAppMaster for "
+              + "applicationId=" + applicationAttemptId.getApplicationId()
+              + ", attemptNum=" + applicationAttemptId.getAttemptId()
+              + ", AMContainerId=" + containerId
+              + ", jvmPid=" + pid
+              + ", userFromEnv=" + jobUserName
+              + ", cliSessionOption=" + sessionModeCliOption
+              + ", pwd=" + System.getenv(ApplicationConstants.Environment.PWD.name())
+              + ", localDirs=" + System.getenv(ApplicationConstants.Environment.LOCAL_DIRS.name())
+              + ", logDirs=" + System.getenv(ApplicationConstants.Environment.LOG_DIRS.name()));
 
       Configuration conf = new Configuration(new YarnConfiguration());
 
-      DAGProtos.ConfigurationProto confProto =
-          TezUtilsInternal.readUserSpecifiedTezConfiguration(
+      DAGProtos.ConfigurationProto confProto = TezUtilsInternal.readUserSpecifiedTezConfiguration(
               System.getenv(ApplicationConstants.Environment.PWD.name()));
       TezUtilsInternal.addUserSpecifiedTezConfiguration(conf, confProto.getConfKeyValuesList());
 
@@ -302,31 +253,22 @@ public class RssDAGAppMaster extends DAGAppMaster {
       String nodeHostString = System.getenv(ApplicationConstants.Environment.NM_HOST.name());
       String nodePortString = System.getenv(ApplicationConstants.Environment.NM_PORT.name());
       String nodeHttpPortString =
-          System.getenv(ApplicationConstants.Environment.NM_HTTP_PORT.name());
+              System.getenv(ApplicationConstants.Environment.NM_HTTP_PORT.name());
       long appSubmitTime = Long.parseLong(appSubmitTimeStr);
       RssDAGAppMaster appMaster =
-          new RssDAGAppMaster(
-              applicationAttemptId,
-              containerId,
-              nodeHostString,
-              Integer.parseInt(nodePortString),
-              Integer.parseInt(nodeHttpPortString),
-              new SystemClock(),
-              appSubmitTime,
-              sessionModeCliOption,
-              System.getenv(ApplicationConstants.Environment.PWD.name()),
-              TezCommonUtils.getTrimmedStrings(
-                  System.getenv(ApplicationConstants.Environment.LOCAL_DIRS.name())),
-              TezCommonUtils.getTrimmedStrings(
-                  System.getenv(ApplicationConstants.Environment.LOG_DIRS.name())),
-              clientVersion,
-              credentials,
-              jobUserName,
-              amPluginDescriptorProto);
-      ShutdownHookManager.get()
-          .addShutdownHook(new DAGAppMasterShutdownHook(appMaster), SHUTDOWN_HOOK_PRIORITY);
-      ShutdownHookManager.get()
-          .addShutdownHook(new RssDAGAppMasterShutdownHook(appMaster), SHUTDOWN_HOOK_PRIORITY);
+              new RssDAGAppMaster(applicationAttemptId, containerId, nodeHostString,
+                      Integer.parseInt(nodePortString),
+                      Integer.parseInt(nodeHttpPortString), new SystemClock(), appSubmitTime,
+                      sessionModeCliOption,
+                      System.getenv(ApplicationConstants.Environment.PWD.name()),
+                      TezCommonUtils.getTrimmedStrings(
+                              System.getenv(ApplicationConstants.Environment.LOCAL_DIRS.name())),
+                      TezCommonUtils.getTrimmedStrings(System.getenv(ApplicationConstants.Environment.LOG_DIRS.name())),
+                      clientVersion, credentials, jobUserName, amPluginDescriptorProto);
+      ShutdownHookManager.get().addShutdownHook(
+              new DAGAppMasterShutdownHook(appMaster), SHUTDOWN_HOOK_PRIORITY);
+      ShutdownHookManager.get().addShutdownHook(new RssDAGAppMasterShutdownHook(appMaster), SHUTDOWN_HOOK_PRIORITY);
+
 
       // log the system properties
       if (LOG.isInfoEnabled()) {
@@ -344,8 +286,7 @@ public class RssDAGAppMaster extends DAGAppMaster {
   }
 
   static void mayCloseTezSlowStart(Configuration conf) {
-    if (!conf.getBoolean(
-        RssTezConfig.RSS_AM_SLOW_START_ENABLE, RssTezConfig.RSS_AM_SLOW_START_ENABLE_DEFAULT)) {
+    if (!conf.getBoolean(RssTezConfig.RSS_AM_SLOW_START_ENABLE, RssTezConfig.RSS_AM_SLOW_START_ENABLE_DEFAULT)) {
       conf.setFloat(ShuffleVertexManager.TEZ_SHUFFLE_VERTEX_MANAGER_MIN_SRC_FRACTION, 1.0f);
       conf.setFloat(ShuffleVertexManager.TEZ_SHUFFLE_VERTEX_MANAGER_MAX_SRC_FRACTION, 1.0f);
     }
@@ -387,10 +328,10 @@ public class RssDAGAppMaster extends DAGAppMaster {
   static class DagInitialCallback implements OnStateChangedCallback<DAGState, DAGImpl> {
 
     private RssDAGAppMaster appMaster;
-
+    
     DagInitialCallback(RssDAGAppMaster appMaster) {
       this.appMaster = appMaster;
-    }
+    } 
 
     @Override
     public void onStateChanged(DAGImpl dag, DAGState dagState) {
@@ -401,31 +342,25 @@ public class RssDAGAppMaster extends DAGAppMaster {
         for (Map.Entry<String, Edge> entry : edges.entrySet()) {
           Edge edge = entry.getValue();
           int sourceVertexId = dag.getVertex(edge.getSourceVertexName()).getVertexId().getId();
-          int destinationVertexId =
-              dag.getVertex(edge.getDestinationVertexName()).getVertexId().getId();
+          int destinationVertexId = dag.getVertex(edge.getDestinationVertexName()).getVertexId().getId();
 
           // add user defined config to edge source conf
           Configuration edgeSourceConf =
-              TezUtils.createConfFromUserPayload(
-                  edge.getEdgeProperty().getEdgeSource().getUserPayload());
+              TezUtils.createConfFromUserPayload(edge.getEdgeProperty().getEdgeSource().getUserPayload());
           edgeSourceConf.setInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, sourceVertexId);
           edgeSourceConf.setInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, destinationVertexId);
-          edgeSourceConf.set(
-              RSS_AM_SHUFFLE_MANAGER_ADDRESS,
+          edgeSourceConf.set(RSS_AM_SHUFFLE_MANAGER_ADDRESS,
               this.appMaster.getTezRemoteShuffleManager().getAddress().getHostName());
-          edgeSourceConf.setInt(
-              RSS_AM_SHUFFLE_MANAGER_PORT,
+          edgeSourceConf.setInt(RSS_AM_SHUFFLE_MANAGER_PORT,
               this.appMaster.getTezRemoteShuffleManager().getAddress().getPort());
           edgeSourceConf.addResource(filterRssConf);
           RssTezUtils.applyDynamicClientConf(edgeSourceConf, this.appMaster.getClusterClientConf());
-          edge.getEdgeProperty()
-              .getEdgeSource()
+          edge.getEdgeProperty().getEdgeSource()
               .setUserPayload(TezUtils.createUserPayloadFromConf(edgeSourceConf));
 
           // rename output class name
           OutputDescriptor outputDescriptor = edge.getEdgeProperty().getEdgeSource();
-          Field outputClassNameField =
-              outputDescriptor.getClass().getSuperclass().getDeclaredField("className");
+          Field outputClassNameField = outputDescriptor.getClass().getSuperclass().getDeclaredField("className");
           outputClassNameField.setAccessible(true);
           String outputClassName = (String) outputClassNameField.get(outputDescriptor);
           String rssOutputClassName = RssTezUtils.replaceRssOutputClassName(outputClassName);
@@ -433,27 +368,21 @@ public class RssDAGAppMaster extends DAGAppMaster {
 
           // add user defined config to edge destination conf
           Configuration edgeDestinationConf =
-              TezUtils.createConfFromUserPayload(
-                  edge.getEdgeProperty().getEdgeSource().getUserPayload());
+              TezUtils.createConfFromUserPayload(edge.getEdgeProperty().getEdgeSource().getUserPayload());
           edgeDestinationConf.setInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, sourceVertexId);
           edgeDestinationConf.setInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, destinationVertexId);
-          edgeDestinationConf.set(
-              RSS_AM_SHUFFLE_MANAGER_ADDRESS,
+          edgeDestinationConf.set(RSS_AM_SHUFFLE_MANAGER_ADDRESS,
               this.appMaster.getTezRemoteShuffleManager().getAddress().getHostName());
-          edgeDestinationConf.setInt(
-              RSS_AM_SHUFFLE_MANAGER_PORT,
+          edgeDestinationConf.setInt(RSS_AM_SHUFFLE_MANAGER_PORT,
               this.appMaster.getTezRemoteShuffleManager().getAddress().getPort());
           edgeDestinationConf.addResource(filterRssConf);
-          RssTezUtils.applyDynamicClientConf(
-              edgeDestinationConf, this.appMaster.getClusterClientConf());
-          edge.getEdgeProperty()
-              .getEdgeDestination()
+          RssTezUtils.applyDynamicClientConf(edgeDestinationConf, this.appMaster.getClusterClientConf());
+          edge.getEdgeProperty().getEdgeDestination()
               .setUserPayload(TezUtils.createUserPayloadFromConf(edgeDestinationConf));
 
           // rename input class name
           InputDescriptor inputDescriptor = edge.getEdgeProperty().getEdgeDestination();
-          Field inputClassNameField =
-              outputDescriptor.getClass().getSuperclass().getDeclaredField("className");
+          Field inputClassNameField = outputDescriptor.getClass().getSuperclass().getDeclaredField("className");
           inputClassNameField.setAccessible(true);
           String inputClassName = (String) outputClassNameField.get(inputDescriptor);
           String rssInputClassName = RssTezUtils.replaceRssInputClassName(inputClassName);
@@ -478,10 +407,8 @@ public class RssDAGAppMaster extends DAGAppMaster {
 
   private static void reconfigureLog4j() {
     String configuratorClassName = OptionConverter.getSystemProperty(CONFIGURATOR_CLASS_KEY, null);
-    String configurationOptionStr =
-        OptionConverter.getSystemProperty(DEFAULT_CONFIGURATION_KEY, null);
+    String configurationOptionStr = OptionConverter.getSystemProperty(DEFAULT_CONFIGURATION_KEY, null);
     URL url = Loader.getResource(configurationOptionStr);
-    OptionConverter.selectAndConfigure(
-        url, configuratorClassName, LogManager.getLoggerRepository());
+    OptionConverter.selectAndConfigure(url, configuratorClassName, LogManager.getLoggerRepository());
   }
 }

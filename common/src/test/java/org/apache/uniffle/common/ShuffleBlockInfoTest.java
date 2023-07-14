@@ -30,39 +30,26 @@ public class ShuffleBlockInfoTest {
   public void testToString() {
     List<ShuffleServerInfo> shuffleServerInfos =
         Collections.singletonList(new ShuffleServerInfo("0", "localhost", 1234));
-    ShuffleBlockInfo info =
-        new ShuffleBlockInfo(1, 2, 3, 4, 5, new byte[6], shuffleServerInfos, 7, 8, 9);
-    assertEquals(
-        "ShuffleBlockInfo:shuffleId["
-            + info.getShuffleId()
-            + "],partitionId["
-            + info.getPartitionId()
-            + "],blockId["
-            + info.getBlockId()
-            + "],length["
-            + info.getLength()
-            + "],uncompressLength["
-            + info.getUncompressLength()
-            + "],crc["
-            + info.getCrc()
-            + "],shuffleServer[0,]",
+    ShuffleBlockInfo info = new ShuffleBlockInfo(1, 2, 3, 4, 5, new byte[6],
+        shuffleServerInfos, 7, 8, 9);
+    assertEquals("ShuffleBlockInfo:shuffleId[" + info.getShuffleId()
+        + "],partitionId[" + info.getPartitionId()
+        + "],blockId[" + info.getBlockId()
+        + "],length[" + info.getLength()
+        + "],uncompressLength[" + info.getUncompressLength()
+        + "],crc[" + info.getCrc()
+        + "],shuffleServer[0,]",
         info.toString());
 
-    ShuffleBlockInfo info2 = new ShuffleBlockInfo(1, 2, 3, 4, 5, new byte[6], null, 7, 8, 9);
-    assertEquals(
-        "ShuffleBlockInfo:shuffleId["
-            + info2.getShuffleId()
-            + "],partitionId["
-            + info2.getPartitionId()
-            + "],blockId["
-            + info2.getBlockId()
-            + "],length["
-            + info2.getLength()
-            + "],uncompressLength["
-            + info2.getUncompressLength()
-            + "],crc["
-            + info2.getCrc()
-            + "],shuffleServer is empty",
+    ShuffleBlockInfo info2 = new ShuffleBlockInfo(1, 2, 3, 4, 5, new byte[6],
+        null, 7, 8, 9);
+    assertEquals("ShuffleBlockInfo:shuffleId[" + info2.getShuffleId()
+        + "],partitionId[" + info2.getPartitionId()
+        + "],blockId[" + info2.getBlockId()
+        + "],length[" + info2.getLength()
+        + "],uncompressLength[" + info2.getUncompressLength()
+        + "],crc[" + info2.getCrc()
+        + "],shuffleServer is empty",
         info2.toString());
   }
 }

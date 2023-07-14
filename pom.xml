@@ -62,7 +62,6 @@
     <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
-    <spotless-maven-plugin.version>2.30.0</spotless-maven-plugin.version>
     <metrics.version>3.1.0</metrics.version>
     <mockito.version>3.12.4</mockito.version>
     <netty.version>4.1.68.Final</netty.version>
@@ -854,42 +853,6 @@
           <groupId>org.apache.rat</groupId>
           <artifactId>apache-rat-plugin</artifactId>
           <version>0.13</version>
-        </plugin>
-        <plugin>
-          <groupId>com.diffplug.spotless</groupId>
-          <artifactId>spotless-maven-plugin</artifactId>
-          <version>${spotless-maven-plugin.version}</version>
-          <configuration>
-            <java>
-              <toggleOffOn />
-              <googleJavaFormat>
-                <version>1.7</version>
-              </googleJavaFormat>
-
-              <importOrder>
-                <wildcardsLast>false</wildcardsLast> <!-- Optional, default false. Sort wildcard import after specific imports -->
-                <!-- you can use an empty string for all the imports you didn't specify explicitly, '|' to join group without blank line, and '\#` prefix for static imports. -->
-                <order>java|javax,scala,,org.apache.uniffle,\#</order>
-              </importOrder>
-              <removeUnusedImports />
-
-              <formatAnnotations />
-              <!-- make sure every file has the following copyright header. -->
-              <licenseHeader>
-                <file>${execution.root}/.baseline/copyright/apache-license-header.txt</file>
-              </licenseHeader>
-            </java>
-          </configuration>
-          <executions>
-            <execution>
-              <!-- Runs in compile phase to fail fast in case of formatting issues.-->
-              <id>spotless-check</id>
-              <phase>compile</phase>
-              <goals>
-                <goal>check</goal>
-              </goals>
-            </execution>
-          </executions>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -1721,7 +1684,6 @@
       <id>tez</id>
       <modules>
         <module>client-tez</module>
-        <module>integration-test/tez</module>
       </modules>
       <properties>
         <tez.version>0.9.1</tez.version>
@@ -1732,89 +1694,21 @@
             <groupId>org.apache.tez</groupId>
             <artifactId>tez-common</artifactId>
             <version>${tez.version}</version>
-            <exclusions>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-annotations</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-yarn-api</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-yarn-common</artifactId>
-              </exclusion>
-            </exclusions>
           </dependency>
           <dependency>
             <groupId>org.apache.tez</groupId>
             <artifactId>tez-runtime-library</artifactId>
             <version>${tez.version}</version>
-            <exclusions>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-annotations</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-yarn-api</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-yarn-common</artifactId>
-              </exclusion>
-            </exclusions>
           </dependency>
           <dependency>
             <groupId>org.apache.tez</groupId>
             <artifactId>tez-runtime-internals</artifactId>
             <version>${tez.version}</version>
-            <exclusions>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-annotations</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-yarn-api</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-yarn-common</artifactId>
-              </exclusion>
-            </exclusions>
           </dependency>
           <dependency>
             <groupId>org.apache.tez</groupId>
             <artifactId>tez-dag</artifactId>
             <version>${tez.version}</version>
-            <exclusions>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-annotations</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-yarn-api</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-yarn-common</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-yarn-client</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-yarn-server-common</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-yarn-server-web-proxy</artifactId>
-              </exclusion>
-            </exclusions>
           </dependency>
           <dependency>
             <groupId>org.apache.tez</groupId>
@@ -1823,43 +1717,9 @@
             <exclusions>
               <exclusion>
                 <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-annotations</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-yarn-api</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-yarn-common</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-auth</artifactId>
               </exclusion>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-hdfs</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-yarn-client</artifactId>
-              </exclusion>
             </exclusions>
-          </dependency>
-          <dependency>
-            <groupId>org.apache.tez</groupId>
-            <artifactId>tez-tests</artifactId>
-            <type>test-jar</type>
-            <scope>test</scope>
-            <version>${tez.version}</version>
-          </dependency>
-          <dependency>
-            <groupId>org.apache.uniffle</groupId>
-            <artifactId>rss-integration-common-test</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
           </dependency>
           <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -1875,16 +1735,6 @@
                 <artifactId>httpclient</artifactId>
               </exclusion>
             </exclusions>
-          </dependency>
-          <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-yarn-api</artifactId>
-            <version>${hadoop.version}</version>
-          </dependency>
-          <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-yarn-server-common</artifactId>
-            <version>${hadoop.version}</version>
           </dependency>
           <dependency>
             <groupId>com.google.protobuf</groupId>
@@ -1925,21 +1775,25 @@
         <hadoop.short.version>3.2</hadoop.short.version>
         <commons-codec.version>1.11</commons-codec.version>
         <metrics.version>3.2.4</metrics.version>
+        <bouncycastle.version>1.60</bouncycastle.version>
+        <junit4.version>4.11</junit4.version>
       </properties>
-      <dependencies>
-        <dependency>
-          <groupId>org.bouncycastle</groupId>
-          <artifactId>bcprov-jdk15on</artifactId>
-          <version>1.60</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>junit</groupId>
-          <artifactId>junit</artifactId>
-          <version>4.11</version>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>${bouncycastle.version}</version>
+            <scope>test</scope>
+          </dependency>
+          <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit4.version}</version>
+            <scope>test</scope>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
     </profile>
   </profiles>
 </project>

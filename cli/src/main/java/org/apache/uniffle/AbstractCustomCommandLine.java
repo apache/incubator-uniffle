@@ -72,7 +72,7 @@ public abstract class AbstractCustomCommandLine implements CustomCommandLine {
   }
 
   public CommandLine parseCommandLineOptions(String[] args, boolean stopAtNonOptions)
-      throws UniffleCliArgsException {
+       throws UniffleCliArgsException {
     final Options options = new Options();
     addGeneralOptions(options);
     addRunOptions(options);

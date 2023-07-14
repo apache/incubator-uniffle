@@ -22,7 +22,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** The main core class that generates the ASCII TABLE. */
+/**
+ * The main core class that generates the ASCII TABLE.
+ */
 public final class CLIContentUtils {
   /** Table title. */
   private String title;
@@ -37,7 +39,6 @@ public final class CLIContentUtils {
 
   /**
    * Contains the title constructor.
-   *
    * @param title titleName
    */
   public CLIContentUtils(String title) {
@@ -45,7 +46,9 @@ public final class CLIContentUtils {
     this.title = title;
   }
 
-  /** Initialize the data. */
+  /**
+   * Initialize the data.
+   */
   private void init() {
     this.join = new StringBuilder();
     this.tableRows = new ArrayList<>();
@@ -54,7 +57,6 @@ public final class CLIContentUtils {
 
   /**
    * Adds elements from the collection to the header data in the table.
-   *
    * @param headers Header data
    * @return FormattingCLIUtils object
    */
@@ -64,7 +66,6 @@ public final class CLIContentUtils {
 
   /**
    * Adds a row of normal data to the table.
-   *
    * @param objects Common row data
    * @return FormattingCLIUtils object
    */
@@ -74,7 +75,6 @@ public final class CLIContentUtils {
 
   /**
    * Adds the middle row of data to the table.
-   *
    * @param tableRowType TableRowType
    * @param objects Table row data
    * @return FormattingCLIUtils object
@@ -83,9 +83,8 @@ public final class CLIContentUtils {
     if (objects != null && objects.length > 0) {
       int len = objects.length;
       if (this.maxColMap.size() > len) {
-        throw new IllegalArgumentException(
-            "The number of columns that inserted a row "
-                + "of data into the table is different from the number of previous columns, check!");
+        throw new IllegalArgumentException("The number of columns that inserted a row "
+            + "of data into the table is different from the number of previous columns, check!");
       }
       List<String> lines = new ArrayList<>();
       for (int i = 0; i < len; i++) {
@@ -106,7 +105,9 @@ public final class CLIContentUtils {
     return this;
   }
 
-  /** Builds the string for the row of the table title. */
+  /**
+   * Builds the string for the row of the table title.
+   */
   private void buildTitle() {
     if (this.title != null) {
       int maxTitleSize = 0;
@@ -121,8 +122,7 @@ public final class CLIContentUtils {
       for (int i = 0; i < maxTitleSize + 2; i++) {
         this.join.append("-");
       }
-      this.join
-          .append("+\n")
+      this.join.append("+\n")
           .append("|")
           .append(StrUtils.center(this.title, maxTitleSize + 2, ' '))
           .append("|\n");
@@ -130,7 +130,9 @@ public final class CLIContentUtils {
     }
   }
 
-  /** Build the table, first build the title, and then walk through each row of data to build. */
+  /**
+   * Build the table, first build the title, and then walk through each row of data to build.
+   */
   private void buildTable() {
     this.buildTitle();
     for (int i = 0, len = this.tableRows.size(); i < len; i++) {
@@ -157,7 +159,6 @@ public final class CLIContentUtils {
 
   /**
    * Method to build a border row.
-   *
    * @param data dataLine
    */
   private void buildRowBorder(List<String> data) {
@@ -173,20 +174,19 @@ public final class CLIContentUtils {
 
   /**
    * A way to build rows of data.
-   *
    * @param data dataLine
    */
   private void buildRowLine(List<String> data) {
     this.join.append("|");
     for (int i = 0, len = data.size(); i < len; i++) {
-      this.join.append(StrUtils.center(data.get(i), this.maxColMap.get(i) + 2, ' ')).append("|");
+      this.join.append(StrUtils.center(data.get(i), this.maxColMap.get(i) + 2, ' '))
+          .append("|");
     }
     this.join.append("\n");
   }
 
   /**
    * Rendering is born as a result.
-   *
    * @return ASCII string of Table
    */
   public String render() {
@@ -194,7 +194,9 @@ public final class CLIContentUtils {
     return this.join.toString();
   }
 
-  /** The type of each table row and the entity class of the data. */
+  /**
+   * The type of each table row and the entity class of the data.
+   */
   private static class TableRow {
     private TableRowType tableRowType;
     private List<String> data;
@@ -205,18 +207,19 @@ public final class CLIContentUtils {
     }
   }
 
-  /** An enumeration class that distinguishes between table headers and normal table data. */
+  /**
+   * An enumeration class that distinguishes between table headers and normal table data.
+   */
   private enum TableRowType {
-    TITLE,
-    HEADER,
-    LINE
+    TITLE, HEADER, LINE
   }
 
-  /** String utility class. */
+  /**
+   * String utility class.
+   */
   private static final class StrUtils {
     /**
      * Puts a string in the middle of a given size.
-     *
      * @param str Character string
      * @param size Total size
      * @param padChar Fill character
@@ -236,7 +239,6 @@ public final class CLIContentUtils {
 
     /**
      * Left-fill the given string and size.
-     *
      * @param str String
      * @param size totalSize
      * @param padChar Fill character
@@ -249,7 +251,6 @@ public final class CLIContentUtils {
 
     /**
      * Right-fill the given string and size.
-     *
      * @param str String
      * @param size totalSize
      * @param padChar Fill character
@@ -262,7 +263,6 @@ public final class CLIContentUtils {
 
     /**
      * Re-fill characters as strings.
-     *
      * @param ch String
      * @param repeat Number of repeats
      * @return String

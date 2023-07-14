@@ -31,16 +31,15 @@ public class ThreadUtilsTest {
   public void shutdownThreadPoolTest() throws InterruptedException {
     ExecutorService executorService = Executors.newFixedThreadPool(2);
     AtomicBoolean finished = new AtomicBoolean(false);
-    executorService.submit(
-        () -> {
-          try {
-            Thread.sleep(100000);
-          } catch (InterruptedException interruptedException) {
-            // ignore
-          } finally {
-            finished.set(true);
-          }
-        });
+    executorService.submit(() -> {
+      try {
+        Thread.sleep(100000);
+      } catch (InterruptedException interruptedException) {
+        // ignore
+      } finally {
+        finished.set(true);
+      }
+    });
     ThreadUtils.shutdownThreadPool(executorService, 1);
     assertTrue(finished.get());
     assertTrue(executorService.isShutdown());

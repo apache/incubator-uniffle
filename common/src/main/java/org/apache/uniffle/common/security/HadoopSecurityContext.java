@@ -43,14 +43,15 @@ public class HadoopSecurityContext implements SecurityContext {
 
   // The purpose of the proxy user ugi cache is to prevent the creation of
   // multiple cache keys for the same user, scheme, and authority in the Hadoop filesystem.
-  // Without this cache, large amounts of unnecessary filesystem instances could be stored in
-  // memory,
+  // Without this cache, large amounts of unnecessary filesystem instances could be stored in memory,
   // leading to potential memory leaks. For more information on this issue, refer to #706.
   private Map<String, UserGroupInformation> proxyUserUgiPool;
 
   public HadoopSecurityContext(
-      String krb5ConfPath, String keytabFile, String principal, long refreshIntervalSec)
-      throws Exception {
+      String krb5ConfPath,
+      String keytabFile,
+      String principal,
+      long refreshIntervalSec) throws Exception {
     if (StringUtils.isEmpty(keytabFile)) {
       throw new IllegalArgumentException("KeytabFilePath must be not null or empty");
     }
@@ -71,16 +72,15 @@ public class HadoopSecurityContext implements SecurityContext {
 
     this.loginUgi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(principal, keytabFile);
 
-    LOGGER.info(
-        "Got Kerberos ticket, keytab [{}], principal [{}], user [{}]",
-        keytabFile,
-        principal,
-        loginUgi.getShortUserName());
+    LOGGER.info("Got Kerberos ticket, keytab [{}], principal [{}], user [{}]",
+        keytabFile, principal, loginUgi.getShortUserName());
 
-    refreshScheduledExecutor =
-        ThreadUtils.getDaemonSingleThreadScheduledExecutor("Kerberos-refresh");
+    refreshScheduledExecutor = ThreadUtils.getDaemonSingleThreadScheduledExecutor("Kerberos-refresh");
     refreshScheduledExecutor.scheduleAtFixedRate(
-        this::authRefresh, refreshIntervalSec, refreshIntervalSec, TimeUnit.SECONDS);
+        this::authRefresh,
+        refreshIntervalSec,
+        refreshIntervalSec,
+        TimeUnit.SECONDS);
     proxyUserUgiPool = JavaUtils.newConcurrentMap();
   }
 
@@ -102,9 +102,11 @@ public class HadoopSecurityContext implements SecurityContext {
     // Run with the proxy user.
     if (!user.equals(loginUgi.getShortUserName())) {
       UserGroupInformation proxyUserUgi =
-          proxyUserUgiPool.computeIfAbsent(
-              user, x -> UserGroupInformation.createProxyUser(x, loginUgi));
-      return executeWithUgiWrapper(proxyUserUgi, securedCallable);
+          proxyUserUgiPool.computeIfAbsent(user, x -> UserGroupInformation.createProxyUser(x, loginUgi));
+      return executeWithUgiWrapper(
+          proxyUserUgi,
+          securedCallable
+      );
     }
 
     // Run with the current login user.
@@ -116,8 +118,7 @@ public class HadoopSecurityContext implements SecurityContext {
     return loginUgi.getShortUserName();
   }
 
-  private <T> T executeWithUgiWrapper(UserGroupInformation ugi, Callable<T> callable)
-      throws Exception {
+  private <T> T executeWithUgiWrapper(UserGroupInformation ugi, Callable<T> callable) throws Exception {
     return ugi.doAs((PrivilegedExceptionAction<T>) callable::call);
   }
 

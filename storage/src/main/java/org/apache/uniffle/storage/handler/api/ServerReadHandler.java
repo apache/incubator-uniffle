@@ -25,4 +25,5 @@ public interface ServerReadHandler {
   ShuffleDataResult getShuffleData(long offset, int length);
 
   ShuffleIndexResult getShuffleIndex();
+
 }

@@ -31,40 +31,30 @@ public class RetryUtils {
     return retry(cmd, null, intervalMs, retryTimes, null);
   }
 
-  public static <T> T retry(
-      RetryCmd<T> cmd,
-      long intervalMs,
-      int retryTimes,
-      Set<Class<? extends Throwable>> exceptionClasses)
-      throws Throwable {
+  public static <T> T retry(RetryCmd<T> cmd, long intervalMs, int retryTimes,
+      Set<Class<? extends Throwable>> exceptionClasses) throws Throwable {
     return retry(cmd, null, intervalMs, retryTimes, exceptionClasses);
   }
 
   /**
-   * @param cmd command to execute
-   * @param callBack the callback command executed when the attempt of command fail
-   * @param intervalMs retry interval
-   * @param retryTimes retry times
+   * @param cmd              command to execute
+   * @param callBack         the callback command executed when the attempt of command fail
+   * @param intervalMs       retry interval
+   * @param retryTimes       retry times
    * @param exceptionClasses exception classes which need to be retry, null for all.
-   * @param <T> return type
+   * @param <T>              return type
    * @return
    * @throws Throwable
    */
-  public static <T> T retry(
-      RetryCmd<T> cmd,
-      RetryCallBack callBack,
-      long intervalMs,
-      int retryTimes,
-      Set<Class<? extends Throwable>> exceptionClasses)
-      throws Throwable {
+  public static <T> T retry(RetryCmd<T> cmd, RetryCallBack callBack, long intervalMs,
+                            int retryTimes, Set<Class<? extends Throwable>> exceptionClasses) throws Throwable {
     int retry = 0;
     while (true) {
       try {
         return cmd.execute();
       } catch (Throwable t) {
         retry++;
-        if ((exceptionClasses != null && !isInstanceOf(exceptionClasses, t))
-            || retry >= retryTimes
+        if ((exceptionClasses != null && !isInstanceOf(exceptionClasses, t)) || retry >= retryTimes
             || t instanceof NotRetryException) {
           throw t;
         } else {

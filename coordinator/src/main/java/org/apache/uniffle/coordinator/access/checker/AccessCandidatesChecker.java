@@ -48,8 +48,8 @@ import org.apache.uniffle.coordinator.access.AccessInfo;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
 /**
- * AccessCandidatesChecker maintain a list of candidate access id and update it periodically, it
- * checks the access id in the access request and reject if the id is not in the candidate list.
+ * AccessCandidatesChecker maintain a list of candidate access id and update it periodically,
+ * it checks the access id in the access request and reject if the id is not in the candidate list.
  */
 public class AccessCandidatesChecker extends AbstractAccessChecker {
   private static final Logger LOG = LoggerFactory.getLogger(AccessCandidatesChecker.class);
@@ -69,22 +69,19 @@ public class AccessCandidatesChecker extends AbstractAccessChecker {
     this.fileSystem = HadoopFilesystemProvider.getFilesystem(path, hadoopConf);
 
     if (!fileSystem.isFile(path)) {
-      String msg =
-          String.format("Fail to init AccessCandidatesChecker, %s is not a file.", path.toUri());
+      String msg = String.format("Fail to init AccessCandidatesChecker, %s is not a file.", path.toUri());
       LOG.error(msg);
       throw new RssException(msg);
     }
     updateAccessCandidatesInternal();
     if (candidates.get() == null || candidates.get().isEmpty()) {
-      String msg =
-          "Candidates must be non-empty and can be loaded successfully at coordinator startup.";
+      String msg = "Candidates must be non-empty and can be loaded successfully at coordinator startup.";
       LOG.error(msg);
       throw new RssException(msg);
     }
     LOG.debug("Load candidates: {}", String.join(";", candidates.get()));
 
-    int updateIntervalS =
-        conf.getInteger(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC);
+    int updateIntervalS = conf.getInteger(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC);
     updateAccessCandidatesSES =
         ThreadUtils.getDaemonSingleThreadScheduledExecutor("UpdateAccessCandidates");
     updateAccessCandidatesSES.scheduleAtFixedRate(

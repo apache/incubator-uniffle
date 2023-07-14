@@ -22,11 +22,11 @@ import org.apache.tez.runtime.api.InputContext;
 
 public class InputContextUtils {
 
-  private InputContextUtils() {}
+  private InputContextUtils() {
+  }
 
   public static TezTaskAttemptID getTezTaskAttemptID(InputContext inputContext) {
     String uniqueIdentifier = inputContext.getUniqueIdentifier();
-    return TezTaskAttemptID.fromString(
-        uniqueIdentifier.substring(0, uniqueIdentifier.length() - 6));
+    return TezTaskAttemptID.fromString(uniqueIdentifier.substring(0, uniqueIdentifier.length() - 6));
   }
 }

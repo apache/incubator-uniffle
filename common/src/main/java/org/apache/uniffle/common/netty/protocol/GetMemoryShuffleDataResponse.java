@@ -30,26 +30,18 @@ public class GetMemoryShuffleDataResponse extends RpcResponse {
   private List<BufferSegment> bufferSegments;
   private ByteBuf data;
 
-  public GetMemoryShuffleDataResponse(
-      long requestId, StatusCode statusCode, List<BufferSegment> bufferSegments, byte[] data) {
+  public GetMemoryShuffleDataResponse(long requestId, StatusCode statusCode,
+      List<BufferSegment> bufferSegments, byte[] data) {
     this(requestId, statusCode, null, bufferSegments, data);
   }
 
-  public GetMemoryShuffleDataResponse(
-      long requestId,
-      StatusCode statusCode,
-      String retMessage,
-      List<BufferSegment> bufferSegments,
-      byte[] data) {
+  public GetMemoryShuffleDataResponse(long requestId, StatusCode statusCode, String retMessage,
+      List<BufferSegment> bufferSegments, byte[] data) {
     this(requestId, statusCode, retMessage, bufferSegments, Unpooled.wrappedBuffer(data));
   }
 
-  public GetMemoryShuffleDataResponse(
-      long requestId,
-      StatusCode statusCode,
-      String retMessage,
-      List<BufferSegment> bufferSegments,
-      ByteBuf data) {
+  public GetMemoryShuffleDataResponse(long requestId, StatusCode statusCode, String retMessage,
+      List<BufferSegment> bufferSegments, ByteBuf data) {
     super(requestId, statusCode, retMessage);
     this.bufferSegments = bufferSegments;
     this.data = data;
@@ -57,10 +49,8 @@ public class GetMemoryShuffleDataResponse extends RpcResponse {
 
   @Override
   public int encodedLength() {
-    return super.encodedLength()
-        + Encoders.encodeLengthOfBufferSegments(bufferSegments)
-        + Integer.BYTES
-        + data.readableBytes();
+    return super.encodedLength() + Encoders.encodeLengthOfBufferSegments(bufferSegments)
+        + Integer.BYTES + data.readableBytes();
   }
 
   @Override
@@ -75,10 +65,9 @@ public class GetMemoryShuffleDataResponse extends RpcResponse {
     long requestId = byteBuf.readLong();
     StatusCode statusCode = StatusCode.fromCode(byteBuf.readInt());
     String retMessage = ByteBufUtils.readLengthAndString(byteBuf);
-    List<BufferSegment> bufferSegments = Decoders.decodeBufferSegments(byteBuf);
+    List<BufferSegment> bufferSegments =  Decoders.decodeBufferSegments(byteBuf);
     ByteBuf data = ByteBufUtils.readSlice(byteBuf);
-    return new GetMemoryShuffleDataResponse(
-        requestId, statusCode, retMessage, bufferSegments, data);
+    return new GetMemoryShuffleDataResponse(requestId, statusCode, retMessage, bufferSegments, data);
   }
 
   @Override

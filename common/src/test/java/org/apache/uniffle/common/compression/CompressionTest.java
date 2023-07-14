@@ -42,7 +42,9 @@ public class CompressionTest {
     List<Arguments> arguments = new ArrayList<>();
     for (int size : sizes) {
       for (Codec.Type type : types) {
-        arguments.add(Arguments.of(size, type));
+        arguments.add(
+            Arguments.of(size, type)
+        );
       }
     }
     return arguments;
@@ -54,7 +56,7 @@ public class CompressionTest {
     byte[] data = RandomUtils.nextBytes(size);
     RssConf conf = new RssConf();
     conf.set(COMPRESSION_TYPE, type);
-
+        
     // case1: heap bytebuffer
     Codec codec = Codec.newInstance(conf);
     byte[] compressed = codec.compress(data);
@@ -107,15 +109,14 @@ public class CompressionTest {
     testCompressWithByteBuffer(codec, data, srcBuffer, destBuffer, destOffset);
   }
 
-  private void testCompressWithByteBuffer(
-      Codec codec, byte[] originData, ByteBuffer srcBuffer, ByteBuffer destBuffer, int destOffset) {
+  private void testCompressWithByteBuffer(Codec codec, byte[] originData, ByteBuffer srcBuffer, ByteBuffer destBuffer,
+                                          int destOffset) {
     srcBuffer.position(destOffset);
     srcBuffer.put(originData);
     srcBuffer.flip();
     srcBuffer.position(destOffset);
     destBuffer.position(destOffset);
-    if (!isSameType(srcBuffer, destBuffer)
-        && (codec instanceof SnappyCodec || codec instanceof ZstdCodec)) {
+    if (!isSameType(srcBuffer, destBuffer) && (codec instanceof SnappyCodec || codec instanceof ZstdCodec)) {
       try {
         codec.compress(srcBuffer, destBuffer);
       } catch (Exception e) {
@@ -136,15 +137,14 @@ public class CompressionTest {
     if (srcBuffer == null || destBuffer == null) {
       return false;
     }
-    return (srcBuffer.isDirect() && destBuffer.isDirect())
-        || (!srcBuffer.isDirect() && !destBuffer.isDirect());
+    return (srcBuffer.isDirect() && destBuffer.isDirect()) || (!srcBuffer.isDirect() && !destBuffer.isDirect());
   }
 
-  private void checkCompressedData(
-      Codec codec, byte[] originData, ByteBuffer dest, ByteBuffer src) {
+  private void checkCompressedData(Codec codec, byte[] originData, ByteBuffer dest, ByteBuffer src) {
     codec.decompress(src, originData.length, dest, 0);
     byte[] res = new byte[originData.length];
     dest.get(res);
     assertArrayEquals(originData, res);
   }
+
 }

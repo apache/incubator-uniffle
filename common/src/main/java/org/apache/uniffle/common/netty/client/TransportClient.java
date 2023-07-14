@@ -38,6 +38,7 @@ import org.apache.uniffle.common.netty.protocol.Message;
 import org.apache.uniffle.common.netty.protocol.RpcResponse;
 import org.apache.uniffle.common.util.NettyUtils;
 
+
 public class TransportClient implements Closeable {
   private static final Logger logger = LoggerFactory.getLogger(TransportClient.class);
 
@@ -77,18 +78,17 @@ public class TransportClient implements Closeable {
 
   public RpcResponse sendRpcSync(Message message, long timeoutMs) {
     SettableFuture<RpcResponse> result = SettableFuture.create();
-    RpcResponseCallback callback =
-        new RpcResponseCallback() {
-          @Override
-          public void onSuccess(RpcResponse response) {
-            result.set(response);
-          }
+    RpcResponseCallback callback = new RpcResponseCallback() {
+      @Override
+      public void onSuccess(RpcResponse response) {
+        result.set(response);
+      }
 
-          @Override
-          public void onFailure(Throwable e) {
-            result.setException(e);
-          }
-        };
+      @Override
+      public void onFailure(Throwable e) {
+        result.setException(e);
+      }
+    };
     sendRpc(message, callback);
     try {
       return result.get(timeoutMs, TimeUnit.MILLISECONDS);
@@ -158,6 +158,7 @@ public class TransportClient implements Closeable {
     }
   }
 
+
   @Override
   public void close() throws IOException {
     // close is a local operation and should finish with milliseconds; timeout just to be safe
@@ -167,4 +168,5 @@ public class TransportClient implements Closeable {
   public void timeOut() {
     this.timedOut = true;
   }
+
 }

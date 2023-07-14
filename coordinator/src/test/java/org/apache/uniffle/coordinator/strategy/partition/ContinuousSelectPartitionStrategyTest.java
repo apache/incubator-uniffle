@@ -41,10 +41,8 @@ public class ContinuousSelectPartitionStrategyTest {
   public void test() throws Exception {
     ContinuousSelectPartitionStrategy strategy = new ContinuousSelectPartitionStrategy();
 
-    List<ServerNode> serverNodes =
-        generateServerResource(Lists.newArrayList(20L, 20L, 20L, 20L, 20L));
-    SortedMap<PartitionRange, List<ServerNode>> assignments =
-        strategy.assign(100, 2, 2, serverNodes, 20);
+    List<ServerNode> serverNodes = generateServerResource(Lists.newArrayList(20L, 20L, 20L, 20L, 20L));
+    SortedMap<PartitionRange, List<ServerNode>> assignments = strategy.assign(100, 2, 2, serverNodes, 20);
     assertEquals(50, assignments.size());
     List<Long> expect = Lists.newArrayList(20L, 20L, 20L, 20L, 20L);
     valid(expect, assignments);
@@ -83,32 +81,26 @@ public class ContinuousSelectPartitionStrategyTest {
   private List<ServerNode> generateServerResource(List<Long> resources) {
     List<ServerNode> serverNodes = Lists.newArrayList();
     for (int i = 0; i < resources.size(); i++) {
-      ServerNode node =
-          new ServerNode(
-              String.valueOf((char) ('a' + i)),
-              "127.0.0." + i,
-              0,
-              10L,
-              5L,
-              resources.get(i),
-              5,
-              tags);
+      ServerNode node = new ServerNode(
+          String.valueOf((char) ('a' + i)),
+          "127.0.0." + i,
+          0,
+          10L,
+          5L,
+          resources.get(i),
+          5,
+          tags);
       serverNodes.add(node);
     }
     return serverNodes;
   }
 
-  private void valid(
-      List<Long> expect, SortedMap<PartitionRange, List<ServerNode>> partitionToServerNodes) {
-    SortedMap<ServerNode, Integer> serverToPartitionRangeNums =
-        new TreeMap<>(Comparator.comparing(ServerNode::getId));
-    partitionToServerNodes.values().stream()
-        .flatMap(Collection::stream)
-        .forEach(
-            serverNode -> {
-              int oldVal = serverToPartitionRangeNums.getOrDefault(serverNode, 0);
-              serverToPartitionRangeNums.put(serverNode, oldVal + 1);
-            });
+  private void valid(List<Long> expect, SortedMap<PartitionRange, List<ServerNode>> partitionToServerNodes) {
+    SortedMap<ServerNode, Integer> serverToPartitionRangeNums = new TreeMap<>(Comparator.comparing(ServerNode::getId));
+    partitionToServerNodes.values().stream().flatMap(Collection::stream).forEach(serverNode -> {
+      int oldVal = serverToPartitionRangeNums.getOrDefault(serverNode, 0);
+      serverToPartitionRangeNums.put(serverNode, oldVal + 1);
+    });
     assertEquals(serverToPartitionRangeNums.size(), expect.size());
 
     int i = 0;

@@ -30,27 +30,21 @@ import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 public class ContinuousSelectPartitionStrategy implements SelectPartitionStrategy {
   @Override
   public SortedMap<PartitionRange, List<ServerNode>> assign(
-      int totalPartitionNum,
-      int partitionNumPerRange,
-      int replica,
-      List<ServerNode> candidatesNodes,
-      int estimateTaskConcurrency) {
+      int totalPartitionNum, int partitionNumPerRange, int replica,
+      List<ServerNode> candidatesNodes, int estimateTaskConcurrency) {
     SortedMap<PartitionRange, List<ServerNode>> assignments = new TreeMap<>();
     int serverNum = candidatesNodes.size();
-    List<List<PartitionRange>> rangesGroup =
-        CoordinatorUtils.generateRangesGroup(
-            totalPartitionNum, partitionNumPerRange, serverNum, estimateTaskConcurrency);
+    List<List<PartitionRange>> rangesGroup = CoordinatorUtils.generateRangesGroup(totalPartitionNum,
+        partitionNumPerRange, serverNum, estimateTaskConcurrency);
 
     for (int rc = 0; rc < replica; rc++) {
       for (int i = 0; i < rangesGroup.size(); i++) {
         ServerNode node = candidatesNodes.get((i + rc) % serverNum);
         List<PartitionRange> ranges = rangesGroup.get(i);
-        ranges.forEach(
-            range -> {
-              List<ServerNode> serverNodes =
-                  assignments.computeIfAbsent(range, key -> Lists.newArrayList());
-              serverNodes.add(node);
-            });
+        ranges.forEach(range -> {
+          List<ServerNode> serverNodes = assignments.computeIfAbsent(range, key -> Lists.newArrayList());
+          serverNodes.add(node);
+        });
       }
     }
     return assignments;

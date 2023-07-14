@@ -74,11 +74,9 @@ public class DynamicFetchClientConfTest extends IntegrationTestBase {
     assertFalse(sparkConf.contains("spark.mock.1"));
     assertEquals("no-overwrite-conf", sparkConf.get("spark.mock.2"));
     assertFalse(sparkConf.contains("spark.mock.3"));
-    assertEquals(
-        "Dummy-" + RssSparkConfig.RSS_STORAGE_TYPE.key(),
+    assertEquals("Dummy-" + RssSparkConfig.RSS_STORAGE_TYPE.key(),
         sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
-    assertEquals(
-        "Dummy-" + RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(),
+    assertEquals("Dummy-" + RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(),
         sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key()));
     assertTrue(sparkConf.getBoolean("spark.shuffle.service.enabled", true));
 

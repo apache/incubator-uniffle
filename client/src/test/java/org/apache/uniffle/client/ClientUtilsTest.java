@@ -49,28 +49,23 @@ public class ClientUtilsTest {
   @Test
   public void getBlockIdTest() {
     // max value of blockId
-    assertEquals(new Long(854558029292503039L), ClientUtils.getBlockId(16777215, 1048575, 24287));
+    assertEquals(
+        new Long(854558029292503039L), ClientUtils.getBlockId(16777215, 1048575, 24287));
     // just a random test
-    assertEquals(new Long(3518437418598500L), ClientUtils.getBlockId(100, 100, 100));
+    assertEquals(
+        new Long(3518437418598500L), ClientUtils.getBlockId(100, 100, 100));
     // min value of blockId
-    assertEquals(new Long(0L), ClientUtils.getBlockId(0, 0, 0));
+    assertEquals(
+        new Long(0L), ClientUtils.getBlockId(0, 0, 0));
 
-    final Throwable e1 =
-        assertThrows(IllegalArgumentException.class, () -> ClientUtils.getBlockId(16777216, 0, 0));
-    assertTrue(
-        e1.getMessage()
-            .contains("Can't support partitionId[16777216], the max value should be 16777215"));
+    final Throwable e1 = assertThrows(IllegalArgumentException.class, () -> ClientUtils.getBlockId(16777216, 0, 0));
+    assertTrue(e1.getMessage().contains("Can't support partitionId[16777216], the max value should be 16777215"));
 
-    final Throwable e2 =
-        assertThrows(IllegalArgumentException.class, () -> ClientUtils.getBlockId(0, 2097152, 0));
-    assertTrue(
-        e2.getMessage()
-            .contains("Can't support taskAttemptId[2097152], the max value should be 2097151"));
+    final Throwable e2 = assertThrows(IllegalArgumentException.class, () -> ClientUtils.getBlockId(0, 2097152, 0));
+    assertTrue(e2.getMessage().contains("Can't support taskAttemptId[2097152], the max value should be 2097151"));
 
-    final Throwable e3 =
-        assertThrows(IllegalArgumentException.class, () -> ClientUtils.getBlockId(0, 0, 262144));
-    assertTrue(
-        e3.getMessage().contains("Can't support sequence[262144], the max value should be 262143"));
+    final Throwable e3 = assertThrows(IllegalArgumentException.class, () -> ClientUtils.getBlockId(0, 0, 262144));
+    assertTrue(e3.getMessage().contains("Can't support sequence[262144], the max value should be 262143"));
   }
 
   @Test
@@ -85,9 +80,9 @@ public class ClientUtilsTest {
         Long blockId = ClientUtils.getBlockId(partitionId, i, j);
         blockIdMap.addLong(blockId);
       }
+
     }
-    Roaring64NavigableMap taskIdBitMap =
-        RssUtils.generateTaskIdBitMap(blockIdMap, new DefaultIdHelper());
+    Roaring64NavigableMap taskIdBitMap = RssUtils.generateTaskIdBitMap(blockIdMap, new DefaultIdHelper());
     assertEquals(taskSize, taskIdBitMap.getLongCardinality());
     LongIterator longIterator = taskIdBitMap.getLongIterator();
     for (int i = 0; i < taskSize; i++) {
@@ -99,25 +94,22 @@ public class ClientUtilsTest {
     List<CompletableFuture<Boolean>> futures = new ArrayList<>();
     for (int i = 0; i < 3; i++) {
       final int index = i;
-      CompletableFuture<Boolean> future =
-          CompletableFuture.supplyAsync(
-              () -> {
-                if (index == 2) {
-                  try {
-                    Thread.sleep(3000);
-                  } catch (InterruptedException interruptedException) {
-                    LOGGER.info("Capture the InterruptedException");
-                    return false;
-                  }
-                  LOGGER.info("Finished index: " + index);
-                  return true;
-                }
-                if (fail && index == 1) {
-                  return false;
-                }
-                return true;
-              },
-              executorService);
+      CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
+        if (index == 2) {
+          try {
+            Thread.sleep(3000);
+          } catch (InterruptedException interruptedException) {
+            LOGGER.info("Capture the InterruptedException");
+            return false;
+          }
+          LOGGER.info("Finished index: " + index);
+          return true;
+        }
+        if (fail && index == 1) {
+          return false;
+        }
+        return true;
+      }, executorService);
       futures.add(future);
     }
     return futures;
@@ -127,16 +119,12 @@ public class ClientUtilsTest {
   public void testWaitUntilDoneOrFail() {
     // case1: enable fail fast
     List<CompletableFuture<Boolean>> futures1 = getFutures(true);
-    Awaitility.await()
-        .timeout(2, TimeUnit.SECONDS)
-        .until(() -> !waitUntilDoneOrFail(futures1, true));
+    Awaitility.await().timeout(2, TimeUnit.SECONDS).until(() -> !waitUntilDoneOrFail(futures1, true));
 
     // case2: disable fail fast
     List<CompletableFuture<Boolean>> futures2 = getFutures(true);
     try {
-      Awaitility.await()
-          .timeout(2, TimeUnit.SECONDS)
-          .until(() -> !waitUntilDoneOrFail(futures2, false));
+      Awaitility.await().timeout(2, TimeUnit.SECONDS).until(() -> !waitUntilDoneOrFail(futures2, false));
       fail();
     } catch (Exception e) {
       // ignore
@@ -144,9 +132,7 @@ public class ClientUtilsTest {
 
     // case3: all succeed
     List<CompletableFuture<Boolean>> futures3 = getFutures(false);
-    Awaitility.await()
-        .timeout(4, TimeUnit.SECONDS)
-        .until(() -> waitUntilDoneOrFail(futures3, true));
+    Awaitility.await().timeout(4, TimeUnit.SECONDS).until(() -> waitUntilDoneOrFail(futures3, true));
   }
 
   @Test

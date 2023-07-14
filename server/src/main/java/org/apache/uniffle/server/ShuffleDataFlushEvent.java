@@ -48,7 +48,6 @@ public class ShuffleDataFlushEvent {
   private final List<Runnable> cleanupCallbackChains;
 
   private boolean ownedByHugePartition = false;
-  private long startPendingTime;
 
   public ShuffleDataFlushEvent(
       long eventId,
@@ -125,7 +124,6 @@ public class ShuffleDataFlushEvent {
 
   public void markPended() {
     isPended = true;
-    startPendingTime = System.currentTimeMillis();
   }
 
   public Storage getUnderStorage() {
@@ -149,7 +147,8 @@ public class ShuffleDataFlushEvent {
     return ret;
   }
 
-  public void addCleanupCallback(Runnable cleanupCallback) {
+  public void addCleanupCallback(
+      Runnable cleanupCallback) {
     if (cleanupCallback != null) {
       cleanupCallbackChains.add(cleanupCallback);
     }
@@ -157,22 +156,14 @@ public class ShuffleDataFlushEvent {
 
   @Override
   public String toString() {
-    return "ShuffleDataFlushEvent: eventId="
-        + eventId
-        + ", appId="
-        + appId
-        + ", shuffleId="
-        + shuffleId
-        + ", startPartition="
-        + startPartition
-        + ", endPartition="
-        + endPartition
-        + ", retryTimes="
-        + retryTimes
-        + ", underStorage="
-        + (underStorage == null ? null : underStorage.getClass().getSimpleName())
-        + ", isPended="
-        + isPended;
+    return "ShuffleDataFlushEvent: eventId=" + eventId
+        + ", appId=" + appId
+        + ", shuffleId=" + shuffleId
+        + ", startPartition=" + startPartition
+        + ", endPartition=" + endPartition
+        + ", retryTimes=" + retryTimes
+        + ", underStorage=" + (underStorage == null ? null : underStorage.getClass().getSimpleName())
+        + ", isPended=" + isPended;
   }
 
   public boolean isOwnedByHugePartition() {
@@ -181,9 +172,5 @@ public class ShuffleDataFlushEvent {
 
   public void markOwnedByHugePartition() {
     this.ownedByHugePartition = true;
-  }
-
-  public long getStartPendingTime() {
-    return startPendingTime;
   }
 }

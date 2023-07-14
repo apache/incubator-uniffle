@@ -33,29 +33,34 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.util.JavaUtils;
 
 /**
- * ShuffleTaskInfo contains the information of submitting the shuffle, the information of the cache
- * block, user and timestamp corresponding to the app
+ * ShuffleTaskInfo contains the information of submitting the shuffle,
+ * the information of the cache block, user and timestamp corresponding to the app
  */
 public class ShuffleTaskInfo {
   private static final Logger LOGGER = LoggerFactory.getLogger(ShuffleTaskInfo.class);
 
   private final String appId;
   private Long currentTimes;
-  /** shuffleId -> commit count */
+  /**
+   * shuffleId -> commit count
+   */
   private Map<Integer, AtomicInteger> commitCounts;
-
   private Map<Integer, Object> commitLocks;
-  /** shuffleId -> blockIds */
+  /**
+   * shuffleId -> blockIds
+    */
   private Map<Integer, Roaring64NavigableMap> cachedBlockIds;
-
   private AtomicReference<String> user;
 
   private AtomicLong totalDataSize = new AtomicLong(0);
-  /** shuffleId -> partitionId -> partition shuffle data size */
+  /**
+   * shuffleId -> partitionId -> partition shuffle data size
+   */
   private Map<Integer, Map<Integer, Long>> partitionDataSizes;
-  /** shuffleId -> huge partitionIds set */
+  /**
+   * shuffleId -> huge partitionIds set
+   */
   private final Map<Integer, Set<Integer>> hugePartitionTags;
-
   private final AtomicBoolean existHugePartition;
 
   private final AtomicReference<ShuffleSpecification> specification;
@@ -154,16 +159,11 @@ public class ShuffleTaskInfo {
       }
     }
 
-    Set<Integer> partitions =
-        hugePartitionTags.computeIfAbsent(shuffleId, key -> Sets.newConcurrentHashSet());
+    Set<Integer> partitions = hugePartitionTags.computeIfAbsent(shuffleId, key -> Sets.newConcurrentHashSet());
     if (partitions.add(partitionId)) {
       ShuffleServerMetrics.counterTotalHugePartitionNum.inc();
       ShuffleServerMetrics.gaugeHugePartitionNum.inc();
-      LOGGER.warn(
-          "Huge partition occurs, appId: {}, shuffleId: {}, partitionId: {}",
-          appId,
-          shuffleId,
-          partitionId);
+      LOGGER.warn("Huge partition occurs, appId: {}, shuffleId: {}, partitionId: {}", appId, shuffleId, partitionId);
     }
   }
 }

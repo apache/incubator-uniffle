@@ -32,8 +32,7 @@ public class WriteBufferTest {
   private SparkConf conf = new SparkConf(false);
   private Serializer kryoSerializer = new KryoSerializer(conf);
   private WrappedByteArrayOutputStream arrayOutputStream = new WrappedByteArrayOutputStream(32);
-  private SerializationStream serializeStream =
-      kryoSerializer.newInstance().serializeStream(arrayOutputStream);
+  private SerializationStream serializeStream = kryoSerializer.newInstance().serializeStream(arrayOutputStream);
   private byte[] serializedData;
   private int serializedDataLength;
 

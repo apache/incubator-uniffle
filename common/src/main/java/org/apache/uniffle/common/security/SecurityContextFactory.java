@@ -41,12 +41,12 @@ public class SecurityContextFactory {
       return;
     }
 
-    this.securityContext =
-        new HadoopSecurityContext(
-            securityConfig.getKrb5ConfPath(),
-            securityConfig.getKeytabFilePath(),
-            securityConfig.getPrincipal(),
-            securityConfig.getReloginIntervalSec());
+    this.securityContext = new HadoopSecurityContext(
+        securityConfig.getKrb5ConfPath(),
+        securityConfig.getKeytabFilePath(),
+        securityConfig.getPrincipal(),
+        securityConfig.getReloginIntervalSec()
+    );
     LOGGER.info("Initialized security context: {}", securityContext.getClass().getSimpleName());
   }
 

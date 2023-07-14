@@ -29,8 +29,8 @@ public class RssTezPerPartitionRecordTest {
     int[] numRecordsPerPartition = {0, 10, 10, 20, 30};
     int numOutputs = 5;
 
-    RssTezPerPartitionRecord rssTezPerPartitionRecord =
-        new RssTezPerPartitionRecord(numOutputs, numRecordsPerPartition);
+    RssTezPerPartitionRecord rssTezPerPartitionRecord
+        = new RssTezPerPartitionRecord(numOutputs, numRecordsPerPartition);
 
     assertTrue(numOutputs == rssTezPerPartitionRecord.size());
   }
@@ -40,8 +40,8 @@ public class RssTezPerPartitionRecordTest {
     int[] numRecordsPerPartition = {0, 10, 10, 20, 30};
     int numOutputs = 5;
 
-    RssTezPerPartitionRecord rssTezPerPartitionRecord =
-        new RssTezPerPartitionRecord(numOutputs, numRecordsPerPartition);
+    RssTezPerPartitionRecord rssTezPerPartitionRecord
+        = new RssTezPerPartitionRecord(numOutputs, numRecordsPerPartition);
 
     for (int i = 0; i < numRecordsPerPartition.length; i++) {
       if (0 == i) {

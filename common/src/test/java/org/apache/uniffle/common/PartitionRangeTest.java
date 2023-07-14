@@ -75,4 +75,5 @@ public class PartitionRangeTest {
     assertEquals(-1, partitionRange1.compareTo(partitionRange3));
     assertEquals(1, partitionRange3.compareTo(partitionRange2));
   }
+
 }

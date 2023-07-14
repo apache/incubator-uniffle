@@ -46,16 +46,10 @@ public abstract class PurgeEvent {
 
   @Override
   public String toString() {
-    return this.getClass().getSimpleName()
-        + "{"
-        + "appId='"
-        + appId
-        + '\''
-        + ", user='"
-        + user
-        + '\''
-        + ", shuffleIds="
-        + shuffleIds
+    return this.getClass().getSimpleName() + "{"
+        + "appId='" + appId + '\''
+        + ", user='" + user + '\''
+        + ", shuffleIds=" + shuffleIds
         + '}';
   }
 }

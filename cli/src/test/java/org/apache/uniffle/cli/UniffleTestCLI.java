@@ -50,15 +50,12 @@ public class UniffleTestCLI {
     String[] args1 = {"-help"};
     assertEquals(0, uniffleCLI.run(args1));
     oldOutPrintStream.println(dataOut);
-    assertTrue(
-        dataOut
-            .toString()
-            .contains("-a,--admin <arg>   This is an admin command that will print args."));
-    assertTrue(
-        dataOut
-            .toString()
-            .contains("-c,--cli <arg>     This is an client cli command that will print args."));
-    assertTrue(dataOut.toString().contains("-h,--help          Help for the Uniffle CLI."));
+    assertTrue(dataOut.toString().contains(
+        "-a,--admin <arg>   This is an admin command that will print args."));
+    assertTrue(dataOut.toString().contains(
+        "-c,--cli <arg>     This is an client cli command that will print args."));
+    assertTrue(dataOut.toString().contains(
+        "-h,--help          Help for the Uniffle CLI."));
 
     System.setOut(oldOutPrintStream);
     System.setErr(oldErrPrintStream);
@@ -76,7 +73,7 @@ public class UniffleTestCLI {
     System.setOut(new PrintStream(dataOut));
     System.setErr(new PrintStream(dataErr));
 
-    String[] args = {"-c", "hello world"};
+    String[] args = {"-c","hello world"};
     assertEquals(0, uniffleCLI.run(args));
     oldOutPrintStream.println(dataOut);
     assertTrue(dataOut.toString().contains("uniffle-client-cli : hello world"));

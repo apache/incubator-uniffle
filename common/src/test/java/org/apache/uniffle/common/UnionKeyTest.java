@@ -27,7 +27,11 @@ public class UnionKeyTest {
 
   @Test
   public void test() {
-    Object[] elements = new Object[] {"appId", 1, 1};
+    Object[] elements = new Object[]{
+        "appId",
+        1,
+        1
+    };
 
     String key = UnionKey.buildKey(elements);
     assertEquals(key, "appId_1_1");
@@ -36,10 +40,10 @@ public class UnionKeyTest {
     assertFalse(UnionKey.sameWith(null, elements));
 
     assertFalse(UnionKey.startsWith(null, elements));
-    assertFalse(UnionKey.startsWith(key, new Object[] {"appId", "app"}));
+    assertFalse(UnionKey.startsWith(key, new Object[]{"appId", "app"}));
     assertTrue(UnionKey.startsWith(key, elements));
-    assertTrue(UnionKey.startsWith(key, new Object[] {"appId"}));
-    assertTrue(UnionKey.startsWith(key, new Object[] {"appId", 1}));
-    assertTrue(UnionKey.startsWith(key, new Object[] {"appId", 1, 1}));
+    assertTrue(UnionKey.startsWith(key, new Object[]{"appId"}));
+    assertTrue(UnionKey.startsWith(key, new Object[]{"appId", 1}));
+    assertTrue(UnionKey.startsWith(key, new Object[]{"appId", 1, 1}));
   }
 }

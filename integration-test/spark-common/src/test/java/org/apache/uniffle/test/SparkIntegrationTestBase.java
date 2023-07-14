@@ -41,7 +41,8 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
     return null;
   }
 
-  public void updateSparkConfCustomer(SparkConf sparkConf) {}
+  public void updateSparkConfCustomer(SparkConf sparkConf) {
+  }
 
   public void run() throws Exception {
 
@@ -62,15 +63,13 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
 
     verifyTestResult(resultWithoutRss, resultWithRss);
 
-    LOG.info(
-        "Test: durationWithoutRss["
-            + durationWithoutRss
-            + "], durationWithRss["
-            + durationWithRss
-            + "]");
+    LOG.info("Test: durationWithoutRss[" + durationWithoutRss
+        + "], durationWithRss[" + durationWithRss + "]");
   }
 
-  public void updateCommonSparkConf(SparkConf sparkConf) {}
+  public void updateCommonSparkConf(SparkConf sparkConf) {
+
+  }
 
   private static <T> T getIfExists(Option<T> o) {
     return o.isDefined() ? o.get() : null;
@@ -88,7 +87,9 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
   }
 
   protected SparkConf createSparkConf() {
-    return new SparkConf().setAppName(this.getClass().getSimpleName()).setMaster("local[4]");
+    return new SparkConf()
+        .setAppName(this.getClass().getSimpleName())
+        .setMaster("local[4]");
   }
 
   public void updateSparkConfWithRss(SparkConf sparkConf) {

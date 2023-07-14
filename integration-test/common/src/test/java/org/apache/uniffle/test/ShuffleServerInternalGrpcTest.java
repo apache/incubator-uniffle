@@ -70,25 +70,22 @@ public class ShuffleServerInternalGrpcTest extends IntegrationTestBase {
   @BeforeEach
   public void createClient() {
     shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
-    shuffleServerInternalClient =
-        new ShuffleServerInternalGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
+    shuffleServerInternalClient = new ShuffleServerInternalGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
   }
 
   @Test
   public void decommissionTest() {
     String appId = "decommissionTest";
     int shuffleId = 0;
-    shuffleServerClient.registerShuffle(
-        new RssRegisterShuffleRequest(
-            appId, shuffleId, Lists.newArrayList(new PartitionRange(0, 1)), ""));
+    shuffleServerClient.registerShuffle(new RssRegisterShuffleRequest(appId, shuffleId,
+        Lists.newArrayList(new PartitionRange(0, 1)), ""));
 
     ShuffleServer shuffleServer = shuffleServers.get(0);
-    RssDecommissionResponse response =
-        shuffleServerInternalClient.decommission(new RssDecommissionRequest());
+    RssDecommissionResponse response = shuffleServerInternalClient.decommission(new RssDecommissionRequest());
     assertEquals(StatusCode.SUCCESS, response.getStatusCode());
     assertEquals(ServerStatus.DECOMMISSIONING, shuffleServer.getServerStatus());
     RssCancelDecommissionResponse cancelResponse =
-        shuffleServerInternalClient.cancelDecommission(new RssCancelDecommissionRequest());
+            shuffleServerInternalClient.cancelDecommission(new RssCancelDecommissionRequest());
     assertEquals(StatusCode.SUCCESS, cancelResponse.getStatusCode());
     assertEquals(ServerStatus.ACTIVE, shuffleServer.getServerStatus());
 
@@ -97,10 +94,11 @@ public class ShuffleServerInternalGrpcTest extends IntegrationTestBase {
     response = shuffleServerInternalClient.decommission(new RssDecommissionRequest());
     assertEquals(StatusCode.SUCCESS, response.getStatusCode());
     assertEquals(ServerStatus.DECOMMISSIONING, shuffleServer.getServerStatus());
-    Awaitility.await().timeout(10, TimeUnit.SECONDS).until(() -> !shuffleServer.isRunning());
+    Awaitility.await().timeout(10, TimeUnit.SECONDS).until(() ->
+        !shuffleServer.isRunning());
     // Server is already shutdown, so io exception should be thrown here.
-    assertThrows(
-        StatusRuntimeException.class,
+    assertThrows(StatusRuntimeException.class,
         () -> shuffleServerInternalClient.cancelDecommission(new RssCancelDecommissionRequest()));
   }
+
 }

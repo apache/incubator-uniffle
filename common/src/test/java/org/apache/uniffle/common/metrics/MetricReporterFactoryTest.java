@@ -30,12 +30,13 @@ public class MetricReporterFactoryTest {
   @Test
   public void testGetMetricReporter() throws Exception {
     CustomRssConf conf = new CustomRssConf();
-    conf.set(
-        RssBaseConf.RSS_METRICS_REPORTER_CLASS,
+    conf.set(RssBaseConf.RSS_METRICS_REPORTER_CLASS,
         PrometheusPushGatewayMetricReporter.class.getCanonicalName());
     MetricReporter metricReporter = MetricReporterFactory.getMetricReporter(conf, "1");
     assertTrue(metricReporter instanceof PrometheusPushGatewayMetricReporter);
   }
 
-  class CustomRssConf extends RssConf {}
+  class CustomRssConf extends RssConf {
+
+  }
 }

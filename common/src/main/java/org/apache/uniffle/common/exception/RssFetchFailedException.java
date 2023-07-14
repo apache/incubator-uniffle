@@ -17,7 +17,9 @@
 
 package org.apache.uniffle.common.exception;
 
-/** Dedicated exception for rss client's shuffle failed related exception. */
+/**
+ * Dedicated exception for rss client's shuffle failed related exception.
+ */
 public class RssFetchFailedException extends RssException {
   public RssFetchFailedException(String message) {
     super(message);

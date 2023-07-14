@@ -1,12 +1,13 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -58,8 +59,7 @@ public class RssSortedGroupedMergedInputTest {
     sInputs.add(sInput2);
     sInputs.add(sInput3);
     MergedInputContext mockContext = createMergedInputContext();
-    ConcatenatedMergedKeyValueInput input =
-        new ConcatenatedMergedKeyValueInput(mockContext, sInputs);
+    ConcatenatedMergedKeyValueInput input = new ConcatenatedMergedKeyValueInput(mockContext, sInputs);
 
     KeyValueReader kvReader = input.getReader();
     int keyCount = 0;
@@ -78,14 +78,14 @@ public class RssSortedGroupedMergedInputTest {
   @Test
   @Timeout(value = 5000, unit = TimeUnit.MILLISECONDS)
   public void testSimpleConcatenatedMergedKeyValuesInput() throws Exception {
-    SortedTestKeyValuesReader kvsReader1 =
-        new SortedTestKeyValuesReader(new int[] {1, 2, 3}, new int[][] {{1, 1}, {2, 2}, {3, 3}});
+    SortedTestKeyValuesReader kvsReader1 = new SortedTestKeyValuesReader(new int[] { 1, 2, 3 },
+        new int[][] { { 1, 1 }, { 2, 2 }, { 3, 3 } });
 
-    SortedTestKeyValuesReader kvsReader2 =
-        new SortedTestKeyValuesReader(new int[] {1, 2, 3}, new int[][] {{1, 1}, {2, 2}, {3, 3}});
+    SortedTestKeyValuesReader kvsReader2 = new SortedTestKeyValuesReader(new int[] { 1, 2, 3 },
+        new int[][] { { 1, 1 }, { 2, 2 }, { 3, 3 } });
 
-    SortedTestKeyValuesReader kvsReader3 =
-        new SortedTestKeyValuesReader(new int[] {1, 2, 3}, new int[][] {{1, 1}, {2, 2}, {3, 3}});
+    SortedTestKeyValuesReader kvsReader3 = new SortedTestKeyValuesReader(new int[] { 1, 2, 3 },
+        new int[][] { { 1, 1 }, { 2, 2 }, { 3, 3 } });
 
     SortedTestInput sInput1 = new SortedTestInput(kvsReader1);
     SortedTestInput sInput2 = new SortedTestInput(kvsReader2);
@@ -96,8 +96,7 @@ public class RssSortedGroupedMergedInputTest {
     sInputs.add(sInput2);
     sInputs.add(sInput3);
     MergedInputContext mockContext = createMergedInputContext();
-    ConcatenatedMergedKeyValuesInput input =
-        new ConcatenatedMergedKeyValuesInput(mockContext, sInputs);
+    ConcatenatedMergedKeyValuesInput input = new ConcatenatedMergedKeyValuesInput(mockContext, sInputs);
 
     KeyValuesReader kvsReader = input.getReader();
     int keyCount = 0;
@@ -120,7 +119,7 @@ public class RssSortedGroupedMergedInputTest {
   }
 
   private void getNextFromFinishedReader(KeyValuesReader kvsReader) {
-    // Try reading again and it should throw IOException
+    //Try reading again and it should throw IOException
     try {
       boolean hasNext = kvsReader.next();
       fail();
@@ -130,7 +129,7 @@ public class RssSortedGroupedMergedInputTest {
   }
 
   private void getNextFromFinishedReader(KeyValueReader kvReader) {
-    // Try reading again and it should throw IOException
+    //Try reading again and it should throw IOException
     try {
       boolean hasNext = kvReader.next();
       fail();
@@ -154,7 +153,8 @@ public class RssSortedGroupedMergedInputTest {
     }
 
     @Override
-    public void start() throws IOException {}
+    public void start() throws IOException {
+    }
 
     @Override
     public KeyValuesReader getReader() throws IOException {
@@ -162,7 +162,8 @@ public class RssSortedGroupedMergedInputTest {
     }
 
     @Override
-    public void handleEvents(List<Event> inputEvents) {}
+    public void handleEvents(List<Event> inputEvents) {
+    }
 
     @Override
     public List<Event> close() throws IOException {
@@ -220,7 +221,8 @@ public class RssSortedGroupedMergedInputTest {
     }
 
     @Override
-    public void start() throws Exception {}
+    public void start() throws Exception {
+    }
 
     @Override
     public Reader getReader() throws Exception {
@@ -251,6 +253,7 @@ public class RssSortedGroupedMergedInputTest {
     }
   }
 
+
   private static class RawComparatorForTest implements RawComparator<Integer> {
 
     @Override
@@ -264,3 +267,4 @@ public class RssSortedGroupedMergedInputTest {
     }
   }
 }
+

@@ -35,10 +35,8 @@ public class ServerStatusTest {
     assertEquals(-1, ServerStatus.UNKNOWN.code());
     assertEquals(ServerStatus.fromCode(-2), ServerStatus.UNKNOWN);
     assertEquals(ServerStatus.fromCode(Integer.MAX_VALUE), ServerStatus.UNKNOWN);
-    List<RssProtos.ServerStatus> protoServerStatuses =
-        Arrays.stream(RssProtos.ServerStatus.values())
-            .filter(s -> !RssProtos.ServerStatus.UNRECOGNIZED.equals(s))
-            .collect(Collectors.toList());
+    List<RssProtos.ServerStatus> protoServerStatuses = Arrays.stream(RssProtos.ServerStatus.values())
+        .filter(s -> !RssProtos.ServerStatus.UNRECOGNIZED.equals(s)).collect(Collectors.toList());
 
     for (RssProtos.ServerStatus statusCode : protoServerStatuses) {
 
@@ -48,10 +46,8 @@ public class ServerStatusTest {
         fail(e.getMessage());
       }
     }
-    List<ServerStatus> serverStatuses =
-        Arrays.stream(ServerStatus.values())
-            .filter(s -> !ServerStatus.UNKNOWN.equals(s))
-            .collect(Collectors.toList());
+    List<ServerStatus> serverStatuses = Arrays.stream(ServerStatus.values())
+        .filter(s -> !ServerStatus.UNKNOWN.equals(s)).collect(Collectors.toList());
     for (ServerStatus serverStatus : serverStatuses) {
       try {
         RssProtos.ServerStatus.valueOf(serverStatus.name());

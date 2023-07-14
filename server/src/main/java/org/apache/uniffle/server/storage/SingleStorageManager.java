@@ -34,6 +34,7 @@ import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageWriteMetrics;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 
+
 public abstract class SingleStorageManager implements StorageManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(SingleStorageManager.class);
@@ -101,6 +102,7 @@ public abstract class SingleStorageManager implements StorageManager {
     }
   }
 
+
   @Override
   public boolean canWrite(ShuffleDataFlushEvent event) {
     try {
@@ -115,9 +117,8 @@ public abstract class SingleStorageManager implements StorageManager {
       return false;
     }
   }
-
-  public StorageWriteMetrics createStorageWriteMetrics(
-      ShuffleDataFlushEvent event, long writeTime) {
+  
+  public StorageWriteMetrics createStorageWriteMetrics(ShuffleDataFlushEvent event, long writeTime) {
     long length = 0;
     long blockNum = 0;
     for (ShufflePartitionedBlock block : event.getShuffleBlocks()) {
@@ -125,9 +126,7 @@ public abstract class SingleStorageManager implements StorageManager {
       blockNum++;
     }
     List<Integer> partitions = Lists.newArrayList();
-    for (int partition = event.getStartPartition();
-        partition <= event.getEndPartition();
-        partition++) {
+    for (int partition = event.getStartPartition(); partition <= event.getEndPartition(); partition++) {
       partitions.add(partition);
     }
     return new StorageWriteMetrics(

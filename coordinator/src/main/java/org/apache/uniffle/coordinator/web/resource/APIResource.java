@@ -22,7 +22,7 @@ import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
 @Path("api")
-@Produces({MediaType.APPLICATION_JSON})
+@Produces({ MediaType.APPLICATION_JSON })
 public class APIResource {
   @Path("server")
   public Class<ServerResource> getServerResource() {

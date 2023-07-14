@@ -65,16 +65,8 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
 
     long start = System.currentTimeMillis();
     prepareFilePath(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, path);
-    LOG.debug(
-        "Prepare for appId["
-            + appId
-            + "], shuffleId["
-            + shuffleId
-            + "], partitionId["
-            + partitionId
-            + "] cost "
-            + (System.currentTimeMillis() - start)
-            + " ms");
+    LOG.debug("Prepare for appId[" + appId + "], shuffleId[" + shuffleId + "], partitionId[" + partitionId
+        + "] cost " + (System.currentTimeMillis() - start) + " ms");
   }
 
   private void prepareFilePath(
@@ -84,11 +76,9 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
       int partitionNumPerRange,
       int partitionNum,
       String storageBasePath) {
-    String fullShufflePath =
-        ShuffleStorageUtils.getFullShuffleDataFolder(
-            storageBasePath,
-            ShuffleStorageUtils.getShuffleDataPathWithRange(
-                appId, shuffleId, partitionId, partitionNumPerRange, partitionNum));
+    String fullShufflePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
+        ShuffleStorageUtils.getShuffleDataPathWithRange(
+            appId, shuffleId, partitionId, partitionNumPerRange, partitionNum));
 
     File baseFolder = new File(fullShufflePath);
     if (!baseFolder.exists()) {
@@ -99,14 +89,12 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
     String failedGetIndexFileMsg = "No index file found in  " + storageBasePath;
     try {
       // get all index files
-      indexFiles =
-          baseFolder.listFiles(
-              new FilenameFilter() {
-                @Override
-                public boolean accept(File dir, String name) {
-                  return name.endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX);
-                }
-              });
+      indexFiles = baseFolder.listFiles(new FilenameFilter() {
+        @Override
+        public boolean accept(File dir, String name) {
+          return name.endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX);
+        }
+      });
     } catch (Exception e) {
       throw new FileNotFoundException(failedGetIndexFileMsg, e);
     }
@@ -116,10 +104,8 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
         throw new RssException("More index file than expected: " + indexFiles.length);
       }
       String fileNamePrefix = getFileNamePrefix(indexFiles[0].getName());
-      indexFileName =
-          fullShufflePath + "/" + ShuffleStorageUtils.generateIndexFileName(fileNamePrefix);
-      dataFileName =
-          fullShufflePath + "/" + ShuffleStorageUtils.generateDataFileName(fileNamePrefix);
+      indexFileName = fullShufflePath + "/" + ShuffleStorageUtils.generateIndexFileName(fileNamePrefix);
+      dataFileName = fullShufflePath + "/" + ShuffleStorageUtils.generateDataFileName(fileNamePrefix);
     }
   }
 
@@ -143,13 +129,7 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
       }
       LOG.debug(
           "Read File segment: {}, offset[{}], length[{}], cost: {} ms, for appId[{}], shuffleId[{}], partitionId[{}]",
-          dataFileName,
-          offset,
-          length,
-          System.currentTimeMillis() - start,
-          appId,
-          shuffleId,
-          partitionId);
+          dataFileName, offset, length, System.currentTimeMillis() - start, appId, shuffleId, partitionId);
     } catch (Exception e) {
       LOG.warn("Can't read data for{}, offset[{}], length[{}]", dataFileName, offset, length);
     }
@@ -163,19 +143,18 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
     int len = 0;
     try (LocalFileReader reader = createFileReader(indexFileName)) {
       long indexFileSize = new File(indexFileName).length();
-      indexNum = (int) (indexFileSize / FileBasedShuffleSegment.SEGMENT_SIZE);
+      indexNum = (int)  (indexFileSize / FileBasedShuffleSegment.SEGMENT_SIZE);
       len = indexNum * FileBasedShuffleSegment.SEGMENT_SIZE;
       if (indexFileSize != len) {
-        LOG.warn(
-            "Maybe the index file: {} is being written due to the shuffle-buffer flushing.",
-            indexFileName);
+        LOG.warn("Maybe the index file: {} is being written due to the shuffle-buffer flushing.", indexFileName);
       }
       byte[] indexData = reader.read(0, len);
       // get dataFileSize for read segment generation in DataSkippableReadHandler#readShuffleData
       long dataFileSize = new File(dataFileName).length();
       return new ShuffleIndexResult(ByteBuffer.wrap(indexData), dataFileSize);
     } catch (Exception e) {
-      LOG.error("Fail to read index file {} indexNum {} len {}", indexFileName, indexNum, len);
+      LOG.error("Fail to read index file {} indexNum {} len {}",
+          indexFileName, indexNum, len);
       return new ShuffleIndexResult();
     }
   }

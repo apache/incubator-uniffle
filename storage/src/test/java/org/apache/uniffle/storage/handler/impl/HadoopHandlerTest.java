@@ -83,7 +83,8 @@ public class HadoopHandlerTest extends HadoopTestBase {
       expectedIndex.add(new FileBasedShuffleSegment(i, pos, i * 8, i * 8, i, i));
       pos += i * 8;
     }
-    writeHandler = new HadoopShuffleWriteHandler("appId", 1, 1, 1, basePath, "test", conf);
+    writeHandler =
+        new HadoopShuffleWriteHandler("appId", 1, 1, 1, basePath, "test", conf);
     writeHandler.write(blocksAppend);
 
     compareDataAndIndex("appId", 1, 1, basePath, expectedData, expectedBlockId);
@@ -95,27 +96,16 @@ public class HadoopHandlerTest extends HadoopTestBase {
       int partitionId,
       String basePath,
       List<byte[]> expectedData,
-      List<Long> expectedBlockId)
-      throws IllegalStateException {
+      List<Long> expectedBlockId) throws IllegalStateException {
     Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     for (long blockId : expectedBlockId) {
       expectBlockIds.addLong(blockId);
     }
     // read directly and compare
-    HadoopClientReadHandler readHandler =
-        new HadoopClientReadHandler(
-            appId,
-            shuffleId,
-            partitionId,
-            100,
-            1,
-            10,
-            10000,
-            expectBlockIds,
-            processBlockIds,
-            basePath,
-            new Configuration());
+    HadoopClientReadHandler readHandler = new HadoopClientReadHandler(
+        appId, shuffleId, partitionId, 100, 1, 10,
+        10000, expectBlockIds, processBlockIds, basePath, new Configuration());
     try {
       List<ByteBuffer> actual = readData(readHandler, Sets.newHashSet(expectedBlockId));
       compareBytes(expectedData, actual);
@@ -124,8 +114,7 @@ public class HadoopHandlerTest extends HadoopTestBase {
     }
   }
 
-  private List<ByteBuffer> readData(HadoopClientReadHandler handler, Set<Long> blockIds)
-      throws IllegalStateException {
+  private List<ByteBuffer> readData(HadoopClientReadHandler handler, Set<Long> blockIds) throws IllegalStateException {
     ShuffleDataResult sdr = handler.readShuffleData();
     List<BufferSegment> bufferSegments = sdr.getBufferSegments();
     List<ByteBuffer> result = Lists.newArrayList();
@@ -136,4 +125,6 @@ public class HadoopHandlerTest extends HadoopTestBase {
     }
     return result;
   }
+
 }
+

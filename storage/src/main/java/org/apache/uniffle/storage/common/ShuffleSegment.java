@@ -17,4 +17,6 @@
 
 package org.apache.uniffle.storage.common;
 
-public abstract class ShuffleSegment implements java.io.Serializable {}
+public abstract class ShuffleSegment implements java.io.Serializable {
+
+}

@@ -38,22 +38,19 @@ public class RssBypassWriter {
     // So, we should consider the two situations, respectively.
     if (mapOutput instanceof InMemoryMapOutput) {
       InMemoryMapOutput inMemoryMapOutput = (InMemoryMapOutput) mapOutput;
-      // In InMemoryMapOutput constructor method, we create a decompressor or borrow a decompressor
-      // from
-      // pool. Now we need to put it back, otherwise we will create a decompressor for every
-      // InMemoryMapOutput
+      // In InMemoryMapOutput constructor method, we create a decompressor or borrow a decompressor from
+      // pool. Now we need to put it back, otherwise we will create a decompressor for every InMemoryMapOutput
       // object, they will cause `out of direct memory` problems.
       CodecPool.returnDecompressor(getDecompressor(inMemoryMapOutput));
       write(inMemoryMapOutput, buffer);
     } else if (mapOutput instanceof OnDiskMapOutput) {
       // RSS leverages its own compression, it is incompatible with hadoop's disk file compression.
       // So we should disable this situation.
-      throw new IllegalStateException(
-          "RSS does not support OnDiskMapOutput as shuffle ouput,"
-              + " try to reduce mapreduce.reduce.shuffle.memory.limit.percent");
+      throw new IllegalStateException("RSS does not support OnDiskMapOutput as shuffle ouput,"
+        + " try to reduce mapreduce.reduce.shuffle.memory.limit.percent");
     } else {
-      throw new IllegalStateException(
-          "Merger reserve unknown type of MapOutput: " + mapOutput.getClass().getCanonicalName());
+      throw new IllegalStateException("Merger reserve unknown type of MapOutput: "
+        + mapOutput.getClass().getCanonicalName());
     }
   }
 

@@ -38,17 +38,18 @@ public class ConfigUtils {
   // --------------------------------------------------------------------------------------------
 
   // Make sure that we cannot instantiate this class
-  private ConfigUtils() {}
+  private ConfigUtils() {
+  }
 
   /**
    * Tries to convert the raw value into the provided type.
    *
    * @param rawValue rawValue to convert into the provided type clazz
-   * @param clazz clazz specifying the target type
-   * @param <T> type of the result
+   * @param clazz    clazz specifying the target type
+   * @param <T>      type of the result
    * @return the converted value if rawValue is of type clazz
-   * @throws IllegalArgumentException if the rawValue cannot be converted in the specified target
-   *     type clazz
+   * @throws IllegalArgumentException if the rawValue cannot be converted in the
+   *                                  specified target type clazz
    */
   @SuppressWarnings("unchecked")
   public static <T> T convertValue(Object rawValue, Class<?> clazz) {
@@ -79,7 +80,9 @@ public class ConfigUtils {
     return Arrays.stream(clazz.getEnumConstants())
         .filter(
             e ->
-                e.toString().toUpperCase(Locale.ROOT).equals(o.toString().toUpperCase(Locale.ROOT)))
+                e.toString()
+                    .toUpperCase(Locale.ROOT)
+                    .equals(o.toString().toUpperCase(Locale.ROOT)))
         .findAny()
         .orElseThrow(
             () ->
@@ -104,8 +107,9 @@ public class ConfigUtils {
       if (value <= Integer.MAX_VALUE && value >= Integer.MIN_VALUE) {
         return (int) value;
       } else {
-        throw new IllegalArgumentException(
-            String.format("Configuration value %s overflows/underflows the integer type.", value));
+        throw new IllegalArgumentException(String.format(
+            "Configuration value %s overflows/underflows the integer type.",
+            value));
       }
     }
     return Integer.parseInt(o.toString());
@@ -146,10 +150,9 @@ public class ConfigUtils {
       case "FALSE":
         return false;
       default:
-        throw new IllegalArgumentException(
-            String.format(
-                "Unrecognized option for boolean: %s. Expected either true or false(case insensitive)",
-                o));
+        throw new IllegalArgumentException(String.format(
+            "Unrecognized option for boolean: %s. Expected either true or false(case insensitive)",
+            o));
     }
   }
 
@@ -163,8 +166,9 @@ public class ConfigUtils {
           || (value >= -Float.MAX_VALUE && value <= -Float.MIN_VALUE)) {
         return (float) value;
       } else {
-        throw new IllegalArgumentException(
-            String.format("Configuration value %s overflows/underflows the float type.", value));
+        throw new IllegalArgumentException(String.format(
+            "Configuration value %s overflows/underflows the float type.",
+            value));
       }
     }
 
@@ -182,17 +186,14 @@ public class ConfigUtils {
   }
 
   @SuppressWarnings("unchecked")
-  public static List<ConfigOption<Object>> getAllConfigOptions(
-      Class<? extends RssBaseConf> confClass) {
+  public static List<ConfigOption<Object>> getAllConfigOptions(Class<? extends RssBaseConf> confClass) {
     List<ConfigOption<Object>> configOptionList = Lists.newArrayList();
     try {
       Field[] fields = confClass.getFields();
       for (Field field : fields) {
         int modifiers = field.getModifiers();
-        if (isStatic(modifiers)
-            && isPublic(modifiers)
-            && isFinal(modifiers)
-            && field.getType().isAssignableFrom(ConfigOption.class)) {
+        if (isStatic(modifiers) && isPublic(modifiers)
+            && isFinal(modifiers) && field.getType().isAssignableFrom(ConfigOption.class)) {
           configOptionList.add((ConfigOption<Object>) field.get(null));
         }
       }
@@ -206,13 +207,15 @@ public class ConfigUtils {
 
   public static final Function<Long, Boolean> NON_NEGATIVE_LONG_VALIDATOR = value -> value >= 0;
 
-  public static final Function<Integer, Boolean> SERVER_PORT_VALIDATOR =
-      value -> ((value == 0) || (value >= 1024 && value <= 65535));
+  public static final Function<Integer, Boolean> SERVER_PORT_VALIDATOR = value -> ((value == 0)
+                                                                                || (value >= 1024 && value <= 65535));
   public static final Function<Long, Boolean> POSITIVE_INTEGER_VALIDATOR =
       value -> value > 0L && value <= Integer.MAX_VALUE;
 
-  public static final Function<Integer, Boolean> POSITIVE_INTEGER_VALIDATOR_2 = value -> value > 0;
+  public static final Function<Integer, Boolean> POSITIVE_INTEGER_VALIDATOR_2 =
+      value -> value > 0;
 
   public static final Function<Double, Boolean> PERCENTAGE_DOUBLE_VALIDATOR =
       value -> Double.compare(value, 100.0) <= 0 && Double.compare(value, 0.0) >= 0;
+
 }

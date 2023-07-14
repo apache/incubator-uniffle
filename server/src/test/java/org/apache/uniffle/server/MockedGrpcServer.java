@@ -27,8 +27,8 @@ import org.apache.uniffle.common.rpc.GrpcServer;
 public class MockedGrpcServer extends GrpcServer {
   MockedShuffleServerGrpcService service;
 
-  public MockedGrpcServer(
-      RssBaseConf conf, MockedShuffleServerGrpcService service, GRPCMetrics grpcMetrics) {
+  public MockedGrpcServer(RssBaseConf conf, MockedShuffleServerGrpcService service,
+                          GRPCMetrics grpcMetrics) {
     super(conf, Lists.newArrayList(Pair.of(service, Lists.newArrayList())), grpcMetrics);
     this.service = service;
   }

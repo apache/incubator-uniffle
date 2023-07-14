@@ -41,7 +41,9 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
-/** QuotaManager is a manager for resource restriction. */
+/**
+ * QuotaManager is a manager for resource restriction.
+ */
 public class QuotaManager {
   private static final Logger LOG = LoggerFactory.getLogger(QuotaManager.class);
   private final Map<String, Map<String, Long>> currentUserAndApp = JavaUtils.newConcurrentMap();
@@ -56,15 +58,13 @@ public class QuotaManager {
     this.quotaFilePath = conf.get(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH);
     this.quotaAppNum = conf.getInteger(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_APP_NUM);
     if (quotaFilePath == null) {
-      LOG.warn(
-          "{} is not configured, each user will use the default quota : {}",
+      LOG.warn("{} is not configured, each user will use the default quota : {}",
           CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH.key(),
           conf.get(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_APP_NUM));
     } else {
       final Long updateTime = conf.get(CoordinatorConf.COORDINATOR_QUOTA_UPDATE_INTERVAL);
       try {
-        hadoopFileSystem =
-            HadoopFilesystemProvider.getFilesystem(new Path(quotaFilePath), new Configuration());
+        hadoopFileSystem = HadoopFilesystemProvider.getFilesystem(new Path(quotaFilePath), new Configuration());
       } catch (Exception e) {
         LOG.error("Cannot init remoteFS on path : {}", quotaFilePath, e);
       }
@@ -101,7 +101,7 @@ public class QuotaManager {
   public void parseQuotaFile(DataInputStream fsDataInputStream) {
     String content;
     try (BufferedReader bufferedReader =
-        new BufferedReader(new InputStreamReader(fsDataInputStream, StandardCharsets.UTF_8))) {
+             new BufferedReader(new InputStreamReader(fsDataInputStream, StandardCharsets.UTF_8))) {
       while ((content = bufferedReader.readLine()) != null) {
         // to avoid reading comments
         if (!content.startsWith("#") && !content.isEmpty()) {
@@ -116,8 +116,7 @@ public class QuotaManager {
   }
 
   public boolean checkQuota(String user, String uuid) {
-    Map<String, Long> appAndTimes =
-        currentUserAndApp.computeIfAbsent(user, x -> JavaUtils.newConcurrentMap());
+    Map<String, Long> appAndTimes = currentUserAndApp.computeIfAbsent(user, x -> JavaUtils.newConcurrentMap());
     Integer defaultAppNum = defaultUserApps.computeIfAbsent(user, x -> quotaAppNum);
     synchronized (this) {
       int currentAppNum = appAndTimes.size();

@@ -44,42 +44,38 @@ public class GrpcServerTest {
   public void testGrpcExecutorPool() throws Exception {
     GRPCMetrics grpcMetrics = GRPCMetrics.getEmptyGRPCMetrics();
     grpcMetrics.register(new CollectorRegistry(true));
-    GrpcServer.GrpcThreadPoolExecutor executor =
-        new GrpcServer.GrpcThreadPoolExecutor(
-            2,
-            2,
-            100,
-            TimeUnit.MINUTES,
-            Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
-            ThreadUtils.getThreadFactory("Grpc"),
-            grpcMetrics);
+    GrpcServer.GrpcThreadPoolExecutor executor = new GrpcServer.GrpcThreadPoolExecutor(
+        2,
+        2,
+        100,
+        TimeUnit.MINUTES,
+        Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
+        ThreadUtils.getThreadFactory("Grpc"),
+        grpcMetrics
+    );
 
     CountDownLatch countDownLatch = new CountDownLatch(3);
     for (int i = 0; i < 3; i++) {
       final int index = i;
-      executor.submit(
-          () -> {
-            try {
-              Thread.sleep(100 * 2);
-            } catch (InterruptedException interruptedException) {
-              interruptedException.printStackTrace();
-            }
-            LOGGER.info("Finished task: {}", index);
-            countDownLatch.countDown();
-          });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(100 * 2);
+        } catch (InterruptedException interruptedException) {
+          interruptedException.printStackTrace();
+        }
+        LOGGER.info("Finished task: {}", index);
+        countDownLatch.countDown();
+      });
     }
 
     Thread.sleep(120);
-    double activeThreads =
-        grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY).get();
+    double activeThreads = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY).get();
     assertEquals(2, activeThreads);
-    double queueSize =
-        grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY).get();
+    double queueSize = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY).get();
     assertEquals(1, queueSize);
 
     countDownLatch.await();
-    // the metrics is updated afterExecute, which means it may take a while for the thread to
-    // decrease the metrics
+    // the metrics is updated afterExecute, which means it may take a while for the thread to decrease the metrics
     Thread.sleep(100);
     activeThreads = grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY).get();
     assertEquals(0, activeThreads);
@@ -95,13 +91,13 @@ public class GrpcServerTest {
     grpcMetrics.register(new CollectorRegistry(true));
     RssBaseConf conf = new RssBaseConf();
     conf.set(RPC_SERVER_PORT, 0);
-    GrpcServer server =
-        GrpcServer.Builder.newBuilder()
-            .conf(conf)
-            .grpcMetrics(grpcMetrics)
-            .addService(new ShuffleManagerGrpc.ShuffleManagerImplBase() {})
-            .build();
+    GrpcServer server = GrpcServer.Builder.newBuilder()
+        .conf(conf)
+        .grpcMetrics(grpcMetrics)
+        .addService(new ShuffleManagerGrpc.ShuffleManagerImplBase(){})
+        .build();
     server.start();
     assertTrue(server.getPort() > 0);
   }
+
 }

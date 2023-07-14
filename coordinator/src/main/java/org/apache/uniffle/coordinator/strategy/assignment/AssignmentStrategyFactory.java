@@ -45,4 +45,5 @@ public class AssignmentStrategyFactory {
     BASIC,
     PARTITION_BALANCE
   }
+
 }

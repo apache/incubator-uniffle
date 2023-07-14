@@ -102,22 +102,9 @@ public class HadoopClientReadHandler extends AbstractClientReadHandler {
       Roaring64NavigableMap processBlockIds,
       String storageBasePath,
       Configuration hadoopConf) {
-    this(
-        appId,
-        shuffleId,
-        partitionId,
-        indexReadLimit,
-        partitionNumPerRange,
-        partitionNum,
-        readBufferSize,
-        expectBlockIds,
-        processBlockIds,
-        storageBasePath,
-        hadoopConf,
-        ShuffleDataDistributionType.NORMAL,
-        Roaring64NavigableMap.bitmapOf(),
-        null,
-        false);
+    this(appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange, partitionNum, readBufferSize,
+        expectBlockIds, processBlockIds, storageBasePath, hadoopConf, ShuffleDataDistributionType.NORMAL,
+        Roaring64NavigableMap.bitmapOf(), null, false);
   }
 
   protected void init(String fullShufflePath) {
@@ -132,18 +119,13 @@ public class HadoopClientReadHandler extends AbstractClientReadHandler {
     FileStatus[] indexFiles = null;
     try {
       // get all index files
-      indexFiles =
-          fs.listStatus(
-              baseFolder,
-              file ->
-                  file.getName().endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX)
-                      && (shuffleServerId == null || file.getName().startsWith(shuffleServerId)));
+      indexFiles = fs.listStatus(baseFolder,
+          file -> file.getName().endsWith(Constants.SHUFFLE_INDEX_FILE_SUFFIX)
+              && (shuffleServerId == null || file.getName().startsWith(shuffleServerId)));
     } catch (Exception e) {
       if (e instanceof FileNotFoundException) {
-        LOG.info(
-            "Directory["
-                + baseFolder
-                + "] not found. The data may not be flushed to this directory. Nothing will be read.");
+        LOG.info("Directory[" + baseFolder
+            + "] not found. The data may not be flushed to this directory. Nothing will be read.");
       } else {
         String failedGetIndexFileMsg = "Can't list index file in  " + baseFolder;
         LOG.error(failedGetIndexFileMsg, e);
@@ -153,37 +135,23 @@ public class HadoopClientReadHandler extends AbstractClientReadHandler {
 
     if (indexFiles != null && indexFiles.length != 0) {
       for (FileStatus status : indexFiles) {
-        LOG.info(
-            "Find index file for shuffleId["
-                + shuffleId
-                + "], partitionId["
-                + partitionId
-                + "] "
-                + status.getPath());
+        LOG.info("Find index file for shuffleId[" + shuffleId + "], partitionId["
+            + partitionId + "] " + status.getPath());
         String filePrefix = getFileNamePrefix(status.getPath().toUri().toString());
         try {
-          HadoopShuffleReadHandler handler =
-              new HadoopShuffleReadHandler(
-                  appId,
-                  shuffleId,
-                  partitionId,
-                  filePrefix,
-                  readBufferSize,
-                  expectBlockIds,
-                  processBlockIds,
-                  hadoopConf,
-                  distributionType,
-                  expectTaskIds,
-                  offHeapEnable);
+          HadoopShuffleReadHandler handler = new HadoopShuffleReadHandler(
+              appId, shuffleId, partitionId, filePrefix,
+              readBufferSize, expectBlockIds, processBlockIds, hadoopConf,
+              distributionType, expectTaskIds, offHeapEnable);
           readHandlers.add(handler);
         } catch (Exception e) {
           LOG.warn("Can't create ShuffleReaderHandler for " + filePrefix, e);
         }
       }
       Collections.shuffle(readHandlers);
-      LOG.info(
-          "Reading order of Hadoop files with name prefix: {}",
-          readHandlers.stream().map(x -> x.filePrefix).collect(Collectors.toList()));
+      LOG.info("Reading order of Hadoop files with name prefix: {}",
+          readHandlers.stream().map(x -> x.filePrefix).collect(Collectors.toList())
+      );
     }
   }
 
@@ -191,11 +159,9 @@ public class HadoopClientReadHandler extends AbstractClientReadHandler {
   public ShuffleDataResult readShuffleData() {
     // init lazily like LocalFileClientRead
     if (readHandlers.isEmpty()) {
-      String fullShufflePath =
-          ShuffleStorageUtils.getFullShuffleDataFolder(
-              storageBasePath,
-              ShuffleStorageUtils.getShuffleDataPathWithRange(
-                  appId, shuffleId, partitionId, partitionNumPerRange, partitionNum));
+      String fullShufflePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
+          ShuffleStorageUtils.getShuffleDataPathWithRange(appId,
+              shuffleId, partitionId, partitionNumPerRange, partitionNum));
       init(fullShufflePath);
     }
 

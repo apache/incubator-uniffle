@@ -77,9 +77,10 @@ public class RemoteStorageInfo implements Serializable {
 
   public String getConfString() {
     if (confItems.isEmpty()) {
-      return "";
+      return  "";
     }
-    return confItems.entrySet().stream()
+    return confItems.entrySet()
+        .stream()
         .map(e -> String.join("=", e.getKey(), e.getValue()))
         .collect(Collectors.joining(","));
   }
@@ -99,7 +100,7 @@ public class RemoteStorageInfo implements Serializable {
       return false;
     }
 
-    if (this.confItems.size() != that.confItems.size()) {
+    if (this.confItems.size() != that.confItems.size())  {
       return false;
     }
 
@@ -125,10 +126,7 @@ public class RemoteStorageInfo implements Serializable {
     } else if (confItems.isEmpty()) {
       return String.join(Constants.COMMA_SPLIT_CHAR, path, "empty conf");
     } else {
-      return String.join(
-          Constants.COMMA_SPLIT_CHAR,
-          path,
-          Joiner.on(",").withKeyValueSeparator("=").join(confItems));
+      return String.join(Constants.COMMA_SPLIT_CHAR, path, Joiner.on(",").withKeyValueSeparator("=").join(confItems));
     }
   }
 

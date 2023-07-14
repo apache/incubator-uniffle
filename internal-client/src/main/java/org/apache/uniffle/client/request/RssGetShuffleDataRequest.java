@@ -27,14 +27,8 @@ public class RssGetShuffleDataRequest {
   private final long offset;
   private final int length;
 
-  public RssGetShuffleDataRequest(
-      String appId,
-      int shuffleId,
-      int partitionId,
-      int partitionNumPerRange,
-      int partitionNum,
-      long offset,
-      int length) {
+  public RssGetShuffleDataRequest(String appId, int shuffleId, int partitionId, int partitionNumPerRange,
+      int partitionNum, long offset, int length) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;

@@ -45,11 +45,19 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class HadoopClientReadHandlerTest extends HadoopTestBase {
 
-  public static void createAndRunCases(
-      String clusterPathPrefix, Configuration hadoopConf, String writeUser) throws Exception {
+  public static void createAndRunCases(String clusterPathPrefix, Configuration hadoopConf, String writeUser)
+      throws Exception {
     String basePath = clusterPathPrefix + "clientReadTest1";
     HadoopShuffleWriteHandler writeHandler =
-        new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, "test", hadoopConf, writeUser);
+        new HadoopShuffleWriteHandler(
+            "appId",
+            0,
+            1,
+            1,
+            basePath,
+            "test",
+            hadoopConf,
+            writeUser);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
@@ -62,13 +70,15 @@ public class HadoopClientReadHandlerTest extends HadoopTestBase {
     for (int i = 0; i < 5; i++) {
       writeHandler.setFailTimes(i);
       int num = new Random().nextInt(17);
-      writeTestData(writeHandler, num, 3, 0, expectedData);
+      writeTestData(writeHandler,  num, 3, 0, expectedData);
       total += calcExpectedSegmentNum(num, 3, readBufferSize);
       expectTotalBlockNum += num;
       expectedData.forEach((id, block) -> expectBlockIds.addLong(id));
     }
 
-    /** This part is to check the fault tolerance of reading HDFS incomplete index file */
+    /**
+     * This part is to check the fault tolerance of reading HDFS incomplete index file
+     */
     String indexFileName = ShuffleStorageUtils.generateIndexFileName("test_0");
     HadoopFileWriter indexWriter = writeHandler.createWriter(indexFileName);
     indexWriter.writeData(ByteBuffer.allocate(4).putInt(169560).array());
@@ -77,37 +87,28 @@ public class HadoopClientReadHandlerTest extends HadoopTestBase {
 
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
 
-    HadoopShuffleReadHandler indexReader =
-        new HadoopShuffleReadHandler(
-            "appId",
-            0,
-            1,
-            basePath + "/appId/0/1-1/test_0",
-            readBufferSize,
-            expectBlockIds,
-            processBlockIds,
-            hadoopConf);
+    HadoopShuffleReadHandler indexReader = new HadoopShuffleReadHandler(
+        "appId", 0, 1, basePath + "/appId/0/1-1/test_0",
+        readBufferSize, expectBlockIds, processBlockIds, hadoopConf);
     try {
       ShuffleIndexResult indexResult = indexReader.readShuffleIndex();
-      assertEquals(
-          0, indexResult.getIndexData().remaining() % FileBasedShuffleSegment.SEGMENT_SIZE);
+      assertEquals(0, indexResult.getIndexData().remaining() % FileBasedShuffleSegment.SEGMENT_SIZE);
     } catch (Exception e) {
       fail();
     }
 
-    HadoopClientReadHandler handler =
-        new HadoopClientReadHandler(
-            "appId",
-            0,
-            1,
-            1024 * 10214,
-            1,
-            10,
-            readBufferSize,
-            expectBlockIds,
-            processBlockIds,
-            basePath,
-            hadoopConf);
+    HadoopClientReadHandler handler = new HadoopClientReadHandler(
+        "appId",
+        0,
+        1,
+        1024 * 10214,
+        1,
+        10,
+        readBufferSize,
+        expectBlockIds,
+        processBlockIds,
+        basePath,
+        hadoopConf);
     Set<Long> actualBlockIds = Sets.newHashSet();
 
     for (int i = 0; i < total; ++i) {
@@ -122,7 +123,8 @@ public class HadoopClientReadHandlerTest extends HadoopTestBase {
     assertTrue(handler.readShuffleData().isEmpty());
     assertEquals(
         total,
-        handler.getHdfsShuffleFileReadHandlers().stream()
+        handler.getHdfsShuffleFileReadHandlers()
+            .stream()
             .mapToInt(i -> i.getShuffleDataSegments().size())
             .sum());
     assertEquals(expectTotalBlockNum, totalBlockNum);

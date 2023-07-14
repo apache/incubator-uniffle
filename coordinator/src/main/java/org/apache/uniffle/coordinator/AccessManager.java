@@ -49,8 +49,7 @@ public class AccessManager implements Reconfigurable {
       CoordinatorConf conf,
       ClusterManager clusterManager,
       QuotaManager quotaManager,
-      Configuration hadoopConf)
-      throws Exception {
+      Configuration hadoopConf) throws Exception {
     this.coordinatorConf = conf;
     this.clusterManager = clusterManager;
     this.hadoopConf = hadoopConf;

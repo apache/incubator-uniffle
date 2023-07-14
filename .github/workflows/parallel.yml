@@ -61,7 +61,6 @@ jobs:
           - mr-hadoop2.8
           - mr-hadoop3.2
           - tez
-          - tez-hadoop3.2
       fail-fast: false
     name: -P${{ matrix.profile }}
     steps:

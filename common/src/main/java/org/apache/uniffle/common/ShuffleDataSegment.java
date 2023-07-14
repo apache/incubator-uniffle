@@ -20,9 +20,8 @@ package org.apache.uniffle.common;
 import java.util.List;
 
 /**
- * ShuffleDataSegment is a view of a segment of shuffle data file, which is split according to the
- * read buffer size. It contains a list of BufferSegment, they are indices of the block in the data
- * file segment.
+ * ShuffleDataSegment is a view of a segment of shuffle data file, which is split according to the read buffer size.
+ * It contains a list of BufferSegment, they are indices of the block in the data file segment.
  */
 public class ShuffleDataSegment {
   private final long offset;

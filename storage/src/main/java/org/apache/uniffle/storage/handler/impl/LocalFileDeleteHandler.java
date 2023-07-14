@@ -37,14 +37,8 @@ public class LocalFileDeleteHandler implements ShuffleDeleteHandler {
       try {
         File baseFolder = new File(shufflePath);
         FileUtils.deleteDirectory(baseFolder);
-        LOG.info(
-            "Delete shuffle data for appId["
-                + appId
-                + "] with "
-                + shufflePath
-                + " cost "
-                + (System.currentTimeMillis() - start)
-                + " ms");
+        LOG.info("Delete shuffle data for appId[" + appId + "] with " + shufflePath
+            + " cost " + (System.currentTimeMillis() - start) + " ms");
       } catch (Exception e) {
         LOG.warn("Can't delete shuffle data for appId[" + appId + "] with " + shufflePath, e);
       }

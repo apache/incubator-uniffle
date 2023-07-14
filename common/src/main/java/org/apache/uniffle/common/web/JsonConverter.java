@@ -42,45 +42,34 @@ public class JsonConverter implements MessageBodyReader<Object>, MessageBodyWrit
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
-  public boolean isWriteable(
-      Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+  public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations,
+                             MediaType mediaType) {
     return true;
   }
 
   @Override
-  public void writeTo(
-      Object t,
-      Class<?> type,
-      Type genericType,
-      Annotation[] annotations,
-      MediaType mediaType,
-      MultivaluedMap<String, Object> httpHeaders,
-      OutputStream entityStream)
-      throws IOException, WebApplicationException {
+  public void writeTo(Object t, Class<?> type, Type genericType, Annotation[] annotations,
+                      MediaType mediaType, MultivaluedMap<String, Object> httpHeaders,
+                      OutputStream entityStream) throws IOException, WebApplicationException {
     objectMapper.writeValue(new OutputStreamWriter(entityStream, Charset.defaultCharset()), t);
   }
 
   @Override
-  public boolean isReadable(
-      Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+  public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations,
+                            MediaType mediaType) {
     return true;
   }
 
   @Override
-  public Object readFrom(
-      Class<Object> type,
-      Type genericType,
-      Annotation[] annotations,
-      MediaType mediaType,
-      MultivaluedMap<String, String> httpHeaders,
-      InputStream entityStream)
-      throws IOException, WebApplicationException {
+  public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations,
+                         MediaType mediaType, MultivaluedMap<String, String> httpHeaders,
+                         InputStream entityStream) throws IOException, WebApplicationException {
     return objectMapper.readValue(entityStream, type);
   }
 
   @Override
-  public long getSize(
-      Object t, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+  public long getSize(Object t, Class<?> type, Type genericType, Annotation[] annotations,
+                      MediaType mediaType) {
     return -1;
   }
 }

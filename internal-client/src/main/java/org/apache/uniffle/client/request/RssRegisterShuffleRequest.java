@@ -67,19 +67,23 @@ public class RssRegisterShuffleRequest {
         remoteStorageInfo,
         user,
         dataDistributionType,
-        RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue());
+        RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue()
+    );
   }
 
   public RssRegisterShuffleRequest(
-      String appId, int shuffleId, List<PartitionRange> partitionRanges, String remoteStoragePath) {
-    this(
-        appId,
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      String remoteStoragePath) {
+    this(appId,
         shuffleId,
         partitionRanges,
         new RemoteStorageInfo(remoteStoragePath),
         StringUtils.EMPTY,
         ShuffleDataDistributionType.NORMAL,
-        RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue());
+        RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue()
+    );
   }
 
   public String getAppId() {

@@ -48,14 +48,10 @@ public class RpcResponse extends Message {
   @Override
   public String toString() {
     return "RpcResponse{"
-        + "requestId="
-        + requestId
-        + ", statusCode="
-        + statusCode
-        + ", retMessage='"
-        + retMessage
-        + '\''
-        + '}';
+        + "requestId=" + requestId
+        + ", statusCode=" + statusCode
+        + ", retMessage='" + retMessage
+        + '\'' + '}';
   }
 
   @Override
@@ -69,6 +65,7 @@ public class RpcResponse extends Message {
     buf.writeInt(statusCode.ordinal());
     ByteBufUtils.writeLengthAndString(buf, retMessage);
   }
+
 
   public static RpcResponse decode(ByteBuf buf) {
     long requestId = buf.readLong();

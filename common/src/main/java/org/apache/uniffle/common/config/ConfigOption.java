@@ -24,11 +24,12 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * A {@code ConfigOption} describes a configuration parameter. It encapsulates the configuration
- * key, deprecated older versions of the key, and an optional default value for the configuration
- * parameter.
- *
- * <p>It is built via the {@code ConfigOptions} class. Once created, a config option is immutable.
+ * A {@code ConfigOption} describes a configuration parameter. It encapsulates
+ * the configuration key, deprecated older versions of the key, and an optional
+ * default value for the configuration parameter.
+ * <p>
+ * It is built via the {@code ConfigOptions} class. Once created,
+ * a config option is immutable.
  *
  * @param <T> The type of value associated with the configuration option.
  */
@@ -36,19 +37,29 @@ public class ConfigOption<T> {
   static final FallbackKey[] EMPTY = new FallbackKey[0];
   static final String EMPTY_DESCRIPTION = "";
 
-  /** The current key for that config option. */
+  /**
+   * The current key for that config option.
+   */
   private final String key;
 
-  /** The default value for this option. */
+  /**
+   * The default value for this option.
+   */
   private final T defaultValue;
 
-  /** The description for this option. */
+  /**
+   * The description for this option.
+   */
   private final String description;
 
-  /** Type of the value that this ConfigOption describes. */
+  /**
+   * Type of the value that this ConfigOption describes.
+   */
   private final Class<?> clazz;
 
-  /** The function which convert the input data to desired type */
+  /**
+   * The function which convert the input data to desired type
+   */
   private final Function<Object, T> converter;
 
   /** The list of deprecated keys, in the order to be checked. */
@@ -57,11 +68,11 @@ public class ConfigOption<T> {
   /**
    * Creates a new config option with fallback keys.
    *
-   * @param key The current key for that config option
-   * @param clazz describes type of the ConfigOption, see description of the clazz field
-   * @param description Description for that option
+   * @param key          The current key for that config option
+   * @param clazz        describes type of the ConfigOption, see description of the clazz field
+   * @param description  Description for that option
    * @param defaultValue The default value for this option
-   * @param converter The method which convert the input data to desired type
+   * @param converter    The method which convert the input data to desired type
    */
   ConfigOption(
       String key,
@@ -79,8 +90,8 @@ public class ConfigOption<T> {
   }
 
   /**
-   * Creates a new config option, using this option's key and default value, and adding the given
-   * description. The given description is used when generation the configuration documentation.
+   * Creates a new config option, using this option's key and default value, and
+   * adding the given description. The given description is used when generation the configuration documentation.
    *
    * @param description The description for this option.
    * @return A new config option, with given description.
@@ -122,7 +133,8 @@ public class ConfigOption<T> {
 
     // put deprecated keys last so that they are de-prioritized
     final FallbackKey[] mergedAlternativeKeys =
-        Stream.concat(currentAlternativeKeys, newDeprecatedKeys).toArray(FallbackKey[]::new);
+        Stream.concat(currentAlternativeKeys, newDeprecatedKeys)
+            .toArray(FallbackKey[]::new);
     return new ConfigOption<>(
         key, clazz, description, defaultValue, converter, mergedAlternativeKeys);
   }
@@ -185,10 +197,9 @@ public class ConfigOption<T> {
 
   /**
    * The method which convert the input data to desired type
-   *
-   * @param v the input value
-   * @param clazz the desired type
-   * @return the value for desired type
+   * @param v      the input value
+   * @param clazz  the desired type
+   * @return   the value for desired type
    */
   public T convertValue(Object v, Class<?> clazz) {
     return converter.apply(v);
@@ -201,9 +212,8 @@ public class ConfigOption<T> {
     } else if (o != null && o.getClass() == this.getClass()) {
       ConfigOption<?> that = (ConfigOption<?>) o;
       return this.key.equals(that.key)
-          && (this.defaultValue == null
-              ? that.defaultValue == null
-              : (that.defaultValue != null && this.defaultValue.equals(that.defaultValue)));
+        && (this.defaultValue == null ? that.defaultValue == null :
+        (that.defaultValue != null && this.defaultValue.equals(that.defaultValue)));
     } else {
       return false;
     }

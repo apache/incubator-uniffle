@@ -29,8 +29,7 @@ public class RotateStorageManagerFallbackStrategy extends AbstractStorageManager
   }
 
   @Override
-  public StorageManager tryFallback(
-      StorageManager current, ShuffleDataFlushEvent event, StorageManager... candidates) {
+  public StorageManager tryFallback(StorageManager current, ShuffleDataFlushEvent event, StorageManager... candidates) {
     if (fallBackTimes > 0
         && (event.getRetryTimes() < fallBackTimes || event.getRetryTimes() % fallBackTimes > 0)) {
       return current;

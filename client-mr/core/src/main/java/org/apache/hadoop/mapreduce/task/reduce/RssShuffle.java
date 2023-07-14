@@ -66,7 +66,7 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
   private String throwingThreadName = null;
   private Progress copyPhase;
   private TaskStatus taskStatus;
-  private Task reduceTask; // Used for status updates
+  private Task reduceTask; //Used for status updates
 
   private String appId;
   private String clientType;
@@ -99,98 +99,56 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
     // rss init
     this.appId = RssMRUtils.getApplicationAttemptId().toString();
     this.appAttemptId = RssMRUtils.getApplicationAttemptId().getAttemptId();
-    this.replicaWrite =
-        RssMRUtils.getInt(
-            rssJobConf,
-            mrJobConf,
-            RssMRConfig.RSS_DATA_REPLICA_WRITE,
-            RssMRConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE);
-    this.replicaRead =
-        RssMRUtils.getInt(
-            rssJobConf,
-            mrJobConf,
-            RssMRConfig.RSS_DATA_REPLICA_READ,
-            RssMRConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE);
-    this.replica =
-        RssMRUtils.getInt(
-            rssJobConf,
-            mrJobConf,
-            RssMRConfig.RSS_DATA_REPLICA,
-            RssMRConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
+    this.replicaWrite = RssMRUtils.getInt(rssJobConf, mrJobConf, RssMRConfig.RSS_DATA_REPLICA_WRITE,
+        RssMRConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE);
+    this.replicaRead = RssMRUtils.getInt(rssJobConf, mrJobConf, RssMRConfig.RSS_DATA_REPLICA_READ,
+        RssMRConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE);
+    this.replica = RssMRUtils.getInt(rssJobConf, mrJobConf, RssMRConfig.RSS_DATA_REPLICA,
+        RssMRConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
 
     this.partitionNum = mrJobConf.getNumReduceTasks();
-    this.partitionNumPerRange =
-        RssMRUtils.getInt(
-            rssJobConf,
-            mrJobConf,
-            RssMRConfig.RSS_PARTITION_NUM_PER_RANGE,
-            RssMRConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
-    this.basePath =
-        RssMRUtils.getString(rssJobConf, mrJobConf, RssMRConfig.RSS_REMOTE_STORAGE_PATH);
-    String remoteStorageConf =
-        RssMRUtils.getString(rssJobConf, mrJobConf, RssMRConfig.RSS_REMOTE_STORAGE_CONF, "");
+    this.partitionNumPerRange = RssMRUtils.getInt(rssJobConf, mrJobConf, RssMRConfig.RSS_PARTITION_NUM_PER_RANGE,
+        RssMRConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
+    this.basePath = RssMRUtils.getString(rssJobConf, mrJobConf, RssMRConfig.RSS_REMOTE_STORAGE_PATH);
+    String remoteStorageConf = RssMRUtils.getString(rssJobConf, mrJobConf, RssMRConfig.RSS_REMOTE_STORAGE_CONF, "");
     this.remoteStorageInfo = new RemoteStorageInfo(basePath, remoteStorageConf);
     this.merger = createMergeManager(context);
   }
 
-  protected MergeManager<K, V> createMergeManager(ShuffleConsumerPlugin.Context context) {
-    boolean useRemoteSpill =
-        RssMRUtils.getBoolean(
-            rssJobConf,
-            mrJobConf,
-            RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
-            RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT);
+  protected MergeManager<K, V> createMergeManager(
+      ShuffleConsumerPlugin.Context context) {
+    boolean useRemoteSpill = RssMRUtils.getBoolean(rssJobConf, mrJobConf,
+        RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED, RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT);
     if (useRemoteSpill) {
       // Use minimized replica, because spilled data can be recomputed by reduce task.
       // Instead, we use more retries on HDFS client.
-      int replication =
-          RssMRUtils.getInt(
-              rssJobConf,
-              mrJobConf,
-              RssMRConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION,
-              RssMRConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION_DEFAULT);
-      int retries =
-          RssMRUtils.getInt(
-              rssJobConf,
-              mrJobConf,
-              RssMRConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES,
-              RssMRConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES_DEFAULT);
-      return new RssRemoteMergeManagerImpl(
-          appId,
-          reduceId,
-          mrJobConf,
-          basePath,
-          replication,
-          retries,
-          context.getLocalFS(),
-          context.getLocalDirAllocator(),
-          reporter,
-          context.getCodec(),
-          context.getCombinerClass(),
-          context.getCombineCollector(),
-          context.getSpilledRecordsCounter(),
-          context.getReduceCombineInputCounter(),
-          context.getMergedMapOutputsCounter(),
-          this,
-          context.getMergePhase(),
-          context.getMapOutputFile(),
-          getRemoteConf());
+      int replication = RssMRUtils.getInt(rssJobConf, mrJobConf,
+          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION,
+          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION_DEFAULT);
+      int retries = RssMRUtils.getInt(rssJobConf, mrJobConf,
+          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES,
+          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES_DEFAULT);
+      return new RssRemoteMergeManagerImpl(appId, reduceId, mrJobConf,
+        basePath,
+        replication,
+        retries,
+        context.getLocalFS(),
+        context.getLocalDirAllocator(), reporter, context.getCodec(),
+        context.getCombinerClass(), context.getCombineCollector(),
+        context.getSpilledRecordsCounter(),
+        context.getReduceCombineInputCounter(),
+        context.getMergedMapOutputsCounter(), this, context.getMergePhase(),
+        context.getMapOutputFile(),
+        getRemoteConf()
+      );
     } else {
-      return new MergeManagerImpl<K, V>(
-          reduceId,
-          mrJobConf,
-          context.getLocalFS(),
-          context.getLocalDirAllocator(),
-          reporter,
-          context.getCodec(),
-          context.getCombinerClass(),
-          context.getCombineCollector(),
-          context.getSpilledRecordsCounter(),
-          context.getReduceCombineInputCounter(),
-          context.getMergedMapOutputsCounter(),
-          this,
-          context.getMergePhase(),
-          context.getMapOutputFile());
+      return new MergeManagerImpl<K, V>(reduceId, mrJobConf, context.getLocalFS(),
+        context.getLocalDirAllocator(), reporter, context.getCodec(),
+        context.getCombinerClass(), context.getCombineCollector(),
+        context.getSpilledRecordsCounter(),
+        context.getReduceCombineInputCounter(),
+        context.getMergedMapOutputsCounter(), this, context.getMergePhase(),
+        context.getMapOutputFile());
     }
   }
 
@@ -198,66 +156,43 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
   public RawKeyValueIterator run() throws IOException, InterruptedException {
 
     // get assigned RSS servers
-    Set<ShuffleServerInfo> serverInfoSet =
-        RssMRUtils.getAssignedServers(rssJobConf, reduceId.getTaskID().getId());
+    Set<ShuffleServerInfo> serverInfoSet = RssMRUtils.getAssignedServers(rssJobConf,
+        reduceId.getTaskID().getId());
     List<ShuffleServerInfo> serverInfoList = new ArrayList<>();
-    for (ShuffleServerInfo server : serverInfoSet) {
+    for (ShuffleServerInfo server: serverInfoSet) {
       serverInfoList.add(server);
     }
 
     // just get blockIds from RSS servers
     ShuffleWriteClient writeClient = RssMRUtils.createShuffleClient(mrJobConf);
-    Roaring64NavigableMap blockIdBitmap =
-        writeClient.getShuffleResult(
-            clientType, serverInfoSet, appId, 0, reduceId.getTaskID().getId());
+    Roaring64NavigableMap blockIdBitmap = writeClient.getShuffleResult(
+        clientType, serverInfoSet, appId, 0, reduceId.getTaskID().getId());
     writeClient.close();
 
     // get map-completion events to generate RSS taskIDs
-    final RssEventFetcher<K, V> eventFetcher =
-        new RssEventFetcher<K, V>(
-            appAttemptId, reduceId, umbilical, mrJobConf, MAX_EVENTS_TO_FETCH);
+    final RssEventFetcher<K,V> eventFetcher =
+        new RssEventFetcher<K,V>(appAttemptId, reduceId, umbilical, mrJobConf, MAX_EVENTS_TO_FETCH);
     Roaring64NavigableMap taskIdBitmap = eventFetcher.fetchAllRssTaskIds();
 
-    LOG.info(
-        "In reduce: " + reduceId + ", RSS MR client has fetched blockIds and taskIds successfully");
+    LOG.info("In reduce: " + reduceId
+        + ", RSS MR client has fetched blockIds and taskIds successfully");
 
     // start fetcher to fetch blocks from RSS servers
     if (!taskIdBitmap.isEmpty()) {
-      LOG.info("In reduce: " + reduceId + ", Rss MR client starts to fetch blocks from RSS server");
+      LOG.info("In reduce: " + reduceId
+          + ", Rss MR client starts to fetch blocks from RSS server");
       JobConf readerJobConf = getRemoteConf();
       boolean expectedTaskIdsBitmapFilterEnable = serverInfoList.size() > 1;
-      CreateShuffleReadClientRequest request =
-          new CreateShuffleReadClientRequest(
-              appId,
-              0,
-              reduceId.getTaskID().getId(),
-              basePath,
-              partitionNumPerRange,
-              partitionNum,
-              blockIdBitmap,
-              taskIdBitmap,
-              serverInfoList,
-              readerJobConf,
-              new MRIdHelper(),
-              expectedTaskIdsBitmapFilterEnable,
-              RssMRConfig.toRssConf(rssJobConf));
-      ShuffleReadClient shuffleReadClient =
-          ShuffleClientFactory.getInstance().createShuffleReadClient(request);
-      RssFetcher fetcher =
-          new RssFetcher(
-              mrJobConf,
-              reduceId,
-              taskStatus,
-              merger,
-              copyPhase,
-              reporter,
-              metrics,
-              shuffleReadClient,
-              blockIdBitmap.getLongCardinality(),
-              RssMRConfig.toRssConf(rssJobConf));
+      CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
+          appId, 0, reduceId.getTaskID().getId(), basePath, partitionNumPerRange,
+          partitionNum, blockIdBitmap, taskIdBitmap, serverInfoList, readerJobConf,
+          new MRIdHelper(), expectedTaskIdsBitmapFilterEnable, RssMRConfig.toRssConf(rssJobConf));
+      ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
+      RssFetcher fetcher = new RssFetcher(mrJobConf, reduceId, taskStatus, merger, copyPhase, reporter, metrics,
+          shuffleReadClient, blockIdBitmap.getLongCardinality(), RssMRConfig.toRssConf(rssJobConf));
       fetcher.fetchAllRssBlocks();
-      LOG.info(
-          "In reduce: " + reduceId + ", Rss MR client fetches blocks from RSS server successfully");
+      LOG.info("In reduce: " + reduceId
+          + ", Rss MR client fetches blocks from RSS server successfully");
     }
 
     copyPhase.complete();
@@ -275,12 +210,13 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
     // Sanity check
     synchronized (this) {
       if (throwable != null) {
-        throw new Shuffle.ShuffleError("error in shuffle in " + throwingThreadName, throwable);
+        throw new Shuffle.ShuffleError("error in shuffle in " + throwingThreadName,
+            throwable);
       }
     }
 
-    LOG.info(
-        "In reduce: " + reduceId + ", Rss MR client returns sorted data to reduce successfully");
+    LOG.info("In reduce: " + reduceId
+        + ", Rss MR client returns sorted data to reduce successfully");
 
     return kvIter;
   }
@@ -296,7 +232,8 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
   }
 
   @Override
-  public void close() {}
+  public void close() {
+  }
 
   @Override
   public synchronized void reportException(Throwable t) {

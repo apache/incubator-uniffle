@@ -23,6 +23,7 @@ import java.util.zip.Checksum;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
+
 public class RssTezPerPartitionRecord extends TezSpillRecord {
   private int numPartitions;
   private int[] numRecordsPerPartition;
@@ -38,17 +39,16 @@ public class RssTezPerPartitionRecord extends TezSpillRecord {
     this.numRecordsPerPartition = numRecordsPerPartition;
   }
 
+
   public RssTezPerPartitionRecord(Path indexFileName, Configuration job) throws IOException {
     super(indexFileName, job);
   }
 
-  public RssTezPerPartitionRecord(Path indexFileName, Configuration job, String expectedIndexOwner)
-      throws IOException {
+  public RssTezPerPartitionRecord(Path indexFileName, Configuration job, String expectedIndexOwner) throws IOException {
     super(indexFileName, job, expectedIndexOwner);
   }
 
-  public RssTezPerPartitionRecord(
-      Path indexFileName, Configuration job, Checksum crc, String expectedIndexOwner)
+  public RssTezPerPartitionRecord(Path indexFileName, Configuration job, Checksum crc, String expectedIndexOwner)
       throws IOException {
     super(indexFileName, job, crc, expectedIndexOwner);
   }
@@ -66,11 +66,12 @@ public class RssTezPerPartitionRecord extends TezSpillRecord {
     return rssTezIndexRecord;
   }
 
+
   static class RssTezIndexRecord extends TezIndexRecord {
     private boolean hasData;
 
     private void setData(boolean hasData) {
-      this.hasData = hasData;
+      this. hasData = hasData;
     }
 
     @Override
@@ -78,4 +79,5 @@ public class RssTezPerPartitionRecord extends TezSpillRecord {
       return hasData;
     }
   }
+
 }

@@ -51,8 +51,8 @@ public class FixedSizeSegmentSplitter implements SegmentSplitter {
     return transIndexDataToSegments(indexData, readBufferSize, dataFileLen);
   }
 
-  private static List<ShuffleDataSegment> transIndexDataToSegments(
-      ByteBuffer indexData, int readBufferSize, long dataFileLen) {
+  private static List<ShuffleDataSegment> transIndexDataToSegments(ByteBuffer indexData,
+      int readBufferSize, long dataFileLen) {
     List<BufferSegment> bufferSegments = Lists.newArrayList();
     List<ShuffleDataSegment> dataFileSegments = Lists.newArrayList();
     int bufferOffset = 0;
@@ -77,24 +77,18 @@ public class FixedSizeSegmentSplitter implements SegmentSplitter {
 
         totalLength += length;
 
-        // If ShuffleServer is flushing the file at this time, the length in the index file record
-        // may be greater
-        // than the length in the actual data file, and it needs to be returned at this time to
-        // avoid EOFException
+        // If ShuffleServer is flushing the file at this time, the length in the index file record may be greater
+        // than the length in the actual data file, and it needs to be returned at this time to avoid EOFException
         if (dataFileLen != -1 && totalLength > dataFileLen) {
           long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;
-          LOGGER.info(
-              "Abort inconsistent data, the data length: {}(bytes) recorded in index file is greater than "
+          LOGGER.info("Abort inconsistent data, the data length: {}(bytes) recorded in index file is greater than "
                   + "the real data file length: {}(bytes). Partition id: {}. "
                   + "This may happen when the data is flushing, please ignore.",
-              totalLength,
-              dataFileLen,
-              Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask));
+              totalLength, dataFileLen, Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask));
           break;
         }
 
-        bufferSegments.add(
-            new BufferSegment(blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
+        bufferSegments.add(new BufferSegment(blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
         bufferOffset += length;
 
         if (bufferOffset >= readBufferSize) {

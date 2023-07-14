@@ -30,15 +30,11 @@ import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 public class RoundSelectPartitionStrategy implements SelectPartitionStrategy {
   @Override
   public SortedMap<PartitionRange, List<ServerNode>> assign(
-      int totalPartitionNum,
-      int partitionNumPerRange,
-      int replica,
-      List<ServerNode> candidatesNodes,
-      int estimateTaskConcurrency) {
+      int totalPartitionNum, int partitionNumPerRange, int replica,
+      List<ServerNode> candidatesNodes, int estimateTaskConcurrency) {
     SortedMap<PartitionRange, List<ServerNode>> assignments = new TreeMap<>();
     int idx = 0;
-    List<PartitionRange> ranges =
-        CoordinatorUtils.generateRanges(totalPartitionNum, partitionNumPerRange);
+    List<PartitionRange> ranges = CoordinatorUtils.generateRanges(totalPartitionNum, partitionNumPerRange);
     for (PartitionRange range : ranges) {
       List<ServerNode> assignNodes = Lists.newArrayList();
       for (int rc = 0; rc < replica; rc++) {

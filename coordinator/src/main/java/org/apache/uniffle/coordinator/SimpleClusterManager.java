@@ -64,9 +64,13 @@ public class SimpleClusterManager implements ClusterManager {
   private final Map<String, ServerNode> servers = JavaUtils.newConcurrentMap();
   private final Cache<ServerNode, ShuffleServerInternalGrpcClient> clientCache;
   private Set<String> excludeNodes = Sets.newConcurrentHashSet();
-  /** ServerNode whose heartbeat is lost */
+  /**
+   * ServerNode whose heartbeat is lost
+   */
   Set<ServerNode> lostNodes = Sets.newHashSet();
-  /** Unhealthy ServerNode */
+  /**
+   * Unhealthy ServerNode
+   */
   Set<ServerNode> unhealthyNodes = Sets.newHashSet();
   // tag -> nodes
   private Map<String, Set<ServerNode>> tagToNodes = JavaUtils.newConcurrentMap();
@@ -92,43 +96,34 @@ public class SimpleClusterManager implements ClusterManager {
     scheduledExecutorService =
         ThreadUtils.getDaemonSingleThreadScheduledExecutor("SimpleClusterManager");
 
-    this.startupSilentPeriodEnabled =
-        conf.get(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_ENABLED);
-    this.startupSilentPeriodDurationMs =
-        conf.get(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_DURATION);
+    this.startupSilentPeriodEnabled = conf.get(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_ENABLED);
+    this.startupSilentPeriodDurationMs = conf.get(CoordinatorConf.COORDINATOR_START_SILENT_PERIOD_DURATION);
 
-    periodicOutputIntervalTimes =
-        conf.get(CoordinatorConf.COORDINATOR_NODES_PERIODIC_OUTPUT_INTERVAL_TIMES);
+    periodicOutputIntervalTimes = conf.get(CoordinatorConf.COORDINATOR_NODES_PERIODIC_OUTPUT_INTERVAL_TIMES);
 
     scheduledExecutorService.scheduleAtFixedRate(
-        this::nodesCheck, heartbeatTimeout / 3, heartbeatTimeout / 3, TimeUnit.MILLISECONDS);
+        this::nodesCheck, heartbeatTimeout / 3,
+        heartbeatTimeout / 3, TimeUnit.MILLISECONDS);
 
-    String excludeNodesPath =
-        conf.getString(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH, "");
+    String excludeNodesPath = conf.getString(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH, "");
     if (!StringUtils.isEmpty(excludeNodesPath)) {
-      this.hadoopFileSystem =
-          HadoopFilesystemProvider.getFilesystem(new Path(excludeNodesPath), hadoopConf);
-      long updateNodesInterval =
-          conf.getLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL);
+      this.hadoopFileSystem = HadoopFilesystemProvider.getFilesystem(new Path(excludeNodesPath), hadoopConf);
+      long updateNodesInterval = conf.getLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL);
       checkNodesExecutorService =
           ThreadUtils.getDaemonSingleThreadScheduledExecutor("UpdateExcludeNodes");
       checkNodesExecutorService.scheduleAtFixedRate(
-          () -> updateExcludeNodes(excludeNodesPath),
-          updateNodesInterval,
-          updateNodesInterval,
-          TimeUnit.MILLISECONDS);
+          () -> updateExcludeNodes(excludeNodesPath), updateNodesInterval, updateNodesInterval, TimeUnit.MILLISECONDS);
     }
 
     long clientExpiredTime = conf.get(CoordinatorConf.COORDINATOR_NODES_CLIENT_CACHE_EXPIRED);
     int maxClient = conf.get(CoordinatorConf.COORDINATOR_NODES_CLIENT_CACHE_MAX);
-    clientCache =
-        CacheBuilder.newBuilder()
-            .expireAfterAccess(clientExpiredTime, TimeUnit.MILLISECONDS)
-            .maximumSize(maxClient)
-            .removalListener(
-                notify -> ((ShuffleServerInternalGrpcClient) notify.getValue()).close())
-            .build();
+    clientCache = CacheBuilder.newBuilder()
+        .expireAfterAccess(clientExpiredTime, TimeUnit.MILLISECONDS)
+        .maximumSize(maxClient)
+        .removalListener(notify -> ((ShuffleServerInternalGrpcClient) notify.getValue()).close())
+        .build();
     this.startTime = System.currentTimeMillis();
+
   }
 
   void nodesCheck() {
@@ -160,10 +155,10 @@ public class SimpleClusterManager implements ClusterManager {
         }
       }
       if (!lostNodes.isEmpty() || outputAliveServerCount % periodicOutputIntervalTimes == 0) {
-        LOG.info(
-            "Alive servers number: {}, ids: {}",
+        LOG.info("Alive servers number: {}, ids: {}",
             servers.size(),
-            servers.keySet().stream().collect(Collectors.toList()));
+            servers.keySet().stream().collect(Collectors.toList())
+        );
       }
       outputAliveServerCount++;
 
@@ -173,7 +168,7 @@ public class SimpleClusterManager implements ClusterManager {
       LOG.warn("Error happened in nodesCheck", e);
     }
   }
-
+  
   @VisibleForTesting
   public void nodesCheckTest() {
     nodesCheck();
@@ -207,8 +202,7 @@ public class SimpleClusterManager implements ClusterManager {
 
   private void parseExcludeNodesFile(DataInputStream fsDataInputStream) throws IOException {
     Set<String> nodes = Sets.newConcurrentHashSet();
-    try (BufferedReader br =
-        new BufferedReader(new InputStreamReader(fsDataInputStream, StandardCharsets.UTF_8))) {
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(fsDataInputStream, StandardCharsets.UTF_8))) {
       String line;
       while ((line = br.readLine()) != null) {
         if (!StringUtils.isEmpty(line) && !line.trim().startsWith("#")) {
@@ -218,8 +212,7 @@ public class SimpleClusterManager implements ClusterManager {
     }
     // update exclude nodes and last modify time
     excludeNodes = nodes;
-    LOG.info(
-        "Updated exclude nodes and {} nodes were marked as exclude nodes", excludeNodes.size());
+    LOG.info("Updated exclude nodes and {} nodes were marked as exclude nodes", excludeNodes.size());
   }
 
   @Override
@@ -321,8 +314,7 @@ public class SimpleClusterManager implements ClusterManager {
 
   private ShuffleServerInternalGrpcClient getShuffleServerClient(ServerNode serverNode) {
     try {
-      return clientCache.get(
-          serverNode,
+      return clientCache.get(serverNode,
           () -> new ShuffleServerInternalGrpcClient(serverNode.getIp(), serverNode.getGrpcPort()));
     } catch (ExecutionException e) {
       throw new RssException(e);
@@ -367,7 +359,7 @@ public class SimpleClusterManager implements ClusterManager {
   public void setStartupSilentPeriodEnabled(boolean startupSilentPeriodEnabled) {
     this.startupSilentPeriodEnabled = startupSilentPeriodEnabled;
   }
-
+  
   @VisibleForTesting
   public Map<String, ServerNode> getServers() {
     return servers;

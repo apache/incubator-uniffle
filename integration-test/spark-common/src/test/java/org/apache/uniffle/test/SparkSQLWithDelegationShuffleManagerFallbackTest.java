@@ -38,12 +38,8 @@ public class SparkSQLWithDelegationShuffleManagerFallbackTest extends SparkSQLTe
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
-    final String candidates =
-        Objects.requireNonNull(
-                SparkSQLWithDelegationShuffleManagerTest.class
-                    .getClassLoader()
-                    .getResource("candidates"))
-            .getFile();
+    final String candidates = Objects.requireNonNull(
+        SparkSQLWithDelegationShuffleManagerTest.class.getClassLoader().getResource("candidates")).getFile();
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setString(
         CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
@@ -77,5 +73,7 @@ public class SparkSQLWithDelegationShuffleManagerFallbackTest extends SparkSQLTe
   }
 
   @Override
-  public void checkShuffleData() throws Exception {}
+  public void checkShuffleData() throws Exception {
+  }
+
 }

@@ -40,8 +40,7 @@ public class DefaultStorageMediaProvider implements StorageMediaProvider {
   private static final String NUMBERIC_STRING = "0123456789";
   private static final String BLOCK_PATH_FORMAT = "/sys/block/%s/queue/rotational";
   private static final String HDFS = "hdfs";
-  private static final List<String> OBJECT_STORE_SCHEMAS =
-      Arrays.asList("s3", "oss", "cos", "gcs", "obs", "daos");
+  private static final List<String> OBJECT_STORE_SCHEMAS = Arrays.asList("s3", "oss", "cos", "gcs", "obs", "daos");
 
   @Override
   public StorageMedia getStorageMediaFor(String baseDir) {
@@ -54,12 +53,11 @@ public class DefaultStorageMediaProvider implements StorageMediaProvider {
         return StorageMedia.OBJECT_STORE;
       }
     } catch (URISyntaxException e) {
-      logger.warn("invalid uri input from " + baseDir + ", with exception:", e);
+      logger.warn("invalid uri input from " +  baseDir + ", with exception:", e);
     }
     // if baseDir starts with HDFS, the hdfs storage type should be reported
     if (SystemUtils.IS_OS_LINUX) {
-      // according to https://unix.stackexchange.com/a/65602, we can detect disk types by looking at
-      // the
+      // according to https://unix.stackexchange.com/a/65602, we can detect disk types by looking at the
       // `/sys/block/sdx/queue/rotational`.
       try {
         File baseFile = new File(baseDir);

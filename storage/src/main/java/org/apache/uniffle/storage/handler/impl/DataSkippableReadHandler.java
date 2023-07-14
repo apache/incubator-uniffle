@@ -74,7 +74,8 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
       }
 
       shuffleDataSegments =
-          SegmentSplitterFactory.getInstance()
+          SegmentSplitterFactory
+              .getInstance()
               .get(distributionType, expectTaskIds, readBufferSize)
               .split(shuffleIndexResult);
     }

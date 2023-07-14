@@ -57,8 +57,7 @@ public class StreamServer implements ServerInterface {
   public StreamServer(ShuffleServer shuffleServer) {
     this.shuffleServer = shuffleServer;
     this.shuffleServerConf = shuffleServer.getShuffleServerConf();
-    boolean isEpollEnable =
-        shuffleServerConf.getBoolean(ShuffleServerConf.NETTY_SERVER_EPOLL_ENABLE);
+    boolean isEpollEnable = shuffleServerConf.getBoolean(ShuffleServerConf.NETTY_SERVER_EPOLL_ENABLE);
     int acceptThreads = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_ACCEPT_THREAD);
     int workerThreads = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_WORKER_THREAD);
     if (isEpollEnable) {
@@ -87,21 +86,19 @@ public class StreamServer implements ServerInterface {
     ShuffleServerNettyHandler serverNettyHandler = new ShuffleServerNettyHandler(shuffleServer);
     TransportContext transportContext =
         new TransportContext(new TransportConf(shuffleServerConf), serverNettyHandler, true);
-    serverBootstrap
-        .childHandler(
-            new ChannelInitializer<SocketChannel>() {
-              @Override
-              public void initChannel(final SocketChannel ch) {
-                transportContext.initializePipeline(ch, new TransportFrameDecoder());
-              }
-            })
-        .option(ChannelOption.SO_BACKLOG, backlogSize)
-        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMillis)
-        .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-        .childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMillis)
-        .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-        .childOption(ChannelOption.TCP_NODELAY, true)
-        .childOption(ChannelOption.SO_KEEPALIVE, true);
+    serverBootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
+      @Override
+      public void initChannel(final SocketChannel ch) {
+        transportContext.initializePipeline(ch, new TransportFrameDecoder());
+      }
+    })
+               .option(ChannelOption.SO_BACKLOG, backlogSize)
+               .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMillis)
+               .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+               .childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMillis)
+               .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+               .childOption(ChannelOption.TCP_NODELAY, true)
+               .childOption(ChannelOption.SO_KEEPALIVE, true);
 
     if (sendBuf > 0) {
       serverBootstrap.childOption(ChannelOption.SO_SNDBUF, sendBuf);
@@ -116,9 +113,8 @@ public class StreamServer implements ServerInterface {
   public int start() throws IOException {
     int port = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
     try {
-      port =
-          RssUtils.startServiceOnPort(
-              this, Constants.NETTY_STREAM_SERVICE_NAME, port, shuffleServerConf);
+      port = RssUtils.startServiceOnPort(this,
+          Constants.NETTY_STREAM_SERVICE_NAME, port, shuffleServerConf);
     } catch (Exception e) {
       ExitUtils.terminate(1, "Fail to start stream server", e, LOG);
     }
@@ -128,19 +124,16 @@ public class StreamServer implements ServerInterface {
   @Override
   public void startOnPort(int port) throws Exception {
 
-    ServerBootstrap serverBootstrap =
-        bootstrapChannel(
-            shuffleBossGroup,
-            shuffleWorkerGroup,
-            shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_BACKLOG),
-            shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_TIMEOUT),
-            shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_SEND_BUF),
-            shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_RECEIVE_BUF));
+    ServerBootstrap serverBootstrap = bootstrapChannel(shuffleBossGroup, shuffleWorkerGroup,
+        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_BACKLOG),
+        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_TIMEOUT),
+        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_SEND_BUF),
+        shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_RECEIVE_BUF));
 
     // Bind the ports and save the results so that the channels can be closed later.
     // If the second bind fails, the first one gets cleaned up in the shutdown.
     try {
-      channelFuture = serverBootstrap.bind(port);
+      channelFuture =  serverBootstrap.bind(port);
       channelFuture.syncUninterruptibly();
       LOG.info("bind localAddress is " + channelFuture.channel().localAddress());
       LOG.info("Start stream server successfully with port " + port);
@@ -164,5 +157,7 @@ public class StreamServer implements ServerInterface {
   }
 
   @Override
-  public void blockUntilShutdown() throws InterruptedException {}
+  public void blockUntilShutdown() throws InterruptedException {
+
+  }
 }

@@ -28,11 +28,7 @@ public class RssGetInMemoryShuffleDataRequest {
   private final Roaring64NavigableMap expectedTaskIds;
 
   public RssGetInMemoryShuffleDataRequest(
-      String appId,
-      int shuffleId,
-      int partitionId,
-      long lastBlockId,
-      int readBufferSize,
+      String appId, int shuffleId, int partitionId, long lastBlockId, int readBufferSize,
       Roaring64NavigableMap expectedTaskIds) {
     this.appId = appId;
     this.shuffleId = shuffleId;

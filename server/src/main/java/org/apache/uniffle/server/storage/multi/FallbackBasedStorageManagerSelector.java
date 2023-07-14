@@ -37,10 +37,13 @@ public abstract class FallbackBasedStorageManagerSelector implements StorageMana
 
   abstract StorageManager regularSelect(ShuffleDataFlushEvent flushEvent);
 
-  private StorageManager fallbackSelect(
-      ShuffleDataFlushEvent flushEvent, StorageManager candidateStorageManager) {
+  private StorageManager fallbackSelect(ShuffleDataFlushEvent flushEvent, StorageManager candidateStorageManager) {
     return fallbackStrategy.tryFallback(
-        candidateStorageManager, flushEvent, warmStorageManager, coldStorageManager);
+        candidateStorageManager,
+        flushEvent,
+        warmStorageManager,
+        coldStorageManager
+    );
   }
 
   @Override

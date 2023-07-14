@@ -17,6 +17,7 @@
 
 package org.apache.tez.runtime.library.common.shuffle.orderedgrouped;
 
+
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -30,11 +31,13 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ChecksumUtils;
 
+
+
 // In Tez shuffle, MapOutput encapsulates the logic to fetch map task's output data via http.
 // So, in RSS, we should bypass this logic, and directly write data to MapOutput.
 public class RssTezBypassWriter {
   private static final Logger LOG = LoggerFactory.getLogger(RssTezBypassWriter.class);
-  private static final byte[] HEADER = new byte[] {(byte) 'T', (byte) 'I', (byte) 'F', (byte) 0};
+  private static final byte[] HEADER = new byte[] { (byte) 'T', (byte) 'I', (byte) 'F', (byte) 0};
 
   public static void write(MapOutput mapOutput, byte[] buffer) {
     // Write and commit uncompressed data to MapOutput.
@@ -47,14 +50,14 @@ public class RssTezBypassWriter {
     } else if (mapOutput.getType() == MapOutput.Type.DISK) {
       // RSS leverages its own compression, it is incompatible with hadoop's disk file compression.
       // So we should disable this situation.
-      throw new RssException(
-          "RSS does not support OnDiskMapOutput as shuffle ouput,"
+      throw new RssException("RSS does not support OnDiskMapOutput as shuffle ouput,"
               + " try to reduce mapreduce.reduce.shuffle.memory.limit.percent");
     } else {
-      throw new RssException(
-          "Merger reserve unknown type of MapOutput: " + mapOutput.getClass().getCanonicalName());
+      throw new RssException("Merger reserve unknown type of MapOutput: "
+              + mapOutput.getClass().getCanonicalName());
     }
   }
+
 
   public static void write(final FetchedInput mapOutput, byte[] buffer) throws IOException {
     // Write and commit uncompressed data to MapOutput.
@@ -68,12 +71,12 @@ public class RssTezBypassWriter {
       OutputStream output = ((DiskFetchedInput) mapOutput).getOutputStream();
       output.write(HEADER);
       output.write(buffer);
-      output.write(Ints.toByteArray((int) ChecksumUtils.getCrc32(buffer)));
+      output.write(Ints.toByteArray((int)ChecksumUtils.getCrc32(buffer)));
       output.flush();
       output.close();
     } else {
-      throw new RssException(
-          "Merger reserve unknown type of MapOutput: " + mapOutput.getClass().getCanonicalName());
+      throw new RssException("Merger reserve unknown type of MapOutput: "
+          + mapOutput.getClass().getCanonicalName());
     }
   }
 }

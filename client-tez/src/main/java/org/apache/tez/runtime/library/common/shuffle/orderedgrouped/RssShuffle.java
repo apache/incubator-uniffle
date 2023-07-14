@@ -62,7 +62,10 @@ import org.apache.tez.runtime.library.exceptions.InputAlreadyClosedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Usage: Create instance, setInitialMemoryAllocated(long), run() */
+/**
+ * Usage: Create instance, setInitialMemoryAllocated(long), run()
+ *
+ */
 @InterfaceAudience.Private
 @InterfaceStability.Unstable
 public class RssShuffle implements ExceptionReporter {
@@ -73,8 +76,10 @@ public class RssShuffle implements ExceptionReporter {
   private final InputContext inputContext;
 
   private final ShuffleInputEventHandlerOrderedGrouped eventHandler;
-  @VisibleForTesting final RssShuffleScheduler rssScheduler;
-  @VisibleForTesting final MergeManager merger;
+  @VisibleForTesting
+  final RssShuffleScheduler rssScheduler;
+  @VisibleForTesting
+  final MergeManager merger;
 
   private final CompressionCodec codec;
   private final boolean ifileReadAhead;
@@ -98,14 +103,11 @@ public class RssShuffle implements ExceptionReporter {
   private final TezCounter mergePhaseTime;
   private final TezCounter shufflePhaseTime;
 
-  /** Usage: Create instance, RssShuffle */
-  public RssShuffle(
-      InputContext inputContext,
-      Configuration conf,
-      int numInputs,
-      long initialMemoryAvailable,
-      int shuffleId)
-      throws IOException {
+  /**
+   Usage: Create instance, RssShuffle
+   */
+  public RssShuffle(InputContext inputContext, Configuration conf, int numInputs,
+                 long initialMemoryAvailable, int shuffleId) throws IOException {
     this.inputContext = inputContext;
     this.conf = conf;
 
@@ -113,20 +115,18 @@ public class RssShuffle implements ExceptionReporter {
 
     if (ConfigUtils.isIntermediateInputCompressed(conf)) {
       Class<? extends CompressionCodec> codecClass =
-          ConfigUtils.getIntermediateInputCompressorClass(conf, DefaultCodec.class);
+              ConfigUtils.getIntermediateInputCompressorClass(conf, DefaultCodec.class);
       codec = ReflectionUtils.newInstance(codecClass, conf);
       // Work around needed for HADOOP-12191. Avoids the native initialization synchronization race
       codec.getDecompressorType();
     } else {
       codec = null;
     }
-    this.ifileReadAhead =
-        conf.getBoolean(
+    this.ifileReadAhead = conf.getBoolean(
             TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_READAHEAD,
             TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_READAHEAD_DEFAULT);
     if (this.ifileReadAhead) {
-      this.ifileReadAheadLength =
-          conf.getInt(
+      this.ifileReadAheadLength = conf.getInt(
               TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_READAHEAD_BYTES,
               TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_READAHEAD_BYTES_DEFAULT);
     } else {
@@ -137,30 +137,22 @@ public class RssShuffle implements ExceptionReporter {
 
     FileSystem localFS = FileSystem.getLocal(this.conf);
     LocalDirAllocator localDirAllocator =
-        new LocalDirAllocator(TezRuntimeFrameworkConfigs.LOCAL_DIRS);
+            new LocalDirAllocator(TezRuntimeFrameworkConfigs.LOCAL_DIRS);
 
     // TODO TEZ Get rid of Map / Reduce references.
     TezCounter spilledRecordsCounter =
-        inputContext.getCounters().findCounter(TaskCounter.SPILLED_RECORDS);
+            inputContext.getCounters().findCounter(TaskCounter.SPILLED_RECORDS);
     TezCounter reduceCombineInputCounter =
-        inputContext.getCounters().findCounter(TaskCounter.COMBINE_INPUT_RECORDS);
+            inputContext.getCounters().findCounter(TaskCounter.COMBINE_INPUT_RECORDS);
     TezCounter mergedMapOutputsCounter =
-        inputContext.getCounters().findCounter(TaskCounter.MERGED_MAP_OUTPUTS);
+            inputContext.getCounters().findCounter(TaskCounter.MERGED_MAP_OUTPUTS);
 
-    LOG.info(
-        srcNameTrimmed
-            + ": "
-            + "Shuffle assigned with "
-            + numInputs
-            + " inputs"
-            + ", codec: "
+    LOG.info(srcNameTrimmed + ": " + "Shuffle assigned with " + numInputs + " inputs" + ", codec: "
             + (codec == null ? "None" : codec.getClass().getName())
-            + ", ifileReadAhead: "
-            + ifileReadAhead);
+            + ", ifileReadAhead: " + ifileReadAhead);
 
     startTime = System.currentTimeMillis();
-    merger =
-        new MergeManager(
+    merger = new MergeManager(
             this.conf,
             localFS,
             localDirAllocator,
@@ -175,8 +167,7 @@ public class RssShuffle implements ExceptionReporter {
             ifileReadAhead,
             ifileReadAheadLength);
 
-    rssScheduler =
-        new RssShuffleScheduler(
+    rssScheduler = new RssShuffleScheduler(
             this.inputContext,
             this.conf,
             numInputs,
@@ -193,17 +184,11 @@ public class RssShuffle implements ExceptionReporter {
     this.mergePhaseTime = inputContext.getCounters().findCounter(TaskCounter.MERGE_PHASE_TIME);
     this.shufflePhaseTime = inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_PHASE_TIME);
 
-    eventHandler =
-        new ShuffleInputEventHandlerOrderedGrouped(
-            inputContext, rssScheduler, ShuffleUtils.isTezShuffleHandler(conf));
+    eventHandler = new ShuffleInputEventHandlerOrderedGrouped(inputContext,
+            rssScheduler, ShuffleUtils.isTezShuffleHandler(conf));
 
-    ExecutorService rawExecutor =
-        Executors.newFixedThreadPool(
-            1,
-            new ThreadFactoryBuilder()
-                .setDaemon(true)
-                .setNameFormat("ShuffleAndMergeRunner {" + srcNameTrimmed + "}")
-                .build());
+    ExecutorService rawExecutor = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder()
+            .setDaemon(true).setNameFormat("ShuffleAndMergeRunner {" + srcNameTrimmed + "}").build());
 
     executor = MoreExecutors.listeningDecorator(rawExecutor);
     rssRunShuffleCallable = new RssRunShuffleCallable();
@@ -213,17 +198,12 @@ public class RssShuffle implements ExceptionReporter {
     if (!isShutDown.get()) {
       eventHandler.handleEvents(events);
     } else {
-      LOG.info(
-          srcNameTrimmed
-              + ": "
-              + "Ignoring events since already shutdown. EventCount: "
-              + events.size());
+      LOG.info(srcNameTrimmed + ": " + "Ignoring events since already shutdown. EventCount: " + events.size());
     }
   }
 
   /**
    * Indicates whether the Shuffle and Merge processing is complete.
-   *
    * @return false if not complete, true if complete or if an error occurred.
    * @throws InterruptedException
    * @throws IOException
@@ -256,15 +236,14 @@ public class RssShuffle implements ExceptionReporter {
 
   /**
    * Waits for the Shuffle and Merge to complete, and returns an iterator over the input.
-   *
    * @return an iterator over the fetched input.
    * @throws IOException
    * @throws InterruptedException
    */
-  public TezRawKeyValueIterator waitForInput()
-      throws IOException, InterruptedException, TezException {
-    Preconditions.checkState(
-        rssRunShuffleFuture != null, "waitForInput can only be called after run");
+  public TezRawKeyValueIterator waitForInput() throws IOException, InterruptedException,
+          TezException {
+    Preconditions.checkState(rssRunShuffleFuture != null,
+            "waitForInput can only be called after run");
     TezRawKeyValueIterator kvIter = null;
     try {
       kvIter = rssRunShuffleFuture.get();
@@ -285,8 +264,7 @@ public class RssShuffle implements ExceptionReporter {
   public void run() throws IOException {
     merger.configureAndStart();
     rssRunShuffleFuture = executor.submit(rssRunShuffleCallable);
-    Futures.addCallback(
-        rssRunShuffleFuture, new RssShuffleRunnerFutureCallback(), MoreExecutors.directExecutor());
+    Futures.addCallback(rssRunShuffleFuture, new RssShuffleRunnerFutureCallback(), MoreExecutors.directExecutor());
     executor.shutdown();
   }
 
@@ -317,7 +295,8 @@ public class RssShuffle implements ExceptionReporter {
       // triggered by a previously reportedException. Check before proceeding further.s
       synchronized (RssShuffle.this) {
         if (throwable.get() != null) {
-          throw new RssShuffleError("error in shuffle in " + throwingThreadName, throwable.get());
+          throw new RssShuffleError("error in shuffle in " + throwingThreadName,
+                  throwable.get());
         }
       }
 
@@ -342,7 +321,8 @@ public class RssShuffle implements ExceptionReporter {
       // Sanity check
       synchronized (RssShuffle.this) {
         if (throwable.get() != null) {
-          throw new RssShuffleError("error in shuffle in " + throwingThreadName, throwable.get());
+          throw new RssShuffleError("error in shuffle in " + throwingThreadName,
+                  throwable.get());
         }
       }
 
@@ -357,10 +337,7 @@ public class RssShuffle implements ExceptionReporter {
       cleanupShuffleScheduler();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      LOG.info(
-          srcNameTrimmed
-              + ": "
-              + "Interrupted while attempting to close the scheduler during cleanup. Ignoring");
+      LOG.info(srcNameTrimmed + ": " + "Interrupted while attempting to close the scheduler during cleanup. Ignoring");
     }
   }
 
@@ -376,19 +353,15 @@ public class RssShuffle implements ExceptionReporter {
         merger.close(false);
       } catch (InterruptedException e) {
         if (ignoreErrors) {
-          // Reset the status
+          //Reset the status
           Thread.currentThread().interrupt();
-          LOG.info(
-              srcNameTrimmed
-                  + ": "
-                  + "Interrupted while attempting to close the merger during cleanup. Ignoring");
+          LOG.info(srcNameTrimmed + ": " + "Interrupted while attempting to close the merger during cleanup. Ignoring");
         } else {
           throw e;
         }
       } catch (Throwable e) {
         if (ignoreErrors) {
-          LOG.info(
-              srcNameTrimmed + ": " + "Exception while trying to shutdown merger, Ignoring", e);
+          LOG.info(srcNameTrimmed + ": " + "Exception while trying to shutdown merger, Ignoring", e);
         } else {
           throw e;
         }
@@ -405,8 +378,8 @@ public class RssShuffle implements ExceptionReporter {
         cleanupShuffleSchedulerIgnoreErrors();
       } catch (Exception e) {
         LOG.warn(
-            "Error cleaning up shuffle scheduler. Ignoring and continuing with shutdown. Message={}",
-            e.getMessage());
+                "Error cleaning up shuffle scheduler. Ignoring and continuing with shutdown. Message={}",
+                e.getMessage());
       }
       cleanupMerger(true);
     } catch (Throwable t) {
@@ -419,13 +392,8 @@ public class RssShuffle implements ExceptionReporter {
   public synchronized void reportException(Throwable t) {
     // RunShuffleCallable onFailure deals with ignoring errors on shutdown.
     if (throwable.get() == null) {
-      LOG.info(
-          srcNameTrimmed
-              + ": "
-              + "Setting throwable in reportException with message ["
-              + t.getMessage()
-              + "] from thread ["
-              + Thread.currentThread().getName());
+      LOG.info(srcNameTrimmed + ": " + "Setting throwable in reportException with message [" + t.getMessage()
+              + "] from thread [" + Thread.currentThread().getName());
       throwable.set(t);
       throwingThreadName = Thread.currentThread().getName();
       // Notify the scheduler so that the reporting thread finds the

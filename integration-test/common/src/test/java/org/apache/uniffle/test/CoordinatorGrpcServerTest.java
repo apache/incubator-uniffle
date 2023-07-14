@@ -34,22 +34,20 @@ import static org.apache.uniffle.common.metrics.GRPCMetrics.GRPC_SERVER_CONNECTI
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * This class is to test the GRPC server's related metrics like {@code
- * GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_TAG}
+ * This class is to test the GRPC server's related metrics like {@code GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_TAG}
  */
 public class CoordinatorGrpcServerTest {
 
-  static class MockedCoordinatorGrpcService
-      extends CoordinatorServerGrpc.CoordinatorServerImplBase {
+  static class MockedCoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorServerImplBase {
     @Override
     public void registerApplicationInfo(
         RssProtos.ApplicationInfoRequest request,
         StreamObserver<RssProtos.ApplicationInfoResponse> responseObserver) {
-      RssProtos.ApplicationInfoResponse response =
-          RssProtos.ApplicationInfoResponse.newBuilder()
-              .setRetMsg("")
-              .setStatus(RssProtos.StatusCode.SUCCESS)
-              .build();
+      RssProtos.ApplicationInfoResponse response = RssProtos.ApplicationInfoResponse
+          .newBuilder()
+          .setRetMsg("")
+          .setStatus(RssProtos.StatusCode.SUCCESS)
+          .build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     }
@@ -63,12 +61,11 @@ public class CoordinatorGrpcServerTest {
 
     GRPCMetrics grpcMetrics = new CoordinatorGrpcMetrics();
     grpcMetrics.register(new CollectorRegistry(true));
-    GrpcServer grpcServer =
-        GrpcServer.Builder.newBuilder()
-            .conf(baseConf)
-            .grpcMetrics(grpcMetrics)
-            .addService(new MockedCoordinatorGrpcService())
-            .build();
+    GrpcServer grpcServer = GrpcServer.Builder.newBuilder()
+        .conf(baseConf)
+        .grpcMetrics(grpcMetrics)
+        .addService(new MockedCoordinatorGrpcService())
+        .build();
     grpcServer.start();
 
     // case1: test the single one connection metric
@@ -85,10 +82,8 @@ public class CoordinatorGrpcServerTest {
     // case2: test the multiple connections
     CoordinatorGrpcClient client1 = new CoordinatorGrpcClient("localhost", 20001);
     CoordinatorGrpcClient client2 = new CoordinatorGrpcClient("localhost", 20001);
-    client1.registerApplicationInfo(
-        new RssApplicationInfoRequest("testGrpcConnectionSize", 10000, "user"));
-    client2.registerApplicationInfo(
-        new RssApplicationInfoRequest("testGrpcConnectionSize", 10000, "user"));
+    client1.registerApplicationInfo(new RssApplicationInfoRequest("testGrpcConnectionSize", 10000, "user"));
+    client2.registerApplicationInfo(new RssApplicationInfoRequest("testGrpcConnectionSize", 10000, "user"));
 
     connSize = grpcMetrics.getGaugeMap().get(GRPC_SERVER_CONNECTION_NUMBER_KEY).get();
     assertEquals(3, connSize);

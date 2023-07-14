@@ -28,111 +28,46 @@ public class ShuffleClientFactory {
 
   private static final ShuffleClientFactory INSTANCE = new ShuffleClientFactory();
 
-  private ShuffleClientFactory() {}
+  private ShuffleClientFactory() {
+  }
 
   public static ShuffleClientFactory getInstance() {
     return INSTANCE;
   }
 
-  /** Only for MR engine, which won't used to unregister to remote shuffle-servers */
+  /**
+   * Only for MR engine, which won't used to unregister to remote shuffle-servers
+   */
   public ShuffleWriteClient createShuffleWriteClient(
-      String clientType,
-      int retryMax,
-      long retryIntervalMax,
-      int heartBeatThreadNum,
-      int replica,
-      int replicaWrite,
-      int replicaRead,
-      boolean replicaSkipEnabled,
-      int dataTransferPoolSize,
+      String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
+      int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled, int dataTransferPoolSize,
       int dataCommitPoolSize) {
-    return createShuffleWriteClient(
-        clientType,
-        retryMax,
-        retryIntervalMax,
-        heartBeatThreadNum,
-        replica,
-        replicaWrite,
-        replicaRead,
-        replicaSkipEnabled,
-        dataTransferPoolSize,
-        dataCommitPoolSize,
-        10,
-        10,
-        new RssConf());
+    return createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum, replica,
+        replicaWrite, replicaRead, replicaSkipEnabled, dataTransferPoolSize, dataCommitPoolSize,
+        10, 10, new RssConf());
   }
 
   public ShuffleWriteClient createShuffleWriteClient(
-      String clientType,
-      int retryMax,
-      long retryIntervalMax,
-      int heartBeatThreadNum,
-      int replica,
-      int replicaWrite,
-      int replicaRead,
-      boolean replicaSkipEnabled,
-      int dataTransferPoolSize,
-      int dataCommitPoolSize,
-      RssConf rssConf) {
-    return createShuffleWriteClient(
-        clientType,
-        retryMax,
-        retryIntervalMax,
-        heartBeatThreadNum,
-        replica,
-        replicaWrite,
-        replicaRead,
-        replicaSkipEnabled,
-        dataTransferPoolSize,
-        dataCommitPoolSize,
-        10,
-        10,
-        rssConf);
+      String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
+      int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled, int dataTransferPoolSize,
+      int dataCommitPoolSize, RssConf rssConf) {
+    return createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum, replica,
+        replicaWrite, replicaRead, replicaSkipEnabled, dataTransferPoolSize, dataCommitPoolSize, 10, 10, rssConf);
   }
 
   public ShuffleWriteClient createShuffleWriteClient(
-      String clientType,
-      int retryMax,
-      long retryIntervalMax,
-      int heartBeatThreadNum,
-      int replica,
-      int replicaWrite,
-      int replicaRead,
-      boolean replicaSkipEnabled,
-      int dataTransferPoolSize,
-      int dataCommitPoolSize,
-      int unregisterThreadPoolSize,
-      int unregisterRequestTimeoutSec) {
-    return createShuffleWriteClient(
-        clientType,
-        retryMax,
-        retryIntervalMax,
-        heartBeatThreadNum,
-        replica,
-        replicaWrite,
-        replicaRead,
-        replicaSkipEnabled,
-        dataTransferPoolSize,
-        dataCommitPoolSize,
-        unregisterThreadPoolSize,
-        unregisterRequestTimeoutSec,
-        new RssConf());
+      String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
+      int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled, int dataTransferPoolSize,
+      int dataCommitPoolSize, int unregisterThreadPoolSize, int unregisterRequestTimeoutSec) {
+    return createShuffleWriteClient(clientType, retryMax, retryIntervalMax, heartBeatThreadNum, replica,
+        replicaWrite, replicaRead, replicaSkipEnabled, dataTransferPoolSize, dataCommitPoolSize,
+        unregisterThreadPoolSize, unregisterRequestTimeoutSec, new RssConf());
   }
 
   public ShuffleWriteClient createShuffleWriteClient(
-      String clientType,
-      int retryMax,
-      long retryIntervalMax,
-      int heartBeatThreadNum,
-      int replica,
-      int replicaWrite,
-      int replicaRead,
-      boolean replicaSkipEnabled,
-      int dataTransferPoolSize,
-      int dataCommitPoolSize,
-      int unregisterThreadPoolSize,
-      int unregisterRequestTimeoutSec,
-      RssConf rssConf) {
+      String clientType, int retryMax, long retryIntervalMax, int heartBeatThreadNum,
+      int replica, int replicaWrite, int replicaRead, boolean replicaSkipEnabled, int dataTransferPoolSize,
+      int dataCommitPoolSize, int unregisterThreadPoolSize, int unregisterRequestTimeoutSec, RssConf rssConf) {
     // If replica > replicaWrite, blocks maybe be sent for 2 rounds.
     // We need retry less times in this case for let the first round fail fast.
     if (replicaSkipEnabled && replica > replicaWrite) {
@@ -151,7 +86,8 @@ public class ShuffleClientFactory {
         dataCommitPoolSize,
         unregisterThreadPoolSize,
         unregisterRequestTimeoutSec,
-        rssConf);
+        rssConf
+    );
   }
 
   public ShuffleReadClient createShuffleReadClient(CreateShuffleReadClientRequest request) {
@@ -169,6 +105,7 @@ public class ShuffleClientFactory {
         request.getIdHelper(),
         request.getShuffleDataDistributionType(),
         request.isExpectedTaskIdsBitmapFilterEnable(),
-        request.getRssConf());
+        request.getRssConf()
+    );
   }
 }

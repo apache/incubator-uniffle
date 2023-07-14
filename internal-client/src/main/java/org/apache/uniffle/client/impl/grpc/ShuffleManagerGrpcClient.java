@@ -45,8 +45,7 @@ public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManag
     this(host, port, maxRetryAttempts, true);
   }
 
-  public ShuffleManagerGrpcClient(
-      String host, int port, int maxRetryAttempts, boolean usePlaintext) {
+  public ShuffleManagerGrpcClient(String host, int port, int maxRetryAttempts, boolean usePlaintext) {
     super(host, port, maxRetryAttempts, usePlaintext);
     blockingStub = ShuffleManagerGrpc.newBlockingStub(channel);
   }
@@ -60,12 +59,10 @@ public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManag
   }
 
   @Override
-  public RssReportShuffleFetchFailureResponse reportShuffleFetchFailure(
-      RssReportShuffleFetchFailureRequest request) {
+  public RssReportShuffleFetchFailureResponse reportShuffleFetchFailure(RssReportShuffleFetchFailureRequest request) {
     ReportShuffleFetchFailureRequest protoRequest = request.toProto();
     try {
-      ReportShuffleFetchFailureResponse response =
-          getBlockingStub().reportShuffleFetchFailure(protoRequest);
+      ReportShuffleFetchFailureResponse response = getBlockingStub().reportShuffleFetchFailure(protoRequest);
       return RssReportShuffleFetchFailureResponse.fromProto(response);
     } catch (Exception e) {
       String msg = "Report shuffle fetch failure to host:port[" + host + ":" + port + "] failed";

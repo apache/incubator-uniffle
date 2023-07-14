@@ -53,7 +53,9 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables;
 
-/** The class is to test the {@link LocalStorageManager} */
+/**
+ * The class is to test the {@link LocalStorageManager}
+ */
 public class LocalStorageManagerTest {
 
   @BeforeAll
@@ -77,19 +79,21 @@ public class LocalStorageManagerTest {
         new ArrayList<ShufflePartitionedBlock>(), // shuffleBlocks
         null, // valid
         null // shuffleBuffer
-        );
+    );
   }
 
   @Test
   public void testStorageSelectionWhenReachingHighWatermark() {
-    String[] storagePaths = {"/tmp/rss-data1", "/tmp/rss-data2", "/tmp/rss-data3"};
+    String[] storagePaths = {
+        "/tmp/rss-data1",
+        "/tmp/rss-data2",
+        "/tmp/rss-data3"
+    };
 
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
-    conf.setString(
-        ShuffleServerConf.RSS_STORAGE_TYPE,
-        org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
 
     LocalStorageManager localStorageManager = new LocalStorageManager(conf);
 
@@ -111,9 +115,7 @@ public class LocalStorageManagerTest {
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
-    conf.setString(
-        ShuffleServerConf.RSS_STORAGE_TYPE,
-        org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
     LocalStorageManager localStorageManager = new LocalStorageManager(conf);
 
     List<LocalStorage> storages = localStorageManager.getStorages();
@@ -121,8 +123,7 @@ public class LocalStorageManagerTest {
 
     String appId = "testCorruptedStorageApp";
 
-    // case1: no corrupted storage, flush and read event of the same appId and shuffleId and
-    // startPartition
+    // case1: no corrupted storage, flush and read event of the same appId and shuffleId and startPartition
     // will always get the same storage
     ShuffleDataFlushEvent dataFlushEvent1 = toDataFlushEvent(appId, 1, 1);
     Storage storage1 = localStorageManager.selectStorage(dataFlushEvent1);
@@ -135,17 +136,16 @@ public class LocalStorageManagerTest {
     assertEquals(storage1, storage2);
     assertEquals(storage1, storage3);
 
-    // case2: one storage is corrupted, and it will switch to other storage at the first time of
-    // writing
+    // case2: one storage is corrupted, and it will switch to other storage at the first time of writing
     // event of (appId, shuffleId, startPartition)
-    ((LocalStorage) storage1).markCorrupted();
+    ((LocalStorage)storage1).markCorrupted();
     Storage storage4 = localStorageManager.selectStorage(dataFlushEvent1);
     assertNotEquals(storage4.getStoragePath(), storage1.getStoragePath());
     assertEquals(localStorageManager.selectStorage(dataReadEvent), storage4);
 
     // case3: one storage is corrupted when it happened after the original event has been written,
     // so it will switch to another storage for write and read event.
-    LocalStorage mockedStorage = spy((LocalStorage) storage4);
+    LocalStorage mockedStorage = spy((LocalStorage)storage4);
     when(mockedStorage.containsWriteHandler(appId, 1, 1)).thenReturn(true);
     Storage storage5 = localStorageManager.selectStorage(dataFlushEvent1);
     Storage storage6 = localStorageManager.selectStorage(dataReadEvent);
@@ -154,17 +154,15 @@ public class LocalStorageManagerTest {
     assertEquals(storage5, storage6);
 
     // case4: one storage is corrupted when it happened after the original event has been written,
-    // but before reading this partition, another storage corrupted, it still could read the
-    // original data.
+    // but before reading this partition, another storage corrupted, it still could read the original data.
     Storage storage7 = localStorageManager.selectStorage(dataFlushEvent1);
-    Storage restStorage =
-        storages.stream().filter(x -> !x.isCorrupted() && x != storage7).findFirst().get();
-    ((LocalStorage) restStorage).markCorrupted();
+    Storage restStorage = storages.stream().filter(x -> !x.isCorrupted() && x != storage7).findFirst().get();
+    ((LocalStorage)restStorage).markCorrupted();
     Storage storage8 = localStorageManager.selectStorage(dataReadEvent);
     assertEquals(storage7, storage8);
 
     // make all storage corrupted
-    ((LocalStorage) localStorageManager.selectStorage(dataFlushEvent1)).markCorrupted();
+    ((LocalStorage)localStorageManager.selectStorage(dataFlushEvent1)).markCorrupted();
     ShuffleDataFlushEvent dataFlushEvent3 = toDataFlushEvent(appId, 1, 2);
     assertNull(localStorageManager.selectStorage(dataFlushEvent3));
   }
@@ -176,9 +174,7 @@ public class LocalStorageManagerTest {
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
-    conf.setString(
-        ShuffleServerConf.RSS_STORAGE_TYPE,
-        org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
     LocalStorageManager localStorageManager = new LocalStorageManager(conf);
 
     List<LocalStorage> storages = localStorageManager.getStorages();
@@ -207,22 +203,17 @@ public class LocalStorageManagerTest {
     }
 
     // case2: when candidates exist, it should initialize successfully.
-    conf.set(
-        ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/a/rss-data", "/tmp/rss-data-1"));
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/a/rss-data", "/tmp/rss-data-1"));
     LocalStorageManager localStorageManager = new LocalStorageManager(conf);
     assertEquals(1, localStorageManager.getStorages().size());
 
     // case3: all ok
-    conf.set(
-        ShuffleServerConf.RSS_STORAGE_BASE_PATH,
-        Arrays.asList("/tmp/rss-data-1", "/tmp/rss-data-2"));
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/tmp/rss-data-1", "/tmp/rss-data-2"));
     localStorageManager = new LocalStorageManager(conf);
     assertEquals(2, localStorageManager.getStorages().size());
 
-    // case4: only have 1 candidate, but exceed the number of
-    // rss.server.localstorage.initialize.max.fail.number
-    conf.set(
-        ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/a/rss-data", "/tmp/rss-data-1"));
+    // case4: only have 1 candidate, but exceed the number of rss.server.localstorage.initialize.max.fail.number
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/a/rss-data", "/tmp/rss-data-1"));
     conf.setLong(ShuffleServerConf.LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER, 0L);
     try {
       localStorageManager = new LocalStorageManager(conf);
@@ -231,10 +222,8 @@ public class LocalStorageManagerTest {
       // ignore
     }
 
-    // case5: if failed=2, but lower than rss.server.localstorage.initialize.max.fail.number, should
-    // exit
-    conf.set(
-        ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/a/rss-data", "/b/rss-data-1"));
+    // case5: if failed=2, but lower than rss.server.localstorage.initialize.max.fail.number, should exit
+    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/a/rss-data", "/b/rss-data-1"));
     conf.setLong(ShuffleServerConf.LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER, 10L);
     try {
       localStorageManager = new LocalStorageManager(conf);
@@ -251,9 +240,7 @@ public class LocalStorageManagerTest {
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
-    conf.setString(
-        ShuffleServerConf.RSS_STORAGE_TYPE,
-        org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
     LocalStorageManager localStorageManager = new LocalStorageManager(conf);
     Map<String, StorageInfo> storageInfo = localStorageManager.getStorageInfo();
     assertEquals(1, storageInfo.size());
@@ -263,13 +250,12 @@ public class LocalStorageManagerTest {
       assertNotNull(storageInfo.get(mountPoint));
       // on Linux environment, it can detect SSD as local storage type
       if (SystemUtils.IS_OS_LINUX) {
-        final String cmd =
-            String.format(
-                "%s | %s | %s",
-                "lsblk -a -o name,rota",
-                "grep $(df --output=source " + path + " | tail -n 1 | sed -E 's_^.+/__')",
-                "awk '{print $2}'");
-        Process process = Runtime.getRuntime().exec(new String[] {"bash", "-c", cmd});
+        final String cmd = String.format("%s | %s | %s",
+            "lsblk -a -o name,rota",
+            "grep $(df --output=source " + path + " | tail -n 1 | sed -E 's_^.+/__')",
+            "awk '{print $2}'"
+        );
+        Process process = Runtime.getRuntime().exec(new String[]{"bash", "-c", cmd});
         BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
         final String line = br.readLine();
         br.close();
@@ -291,20 +277,16 @@ public class LocalStorageManagerTest {
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
-    conf.setString(
-        ShuffleServerConf.RSS_STORAGE_TYPE,
-        org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
     conf.set(ShuffleServerConf.STORAGE_MEDIA_PROVIDER_ENV_KEY, "env_key");
-    withEnvironmentVariables("env_key", "{\"/tmp\": \"ssd\"}")
-        .execute(
-            () -> {
-              LocalStorageManager localStorageManager = new LocalStorageManager(conf);
-              Map<String, StorageInfo> storageInfo = localStorageManager.getStorageInfo();
-              assertEquals(1, storageInfo.size());
-              String mountPoint = Files.getFileStore(new File("/tmp").toPath()).name();
-              assertNotNull(storageInfo.get(mountPoint));
-              // by default, it should report HDD as local storage type
-              assertEquals(StorageMedia.SSD, storageInfo.get(mountPoint).getType());
-            });
+    withEnvironmentVariables("env_key", "{\"/tmp\": \"ssd\"}").execute(() -> {
+      LocalStorageManager localStorageManager = new LocalStorageManager(conf);
+      Map<String, StorageInfo> storageInfo = localStorageManager.getStorageInfo();
+      assertEquals(1, storageInfo.size());
+      String mountPoint = Files.getFileStore(new File("/tmp").toPath()).name();
+      assertNotNull(storageInfo.get(mountPoint));
+      // by default, it should report HDD as local storage type
+      assertEquals(StorageMedia.SSD, storageInfo.get(mountPoint).getType());
+    });
   }
 }

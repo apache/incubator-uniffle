@@ -57,6 +57,7 @@ public class ShuffleManagerServerFactory {
     }
   }
 
+
   public RssBaseConf getConf() {
     return conf;
   }

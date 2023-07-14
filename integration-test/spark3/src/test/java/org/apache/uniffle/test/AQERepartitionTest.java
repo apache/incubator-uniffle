@@ -47,8 +47,7 @@ public class AQERepartitionTest extends SparkIntegrationTestBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(
-        RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
+    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
@@ -65,7 +64,8 @@ public class AQERepartitionTest extends SparkIntegrationTestBase {
   }
 
   @Override
-  public void updateSparkConfCustomer(SparkConf sparkConf) {}
+  public void updateSparkConfCustomer(SparkConf sparkConf) {
+  }
 
   @Test
   public void resultCompareTest() throws Exception {
@@ -77,9 +77,9 @@ public class AQERepartitionTest extends SparkIntegrationTestBase {
     Thread.sleep(4000);
     List<Column> repartitionCols = Lists.newArrayList();
     repartitionCols.add(new Column("id"));
-    Dataset<Long> df =
-        spark.range(10).repartition(JavaConverters.asScalaBuffer(repartitionCols).toList());
-    Long[][] result = (Long[][]) df.rdd().collectPartitions();
+    Dataset<Long> df = spark.range(10).repartition(
+        JavaConverters.asScalaBuffer(repartitionCols).toList());
+    Long[][] result = (Long[][])df.rdd().collectPartitions();
     Map<Integer, List<Long>> map = Maps.newHashMap();
     for (int i = 0; i < result.length; i++) {
       map.putIfAbsent(i, Lists.newArrayList());
@@ -88,14 +88,12 @@ public class AQERepartitionTest extends SparkIntegrationTestBase {
       }
     }
     for (int i = 0; i < result.length; i++) {
-      map.get(i)
-          .sort(
-              new Comparator<Long>() {
-                @Override
-                public int compare(Long o1, Long o2) {
-                  return Long.compare(o1, o2);
-                }
-              });
+      map.get(i).sort(new Comparator<Long>() {
+        @Override
+        public int compare(Long o1, Long o2) {
+          return Long.compare(o1, o2);
+        }
+      });
     }
     assertTrue(result.length < 10);
     return map;

@@ -70,12 +70,11 @@ public class MetricsManagerTest {
     assertEquals(expectedHelp2, metricsSamples.get(expectedName2).help);
     List<MetricFamilySamples.Sample> f = metricsSamples.get(expectedName2).samples;
     assertEquals(2, metricsSamples.get(expectedName2).samples.size());
-    String[] actualLabelValues =
-        metricsSamples.get(expectedName2).samples.stream()
-            .map(i -> i.labelValues.get(0))
-            .collect(Collectors.toList())
-            .toArray(new String[0]);
+    String[] actualLabelValues = metricsSamples
+        .get(expectedName2).samples
+        .stream().map(i -> i.labelValues.get(0))
+        .collect(Collectors.toList()).toArray(new String[0]);
     Arrays.sort(actualLabelValues);
-    assertArrayEquals(new String[] {"lv1", "lv2"}, actualLabelValues);
+    assertArrayEquals(new String[]{"lv1", "lv2"}, actualLabelValues);
   }
 }

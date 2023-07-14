@@ -22,14 +22,16 @@ import java.io.Closeable;
 import org.apache.uniffle.coordinator.access.AccessCheckResult;
 import org.apache.uniffle.coordinator.access.AccessInfo;
 
-/** Interface for checking the access info from the client-side. */
+/**
+ * Interface for checking the access info from the client-side.
+ */
 public interface AccessChecker extends Closeable {
 
   /**
    * Called when the AccessManager handle the access request.
    *
    * @param accessInfo access info of the client
-   * @return access check result
+   * @return  access check result
    */
   AccessCheckResult check(AccessInfo accessInfo);
 

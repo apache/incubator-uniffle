@@ -34,21 +34,26 @@ public class StorageInfoUtilsTest {
   public void testFromProto() {
     // empty map should return empty result
     assertEquals(0, fromProto(Maps.newHashMap()).size());
-    RssProtos.StorageInfo info =
-        RssProtos.StorageInfo.newBuilder()
-            .setMountPoint("/mnt")
-            .setStorageMedia(RssProtos.StorageInfo.StorageMedia.HDD)
-            .setCapacity(100)
-            .setUsedBytes(95)
-            .setStatus(RssProtos.StorageInfo.StorageStatus.NORMAL)
-            .build();
+    RssProtos.StorageInfo info = RssProtos.StorageInfo.newBuilder()
+        .setMountPoint("/mnt")
+        .setStorageMedia(RssProtos.StorageInfo.StorageMedia.HDD)
+        .setCapacity(100)
+        .setUsedBytes(95)
+        .setStatus(RssProtos.StorageInfo.StorageStatus.NORMAL)
+        .build();
     Map<String, RssProtos.StorageInfo> tmp = Maps.newHashMap();
     tmp.put(info.getMountPoint(), info);
     Map<String, StorageInfo> result = fromProto(tmp);
     assertEquals(1, result.size());
     assertNotNull(result.get(info.getMountPoint()));
     StorageInfo storageInfo = result.get(info.getMountPoint());
-    StorageInfo expected = new StorageInfo("/mnt", StorageMedia.HDD, 100, 95, StorageStatus.NORMAL);
+    StorageInfo expected = new StorageInfo(
+        "/mnt",
+        StorageMedia.HDD,
+        100,
+        95,
+        StorageStatus.NORMAL
+    );
     assertEquals(expected, storageInfo);
   }
 
@@ -56,11 +61,18 @@ public class StorageInfoUtilsTest {
   public void testToProto() {
     // empty input
     assertEquals(0, toProto(Maps.newHashMap()).size());
-    StorageInfo info = new StorageInfo("/mnt", StorageMedia.HDD, 100, 95, StorageStatus.NORMAL);
+    StorageInfo info = new StorageInfo(
+        "/mnt",
+        StorageMedia.HDD,
+        100,
+        95,
+        StorageStatus.NORMAL
+    );
     Map<String, StorageInfo> tmp = Maps.newHashMap();
     tmp.put("/mnt", info);
     Map<String, RssProtos.StorageInfo> result = toProto(tmp);
     assertEquals(1, result.size());
     assertEquals(info.toProto(), result.get("/mnt"));
   }
+
 }

@@ -90,20 +90,16 @@ public class ShuffleManagerGrpcServiceTest {
     assertFalse(appIdResponseObserver.value.getReSubmitWholeStage());
 
     // req with wrong appId should fail.
-    req =
-        ReportShuffleFetchFailureRequest.newBuilder()
-            .mergeFrom(req)
-            .setAppId("wrong-app-id")
-            .build();
+    req = ReportShuffleFetchFailureRequest.newBuilder().mergeFrom(req)
+              .setAppId("wrong-app-id").build();
     service.reportShuffleFetchFailure(req, appIdResponseObserver);
     assertEquals(StatusCode.INVALID_REQUEST, appIdResponseObserver.value.getStatus());
     // forwards the stageAttemptId to 1 to mock invalid request
-    req =
-        ReportShuffleFetchFailureRequest.newBuilder()
-            .mergeFrom(req)
-            .setAppId(appId)
-            .setStageAttemptId(0)
-            .build();
+    req = ReportShuffleFetchFailureRequest.newBuilder()
+              .mergeFrom(req)
+              .setAppId(appId)
+              .setStageAttemptId(0)
+              .build();
     service.reportShuffleFetchFailure(req, appIdResponseObserver);
     assertEquals(StatusCode.INVALID_REQUEST, appIdResponseObserver.value.getStatus());
     assertTrue(appIdResponseObserver.value.getMsg().contains("old stage"));

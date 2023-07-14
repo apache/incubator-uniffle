@@ -81,10 +81,6 @@ To build it, run:
 
     mvn -DskipTests clean package
 
-To fix code style issues, run:
-
-    mvn spotless:apply -Pspark3 -Pspark2 -Ptez -Pmr -Phadoop2.8
-
 Build against profile Spark 2 (2.4.6)
 
     mvn -DskipTests clean package -Pspark2
@@ -197,8 +193,7 @@ rss-xxx.tgz will be generated for deployment
      rss.storage.basePath /data1/rssdata,/data2/rssdata....
      # it's better to config thread num according to local disk num
      rss.server.flush.thread.alive 5
-     rss.server.flush.localfile.threadPool.size 10
-     rss.server.flush.hadoop.threadPool.size 10
+     rss.server.flush.threadPool.size 10
      rss.server.buffer.capacity 40g
      rss.server.read.buffer.capacity 20g
      rss.server.heartbeat.interval 10000

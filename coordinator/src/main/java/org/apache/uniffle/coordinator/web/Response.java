@@ -24,7 +24,8 @@ public class Response<T> {
   private T data;
   private String errMsg;
 
-  public Response() {}
+  public Response() {
+  }
 
   public Response(int code, T data, String errMsg) {
     this.code = code;

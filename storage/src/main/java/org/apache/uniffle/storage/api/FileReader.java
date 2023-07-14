@@ -22,8 +22,8 @@ import java.nio.ByteBuffer;
 public interface FileReader {
 
   /**
-   * This method will return a byte array, will read the length of this file data from offset
-   * position.
+   * This method will return a byte array, will read
+   * the length of this file data from offset position.
    *
    * @param offset the file offset which we start to read
    * @param length the data length which we need to read
@@ -32,16 +32,15 @@ public interface FileReader {
   byte[] read(long offset, int length);
 
   /**
-   * This method will return a byte array, will read the data from current position to the end of
-   * file
-   *
+   *  This method will return a byte array, will read
+   *  the data from current position to the end of file
    * @return file data
    */
   byte[] read();
 
   /**
-   * This method will return a direct byte buffer, will read the length of this file data from
-   * offset position.
+   * This method will return a direct byte buffer, will read
+   * the length of this file data from offset position.
    *
    * @param offset the file offset which we start to read
    * @param length the data length which we need to read
@@ -50,9 +49,8 @@ public interface FileReader {
   ByteBuffer readAsByteBuffer(long offset, int length);
 
   /**
-   * This method will return a direct byte buffer, will read the data from current position to the
-   * end of file
-   *
+   *  This method will return a direct byte buffer, will read
+   *  the data from current position to the end of file
    * @return file data
    */
   ByteBuffer readAsByteBuffer();

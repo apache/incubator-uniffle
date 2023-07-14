@@ -60,8 +60,7 @@ public class AccessManagerTest {
       String expectedMessage = "Empty classes";
       assertTrue(e.getMessage().startsWith(expectedMessage));
     }
-    conf.setString(
-        CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
+    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
         "com.Dummy,org.apache.uniffle.coordinator.access.AccessManagerTest$MockAccessChecker");
     try {
       new AccessManager(conf, null, applicationManager.getQuotaManager(), new Configuration());
@@ -71,32 +70,26 @@ public class AccessManagerTest {
     }
     // test empty checkers
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(), "");
-    AccessManager accessManager =
-        new AccessManager(conf, null, applicationManager.getQuotaManager(), new Configuration());
-    assertTrue(
-        accessManager
-            .handleAccessRequest(
-                new AccessInfo(
-                    String.valueOf(new Random().nextInt()),
-                    Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION),
-                    Collections.emptyMap(),
-                    "user"))
-            .isSuccess());
+    AccessManager accessManager = new AccessManager(conf, null,
+        applicationManager.getQuotaManager(), new Configuration());
+    assertTrue(accessManager.handleAccessRequest(
+            new AccessInfo(String.valueOf(new Random().nextInt()),
+                Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), Collections.emptyMap(), "user"))
+        .isSuccess());
     accessManager.close();
     // test mock checkers
     String alwaysTrueClassName = MockAccessCheckerAlwaysTrue.class.getName();
-    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(), alwaysTrueClassName + ",");
-    accessManager =
-        new AccessManager(conf, null, applicationManager.getQuotaManager(), new Configuration());
+    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
+        alwaysTrueClassName + ",");
+    accessManager = new AccessManager(conf, null,
+        applicationManager.getQuotaManager(), new Configuration());
     assertEquals(1, accessManager.getAccessCheckers().size());
     assertTrue(accessManager.handleAccessRequest(new AccessInfo("mock1")).isSuccess());
     assertTrue(accessManager.handleAccessRequest(new AccessInfo("mock2")).isSuccess());
     String alwaysFalseClassName = MockAccessCheckerAlwaysFalse.class.getName();
-    conf.setString(
-        CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
-        alwaysTrueClassName + "," + alwaysFalseClassName);
-    accessManager =
-        new AccessManager(conf, null, applicationManager.getQuotaManager(), new Configuration());
+    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(), alwaysTrueClassName + "," + alwaysFalseClassName);
+    accessManager = new AccessManager(conf, null,
+        applicationManager.getQuotaManager(), new Configuration());
     assertEquals(2, accessManager.getAccessCheckers().size());
     assertFalse(accessManager.handleAccessRequest(new AccessInfo("mock1")).isSuccess());
     accessManager.close();
@@ -107,7 +100,8 @@ public class AccessManagerTest {
       super(accessManager);
     }
 
-    public void close() {}
+    public void close() {
+    }
 
     public AccessCheckResult check(AccessInfo accessInfo) {
       return new AccessCheckResult(true, "");
@@ -119,7 +113,9 @@ public class AccessManagerTest {
       super(accessManager);
     }
 
-    public void close() {}
+    public void close() {
+
+    }
 
     public AccessCheckResult check(AccessInfo accessInfo) {
       return new AccessCheckResult(false, "MockAccessCheckerAlwaysFalse");

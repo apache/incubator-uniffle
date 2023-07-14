@@ -42,13 +42,8 @@ public class BasicAssignmentStrategy extends AbstractAssignmentStrategy {
   }
 
   @Override
-  public PartitionRangeAssignment assign(
-      int totalPartitionNum,
-      int partitionNumPerRange,
-      int replica,
-      Set<String> requiredTags,
-      int requiredShuffleServerNumber,
-      int estimateTaskConcurrency) {
+  public PartitionRangeAssignment assign(int totalPartitionNum, int partitionNumPerRange,
+      int replica, Set<String> requiredTags, int requiredShuffleServerNumber, int estimateTaskConcurrency) {
     int shuffleNodesMax = clusterManager.getShuffleNodesMax();
     int expectedShuffleNodesNum = shuffleNodesMax;
     if (requiredShuffleServerNumber < shuffleNodesMax && requiredShuffleServerNumber > 0) {
@@ -60,16 +55,14 @@ public class BasicAssignmentStrategy extends AbstractAssignmentStrategy {
     }
 
     SortedMap<PartitionRange, List<ServerNode>> assignments =
-        getPartitionAssignment(
-            totalPartitionNum, partitionNumPerRange, replica, servers, estimateTaskConcurrency);
+        getPartitionAssignment(totalPartitionNum, partitionNumPerRange, replica, servers, estimateTaskConcurrency);
 
     return new PartitionRangeAssignment(assignments);
   }
 
   private List<ServerNode> getRequiredServers(Set<String> requiredTags, int expectedNum) {
     List<ServerNode> servers = clusterManager.getServerList(requiredTags);
-    // shuffle server update the status according to heartbeat, if every server is in initial
-    // status,
+    // shuffle server update the status according to heartbeat, if every server is in initial status,
     // random the order of list to avoid always pick same nodes
     Collections.shuffle(servers);
     Collections.sort(servers);

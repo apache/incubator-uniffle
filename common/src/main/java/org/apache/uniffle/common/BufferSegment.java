@@ -30,8 +30,7 @@ public class BufferSegment {
   private long crc;
   private long taskAttemptId;
 
-  public BufferSegment(
-      long blockId, long offset, int length, int uncompressLength, long crc, long taskAttemptId) {
+  public BufferSegment(long blockId, long offset, int length, int uncompressLength, long crc, long taskAttemptId) {
     this.blockId = blockId;
     this.offset = offset;
     this.length = length;
@@ -60,19 +59,9 @@ public class BufferSegment {
 
   @Override
   public String toString() {
-    return "BufferSegment{blockId["
-        + blockId
-        + "], taskAttemptId["
-        + taskAttemptId
-        + "], offset["
-        + offset
-        + "], length["
-        + length
-        + "], crc["
-        + crc
-        + "], uncompressLength["
-        + uncompressLength
-        + "]}";
+    return "BufferSegment{blockId[" + blockId + "], taskAttemptId[" + taskAttemptId
+        + "], offset[" + offset + "], length[" + length + "], crc[" + crc
+        + "], uncompressLength[" + uncompressLength + "]}";
   }
 
   public int getOffset() {

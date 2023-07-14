@@ -36,8 +36,7 @@ public class DefaultStorageMediaProviderTest {
     assertEquals(StorageMedia.HDFS, provider.getStorageMediaFor("hdfs://nn1/path/to/base"));
     // object store files
     assertEquals(StorageMedia.OBJECT_STORE, provider.getStorageMediaFor("s3://bucket-name/a/path"));
-    assertEquals(
-        StorageMedia.OBJECT_STORE, provider.getStorageMediaFor("cos://bucket-name/b/path"));
+    assertEquals(StorageMedia.OBJECT_STORE, provider.getStorageMediaFor("cos://bucket-name/b/path"));
 
     // by default, the local file should report as HDD
     assertEquals(StorageMedia.HDD, provider.getStorageMediaFor("/path/to/base/dir"));

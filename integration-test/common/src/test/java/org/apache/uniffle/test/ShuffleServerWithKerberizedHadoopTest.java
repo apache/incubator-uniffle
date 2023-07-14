@@ -153,22 +153,19 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
   }
 
   private Map<Integer, List<ShuffleBlockInfo>> createTestData(
-      Roaring64NavigableMap[] bitmaps, Map<Long, byte[]> expectedData) {
+      Roaring64NavigableMap[] bitmaps,
+      Map<Long, byte[]> expectedData) {
     for (int i = 0; i < 4; i++) {
       bitmaps[i] = Roaring64NavigableMap.bitmapOf();
     }
-    List<ShuffleBlockInfo> blocks1 =
-        ShuffleReadWriteBase.createShuffleBlockList(
-            0, 0, 0, 3, 25, bitmaps[0], expectedData, mockSSI);
-    List<ShuffleBlockInfo> blocks2 =
-        ShuffleReadWriteBase.createShuffleBlockList(
-            0, 1, 1, 5, 25, bitmaps[1], expectedData, mockSSI);
-    List<ShuffleBlockInfo> blocks3 =
-        ShuffleReadWriteBase.createShuffleBlockList(
-            0, 2, 2, 4, 25, bitmaps[2], expectedData, mockSSI);
-    List<ShuffleBlockInfo> blocks4 =
-        ShuffleReadWriteBase.createShuffleBlockList(
-            0, 3, 3, 1, 25, bitmaps[3], expectedData, mockSSI);
+    List<ShuffleBlockInfo> blocks1 = ShuffleReadWriteBase.createShuffleBlockList(
+        0, 0, 0, 3, 25, bitmaps[0], expectedData, mockSSI);
+    List<ShuffleBlockInfo> blocks2 = ShuffleReadWriteBase.createShuffleBlockList(
+        0, 1, 1, 5, 25, bitmaps[1], expectedData, mockSSI);
+    List<ShuffleBlockInfo> blocks3 = ShuffleReadWriteBase.createShuffleBlockList(
+        0, 2, 2, 4, 25, bitmaps[2], expectedData, mockSSI);
+    List<ShuffleBlockInfo> blocks4 = ShuffleReadWriteBase.createShuffleBlockList(
+        0, 3, 3, 1, 25, bitmaps[3], expectedData, mockSSI);
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
     partitionToBlocks.put(0, blocks1);
     partitionToBlocks.put(1, blocks2);
@@ -185,27 +182,29 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     String appId = "app_hdfs_read_write";
     String dataBasePath = alexDir + "rss/test";
 
-    RemoteStorageInfo remoteStorageInfo =
-        new RemoteStorageInfo(dataBasePath, conf2Map(kerberizedHadoop.getConf()));
+    RemoteStorageInfo remoteStorageInfo = new RemoteStorageInfo(
+        dataBasePath,
+        conf2Map(kerberizedHadoop.getConf())
+    );
 
-    RssRegisterShuffleRequest rrsr =
-        new RssRegisterShuffleRequest(
-            appId,
-            0,
-            Lists.newArrayList(new PartitionRange(0, 1)),
-            remoteStorageInfo,
-            user,
-            ShuffleDataDistributionType.NORMAL);
+    RssRegisterShuffleRequest rrsr = new RssRegisterShuffleRequest(
+        appId,
+        0,
+        Lists.newArrayList(new PartitionRange(0, 1)),
+        remoteStorageInfo,
+        user,
+        ShuffleDataDistributionType.NORMAL
+    );
     shuffleServerClient.registerShuffle(rrsr);
 
-    rrsr =
-        new RssRegisterShuffleRequest(
-            appId,
-            0,
-            Lists.newArrayList(new PartitionRange(2, 3)),
-            remoteStorageInfo,
-            user,
-            ShuffleDataDistributionType.NORMAL);
+    rrsr = new RssRegisterShuffleRequest(
+        appId,
+        0,
+        Lists.newArrayList(new PartitionRange(2, 3)),
+        remoteStorageInfo,
+        user,
+        ShuffleDataDistributionType.NORMAL
+    );
     shuffleServerClient.registerShuffle(rrsr);
 
     Roaring64NavigableMap[] bitmaps = new Roaring64NavigableMap[4];
@@ -218,8 +217,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
     shuffleToBlocks.put(0, partitionToBlocks);
 
-    RssSendShuffleDataRequest rssdr =
-        new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
+    RssSendShuffleDataRequest rssdr = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
     shuffleServerClient.sendShuffleData(rssdr);
     assertEquals(456, shuffleServer.getShuffleBufferManager().getUsedMemory());
     assertEquals(0, shuffleServer.getShuffleBufferManager().getPreAllocatedSize());
@@ -228,22 +226,22 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     RssFinishShuffleRequest rfsr = new RssFinishShuffleRequest(appId, 0);
 
     ShuffleServerInfo ssi = new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT);
-    ShuffleReadClientImpl readClient =
-        new ShuffleReadClientImpl(
-            StorageType.HDFS.name(),
-            appId,
-            0,
-            0,
-            100,
-            2,
-            10,
-            1000,
-            dataBasePath,
-            bitmaps[0],
-            Roaring64NavigableMap.bitmapOf(0),
-            Lists.newArrayList(ssi),
-            new Configuration(),
-            new DefaultIdHelper());
+    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(
+        StorageType.HDFS.name(),
+        appId,
+        0,
+        0,
+        100,
+        2,
+        10,
+        1000,
+        dataBasePath,
+        bitmaps[0],
+        Roaring64NavigableMap.bitmapOf(0),
+        Lists.newArrayList(ssi),
+        new Configuration(),
+        new DefaultIdHelper()
+    );
     assertNull(readClient.readShuffleBlockData());
     shuffleServerClient.finishShuffle(rfsr);
 
@@ -270,82 +268,79 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     rfsr = new RssFinishShuffleRequest(appId, 0);
     shuffleServerClient.finishShuffle(rfsr);
 
-    readClient =
-        new ShuffleReadClientImpl(
-            StorageType.HDFS.name(),
-            appId,
-            0,
-            0,
-            100,
-            2,
-            10,
-            1000,
-            dataBasePath,
-            bitmaps[0],
-            Roaring64NavigableMap.bitmapOf(0),
-            Lists.newArrayList(ssi),
-            new Configuration(),
-            new DefaultIdHelper());
+    readClient = new ShuffleReadClientImpl(
+        StorageType.HDFS.name(),
+        appId,
+        0,
+        0,
+        100,
+        2,
+        10,
+        1000,
+        dataBasePath, bitmaps[0],
+        Roaring64NavigableMap.bitmapOf(0),
+        Lists.newArrayList(ssi),
+        new Configuration(),
+        new DefaultIdHelper()
+    );
     validateResult(readClient, expectedData, bitmaps[0]);
 
-    readClient =
-        new ShuffleReadClientImpl(
-            StorageType.HDFS.name(),
-            appId,
-            0,
-            1,
-            100,
-            2,
-            10,
-            1000,
-            dataBasePath,
-            bitmaps[1],
-            Roaring64NavigableMap.bitmapOf(1),
-            Lists.newArrayList(ssi),
-            new Configuration(),
-            new DefaultIdHelper());
+    readClient = new ShuffleReadClientImpl(
+        StorageType.HDFS.name(),
+        appId,
+        0,
+        1,
+        100,
+        2,
+        10,
+        1000,
+        dataBasePath,
+        bitmaps[1],
+        Roaring64NavigableMap.bitmapOf(1),
+        Lists.newArrayList(ssi),
+        new Configuration(),
+        new DefaultIdHelper()
+    );
     validateResult(readClient, expectedData, bitmaps[1]);
 
-    readClient =
-        new ShuffleReadClientImpl(
-            StorageType.HDFS.name(),
-            appId,
-            0,
-            2,
-            100,
-            2,
-            10,
-            1000,
-            dataBasePath,
-            bitmaps[2],
-            Roaring64NavigableMap.bitmapOf(2),
-            Lists.newArrayList(ssi),
-            new Configuration(),
-            new DefaultIdHelper());
+    readClient = new ShuffleReadClientImpl(
+        StorageType.HDFS.name(),
+        appId,
+        0,
+        2,
+        100,
+        2,
+        10,
+        1000,
+        dataBasePath,
+        bitmaps[2],
+        Roaring64NavigableMap.bitmapOf(2),
+        Lists.newArrayList(ssi),
+        new Configuration(),
+        new DefaultIdHelper()
+    );
     validateResult(readClient, expectedData, bitmaps[2]);
 
-    readClient =
-        new ShuffleReadClientImpl(
-            StorageType.HDFS.name(),
-            appId,
-            0,
-            3,
-            100,
-            2,
-            10,
-            1000,
-            dataBasePath,
-            bitmaps[3],
-            Roaring64NavigableMap.bitmapOf(3),
-            Lists.newArrayList(ssi),
-            new Configuration(),
-            new DefaultIdHelper());
+    readClient = new ShuffleReadClientImpl(
+        StorageType.HDFS.name(),
+        appId,
+        0,
+        3,
+        100,
+        2,
+        10,
+        1000,
+        dataBasePath,
+        bitmaps[3],
+        Roaring64NavigableMap.bitmapOf(3),
+        Lists.newArrayList(ssi),
+        new Configuration(),
+        new DefaultIdHelper()
+    );
     validateResult(readClient, expectedData, bitmaps[3]);
   }
 
-  protected void validateResult(
-      ShuffleReadClientImpl readClient,
-      Map<Long, byte[]> expectedData,
+  protected void validateResult(ShuffleReadClientImpl readClient, Map<Long, byte[]> expectedData,
       Roaring64NavigableMap blockIdBitmap) {
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();
     Roaring64NavigableMap matched = Roaring64NavigableMap.bitmapOf();

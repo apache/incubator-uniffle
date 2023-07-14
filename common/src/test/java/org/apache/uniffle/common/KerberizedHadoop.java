@@ -131,8 +131,7 @@ public class KerberizedHadoop implements Serializable {
     String oneFileContent = "test content";
     FSDataOutputStream fsDataOutputStream =
         writeFs.create(new org.apache.hadoop.fs.Path("/alex/basic.txt"));
-    BufferedWriter br =
-        new BufferedWriter(new OutputStreamWriter(fsDataOutputStream, StandardCharsets.UTF_8));
+    BufferedWriter br = new BufferedWriter(new OutputStreamWriter(fsDataOutputStream, StandardCharsets.UTF_8));
     br.write(oneFileContent);
     br.close();
 
@@ -179,7 +178,7 @@ public class KerberizedHadoop implements Serializable {
 
     Configuration conf = new Configuration();
     conf.set(HADOOP_SECURITY_AUTHENTICATION, "kerberos");
-
+    
     UserGroupInformation.setConfiguration(conf);
     UserGroupInformation.setShouldRenewImmediatelyForTests(true);
     final UserGroupInformation ugi =
@@ -190,34 +189,29 @@ public class KerberizedHadoop implements Serializable {
     hdfsConf.set("hadoop.proxyuser.hdfs.groups", "*");
     hdfsConf.set("hadoop.proxyuser.hdfs.users", "*");
 
-    this.kerberizedDfsCluster =
-        RetryUtils.retry(
-            () -> {
-              List<Integer> ports = findAvailablePorts(5);
-              LOGGER.info("Find available ports: {}", ports);
+    this.kerberizedDfsCluster = RetryUtils.retry(() -> {
+      List<Integer> ports = findAvailablePorts(5);
+      LOGGER.info("Find available ports: {}", ports);
 
-              hdfsConf.set("dfs.datanode.ipc.address", "0.0.0.0:" + ports.get(0));
-              hdfsConf.set("dfs.datanode.address", "0.0.0.0:" + ports.get(1));
-              hdfsConf.set("dfs.datanode.http.address", "0.0.0.0:" + ports.get(2));
-              hdfsConf.set("dfs.datanode.http.address", "0.0.0.0:" + ports.get(3));
+      hdfsConf.set("dfs.datanode.ipc.address", "0.0.0.0:" + ports.get(0));
+      hdfsConf.set("dfs.datanode.address", "0.0.0.0:" + ports.get(1));
+      hdfsConf.set("dfs.datanode.http.address", "0.0.0.0:" + ports.get(2));
+      hdfsConf.set("dfs.datanode.http.address", "0.0.0.0:" + ports.get(3));
 
-              return ugi.doAs(
-                  new PrivilegedExceptionAction<MiniDFSCluster>() {
+      return ugi.doAs(new PrivilegedExceptionAction<MiniDFSCluster>() {
 
-                    @Override
-                    public MiniDFSCluster run() throws Exception {
-                      return new MiniDFSCluster.Builder(hdfsConf)
-                          .nameNodePort(ports.get(4))
-                          .numDataNodes(1)
-                          .clusterId("kerberized-cluster-1")
-                          .checkDataNodeAddrConfig(true)
-                          .build();
-                    }
-                  });
-            },
-            1000L,
-            5,
-            Sets.newHashSet(BindException.class));
+        @Override
+        public MiniDFSCluster run() throws Exception {
+          return new MiniDFSCluster
+              .Builder(hdfsConf)
+              .nameNodePort(ports.get(4))
+              .numDataNodes(1)
+              .clusterId("kerberized-cluster-1")
+              .checkDataNodeAddrConfig(true)
+              .build();
+        }
+      });
+    }, 1000L, 5, Sets.newHashSet(BindException.class));
   }
 
   private void startKDC() throws Exception {
@@ -282,9 +276,7 @@ public class KerberizedHadoop implements Serializable {
   public Configuration getConf() throws IOException {
     Configuration configuration = kerberizedDfsCluster.getFileSystem().getConf();
     configuration.setBoolean("fs.hdfs.impl.disable.cache", true);
-    configuration.set(
-        "hadoop.security.authentication",
-        UserGroupInformation.AuthenticationMethod.KERBEROS.name());
+    configuration.set("hadoop.security.authentication", UserGroupInformation.AuthenticationMethod.KERBEROS.name());
     return configuration;
   }
 
@@ -317,8 +309,8 @@ public class KerberizedHadoop implements Serializable {
   }
 
   /**
-   * Should be invoked by extending class to solve the NPE. refer to:
-   * https://github.com/apache/hbase/pull/1207
+   * Should be invoked by extending class to solve the NPE.
+   * refer to: https://github.com/apache/hbase/pull/1207
    */
   public void setTestRunner(Class<?> cls) {
     this.testRunnerCls = cls;
@@ -331,10 +323,11 @@ public class KerberizedHadoop implements Serializable {
       // ignore
     }
 
-    /** Allow the user of HDFS can be delegated to alex. */
+    /**
+     * Allow the user of HDFS can be delegated to alex.
+     */
     @Override
-    public void authorize(UserGroupInformation userGroupInformation, String s)
-        throws AuthorizationException {
+    public void authorize(UserGroupInformation userGroupInformation, String s) throws AuthorizationException {
       UserGroupInformation superUser = userGroupInformation.getRealUser();
       LOGGER.info("Proxy: {}", superUser.getShortUserName());
     }

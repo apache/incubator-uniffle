@@ -31,19 +31,16 @@ import org.apache.hadoop.yarn.exceptions.YarnException;
 
 public class HadoopShimImpl {
 
-  public static ShuffleClientMetrics createShuffleClientMetrics(
-      TaskAttemptID taskAttemptID, JobConf jobConf) {
+  public static ShuffleClientMetrics createShuffleClientMetrics(TaskAttemptID taskAttemptID, JobConf jobConf) {
     return ShuffleClientMetrics.create(taskAttemptID, jobConf);
   }
 
-  public static RMContainerAllocator createRMContainerAllocator(
-      ClientService clientService, AppContext context) {
+  public static RMContainerAllocator createRMContainerAllocator(ClientService clientService, AppContext context) {
     return new RMContainerAllocator(clientService, context, new NoopAMPreemptionPolicy()) {
       @Override
       protected AllocateResponse makeRemoteRequest() throws YarnException, IOException {
         AllocateResponse response = super.makeRemoteRequest();
-        // UpdateNodes only have one use for MRAppMaster, MRAppMaster use the updateNodes to find
-        // which
+        // UpdateNodes only have one use for MRAppMaster, MRAppMaster use the updateNodes to find which
         // nodes are bad nodes. So we clear them, MRAppMaster will not recompute the map tasks.
         response.getUpdatedNodes().clear();
         return response;

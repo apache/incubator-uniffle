@@ -44,12 +44,13 @@ import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+
 public abstract class AbstractRssReaderTest extends HadoopTestBase {
 
   private AtomicInteger atomicInteger = new AtomicInteger(0);
 
-  protected void validateResult(
-      Iterator iterator, Map<String, String> expectedData, int recordNum) {
+  protected void validateResult(Iterator iterator,
+      Map<String, String> expectedData, int recordNum) {
     Set<String> actualKeys = Sets.newHashSet();
     while (iterator.hasNext()) {
       Product2 product2 = (Product2) iterator.next();
@@ -70,18 +71,9 @@ public abstract class AbstractRssReaderTest extends HadoopTestBase {
       Roaring64NavigableMap blockIdBitmap,
       String keyPrefix,
       Serializer serializer,
-      int partitionID)
-      throws Exception {
-    writeTestData(
-        handler,
-        blockNum,
-        recordNum,
-        expectedData,
-        blockIdBitmap,
-        keyPrefix,
-        serializer,
-        partitionID,
-        true);
+      int partitionID) throws Exception {
+    writeTestData(handler, blockNum, recordNum, expectedData, blockIdBitmap, keyPrefix, serializer,
+        partitionID, true);
   }
 
   protected void writeTestData(
@@ -93,8 +85,7 @@ public abstract class AbstractRssReaderTest extends HadoopTestBase {
       String keyPrefix,
       Serializer serializer,
       int partitionID,
-      boolean compress)
-      throws Exception {
+      boolean compress) throws Exception {
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList();
     SerializerInstance serializerInstance = serializer.newInstance();
     for (int i = 0; i < blockNum; i++) {
@@ -118,15 +109,14 @@ public abstract class AbstractRssReaderTest extends HadoopTestBase {
     return createShuffleBlock(data, blockId, true);
   }
 
-  protected ShufflePartitionedBlock createShuffleBlock(
-      byte[] data, long blockId, boolean compress) {
+  protected ShufflePartitionedBlock createShuffleBlock(byte[] data, long blockId, boolean compress) {
     byte[] compressData = data;
     if (compress) {
       compressData = Codec.newInstance(new RssConf()).compress(data);
     }
     long crc = ChecksumUtils.getCrc32(compressData);
-    return new ShufflePartitionedBlock(
-        compressData.length, data.length, crc, blockId, 0, compressData);
+    return new ShufflePartitionedBlock(compressData.length, data.length, crc, blockId, 0,
+        compressData);
   }
 
   protected void writeData(SerializationStream serializeStream, String key, String value) {

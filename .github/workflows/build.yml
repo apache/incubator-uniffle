@@ -27,12 +27,6 @@ jobs:
   changes:
     uses: ./.github/workflows/changes.yml
 
-  spotless:
-    uses: ./.github/workflows/sequential.yml
-    with:
-      maven-args: spotless:check
-      cache-key: spotless
-
   checkstyle:
     uses: ./.github/workflows/sequential.yml
     with:

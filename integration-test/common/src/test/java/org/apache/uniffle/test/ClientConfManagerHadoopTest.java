@@ -47,8 +47,10 @@ public class ClientConfManagerHadoopTest extends HadoopTestBase {
   }
 
   public static void createAndRunClientConfManagerCases(
-      String clusterPathPrefix, String cfgFile, FileSystem fileSystem, Configuration hadoopConf)
-      throws Exception {
+      String clusterPathPrefix,
+      String cfgFile,
+      FileSystem fileSystem,
+      Configuration hadoopConf) throws Exception {
 
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, clusterPathPrefix);
@@ -68,8 +70,8 @@ public class ClientConfManagerHadoopTest extends HadoopTestBase {
     Path path = new Path(cfgFile);
     FSDataOutputStream out = fileSystem.create(path);
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile);
-    ClientConfManager clientConfManager =
-        new ClientConfManager(conf, new Configuration(), new ApplicationManager(conf));
+    ClientConfManager clientConfManager = new ClientConfManager(
+        conf, new Configuration(), new ApplicationManager(conf));
     assertEquals(0, clientConfManager.getClientConf().size());
 
     PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(out));

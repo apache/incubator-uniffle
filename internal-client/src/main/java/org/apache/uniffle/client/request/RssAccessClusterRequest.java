@@ -28,8 +28,8 @@ public class RssAccessClusterRequest {
   private final int timeoutMs;
   private final String user;
   /**
-   * The map is to pass the extra data to the coordinator and to extend more pluggable {@code
-   * AccessCheckers} easily.
+   * The map is to pass the extra data to the coordinator and to
+   * extend more pluggable {@code AccessCheckers} easily.
    */
   private final Map<String, String> extraProperties;
 

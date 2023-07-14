@@ -28,7 +28,8 @@ import com.google.common.collect.ImmutableMap;
 // copy from org.apache.spark.network.util.JavaUtils
 public final class UnitConverter {
 
-  private UnitConverter() {}
+  private UnitConverter() {
+  }
 
   private static final Map<String, ByteUnit> byteSuffixes =
       ImmutableMap.<String, ByteUnit>builder()
@@ -58,7 +59,7 @@ public final class UnitConverter {
 
   public static boolean isByteString(String str) {
     String strLower = str.toLowerCase();
-    for (String key : byteSuffixes.keySet()) {
+    for (String key: byteSuffixes.keySet()) {
       if (strLower.contains(key)) {
         return true;
       }
@@ -89,32 +90,32 @@ public final class UnitConverter {
         // If suffix is valid use that, otherwise none was provided and use the default passed
         return unit.convertFrom(val, byteUnit);
       } else if (fractionMatcher.matches()) {
-        throw new NumberFormatException(
-            "Fractional values are not supported. Input was: " + fractionMatcher.group(1));
+        throw new NumberFormatException("Fractional values are not supported. Input was: "
+            + fractionMatcher.group(1));
       } else {
         throw new NumberFormatException("Failed to parse byte string: " + str);
       }
     } catch (NumberFormatException e) {
-      String byteError =
-          "Size must be specified as bytes (b), "
-              + "kibibytes (k), mebibytes (m), gibibytes (g), tebibytes (t), or pebibytes(p). "
-              + "E.g. 50b, 100k, or 250m.";
+      String byteError = "Size must be specified as bytes (b), "
+          + "kibibytes (k), mebibytes (m), gibibytes (g), tebibytes (t), or pebibytes(p). "
+          + "E.g. 50b, 100k, or 250m.";
       throw new NumberFormatException(byteError + "\n" + e.getMessage());
     }
   }
 
   /**
-   * Convert a passed byte string (e.g. 50b, 100k, or 250m) to bytes for internal use.
+   * Convert a passed byte string (e.g. 50b, 100k, or 250m) to bytes for
+   * internal use.
    *
-   * <p>If no suffix is provided, the passed number is assumed to be in bytes.
+   * If no suffix is provided, the passed number is assumed to be in bytes.
    */
   public static long byteStringAsBytes(String str) {
     return byteStringAs(str, ByteUnit.BYTE);
   }
 
   /**
-   * Convert a passed time string (e.g. 50s, 100ms, or 250us) to a time count in the given unit. The
-   * unit is also considered the default if the given string does not specify a unit.
+   * Convert a passed time string (e.g. 50s, 100ms, or 250us) to a time count in the given unit.
+   * The unit is also considered the default if the given string does not specify a unit.
    */
   public static long timeStringAs(String str, TimeUnit unit) {
     String lower = str.toLowerCase(Locale.ROOT).trim();
@@ -140,10 +141,9 @@ public final class UnitConverter {
       // If suffix is valid use that, otherwise none was provided and use the default passed
       return unit.convert(val, timeUnit);
     } catch (NumberFormatException e) {
-      String timeError =
-          "Time must be specified as seconds (s), "
-              + "milliseconds (ms), microseconds (us), minutes (m or min), hour (h), or day (d). "
-              + "E.g. 50s, 100ms, or 250us.";
+      String timeError = "Time must be specified as seconds (s), "
+          + "milliseconds (ms), microseconds (us), minutes (m or min), hour (h), or day (d). "
+          + "E.g. 50s, 100ms, or 250us.";
 
       throw new NumberFormatException(timeError + "\n" + e.getMessage());
     }

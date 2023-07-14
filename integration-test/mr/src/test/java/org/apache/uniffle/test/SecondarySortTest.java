@@ -81,7 +81,7 @@ public class SecondarySortTest extends MRIntegrationTestBase {
     return new TestTool();
   }
 
-  private class TestTool extends SecondarySort implements Tool, Configurable {
+  private class TestTool  extends SecondarySort implements Tool, Configurable {
 
     String outputPath = "secondary_sort_output/" + System.currentTimeMillis();
     Configuration toolConf;

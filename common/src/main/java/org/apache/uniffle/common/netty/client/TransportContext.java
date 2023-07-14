@@ -47,8 +47,7 @@ public class TransportContext {
     this(transportConf, null, closeIdleConnections);
   }
 
-  public TransportContext(
-      TransportConf transportConf, BaseMessageHandler msgHandler, boolean closeIdleConnections) {
+  public TransportContext(TransportConf transportConf, BaseMessageHandler msgHandler, boolean closeIdleConnections) {
     this.transportConf = transportConf;
     this.msgHandler = msgHandler;
     this.closeIdleConnections = closeIdleConnections;
@@ -66,8 +65,7 @@ public class TransportContext {
         .addLast("encoder", ENCODER) // out
         .addLast("decoder", decoder) // in
         .addLast(
-            "idleStateHandler",
-            new IdleStateHandler(0, 0, transportConf.connectionTimeoutMs() / 1000))
+            "idleStateHandler", new IdleStateHandler(0, 0, transportConf.connectionTimeoutMs() / 1000))
         .addLast("responseHandler", channelHandler);
     return channelHandler;
   }
@@ -76,13 +74,10 @@ public class TransportContext {
       Channel channel, BaseMessageHandler msgHandler) {
     TransportResponseHandler responseHandler = new TransportResponseHandler(channel);
     TransportClient client = new TransportClient(channel, responseHandler);
-    TransportRequestHandler requestHandler = new TransportRequestHandler(client, msgHandler);
+    TransportRequestHandler requestHandler =
+        new TransportRequestHandler(client, msgHandler);
     return new TransportChannelHandler(
-        client,
-        responseHandler,
-        requestHandler,
-        transportConf.connectionTimeoutMs(),
-        closeIdleConnections);
+        client, responseHandler, requestHandler, transportConf.connectionTimeoutMs(), closeIdleConnections);
   }
 
   public TransportConf getConf() {

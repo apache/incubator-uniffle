@@ -27,18 +27,17 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 
 /**
- * LowestIOSampleCostSelectStorageStrategy considers that when allocating apps to different remote
- * paths, remote paths that can write and read. Therefore, it may occur that all apps are written to
- * the same cluster. At the same time, if a cluster has read and write exceptions, we will
- * automatically avoid the cluster.
+ * LowestIOSampleCostSelectStorageStrategy considers that when allocating apps to different remote paths,
+ * remote paths that can write and read. Therefore, it may occur that all apps are written to the same cluster.
+ * At the same time, if a cluster has read and write exceptions, we will automatically avoid the cluster.
  */
 public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStorageStrategy {
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(LowestIOSampleCostSelectStorageStrategy.class);
-  /** store remote path -> application count for assignment strategy */
+  private static final Logger LOG = LoggerFactory.getLogger(LowestIOSampleCostSelectStorageStrategy.class);
+  /**
+   * store remote path -> application count for assignment strategy
+   */
   private final Map<String, RemoteStorageInfo> appIdToRemoteStorageInfo;
-
   private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
 
   public LowestIOSampleCostSelectStorageStrategy(
@@ -72,8 +71,7 @@ public class LowestIOSampleCostSelectStorageStrategy extends AbstractSelectStora
     for (Map.Entry<String, RankValue> uri : uris) {
       String storagePath = uri.getKey();
       if (availableRemoteStorageInfo.containsKey(storagePath)) {
-        return appIdToRemoteStorageInfo.computeIfAbsent(
-            appId, x -> availableRemoteStorageInfo.get(storagePath));
+        return appIdToRemoteStorageInfo.computeIfAbsent(appId, x -> availableRemoteStorageInfo.get(storagePath));
       }
     }
     LOG.warn("No remote storage is available, we will default to the first.");

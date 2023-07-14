@@ -35,16 +35,14 @@ public class RssClientConfig {
   public static final String RSS_DATA_REPLICA_SKIP_ENABLED = "rss.data.replica.skip.enabled";
   public static final boolean RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE = true;
   public static final String RSS_DATA_TRANSFER_POOL_SIZE = "rss.client.data.transfer.pool.size";
-  public static final int RSS_DATA_TRANFER_POOL_SIZE_DEFAULT_VALUE =
-      Runtime.getRuntime().availableProcessors();
+  public static final int RSS_DATA_TRANFER_POOL_SIZE_DEFAULT_VALUE = Runtime.getRuntime().availableProcessors();
   public static final String RSS_DATA_COMMIT_POOL_SIZE = "rss.client.data.commit.pool.size";
   public static final int RSS_DATA_COMMIT_POOL_SIZE_DEFAULT_VALUE = -1;
   public static final String RSS_HEARTBEAT_INTERVAL = "rss.heartbeat.interval";
   public static final long RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE = 10 * 1000L;
   public static final String RSS_HEARTBEAT_TIMEOUT = "rss.heartbeat.timeout";
   public static final String RSS_STORAGE_TYPE = "rss.storage.type";
-  public static final String RSS_CLIENT_SEND_CHECK_INTERVAL_MS =
-      "rss.client.send.check.interval.ms";
+  public static final String RSS_CLIENT_SEND_CHECK_INTERVAL_MS = "rss.client.send.check.interval.ms";
   public static final long RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE = 500L;
   public static final String RSS_CLIENT_SEND_CHECK_TIMEOUT_MS = "rss.client.send.check.timeout.ms";
   public static final long RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE = 60 * 1000 * 10L;
@@ -63,12 +61,10 @@ public class RssClientConfig {
   // The tags specified by rss client to determine server assignment.
   public static final String RSS_CLIENT_ASSIGNMENT_TAGS = "rss.client.assignment.tags";
   public static final String RSS_TEST_MODE_ENABLE = "rss.test.mode.enable";
-
-  public static final String RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL =
-      "rss.client.assignment.retry.interval";
+  
+  public static final String RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL = "rss.client.assignment.retry.interval";
   public static final long RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE = 65000;
-  public static final String RSS_CLIENT_ASSIGNMENT_RETRY_TIMES =
-      "rss.client.assignment.retry.times";
+  public static final String RSS_CLIENT_ASSIGNMENT_RETRY_TIMES = "rss.client.assignment.retry.times";
   public static final int RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE = 3;
 
   public static final String RSS_ACCESS_TIMEOUT_MS = "rss.access.timeout.ms";
@@ -84,12 +80,10 @@ public class RssClientConfig {
       "rss.estimate.task.concurrency.dynamic.factor";
   public static final double RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR_DEFAULT_VALUE = 1.0;
 
-  public static final String RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED =
-      "rss.estimate.server.assignment.enabled";
+  public static final String RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED = "rss.estimate.server.assignment.enabled";
   public static final boolean RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED_DEFAULT_VALUE = false;
 
-  public static final String RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER =
-      "rss.estimate.task.concurrency.per.server";
+  public static final String RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER = "rss.estimate.task.concurrency.per.server";
   public static final int RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE = 80;
 
   public static final String RSS_RESUBMIT_STAGE = "rss.resubmit.stage";

@@ -46,15 +46,15 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 
 /**
- * This is a simple implementation class, which provides some methods to check whether the path is
- * normal
+ * This is a simple implementation class, which provides some methods to check whether the path is normal
  */
 public abstract class AbstractSelectStorageStrategy implements SelectStorageStrategy {
 
   private static final Logger LOG = LoggerFactory.getLogger(AbstractSelectStorageStrategy.class);
-  /** store remote path -> application count for assignment strategy */
+  /**
+   * store remote path -> application count for assignment strategy
+   */
   protected final Map<String, RankValue> remoteStoragePathRankValue;
-
   protected final int fileSize;
   private final String coordinatorId;
   private final Configuration hadoopConf;
@@ -62,17 +62,17 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
   protected List<Map.Entry<String, RankValue>> uris;
 
   public AbstractSelectStorageStrategy(
-      Map<String, RankValue> remoteStoragePathRankValue, CoordinatorConf conf) {
+      Map<String, RankValue> remoteStoragePathRankValue,
+      CoordinatorConf conf) {
     this.remoteStoragePathRankValue = remoteStoragePathRankValue;
     this.hadoopConf = new Configuration();
     this.fileSize = conf.getInteger(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_FILE_SIZE);
-    this.coordinatorId =
-        conf.getString(CoordinatorUtils.COORDINATOR_ID, UUID.randomUUID().toString());
+    this.coordinatorId = conf.getString(CoordinatorUtils.COORDINATOR_ID, UUID.randomUUID().toString());
     this.conf = conf;
   }
 
-  public void readAndWriteHadoopStorage(
-      FileSystem fs, Path testPath, String uri, RankValue rankValue) throws IOException {
+  public void readAndWriteHadoopStorage(FileSystem fs, Path testPath,
+                                        String uri, RankValue rankValue) throws IOException {
     byte[] data = RandomUtils.nextBytes(fileSize);
     try (FSDataOutputStream fos = fs.create(testPath)) {
       fos.write(data);
@@ -87,8 +87,7 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
         if (hasReadBytes < fileSize) {
           for (int i = 0; i < readBytes; i++) {
             if (data[hasReadBytes + i] != readData[i]) {
-              remoteStoragePathRankValue.put(
-                  uri, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
+              remoteStoragePathRankValue.put(uri, new RankValue(Long.MAX_VALUE, rankValue.getAppNum().get()));
               throw new RssException("The content of reading and writing is inconsistent.");
             }
           }
@@ -103,37 +102,29 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
     uris = Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet());
     if (remoteStoragePathRankValue.size() > 1) {
       CountDownLatch countDownLatch = new CountDownLatch(uris.size());
-      uris.parallelStream()
-          .forEach(
-              uri -> {
-                if (uri.getKey().startsWith(ApplicationManager.getPathSchema().get(0))) {
-                  Path remotePath = new Path(uri.getKey());
-                  String rssTest =
-                      uri.getKey()
-                          + "/rssTest-"
-                          + getCoordinatorId()
-                          + Thread.currentThread().getName();
-                  Path testPath = new Path(rssTest);
-                  RankValue rankValue = remoteStoragePathRankValue.get(uri.getKey());
-                  rankValue.setHealthy(new AtomicBoolean(true));
-                  long startWriteTime = System.currentTimeMillis();
-                  try {
-                    FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hadoopConf);
-                    for (int j = 0; j < readAndWriteTimes(conf); j++) {
-                      readAndWriteHadoopStorage(fs, testPath, uri.getKey(), rankValue);
-                    }
-                  } catch (Exception e) {
-                    LOG.error(
-                        "Storage read and write error, we will not use this remote path {}.",
-                        uri,
-                        e);
-                    rankValue.setHealthy(new AtomicBoolean(false));
-                  } finally {
-                    sortPathByRankValue(uri.getKey(), rssTest, startWriteTime);
-                  }
-                  countDownLatch.countDown();
-                }
-              });
+      uris.parallelStream().forEach(uri -> {
+        if (uri.getKey().startsWith(ApplicationManager.getPathSchema().get(0))) {
+          Path remotePath = new Path(uri.getKey());
+          String rssTest = uri.getKey() + "/rssTest-" + getCoordinatorId()
+              + Thread.currentThread().getName();
+          Path testPath = new Path(rssTest);
+          RankValue rankValue = remoteStoragePathRankValue.get(uri.getKey());
+          rankValue.setHealthy(new AtomicBoolean(true));
+          long startWriteTime = System.currentTimeMillis();
+          try {
+            FileSystem fs = HadoopFilesystemProvider.getFilesystem(remotePath, hadoopConf);
+            for (int j = 0; j < readAndWriteTimes(conf); j++) {
+              readAndWriteHadoopStorage(fs, testPath, uri.getKey(), rankValue);
+            }
+          } catch (Exception e) {
+            LOG.error("Storage read and write error, we will not use this remote path {}.", uri, e);
+            rankValue.setHealthy(new AtomicBoolean(false));
+          } finally {
+            sortPathByRankValue(uri.getKey(), rssTest, startWriteTime);
+          }
+          countDownLatch.countDown();
+        }
+      });
       try {
         countDownLatch.await();
       } catch (InterruptedException e) {
@@ -143,7 +134,8 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
   }
 
   @VisibleForTesting
-  public void sortPathByRankValue(String path, String testPath, long startWrite) {
+  public void sortPathByRankValue(
+      String path, String testPath, long startWrite) {
     RankValue rankValue = remoteStoragePathRankValue.get(path);
     try {
       FileSystem fs = HadoopFilesystemProvider.getFilesystem(new Path(path), hadoopConf);
@@ -157,16 +149,13 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
     }
 
     if (this.getComparator() != null) {
-      uris =
-          Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet()).stream()
-              .filter(Objects::nonNull)
-              .sorted(this.getComparator())
-              .collect(Collectors.toList());
+      uris = Lists.newCopyOnWriteArrayList(
+          remoteStoragePathRankValue.entrySet()).stream().filter(
+          Objects::nonNull).sorted(this.getComparator()).collect(Collectors.toList());
     } else {
-      uris =
-          Lists.newCopyOnWriteArrayList(remoteStoragePathRankValue.entrySet()).stream()
-              .filter(Objects::nonNull)
-              .collect(Collectors.toList());
+      uris = Lists.newCopyOnWriteArrayList(
+          remoteStoragePathRankValue.entrySet()).stream().filter(
+          Objects::nonNull).collect(Collectors.toList());
     }
     LOG.info("The sorted remote path list is: {}", uris);
   }
@@ -177,7 +166,6 @@ public abstract class AbstractSelectStorageStrategy implements SelectStorageStra
 
   /**
    * Different strategies will have different sorting methods of remote paths
-   *
    * @return A comparator is to calculate the RankValue
    */
   protected Comparator<Map.Entry<String, RankValue>> getComparator() {

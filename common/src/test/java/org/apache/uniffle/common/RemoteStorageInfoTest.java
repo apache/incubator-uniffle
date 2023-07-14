@@ -46,12 +46,9 @@ public class RemoteStorageInfoTest {
   private static Stream<Arguments> confItemsParams() {
     return Stream.of(
         arguments(null, null, String.join(Constants.COMMA_SPLIT_CHAR, TEST_PATH, "empty conf")),
-        arguments(
-            "",
-            Collections.emptyMap(),
-            String.join(Constants.COMMA_SPLIT_CHAR, TEST_PATH, "empty conf")),
-        arguments(
-            CONF_STRING, confMap, String.join(Constants.COMMA_SPLIT_CHAR, TEST_PATH, CONF_STRING)));
+        arguments("", Collections.emptyMap(), String.join(Constants.COMMA_SPLIT_CHAR, TEST_PATH, "empty conf")),
+        arguments(CONF_STRING, confMap, String.join(Constants.COMMA_SPLIT_CHAR, TEST_PATH, CONF_STRING))
+    );
   }
 
   @ParameterizedTest
@@ -65,21 +62,18 @@ public class RemoteStorageInfoTest {
 
   @ParameterizedTest
   @MethodSource("confItemsParams")
-  public void testRemoteStorageInfo(
-      String confString, Map<String, String> confItems, String expectedToString) {
+  public void testRemoteStorageInfo(String confString, Map<String, String> confItems, String expectedToString) {
     RemoteStorageInfo info = new RemoteStorageInfo(TEST_PATH, confItems);
     assertFalse(info.isEmpty());
     assertEquals(TEST_PATH, info.getPath());
-    assertEquals(
-        Optional.ofNullable(confItems).orElse(Collections.emptyMap()), info.getConfItems());
+    assertEquals(Optional.ofNullable(confItems).orElse(Collections.emptyMap()), info.getConfItems());
     assertEquals(Optional.ofNullable(confString).orElse(""), info.getConfString());
     assertEquals(expectedToString, info.toString());
 
     info = new RemoteStorageInfo(TEST_PATH, confString);
     assertFalse(info.isEmpty());
     assertEquals(TEST_PATH, info.getPath());
-    assertEquals(
-        Optional.ofNullable(confItems).orElse(Collections.emptyMap()), info.getConfItems());
+    assertEquals(Optional.ofNullable(confItems).orElse(Collections.emptyMap()), info.getConfItems());
     assertEquals(Optional.ofNullable(confString).orElse(""), info.getConfString());
     assertEquals(expectedToString, info.toString());
   }

@@ -97,12 +97,10 @@ public class LocalStorageManager extends SingleStorageManager {
     double highWaterMarkOfWrite = conf.get(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE);
     double lowWaterMarkOfWrite = conf.get(ShuffleServerConf.LOW_WATER_MARK_OF_WRITE);
     if (highWaterMarkOfWrite < lowWaterMarkOfWrite) {
-      throw new IllegalArgumentException(
-          "highWaterMarkOfWrite must be larger than lowWaterMarkOfWrite");
+      throw new IllegalArgumentException("highWaterMarkOfWrite must be larger than lowWaterMarkOfWrite");
     }
 
-    // We must make sure the order of `storageBasePaths` and `localStorages` is same, or some unit
-    // test may be fail
+    // We must make sure the order of `storageBasePaths` and `localStorages` is same, or some unit test may be fail
     CountDownLatch countDownLatch = new CountDownLatch(storageBasePaths.size());
     AtomicInteger successCount = new AtomicInteger();
     ServiceLoader<StorageMediaProvider> loader = ServiceLoader.load(StorageMediaProvider.class);
@@ -115,26 +113,24 @@ public class LocalStorageManager extends SingleStorageManager {
     for (int i = 0; i < storageBasePaths.size(); i++) {
       final int idx = i;
       String storagePath = storageBasePaths.get(i);
-      executorService.submit(
-          () -> {
-            try {
-              StorageMedia storageType = getStorageTypeForBasePath(storagePath);
-              localStorageArray[idx] =
-                  LocalStorage.newBuilder()
-                      .basePath(storagePath)
-                      .capacity(capacity)
-                      .ratio(ratio)
-                      .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
-                      .highWaterMarkOfWrite(highWaterMarkOfWrite)
-                      .localStorageMedia(storageType)
-                      .build();
-              successCount.incrementAndGet();
-            } catch (Exception e) {
-              LOG.error("LocalStorage init failed!", e);
-            } finally {
-              countDownLatch.countDown();
-            }
-          });
+      executorService.submit(() -> {
+        try {
+          StorageMedia storageType = getStorageTypeForBasePath(storagePath);
+          localStorageArray[idx] = LocalStorage.newBuilder()
+              .basePath(storagePath)
+              .capacity(capacity)
+              .ratio(ratio)
+              .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
+              .highWaterMarkOfWrite(highWaterMarkOfWrite)
+              .localStorageMedia(storageType)
+              .build();
+          successCount.incrementAndGet();
+        } catch (Exception e) {
+          LOG.error("LocalStorage init failed!", e);
+        } finally {
+          countDownLatch.countDown();
+        }
+      });
     }
 
     try {
@@ -148,20 +144,16 @@ public class LocalStorageManager extends SingleStorageManager {
     long maxFailedNumber = conf.getLong(LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER);
     if (failedCount > maxFailedNumber || successCount.get() == 0) {
       throw new RssException(
-          String.format(
-              "Initialize %s local storage(s) failed, "
-                  + "specified local storage paths size: %s, the conf of %s size: %s",
-              failedCount,
-              localStorageArray.length,
-              LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER.key(),
-              maxFailedNumber));
+          String.format("Initialize %s local storage(s) failed, "
+              + "specified local storage paths size: %s, the conf of %s size: %s",
+              failedCount, localStorageArray.length, LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER.key(), maxFailedNumber)
+      );
     }
-    localStorages =
-        Arrays.stream(localStorageArray).filter(Objects::nonNull).collect(Collectors.toList());
+    localStorages = Arrays.stream(localStorageArray).filter(Objects::nonNull).collect(Collectors.toList());
     LOG.info(
         "Succeed to initialize storage paths: {}",
-        StringUtils.join(
-            localStorages.stream().map(LocalStorage::getBasePath).collect(Collectors.toList())));
+        StringUtils.join(localStorages.stream().map(LocalStorage::getBasePath).collect(Collectors.toList()))
+    );
     this.checker = new LocalStorageChecker(conf, localStorages);
   }
 
@@ -181,15 +173,12 @@ public class LocalStorageManager extends SingleStorageManager {
     int shuffleId = event.getShuffleId();
     int partitionId = event.getStartPartition();
 
-    LocalStorage storage =
-        partitionsOfStorage.get(UnionKey.buildKey(appId, shuffleId, partitionId));
+    LocalStorage storage = partitionsOfStorage.get(UnionKey.buildKey(appId, shuffleId, partitionId));
     if (storage != null) {
       if (storage.isCorrupted()) {
         if (storage.containsWriteHandler(appId, shuffleId, partitionId)) {
-          LOG.error(
-              "LocalStorage: {} is corrupted. Switching another storage for event: {}, some data will be lost",
-              storage.getBasePath(),
-              event);
+          LOG.error("LocalStorage: {} is corrupted. Switching another storage for event: {}, some data will be lost",
+              storage.getBasePath(), event);
         }
       } else {
         if (event.getUnderStorage() == null) {
@@ -199,25 +188,28 @@ public class LocalStorageManager extends SingleStorageManager {
       }
     }
 
-    List<LocalStorage> candidates =
-        localStorages.stream()
-            .filter(x -> x.canWrite() && !x.isCorrupted())
-            .collect(Collectors.toList());
+    List<LocalStorage> candidates = localStorages
+        .stream()
+        .filter(x -> x.canWrite() && !x.isCorrupted())
+        .collect(Collectors.toList());
 
     if (candidates.size() == 0) {
       return null;
     }
-    final LocalStorage selectedStorage =
-        candidates.get(
-            ShuffleStorageUtils.getStorageIndex(candidates.size(), appId, shuffleId, partitionId));
+    final LocalStorage selectedStorage = candidates.get(
+        ShuffleStorageUtils.getStorageIndex(
+            candidates.size(),
+            appId,
+            shuffleId,
+            partitionId
+        )
+    );
     return partitionsOfStorage.compute(
         UnionKey.buildKey(appId, shuffleId, partitionId),
         (key, localStorage) -> {
           // If this is the first time to select storage or existing storage is corrupted,
           // we should refresh the cache.
-          if (localStorage == null
-              || localStorage.isCorrupted()
-              || event.getUnderStorage() == null) {
+          if (localStorage == null || localStorage.isCorrupted() || event.getUnderStorage() == null) {
             event.setUnderStorage(selectedStorage);
             return selectedStorage;
           }
@@ -249,8 +241,7 @@ public class LocalStorageManager extends SingleStorageManager {
   public void removeResources(PurgeEvent event) {
     String appId = event.getAppId();
     String user = event.getUser();
-    List<Integer> shuffleSet =
-        Optional.ofNullable(event.getShuffleIds()).orElse(Collections.emptyList());
+    List<Integer> shuffleSet = Optional.ofNullable(event.getShuffleIds()).orElse(Collections.emptyList());
 
     // Remove partitions to storage mapping cache
     cleanupStorageSelectionCache(event);
@@ -264,30 +255,24 @@ public class LocalStorageManager extends SingleStorageManager {
       }
     }
     // delete shuffle data for application
-    ShuffleDeleteHandler deleteHandler =
-        ShuffleHandlerFactory.getInstance()
-            .createShuffleDeleteHandler(
-                new CreateShuffleDeleteHandlerRequest(
-                    StorageType.LOCALFILE.name(), new Configuration()));
+    ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
+        .createShuffleDeleteHandler(
+            new CreateShuffleDeleteHandlerRequest(StorageType.LOCALFILE.name(), new Configuration()));
 
-    List<String> deletePaths =
-        storageBasePaths.stream()
-            .flatMap(
-                path -> {
-                  String basicPath = ShuffleStorageUtils.getFullShuffleDataFolder(path, appId);
-                  if (event instanceof ShufflePurgeEvent) {
-                    List<String> paths = new ArrayList<>();
-                    for (int shuffleId : shuffleSet) {
-                      paths.add(
-                          ShuffleStorageUtils.getFullShuffleDataFolder(
-                              basicPath, String.valueOf(shuffleId)));
-                    }
-                    return paths.stream();
-                  } else {
-                    return Stream.of(basicPath);
-                  }
-                })
-            .collect(Collectors.toList());
+    List<String> deletePaths = storageBasePaths.stream().flatMap(path -> {
+      String basicPath = ShuffleStorageUtils.getFullShuffleDataFolder(path, appId);
+      if (event instanceof ShufflePurgeEvent) {
+        List<String> paths = new ArrayList<>();
+        for (int shuffleId : shuffleSet) {
+          paths.add(
+              ShuffleStorageUtils.getFullShuffleDataFolder(basicPath, String.valueOf(shuffleId))
+          );
+        }
+        return paths.stream();
+      } else {
+        return Stream.of(basicPath);
+      }
+    }).collect(Collectors.toList());
 
     deleteHandler.delete(deletePaths.toArray(new String[deletePaths.size()]), appId, user);
   }
@@ -295,19 +280,22 @@ public class LocalStorageManager extends SingleStorageManager {
   private void cleanupStorageSelectionCache(PurgeEvent event) {
     Function<String, Boolean> deleteConditionFunc = null;
     if (event instanceof AppPurgeEvent) {
-      deleteConditionFunc =
-          partitionUnionKey -> UnionKey.startsWith(partitionUnionKey, event.getAppId());
+      deleteConditionFunc = partitionUnionKey -> UnionKey.startsWith(partitionUnionKey, event.getAppId());
     } else if (event instanceof ShufflePurgeEvent) {
       deleteConditionFunc =
-          partitionUnionKey ->
-              UnionKey.startsWith(partitionUnionKey, event.getAppId(), event.getShuffleIds());
+          partitionUnionKey -> UnionKey.startsWith(
+              partitionUnionKey,
+              event.getAppId(),
+              event.getShuffleIds()
+          );
     }
     long startTime = System.currentTimeMillis();
-    deleteElement(partitionsOfStorage, deleteConditionFunc);
-    LOG.info(
-        "Cleaning the storage selection cache costs: {}(ms) for event: {}",
-        System.currentTimeMillis() - startTime,
-        event);
+    deleteElement(
+        partitionsOfStorage,
+        deleteConditionFunc
+    );
+    LOG.info("Cleaning the storage selection cache costs: {}(ms) for event: {}",
+        System.currentTimeMillis() - startTime, event);
   }
 
   private <K, V> void deleteElement(Map<K, V> map, Function<K, Boolean> deleteConditionFunc) {
@@ -331,15 +319,12 @@ public class LocalStorageManager extends SingleStorageManager {
 
     for (String appId : appIdsOnStorages) {
       if (!appIds.contains(appId)) {
-        ShuffleDeleteHandler deleteHandler =
-            ShuffleHandlerFactory.getInstance()
-                .createShuffleDeleteHandler(
-                    new CreateShuffleDeleteHandlerRequest(
-                        StorageType.LOCALFILE.name(), new Configuration()));
+        ShuffleDeleteHandler deleteHandler = ShuffleHandlerFactory.getInstance()
+            .createShuffleDeleteHandler(
+               new CreateShuffleDeleteHandlerRequest(StorageType.LOCALFILE.name(), new Configuration()));
         String[] deletePaths = new String[storageBasePaths.size()];
         for (int i = 0; i < storageBasePaths.size(); i++) {
-          deletePaths[i] =
-              ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePaths.get(i), appId);
+          deletePaths[i] = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePaths.get(i), appId);
         }
         deleteHandler.delete(deletePaths, appId, UNKNOWN_USER_NAME);
       }
@@ -363,7 +348,12 @@ public class LocalStorageManager extends SingleStorageManager {
       if (media == null) {
         media = StorageMedia.UNKNOWN;
       }
-      StorageInfo info = new StorageInfo(mountPoint, media, capacity, wroteBytes, status);
+      StorageInfo info = new StorageInfo(
+          mountPoint,
+          media,
+          capacity,
+          wroteBytes,
+          status);
       result.put(mountPoint, info);
     }
     return result;

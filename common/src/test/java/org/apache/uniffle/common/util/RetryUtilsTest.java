@@ -34,17 +34,12 @@ public class RetryUtilsTest {
     AtomicInteger callbackTime = new AtomicInteger();
     int maxTryTime = 3;
     try {
-      RetryUtils.retry(
-          () -> {
-            tryTimes.incrementAndGet();
-            throw new RssException("");
-          },
-          () -> {
-            callbackTime.incrementAndGet();
-          },
-          10,
-          maxTryTime,
-          Sets.newHashSet(RssException.class));
+      RetryUtils.retry(() -> {
+        tryTimes.incrementAndGet();
+        throw new RssException("");
+      }, () -> {
+        callbackTime.incrementAndGet();
+      }, 10, maxTryTime, Sets.newHashSet(RssException.class));
     } catch (Throwable throwable) {
       // ignore
     }
@@ -53,13 +48,10 @@ public class RetryUtilsTest {
 
     tryTimes.set(0);
     try {
-      RetryUtils.retry(
-          () -> {
-            tryTimes.incrementAndGet();
-            throw new Exception("");
-          },
-          10,
-          maxTryTime);
+      RetryUtils.retry(() -> {
+        tryTimes.incrementAndGet();
+        throw new Exception("");
+      }, 10, maxTryTime);
     } catch (Throwable throwable) {
       // ignore
     }
@@ -68,14 +60,10 @@ public class RetryUtilsTest {
     tryTimes.set(0);
     int ret = 0;
     try {
-      ret =
-          RetryUtils.retry(
-              () -> {
-                tryTimes.incrementAndGet();
-                return 1;
-              },
-              10,
-              maxTryTime);
+      ret = RetryUtils.retry(() -> {
+        tryTimes.incrementAndGet();
+        return 1;
+      }, 10, maxTryTime);
     } catch (Throwable throwable) {
       // ignore
     }
@@ -84,13 +72,10 @@ public class RetryUtilsTest {
 
     tryTimes.set(0);
     try {
-      RetryUtils.retry(
-          () -> {
-            tryTimes.incrementAndGet();
-            throw new NotRetryException("");
-          },
-          10,
-          maxTryTime);
+      RetryUtils.retry(() -> {
+        tryTimes.incrementAndGet();
+        throw new NotRetryException("");
+      }, 10, maxTryTime);
     } catch (Throwable throwable) {
       // ignore
     }

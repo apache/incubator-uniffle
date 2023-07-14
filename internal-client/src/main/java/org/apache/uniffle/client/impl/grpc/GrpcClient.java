@@ -65,4 +65,5 @@ public abstract class GrpcClient {
       logger.error("Can't close GRPC client to " + host + ":" + port);
     }
   }
+
 }

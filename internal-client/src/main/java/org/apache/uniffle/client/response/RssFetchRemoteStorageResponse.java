@@ -23,7 +23,9 @@ import org.apache.uniffle.common.rpc.StatusCode;
 public class RssFetchRemoteStorageResponse extends ClientResponse {
   private RemoteStorageInfo remoteStorageInfo;
 
-  public RssFetchRemoteStorageResponse(StatusCode statusCode, RemoteStorageInfo remoteStorageInfo) {
+  public RssFetchRemoteStorageResponse(
+      StatusCode statusCode,
+      RemoteStorageInfo remoteStorageInfo) {
     super(statusCode);
     this.remoteStorageInfo = remoteStorageInfo;
   }

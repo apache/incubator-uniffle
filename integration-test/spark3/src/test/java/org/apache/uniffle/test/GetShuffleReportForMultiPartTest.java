@@ -67,8 +67,7 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(
-        RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
+    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     // Create multi shuffle servers
@@ -105,7 +104,8 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
 
   private static void enableRecordGetShuffleResult() {
     for (ShuffleServer shuffleServer : shuffleServers) {
-      ((MockedGrpcServer) shuffleServer.getServer()).getService().enableRecordGetShuffleResult();
+      ((MockedGrpcServer) shuffleServer.getServer()).getService()
+          .enableRecordGetShuffleResult();
     }
   }
 
@@ -133,8 +133,7 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
     sparkConf.set(RssSparkConfig.RSS_DATA_REPLICA_WRITE.key(), String.valueOf(replicateWrite));
     sparkConf.set(RssSparkConfig.RSS_DATA_REPLICA_READ.key(), String.valueOf(replicateRead));
 
-    sparkConf.set(
-        "spark.shuffle.manager",
+    sparkConf.set("spark.shuffle.manager",
         "org.apache.uniffle.test.GetShuffleReportForMultiPartTest$RssShuffleManagerWrapper");
   }
 
@@ -147,54 +146,30 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
   Map<Integer, String> runTest(SparkSession spark, String fileName) throws Exception {
     Thread.sleep(4000);
     Map<Integer, String> map = Maps.newHashMap();
-    Dataset<Row> df2 =
-        spark
-            .range(0, 1000, 1, 10)
-            .select(
-                functions
-                    .when(functions.col("id").$less(250), 249)
-                    .otherwise(functions.col("id"))
-                    .as("key2"),
-                functions.col("id").as("value2"));
-    Dataset<Row> df1 =
-        spark
-            .range(0, 1000, 1, 10)
-            .select(
-                functions
-                    .when(functions.col("id").$less(250), 249)
-                    .when(functions.col("id").$greater(750), 1000)
-                    .otherwise(functions.col("id"))
-                    .as("key1"),
-                functions.col("id").as("value2"));
+    Dataset<Row> df2 = spark.range(0, 1000, 1, 10)
+        .select(functions.when(functions.col("id").$less(250), 249)
+            .otherwise(functions.col("id")).as("key2"), functions.col("id").as("value2"));
+    Dataset<Row> df1 = spark.range(0, 1000, 1, 10)
+        .select(functions.when(functions.col("id").$less(250), 249)
+            .when(functions.col("id").$greater(750), 1000)
+                .otherwise(functions.col("id")).as("key1"), functions.col("id").as("value2"));
     Dataset<Row> df3 = df1.join(df2, df1.col("key1").equalTo(df2.col("key2")));
 
     List<String> result = Lists.newArrayList();
-    assertTrue(
-        df3.queryExecution()
-            .executedPlan()
-            .toString()
-            .startsWith("AdaptiveSparkPlan isFinalPlan=false"));
-    df3.collectAsList()
-        .forEach(
-            row -> {
-              result.add(row.json());
-            });
-    assertTrue(
-        df3.queryExecution()
-            .executedPlan()
-            .toString()
-            .startsWith("AdaptiveSparkPlan isFinalPlan=true"));
+    assertTrue(df3.queryExecution().executedPlan().toString().startsWith("AdaptiveSparkPlan isFinalPlan=false"));
+    df3.collectAsList().forEach(row -> {
+      result.add(row.json());
+    });
+    assertTrue(df3.queryExecution().executedPlan().toString().startsWith("AdaptiveSparkPlan isFinalPlan=true"));
     AdaptiveSparkPlanExec plan = (AdaptiveSparkPlanExec) df3.queryExecution().executedPlan();
-    SortMergeJoinExec joinExec =
-        (SortMergeJoinExec) plan.executedPlan().children().iterator().next();
+    SortMergeJoinExec joinExec = (SortMergeJoinExec) plan.executedPlan().children().iterator().next();
     assertTrue(joinExec.isSkewJoin());
-    result.sort(
-        new Comparator<String>() {
-          @Override
-          public int compare(String o1, String o2) {
-            return o1.compareTo(o2);
-          }
-        });
+    result.sort(new Comparator<String>() {
+      @Override
+      public int compare(String o1, String o2) {
+        return o1.compareTo(o2);
+      }
+    });
     int i = 0;
     for (String str : result) {
       map.put(i, str);
@@ -202,14 +177,11 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
     }
     SparkConf conf = spark.sparkContext().conf();
     if (conf.get("spark.shuffle.manager", "")
-        .equals(
-            "org.apache.uniffle.test.GetShuffleReportForMultiPartTest$RssShuffleManagerWrapper")) {
+        .equals("org.apache.uniffle.test.GetShuffleReportForMultiPartTest$RssShuffleManagerWrapper")) {
       RssShuffleManagerWrapper mockRssShuffleManager =
           (RssShuffleManagerWrapper) spark.sparkContext().env().shuffleManager();
-      int expectRequestNum =
-          mockRssShuffleManager.getShuffleIdToPartitionNum().values().stream()
-              .mapToInt(x -> x.get())
-              .sum();
+      int expectRequestNum = mockRssShuffleManager.getShuffleIdToPartitionNum().values().stream()
+          .mapToInt(x -> x.get()).sum();
       // Validate getShuffleResultForMultiPart is correct before return result
       validateRequestCount(spark.sparkContext().applicationId(), expectRequestNum * replicateRead);
     }
@@ -218,16 +190,10 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
 
   public void validateRequestCount(String appId, int expectRequestNum) {
     for (ShuffleServer shuffleServer : shuffleServers) {
-      MockedShuffleServerGrpcService service =
-          ((MockedGrpcServer) shuffleServer.getServer()).getService();
-      Map<String, Map<Integer, AtomicInteger>> serviceRequestCount =
-          service.getShuffleIdToPartitionRequest();
-      int requestNum =
-          serviceRequestCount.entrySet().stream()
-              .filter(x -> x.getKey().startsWith(appId))
-              .flatMap(x -> x.getValue().values().stream())
-              .mapToInt(AtomicInteger::get)
-              .sum();
+      MockedShuffleServerGrpcService service = ((MockedGrpcServer) shuffleServer.getServer()).getService();
+      Map<String, Map<Integer, AtomicInteger>> serviceRequestCount = service.getShuffleIdToPartitionRequest();
+      int requestNum = serviceRequestCount.entrySet().stream().filter(x -> x.getKey().startsWith(appId))
+          .flatMap(x -> x.getValue().values().stream()).mapToInt(AtomicInteger::get).sum();
       expectRequestNum -= requestNum;
     }
     assertEquals(0, expectRequestNum);
@@ -254,25 +220,14 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
         Roaring64NavigableMap taskIdBitmap) {
       int shuffleId = handle.shuffleId();
       RssShuffleHandle<?, ?, ?> rssShuffleHandle = (RssShuffleHandle<?, ?, ?>) handle;
-      Map<Integer, List<ShuffleServerInfo>> allPartitionToServers =
-          rssShuffleHandle.getPartitionToServers();
-      int partitionNum =
-          (int)
-              allPartitionToServers.entrySet().stream()
-                  .filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition)
-                  .count();
-      AtomicInteger partShouldRequestNum =
-          shuffleToPartShouldRequestNum.computeIfAbsent(shuffleId, x -> new AtomicInteger(0));
+      Map<Integer, List<ShuffleServerInfo>> allPartitionToServers = rssShuffleHandle.getPartitionToServers();
+      int partitionNum = (int) allPartitionToServers.entrySet().stream()
+                                   .filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition).count();
+      AtomicInteger partShouldRequestNum = shuffleToPartShouldRequestNum.computeIfAbsent(shuffleId,
+          x -> new AtomicInteger(0));
       partShouldRequestNum.addAndGet(partitionNum);
-      return super.getReaderImpl(
-          handle,
-          startMapIndex,
-          endMapIndex,
-          startPartition,
-          endPartition,
-          context,
-          metrics,
-          taskIdBitmap);
+      return super.getReaderImpl(handle, startMapIndex, endMapIndex, startPartition, endPartition,
+          context, metrics, taskIdBitmap);
     }
 
     public Map<Integer, AtomicInteger> getShuffleIdToPartitionNum() {

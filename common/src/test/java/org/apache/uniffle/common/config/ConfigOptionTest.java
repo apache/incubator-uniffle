@@ -34,12 +34,11 @@ public class ConfigOptionTest {
 
   @Test
   public void testDeprecatedAndFallbackKeys() {
-    final ConfigOption<Integer> intConfig =
-        ConfigOptions.key("rss.main.key")
-            .intType()
-            .defaultValue(100)
-            .withFallbackKeys("rss.fallback.key1")
-            .withDeprecatedKeys("rss.deprecated.key1");
+    final ConfigOption<Integer> intConfig = ConfigOptions
+        .key("rss.main.key")
+        .intType().defaultValue(100)
+        .withFallbackKeys("rss.fallback.key1")
+        .withDeprecatedKeys("rss.deprecated.key1");
 
     // case1
     RssConf conf = new RssBaseConf();
@@ -71,15 +70,21 @@ public class ConfigOptionTest {
 
   @Test
   public void testFallbackKeys() {
-    final ConfigOption<Integer> config1 = ConfigOptions.key("rss.key.1").intType().defaultValue(1);
+    final ConfigOption<Integer> config1 = ConfigOptions
+        .key("rss.key.1")
+        .intType()
+        .defaultValue(1);
 
-    final ConfigOption<Integer> config2 = ConfigOptions.key("rss.key.2").intType().defaultValue(2);
+    final ConfigOption<Integer> config2 = ConfigOptions
+        .key("rss.key.2")
+        .intType()
+        .defaultValue(2);
 
-    final ConfigOption<Integer> config3 =
-        ConfigOptions.key("rss.key.3")
-            .intType()
-            .defaultValue(9999)
-            .withFallbackKeys(config1.key(), config2.key());
+    final ConfigOption<Integer> config3 = ConfigOptions
+        .key("rss.key.3")
+        .intType()
+        .defaultValue(9999)
+        .withFallbackKeys(config1.key(), config2.key());
 
     // case1
     RssConf conf = new RssBaseConf();
@@ -97,11 +102,11 @@ public class ConfigOptionTest {
 
   @Test
   public void testDeprecatedKeys() {
-    final ConfigOption<Integer> intConfig =
-        ConfigOptions.key("rss.key")
-            .intType()
-            .defaultValue(100)
-            .withDeprecatedKeys("rss.s1", "rss.s2", "rss.s3");
+    final ConfigOption<Integer> intConfig = ConfigOptions
+        .key("rss.key")
+        .intType()
+        .defaultValue(100)
+        .withDeprecatedKeys("rss.s1", "rss.s2", "rss.s3");
 
     // case 1
     RssConf conf = new RssBaseConf();
@@ -135,8 +140,8 @@ public class ConfigOptionTest {
 
   @Test
   public void testSetKVWithStringTypeDirectly() {
-    final ConfigOption<Integer> intConfig =
-        ConfigOptions.key("rss.key1")
+    final ConfigOption<Integer> intConfig = ConfigOptions
+            .key("rss.key1")
             .intType()
             .defaultValue(1000)
             .withDescription("Int config key1");
@@ -145,8 +150,8 @@ public class ConfigOptionTest {
     conf.setString("rss.key1", "2000");
     assertEquals(2000, conf.get(intConfig));
 
-    final ConfigOption<Boolean> booleanConfig =
-        ConfigOptions.key("key2")
+    final ConfigOption<Boolean> booleanConfig = ConfigOptions
+            .key("key2")
             .booleanType()
             .defaultValue(false)
             .withDescription("Boolean config key");
@@ -164,11 +169,11 @@ public class ConfigOptionTest {
 
   @Test
   public void testEnumType() {
-    final ConfigOption<TestType> enumConfigOption =
-        ConfigOptions.key("rss.enum")
-            .enumType(TestType.class)
-            .defaultValue(TestType.TYPE_1)
-            .withDescription("enum test");
+    final ConfigOption<TestType> enumConfigOption = ConfigOptions
+        .key("rss.enum")
+        .enumType(TestType.class)
+        .defaultValue(TestType.TYPE_1)
+        .withDescription("enum test");
 
     RssBaseConf conf = new RssBaseConf();
 
@@ -205,8 +210,8 @@ public class ConfigOptionTest {
   @Test
   public void testListTypes() {
     // test the string type list.
-    final ConfigOption<List<String>> listStringConfigOption =
-        ConfigOptions.key("rss.key1")
+    final ConfigOption<List<String>> listStringConfigOption = ConfigOptions
+            .key("rss.key1")
             .stringType()
             .asList()
             .defaultValues("h1", "h2")
@@ -224,8 +229,8 @@ public class ConfigOptionTest {
     assertEquals(Lists.newArrayList("a", "b", "c"), vals);
 
     // test the long type list
-    final ConfigOption<List<Long>> listLongConfigOption =
-        ConfigOptions.key("rss.key2")
+    final ConfigOption<List<Long>> listLongConfigOption = ConfigOptions
+            .key("rss.key2")
             .longType()
             .asList()
             .defaultValues(1L)
@@ -244,8 +249,8 @@ public class ConfigOptionTest {
     assertEquals(Lists.newArrayList(1L, 2L, 3L, 4L), conf.get(listLongConfigOption));
 
     // test the no-default values
-    final ConfigOption<List<Long>> listLongConfigOptionWithoutDefault =
-        ConfigOptions.key("rss.key3")
+    final ConfigOption<List<Long>> listLongConfigOptionWithoutDefault = ConfigOptions
+            .key("rss.key3")
             .longType()
             .asList()
             .noDefaultValue()
@@ -254,13 +259,11 @@ public class ConfigOptionTest {
     assertNull(valsWithoutDefault);
 
     // test the method of check
-    final ConfigOption<List<Integer>> checkLongValsOptions =
-        ConfigOptions.key("rss.key4")
+    final ConfigOption<List<Integer>> checkLongValsOptions = ConfigOptions
+            .key("rss.key4")
             .intType()
             .asList()
-            .checkValue(
-                (Function<Integer, Boolean>) val -> val > 0,
-                "Every number of list should be positive")
+            .checkValue((Function<Integer, Boolean>) val -> val > 0, "Every number of list should be positive")
             .noDefaultValue()
             .withDescription("The key4 is illegal");
 
@@ -281,8 +284,8 @@ public class ConfigOptionTest {
     }
 
     // test the empty list
-    final ConfigOption<List<String>> emptyListStringOption =
-        ConfigOptions.key("rss.key5")
+    final ConfigOption<List<String>> emptyListStringOption = ConfigOptions
+            .key("rss.key5")
             .stringType()
             .asList()
             .noDefaultValue()
@@ -301,43 +304,45 @@ public class ConfigOptionTest {
 
   @Test
   public void testBasicTypes() {
-    final ConfigOption<Integer> intConfig =
-        ConfigOptions.key("rss.key1")
-            .intType()
-            .defaultValue(1000)
-            .withDescription("Int config key1");
+    final ConfigOption<Integer> intConfig = ConfigOptions
+        .key("rss.key1")
+        .intType()
+        .defaultValue(1000)
+        .withDescription("Int config key1");
     assertSame(Integer.class, intConfig.getClazz());
     assertEquals(1000, (int) intConfig.defaultValue());
     assertEquals("Int config key1", intConfig.description());
 
-    final ConfigOption<Long> longConfig =
-        ConfigOptions.key("rss.key2").longType().defaultValue(1999L);
+    final ConfigOption<Long> longConfig = ConfigOptions
+        .key("rss.key2")
+        .longType()
+        .defaultValue(1999L);
     assertTrue(longConfig.hasDefaultValue());
     assertEquals(1999L, (long) longConfig.defaultValue());
 
-    final ConfigOption<String> stringConfig =
-        ConfigOptions.key("rss.key3").stringType().noDefaultValue();
+    final ConfigOption<String> stringConfig = ConfigOptions
+        .key("rss.key3")
+        .stringType()
+        .noDefaultValue();
     assertFalse(stringConfig.hasDefaultValue());
     assertEquals("", stringConfig.description());
 
-    final ConfigOption<Boolean> booleanConfig =
-        ConfigOptions.key("key4")
-            .booleanType()
-            .defaultValue(false)
-            .withDescription("Boolean config key");
+    final ConfigOption<Boolean> booleanConfig = ConfigOptions
+        .key("key4")
+        .booleanType()
+        .defaultValue(false)
+        .withDescription("Boolean config key");
     assertFalse(booleanConfig.defaultValue());
     assertEquals("Boolean config key", booleanConfig.description());
 
-    final ConfigOption<Integer> positiveInt =
-        ConfigOptions.key("key5")
-            .intType()
-            .checkValue(
-                (v) -> {
-                  return v > 0;
-                },
-                "The value of key5 must be positive")
-            .defaultValue(1)
-            .withDescription("Positive integer key");
+    final ConfigOption<Integer> positiveInt = ConfigOptions
+        .key("key5")
+        .intType()
+        .checkValue((v) -> {
+          return v > 0;
+        }, "The value of key5 must be positive")
+        .defaultValue(1)
+        .withDescription("Positive integer key");
     RssBaseConf conf = new RssBaseConf();
     conf.set(positiveInt, -1);
     boolean isException = false;

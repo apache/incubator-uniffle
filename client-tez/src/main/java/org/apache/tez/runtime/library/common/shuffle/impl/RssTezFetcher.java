@@ -37,6 +37,7 @@ import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 
+
 public class RssTezFetcher {
   private static final Logger LOG = LoggerFactory.getLogger(RssTezFetcher.class);
   private final FetcherCallback fetcherCallback;
@@ -49,12 +50,12 @@ public class RssTezFetcher {
 
   private final ShuffleReadClient shuffleReadClient;
   Map<Integer, Roaring64NavigableMap> rssSuccessBlockIdBitmapMap;
-  private int partitionId; // partition id to fetch for this task
+  private int partitionId;   // partition id to fetch for this task
   private long readTime = 0;
   private long decompressTime = 0;
   private long serializeTime = 0;
   private long waitTime = 0;
-  private long copyTime = 0; // the sum of readTime + decompressTime + serializeTime + waitTime
+  private long copyTime = 0;  // the sum of readTime + decompressTime + serializeTime + waitTime
   private long unCompressionLength = 0;
   private int uniqueMapId = 0;
 
@@ -64,13 +65,11 @@ public class RssTezFetcher {
   private byte[] uncompressedData = null;
   private Codec codec;
 
-  RssTezFetcher(
-      FetcherCallback fetcherCallback,
-      FetchedInputAllocator inputManager,
-      ShuffleReadClient shuffleReadClient,
-      Map<Integer, Roaring64NavigableMap> rssSuccessBlockIdBitmapMap,
-      int partitionId,
-      RssConf rssConf) {
+  RssTezFetcher(FetcherCallback fetcherCallback,
+                FetchedInputAllocator inputManager,
+                ShuffleReadClient shuffleReadClient,
+                Map<Integer, Roaring64NavigableMap> rssSuccessBlockIdBitmapMap,
+                int partitionId, RssConf rssConf) {
     this.fetcherCallback = fetcherCallback;
     this.inputManager = inputManager;
     this.shuffleReadClient = shuffleReadClient;
@@ -149,30 +148,16 @@ public class RssTezFetcher {
       shuffleReadClient.close();
       shuffleReadClient.checkProcessedBlockIds();
       shuffleReadClient.logStatics();
-      LOG.info(
-          "reduce task partition:"
-              + partitionId
-              + " read block cnt: "
-              + copyBlockCount
-              + " cost "
-              + readTime
-              + " ms to fetch and "
-              + decompressTime
-              + " ms to decompress with unCompressionLength["
-              + unCompressionLength
-              + "] and "
-              + serializeTime
-              + " ms to serialize and "
-              + waitTime
-              + " ms to wait resource, total copy time: "
-              + copyTime);
+      LOG.info("reduce task partition:" + partitionId + " read block cnt: " + copyBlockCount + " cost "
+          + readTime + " ms to fetch and " + decompressTime + " ms to decompress with unCompressionLength["
+          + unCompressionLength + "] and " + serializeTime + " ms to serialize and "
+          + waitTime + " ms to wait resource, total copy time: " + copyTime);
       LOG.info("Stop fetcher");
       stopFetch();
     }
   }
 
-  private boolean issueMapOutputMerge(int compressedLength, long blockStartFetch)
-      throws IOException {
+  private boolean issueMapOutputMerge(int compressedLength, long blockStartFetch) throws IOException {
     // Allocate a MapOutput (either in-memory or on-disk) to put uncompressed block
     // In Rss, a MapOutput is sent as multiple blocks, so the reducer needs to
     // treat each "block" as a faked "mapout".
@@ -182,9 +167,8 @@ public class RssTezFetcher {
     FetchedInput fetchedInput = null;
 
     try {
-      fetchedInput =
-          inputManager.allocate(
-              uncompressedData.length, compressedLength, uniqueInputAttemptIdentifier);
+      fetchedInput = inputManager.allocate(uncompressedData.length,
+          compressedLength, uniqueInputAttemptIdentifier);
     } catch (IOException ioe) {
       // kill this reduce attempt
       throw ioe;
@@ -194,22 +178,12 @@ public class RssTezFetcher {
     try {
       RssTezBypassWriter.write(fetchedInput, uncompressedData);
       // let the merger knows this block is ready for merging
-      fetcherCallback.fetchSucceeded(
-          null,
-          uniqueInputAttemptIdentifier,
-          fetchedInput,
-          compressedLength,
-          unCompressionLength,
-          System.currentTimeMillis() - blockStartFetch);
+      fetcherCallback.fetchSucceeded(null, uniqueInputAttemptIdentifier, fetchedInput,
+          compressedLength, unCompressionLength, System.currentTimeMillis() - blockStartFetch);
     } catch (Throwable t) {
       LOG.error("Failed to write fetchedInput.", t);
-      throw new RssException(
-          "Partition: "
-              + partitionId
-              + " cannot write block to "
-              + fetchedInput.getClass().getSimpleName()
-              + " due to: "
-              + t.getClass().getName());
+      throw new RssException("Partition: " + partitionId + " cannot write block to "
+          + fetchedInput.getClass().getSimpleName() + " due to: " + t.getClass().getName());
     }
     return true;
   }

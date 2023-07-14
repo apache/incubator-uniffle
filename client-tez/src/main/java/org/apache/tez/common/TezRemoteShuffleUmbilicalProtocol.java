@@ -26,16 +26,17 @@ import org.apache.hadoop.security.token.TokenInfo;
 import org.apache.tez.dag.api.TezException;
 import org.apache.tez.runtime.common.security.JobTokenSelector;
 
+
 @TokenInfo(JobTokenSelector.class)
 @InterfaceAudience.Private
 @InterfaceStability.Stable
 
 // ProtocolInfo will be required once we move to Hadoop PB RPC
-// @ProtocolInfo(protocolName = "TezRemoteShuffleUmbilicalProtocol", protocolVersion = 1)
-public interface TezRemoteShuffleUmbilicalProtocol extends VersionedProtocol {
+//@ProtocolInfo(protocolName = "TezRemoteShuffleUmbilicalProtocol", protocolVersion = 1)
+public interface TezRemoteShuffleUmbilicalProtocol  extends VersionedProtocol {
   @SuppressWarnings("checkstyle:ConstantName")
   long versionID = 31L;
 
   GetShuffleServerResponse getShuffleAssignments(GetShuffleServerRequest request)
-      throws IOException, TezException;
+          throws IOException, TezException;
 }

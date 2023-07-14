@@ -28,13 +28,8 @@ public class GetLocalShuffleIndexRequest extends RequestMessage {
   private int partitionNumPerRange;
   private int partitionNum;
 
-  public GetLocalShuffleIndexRequest(
-      long requestId,
-      String appId,
-      int shuffleId,
-      int partitionId,
-      int partitionNumPerRange,
-      int partitionNum) {
+  public GetLocalShuffleIndexRequest(long requestId, String appId, int shuffleId, int partitionId,
+      int partitionNumPerRange, int partitionNum) {
     super(requestId);
     this.appId = appId;
     this.shuffleId = shuffleId;
@@ -70,8 +65,8 @@ public class GetLocalShuffleIndexRequest extends RequestMessage {
     int partitionId = byteBuf.readInt();
     int partitionNumPerRange = byteBuf.readInt();
     int partitionNum = byteBuf.readInt();
-    return new GetLocalShuffleIndexRequest(
-        requestId, appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
+    return new GetLocalShuffleIndexRequest(requestId, appId, shuffleId, partitionId, partitionNumPerRange,
+        partitionNum);
   }
 
   public String getAppId() {

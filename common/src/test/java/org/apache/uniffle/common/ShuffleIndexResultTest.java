@@ -28,4 +28,5 @@ public class ShuffleIndexResultTest {
     assertTrue(new ShuffleIndexResult().isEmpty());
     assertTrue(new ShuffleIndexResult(null, -1).isEmpty());
   }
+
 }

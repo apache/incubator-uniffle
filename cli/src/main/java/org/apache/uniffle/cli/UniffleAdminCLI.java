@@ -43,27 +43,14 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
 
   public UniffleAdminCLI(String shortPrefix, String longPrefix) {
     allOptions = new Options();
-    refreshCheckerCli =
-        new Option(
-            shortPrefix + "r",
-            longPrefix + "refreshChecker",
-            false,
-            "This is an admin command that will refresh access checker.");
-    help =
-        new Option(
-            shortPrefix + "h", longPrefix + "help", false, "Help for the Uniffle Admin CLI.");
-    coordinatorHost =
-        new Option(
-            shortPrefix + "s",
-            longPrefix + "coordinatorHost",
-            true,
-            "This is coordinator server host.");
-    coordinatorPort =
-        new Option(
-            shortPrefix + "p",
-            longPrefix + "coordinatorPort",
-            true,
-            "This is coordinator server port.");
+    refreshCheckerCli = new Option(shortPrefix + "r", longPrefix + "refreshChecker",
+        false, "This is an admin command that will refresh access checker.");
+    help = new Option(shortPrefix + "h", longPrefix + "help",
+        false, "Help for the Uniffle Admin CLI.");
+    coordinatorHost = new Option(shortPrefix + "s", longPrefix + "coordinatorHost",
+        true, "This is coordinator server host.");
+    coordinatorPort = new Option(shortPrefix + "p", longPrefix + "coordinatorPort",
+        true, "This is coordinator server port.");
     ssl = new Option(null, longPrefix + "ssl", false, "use SSL.");
 
     allOptions.addOption(refreshCheckerCli);
@@ -114,8 +101,7 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
 
   private String refreshAccessChecker() throws UniffleCliArgsException {
     if (client == null) {
-      throw new UniffleCliArgsException(
-          "Missing Coordinator host address and grpc port parameters.");
+      throw new UniffleCliArgsException("Missing Coordinator host address and grpc port parameters.");
     }
     AdminRestApi adminRestApi = new AdminRestApi(client);
     return adminRestApi.refreshAccessChecker();

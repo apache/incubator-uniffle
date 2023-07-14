@@ -21,7 +21,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-/** The basis for app to select remote storage ranking */
+/**
+ * The basis for app to select remote storage ranking
+ */
 public class RankValue {
   AtomicLong costTime;
   AtomicInteger appNum;
@@ -65,12 +67,8 @@ public class RankValue {
   @Override
   public String toString() {
     return "RankValue{"
-        + "costTime="
-        + costTime
-        + ", appNum="
-        + appNum
-        + ", isHealthy="
-        + isHealthy
-        + '}';
+        + "costTime=" + costTime
+        + ", appNum=" + appNum
+        + ", isHealthy=" + isHealthy + '}';
   }
 }

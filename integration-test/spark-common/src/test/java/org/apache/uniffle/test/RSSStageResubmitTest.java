@@ -54,17 +54,18 @@ public class RSSStageResubmitTest extends SparkIntegrationTestBase {
   }
 
   private static void enableFirstReadRequest(int failCount) {
-    for (ShuffleServer server : shuffleServers) {
+    for (ShuffleServer server: shuffleServers) {
       ((MockedGrpcServer) server.getServer()).getService().enableFirstNReadRequestToFail(failCount);
     }
   }
 
   @Override
   public Map runTest(SparkSession spark, String fileName) throws Exception {
-    List<Row> rows =
-        spark.range(0, 1000, 1, 4).repartition(2).groupBy("id").count().collectAsList();
+    List<Row> rows = spark.range(0, 1000, 1, 4)
+        .repartition(2).groupBy("id").count()
+                         .collectAsList();
     Map<String, Long> result = Maps.newHashMap();
-    for (Row row : rows) {
+    for (Row row: rows) {
       result.put(row.get(0).toString(), row.getLong(1));
     }
     return result;
@@ -73,19 +74,21 @@ public class RSSStageResubmitTest extends SparkIntegrationTestBase {
   @Override
   protected SparkConf createSparkConf() {
     return new SparkConf()
-        .setAppName(this.getClass().getSimpleName())
-        .setMaster(String.format("local[4,%d]", maxTaskFailures));
+               .setAppName(this.getClass().getSimpleName())
+               .setMaster(String.format("local[4,%d]", maxTaskFailures));
   }
 
   @Override
   public void updateSparkConfCustomer(SparkConf sparkConf) {
-    sparkConf.set(
-        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_RESUBMIT_STAGE, "true");
+    sparkConf.set(RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_RESUBMIT_STAGE, "true");
     sparkConf.set("spark.task.maxFailures", String.valueOf(maxTaskFailures));
   }
+
 
   @Test
   public void testRSSStageResubmit() throws Exception {
     run();
   }
+
 }
+

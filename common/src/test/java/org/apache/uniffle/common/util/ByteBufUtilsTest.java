@@ -61,7 +61,7 @@ public class ByteBufUtilsTest {
 
     res.clear();
     ByteBufUtils.copyByteBuf(compositeByteBuf, res);
-    assertEquals(expectedLength, res.readableBytes() - Integer.BYTES);
+    assertEquals(expectedLength, res.readableBytes()  - Integer.BYTES);
 
     byteBuf.clear();
     byte[] bytes = expectedString.getBytes(StandardCharsets.UTF_8);

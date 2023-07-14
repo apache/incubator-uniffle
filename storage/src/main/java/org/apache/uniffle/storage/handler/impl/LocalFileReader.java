@@ -55,31 +55,15 @@ public class LocalFileReader implements FileReader, Closeable {
         }
         targetSkip -= realSkip;
         if (targetSkip > 0) {
-          LOG.warn(
-              "Got unexpected skip for path:"
-                  + path
-                  + " with offset["
-                  + offset
-                  + "], length["
-                  + length
-                  + "], remain["
-                  + targetSkip
-                  + "]");
+          LOG.warn("Got unexpected skip for path:" + path + " with offset["
+              + offset + "], length[" + length + "], remain[" + targetSkip + "]");
         }
       }
       byte[] buf = new byte[length];
       dataInputStream.readFully(buf);
       return buf;
     } catch (Exception e) {
-      LOG.warn(
-          "Can't read data for path:"
-              + path
-              + " with offset["
-              + offset
-              + "], length["
-              + length
-              + "]",
-          e);
+      LOG.warn("Can't read data for path:" + path + " with offset[" + offset + "], length[" + length + "]", e);
     }
     return new byte[0];
   }

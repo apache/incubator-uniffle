@@ -67,40 +67,38 @@ public class GrpcServer implements ServerInterface {
     this.grpcMetrics = grpcMetrics;
 
     int rpcExecutorSize = conf.getInteger(RssBaseConf.RPC_EXECUTOR_SIZE);
-    pool =
-        new GrpcThreadPoolExecutor(
-            rpcExecutorSize,
-            rpcExecutorSize * 2,
-            10,
-            TimeUnit.MINUTES,
-            Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
-            ThreadUtils.getThreadFactory("Grpc"),
-            grpcMetrics);
+    pool = new GrpcThreadPoolExecutor(
+        rpcExecutorSize,
+        rpcExecutorSize * 2,
+        10,
+        TimeUnit.MINUTES,
+        Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
+        ThreadUtils.getThreadFactory("Grpc"),
+        grpcMetrics
+    );
   }
 
   private Server buildGrpcServer(int serverPort) {
     boolean isMetricsEnabled = rssConf.getBoolean(RssBaseConf.RPC_METRICS_ENABLED);
     long maxInboundMessageSize = rssConf.getLong(RssBaseConf.RPC_MESSAGE_MAX_SIZE);
-    ServerBuilder<?> builder =
-        ServerBuilder.forPort(serverPort)
-            .executor(pool)
-            .maxInboundMessageSize((int) maxInboundMessageSize);
+    ServerBuilder<?> builder = ServerBuilder
+        .forPort(serverPort)
+        .executor(pool)
+        .maxInboundMessageSize((int) maxInboundMessageSize);
     if (isMetricsEnabled) {
       builder.addTransportFilter(new MonitoringServerTransportFilter(grpcMetrics));
     }
-    servicesWithInterceptors.forEach(
-        (serviceWithInterceptors) -> {
-          List<ServerInterceptor> interceptors = serviceWithInterceptors.getRight();
-          if (isMetricsEnabled) {
-            MonitoringServerInterceptor monitoringInterceptor =
-                new MonitoringServerInterceptor(grpcMetrics);
-            List<ServerInterceptor> newInterceptors = Lists.newArrayList(interceptors);
-            newInterceptors.add(monitoringInterceptor);
-            interceptors = newInterceptors;
-          }
-          builder.addService(
-              ServerInterceptors.intercept(serviceWithInterceptors.getLeft(), interceptors));
-        });
+    servicesWithInterceptors.forEach((serviceWithInterceptors) -> {
+      List<ServerInterceptor> interceptors = serviceWithInterceptors.getRight();
+      if (isMetricsEnabled) {
+        MonitoringServerInterceptor monitoringInterceptor =
+            new MonitoringServerInterceptor(grpcMetrics);
+        List<ServerInterceptor> newInterceptors = Lists.newArrayList(interceptors);
+        newInterceptors.add(monitoringInterceptor);
+        interceptors = newInterceptors;
+      }
+      builder.addService(ServerInterceptors.intercept(serviceWithInterceptors.getLeft(), interceptors));
+    });
     return builder.build();
   }
 
@@ -109,8 +107,7 @@ public class GrpcServer implements ServerInterface {
     private RssBaseConf rssBaseConf;
     private GRPCMetrics grpcMetrics;
 
-    private List<Pair<BindableService, List<ServerInterceptor>>> servicesWithInterceptors =
-        new ArrayList<>();
+    private List<Pair<BindableService, List<ServerInterceptor>>> servicesWithInterceptors = new ArrayList<>();
 
     public static Builder newBuilder() {
       return new Builder();
@@ -155,16 +152,16 @@ public class GrpcServer implements ServerInterface {
     @Override
     protected void beforeExecute(Thread t, Runnable r) {
       grpcMetrics.incGauge(GRPCMetrics.GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY);
-      grpcMetrics.setGauge(
-          GRPCMetrics.GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY, getQueue().size());
+      grpcMetrics.setGauge(GRPCMetrics.GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY,
+          getQueue().size());
       super.beforeExecute(t, r);
     }
 
     @Override
     protected void afterExecute(Runnable r, Throwable t) {
       grpcMetrics.decGauge(GRPCMetrics.GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY);
-      grpcMetrics.setGauge(
-          GRPCMetrics.GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY, getQueue().size());
+      grpcMetrics.setGauge(GRPCMetrics.GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY,
+          getQueue().size());
       super.afterExecute(r, t);
     }
   }
@@ -172,8 +169,8 @@ public class GrpcServer implements ServerInterface {
   @Override
   public int start() throws IOException {
     try {
-      this.listenPort =
-          RssUtils.startServiceOnPort(this, Constants.GRPC_SERVICE_NAME, port, rssConf);
+      this.listenPort = RssUtils.startServiceOnPort(this,
+          Constants.GRPC_SERVICE_NAME, port, rssConf);
     } catch (Exception e) {
       ExitUtils.terminate(1, "Fail to start grpc server on conf port:" + port, e, LOG);
     }
@@ -211,4 +208,5 @@ public class GrpcServer implements ServerInterface {
   public int getPort() {
     return listenPort;
   }
+
 }
