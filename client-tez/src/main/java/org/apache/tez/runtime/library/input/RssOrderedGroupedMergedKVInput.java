@@ -1,13 +1,12 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -41,27 +40,24 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.exception.RssException;
 
 /**
- * A {@link MergedLogicalInput} which merges multiple
- * {@link OrderedGroupedKVInput}s and returns a single view of these by merging
- * values which belong to the same key.
- * 
- * Combiners and Secondary Sort are not implemented, so there is no guarantee on
- * the order of values.
+ * A {@link MergedLogicalInput} which merges multiple {@link OrderedGroupedKVInput}s and returns a
+ * single view of these by merging values which belong to the same key.
+ *
+ * <p>Combiners and Secondary Sort are not implemented, so there is no guarantee on the order of
+ * values.
  */
 @Public
 public class RssOrderedGroupedMergedKVInput extends MergedLogicalInput {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssOrderedGroupedMergedKVInput.class);
-  private final Set<Input> completedInputs = Collections
-      .newSetFromMap(new IdentityHashMap<Input, Boolean>());
+  private final Set<Input> completedInputs =
+      Collections.newSetFromMap(new IdentityHashMap<Input, Boolean>());
 
   public RssOrderedGroupedMergedKVInput(MergedInputContext context, List<Input> inputs) {
     super(context, inputs);
   }
 
-  /**
-   * Provides an ordered {@link KeyValuesReader}
-   */
+  /** Provides an ordered {@link KeyValuesReader} */
   @Override
   public KeyValuesReader getReader() throws Exception {
     return new OrderedGroupedMergedKeyValuesReader(getInputs(), getContext());
@@ -79,8 +75,10 @@ public class RssOrderedGroupedMergedKVInput extends MergedLogicalInput {
 
   private static class OrderedGroupedMergedKeyValuesReader extends KeyValuesReader {
     private final PriorityQueue<KeyValuesReader> pQueue;
+
     @SuppressWarnings("rawtypes")
     private final RawComparator keyComparator;
+
     private final List<KeyValuesReader> finishedReaders;
     private final ValuesIterable currentValues;
     private KeyValuesReader nextKVReader;
@@ -89,10 +87,9 @@ public class RssOrderedGroupedMergedKVInput extends MergedLogicalInput {
 
     OrderedGroupedMergedKeyValuesReader(List<Input> inputs, MergedInputContext context)
         throws Exception {
-      keyComparator = ((OrderedGroupedKVInput) inputs.get(0))
-          .getInputKeyComparator();
-      pQueue = new PriorityQueue<KeyValuesReader>(inputs.size(),
-          new KVReaderComparator(keyComparator));
+      keyComparator = ((OrderedGroupedKVInput) inputs.get(0)).getInputKeyComparator();
+      pQueue =
+          new PriorityQueue<KeyValuesReader>(inputs.size(), new KVReaderComparator(keyComparator));
       finishedReaders = new ArrayList<KeyValuesReader>(inputs.size());
       for (Input input : inputs) {
         KeyValuesReader reader = (KeyValuesReader) input.getReader();
@@ -104,8 +101,7 @@ public class RssOrderedGroupedMergedKVInput extends MergedLogicalInput {
       this.context = context;
     }
 
-    private void advanceAndAddToQueue(KeyValuesReader kvsReadr)
-        throws IOException {
+    private void advanceAndAddToQueue(KeyValuesReader kvsReadr) throws IOException {
       if (kvsReadr.next()) {
         pQueue.add(kvsReadr);
       }
@@ -166,7 +162,6 @@ public class RssOrderedGroupedMergedKVInput extends MergedLogicalInput {
       public void moveToNext() throws IOException {
         iterator.moveToNext();
       }
-
     }
 
     @SuppressWarnings("unchecked")
@@ -229,12 +224,9 @@ public class RssOrderedGroupedMergedKVInput extends MergedLogicalInput {
       }
     }
 
-    /**
-     * Comparator that compares KeyValuesReader on their current key
-     */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private static class KVReaderComparator implements
-        Comparator<KeyValuesReader> {
+    /** Comparator that compares KeyValuesReader on their current key */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static class KVReaderComparator implements Comparator<KeyValuesReader> {
 
       private RawComparator keyComparator;
 
@@ -258,7 +250,7 @@ public class RssOrderedGroupedMergedKVInput extends MergedLogicalInput {
   public float getProgress() throws ProgressFailedException, InterruptedException {
     float totalProgress = 0.0f;
     for (Input input : getInputs()) {
-      totalProgress += ((OrderedGroupedKVInput)input).getProgress();
+      totalProgress += ((OrderedGroupedKVInput) input).getProgress();
     }
     return (1.0f) * totalProgress / getInputs().size();
   }

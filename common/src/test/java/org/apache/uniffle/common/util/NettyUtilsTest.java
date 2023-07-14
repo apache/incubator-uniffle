@@ -57,7 +57,8 @@ public class NettyUtilsTest {
 
   static class MockDecoder extends ByteToMessageDecoder {
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf byteBuf, List<Object> list) throws Exception {
+    protected void decode(ChannelHandlerContext ctx, ByteBuf byteBuf, List<Object> list)
+        throws Exception {
       RpcResponse rpcResponse = new RpcResponse(1L, StatusCode.SUCCESS, EXPECTED_MESSAGE);
       NettyUtils.writeResponseMsg(ctx, rpcResponse, true);
     }
@@ -67,8 +68,7 @@ public class NettyUtilsTest {
   public void test() throws InterruptedException {
     EventLoopGroup workerGroup = NettyUtils.createEventLoop(IOMode.NIO, 2, "netty-client");
     PooledByteBufAllocator pooledByteBufAllocator =
-        NettyUtils.createPooledByteBufAllocator(
-            true, false /* allowCache */, 2);
+        NettyUtils.createPooledByteBufAllocator(true, false /* allowCache */, 2);
     Bootstrap bootstrap = new Bootstrap();
     bootstrap
         .group(workerGroup)
@@ -82,18 +82,24 @@ public class NettyUtilsTest {
         new ChannelInitializer<SocketChannel>() {
           @Override
           public void initChannel(SocketChannel ch) {
-            ch.pipeline().addLast(new ByteToMessageDecoder() {
-              @Override
-              protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) {
-                Message.Type messageType;
-                messageType = Message.Type.decode(byteBuf);
-                assertEquals(Message.Type.RPC_RESPONSE, messageType);
-                RpcResponse rpcResponse = (RpcResponse)Message.decode(messageType, byteBuf);
-                assertEquals(1L, rpcResponse.getRequestId());
-                assertEquals(StatusCode.SUCCESS, rpcResponse.getStatusCode());
-                assertEquals(EXPECTED_MESSAGE, rpcResponse.getRetMessage());
-              }
-            });
+            ch.pipeline()
+                .addLast(
+                    new ByteToMessageDecoder() {
+                      @Override
+                      protected void decode(
+                          ChannelHandlerContext channelHandlerContext,
+                          ByteBuf byteBuf,
+                          List<Object> list) {
+                        Message.Type messageType;
+                        messageType = Message.Type.decode(byteBuf);
+                        assertEquals(Message.Type.RPC_RESPONSE, messageType);
+                        RpcResponse rpcResponse =
+                            (RpcResponse) Message.decode(messageType, byteBuf);
+                        assertEquals(1L, rpcResponse.getRequestId());
+                        assertEquals(StatusCode.SUCCESS, rpcResponse.getStatusCode());
+                        assertEquals(EXPECTED_MESSAGE, rpcResponse.getRetMessage());
+                      }
+                    });
             channelRef.set(ch);
           }
         });
@@ -108,19 +114,19 @@ public class NettyUtilsTest {
 
   @BeforeEach
   public void startNettyServer() {
-    Supplier<ChannelHandler[]> handlerSupplier = () -> new ChannelHandler[]{
-        new MockDecoder()
-    };
+    Supplier<ChannelHandler[]> handlerSupplier = () -> new ChannelHandler[] {new MockDecoder()};
     bossGroup = NettyUtils.createEventLoop(IOMode.NIO, 1, "netty-boss-group");
     workerGroup = NettyUtils.createEventLoop(IOMode.NIO, 5, "netty-worker-group");
-    ServerBootstrap serverBootstrap = new ServerBootstrap().group(bossGroup, workerGroup)
-                                          .channel(NioServerSocketChannel.class);
-    serverBootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
-      @Override
-      public void initChannel(final SocketChannel ch) {
-        ch.pipeline().addLast(handlerSupplier.get());
-      }
-    })
+    ServerBootstrap serverBootstrap =
+        new ServerBootstrap().group(bossGroup, workerGroup).channel(NioServerSocketChannel.class);
+    serverBootstrap
+        .childHandler(
+            new ChannelInitializer<SocketChannel>() {
+              @Override
+              public void initChannel(final SocketChannel ch) {
+                ch.pipeline().addLast(handlerSupplier.get());
+              }
+            })
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
         .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
         .childOption(ChannelOption.TCP_NODELAY, true)

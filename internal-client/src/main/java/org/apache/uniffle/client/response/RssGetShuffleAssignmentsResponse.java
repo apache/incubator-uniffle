@@ -41,8 +41,7 @@ public class RssGetShuffleAssignmentsResponse extends ClientResponse {
     return partitionToServers;
   }
 
-  public void setPartitionToServers(
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers) {
+  public void setPartitionToServers(Map<Integer, List<ShuffleServerInfo>> partitionToServers) {
     this.partitionToServers = partitionToServers;
   }
 

@@ -44,8 +44,7 @@ public class HadoopTestBase implements Serializable {
   public static void setUpHdfs(@TempDir File tempDir) throws Exception {
     conf = new Configuration();
     baseDir = tempDir;
-    conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR,
-        baseDir.getAbsolutePath());
+    conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath());
     cluster = (new MiniDFSCluster.Builder(conf)).build();
     HDFS_URI = cluster.getURI().toString() + "/";
     fs = (new Path(HDFS_URI)).getFileSystem(conf);

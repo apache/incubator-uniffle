@@ -33,22 +33,20 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 
 @Path("/prometheus/metrics")
 public class PrometheusMetricResource extends BaseMetricResource {
-  @Context
-  private HttpServletResponse httpServletResponse;
-  @Context
-  protected ServletContext servletContext;
+  @Context private HttpServletResponse httpServletResponse;
+  @Context protected ServletContext servletContext;
 
   @GET
   @Path("/{type}")
-  public String metrics(
-      @PathParam("type") String type,
-      @QueryParam("name[]") Set<String> names) throws IOException {
+  public String metrics(@PathParam("type") String type, @QueryParam("name[]") Set<String> names)
+      throws IOException {
     httpServletResponse.setStatus(200);
     httpServletResponse.setContentType("text/plain; version=0.0.4; charset=utf-8");
     Writer writer = new BufferedWriter(httpServletResponse.getWriter());
 
     try {
-      TextFormat.write004(writer, getCollectorRegistry(servletContext, type).filteredMetricFamilySamples(names));
+      TextFormat.write004(
+          writer, getCollectorRegistry(servletContext, type).filteredMetricFamilySamples(names));
       writer.flush();
     } finally {
       writer.close();

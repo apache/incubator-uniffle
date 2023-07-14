@@ -27,8 +27,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * {@code ConfigOptions} are used to build a {@link ConfigOption}.
- * The option is typically built in one of the following pattern:
+ * {@code ConfigOptions} are used to build a {@link ConfigOption}. The option is typically built in
+ * one of the following pattern:
  *
  * <pre>{@code
  * // simple string-valued option with a default value
@@ -60,11 +60,8 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class ConfigOptions {
 
-  /**
-   * Not intended to be instantiated.
-   */
-  private ConfigOptions() {
-  }
+  /** Not intended to be instantiated. */
+  private ConfigOptions() {}
 
   // ------------------------------------------------------------------------
 
@@ -80,13 +77,11 @@ public class ConfigOptions {
   }
 
   /**
-   * The option builder is used to create a {@link ConfigOption}.
-   * It is instantiated via {@link ConfigOptions#key(String)}.
+   * The option builder is used to create a {@link ConfigOption}. It is instantiated via {@link
+   * ConfigOptions#key(String)}.
    */
   public static final class OptionBuilder {
-    /**
-     * The key for the config option.
-     */
+    /** The key for the config option. */
     private final String key;
 
     /**
@@ -98,44 +93,32 @@ public class ConfigOptions {
       this.key = key;
     }
 
-    /**
-     * Defines that the value of the option should be of {@link Boolean} type.
-     */
+    /** Defines that the value of the option should be of {@link Boolean} type. */
     public TypedConfigOptionBuilder<Boolean> booleanType() {
       return new TypedConfigOptionBuilder<>(key, Boolean.class);
     }
 
-    /**
-     * Defines that the value of the option should be of {@link Integer} type.
-     */
+    /** Defines that the value of the option should be of {@link Integer} type. */
     public TypedConfigOptionBuilder<Integer> intType() {
       return new TypedConfigOptionBuilder<>(key, Integer.class);
     }
 
-    /**
-     * Defines that the value of the option should be of {@link Long} type.
-     */
+    /** Defines that the value of the option should be of {@link Long} type. */
     public TypedConfigOptionBuilder<Long> longType() {
       return new TypedConfigOptionBuilder<>(key, Long.class);
     }
 
-    /**
-     * Defines that the value of the option should be of {@link Float} type.
-     */
+    /** Defines that the value of the option should be of {@link Float} type. */
     public TypedConfigOptionBuilder<Float> floatType() {
       return new TypedConfigOptionBuilder<>(key, Float.class);
     }
 
-    /**
-     * Defines that the value of the option should be of {@link Double} type.
-     */
+    /** Defines that the value of the option should be of {@link Double} type. */
     public TypedConfigOptionBuilder<Double> doubleType() {
       return new TypedConfigOptionBuilder<>(key, Double.class);
     }
 
-    /**
-     * Defines that the value of the option should be of {@link String} type.
-     */
+    /** Defines that the value of the option should be of {@link String} type. */
     public TypedConfigOptionBuilder<String> stringType() {
       return new TypedConfigOptionBuilder<>(key, String.class);
     }
@@ -165,15 +148,15 @@ public class ConfigOptions {
     TypedConfigOptionBuilder(String key, Class<T> clazz) {
       this.key = key;
       this.clazz = clazz;
-      this.converter = (v) -> {
-        try {
-          return ConfigUtils.convertValue(v, clazz);
-        } catch (Exception e) {
-          throw new IllegalArgumentException(String.format(
-              "Could not parse value '%s' for key '%s'.", v.toString(),
-              key), e);
-        }
-      };
+      this.converter =
+          (v) -> {
+            try {
+              return ConfigUtils.convertValue(v, clazz);
+            } catch (Exception e) {
+              throw new IllegalArgumentException(
+                  String.format("Could not parse value '%s' for key '%s'.", v.toString(), key), e);
+            }
+          };
     }
 
     TypedConfigOptionBuilder(String key, Class<T> clazz, Function<Object, T> converter) {
@@ -188,13 +171,14 @@ public class ConfigOptions {
 
     // todo: errorMsg shouldn't contain key
     public TypedConfigOptionBuilder<T> checkValue(Function<T, Boolean> checkValue, String errMsg) {
-      Function<Object, T> newConverter = (v) -> {
-        T newValue = this.converter.apply(v);
-        if (!checkValue.apply(newValue)) {
-          throw new IllegalArgumentException(errMsg);
-        }
-        return newValue;
-      };
+      Function<Object, T> newConverter =
+          (v) -> {
+            T newValue = this.converter.apply(v);
+            if (!checkValue.apply(newValue)) {
+              throw new IllegalArgumentException(errMsg);
+            }
+            return newValue;
+          };
       return new TypedConfigOptionBuilder<>(key, clazz, newConverter);
     }
 
@@ -205,12 +189,7 @@ public class ConfigOptions {
      * @return The config option with the default value.
      */
     public ConfigOption<T> defaultValue(T value) {
-      return new ConfigOption<>(
-        key,
-        clazz,
-        ConfigOption.EMPTY_DESCRIPTION,
-        value,
-        converter);
+      return new ConfigOption<>(key, clazz, ConfigOption.EMPTY_DESCRIPTION, value, converter);
     }
 
     /**
@@ -219,12 +198,7 @@ public class ConfigOptions {
      * @return The config option without a default value.
      */
     public ConfigOption<T> noDefaultValue() {
-      return new ConfigOption<>(
-        key,
-        clazz,
-        ConfigOption.EMPTY_DESCRIPTION,
-        null,
-        converter);
+      return new ConfigOption<>(key, clazz, ConfigOption.EMPTY_DESCRIPTION, null, converter);
     }
   }
 
@@ -242,33 +216,38 @@ public class ConfigOptions {
     private Function<Object, List<E>> asListConverter;
 
     @SuppressWarnings("unchecked")
-    public ListConfigOptionBuilder(String key, Class<E> clazz, Function<Object, E> atomicConverter) {
+    public ListConfigOptionBuilder(
+        String key, Class<E> clazz, Function<Object, E> atomicConverter) {
       this.key = key;
       this.clazz = clazz;
       this.atomicConverter = atomicConverter;
-      this.asListConverter = (v) -> {
-        if (v instanceof List) {
-          return (List<E>) v;
-        } else {
-          String trimmedVal = v.toString().trim();
-          if (StringUtils.isEmpty(trimmedVal)) {
-            return Collections.emptyList();
-          }
-          return Arrays.stream(trimmedVal.split(LIST_SPILTTER))
-                  .map(atomicConverter::apply).collect(Collectors.toList());
-        }
-      };
+      this.asListConverter =
+          (v) -> {
+            if (v instanceof List) {
+              return (List<E>) v;
+            } else {
+              String trimmedVal = v.toString().trim();
+              if (StringUtils.isEmpty(trimmedVal)) {
+                return Collections.emptyList();
+              }
+              return Arrays.stream(trimmedVal.split(LIST_SPILTTER))
+                  .map(atomicConverter::apply)
+                  .collect(Collectors.toList());
+            }
+          };
     }
 
-    public ListConfigOptionBuilder<E> checkValue(Function<E, Boolean> checkValueFunc, String errMsg) {
+    public ListConfigOptionBuilder<E> checkValue(
+        Function<E, Boolean> checkValueFunc, String errMsg) {
       final Function<Object, List<E>> listConverFunc = asListConverter;
-      Function<Object, List<E>> newConverter = (v) -> {
-        List<E> list = listConverFunc.apply(v);
-        if (list.stream().anyMatch(x -> !checkValueFunc.apply(x))) {
-          throw new IllegalArgumentException(errMsg);
-        }
-        return list;
-      };
+      Function<Object, List<E>> newConverter =
+          (v) -> {
+            List<E> list = listConverFunc.apply(v);
+            if (list.stream().anyMatch(x -> !checkValueFunc.apply(x))) {
+              throw new IllegalArgumentException(errMsg);
+            }
+            return list;
+          };
       this.asListConverter = newConverter;
       return this;
     }
@@ -282,11 +261,7 @@ public class ConfigOptions {
     @SafeVarargs
     public final ConfigOption<List<E>> defaultValues(E... values) {
       return new ConfigOption<>(
-        key,
-        clazz,
-        ConfigOption.EMPTY_DESCRIPTION,
-        Arrays.asList(values),
-        asListConverter);
+          key, clazz, ConfigOption.EMPTY_DESCRIPTION, Arrays.asList(values), asListConverter);
     }
 
     /**
@@ -295,12 +270,7 @@ public class ConfigOptions {
      * @return The config option without a default value.
      */
     public ConfigOption<List<E>> noDefaultValue() {
-      return new ConfigOption<>(
-        key,
-        clazz,
-        ConfigOption.EMPTY_DESCRIPTION,
-        null,
-        asListConverter);
+      return new ConfigOption<>(key, clazz, ConfigOption.EMPTY_DESCRIPTION, null, asListConverter);
     }
   }
 }

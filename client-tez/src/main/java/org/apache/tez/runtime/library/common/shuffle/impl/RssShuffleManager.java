@@ -1,13 +1,12 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -118,27 +117,18 @@ public class RssShuffleManager extends ShuffleManager {
 
   private final FetchedInputAllocator inputManager;
 
-  @VisibleForTesting
-  final ListeningExecutorService fetcherExecutor;
+  @VisibleForTesting final ListeningExecutorService fetcherExecutor;
 
-  /**
-   * Executor for ReportCallable.
-   */
+  /** Executor for ReportCallable. */
   private ExecutorService reporterExecutor;
 
-  /**
-   * Lock to sync failedEvents.
-   */
+  /** Lock to sync failedEvents. */
   private final ReentrantLock reportLock = new ReentrantLock();
 
-  /**
-   * Condition to wake up the thread notifying when events fail.
-   */
+  /** Condition to wake up the thread notifying when events fail. */
   private final Condition reportCondition = reportLock.newCondition();
 
-  /**
-   * Events reporting fetcher failed.
-   */
+  /** Events reporting fetcher failed. */
   private final HashMap<InputReadErrorEvent, Integer> failedEvents = new HashMap<>();
 
   private final ListeningExecutorService schedulerExecutor;
@@ -146,8 +136,7 @@ public class RssShuffleManager extends ShuffleManager {
 
   private final BlockingQueue<FetchedInput> completedInputs;
   private final AtomicBoolean inputReadyNotificationSent = new AtomicBoolean(false);
-  @VisibleForTesting
-  final BitSet completedInputSet;
+  @VisibleForTesting final BitSet completedInputSet;
   private final ConcurrentMap<HostPort, InputHost> knownSrcHosts;
   private final BlockingQueue<InputHost> pendingHosts;
   private final Set<InputAttemptIdentifier> obsoletedInputs;
@@ -179,9 +168,7 @@ public class RssShuffleManager extends ShuffleManager {
   private final boolean ifileReadAhead;
   private final int ifileReadAheadLength;
 
-  /**
-   * Holds the time to wait for failures to batch them and send less events.
-   */
+  /** Holds the time to wait for failures to batch them and send less events. */
   private final int maxTimeToWaitForReportMillis;
 
   private final String srcNameTrimmed;
@@ -211,9 +198,9 @@ public class RssShuffleManager extends ShuffleManager {
   private final TezCounter firstEventReceived;
   private final TezCounter lastEventReceived;
 
-  //To track shuffleInfo events when finalMerge is disabled OR pipelined shuffle is enabled in source.
-  @VisibleForTesting
-  final Map<Integer, ShuffleEventInfo> shuffleInfoEventsMap;
+  // To track shuffleInfo events when finalMerge is disabled OR pipelined shuffle is enabled in
+  // source.
+  @VisibleForTesting final Map<Integer, ShuffleEventInfo> shuffleInfoEventsMap;
 
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
   private final Set<Integer> successRssPartitionSet = new HashSet<>();
@@ -221,54 +208,84 @@ public class RssShuffleManager extends ShuffleManager {
   private final Set<Integer> allRssPartition = Sets.newConcurrentHashSet();
   private final BlockingQueue<Integer> pendingPartition = new LinkedBlockingQueue<>();
   Map<Integer, List<InputAttemptIdentifier>> partitionToInput = new HashMap<>();
-  private final Map<Integer, Roaring64NavigableMap> rssAllBlockIdBitmapMap = new ConcurrentHashMap<>();
-  private final Map<Integer, Roaring64NavigableMap> rssSuccessBlockIdBitmapMap = new ConcurrentHashMap<>();
+  private final Map<Integer, Roaring64NavigableMap> rssAllBlockIdBitmapMap =
+      new ConcurrentHashMap<>();
+  private final Map<Integer, Roaring64NavigableMap> rssSuccessBlockIdBitmapMap =
+      new ConcurrentHashMap<>();
   private final AtomicInteger numNoDataInput = new AtomicInteger(0);
   private final AtomicInteger numWithDataInput = new AtomicInteger(0);
 
-  public RssShuffleManager(InputContext inputContext, Configuration conf, int numInputs,
-          int bufferSize, boolean ifileReadAheadEnabled, int ifileReadAheadLength,
-          CompressionCodec codec, FetchedInputAllocator inputAllocator, int shuffleId) throws IOException {
-    super(inputContext, conf, numInputs, bufferSize, ifileReadAheadEnabled, ifileReadAheadLength, codec,
+  public RssShuffleManager(
+      InputContext inputContext,
+      Configuration conf,
+      int numInputs,
+      int bufferSize,
+      boolean ifileReadAheadEnabled,
+      int ifileReadAheadLength,
+      CompressionCodec codec,
+      FetchedInputAllocator inputAllocator,
+      int shuffleId)
+      throws IOException {
+    super(
+        inputContext,
+        conf,
+        numInputs,
+        bufferSize,
+        ifileReadAheadEnabled,
+        ifileReadAheadLength,
+        codec,
         inputAllocator);
     this.inputContext = inputContext;
     this.conf = conf;
     this.numInputs = numInputs;
     this.shuffleId = shuffleId;
 
-    this.shuffledInputsCounter = inputContext.getCounters().findCounter(TaskCounter.NUM_SHUFFLED_INPUTS);
-    this.failedShufflesCounter = inputContext.getCounters().findCounter(TaskCounter.NUM_FAILED_SHUFFLE_INPUTS);
+    this.shuffledInputsCounter =
+        inputContext.getCounters().findCounter(TaskCounter.NUM_SHUFFLED_INPUTS);
+    this.failedShufflesCounter =
+        inputContext.getCounters().findCounter(TaskCounter.NUM_FAILED_SHUFFLE_INPUTS);
     this.bytesShuffledCounter = inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES);
-    this.decompressedDataSizeCounter = inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_DECOMPRESSED);
-    this.bytesShuffledToDiskCounter = inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_TO_DISK);
-    this.bytesShuffledToMemCounter = inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_TO_MEM);
-    this.bytesShuffledDirectDiskCounter = inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_DISK_DIRECT);
+    this.decompressedDataSizeCounter =
+        inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_DECOMPRESSED);
+    this.bytesShuffledToDiskCounter =
+        inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_TO_DISK);
+    this.bytesShuffledToMemCounter =
+        inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_TO_MEM);
+    this.bytesShuffledDirectDiskCounter =
+        inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_DISK_DIRECT);
 
     this.ifileBufferSize = bufferSize;
     this.ifileReadAhead = ifileReadAheadEnabled;
     this.ifileReadAheadLength = ifileReadAheadLength;
     this.codec = codec;
     this.inputManager = inputAllocator;
-    this.localDiskFetchEnabled = conf.getBoolean(TezRuntimeConfiguration.TEZ_RUNTIME_OPTIMIZE_LOCAL_FETCH,
-        TezRuntimeConfiguration.TEZ_RUNTIME_OPTIMIZE_LOCAL_FETCH_DEFAULT);
-    this.sharedFetchEnabled = conf.getBoolean(TezRuntimeConfiguration.TEZ_RUNTIME_OPTIMIZE_SHARED_FETCH,
-        TezRuntimeConfiguration.TEZ_RUNTIME_OPTIMIZE_SHARED_FETCH_DEFAULT);
-    this.verifyDiskChecksum = conf.getBoolean(
-        TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_VERIFY_DISK_CHECKSUM,
-        TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_VERIFY_DISK_CHECKSUM_DEFAULT);
+    this.localDiskFetchEnabled =
+        conf.getBoolean(
+            TezRuntimeConfiguration.TEZ_RUNTIME_OPTIMIZE_LOCAL_FETCH,
+            TezRuntimeConfiguration.TEZ_RUNTIME_OPTIMIZE_LOCAL_FETCH_DEFAULT);
+    this.sharedFetchEnabled =
+        conf.getBoolean(
+            TezRuntimeConfiguration.TEZ_RUNTIME_OPTIMIZE_SHARED_FETCH,
+            TezRuntimeConfiguration.TEZ_RUNTIME_OPTIMIZE_SHARED_FETCH_DEFAULT);
+    this.verifyDiskChecksum =
+        conf.getBoolean(
+            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_VERIFY_DISK_CHECKSUM,
+            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_VERIFY_DISK_CHECKSUM_DEFAULT);
     this.maxTimeToWaitForReportMillis = 1;
 
     this.shufflePhaseTime = inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_PHASE_TIME);
-    this.firstEventReceived = inputContext.getCounters().findCounter(TaskCounter.FIRST_EVENT_RECEIVED);
-    this.lastEventReceived = inputContext.getCounters().findCounter(TaskCounter.LAST_EVENT_RECEIVED);
+    this.firstEventReceived =
+        inputContext.getCounters().findCounter(TaskCounter.FIRST_EVENT_RECEIVED);
+    this.lastEventReceived =
+        inputContext.getCounters().findCounter(TaskCounter.LAST_EVENT_RECEIVED);
     this.compositeFetch = ShuffleUtils.isTezShuffleHandler(conf);
 
     this.srcNameTrimmed = TezUtilsInternal.cleanVertexName(inputContext.getSourceVertexName());
 
     completedInputSet = new BitSet(numInputs);
     /**
-     * In case of pipelined shuffle, it is possible to get multiple FetchedInput per attempt.
-     * We do not know upfront the number of spills from source.
+     * In case of pipelined shuffle, it is possible to get multiple FetchedInput per attempt. We do
+     * not know upfront the number of spills from source.
      */
     completedInputs = new LinkedBlockingDeque<>();
     knownSrcHosts = new ConcurrentHashMap<>();
@@ -284,49 +301,68 @@ public class RssShuffleManager extends ShuffleManager {
     this.numFetchers = Math.min(maxConfiguredFetchers, numInputs);
 
     final ExecutorService fetcherRawExecutor;
-    if (conf.getBoolean(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCHER_USE_SHARED_POOL,
+    if (conf.getBoolean(
+        TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCHER_USE_SHARED_POOL,
         TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCHER_USE_SHARED_POOL_DEFAULT)) {
-      fetcherRawExecutor = inputContext.createTezFrameworkExecutorService(numFetchers,
-          "Fetcher_B {" + srcNameTrimmed + "} #%d");
+      fetcherRawExecutor =
+          inputContext.createTezFrameworkExecutorService(
+              numFetchers, "Fetcher_B {" + srcNameTrimmed + "} #%d");
     } else {
-      fetcherRawExecutor = Executors.newFixedThreadPool(numFetchers, new ThreadFactoryBuilder()
-          .setDaemon(true).setNameFormat("Fetcher_B {" + srcNameTrimmed + "} #%d").build());
+      fetcherRawExecutor =
+          Executors.newFixedThreadPool(
+              numFetchers,
+              new ThreadFactoryBuilder()
+                  .setDaemon(true)
+                  .setNameFormat("Fetcher_B {" + srcNameTrimmed + "} #%d")
+                  .build());
     }
     this.fetcherExecutor = MoreExecutors.listeningDecorator(fetcherRawExecutor);
 
-    ExecutorService schedulerRawExecutor = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder()
-        .setDaemon(true).setNameFormat("ShuffleRunner {" + srcNameTrimmed + "}").build());
+    ExecutorService schedulerRawExecutor =
+        Executors.newFixedThreadPool(
+            1,
+            new ThreadFactoryBuilder()
+                .setDaemon(true)
+                .setNameFormat("ShuffleRunner {" + srcNameTrimmed + "}")
+                .build());
     this.schedulerExecutor = MoreExecutors.listeningDecorator(schedulerRawExecutor);
     this.rssSchedulerCallable = new RssRunShuffleCallable(conf);
 
     this.startTime = System.currentTimeMillis();
     this.lastProgressTime = startTime;
 
-    this.asyncHttp = conf.getBoolean(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_USE_ASYNC_HTTP, false);
+    this.asyncHttp =
+        conf.getBoolean(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_USE_ASYNC_HTTP, false);
     httpConnectionParams = ShuffleUtils.getHttpConnectionParams(conf);
 
     this.localFs = (RawLocalFileSystem) FileSystem.getLocal(conf).getRaw();
 
-    this.localDirAllocator = new LocalDirAllocator(
-        TezRuntimeFrameworkConfigs.LOCAL_DIRS);
+    this.localDirAllocator = new LocalDirAllocator(TezRuntimeFrameworkConfigs.LOCAL_DIRS);
 
-    this.localDisks = Iterables.toArray(
-        localDirAllocator.getAllLocalPathsToRead(".", conf), Path.class);
+    this.localDisks =
+        Iterables.toArray(localDirAllocator.getAllLocalPathsToRead(".", conf), Path.class);
     this.localhostName = inputContext.getExecutionContext().getHostName();
 
-    String auxiliaryService = conf.get(TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID,
-        TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID_DEFAULT);
-    final ByteBuffer shuffleMetaData =
-        inputContext.getServiceProviderMetaData(auxiliaryService);
+    String auxiliaryService =
+        conf.get(
+            TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID,
+            TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID_DEFAULT);
+    final ByteBuffer shuffleMetaData = inputContext.getServiceProviderMetaData(auxiliaryService);
     this.shufflePort = ShuffleUtils.deserializeShuffleProviderMetaData(shuffleMetaData);
 
     /**
-     * Setting to very high val can lead to Http 400 error. Cap it to 75; every attempt id would
-     * be approximately 48 bytes; 48 * 75 = 3600 which should give some room for other info in URL.
+     * Setting to very high val can lead to Http 400 error. Cap it to 75; every attempt id would be
+     * approximately 48 bytes; 48 * 75 = 3600 which should give some room for other info in URL.
      */
-    this.maxTaskOutputAtOnce = Math.max(1, Math.min(75, conf.getInt(
-        TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_MAX_TASK_OUTPUT_AT_ONCE,
-        TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_MAX_TASK_OUTPUT_AT_ONCE_DEFAULT)));
+    this.maxTaskOutputAtOnce =
+        Math.max(
+            1,
+            Math.min(
+                75,
+                conf.getInt(
+                    TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_MAX_TASK_OUTPUT_AT_ONCE,
+                    TezRuntimeConfiguration
+                        .TEZ_RUNTIME_SHUFFLE_FETCH_MAX_TASK_OUTPUT_AT_ONCE_DEFAULT)));
 
     if (null != this.localDisks) {
       Arrays.sort(this.localDisks);
@@ -334,44 +370,60 @@ public class RssShuffleManager extends ShuffleManager {
 
     shuffleInfoEventsMap = new ConcurrentHashMap<>();
 
-    LOG.info(srcNameTrimmed + ": numInputs=" + numInputs + ", compressionCodec="
-        + (codec == null ? "NoCompressionCodec" : codec.getClass().getName()) + ", numFetchers="
-        + numFetchers + ", ifileBufferSize=" + ifileBufferSize + ", ifileReadAheadEnabled="
-        + ifileReadAhead + ", ifileReadAheadLength=" + ifileReadAheadLength + ", "
-        + "localDiskFetchEnabled=" + localDiskFetchEnabled + ", "
-        + "sharedFetchEnabled=" + sharedFetchEnabled + ", "
-        + httpConnectionParams.toString() + ", maxTaskOutputAtOnce=" + maxTaskOutputAtOnce);
+    LOG.info(
+        srcNameTrimmed
+            + ": numInputs="
+            + numInputs
+            + ", compressionCodec="
+            + (codec == null ? "NoCompressionCodec" : codec.getClass().getName())
+            + ", numFetchers="
+            + numFetchers
+            + ", ifileBufferSize="
+            + ifileBufferSize
+            + ", ifileReadAheadEnabled="
+            + ifileReadAhead
+            + ", ifileReadAheadLength="
+            + ifileReadAheadLength
+            + ", "
+            + "localDiskFetchEnabled="
+            + localDiskFetchEnabled
+            + ", "
+            + "sharedFetchEnabled="
+            + sharedFetchEnabled
+            + ", "
+            + httpConnectionParams.toString()
+            + ", maxTaskOutputAtOnce="
+            + maxTaskOutputAtOnce);
   }
 
   @Override
   public void run() throws IOException {
     TezTaskAttemptID tezTaskAttemptId = InputContextUtils.getTezTaskAttemptID(this.inputContext);
-    this.partitionToServers = UmbilicalUtils.requestShuffleServer(
-          this.inputContext.getApplicationId(), this.conf, tezTaskAttemptId, shuffleId);
-
+    this.partitionToServers =
+        UmbilicalUtils.requestShuffleServer(
+            this.inputContext.getApplicationId(), this.conf, tezTaskAttemptId, shuffleId);
 
     Preconditions.checkState(inputManager != null, "InputManager must be configured");
     if (maxTimeToWaitForReportMillis > 0) {
-      reporterExecutor = Executors.newSingleThreadExecutor(
-          new ThreadFactoryBuilder().setDaemon(true)
-              .setNameFormat("ShuffleRunner {" + srcNameTrimmed + "}")
-              .build());
+      reporterExecutor =
+          Executors.newSingleThreadExecutor(
+              new ThreadFactoryBuilder()
+                  .setDaemon(true)
+                  .setNameFormat("ShuffleRunner {" + srcNameTrimmed + "}")
+                  .build());
       Future reporterFuture = reporterExecutor.submit(new ReporterCallable());
     }
 
     ListenableFuture<Void> runShuffleFuture = schedulerExecutor.submit(rssSchedulerCallable);
-    Futures.addCallback(runShuffleFuture, new SchedulerFutureCallback(), MoreExecutors.directExecutor());
+    Futures.addCallback(
+        runShuffleFuture, new SchedulerFutureCallback(), MoreExecutors.directExecutor());
     // Shutdown this executor once this task, and the callback complete.
     schedulerExecutor.shutdown();
   }
 
   private class ReporterCallable extends CallableWithNdc<Void> {
-    /**
-     * Measures if the batching interval has ended.
-     */
-
-    ReporterCallable() {
-    }
+    /** Measures if the batching interval has ended. */
+    ReporterCallable() {}
 
     @Override
     protected Void callInternal() throws Exception {
@@ -380,19 +432,19 @@ public class RssShuffleManager extends ShuffleManager {
         try {
           reportLock.lock();
           while (failedEvents.isEmpty()) {
-            boolean signaled = reportCondition.await(maxTimeToWaitForReportMillis,
-                TimeUnit.MILLISECONDS);
+            boolean signaled =
+                reportCondition.await(maxTimeToWaitForReportMillis, TimeUnit.MILLISECONDS);
           }
 
-          long currentTime = Time.monotonicNow();;
+          long currentTime = Time.monotonicNow();
+          ;
           if (currentTime > nextReport) {
             if (failedEvents.size() > 0) {
-              List<Event> failedEventsToSend = Lists.newArrayListWithCapacity(
-                  failedEvents.size());
+              List<Event> failedEventsToSend = Lists.newArrayListWithCapacity(failedEvents.size());
               for (InputReadErrorEvent key : failedEvents.keySet()) {
-                failedEventsToSend.add(InputReadErrorEvent
-                    .create(key.getDiagnostics(), key.getIndex(),
-                        key.getVersion()));
+                failedEventsToSend.add(
+                    InputReadErrorEvent.create(
+                        key.getDiagnostics(), key.getIndex(), key.getVersion()));
               }
               inputContext.sendEvents(failedEventsToSend);
               failedEvents.clear();
@@ -407,19 +459,28 @@ public class RssShuffleManager extends ShuffleManager {
     }
   }
 
-
   private boolean isAllInputFetched() {
-    LOG.info("Check isAllInputFetched, numNoDataInput:{}, numWithDataInput:{},numInputs:{},  " 
+    LOG.info(
+        "Check isAllInputFetched, numNoDataInput:{}, numWithDataInput:{},numInputs:{},  "
             + "successRssPartitionSet:{},  allRssPartition:{}.",
-        numNoDataInput, numWithDataInput, numInputs, successRssPartitionSet, allRssPartition);
+        numNoDataInput,
+        numWithDataInput,
+        numInputs,
+        successRssPartitionSet,
+        allRssPartition);
     return (numNoDataInput.get() + numWithDataInput.get() >= numInputs)
         && (successRssPartitionSet.size() >= allRssPartition.size());
   }
 
   private boolean isAllInputAdded() {
-    LOG.info("Check isAllInputAdded, numNoDataInput:{}, numWithDataInput:{},numInputs:{},  "
+    LOG.info(
+        "Check isAllInputAdded, numNoDataInput:{}, numWithDataInput:{},numInputs:{},  "
             + "successRssPartitionSet:{}, allRssPartition:{}.",
-        numNoDataInput, numWithDataInput, numInputs, successRssPartitionSet, allRssPartition);
+        numNoDataInput,
+        numWithDataInput,
+        numInputs,
+        successRssPartitionSet,
+        allRssPartition);
     return numNoDataInput.get() + numWithDataInput.get() >= numInputs;
   }
 
@@ -436,16 +497,26 @@ public class RssShuffleManager extends ShuffleManager {
       while (!isShutdown.get() && !isAllInputFetched()) {
         lock.lock();
         try {
-          LOG.info("numFetchers:{}, shuffleInfoEventsMap.size:{}, numInputs:{}.",
-              numFetchers, shuffleInfoEventsMap.size(), numInputs);
-          while (((rssRunningFetchers.size() >= numFetchers || pendingPartition.isEmpty()) && !isAllInputFetched())
-                || !isAllInputAdded()) {
-            LOG.info("isAllInputAdded:{}, rssRunningFetchers:{}, numFetchers:{}, pendingPartition:{}, "
-                    + "successRssPartitionSet:{}, allRssPartition:{} ", isAllInputAdded(), rssRunningFetchers,
-                numFetchers, pendingPartition, successRssPartitionSet, allRssPartition);
+          LOG.info(
+              "numFetchers:{}, shuffleInfoEventsMap.size:{}, numInputs:{}.",
+              numFetchers,
+              shuffleInfoEventsMap.size(),
+              numInputs);
+          while (((rssRunningFetchers.size() >= numFetchers || pendingPartition.isEmpty())
+                  && !isAllInputFetched())
+              || !isAllInputAdded()) {
+            LOG.info(
+                "isAllInputAdded:{}, rssRunningFetchers:{}, numFetchers:{}, pendingPartition:{}, "
+                    + "successRssPartitionSet:{}, allRssPartition:{} ",
+                isAllInputAdded(),
+                rssRunningFetchers,
+                numFetchers,
+                pendingPartition,
+                successRssPartitionSet,
+                allRssPartition);
 
             inputContext.notifyProgress();
-            boolean isSignal =  wakeLoop.await(1000, TimeUnit.MILLISECONDS);
+            boolean isSignal = wakeLoop.await(1000, TimeUnit.MILLISECONDS);
             if (isSignal) {
               LOG.info("wakeLoop is signal");
             }
@@ -454,7 +525,10 @@ public class RssShuffleManager extends ShuffleManager {
               break;
             }
           }
-          LOG.info("run out of while, is all inputadded:{}, fetched:{}", isAllInputAdded(), isAllInputFetched());
+          LOG.info(
+              "run out of while, is all inputadded:{}, fetched:{}",
+              isAllInputAdded(),
+              isAllInputFetched());
         } finally {
           lock.unlock();
         }
@@ -473,7 +547,10 @@ public class RssShuffleManager extends ShuffleManager {
         if (!isAllInputFetched() && !isShutdown.get()) {
           lock.lock();
           try {
-            LOG.info("numFetchers:{}，runningFetchers.size():{}.", numFetchers, rssRunningFetchers.size());
+            LOG.info(
+                "numFetchers:{}，runningFetchers.size():{}.",
+                numFetchers,
+                rssRunningFetchers.size());
             int maxFetchersToRun = numFetchers - rssRunningFetchers.size();
             int count = 0;
             LOG.info("pendingPartition:{}", pendingPartition.peek());
@@ -483,7 +560,10 @@ public class RssShuffleManager extends ShuffleManager {
                 partition = pendingPartition.take();
               } catch (InterruptedException e) {
                 if (isShutdown.get()) {
-                  LOG.info(srcNameTrimmed + ": " + "Interrupted and hasBeenShutdown, Breaking out of ShuffleScheduler");
+                  LOG.info(
+                      srcNameTrimmed
+                          + ": "
+                          + "Interrupted and hasBeenShutdown, Breaking out of ShuffleScheduler");
                   Thread.currentThread().interrupt();
                   break;
                 } else {
@@ -495,30 +575,54 @@ public class RssShuffleManager extends ShuffleManager {
                 LOG.debug(srcNameTrimmed + ": " + "Processing pending partition: " + partition);
               }
 
-              if (!isShutdown.get() && (!successRssPartitionSet.contains(partition)
-                  && !runningRssPartitionMap.contains(partition))) {
+              if (!isShutdown.get()
+                  && (!successRssPartitionSet.contains(partition)
+                      && !runningRssPartitionMap.contains(partition))) {
                 runningRssPartitionMap.add(partition);
-                LOG.info("generate RssTezFetcherTask, partition:{}, rssWoker:{}, all woker:{}",
-                    partition, partitionToServers.get(partition), partitionToServers);
+                LOG.info(
+                    "generate RssTezFetcherTask, partition:{}, rssWoker:{}, all woker:{}",
+                    partition,
+                    partitionToServers.get(partition),
+                    partitionToServers);
 
-                RssTezFetcherTask fetcher = new RssTezFetcherTask(RssShuffleManager.this, inputContext,
-                    conf, inputManager, partition, shuffleId, partitionToInput.get(partition),
-                    new HashSet<ShuffleServerInfo>(partitionToServers.get(partition)),
-                    rssAllBlockIdBitmapMap, rssSuccessBlockIdBitmapMap, numInputs, partitionToServers.size());
+                RssTezFetcherTask fetcher =
+                    new RssTezFetcherTask(
+                        RssShuffleManager.this,
+                        inputContext,
+                        conf,
+                        inputManager,
+                        partition,
+                        shuffleId,
+                        partitionToInput.get(partition),
+                        new HashSet<ShuffleServerInfo>(partitionToServers.get(partition)),
+                        rssAllBlockIdBitmapMap,
+                        rssSuccessBlockIdBitmapMap,
+                        numInputs,
+                        partitionToServers.size());
                 rssRunningFetchers.add(fetcher);
                 if (isShutdown.get()) {
-                  LOG.info(srcNameTrimmed + ": " + "hasBeenShutdown,"
-                      + "Breaking out of ShuffleScheduler Loop");
+                  LOG.info(
+                      srcNameTrimmed
+                          + ": "
+                          + "hasBeenShutdown,"
+                          + "Breaking out of ShuffleScheduler Loop");
                   break;
                 }
-                ListenableFuture<FetchResult> future = fetcherExecutor.submit(fetcher);    // add fetcher task
-                Futures.addCallback(future, new FetchFutureCallback(fetcher), MoreExecutors.directExecutor());
+                ListenableFuture<FetchResult> future =
+                    fetcherExecutor.submit(fetcher); // add fetcher task
+                Futures.addCallback(
+                    future, new FetchFutureCallback(fetcher), MoreExecutors.directExecutor());
                 if (++count >= maxFetchersToRun) {
                   break;
                 }
               } else {
                 if (LOG.isDebugEnabled()) {
-                  LOG.debug(srcNameTrimmed + ": " + "Skipping partition: " + partition + " since is shutdown");
+                  LOG.debug(
+                      srcNameTrimmed
+                          + ": "
+                          + "Skipping partition: "
+                          + partition
+                          + " since is shutdown");
                 }
               }
             }
@@ -529,7 +633,10 @@ public class RssShuffleManager extends ShuffleManager {
       }
       LOG.info("RssShuffleManager numInputs:{}", numInputs);
       shufflePhaseTime.setValue(System.currentTimeMillis() - startTime);
-      LOG.info(srcNameTrimmed + ": " + "Shutting down FetchScheduler, Was Interrupted: "
+      LOG.info(
+          srcNameTrimmed
+              + ": "
+              + "Shutting down FetchScheduler, Was Interrupted: "
               + Thread.currentThread().isInterrupted());
       if (!fetcherExecutor.isShutdown()) {
         fetcherExecutor.shutdownNow();
@@ -538,21 +645,27 @@ public class RssShuffleManager extends ShuffleManager {
     }
   }
 
-
   private boolean validateInputAttemptForPipelinedShuffle(InputAttemptIdentifier input) {
-    //For pipelined shuffle.
-    //TEZ-2132 for error handling. As of now, fail fast if there is a different attempt
+    // For pipelined shuffle.
+    // TEZ-2132 for error handling. As of now, fail fast if there is a different attempt
     if (input.canRetrieveInputInChunks()) {
       ShuffleEventInfo eventInfo = shuffleInfoEventsMap.get(input.getInputIdentifier());
       if (eventInfo != null && input.getAttemptNumber() != eventInfo.attemptNum) {
         if (eventInfo.scheduledForDownload || !eventInfo.eventsProcessed.isEmpty()) {
-          IOException exception = new IOException("Previous event already got scheduled for " 
-              + input + ". Previous attempt's data could have been already merged "
-              + "to memory/disk outputs.  Killing (self) this task early."
-              + " currentAttemptNum=" + eventInfo.attemptNum
-              + ", eventsProcessed=" + eventInfo.eventsProcessed
-              + ", scheduledForDownload=" + eventInfo.scheduledForDownload
-              + ", newAttemptNum=" + input.getAttemptNumber());
+          IOException exception =
+              new IOException(
+                  "Previous event already got scheduled for "
+                      + input
+                      + ". Previous attempt's data could have been already merged "
+                      + "to memory/disk outputs.  Killing (self) this task early."
+                      + " currentAttemptNum="
+                      + eventInfo.attemptNum
+                      + ", eventsProcessed="
+                      + eventInfo.eventsProcessed
+                      + ", scheduledForDownload="
+                      + eventInfo.scheduledForDownload
+                      + ", newAttemptNum="
+                      + input.getAttemptNumber());
           String message = "Killing self as previous attempt data could have been consumed";
           killSelf(exception, message);
           return false;
@@ -579,11 +692,26 @@ public class RssShuffleManager extends ShuffleManager {
       lockDisk = new Path(this.localDisks[h % this.localDisks.length], "locks");
     }
 
-    FetcherBuilder fetcherBuilder = new FetcherBuilder(RssShuffleManager.this,
-        httpConnectionParams, inputManager, inputContext.getApplicationId(), inputContext.getDagIdentifier(),
-        null, srcNameTrimmed, conf, localFs, localDirAllocator,
-        lockDisk, localDiskFetchEnabled, sharedFetchEnabled,
-        localhostName, shufflePort, asyncHttp, verifyDiskChecksum, compositeFetch);
+    FetcherBuilder fetcherBuilder =
+        new FetcherBuilder(
+            RssShuffleManager.this,
+            httpConnectionParams,
+            inputManager,
+            inputContext.getApplicationId(),
+            inputContext.getDagIdentifier(),
+            null,
+            srcNameTrimmed,
+            conf,
+            localFs,
+            localDirAllocator,
+            lockDisk,
+            localDiskFetchEnabled,
+            sharedFetchEnabled,
+            localhostName,
+            shufflePort,
+            asyncHttp,
+            verifyDiskChecksum,
+            compositeFetch);
 
     if (codec != null) {
       fetcherBuilder.setCompressionParameters(codec);
@@ -592,15 +720,14 @@ public class RssShuffleManager extends ShuffleManager {
 
     // Remove obsolete inputs from the list being given to the fetcher. Also
     // remove from the obsolete list.
-    PartitionToInputs pendingInputsOfOnePartitionRange = inputHost
-        .clearAndGetOnePartitionRange();
+    PartitionToInputs pendingInputsOfOnePartitionRange = inputHost.clearAndGetOnePartitionRange();
     int includedMaps = 0;
     for (Iterator<InputAttemptIdentifier> inputIter =
-         pendingInputsOfOnePartitionRange.getInputs().iterator();
-         inputIter.hasNext();) {
+            pendingInputsOfOnePartitionRange.getInputs().iterator();
+        inputIter.hasNext(); ) {
       InputAttemptIdentifier input = inputIter.next();
 
-      //For pipelined shuffle.
+      // For pipelined shuffle.
       if (!validateInputAttemptForPipelinedShuffle(input)) {
         continue;
       }
@@ -608,9 +735,10 @@ public class RssShuffleManager extends ShuffleManager {
       // Avoid adding attempts which have already completed.
       boolean alreadyCompleted;
       if (input instanceof CompositeInputAttemptIdentifier) {
-        CompositeInputAttemptIdentifier compositeInput = (CompositeInputAttemptIdentifier)input;
+        CompositeInputAttemptIdentifier compositeInput = (CompositeInputAttemptIdentifier) input;
         int nextClearBit = completedInputSet.nextClearBit(compositeInput.getInputIdentifier());
-        int maxClearBit = compositeInput.getInputIdentifier() + compositeInput.getInputIdentifierCount();
+        int maxClearBit =
+            compositeInput.getInputIdentifier() + compositeInput.getInputIdentifierCount();
         alreadyCompleted = nextClearBit > maxClearBit;
       } else {
         alreadyCompleted = completedInputSet.get(input.getInputIdentifier());
@@ -624,15 +752,17 @@ public class RssShuffleManager extends ShuffleManager {
       // Check if max threshold is met
       if (includedMaps >= maxTaskOutputAtOnce) {
         inputIter.remove();
-        //add to inputHost
-        inputHost.addKnownInput(pendingInputsOfOnePartitionRange.getPartition(),
-            pendingInputsOfOnePartitionRange.getPartitionCount(), input);
+        // add to inputHost
+        inputHost.addKnownInput(
+            pendingInputsOfOnePartitionRange.getPartition(),
+            pendingInputsOfOnePartitionRange.getPartitionCount(),
+            input);
       } else {
         includedMaps++;
       }
     }
     if (inputHost.getNumPendingPartitions() > 0) {
-      pendingHosts.add(inputHost); //add it to queue
+      pendingHosts.add(inputHost); // add it to queue
     }
     for (InputAttemptIdentifier input : pendingInputsOfOnePartitionRange.getInputs()) {
       ShuffleEventInfo eventInfo = shuffleInfoEventsMap.get(input.getInputIdentifier());
@@ -640,23 +770,31 @@ public class RssShuffleManager extends ShuffleManager {
         eventInfo.scheduledForDownload = true;
       }
     }
-    fetcherBuilder.assignWork(inputHost.getHost(), inputHost.getPort(),
+    fetcherBuilder.assignWork(
+        inputHost.getHost(),
+        inputHost.getPort(),
         pendingInputsOfOnePartitionRange.getPartition(),
         pendingInputsOfOnePartitionRange.getPartitionCount(),
         pendingInputsOfOnePartitionRange.getInputs());
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Created Fetcher for host: " + inputHost.getHost()
-          + ", info: " + inputHost.getAdditionalInfo()
-          + ", with inputs: " + pendingInputsOfOnePartitionRange);
+      LOG.debug(
+          "Created Fetcher for host: "
+              + inputHost.getHost()
+              + ", info: "
+              + inputHost.getAdditionalInfo()
+              + ", with inputs: "
+              + pendingInputsOfOnePartitionRange);
     }
     return fetcherBuilder.build();
   }
 
-
   /////////////////// Methods for InputEventHandler
   @Override
-  public void addKnownInput(String hostName, int port,
-                            CompositeInputAttemptIdentifier srcAttemptIdentifier, int srcPhysicalIndex) {
+  public void addKnownInput(
+      String hostName,
+      int port,
+      CompositeInputAttemptIdentifier srcAttemptIdentifier,
+      int srcPhysicalIndex) {
     HostPort identifier = new HostPort(hostName, port);
     InputHost host = knownSrcHosts.get(identifier);
     if (host == null) {
@@ -667,7 +805,8 @@ public class RssShuffleManager extends ShuffleManager {
       }
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug(srcNameTrimmed + ": " + "Adding input: " + srcAttemptIdentifier + ", to host: " + host);
+      LOG.debug(
+          srcNameTrimmed + ": " + "Adding input: " + srcAttemptIdentifier + ", to host: " + host);
     }
 
     if (!validateInputAttemptForPipelinedShuffle(srcAttemptIdentifier)) {
@@ -676,13 +815,19 @@ public class RssShuffleManager extends ShuffleManager {
     int inputIdentifier = srcAttemptIdentifier.getInputIdentifier();
     for (int i = 0; i < srcAttemptIdentifier.getInputIdentifierCount(); i++) {
       if (shuffleInfoEventsMap.get(inputIdentifier + i) == null) {
-        shuffleInfoEventsMap.put(inputIdentifier + i, new ShuffleEventInfo(srcAttemptIdentifier.expand(i)));
-        LOG.info("AddKnownInput, srcAttemptIdentifier:{}, i:{}, expand:{}, map:{}",
-            srcAttemptIdentifier, i, srcAttemptIdentifier.expand(i), shuffleInfoEventsMap);
+        shuffleInfoEventsMap.put(
+            inputIdentifier + i, new ShuffleEventInfo(srcAttemptIdentifier.expand(i)));
+        LOG.info(
+            "AddKnownInput, srcAttemptIdentifier:{}, i:{}, expand:{}, map:{}",
+            srcAttemptIdentifier,
+            i,
+            srcAttemptIdentifier.expand(i),
+            shuffleInfoEventsMap);
       }
     }
 
-    host.addKnownInput(srcPhysicalIndex, srcAttemptIdentifier.getInputIdentifierCount(), srcAttemptIdentifier);
+    host.addKnownInput(
+        srcPhysicalIndex, srcAttemptIdentifier.getInputIdentifierCount(), srcAttemptIdentifier);
     lock.lock();
     try {
       boolean added = pendingHosts.offer(host);
@@ -696,15 +841,22 @@ public class RssShuffleManager extends ShuffleManager {
       lock.unlock();
     }
 
-    LOG.info("AddKnowInput, hostname:{}, port:{}, srcAttemptIdentifier:{}, srcPhysicalIndex:{}",
-            hostName, port, srcAttemptIdentifier, srcPhysicalIndex);
+    LOG.info(
+        "AddKnowInput, hostname:{}, port:{}, srcAttemptIdentifier:{}, srcPhysicalIndex:{}",
+        hostName,
+        port,
+        srcAttemptIdentifier,
+        srcPhysicalIndex);
 
     lock.lock();
     try {
       for (int i = 0; i < srcAttemptIdentifier.getInputIdentifierCount(); i++) {
         int p = srcPhysicalIndex + i;
-        LOG.info("PartitionToInput, original:{}, add:{},  now:{}",
-                srcAttemptIdentifier, srcAttemptIdentifier.expand(i), partitionToInput.get(p));
+        LOG.info(
+            "PartitionToInput, original:{}, add:{},  now:{}",
+            srcAttemptIdentifier,
+            srcAttemptIdentifier.expand(i),
+            partitionToInput.get(p));
         if (!allRssPartition.contains(srcPhysicalIndex + i)) {
           pendingPartition.add(p);
         }
@@ -722,8 +874,7 @@ public class RssShuffleManager extends ShuffleManager {
   }
 
   @Override
-  public void addCompletedInputWithNoData(
-      InputAttemptIdentifier srcAttemptIdentifier) {
+  public void addCompletedInputWithNoData(InputAttemptIdentifier srcAttemptIdentifier) {
     int inputIdentifier = srcAttemptIdentifier.getInputIdentifier();
     if (LOG.isDebugEnabled()) {
       LOG.debug("No input data exists for SrcTask: " + inputIdentifier + ". Marking as complete.");
@@ -744,9 +895,14 @@ public class RssShuffleManager extends ShuffleManager {
       lock.unlock();
     }
     numNoDataInput.incrementAndGet();
-    LOG.info("AddCompletedInputWithNoData, numNoDataInput:{}, numWithDataInput:{},numInputs:{},  "
+    LOG.info(
+        "AddCompletedInputWithNoData, numNoDataInput:{}, numWithDataInput:{},numInputs:{},  "
             + "successRssPartitionSet:{}, allRssPartition:{}.",
-        numNoDataInput, numWithDataInput, numInputs, successRssPartitionSet, allRssPartition);
+        numNoDataInput,
+        numWithDataInput,
+        numInputs,
+        successRssPartitionSet,
+        allRssPartition);
   }
 
   @Override
@@ -763,7 +919,8 @@ public class RssShuffleManager extends ShuffleManager {
   @Override
   void obsoleteKnownInput(InputAttemptIdentifier srcAttemptIdentifier) {
     obsoletedInputs.add(srcAttemptIdentifier);
-    // NEWTEZ Maybe inform the fetcher about this. For now, this is used during the initial fetch list construction.
+    // NEWTEZ Maybe inform the fetcher about this. For now, this is used during the initial fetch
+    // list construction.
   }
 
   // End of Methods for InputEventHandler
@@ -775,11 +932,10 @@ public class RssShuffleManager extends ShuffleManager {
    */
   static class ShuffleEventInfo {
     BitSet eventsProcessed;
-    int finalEventId = -1; //0 indexed
+    int finalEventId = -1; // 0 indexed
     int attemptNum;
     String id;
     boolean scheduledForDownload; // whether chunks got scheduled for download
-
 
     ShuffleEventInfo(InputAttemptIdentifier input) {
       this.id = input.getInputIdentifier() + "_" + input.getAttemptNumber();
@@ -789,9 +945,17 @@ public class RssShuffleManager extends ShuffleManager {
 
     void spillProcessed(int spillId) {
       if (finalEventId != -1) {
-        Preconditions.checkState(eventsProcessed.cardinality() <= (finalEventId + 1),
-            "Wrong state. eventsProcessed cardinality=" + eventsProcessed.cardinality() + " "
-                + "finalEventId=" + finalEventId + ", spillId=" + spillId + ", " + toString());
+        Preconditions.checkState(
+            eventsProcessed.cardinality() <= (finalEventId + 1),
+            "Wrong state. eventsProcessed cardinality="
+                + eventsProcessed.cardinality()
+                + " "
+                + "finalEventId="
+                + finalEventId
+                + ", spillId="
+                + spillId
+                + ", "
+                + toString());
       }
       eventsProcessed.set(spillId);
     }
@@ -802,23 +966,39 @@ public class RssShuffleManager extends ShuffleManager {
 
     boolean isDone() {
       if (LOG.isDebugEnabled()) {
-        LOG.debug("finalEventId=" + finalEventId + ", eventsProcessed cardinality="
-            + eventsProcessed.cardinality());
+        LOG.debug(
+            "finalEventId="
+                + finalEventId
+                + ", eventsProcessed cardinality="
+                + eventsProcessed.cardinality());
       }
       return ((finalEventId != -1) && (finalEventId + 1) == eventsProcessed.cardinality());
     }
 
     @Override
     public String toString() {
-      return "[eventsProcessed=" + eventsProcessed + ", finalEventId=" + finalEventId
-          +  ", id=" + id + ", attemptNum=" + attemptNum
-          + ", scheduledForDownload=" + scheduledForDownload + "]";
+      return "[eventsProcessed="
+          + eventsProcessed
+          + ", finalEventId="
+          + finalEventId
+          + ", id="
+          + id
+          + ", attemptNum="
+          + attemptNum
+          + ", scheduledForDownload="
+          + scheduledForDownload
+          + "]";
     }
   }
 
   @Override
-  public void fetchSucceeded(String host, InputAttemptIdentifier srcAttemptIdentifier,
-                             FetchedInput fetchedInput, long fetchedBytes, long decompressedLength, long copyDuration)
+  public void fetchSucceeded(
+      String host,
+      InputAttemptIdentifier srcAttemptIdentifier,
+      FetchedInput fetchedInput,
+      long fetchedBytes,
+      long decompressedLength,
+      long copyDuration)
       throws IOException {
     // Count irrespective of whether this is a copy of an already fetched input
     lock.lock();
@@ -826,8 +1006,12 @@ public class RssShuffleManager extends ShuffleManager {
       lastProgressTime = System.currentTimeMillis();
       inputContext.notifyProgress();
       fetchedInput.commit();
-      fetchStatsLogger.logIndividualFetchComplete(copyDuration,
-          fetchedBytes, decompressedLength, fetchedInput.getType().toString(), srcAttemptIdentifier);
+      fetchStatsLogger.logIndividualFetchComplete(
+          copyDuration,
+          fetchedBytes,
+          decompressedLength,
+          fetchedInput.getType().toString(),
+          srcAttemptIdentifier);
 
       // Processing counters for completed and commit fetches only. Need
       // additional counters for excessive fetches - which primarily comes
@@ -859,9 +1043,9 @@ public class RssShuffleManager extends ShuffleManager {
     } finally {
       lock.unlock();
     }
-    // NEWTEZ Maybe inform fetchers, in case they have an alternate attempt of the same task in their queue.
+    // NEWTEZ Maybe inform fetchers, in case they have an alternate attempt of the same task in
+    // their queue.
   }
-
 
   private void registerCompletedInput(FetchedInput fetchedInput) {
     lock.lock();
@@ -902,11 +1086,11 @@ public class RssShuffleManager extends ShuffleManager {
     }
   }
 
-  private void registerCompletedInputForPipelinedShuffle(InputAttemptIdentifier srcAttemptIdentifier,
-            FetchedInput fetchedInput) {
+  private void registerCompletedInputForPipelinedShuffle(
+      InputAttemptIdentifier srcAttemptIdentifier, FetchedInput fetchedInput) {
     /**
-     * For pipelinedshuffle it is possible to get multiple spills. Claim success only when
-     * all spills pertaining to an attempt are done.
+     * For pipelinedshuffle it is possible to get multiple spills. Claim success only when all
+     * spills pertaining to an attempt are done.
      */
     if (!validateInputAttemptForPipelinedShuffle(srcAttemptIdentifier)) {
       return;
@@ -915,7 +1099,7 @@ public class RssShuffleManager extends ShuffleManager {
     int inputIdentifier = srcAttemptIdentifier.getInputIdentifier();
     ShuffleEventInfo eventInfo = shuffleInfoEventsMap.get(inputIdentifier);
 
-    //for empty partition case
+    // for empty partition case
     if (eventInfo == null && fetchedInput instanceof NullFetchedInput) {
       eventInfo = new ShuffleEventInfo(srcAttemptIdentifier);
       shuffleInfoEventsMap.put(inputIdentifier, eventInfo);
@@ -933,12 +1117,12 @@ public class RssShuffleManager extends ShuffleManager {
     try {
       /**
        * When fetch is complete for a spill, add it to completedInputs to ensure that it is
-       * available for downstream processing. Final success will be claimed only when all
-       * spills are downloaded from the source.
+       * available for downstream processing. Final success will be claimed only when all spills are
+       * downloaded from the source.
        */
       maybeInformInputReady(fetchedInput);
 
-      //check if we downloaded all spills pertaining to this InputAttemptIdentifier
+      // check if we downloaded all spills pertaining to this InputAttemptIdentifier
       if (eventInfo.isDone()) {
         adjustCompletedInputs(fetchedInput);
         shuffleInfoEventsMap.remove(srcAttemptIdentifier.getInputIdentifier());
@@ -958,25 +1142,33 @@ public class RssShuffleManager extends ShuffleManager {
   }
 
   @Override
-  public void fetchFailed(String host, InputAttemptIdentifier srcAttemptIdentifier, boolean connectFailed) {
+  public void fetchFailed(
+      String host, InputAttemptIdentifier srcAttemptIdentifier, boolean connectFailed) {
     // NEWTEZ. Implement logic to report fetch failures after a threshold.
     // For now, reporting immediately.
-    LOG.info(srcNameTrimmed + ": " + "Fetch failed for src: " + srcAttemptIdentifier
-        + "InputIdentifier: " + srcAttemptIdentifier + ", connectFailed: "
-        + connectFailed);
+    LOG.info(
+        srcNameTrimmed
+            + ": "
+            + "Fetch failed for src: "
+            + srcAttemptIdentifier
+            + "InputIdentifier: "
+            + srcAttemptIdentifier
+            + ", connectFailed: "
+            + connectFailed);
     failedShufflesCounter.increment(1);
     inputContext.notifyProgress();
     if (srcAttemptIdentifier == null) {
       reportFatalError(null, "Received fetchFailure for an unknown src (null)");
     } else {
-      InputReadErrorEvent readError = InputReadErrorEvent.create(
-          "Fetch failure while fetching from "
-              + TezRuntimeUtils.getTaskAttemptIdentifier(
-              inputContext.getSourceVertexName(),
+      InputReadErrorEvent readError =
+          InputReadErrorEvent.create(
+              "Fetch failure while fetching from "
+                  + TezRuntimeUtils.getTaskAttemptIdentifier(
+                      inputContext.getSourceVertexName(),
+                      srcAttemptIdentifier.getInputIdentifier(),
+                      srcAttemptIdentifier.getAttemptNumber()),
               srcAttemptIdentifier.getInputIdentifier(),
-              srcAttemptIdentifier.getAttemptNumber()),
-          srcAttemptIdentifier.getInputIdentifier(),
-          srcAttemptIdentifier.getAttemptNumber());
+              srcAttemptIdentifier.getAttemptNumber());
       if (maxTimeToWaitForReportMillis > 0) {
         try {
           reportLock.lock();
@@ -1003,8 +1195,11 @@ public class RssShuffleManager extends ShuffleManager {
     }
     if (!isShutdown.getAndSet(true)) {
       // Shut down any pending fetchers
-      LOG.info("Shutting down pending fetchers on source" + srcNameTrimmed + ": "
-          + rssRunningFetchers.size());
+      LOG.info(
+          "Shutting down pending fetchers on source"
+              + srcNameTrimmed
+              + ": "
+              + rssRunningFetchers.size());
       lock.lock();
       try {
         wakeLoop.signal(); // signal the fetch-scheduler
@@ -1024,8 +1219,7 @@ public class RssShuffleManager extends ShuffleManager {
       if (this.schedulerExecutor != null && !this.schedulerExecutor.isShutdown()) {
         this.schedulerExecutor.shutdownNow();
       }
-      if (this.reporterExecutor != null
-          && !this.reporterExecutor.isShutdown()) {
+      if (this.reporterExecutor != null && !this.reporterExecutor.isShutdown()) {
         this.reporterExecutor.shutdownNow();
       }
       if (this.fetcherExecutor != null && !this.fetcherExecutor.isShutdown()) {
@@ -1034,15 +1228,15 @@ public class RssShuffleManager extends ShuffleManager {
     }
   }
 
-  /**
-   * @return true if all of the required inputs have been fetched.
-   */
+  /** @return true if all of the required inputs have been fetched. */
   public boolean isAllPartitionFetched() {
     lock.lock();
     try {
       if (!allRssPartition.containsAll(successRssPartitionSet)) {
-        LOG.error("Failed to check partition, all partition:{}, success partiton:{}",
-            allRssPartition, successRssPartitionSet);
+        LOG.error(
+            "Failed to check partition, all partition:{}, success partiton:{}",
+            allRssPartition,
+            successRssPartitionSet);
       }
       return isAllInputFetched();
     } finally {
@@ -1051,9 +1245,8 @@ public class RssShuffleManager extends ShuffleManager {
   }
 
   /**
-   * @return the next available input, or null if there are no available inputs.
-   *         This method will block if there are currently no available inputs,
-   *         but more may become available.
+   * @return the next available input, or null if there are no available inputs. This method will
+   *     block if there are currently no available inputs, but more may become available.
    */
   @Override
   public FetchedInput getNextInput() throws InterruptedException {
@@ -1095,10 +1288,8 @@ public class RssShuffleManager extends ShuffleManager {
 
   // End of methods for walking the available inputs
 
-
   /**
    * Fake input that is added to the completed input list in case an input does not have any data.
-   *
    */
   @VisibleForTesting
   static class NullFetchedInput extends FetchedInput {
@@ -1152,13 +1343,18 @@ public class RssShuffleManager extends ShuffleManager {
       long secsSinceStart = (System.currentTimeMillis() - startTime) / 1000 + 1;
 
       double transferRate = mbs / secsSinceStart;
-      LOG.info("copy(" + inputsDone + " (spillsFetched=" + numFetchedSpills.get() + ") of "
-          + numInputs
-          + ". Transfer rate (CumulativeDataFetched/TimeSinceInputStarted)) "
-          + mbpsFormat.format(transferRate) + " MB/s)");
+      LOG.info(
+          "copy("
+              + inputsDone
+              + " (spillsFetched="
+              + numFetchedSpills.get()
+              + ") of "
+              + numInputs
+              + ". Transfer rate (CumulativeDataFetched/TimeSinceInputStarted)) "
+              + mbpsFormat.format(transferRate)
+              + " MB/s)");
     }
   }
-
 
   private class SchedulerFutureCallback implements FutureCallback<Void> {
     @Override
@@ -1199,7 +1395,8 @@ public class RssShuffleManager extends ShuffleManager {
 
     @Override
     public void onSuccess(FetchResult result) {
-      LOG.info("FetchFutureCallback success, result:{}, partition:{}", result, fetcher.getPartitionId());
+      LOG.info(
+          "FetchFutureCallback success, result:{}, partition:{}", result, fetcher.getPartitionId());
       fetcher.shutdown();
       if (isShutdown.get()) {
         if (LOG.isDebugEnabled()) {
@@ -1210,15 +1407,17 @@ public class RssShuffleManager extends ShuffleManager {
         try {
           successRssPartitionSet.add(fetcher.getPartitionId());
           runningRssPartitionMap.remove(fetcher.getPartitionId());
-          LOG.info("FetchFutureCallback allRssPartition:{}, successRssPartitionSet:{}, runningRssPartitionMap:{}.",
-              allRssPartition, successRssPartitionSet, runningRssPartitionMap);
+          LOG.info(
+              "FetchFutureCallback allRssPartition:{}, successRssPartitionSet:{}, runningRssPartitionMap:{}.",
+              allRssPartition,
+              successRssPartitionSet,
+              runningRssPartitionMap);
           doBookKeepingForFetcherComplete();
         } finally {
           lock.unlock();
         }
       }
     }
-
 
     @Override
     public void onFailure(Throwable t) {

@@ -63,8 +63,13 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     }
   }
 
-  private static void defaultUnregisterAllMapOutput(MapOutputTrackerMaster tracker, Method registerShuffle,
-      int shuffleId, int numMaps, int numReduces) throws SparkException {
+  private static void defaultUnregisterAllMapOutput(
+      MapOutputTrackerMaster tracker,
+      Method registerShuffle,
+      int shuffleId,
+      int numMaps,
+      int numReduces)
+      throws SparkException {
     if (tracker != null && registerShuffle != null) {
       tracker.unregisterShuffle(shuffleId);
       // re-register this shuffle id into map output tracker
@@ -80,7 +85,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
       }
       tracker.incrementEpoch();
     } else {
-      throw new SparkException("default unregisterAllMapOutput should only be called on the driver side");
+      throw new SparkException(
+          "default unregisterAllMapOutput should only be called on the driver side");
     }
   }
 
@@ -101,10 +107,13 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
         } else if (SparkVersionUtils.isSpark3()) {
           m = klass.getDeclaredMethod("unregisterAllMapAndMergeOutput", int.class);
         } else {
-          LOG.warn("Unknown spark version({}), fallback to default method", SparkVersionUtils.SPARK_VERSION);
+          LOG.warn(
+              "Unknown spark version({}), fallback to default method",
+              SparkVersionUtils.SPARK_VERSION);
         }
       } catch (NoSuchMethodException e) {
-        LOG.warn("Got no such method error when get unregisterAllMapOutput method for spark version({})",
+        LOG.warn(
+            "Got no such method error when get unregisterAllMapOutput method for spark version({})",
             SparkVersionUtils.SPARK_VERSION);
       }
       return m;
@@ -127,7 +136,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
           m = klass.getDeclaredMethod("registerShuffle", int.class, int.class);
         }
       } catch (NoSuchMethodException e) {
-        LOG.warn("Got no such method error when get registerShuffle method for spark version({})",
+        LOG.warn(
+            "Got no such method error when get registerShuffle method for spark version({})",
             SparkVersionUtils.SPARK_VERSION);
       }
       return m;
@@ -137,7 +147,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   }
 
   private static MapOutputTrackerMaster getMapOutputTrackerMaster() {
-    MapOutputTracker tracker =  Optional.ofNullable(SparkEnv.get()).map(SparkEnv::mapOutputTracker).orElse(null);
+    MapOutputTracker tracker =
+        Optional.ofNullable(SparkEnv.get()).map(SparkEnv::mapOutputTracker).orElse(null);
     return tracker instanceof MapOutputTrackerMaster ? (MapOutputTrackerMaster) tracker : null;
   }
 }

@@ -97,7 +97,8 @@ public class AutoAccessTest extends IntegrationTestBase {
     assertTrue(sparkConf.getBoolean("spark.shuffle.service.enabled", true));
 
     // empty access id
-    DelegationRssShuffleManager delegationRssShuffleManager = new DelegationRssShuffleManager(sparkConf, true);
+    DelegationRssShuffleManager delegationRssShuffleManager =
+        new DelegationRssShuffleManager(sparkConf, true);
     ShuffleManager shuffleManager = delegationRssShuffleManager.getDelegate();
     assertTrue(shuffleManager instanceof SortShuffleManager);
     assertTrue(sparkConf.getBoolean("spark.shuffle.service.enabled", true));

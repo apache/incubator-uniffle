@@ -44,9 +44,9 @@ import org.apache.uniffle.storage.util.StorageType;
 public class WordCountTest extends MRIntegrationTestBase {
 
   String inputPath = "word_count_input";
-  List<String> wordTable = Lists.newArrayList("apple",
-      "banana", "fruit", "cherry", "Chinese", "America", "Japan",
-      "tomato");
+  List<String> wordTable =
+      Lists.newArrayList(
+          "apple", "banana", "fruit", "cherry", "Chinese", "America", "Japan", "tomato");
 
   @BeforeAll
   public static void setupServers() throws Exception {

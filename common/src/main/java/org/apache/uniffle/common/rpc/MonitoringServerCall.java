@@ -24,7 +24,8 @@ import io.grpc.Status;
 
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 
-public class MonitoringServerCall<R, S> extends ForwardingServerCall.SimpleForwardingServerCall<R, S> {
+public class MonitoringServerCall<R, S>
+    extends ForwardingServerCall.SimpleForwardingServerCall<R, S> {
 
   private final String methodName;
   private final GRPCMetrics grpcMetrics;

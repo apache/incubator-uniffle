@@ -28,9 +28,6 @@ public interface RpcResponseCallback {
    */
   void onSuccess(RpcResponse rpcResponse);
 
-  /**
-   * Exception either propagated from server or raised on client side.
-   */
+  /** Exception either propagated from server or raised on client side. */
   void onFailure(Throwable e);
 }
-

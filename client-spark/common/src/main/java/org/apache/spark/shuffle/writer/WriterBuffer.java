@@ -53,8 +53,14 @@ public class WriterBuffer {
     try {
       System.arraycopy(recordBuffer, 0, buffer, nextOffset, length);
     } catch (Exception e) {
-      LOG.error("Unexpected exception for System.arraycopy, length[" + length + "], nextOffset["
-          + nextOffset + "], bufferSize[" + bufferSize + "]");
+      LOG.error(
+          "Unexpected exception for System.arraycopy, length["
+              + length
+              + "], nextOffset["
+              + nextOffset
+              + "], bufferSize["
+              + bufferSize
+              + "]");
       throw e;
     }
 

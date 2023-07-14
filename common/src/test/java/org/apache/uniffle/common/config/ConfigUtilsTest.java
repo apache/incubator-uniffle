@@ -32,7 +32,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class ConfigUtilsTest {
 
   private enum Ternary {
-    TRUE, FALSE, UNKNOWN
+    TRUE,
+    FALSE,
+    UNKNOWN
   }
 
   private static Stream<Arguments> convertValueArgs() {
@@ -43,8 +45,7 @@ public class ConfigUtilsTest {
         Arguments.arguments(1.0f, Float.class),
         Arguments.arguments(2.0, Double.class),
         Arguments.arguments("foo", String.class),
-        Arguments.arguments(Ternary.FALSE, Ternary.class)
-    );
+        Arguments.arguments(Ternary.FALSE, Ternary.class));
   }
 
   @ParameterizedTest
@@ -55,15 +56,15 @@ public class ConfigUtilsTest {
 
   @Test
   public void testConvertValueWithUnsupportedType() {
-    assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertValue(null, Object.class));
+    assertThrows(
+        IllegalArgumentException.class, () -> ConfigUtils.convertValue(null, Object.class));
   }
 
   private static Stream<Arguments> toStringArgs() {
     return Stream.of(
         Arguments.arguments("foo", "foo"),
         Arguments.arguments(123, "123"),
-        Arguments.arguments(Ternary.TRUE, "TRUE")
-    );
+        Arguments.arguments(Ternary.TRUE, "TRUE"));
   }
 
   @ParameterizedTest
@@ -84,8 +85,7 @@ public class ConfigUtilsTest {
         Arguments.arguments(minInt - 1, null),
         Arguments.arguments("123", 123),
         Arguments.arguments("2.0", null),
-        Arguments.arguments("foo", null)
-    );
+        Arguments.arguments("foo", null));
   }
 
   @ParameterizedTest
@@ -112,8 +112,7 @@ public class ConfigUtilsTest {
         Arguments.arguments("3TB", 3L << 40),
         Arguments.arguments("2PB", 2L << 50),
         Arguments.arguments("2.0", null),
-        Arguments.arguments("foo", null)
-    );
+        Arguments.arguments("foo", null));
   }
 
   @ParameterizedTest
@@ -141,8 +140,7 @@ public class ConfigUtilsTest {
         Arguments.arguments("5T", 5L << 40),
         Arguments.arguments("5tb", 5L << 40),
         Arguments.arguments("6P", 6L << 50),
-        Arguments.arguments("6PB", 6L << 50)
-    );
+        Arguments.arguments("6PB", 6L << 50));
   }
 
   @ParameterizedTest
@@ -169,15 +167,15 @@ public class ConfigUtilsTest {
         Arguments.arguments("FALSE", false),
         Arguments.arguments("fAlsE", false),
         Arguments.arguments(Ternary.FALSE, false),
-        Arguments.arguments(Ternary.UNKNOWN, null)
-    );
+        Arguments.arguments(Ternary.UNKNOWN, null));
   }
 
   @ParameterizedTest
   @MethodSource("toBooleanArgs")
   public void testConvertToBoolean(Object value, Boolean expected) {
     if (expected == null) {
-      assertThrows(IllegalArgumentException.class, () -> ConfigUtils.convertToBoolean(Ternary.UNKNOWN));
+      assertThrows(
+          IllegalArgumentException.class, () -> ConfigUtils.convertToBoolean(Ternary.UNKNOWN));
     } else {
       assertEquals(expected, ConfigUtils.convertToBoolean(value));
     }
@@ -203,8 +201,7 @@ public class ConfigUtilsTest {
         Arguments.arguments(-minFloat * 0.9, null),
         Arguments.arguments("123", 123.0f),
         Arguments.arguments("123.45", 123.45f),
-        Arguments.arguments("foo", null)
-    );
+        Arguments.arguments("foo", null));
   }
 
   @ParameterizedTest
@@ -231,8 +228,7 @@ public class ConfigUtilsTest {
         Arguments.arguments(-Double.MIN_VALUE, -Double.MIN_VALUE),
         Arguments.arguments("123", 123.0),
         Arguments.arguments("123.45", 123.45),
-        Arguments.arguments("foo", null)
-    );
+        Arguments.arguments("foo", null));
   }
 
   @ParameterizedTest
@@ -263,9 +259,12 @@ public class ConfigUtilsTest {
   }
 
   @ParameterizedTest
-  @ValueSource(longs = {0, 1, 2, -1, Integer.MIN_VALUE, Integer.MAX_VALUE, Long.MIN_VALUE, Long.MAX_VALUE})
+  @ValueSource(
+      longs = {0, 1, 2, -1, Integer.MIN_VALUE, Integer.MAX_VALUE, Long.MIN_VALUE, Long.MAX_VALUE})
   public void testPositiveIntegerValidator(long value) {
-    assertEquals(value > 0 && value <= Integer.MAX_VALUE, ConfigUtils.POSITIVE_INTEGER_VALIDATOR.apply(value));
+    assertEquals(
+        value > 0 && value <= Integer.MAX_VALUE,
+        ConfigUtils.POSITIVE_INTEGER_VALIDATOR.apply(value));
   }
 
   @ParameterizedTest
@@ -277,7 +276,7 @@ public class ConfigUtilsTest {
   @ParameterizedTest
   @ValueSource(doubles = {-1.0, -0.01, 0.0, 1.5, 50.2, 99.9, 100.0, 100.01, 101.0})
   public void testPercentageDoubleValidator(double value) {
-    assertEquals(value >= 0.0 && value <= 100.0, ConfigUtils.PERCENTAGE_DOUBLE_VALIDATOR.apply(value));
+    assertEquals(
+        value >= 0.0 && value <= 100.0, ConfigUtils.PERCENTAGE_DOUBLE_VALIDATOR.apply(value));
   }
-
 }

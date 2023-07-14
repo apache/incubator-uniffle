@@ -77,29 +77,53 @@ public class AQESkewedJoinTest extends SparkIntegrationTestBase {
   Map runTest(SparkSession spark, String fileName) throws Exception {
     Thread.sleep(4000);
     Map<Integer, String> map = Maps.newHashMap();
-    Dataset<Row> df2 = spark.range(0, 1000, 1, 10)
-        .select(functions.when(functions.col("id").$less(250), 249)
-            .otherwise(functions.col("id")).as("key2"), functions.col("id").as("value2"));
-    Dataset<Row> df1 = spark.range(0, 1000, 1, 10)
-        .select(functions.when(functions.col("id").$less(250), 249)
-            .when(functions.col("id").$greater(750), 1000)
-            .otherwise(functions.col("id")).as("key1"), functions.col("id").as("value2"));
+    Dataset<Row> df2 =
+        spark
+            .range(0, 1000, 1, 10)
+            .select(
+                functions
+                    .when(functions.col("id").$less(250), 249)
+                    .otherwise(functions.col("id"))
+                    .as("key2"),
+                functions.col("id").as("value2"));
+    Dataset<Row> df1 =
+        spark
+            .range(0, 1000, 1, 10)
+            .select(
+                functions
+                    .when(functions.col("id").$less(250), 249)
+                    .when(functions.col("id").$greater(750), 1000)
+                    .otherwise(functions.col("id"))
+                    .as("key1"),
+                functions.col("id").as("value2"));
     Dataset<Row> df3 = df1.join(df2, df1.col("key1").equalTo(df2.col("key2")));
     List<String> result = Lists.newArrayList();
-    assertTrue(df3.queryExecution().executedPlan().toString().startsWith("AdaptiveSparkPlan isFinalPlan=false"));
-    df3.collectAsList().forEach(row -> {
-      result.add(row.json());
-    });
-    assertTrue(df3.queryExecution().executedPlan().toString().startsWith("AdaptiveSparkPlan isFinalPlan=true"));
+    assertTrue(
+        df3.queryExecution()
+            .executedPlan()
+            .toString()
+            .startsWith("AdaptiveSparkPlan isFinalPlan=false"));
+    df3.collectAsList()
+        .forEach(
+            row -> {
+              result.add(row.json());
+            });
+    assertTrue(
+        df3.queryExecution()
+            .executedPlan()
+            .toString()
+            .startsWith("AdaptiveSparkPlan isFinalPlan=true"));
     AdaptiveSparkPlanExec plan = (AdaptiveSparkPlanExec) df3.queryExecution().executedPlan();
-    SortMergeJoinExec joinExec = (SortMergeJoinExec) plan.executedPlan().children().iterator().next();
+    SortMergeJoinExec joinExec =
+        (SortMergeJoinExec) plan.executedPlan().children().iterator().next();
     assertTrue(joinExec.isSkewJoin());
-    result.sort(new Comparator<String>() {
-      @Override
-      public int compare(String o1, String o2) {
-        return o1.compareTo(o2);
-      }
-    });
+    result.sort(
+        new Comparator<String>() {
+          @Override
+          public int compare(String o1, String o2) {
+            return o1.compareTo(o2);
+          }
+        });
     int i = 0;
     for (String str : result) {
       map.put(i, str);

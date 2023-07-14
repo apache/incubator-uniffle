@@ -35,7 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RssSimpleFetchedInputAllocatorTest {
 
-  private static final Logger LOG = LoggerFactory.getLogger(RssSimpleFetchedInputAllocatorTest.class);
+  private static final Logger LOG =
+      LoggerFactory.getLogger(RssSimpleFetchedInputAllocatorTest.class);
 
   @Test
   public void testAllocate() throws IOException {
@@ -51,37 +52,52 @@ public class RssSimpleFetchedInputAllocatorTest {
     long inMemThreshold = (long) (bufferPercent * jvmMax);
     LOG.info("InMemThreshold: " + inMemThreshold);
 
-    RssSimpleFetchedInputAllocator inputManager = new RssSimpleFetchedInputAllocator(
-        "srcName", UUID.randomUUID().toString(), 123, conf,
-        Runtime.getRuntime().maxMemory(), inMemThreshold);
+    RssSimpleFetchedInputAllocator inputManager =
+        new RssSimpleFetchedInputAllocator(
+            "srcName",
+            UUID.randomUUID().toString(),
+            123,
+            conf,
+            Runtime.getRuntime().maxMemory(),
+            inMemThreshold);
 
     long requestSize = (long) (0.4f * inMemThreshold);
     long compressedSize = 1L;
     LOG.info("RequestSize: " + requestSize);
 
-    FetchedInput fi1 = inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(1, 1));
+    FetchedInput fi1 =
+        inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(1, 1));
     assertEquals(FetchedInput.Type.MEMORY, fi1.getType());
 
-    FetchedInput fi2 = inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(2, 1));
+    FetchedInput fi2 =
+        inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(2, 1));
     assertEquals(FetchedInput.Type.MEMORY, fi2.getType());
 
     MockedConstruction<DiskFetchedInput> mockedConstruction =
-          Mockito.mockConstruction(DiskFetchedInput.class, ((mockedInput, context) -> {
-            // Over limit by this point. Next reserve should give back a DISK allocation
-            FetchedInput fi3 = inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(3, 1));
-            assertEquals(FetchedInput.Type.DISK, fi3.getType());
+        Mockito.mockConstruction(
+            DiskFetchedInput.class,
+            ((mockedInput, context) -> {
+              // Over limit by this point. Next reserve should give back a DISK allocation
+              FetchedInput fi3 =
+                  inputManager.allocate(
+                      requestSize, compressedSize, new InputAttemptIdentifier(3, 1));
+              assertEquals(FetchedInput.Type.DISK, fi3.getType());
 
-            // Freed one memory allocation. Next should be mem again.
-            fi1.abort();
-            fi1.free();
-            FetchedInput fi4 = inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(4, 1));
-            assertEquals(FetchedInput.Type.MEMORY, fi4.getType());
+              // Freed one memory allocation. Next should be mem again.
+              fi1.abort();
+              fi1.free();
+              FetchedInput fi4 =
+                  inputManager.allocate(
+                      requestSize, compressedSize, new InputAttemptIdentifier(4, 1));
+              assertEquals(FetchedInput.Type.MEMORY, fi4.getType());
 
-            // Freed one disk allocation. Next sould be disk again (no mem freed)
-            fi3.abort();
-            fi3.free();
-            FetchedInput fi5 = inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(4, 1));
-            assertEquals(FetchedInput.Type.DISK, fi5.getType());
-          }));
+              // Freed one disk allocation. Next sould be disk again (no mem freed)
+              fi3.abort();
+              fi3.free();
+              FetchedInput fi5 =
+                  inputManager.allocate(
+                      requestSize, compressedSize, new InputAttemptIdentifier(4, 1));
+              assertEquals(FetchedInput.Type.DISK, fi5.getType());
+            }));
   }
 }

@@ -41,8 +41,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.util.Progressable;
 import org.apache.hadoop.util.ReflectionUtils;
 
-
-public class RssInMemoryRemoteMerger<K, V> extends MergeThread<InMemoryMapOutput<K,V>, K, V> {
+public class RssInMemoryRemoteMerger<K, V> extends MergeThread<InMemoryMapOutput<K, V>, K, V> {
   private static final Log LOG = LogFactory.getLog(RssInMemoryRemoteMerger.class);
 
   private static final String SPILL_OUTPUT_PREFIX = "spill";
@@ -55,7 +54,7 @@ public class RssInMemoryRemoteMerger<K, V> extends MergeThread<InMemoryMapOutput
   private final Progressable reporter;
   private final Counters.Counter spilledRecordsCounter;
   private final Class<? extends Reducer> combinerClass;
-  private final Task.CombineOutputCollector<K,V> combineCollector;
+  private final Task.CombineOutputCollector<K, V> combineCollector;
   private final Counters.Counter reduceCombineInputCounter;
   private final Counters.Counter mergedMapOutputsCounter;
 
@@ -70,7 +69,7 @@ public class RssInMemoryRemoteMerger<K, V> extends MergeThread<InMemoryMapOutput
       Counters.Counter spilledRecordsCounter,
       Class<? extends Reducer> combinerClass,
       ExceptionReporter exceptionReporter,
-      Task.CombineOutputCollector<K,V> combineCollector,
+      Task.CombineOutputCollector<K, V> combineCollector,
       Counters.Counter reduceCombineInputCounter,
       Counters.Counter mergedMapOutputsCounter) {
     super(manager, Integer.MAX_VALUE, exceptionReporter);
@@ -107,22 +106,35 @@ public class RssInMemoryRemoteMerger<K, V> extends MergeThread<InMemoryMapOutput
     Path outputPath = new Path(spillPath, filePath);
 
     FSDataOutputStream out = CryptoUtils.wrapIfNecessary(jobConf, remoteFs.create(outputPath));
-    IFile.Writer<K, V> writer = new IFile.Writer<K, V>(jobConf, out,
-        (Class<K>) jobConf.getMapOutputKeyClass(),
-        (Class<V>) jobConf.getMapOutputValueClass(), codec, null, true);
+    IFile.Writer<K, V> writer =
+        new IFile.Writer<K, V>(
+            jobConf,
+            out,
+            (Class<K>) jobConf.getMapOutputKeyClass(),
+            (Class<V>) jobConf.getMapOutputValueClass(),
+            codec,
+            null,
+            true);
 
     RawKeyValueIterator rIter = null;
     try {
       LOG.info("Initiating in-memory merge with " + noInMemorySegments + " segments...");
 
       // tmpDir won't be used. tmpDir is used for onDiskMerger
-      rIter = Merger.merge(jobConf, remoteFs,
-          (Class<K>)jobConf.getMapOutputKeyClass(),
-          (Class<V>)jobConf.getMapOutputValueClass(),
-          inMemorySegments, inMemorySegments.size(),
-          new Path(taskAttemptId),
-          (RawComparator<K>)jobConf.getOutputKeyComparator(),
-          reporter, spilledRecordsCounter, null, null);
+      rIter =
+          Merger.merge(
+              jobConf,
+              remoteFs,
+              (Class<K>) jobConf.getMapOutputKeyClass(),
+              (Class<V>) jobConf.getMapOutputValueClass(),
+              inMemorySegments,
+              inMemorySegments.size(),
+              new Path(taskAttemptId),
+              (RawComparator<K>) jobConf.getOutputKeyComparator(),
+              reporter,
+              spilledRecordsCounter,
+              null,
+              null);
 
       if (null == combinerClass) {
         Merger.writeFile(rIter, writer, reporter, jobConf);
@@ -135,36 +147,39 @@ public class RssInMemoryRemoteMerger<K, V> extends MergeThread<InMemoryMapOutput
       // keep this for final merge
       manager.closeOnHDFSFile(outputPath);
 
-      LOG.info(taskAttemptId + " Merge of the " + noInMemorySegments
-          + " files in-memory complete."
-          + " Local file is " + outputPath + " of size "
-          + remoteFs.getFileStatus(outputPath).getLen()
-          + " cost time " + (System.currentTimeMillis() - start) + " ms");
+      LOG.info(
+          taskAttemptId
+              + " Merge of the "
+              + noInMemorySegments
+              + " files in-memory complete."
+              + " Local file is "
+              + outputPath
+              + " of size "
+              + remoteFs.getFileStatus(outputPath).getLen()
+              + " cost time "
+              + (System.currentTimeMillis() - start)
+              + " ms");
     } catch (IOException e) {
       // make sure that we delete the ondisk file that we created
       // earlier when we invoked cloneFileAttributes
       remoteFs.delete(outputPath, true);
       throw e;
     }
-
   }
 
-  private void combineAndSpill(
-      RawKeyValueIterator kvIter,
-      Counters.Counter inCounter) throws IOException {
+  private void combineAndSpill(RawKeyValueIterator kvIter, Counters.Counter inCounter)
+      throws IOException {
     JobConf job = jobConf;
     Reducer combiner = ReflectionUtils.newInstance(combinerClass, job);
     Class<K> keyClass = (Class<K>) job.getMapOutputKeyClass();
     Class<V> valClass = (Class<V>) job.getMapOutputValueClass();
-    RawComparator<K> comparator =
-        (RawComparator<K>) job.getCombinerKeyGroupingComparator();
+    RawComparator<K> comparator = (RawComparator<K>) job.getCombinerKeyGroupingComparator();
     try {
-      Task.CombineValuesIterator values = new Task.CombineValuesIterator(
-          kvIter, comparator, keyClass, valClass, job, Reporter.NULL,
-          inCounter);
+      Task.CombineValuesIterator values =
+          new Task.CombineValuesIterator(
+              kvIter, comparator, keyClass, valClass, job, Reporter.NULL, inCounter);
       while (values.more()) {
-        combiner.reduce(values.getKey(), values, combineCollector,
-            Reporter.NULL);
+        combiner.reduce(values.getKey(), values, combineCollector, Reporter.NULL);
         values.nextKey();
       }
     } finally {
@@ -173,24 +188,24 @@ public class RssInMemoryRemoteMerger<K, V> extends MergeThread<InMemoryMapOutput
   }
 
   private long createInMemorySegments(
-      List<InMemoryMapOutput<K,V>> inMemoryMapOutputs,
-      List<Merger.Segment<K, V>> inMemorySegments) throws IOException {
+      List<InMemoryMapOutput<K, V>> inMemoryMapOutputs, List<Merger.Segment<K, V>> inMemorySegments)
+      throws IOException {
     long totalSize = 0L;
     // We could use fullSize could come from the RamManager, but files can be
     // closed but not yet present in inMemoryMapOutputs
     long fullSize = 0L;
-    for (InMemoryMapOutput<K,V> mo : inMemoryMapOutputs) {
+    for (InMemoryMapOutput<K, V> mo : inMemoryMapOutputs) {
       fullSize += mo.getMemory().length;
     }
     while (fullSize > 0) {
-      InMemoryMapOutput<K,V> mo = inMemoryMapOutputs.remove(0);
+      InMemoryMapOutput<K, V> mo = inMemoryMapOutputs.remove(0);
       byte[] data = mo.getMemory();
       long size = data.length;
       totalSize += size;
       fullSize -= size;
-      IFile.Reader<K,V> reader = new InMemoryReader<K,V>(manager,
-          mo.getMapId(), data, 0, (int)size, jobConf);
-      inMemorySegments.add(new Merger.Segment<K,V>(reader, true, mergedMapOutputsCounter));
+      IFile.Reader<K, V> reader =
+          new InMemoryReader<K, V>(manager, mo.getMapId(), data, 0, (int) size, jobConf);
+      inMemorySegments.add(new Merger.Segment<K, V>(reader, true, mergedMapOutputsCounter));
     }
     return totalSize;
   }

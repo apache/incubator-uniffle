@@ -27,8 +27,9 @@ public class CoordinatorConfTest {
 
   @Test
   public void test() {
-    final String filePath = Objects.requireNonNull(
-        getClass().getClassLoader().getResource("coordinator.conf")).getFile();
+    final String filePath =
+        Objects.requireNonNull(getClass().getClassLoader().getResource("coordinator.conf"))
+            .getFile();
     CoordinatorConf conf = new CoordinatorConf(filePath);
 
     // test base conf
@@ -42,12 +43,12 @@ public class CoordinatorConfTest {
     assertEquals(123, conf.getLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT));
 
     // test default conf
-    assertEquals("PARTITION_BALANCE", conf.get(CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY).name());
+    assertEquals(
+        "PARTITION_BALANCE", conf.get(CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY).name());
     assertEquals(256, conf.getInteger(CoordinatorConf.JETTY_CORE_POOL_SIZE));
     assertEquals(60 * 1000, conf.getLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL));
 
     // test custom keys defined in plugins
     assertEquals("v1", conf.getString("plugin.custom.key", null));
   }
-
 }

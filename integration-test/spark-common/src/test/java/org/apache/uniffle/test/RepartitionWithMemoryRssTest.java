@@ -69,6 +69,5 @@ public class RepartitionWithMemoryRssTest extends RepartitionTest {
   }
 
   @Override
-  public void updateRssStorage(SparkConf sparkConf) {
-  }
+  public void updateRssStorage(SparkConf sparkConf) {}
 }

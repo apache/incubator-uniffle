@@ -90,8 +90,7 @@ public class HadoopStorage extends AbstractStorage {
             storagePath,
             request.getFileNamePrefix(),
             conf,
-            user
-        );
+            user);
       } else {
         return new PooledHadoopShuffleWriteHandler(
             request.getAppId(),
@@ -102,8 +101,7 @@ public class HadoopStorage extends AbstractStorage {
             request.getFileNamePrefix(),
             conf,
             user,
-            request.getMaxFileNumber()
-        );
+            request.getMaxFileNumber());
       }
     } catch (Exception e) {
       throw new RssException(e);

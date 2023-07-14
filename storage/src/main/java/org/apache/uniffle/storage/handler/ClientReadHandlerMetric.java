@@ -75,7 +75,7 @@ public class ClientReadHandlerMetric {
   public void incSkippedReadUncompressLength(long skippedReadUncompressLength) {
     this.skippedReadUncompressLength += skippedReadUncompressLength;
   }
-  
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -85,17 +85,22 @@ public class ClientReadHandlerMetric {
       return false;
     }
     ClientReadHandlerMetric that = (ClientReadHandlerMetric) o;
-    return readBlockNum == that.getReadBlockNum() 
-        && readLength == that.getReadLength() 
-        && readUncompressLength == that.getReadUncompressLength() 
-        && skippedReadBlockNum == that.getSkippedReadBlockNum() 
-        && skippedReadLength == that.getSkippedReadLength() 
+    return readBlockNum == that.getReadBlockNum()
+        && readLength == that.getReadLength()
+        && readUncompressLength == that.getReadUncompressLength()
+        && skippedReadBlockNum == that.getSkippedReadBlockNum()
+        && skippedReadLength == that.getSkippedReadLength()
         && skippedReadUncompressLength == that.getSkippedReadUncompressLength();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(readBlockNum, readLength, readUncompressLength,
-        skippedReadBlockNum, skippedReadLength, skippedReadUncompressLength);
+    return Objects.hash(
+        readBlockNum,
+        readLength,
+        readUncompressLength,
+        skippedReadBlockNum,
+        skippedReadLength,
+        skippedReadUncompressLength);
   }
 }

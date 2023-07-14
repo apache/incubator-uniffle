@@ -23,5 +23,6 @@ import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 
 public interface ShuffleManagerClient extends Closeable {
-  RssReportShuffleFetchFailureResponse reportShuffleFetchFailure(RssReportShuffleFetchFailureRequest request);
+  RssReportShuffleFetchFailureResponse reportShuffleFetchFailure(
+      RssReportShuffleFetchFailureRequest request);
 }

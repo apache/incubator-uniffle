@@ -71,35 +71,41 @@ public class RssTezFetcherTest {
     initRssData();
     ShuffleReadClient shuffleReadClient = new MockedShuffleReadClient(data);
 
-    SimpleFetchedInputAllocator inputManager = new SimpleFetchedInputAllocator(
-        TezUtilsInternal.cleanVertexName("Map 1"),
-        "1",
-        2, conf,
-        200 * 1024 * 1024L,
-        300 * 1024 * 1024L);
+    SimpleFetchedInputAllocator inputManager =
+        new SimpleFetchedInputAllocator(
+            TezUtilsInternal.cleanVertexName("Map 1"),
+            "1",
+            2,
+            conf,
+            200 * 1024 * 1024L,
+            300 * 1024 * 1024L);
 
     List<byte[]> result = new ArrayList<byte[]>();
-    FetcherCallback fetcherCallback = new FetcherCallback() {
-      @Override
-      public void fetchSucceeded(String host, InputAttemptIdentifier srcAttemptIdentifier, FetchedInput fetchedInput,
-            long fetchedBytes, long decompressedLength, long copyDuration) throws IOException {
-        LOG.info("Fetch success");
-        fetchedInput.commit();
-        result.add(((MemoryFetchedInput) fetchedInput).getBytes());
-      }
+    FetcherCallback fetcherCallback =
+        new FetcherCallback() {
+          @Override
+          public void fetchSucceeded(
+              String host,
+              InputAttemptIdentifier srcAttemptIdentifier,
+              FetchedInput fetchedInput,
+              long fetchedBytes,
+              long decompressedLength,
+              long copyDuration)
+              throws IOException {
+            LOG.info("Fetch success");
+            fetchedInput.commit();
+            result.add(((MemoryFetchedInput) fetchedInput).getBytes());
+          }
 
-      @Override
-      public void fetchFailed(String host, InputAttemptIdentifier srcAttemptIdentifier, boolean connectFailed) {
-        fail();
-      }
-    };
+          @Override
+          public void fetchFailed(
+              String host, InputAttemptIdentifier srcAttemptIdentifier, boolean connectFailed) {
+            fail();
+          }
+        };
 
-    RssTezFetcher rssFetcher = new RssTezFetcher(fetcherCallback,
-        inputManager,
-        shuffleReadClient,
-        null,
-        2,
-        new RssConf());
+    RssTezFetcher rssFetcher =
+        new RssTezFetcher(fetcherCallback, inputManager, shuffleReadClient, null, 2, new RssConf());
     rssFetcher.fetchAllRssBlocks();
 
     for (int i = 0; i < data.size(); i++) {
@@ -115,8 +121,9 @@ public class RssTezFetcherTest {
       keyDeserializer.open(keyIn);
       valDeserializer.open(valIn);
 
-      InMemoryReader reader = new InMemoryReader(null,
-          new InputAttemptIdentifier(0, 0), result.get(i), 0, result.get(i).length);
+      InMemoryReader reader =
+          new InMemoryReader(
+              null, new InputAttemptIdentifier(0, 0), result.get(i), 0, result.get(i).length);
       int numRecordsRead = 0;
       while (reader.nextRawKey(keyIn)) {
         reader.nextRawValue(valIn);
@@ -138,7 +145,7 @@ public class RssTezFetcherTest {
     InMemoryWriter writer = null;
     BoundedByteArrayOutputStream bout = new BoundedByteArrayOutputStream(1024 * 1024);
     List<KVPair> pairData = generateTestData(true, 10);
-    //No RLE, No RepeatKeys, no compression
+    // No RLE, No RepeatKeys, no compression
     writer = new InMemoryWriter(bout);
     writeTestFileUsingDataBuffer(writer, false, pairData);
     data = new ArrayList<>();
@@ -153,10 +160,11 @@ public class RssTezFetcherTest {
 
     MockedShuffleReadClient(List<byte[]> data) {
       this.blocks = new LinkedList<>();
-      data.forEach(bytes -> {
-        byte[] compressed = codec.compress(bytes);
-        blocks.add(new CompressedShuffleBlock(ByteBuffer.wrap(compressed), bytes.length));
-      });
+      data.forEach(
+          bytes -> {
+            byte[] compressed = codec.compress(bytes);
+            blocks.add(new CompressedShuffleBlock(ByteBuffer.wrap(compressed), bytes.length));
+          });
     }
 
     @Override
@@ -169,18 +177,14 @@ public class RssTezFetcherTest {
     }
 
     @Override
-    public void checkProcessedBlockIds() {
-    }
+    public void checkProcessedBlockIds() {}
 
     @Override
-    public void close() {
-    }
+    public void close() {}
 
     @Override
-    public void logStatics() {
-    }
+    public void logStatics() {}
   }
-
 
   /**
    * Generate key value pair
@@ -209,7 +213,7 @@ public class RssTezFetcherTest {
         }
       }
     }
-    //If we need to generated repeated keys, try to add some repeated keys to the end of file also.
+    // If we need to generated repeated keys, try to add some repeated keys to the end of file also.
     if (repeatCount > 0 && kvp != null) {
       data.add(kvp);
       data.add(kvp);
@@ -217,8 +221,8 @@ public class RssTezFetcherTest {
     return data;
   }
 
-  private static IFile.Writer writeTestFileUsingDataBuffer(IFile.Writer writer, boolean repeatKeys,
-            List<KVPair> data) throws IOException {
+  private static IFile.Writer writeTestFileUsingDataBuffer(
+      IFile.Writer writer, boolean repeatKeys, List<KVPair> data) throws IOException {
     DataInputBuffer previousKey = new DataInputBuffer();
     DataInputBuffer key = new DataInputBuffer();
     DataInputBuffer value = new DataInputBuffer();
@@ -239,7 +243,7 @@ public class RssTezFetcherTest {
   }
 
   private static void populateData(KVPair kvp, DataInputBuffer key, DataInputBuffer value)
-      throws  IOException {
+      throws IOException {
     DataOutputBuffer k = new DataOutputBuffer();
     DataOutputBuffer v = new DataOutputBuffer();
     kvp.getKey().write(k);

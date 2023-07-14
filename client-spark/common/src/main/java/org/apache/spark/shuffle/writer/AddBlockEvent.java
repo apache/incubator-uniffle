@@ -34,16 +34,15 @@ public class AddBlockEvent {
     this.processedCallbackChain = new ArrayList<>();
   }
 
-  public AddBlockEvent(String taskId, List<ShuffleBlockInfo> shuffleBlockInfoList, Runnable callback) {
+  public AddBlockEvent(
+      String taskId, List<ShuffleBlockInfo> shuffleBlockInfoList, Runnable callback) {
     this.taskId = taskId;
     this.shuffleDataInfoList = shuffleBlockInfoList;
     this.processedCallbackChain = new ArrayList<>();
     addCallback(callback);
   }
 
-  /**
-   * @param callback, should not throw any exception and execute fast.
-   */
+  /** @param callback, should not throw any exception and execute fast. */
   public void addCallback(Runnable callback) {
     processedCallbackChain.add(callback);
   }

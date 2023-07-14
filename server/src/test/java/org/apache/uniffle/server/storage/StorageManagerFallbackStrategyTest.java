@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class StorageManagerFallbackStrategyTest {
   private ShuffleServerConf conf;
-  
+
   @BeforeEach
   public void prepare() {
     conf = new ShuffleServerConf();
@@ -46,81 +46,94 @@ public class StorageManagerFallbackStrategyTest {
 
   @Test
   public void testDefaultFallbackStrategy() {
-    RotateStorageManagerFallbackStrategy fallbackStrategy = new RotateStorageManagerFallbackStrategy(conf);
+    RotateStorageManagerFallbackStrategy fallbackStrategy =
+        new RotateStorageManagerFallbackStrategy(conf);
     LocalStorageManager warmStorageManager = new LocalStorageManager(conf);
     HadoopStorageManager coldStorageManager = new HadoopStorageManager(conf);
     StorageManager current = warmStorageManager;
     String remoteStorage = "test";
     String appId = "testDefaultFallbackStrategy_appId";
     coldStorageManager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
-    List<ShufflePartitionedBlock> blocks = Lists.newArrayList(
-        new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
-    ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
-        1, appId, 1, 1, 1, 1000, blocks, null, null);
+    List<ShufflePartitionedBlock> blocks =
+        Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
+    ShuffleDataFlushEvent event =
+        new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 1000, blocks, null, null);
     event.increaseRetryTimes();
-    StorageManager storageManager = fallbackStrategy.tryFallback(
-        current, event, warmStorageManager, coldStorageManager);
+    StorageManager storageManager =
+        fallbackStrategy.tryFallback(current, event, warmStorageManager, coldStorageManager);
     assertSame(storageManager, coldStorageManager);
 
     conf.setLong(ShuffleServerConf.FALLBACK_MAX_FAIL_TIMES, 3);
     fallbackStrategy = new RotateStorageManagerFallbackStrategy(conf);
-    storageManager = fallbackStrategy.tryFallback(current, event, warmStorageManager, coldStorageManager);
+    storageManager =
+        fallbackStrategy.tryFallback(current, event, warmStorageManager, coldStorageManager);
     assertSame(storageManager, warmStorageManager);
     for (int i = 0; i < 2; i++) {
       event.increaseRetryTimes();
     }
-    storageManager = fallbackStrategy.tryFallback(current, event, warmStorageManager, coldStorageManager);
+    storageManager =
+        fallbackStrategy.tryFallback(current, event, warmStorageManager, coldStorageManager);
     assertSame(storageManager, coldStorageManager);
     event.increaseRetryTimes();
-    storageManager = fallbackStrategy.tryFallback(current, event, warmStorageManager, coldStorageManager);
+    storageManager =
+        fallbackStrategy.tryFallback(current, event, warmStorageManager, coldStorageManager);
     assertSame(storageManager, warmStorageManager);
     for (int i = 0; i < 2; i++) {
       event.increaseRetryTimes();
     }
-    storageManager = fallbackStrategy.tryFallback(coldStorageManager, event, warmStorageManager, coldStorageManager);
+    storageManager =
+        fallbackStrategy.tryFallback(
+            coldStorageManager, event, warmStorageManager, coldStorageManager);
     assertSame(storageManager, warmStorageManager);
   }
 
   @Test
   public void testHadoopFallbackStrategy() {
-    HadoopStorageManagerFallbackStrategy fallbackStrategy = new HadoopStorageManagerFallbackStrategy(conf);
+    HadoopStorageManagerFallbackStrategy fallbackStrategy =
+        new HadoopStorageManagerFallbackStrategy(conf);
     LocalStorageManager warmStorageManager = new LocalStorageManager(conf);
     HadoopStorageManager coldStorageManager = new HadoopStorageManager(conf);
     String remoteStorage = "test";
     String appId = "testHdfsFallbackStrategy_appId";
     coldStorageManager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
-    List<ShufflePartitionedBlock> blocks = Lists.newArrayList(
-        new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
-    ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
-        1, appId, 1, 1, 1, 1000, blocks, null, null);
+    List<ShufflePartitionedBlock> blocks =
+        Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
+    ShuffleDataFlushEvent event =
+        new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 1000, blocks, null, null);
     event.increaseRetryTimes();
-    StorageManager storageManager = fallbackStrategy.tryFallback(
-        warmStorageManager, event, warmStorageManager, coldStorageManager);
+    StorageManager storageManager =
+        fallbackStrategy.tryFallback(
+            warmStorageManager, event, warmStorageManager, coldStorageManager);
     assertSame(storageManager, warmStorageManager);
 
-    storageManager = fallbackStrategy.tryFallback(coldStorageManager, event, warmStorageManager, coldStorageManager);
+    storageManager =
+        fallbackStrategy.tryFallback(
+            coldStorageManager, event, warmStorageManager, coldStorageManager);
     assertSame(storageManager, warmStorageManager);
   }
 
-
   @Test
   public void testLocalFallbackStrategy() {
-    LocalStorageManagerFallbackStrategy fallbackStrategy = new LocalStorageManagerFallbackStrategy(conf);
+    LocalStorageManagerFallbackStrategy fallbackStrategy =
+        new LocalStorageManagerFallbackStrategy(conf);
     LocalStorageManager warmStorageManager = new LocalStorageManager(conf);
     HadoopStorageManager coldStorageManager = new HadoopStorageManager(conf);
     String remoteStorage = "test";
     String appId = "testLocalFallbackStrategy_appId";
     coldStorageManager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
-    List<ShufflePartitionedBlock> blocks = Lists.newArrayList(
-        new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
-    ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
-        1, appId, 1, 1, 1, 1000, blocks, null, null);
+    List<ShufflePartitionedBlock> blocks =
+        Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
+    ShuffleDataFlushEvent event =
+        new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 1000, blocks, null, null);
     event.increaseRetryTimes();
-    StorageManager storageManager = fallbackStrategy.tryFallback(
-        warmStorageManager, event, warmStorageManager, coldStorageManager);
+    StorageManager storageManager =
+        fallbackStrategy.tryFallback(
+            warmStorageManager, event, warmStorageManager, coldStorageManager);
     assertSame(storageManager, coldStorageManager);
 
-    storageManager = fallbackStrategy.tryFallback(coldStorageManager, event, warmStorageManager, coldStorageManager);
+    storageManager =
+        fallbackStrategy.tryFallback(
+            coldStorageManager, event, warmStorageManager, coldStorageManager);
     assertSame(storageManager, coldStorageManager);
   }
 }

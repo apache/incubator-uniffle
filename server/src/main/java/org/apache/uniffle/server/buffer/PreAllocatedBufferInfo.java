@@ -40,5 +40,4 @@ public class PreAllocatedBufferInfo {
   public int getRequireSize() {
     return requireSize;
   }
-
 }

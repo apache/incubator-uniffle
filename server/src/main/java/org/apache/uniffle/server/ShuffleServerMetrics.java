@@ -53,8 +53,10 @@ public class ShuffleServerMetrics {
   private static final String TOTAL_READ_MEMORY_DATA = "total_read_memory_data";
   private static final String TOTAL_READ_TIME = "total_read_time";
   private static final String TOTAL_REQUIRE_READ_MEMORY = "total_require_read_memory_num";
-  private static final String TOTAL_REQUIRE_READ_MEMORY_RETRY = "total_require_read_memory_retry_num";
-  private static final String TOTAL_REQUIRE_READ_MEMORY_FAILED = "total_require_read_memory_failed_num";
+  private static final String TOTAL_REQUIRE_READ_MEMORY_RETRY =
+      "total_require_read_memory_retry_num";
+  private static final String TOTAL_REQUIRE_READ_MEMORY_FAILED =
+      "total_require_read_memory_failed_num";
 
   private static final String LOCAL_STORAGE_TOTAL_DIRS_NUM = "local_storage_total_dirs_num";
   private static final String LOCAL_STORAGE_CORRUPTED_DIRS_NUM = "local_storage_corrupted_dirs_num";
@@ -87,49 +89,53 @@ public class ShuffleServerMetrics {
   public static final String STORAGE_SUCCESS_WRITE_REMOTE = "storage_success_write_remote";
 
   private static final String TOTAL_APP_NUM = "total_app_num";
-  private static final String TOTAL_APP_WITH_HUGE_PARTITION_NUM = "total_app_with_huge_partition_num";
+  private static final String TOTAL_APP_WITH_HUGE_PARTITION_NUM =
+      "total_app_with_huge_partition_num";
   private static final String TOTAL_PARTITION_NUM = "total_partition_num";
   private static final String TOTAL_HUGE_PARTITION_NUM = "total_huge_partition_num";
 
   private static final String HUGE_PARTITION_NUM = "huge_partition_num";
   private static final String APP_WITH_HUGE_PARTITION_NUM = "app_with_huge_partition_num";
 
+  private static final String LOCAL_FILE_EVENT_FLUSH_NUM = "local_file_event_flush_num";
+  private static final String HADOOP_EVENT_FLUSH_NUM = "hadoop_event_flush_num";
+
   public static Counter.Child counterTotalAppNum;
   public static Counter.Child counterTotalAppWithHugePartitionNum;
   public static Counter.Child counterTotalPartitionNum;
   public static Counter.Child counterTotalHugePartitionNum;
 
-  public static Counter.Child  counterTotalReceivedDataSize;
-  public static Counter.Child  counterTotalWriteDataSize;
-  public static Counter.Child  counterTotalWriteBlockSize;
-  public static Counter.Child  counterTotalWriteTime;
-  public static Counter.Child  counterWriteException;
-  public static Counter.Child  counterWriteSlow;
-  public static Counter.Child  counterWriteTotal;
-  public static Counter.Child  counterEventSizeThresholdLevel1;
-  public static Counter.Child  counterEventSizeThresholdLevel2;
-  public static Counter.Child  counterEventSizeThresholdLevel3;
-  public static Counter.Child  counterEventSizeThresholdLevel4;
-  public static Counter.Child  counterTotalReadDataSize;
-  public static Counter.Child  counterTotalReadLocalDataFileSize;
-  public static Counter.Child  counterTotalReadLocalIndexFileSize;
-  public static Counter.Child  counterTotalReadMemoryDataSize;
-  public static Counter.Child  counterTotalReadTime;
-  public static Counter.Child  counterTotalFailedWrittenEventNum;
-  public static Counter.Child  counterTotalDroppedEventNum;
+  public static Counter.Child counterTotalReceivedDataSize;
+  public static Counter.Child counterTotalWriteDataSize;
+  public static Counter.Child counterTotalWriteBlockSize;
+  public static Counter.Child counterTotalWriteTime;
+  public static Counter.Child counterWriteException;
+  public static Counter.Child counterWriteSlow;
+  public static Counter.Child counterWriteTotal;
+  public static Counter.Child counterEventSizeThresholdLevel1;
+  public static Counter.Child counterEventSizeThresholdLevel2;
+  public static Counter.Child counterEventSizeThresholdLevel3;
+  public static Counter.Child counterEventSizeThresholdLevel4;
+  public static Counter.Child counterTotalReadDataSize;
+  public static Counter.Child counterTotalReadLocalDataFileSize;
+  public static Counter.Child counterTotalReadLocalIndexFileSize;
+  public static Counter.Child counterTotalReadMemoryDataSize;
+  public static Counter.Child counterTotalReadTime;
+  public static Counter.Child counterTotalFailedWrittenEventNum;
+  public static Counter.Child counterTotalDroppedEventNum;
   public static Counter.Child counterTotalHadoopWriteDataSize;
-  public static Counter.Child  counterTotalLocalFileWriteDataSize;
-  public static Counter.Child  counterTotalRequireBufferFailed;
-  public static Counter.Child  counterTotalRequireBufferFailedForHugePartition;
-  public static Counter.Child  counterTotalRequireBufferFailedForRegularPartition;
+  public static Counter.Child counterTotalLocalFileWriteDataSize;
+  public static Counter.Child counterTotalRequireBufferFailed;
+  public static Counter.Child counterTotalRequireBufferFailedForHugePartition;
+  public static Counter.Child counterTotalRequireBufferFailedForRegularPartition;
 
-  public static Counter.Child  counterLocalStorageTotalWrite;
-  public static Counter.Child  counterLocalStorageRetryWrite;
-  public static Counter.Child  counterLocalStorageFailedWrite;
-  public static Counter.Child  counterLocalStorageSuccessWrite;
-  public static Counter.Child  counterTotalRequireReadMemoryNum;
-  public static Counter.Child  counterTotalRequireReadMemoryRetryNum;
-  public static Counter.Child  counterTotalRequireReadMemoryFailedNum;
+  public static Counter.Child counterLocalStorageTotalWrite;
+  public static Counter.Child counterLocalStorageRetryWrite;
+  public static Counter.Child counterLocalStorageFailedWrite;
+  public static Counter.Child counterLocalStorageSuccessWrite;
+  public static Counter.Child counterTotalRequireReadMemoryNum;
+  public static Counter.Child counterTotalRequireReadMemoryRetryNum;
+  public static Counter.Child counterTotalRequireReadMemoryFailedNum;
 
   public static Gauge.Child gaugeHugePartitionNum;
   public static Gauge.Child gaugeAppWithHugePartitionNum;
@@ -154,6 +160,8 @@ public class ShuffleServerMetrics {
   public static Counter counterRemoteStorageFailedWrite;
   public static Counter counterRemoteStorageSuccessWrite;
   private static String tags;
+  public static Counter counterLocalFileEventFlush;
+  public static Counter counterHadoopEventFlush;
 
   private static MetricsManager metricsManager;
   private static boolean isRegister = false;
@@ -233,14 +241,18 @@ public class ShuffleServerMetrics {
     counterEventSizeThresholdLevel3 = metricsManager.addLabeledCounter(EVENT_SIZE_THRESHOLD_LEVEL3);
     counterEventSizeThresholdLevel4 = metricsManager.addLabeledCounter(EVENT_SIZE_THRESHOLD_LEVEL4);
     counterTotalReadDataSize = metricsManager.addLabeledCounter(TOTAL_READ_DATA);
-    counterTotalReadLocalDataFileSize = metricsManager.addLabeledCounter(TOTAL_READ_LOCAL_DATA_FILE);
-    counterTotalReadLocalIndexFileSize = metricsManager.addLabeledCounter(TOTAL_READ_LOCAL_INDEX_FILE);
+    counterTotalReadLocalDataFileSize =
+        metricsManager.addLabeledCounter(TOTAL_READ_LOCAL_DATA_FILE);
+    counterTotalReadLocalIndexFileSize =
+        metricsManager.addLabeledCounter(TOTAL_READ_LOCAL_INDEX_FILE);
     counterTotalReadMemoryDataSize = metricsManager.addLabeledCounter(TOTAL_READ_MEMORY_DATA);
     counterTotalReadTime = metricsManager.addLabeledCounter(TOTAL_READ_TIME);
     counterTotalDroppedEventNum = metricsManager.addLabeledCounter(TOTAL_DROPPED_EVENT_NUM);
-    counterTotalFailedWrittenEventNum = metricsManager.addLabeledCounter(TOTAL_FAILED_WRITTEN_EVENT_NUM);
+    counterTotalFailedWrittenEventNum =
+        metricsManager.addLabeledCounter(TOTAL_FAILED_WRITTEN_EVENT_NUM);
     counterTotalHadoopWriteDataSize = metricsManager.addLabeledCounter(TOTAL_HADOOP_WRITE_DATA);
-    counterTotalLocalFileWriteDataSize = metricsManager.addLabeledCounter(TOTAL_LOCALFILE_WRITE_DATA);
+    counterTotalLocalFileWriteDataSize =
+        metricsManager.addLabeledCounter(TOTAL_LOCALFILE_WRITE_DATA);
     counterTotalRequireBufferFailed = metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED);
     counterTotalRequireBufferFailedForRegularPartition =
         metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED_FOR_REGULAR_PARTITION);
@@ -250,28 +262,37 @@ public class ShuffleServerMetrics {
     counterLocalStorageRetryWrite = metricsManager.addLabeledCounter(STORAGE_RETRY_WRITE_LOCAL);
     counterLocalStorageFailedWrite = metricsManager.addLabeledCounter(STORAGE_FAILED_WRITE_LOCAL);
     counterLocalStorageSuccessWrite = metricsManager.addLabeledCounter(STORAGE_SUCCESS_WRITE_LOCAL);
-    counterRemoteStorageTotalWrite = metricsManager.addCounter(
-        STORAGE_TOTAL_WRITE_REMOTE, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
-    counterRemoteStorageRetryWrite = metricsManager.addCounter(
-        STORAGE_RETRY_WRITE_REMOTE, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
-    counterRemoteStorageFailedWrite = metricsManager.addCounter(
-        STORAGE_FAILED_WRITE_REMOTE, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
-    counterRemoteStorageSuccessWrite = metricsManager.addCounter(
-        STORAGE_SUCCESS_WRITE_REMOTE, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
+    counterRemoteStorageTotalWrite =
+        metricsManager.addCounter(
+            STORAGE_TOTAL_WRITE_REMOTE, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
+    counterRemoteStorageRetryWrite =
+        metricsManager.addCounter(
+            STORAGE_RETRY_WRITE_REMOTE, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
+    counterRemoteStorageFailedWrite =
+        metricsManager.addCounter(
+            STORAGE_FAILED_WRITE_REMOTE, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
+    counterRemoteStorageSuccessWrite =
+        metricsManager.addCounter(
+            STORAGE_SUCCESS_WRITE_REMOTE, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
     counterTotalRequireReadMemoryNum = metricsManager.addLabeledCounter(TOTAL_REQUIRE_READ_MEMORY);
-    counterTotalRequireReadMemoryRetryNum = metricsManager.addLabeledCounter(TOTAL_REQUIRE_READ_MEMORY_RETRY);
-    counterTotalRequireReadMemoryFailedNum = metricsManager.addLabeledCounter(TOTAL_REQUIRE_READ_MEMORY_FAILED);
+    counterTotalRequireReadMemoryRetryNum =
+        metricsManager.addLabeledCounter(TOTAL_REQUIRE_READ_MEMORY_RETRY);
+    counterTotalRequireReadMemoryFailedNum =
+        metricsManager.addLabeledCounter(TOTAL_REQUIRE_READ_MEMORY_FAILED);
 
     counterTotalAppNum = metricsManager.addLabeledCounter(TOTAL_APP_NUM);
-    counterTotalAppWithHugePartitionNum = metricsManager.addLabeledCounter(TOTAL_APP_WITH_HUGE_PARTITION_NUM);
+    counterTotalAppWithHugePartitionNum =
+        metricsManager.addLabeledCounter(TOTAL_APP_WITH_HUGE_PARTITION_NUM);
     counterTotalPartitionNum = metricsManager.addLabeledCounter(TOTAL_PARTITION_NUM);
     counterTotalHugePartitionNum = metricsManager.addLabeledCounter(TOTAL_HUGE_PARTITION_NUM);
 
     gaugeLocalStorageTotalDirsNum = metricsManager.addLabeledGauge(LOCAL_STORAGE_TOTAL_DIRS_NUM);
-    gaugeLocalStorageCorruptedDirsNum = metricsManager.addLabeledGauge(LOCAL_STORAGE_CORRUPTED_DIRS_NUM);
+    gaugeLocalStorageCorruptedDirsNum =
+        metricsManager.addLabeledGauge(LOCAL_STORAGE_CORRUPTED_DIRS_NUM);
     gaugeLocalStorageTotalSpace = metricsManager.addLabeledGauge(LOCAL_STORAGE_TOTAL_SPACE);
     gaugeLocalStorageUsedSpace = metricsManager.addLabeledGauge(LOCAL_STORAGE_USED_SPACE);
-    gaugeLocalStorageUsedSpaceRatio = metricsManager.addLabeledGauge(LOCAL_STORAGE_USED_SPACE_RATIO);
+    gaugeLocalStorageUsedSpaceRatio =
+        metricsManager.addLabeledGauge(LOCAL_STORAGE_USED_SPACE_RATIO);
 
     gaugeIsHealthy = metricsManager.addLabeledGauge(IS_HEALTHY);
     gaugeAllocatedBufferSize = metricsManager.addLabeledGauge(ALLOCATED_BUFFER_SIZE);
@@ -285,5 +306,8 @@ public class ShuffleServerMetrics {
 
     gaugeHugePartitionNum = metricsManager.addLabeledGauge(HUGE_PARTITION_NUM);
     gaugeAppWithHugePartitionNum = metricsManager.addLabeledGauge(APP_WITH_HUGE_PARTITION_NUM);
+
+    counterLocalFileEventFlush = metricsManager.addCounter(LOCAL_FILE_EVENT_FLUSH_NUM);
+    counterHadoopEventFlush = metricsManager.addCounter(HADOOP_EVENT_FLUSH_NUM);
   }
 }

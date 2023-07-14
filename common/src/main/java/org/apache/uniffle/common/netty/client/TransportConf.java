@@ -60,5 +60,4 @@ public class TransportConf {
   public int sendBuf() {
     return rssConf.get(RssClientConf.NETTY_CLIENT_SEND_BUFFER);
   }
-
 }

@@ -56,13 +56,15 @@ public class RssUtilsTest {
 
   @Test
   public void testGetPropertiesFromFile() {
-    final String filePath = Objects.requireNonNull(
-        getClass().getClassLoader().getResource("rss-defaults.conf")).getFile();
+    final String filePath =
+        Objects.requireNonNull(getClass().getClassLoader().getResource("rss-defaults.conf"))
+            .getFile();
     Map<String, String> properties = RssUtils.getPropertiesFromFile(filePath);
     assertEquals("12121", properties.get("rss.coordinator.port"));
     assertEquals("155", properties.get("rss.server.heartbeat.interval"));
     assertEquals("true", properties.get("rss.x.y.z"));
-    assertEquals("-XX:+PrintGCDetails-Dkey=value-Dnumbers=\"one two three\"",
+    assertEquals(
+        "-XX:+PrintGCDetails-Dkey=value-Dnumbers=\"one two three\"",
         properties.get("rss.a.b.c.extraJavaOptions"));
   }
 
@@ -77,15 +79,17 @@ public class RssUtilsTest {
       assertTrue(ia.isReachable(5000));
       withEnvironmentVariable("RSS_IP", "8.8.8.8")
           .execute(() -> assertEquals("8.8.8.8", RssUtils.getHostIp()));
-      withEnvironmentVariable("RSS_IP", "xxxx").execute(() -> {
-        boolean isException = false;
-        try {
-          RssUtils.getHostIp();
-        } catch (Exception e) {
-          isException = true;
-        }
-        assertTrue(isException);
-      });
+      withEnvironmentVariable("RSS_IP", "xxxx")
+          .execute(
+              () -> {
+                boolean isException = false;
+                try {
+                  RssUtils.getHostIp();
+                } catch (Exception e) {
+                  isException = true;
+                }
+                assertTrue(isException);
+              });
       withEnvironmentVariable("RSS_IP", realIp).execute(RssUtils::getHostIp);
     } catch (Exception e) {
       fail(e.getMessage());
@@ -103,7 +107,9 @@ public class RssUtilsTest {
     int port = 0;
     try {
       int actualPort = RssUtils.startServiceOnPort(mockServer, "MockServer", port, rssBaseConf);
-      assertTrue(actualPort >= 30000 && actualPort < 39999 + rssBaseConf.get(RssBaseConf.SERVER_PORT_MAX_RETRIES));
+      assertTrue(
+          actualPort >= 30000
+              && actualPort < 39999 + rssBaseConf.get(RssBaseConf.SERVER_PORT_MAX_RETRIES));
     } finally {
       if (mockServer != null) {
         mockServer.stop();
@@ -122,7 +128,9 @@ public class RssUtilsTest {
       port = 10000;
       rssBaseConf.set(RssBaseConf.SERVER_PORT_MAX_RETRIES, 100);
       int actualPort = RssUtils.startServiceOnPort(mockServer, "MockServer", port, rssBaseConf);
-      assertTrue(actualPort >= port && actualPort < port + rssBaseConf.get(RssBaseConf.SERVER_PORT_MAX_RETRIES));
+      assertTrue(
+          actualPort >= port
+              && actualPort < port + rssBaseConf.get(RssBaseConf.SERVER_PORT_MAX_RETRIES));
     } finally {
       if (mockServer != null) {
         mockServer.stop();
@@ -136,7 +144,8 @@ public class RssUtilsTest {
       port = 10000;
       int actualPort1 = RssUtils.startServiceOnPort(mockServer, "MockServer", port, rssBaseConf);
       rssBaseConf.set(RssBaseConf.SERVER_PORT_MAX_RETRIES, 10);
-      int actualPort2 = RssUtils.startServiceOnPort(toStartSockServer, "MockServer", actualPort1, rssBaseConf);
+      int actualPort2 =
+          RssUtils.startServiceOnPort(toStartSockServer, "MockServer", actualPort1, rssBaseConf);
       assertTrue(actualPort1 < actualPort2);
       toStartSockServer.stop();
       rssBaseConf.set(RssBaseConf.SERVER_PORT_MAX_RETRIES, 0);
@@ -152,9 +161,7 @@ public class RssUtilsTest {
         toStartSockServer.stop();
       }
     }
-
   }
-
 
   @Test
   public void testSerializeBitmap() throws Exception {
@@ -162,7 +169,7 @@ public class RssUtilsTest {
     byte[] bytes = RssUtils.serializeBitMap(bitmap1);
     Roaring64NavigableMap bitmap2 = RssUtils.deserializeBitMap(bytes);
     assertEquals(bitmap1, bitmap2);
-    assertEquals(Roaring64NavigableMap.bitmapOf(), RssUtils.deserializeBitMap(new byte[]{}));
+    assertEquals(Roaring64NavigableMap.bitmapOf(), RssUtils.deserializeBitMap(new byte[] {}));
   }
 
   @Test
@@ -188,38 +195,44 @@ public class RssUtilsTest {
     } catch (RuntimeException e) {
       assertTrue(e.getMessage().startsWith("java.lang.ClassNotFoundException: Dummy"));
     }
-    exts = Collections.singletonList("org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummyFailNotSub");
+    exts =
+        Collections.singletonList(
+            "org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummyFailNotSub");
     try {
       RssUtils.loadExtensions(RssUtilTestDummy.class, exts, 1);
     } catch (RuntimeException e) {
-      assertTrue(e.getMessage().contains("RssUtilTestDummyFailNotSub is not subclass of "
-          + "org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummy"));
+      assertTrue(
+          e.getMessage()
+              .contains(
+                  "RssUtilTestDummyFailNotSub is not subclass of "
+                      + "org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummy"));
     }
-    exts = Collections.singletonList("org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummyNoConstructor");
+    exts =
+        Collections.singletonList(
+            "org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummyNoConstructor");
     try {
       RssUtils.loadExtensions(RssUtilTestDummy.class, exts, "Test");
     } catch (RuntimeException e) {
       assertTrue(e.getMessage().contains("RssUtilTestDummyNoConstructor.<init>()"));
     }
-    exts = Collections.singletonList("org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummySuccess");
+    exts =
+        Collections.singletonList(
+            "org.apache.uniffle.common.util.RssUtilsTest$RssUtilTestDummySuccess");
     String testStr = String.valueOf(new Random().nextInt());
-    List<RssUtilTestDummy> extsObjs = RssUtils.loadExtensions(RssUtilTestDummy.class, exts, testStr);
+    List<RssUtilTestDummy> extsObjs =
+        RssUtils.loadExtensions(RssUtilTestDummy.class, exts, testStr);
     assertEquals(1, extsObjs.size());
     assertEquals(testStr, extsObjs.get(0).get());
   }
 
   @Test
   public void testShuffleBitmapToPartitionBitmap() {
-    Roaring64NavigableMap partition1Bitmap = Roaring64NavigableMap.bitmapOf(
-        getBlockId(0, 0, 0),
-        getBlockId(0, 0, 1),
-        getBlockId(0, 1, 0),
-        getBlockId(0, 1, 1));
-    Roaring64NavigableMap partition2Bitmap = Roaring64NavigableMap.bitmapOf(
-        getBlockId(1, 0, 0),
-        getBlockId(1, 0, 1),
-        getBlockId(1, 1, 0),
-        getBlockId(1, 1, 1));
+    Roaring64NavigableMap partition1Bitmap =
+        Roaring64NavigableMap.bitmapOf(
+            getBlockId(0, 0, 0), getBlockId(0, 0, 1), getBlockId(0, 1, 0), getBlockId(0, 1, 1));
+    Roaring64NavigableMap partition2Bitmap =
+        Roaring64NavigableMap.bitmapOf(
+            getBlockId(1, 0, 0), getBlockId(1, 0, 1), getBlockId(1, 1, 0), getBlockId(1, 1, 1));
     Roaring64NavigableMap shuffleBitmap = Roaring64NavigableMap.bitmapOf();
     shuffleBitmap.or(partition1Bitmap);
     shuffleBitmap.or(partition2Bitmap);
@@ -242,7 +255,8 @@ public class RssUtilsTest {
     partitionToServers.put(2, Lists.newArrayList(server3, server4));
     partitionToServers.put(3, Lists.newArrayList(server1, server2));
     partitionToServers.put(4, Lists.newArrayList(server3, server4));
-    Map<ShuffleServerInfo, Set<Integer>> serverToPartitions = RssUtils.generateServerToPartitions(partitionToServers);
+    Map<ShuffleServerInfo, Set<Integer>> serverToPartitions =
+        RssUtils.generateServerToPartitions(partitionToServers);
     assertEquals(4, serverToPartitions.size());
     assertEquals(serverToPartitions.get(server1), Sets.newHashSet(1, 3));
     assertEquals(serverToPartitions.get(server2), Sets.newHashSet(1, 3));
@@ -253,25 +267,35 @@ public class RssUtilsTest {
   @Test
   public void testGetConfiguredLocalDirs() throws Exception {
     RssConf conf = new RssConf();
-    withEnvironmentVariable(RssUtils.RSS_LOCAL_DIR_KEY, "/path/a").execute(() -> {
-      assertEquals(Collections.singletonList("/path/a"), RssUtils.getConfiguredLocalDirs(conf));
-    });
+    withEnvironmentVariable(RssUtils.RSS_LOCAL_DIR_KEY, "/path/a")
+        .execute(
+            () -> {
+              assertEquals(
+                  Collections.singletonList("/path/a"), RssUtils.getConfiguredLocalDirs(conf));
+            });
 
-    withEnvironmentVariable(RssUtils.RSS_LOCAL_DIR_KEY, "/path/a,/path/b").execute(() -> {
-      assertEquals(Arrays.asList("/path/a", "/path/b"), RssUtils.getConfiguredLocalDirs(conf));
-    });
+    withEnvironmentVariable(RssUtils.RSS_LOCAL_DIR_KEY, "/path/a,/path/b")
+        .execute(
+            () -> {
+              assertEquals(
+                  Arrays.asList("/path/a", "/path/b"), RssUtils.getConfiguredLocalDirs(conf));
+            });
 
-    withEnvironmentVariable(RssUtils.RSS_LOCAL_DIR_KEY, null).execute(() -> {
-      assertNull(RssUtils.getConfiguredLocalDirs(conf));
-      conf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/path/a", "/path/b"));
-      assertEquals(Arrays.asList("/path/a", "/path/b"), RssUtils.getConfiguredLocalDirs(conf));
-    });
+    withEnvironmentVariable(RssUtils.RSS_LOCAL_DIR_KEY, null)
+        .execute(
+            () -> {
+              assertNull(RssUtils.getConfiguredLocalDirs(conf));
+              conf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/path/a", "/path/b"));
+              assertEquals(
+                  Arrays.asList("/path/a", "/path/b"), RssUtils.getConfiguredLocalDirs(conf));
+            });
   }
 
   // Copy from ClientUtils
   private Long getBlockId(long partitionId, long taskAttemptId, long atomicInt) {
     return (atomicInt << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
-        + (partitionId << Constants.TASK_ATTEMPT_ID_MAX_LENGTH) + taskAttemptId;
+        + (partitionId << Constants.TASK_ATTEMPT_ID_MAX_LENGTH)
+        + taskAttemptId;
   }
 
   interface RssUtilTestDummy {
@@ -279,13 +303,11 @@ public class RssUtilsTest {
   }
 
   public static class RssUtilTestDummyFailNotSub {
-    public RssUtilTestDummyFailNotSub() {
-    }
+    public RssUtilTestDummyFailNotSub() {}
   }
 
   public static class RssUtilTestDummyNoConstructor implements RssUtilTestDummy {
-    public RssUtilTestDummyNoConstructor(int a) {
-    }
+    public RssUtilTestDummyNoConstructor(int a) {}
 
     public String get() {
       return null;
@@ -316,17 +338,20 @@ public class RssUtilsTest {
 
     @Override
     public void startOnPort(int port) throws IOException {
-      serverSocket = ServerSocketFactory.getDefault().createServerSocket(
-          port, 1, InetAddress.getByName("localhost"));
-      new Thread(() -> {
-        Socket accept;
-        try {
-          accept = serverSocket.accept();
-          accept.close();
-        } catch (IOException e) {
-          //e.printStackTrace();
-        }
-      }).start();
+      serverSocket =
+          ServerSocketFactory.getDefault()
+              .createServerSocket(port, 1, InetAddress.getByName("localhost"));
+      new Thread(
+              () -> {
+                Socket accept;
+                try {
+                  accept = serverSocket.accept();
+                  accept.close();
+                } catch (IOException e) {
+                  // e.printStackTrace();
+                }
+              })
+          .start();
     }
 
     @Override
@@ -335,7 +360,7 @@ public class RssUtilsTest {
         try {
           serverSocket.close();
         } catch (IOException e) {
-          //e.printStackTrace();
+          // e.printStackTrace();
         }
       }
     }
@@ -345,6 +370,4 @@ public class RssUtilsTest {
       // not implement
     }
   }
-
-
 }

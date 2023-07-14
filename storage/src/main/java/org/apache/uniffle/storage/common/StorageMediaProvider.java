@@ -26,7 +26,8 @@ public interface StorageMediaProvider {
    * Returns current storage media for baseDir.
    *
    * @param baseDir the storage dir to check for
-   * @return LocalStorageType if valid or queryable. Unknown would be returned if it cannot be determined.
+   * @return LocalStorageType if valid or queryable. Unknown would be returned if it cannot be
+   *     determined.
    */
   StorageMedia getStorageMediaFor(String baseDir);
 
@@ -35,6 +36,5 @@ public interface StorageMediaProvider {
    *
    * @param config RSS configurations.
    */
-  default void init(RssConf config) {
-  }
+  default void init(RssConf config) {}
 }

@@ -41,10 +41,8 @@ public class ShuffleHadoopStorageUtilsTest extends HadoopTestBase {
   }
 
   public static void createAndRunCases(
-      File tempDir,
-      FileSystem fileSystem,
-      String clusterPathPrefix,
-      Configuration hadoopConf) throws Exception {
+      File tempDir, FileSystem fileSystem, String clusterPathPrefix, Configuration hadoopConf)
+      throws Exception {
     File file = new File(tempDir, "test");
     FileOutputStream fileOut = new FileOutputStream(file);
     DataOutputStream dataOut = new DataOutputStream(fileOut);

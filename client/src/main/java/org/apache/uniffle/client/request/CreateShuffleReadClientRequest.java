@@ -41,7 +41,8 @@ public class CreateShuffleReadClientRequest {
   private List<ShuffleServerInfo> shuffleServerInfoList;
   private Configuration hadoopConf;
   private IdHelper idHelper;
-  private ShuffleDataDistributionType shuffleDataDistributionType = ShuffleDataDistributionType.NORMAL;
+  private ShuffleDataDistributionType shuffleDataDistributionType =
+      ShuffleDataDistributionType.NORMAL;
   private boolean expectedTaskIdsBitmapFilterEnable = false;
   private RssConf rssConf;
 
@@ -59,9 +60,20 @@ public class CreateShuffleReadClientRequest {
       ShuffleDataDistributionType dataDistributionType,
       boolean expectedTaskIdsBitmapFilterEnable,
       RssConf rssConf) {
-    this(appId, shuffleId, partitionId, basePath,
-        partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
-        hadoopConf, new DefaultIdHelper(), expectedTaskIdsBitmapFilterEnable, rssConf);
+    this(
+        appId,
+        shuffleId,
+        partitionId,
+        basePath,
+        partitionNumPerRange,
+        partitionNum,
+        blockIdBitmap,
+        taskIdBitmap,
+        shuffleServerInfoList,
+        hadoopConf,
+        new DefaultIdHelper(),
+        expectedTaskIdsBitmapFilterEnable,
+        rssConf);
     this.shuffleDataDistributionType = dataDistributionType;
   }
 
@@ -79,8 +91,18 @@ public class CreateShuffleReadClientRequest {
       IdHelper idHelper,
       boolean expectedTaskIdsBitmapFilterEnable,
       RssConf rssConf) {
-    this(appId, shuffleId, partitionId, basePath, partitionNumPerRange,
-        partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf, idHelper,
+    this(
+        appId,
+        shuffleId,
+        partitionId,
+        basePath,
+        partitionNumPerRange,
+        partitionNum,
+        blockIdBitmap,
+        taskIdBitmap,
+        shuffleServerInfoList,
+        hadoopConf,
+        idHelper,
         expectedTaskIdsBitmapFilterEnable);
     this.rssConf = rssConf;
   }
@@ -125,9 +147,19 @@ public class CreateShuffleReadClientRequest {
       Configuration hadoopConf,
       boolean expectedTaskIdsBitmapFilterEnable,
       RssConf rssConf) {
-    this(appId, shuffleId, partitionId, basePath,
-        partitionNumPerRange, partitionNum, blockIdBitmap, taskIdBitmap, shuffleServerInfoList,
-        hadoopConf, new DefaultIdHelper(), expectedTaskIdsBitmapFilterEnable);
+    this(
+        appId,
+        shuffleId,
+        partitionId,
+        basePath,
+        partitionNumPerRange,
+        partitionNum,
+        blockIdBitmap,
+        taskIdBitmap,
+        shuffleServerInfoList,
+        hadoopConf,
+        new DefaultIdHelper(),
+        expectedTaskIdsBitmapFilterEnable);
     this.rssConf = rssConf;
   }
 
