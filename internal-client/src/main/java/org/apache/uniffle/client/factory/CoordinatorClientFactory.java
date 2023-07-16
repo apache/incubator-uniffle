@@ -59,7 +59,7 @@ public class CoordinatorClientFactory {
         typeToClients.put(coordinator, grpcClient);
         clients.put(type, typeToClients);
         return grpcClient;
-      default :
+      default:
         throw new UnsupportedOperationException("Unsupported client type " + type);
     }
   }
