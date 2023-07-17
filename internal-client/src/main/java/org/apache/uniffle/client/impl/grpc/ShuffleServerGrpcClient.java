@@ -61,7 +61,6 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
-import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
@@ -106,10 +105,8 @@ import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerBlockingStub;
 public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServerClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerGrpcClient.class);
-  private static RssBaseConf rssConf;
   protected static final long FAILED_REQUIRE_ID = -1;
-  protected static final long RPC_TIMEOUT_DEFAULT_MS =
-      rssConf.getLong(RssBaseConf.RSS_CLIENT_GRPC_TIME_OUT);
+  protected static final long RPC_TIMEOUT_DEFAULT_MS = 60000;
   private long rpcTimeout = RPC_TIMEOUT_DEFAULT_MS;
   private ShuffleServerBlockingStub blockingStub;
 
