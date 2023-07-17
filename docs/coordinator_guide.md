@@ -133,7 +133,7 @@ AccessQuotaChecker is a checker when the number of concurrent tasks submitted by
 ### Fetch single shuffle server
 
 <details>
- <summary><code>GET</code> <code><b>/api/server/{id}</b></code> </summary>
+ <summary><code>GET</code> <code><b>/api/server/nodes/{id}</b></code> </summary>
 
 ##### Parameters
 
@@ -143,7 +143,7 @@ AccessQuotaChecker is a checker when the number of concurrent tasks submitted by
 ##### Example cURL
 
 > ```bash
->  curl -X GET http://localhost:19998/api/server/127.0.0.1-19999
+>  curl -X GET http://localhost:19998/api/server/nodes/127.0.0.1-19999
 > ```
 </details>
 
@@ -151,7 +151,7 @@ AccessQuotaChecker is a checker when the number of concurrent tasks submitted by
 ### Fetch shuffle servers
 
 <details>
- <summary><code>GET</code> <code><b>/api/server/nodes/{status}</b></code> </summary>
+ <summary><code>GET</code> <code><b>/api/server/nodes</b></code> </summary>
 
 ##### Parameters
 
@@ -163,7 +163,7 @@ AccessQuotaChecker is a checker when the number of concurrent tasks submitted by
 
 > ```bash
 >  curl -X GET http://localhost:19998/api/server/nodes
->  curl -X GET http://localhost:19998/api/server/nodes/ACTIVE
+>  curl -X GET http://localhost:19998/api/server/nodes?status=ACTIVE
 > ```
 </details>
 
