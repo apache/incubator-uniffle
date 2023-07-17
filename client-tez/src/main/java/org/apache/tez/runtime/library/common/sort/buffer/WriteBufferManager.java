@@ -38,6 +38,7 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.serializer.Serializer;
 import org.apache.tez.common.RssTezUtils;
+import org.apache.tez.common.counters.TezCounter;
 import org.apache.tez.dag.records.TezDAGID;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 import org.apache.tez.dag.records.TezVertexID;
@@ -95,6 +96,7 @@ public class WriteBufferManager<K, V> {
   private final RssConf rssConf;
   private final int shuffleId;
   private final boolean isNeedSorted;
+  private final TezCounter mapOutputByteCounter;
 
   /** WriteBufferManager */
   public WriteBufferManager(
@@ -121,7 +123,8 @@ public class WriteBufferManager<K, V> {
       long sendCheckTimeout,
       int bitmapSplitNum,
       int shuffleId,
-      boolean isNeedSorted) {
+      boolean isNeedSorted,
+      TezCounter mapOutputByteCounter) {
     this.tezTaskAttemptID = tezTaskAttemptID;
     this.maxMemSize = maxMemSize;
     this.appId = appId;
@@ -147,6 +150,7 @@ public class WriteBufferManager<K, V> {
     this.rssConf = rssConf;
     this.shuffleId = shuffleId;
     this.isNeedSorted = isNeedSorted;
+    this.mapOutputByteCounter = mapOutputByteCounter;
     this.sendExecutorService =
         Executors.newFixedThreadPool(1, ThreadUtils.getThreadFactory("send-thread"));
   }
@@ -192,6 +196,7 @@ public class WriteBufferManager<K, V> {
         && inSendListBytes.get() <= maxMemSize * sendThreshold) {
       sendBuffersToServers();
     }
+    mapOutputByteCounter.increment(length);
   }
 
   private void sendBufferToServers(WriteBuffer<K, V> buffer) {
