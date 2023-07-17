@@ -35,17 +35,13 @@ import org.apache.uniffle.common.rpc.ServerInterface;
 import org.apache.uniffle.common.security.SecurityConfig;
 import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.util.RssUtils;
-import org.apache.uniffle.common.web.CommonMetricsServlet;
+import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategy;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategyFactory;
 import org.apache.uniffle.coordinator.util.CoordinatorUtils;
-import org.apache.uniffle.coordinator.web.servlet.CancelDecommissionServlet;
-import org.apache.uniffle.coordinator.web.servlet.DecommissionServlet;
-import org.apache.uniffle.coordinator.web.servlet.NodesServlet;
-import org.apache.uniffle.coordinator.web.servlet.admin.RefreshCheckerServlet;
 
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_ENABLE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE;
@@ -53,9 +49,7 @@ import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_K
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KRB5_CONF_FILE;
 
-/**
- * The main entrance of coordinator service
- */
+/** The main entrance of coordinator service */
 public class CoordinatorServer extends ReconfigurableBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorServer.class);
@@ -110,18 +104,20 @@ public class CoordinatorServer extends ReconfigurableBase {
       metricReporter.start();
     }
 
-    Runtime.getRuntime().addShutdownHook(new Thread() {
-      @Override
-      public void run() {
-        LOG.info("*** shutting down gRPC server since JVM is shutting down");
-        try {
-          stopServer();
-        } catch (Exception e) {
-          LOG.error(e.getMessage());
-        }
-        LOG.info("*** server shut down");
-      }
-    });
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread() {
+              @Override
+              public void run() {
+                LOG.info("*** shutting down gRPC server since JVM is shutting down");
+                try {
+                  stopServer();
+                } catch (Exception e) {
+                  LOG.error(e.getMessage());
+                }
+                LOG.info("*** server shut down");
+              }
+            });
   }
 
   public void stopServer() throws Exception {
@@ -157,8 +153,6 @@ public class CoordinatorServer extends ReconfigurableBase {
     int port = coordinatorConf.getInteger(CoordinatorConf.RPC_SERVER_PORT);
     id = ip + "-" + port;
     LOG.info("Start to initialize coordinator {}", id);
-    jettyServer = new JettyServer(coordinatorConf);
-    registerRESTAPI();
     // register metrics first to avoid NPE problem when add dynamic metrics
     registerMetrics();
     coordinatorConf.setString(CoordinatorUtils.COORDINATOR_ID, id);
@@ -166,45 +160,51 @@ public class CoordinatorServer extends ReconfigurableBase {
 
     SecurityConfig securityConfig = null;
     if (coordinatorConf.getBoolean(RSS_SECURITY_HADOOP_KERBEROS_ENABLE)) {
-      securityConfig = SecurityConfig.newBuilder()
-          .krb5ConfPath(coordinatorConf.getString(RSS_SECURITY_HADOOP_KRB5_CONF_FILE))
-          .keytabFilePath(coordinatorConf.getString(RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE))
-          .principal(coordinatorConf.getString(RSS_SECURITY_HADOOP_KERBEROS_PRINCIPAL))
-          .reloginIntervalSec(coordinatorConf.getLong(RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC))
-          .build();
+      securityConfig =
+          SecurityConfig.newBuilder()
+              .krb5ConfPath(coordinatorConf.getString(RSS_SECURITY_HADOOP_KRB5_CONF_FILE))
+              .keytabFilePath(coordinatorConf.getString(RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE))
+              .principal(coordinatorConf.getString(RSS_SECURITY_HADOOP_KERBEROS_PRINCIPAL))
+              .reloginIntervalSec(
+                  coordinatorConf.getLong(RSS_SECURITY_HADOOP_KERBEROS_RELOGIN_INTERVAL_SEC))
+              .build();
     }
     SecurityContextFactory.get().init(securityConfig);
 
-
     // load default hadoop configuration
     Configuration hadoopConf = new Configuration();
-    ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(coordinatorConf, hadoopConf);
+    ClusterManagerFactory clusterManagerFactory =
+        new ClusterManagerFactory(coordinatorConf, hadoopConf);
 
     this.clusterManager = clusterManagerFactory.getClusterManager();
     this.clientConfManager = new ClientConfManager(coordinatorConf, hadoopConf, applicationManager);
     AssignmentStrategyFactory assignmentStrategyFactory =
         new AssignmentStrategyFactory(coordinatorConf, clusterManager);
     this.assignmentStrategy = assignmentStrategyFactory.getAssignmentStrategy();
-    this.accessManager = new AccessManager(coordinatorConf, clusterManager,
-        applicationManager.getQuotaManager(), hadoopConf);
+    this.accessManager =
+        new AccessManager(
+            coordinatorConf, clusterManager, applicationManager.getQuotaManager(), hadoopConf);
     CoordinatorFactory coordinatorFactory = new CoordinatorFactory(this);
     server = coordinatorFactory.getServer();
-  }
-
-  private void registerRESTAPI() throws Exception {
-    LOG.info("Register REST API");
-    jettyServer.addServlet(
-        new NodesServlet(this),
-        "/api/server/nodes");
-    jettyServer.addServlet(
-        new DecommissionServlet(this),
-        "/api/server/decommission");
-    jettyServer.addServlet(
-        new CancelDecommissionServlet(this),
-        "/api/server/cancelDecommission");
-    jettyServer.addServlet(
-        new RefreshCheckerServlet(this),
-        "/api/admin/refreshChecker");
+    jettyServer = new JettyServer(coordinatorConf);
+    // register packages and instances for jersey
+    jettyServer.addResourcePackages(
+        "org.apache.uniffle.coordinator.web.resource", "org.apache.uniffle.common.web.resource");
+    jettyServer.registerInstance(ClusterManager.class, clusterManager);
+    jettyServer.registerInstance(AccessManager.class, accessManager);
+    jettyServer.registerInstance(
+        CollectorRegistry.class.getCanonicalName() + "#server",
+        CoordinatorMetrics.getCollectorRegistry());
+    jettyServer.registerInstance(
+        CollectorRegistry.class.getCanonicalName() + "#grpc", grpcMetrics.getCollectorRegistry());
+    jettyServer.registerInstance(
+        CollectorRegistry.class.getCanonicalName() + "#jvm", JvmMetrics.getCollectorRegistry());
+    jettyServer.registerInstance(
+        CollectorRegistry.class.getCanonicalName() + "#all",
+        new CoalescedCollectorRegistry(
+            CoordinatorMetrics.getCollectorRegistry(),
+            grpcMetrics.getCollectorRegistry(),
+            JvmMetrics.getCollectorRegistry()));
   }
 
   private void registerMetrics() throws Exception {
@@ -217,27 +217,7 @@ public class CoordinatorServer extends ReconfigurableBase {
     CollectorRegistry jvmCollectorRegistry = new CollectorRegistry(true);
     JvmMetrics.register(jvmCollectorRegistry, verbose);
 
-    LOG.info("Add metrics servlet");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(CoordinatorMetrics.getCollectorRegistry()),
-        "/metrics/server");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(grpcMetrics.getCollectorRegistry()),
-        "/metrics/grpc");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(JvmMetrics.getCollectorRegistry()),
-        "/metrics/jvm");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(CoordinatorMetrics.getCollectorRegistry(), true),
-        "/prometheus/metrics/server");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(grpcMetrics.getCollectorRegistry(), true),
-        "/prometheus/metrics/grpc");
-    jettyServer.addServlet(
-        new CommonMetricsServlet(JvmMetrics.getCollectorRegistry(), true),
-        "/prometheus/metrics/jvm");
-
-    metricReporter = MetricReporterFactory.getMetricReporter(coordinatorConf,  id);
+    metricReporter = MetricReporterFactory.getMetricReporter(coordinatorConf, id);
     if (metricReporter != null) {
       metricReporter.addCollectorRegistry(CoordinatorMetrics.getCollectorRegistry());
       metricReporter.addCollectorRegistry(grpcMetrics.getCollectorRegistry());
@@ -273,9 +253,7 @@ public class CoordinatorServer extends ReconfigurableBase {
     return grpcMetrics;
   }
 
-  /**
-   * Await termination on the main thread since the grpc library uses daemon threads.
-   */
+  /** Await termination on the main thread since the grpc library uses daemon threads. */
   private void blockUntilShutdown() throws InterruptedException {
     server.blockUntilShutdown();
   }
@@ -299,6 +277,7 @@ public class CoordinatorServer extends ReconfigurableBase {
 
   @Override
   public RssConf reloadConfiguration() {
-    return new CoordinatorConf(coordinatorConf.getString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, ""));
+    return new CoordinatorConf(
+        coordinatorConf.getString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, ""));
   }
 }

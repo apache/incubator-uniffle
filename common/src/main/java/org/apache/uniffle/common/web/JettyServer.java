@@ -22,11 +22,15 @@ import java.net.BindException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.Servlet;
 
+import org.apache.hbase.thirdparty.org.glassfish.jersey.server.ServerProperties;
+import org.apache.hbase.thirdparty.org.glassfish.jersey.servlet.ServletContainer;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -53,6 +57,8 @@ public class JettyServer {
   private Server server;
   private ServletContextHandler servletContextHandler;
   private int httpPort;
+  private ServletHolder servletHolder;
+  private Set<String> reourcePackages = new HashSet<>();
 
   public JettyServer(RssBaseConf conf) throws FileNotFoundException {
     createServer(conf);
@@ -79,30 +85,31 @@ public class JettyServer {
     }
   }
 
-  public void addServlet(Servlet servlet, String pathSpec) {
-    servletContextHandler.addServlet(new ServletHolder(servlet), pathSpec);
-    server.setHandler(servletContextHandler);
-  }
-
   private ExecutorThreadPool createThreadPool(RssBaseConf conf) {
     int corePoolSize = conf.getInteger(RssBaseConf.JETTY_CORE_POOL_SIZE);
     int maxPoolSize = conf.getInteger(RssBaseConf.JETTY_MAX_POOL_SIZE);
-    ExecutorThreadPool pool = new ExecutorThreadPool(
-        new ThreadPoolExecutor(corePoolSize, maxPoolSize, 60L, TimeUnit.SECONDS,
-            new LinkedBlockingQueue<>(), ThreadUtils.getThreadFactory("Jetty")));
+    ExecutorThreadPool pool =
+        new ExecutorThreadPool(
+            new ThreadPoolExecutor(
+                corePoolSize,
+                maxPoolSize,
+                60L,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(),
+                ThreadUtils.getThreadFactory("Jetty")));
     return pool;
   }
 
   private void addHttpConnector(int port, HttpConfiguration httpConfig, long idleTimeout) {
-    ServerConnector httpConnector = new ServerConnector(server,
-        new HttpConnectionFactory(httpConfig));
+    ServerConnector httpConnector =
+        new ServerConnector(server, new HttpConnectionFactory(httpConfig));
     httpConnector.setPort(port);
     httpConnector.setIdleTimeout(idleTimeout);
     server.addConnector(httpConnector);
   }
 
-  private void addHttpsConnector(
-      HttpConfiguration httpConfig, RssBaseConf conf) throws FileNotFoundException {
+  private void addHttpsConnector(HttpConfiguration httpConfig, RssBaseConf conf)
+      throws FileNotFoundException {
     LOG.info("Create https connector");
     Path keystorePath = Paths.get(conf.get(RssBaseConf.JETTY_SSL_KEYSTORE_PATH)).toAbsolutePath();
     if (!Files.exists(keystorePath)) {
@@ -121,9 +128,11 @@ public class JettyServer {
     HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
     httpsConfig.addCustomizer(new SecureRequestCustomizer());
 
-    ServerConnector sslConnector = new ServerConnector(server,
-        new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-        new HttpConnectionFactory(httpsConfig));
+    ServerConnector sslConnector =
+        new ServerConnector(
+            server,
+            new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
+            new HttpConnectionFactory(httpsConfig));
     sslConnector.setPort(securePort);
 
     server.addConnector(sslConnector);
@@ -133,6 +142,21 @@ public class JettyServer {
     servletContextHandler = new ServletContextHandler();
     servletContextHandler.setContextPath("/");
     server.setHandler(servletContextHandler);
+    servletHolder = servletContextHandler.addServlet(ServletContainer.class, "/*");
+  }
+
+  public void addResourcePackages(String... packages) {
+    reourcePackages.addAll(Arrays.asList(packages));
+    servletHolder.setInitParameter(
+        ServerProperties.PROVIDER_PACKAGES, String.join(",", reourcePackages));
+  }
+
+  public void registerInstance(Class<?> clazz, Object instance) {
+    registerInstance(clazz.getCanonicalName(), instance);
+  }
+
+  public void registerInstance(String name, Object instance) {
+    servletContextHandler.setAttribute(name, instance);
   }
 
   public Server getServer() {
@@ -150,9 +174,5 @@ public class JettyServer {
 
   public void stop() throws Exception {
     server.stop();
-  }
-
-  public ServletContextHandler getServletContextHandler() {
-    return this.servletContextHandler;
   }
 }

@@ -33,8 +33,6 @@ import org.apache.hadoop.io.serializer.Serializer;
 import org.apache.hadoop.mapred.JobConf;
 import org.junit.jupiter.api.Test;
 
-
-
 import static com.google.common.collect.Maps.newConcurrentMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -49,24 +47,28 @@ public class WriteBufferTest {
     BytesWritable value = new BytesWritable(valueStr.getBytes());
     JobConf jobConf = new JobConf(new Configuration());
     SerializationFactory serializationFactory = new SerializationFactory(jobConf);
-    Serializer<BytesWritable> keySerializer = serializationFactory.getSerializer(BytesWritable.class);
-    Serializer<BytesWritable> valSerializer = serializationFactory.getSerializer(BytesWritable.class);
+    Serializer<BytesWritable> keySerializer =
+        serializationFactory.getSerializer(BytesWritable.class);
+    Serializer<BytesWritable> valSerializer =
+        serializationFactory.getSerializer(BytesWritable.class);
     WriteBuffer<BytesWritable, BytesWritable> buffer =
         new WriteBuffer<BytesWritable, BytesWritable>(
-          true,
-          1,
-          WritableComparator.get(BytesWritable.class),
-          1024L,
-          keySerializer,
-          valSerializer);
+            true,
+            1,
+            WritableComparator.get(BytesWritable.class),
+            1024L,
+            keySerializer,
+            valSerializer);
 
     long recordLength = buffer.addRecord(key, value);
     assertEquals(20, buffer.getData().length);
     assertEquals(16, recordLength);
     assertEquals(1, buffer.getPartitionId());
     byte[] result = buffer.getData();
-    Deserializer<BytesWritable> keyDeserializer = serializationFactory.getDeserializer(BytesWritable.class);
-    Deserializer<BytesWritable> valDeserializer = serializationFactory.getDeserializer(BytesWritable.class);
+    Deserializer<BytesWritable> keyDeserializer =
+        serializationFactory.getDeserializer(BytesWritable.class);
+    Deserializer<BytesWritable> valDeserializer =
+        serializationFactory.getDeserializer(BytesWritable.class);
     ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(result);
     keyDeserializer.open(byteArrayInputStream);
     valDeserializer.open(byteArrayInputStream);
@@ -80,13 +82,14 @@ public class WriteBufferTest {
     BytesWritable valueRead = keyDeserializer.deserialize(null);
     assertEquals(value, valueRead);
 
-    buffer = new WriteBuffer<BytesWritable, BytesWritable>(
-        true,
-        1,
-        WritableComparator.get(BytesWritable.class),
-        528L,
-        keySerializer,
-        valSerializer);
+    buffer =
+        new WriteBuffer<BytesWritable, BytesWritable>(
+            true,
+            1,
+            WritableComparator.get(BytesWritable.class),
+            528L,
+            keySerializer,
+            valSerializer);
     long start = buffer.getDataLength();
     assertEquals(0, start);
     keyStr = "key3";
@@ -161,5 +164,4 @@ public class WriteBufferTest {
   int readInt(DataInputStream dStream) throws IOException {
     return WritableUtils.readVInt(dStream);
   }
-
 }

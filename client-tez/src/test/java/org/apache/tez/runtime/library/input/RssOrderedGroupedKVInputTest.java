@@ -1,9 +1,12 @@
 /*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -39,6 +42,8 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_DESTINATION_VERTEX_ID;
+import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -58,7 +63,9 @@ public class RssOrderedGroupedKVInputTest {
       ApplicationAttemptId appAttemptId = ApplicationAttemptId.newInstance(appId, 1);
       idUtils.when(IdUtils::getApplicationAttemptId).thenReturn(appAttemptId);
       try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-        shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
+        shuffleUtils
+            .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
+            .thenReturn(4);
         InputContext inputContext = createMockInputContext();
         RssOrderedGroupedKVInput kvInput = new OrderedGroupedKVInputForTest(inputContext, 10);
         kvInput.initialize();
@@ -77,7 +84,8 @@ public class RssOrderedGroupedKVInputTest {
     InputContext inputContext = mock(InputContext.class);
     doReturn("Map 1").when(inputContext).getSourceVertexName();
     doReturn("Reducer 1").when(inputContext).getTaskVertexName();
-    when(inputContext.getUniqueIdentifier()).thenReturn("attempt_1685094627632_0157_1_01_000000_0_10006");
+    when(inputContext.getUniqueIdentifier())
+        .thenReturn("attempt_1685094627632_0157_1_01_000000_0_10006");
 
     ApplicationId applicationId = ApplicationId.newInstance(1, 1);
     doReturn(applicationId).when(inputContext).getApplicationId();
@@ -86,8 +94,10 @@ public class RssOrderedGroupedKVInputTest {
     doReturn(executionContext).when(inputContext).getExecutionContext();
 
     Configuration conf = new TezConfiguration();
+    conf.setInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, 1);
+    conf.setInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, 2);
     UserPayload payLoad = TezUtils.createUserPayloadFromConf(conf);
-    String[] workingDirs = new String[]{"workDir1"};
+    String[] workingDirs = new String[] {"workDir1"};
     TezCounters counters = new TezCounters();
 
     doReturn(payLoad).when(inputContext).getUserPayload();
@@ -95,21 +105,24 @@ public class RssOrderedGroupedKVInputTest {
     doReturn(200 * 1024 * 1024L).when(inputContext).getTotalMemoryAvailableToTask();
     doReturn(counters).when(inputContext).getCounters();
 
-    doAnswer(new Answer() {
-      @Override
-      public Object answer(InvocationOnMock invocation) throws Throwable {
-        Object[] args = invocation.getArguments();
+    doAnswer(
+            new Answer() {
+              @Override
+              public Object answer(InvocationOnMock invocation) throws Throwable {
+                Object[] args = invocation.getArguments();
 
-        if (args[1] instanceof MemoryUpdateCallbackHandler) {
-          MemoryUpdateCallbackHandler memUpdateCallbackHandler = (MemoryUpdateCallbackHandler) args[1];
-          memUpdateCallbackHandler.memoryAssigned(200 * 1024 * 1024);
-        } else {
-          fail();
-        }
-        return null;
-      }
-    }).when(inputContext).requestInitialMemory(any(long.class),
-        any(MemoryUpdateCallbackHandler.class));
+                if (args[1] instanceof MemoryUpdateCallbackHandler) {
+                  MemoryUpdateCallbackHandler memUpdateCallbackHandler =
+                      (MemoryUpdateCallbackHandler) args[1];
+                  memUpdateCallbackHandler.memoryAssigned(200 * 1024 * 1024);
+                } else {
+                  fail();
+                }
+                return null;
+              }
+            })
+        .when(inputContext)
+        .requestInitialMemory(any(long.class), any(MemoryUpdateCallbackHandler.class));
     return inputContext;
   }
 

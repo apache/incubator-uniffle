@@ -32,7 +32,8 @@ public class ShuffleRegisterInfoTest {
     ShuffleServerInfo shuffleServerInfo = new ShuffleServerInfo("1", "localhost", 1234);
     List<PartitionRange> partitionRanges = Collections.singletonList(new PartitionRange(2, 3));
     ShuffleRegisterInfo info1 = new ShuffleRegisterInfo(shuffleServerInfo, partitionRanges);
-    ShuffleRegisterInfo info2 = new ShuffleRegisterInfo(info1.getShuffleServerInfo(), info1.getPartitionRanges());
+    ShuffleRegisterInfo info2 =
+        new ShuffleRegisterInfo(info1.getShuffleServerInfo(), info1.getPartitionRanges());
     assertEquals(info1, info1);
     assertEquals(info1.hashCode(), info1.hashCode());
     assertEquals(info1, info2);
@@ -50,7 +51,7 @@ public class ShuffleRegisterInfoTest {
     ShuffleServerInfo shuffleServerInfo = new ShuffleServerInfo("1", "localhost", 1234);
     List<PartitionRange> partitionRanges = Collections.singletonList(new PartitionRange(2, 3));
     ShuffleRegisterInfo info = new ShuffleRegisterInfo(shuffleServerInfo, partitionRanges);
-    assertEquals("ShuffleRegisterInfo: shuffleServerInfo[1], [PartitionRange[2, 3]]", info.toString());
+    assertEquals(
+        "ShuffleRegisterInfo: shuffleServerInfo[1], [PartitionRange[2, 3]]", info.toString());
   }
-
 }

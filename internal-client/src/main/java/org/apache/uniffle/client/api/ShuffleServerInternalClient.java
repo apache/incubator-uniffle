@@ -26,8 +26,8 @@ public interface ShuffleServerInternalClient {
 
   RssDecommissionResponse decommission(RssDecommissionRequest request);
 
-  RssCancelDecommissionResponse cancelDecommission(RssCancelDecommissionRequest rssCancelDecommissionRequest);
+  RssCancelDecommissionResponse cancelDecommission(
+      RssCancelDecommissionRequest rssCancelDecommissionRequest);
 
   void close();
-
 }

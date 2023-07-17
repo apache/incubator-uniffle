@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.exception.UniffleRestException;
 
-
 public class RestClientImpl implements RestClient {
   private static final Logger LOG = LoggerFactory.getLogger(RestClientImpl.class);
   private CloseableHttpClient httpclient;
@@ -92,7 +91,6 @@ public class RestClientImpl implements RestClient {
       response = httpclient.execute(httpRequest, responseHandler);
       LOG.debug("Response: {}", response);
     } catch (ConnectException | ConnectTimeoutException | NoHttpResponseException e) {
-      // net exception can be retried by connecting to other Kyuubi server
       throw new UniffleRestException("Api request failed for " + uri.toString(), e);
     } catch (UniffleRestException rethrow) {
       throw rethrow;
@@ -103,7 +101,6 @@ public class RestClientImpl implements RestClient {
 
     return response;
   }
-
 
   private URI buildURI(String path, Map<String, Object> params) {
     URI uri;

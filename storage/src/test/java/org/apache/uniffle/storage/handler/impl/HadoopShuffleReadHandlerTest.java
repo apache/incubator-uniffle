@@ -48,18 +48,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
 
-  public static void createAndRunCases(String clusterPathPrefix, Configuration conf, String user) throws Exception {
+  public static void createAndRunCases(String clusterPathPrefix, Configuration conf, String user)
+      throws Exception {
     String basePath = clusterPathPrefix + "HdfsShuffleFileReadHandlerTest";
     HadoopShuffleWriteHandler writeHandler =
-        new HadoopShuffleWriteHandler(
-            "appId",
-            0,
-            1,
-            1,
-            basePath,
-            "test",
-            conf,
-            user);
+        new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, "test", conf, user);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
 
@@ -67,17 +60,21 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
     int totalBlockNum = 0;
     int expectTotalBlockNum = new Random().nextInt(37);
     int blockSize = new Random().nextInt(7) + 1;
-    HadoopShuffleHandlerTestBase.writeTestData(writeHandler, expectTotalBlockNum, blockSize, 0, expectedData);
-    int total = HadoopShuffleHandlerTestBase.calcExpectedSegmentNum(expectTotalBlockNum, blockSize, readBufferSize);
+    HadoopShuffleHandlerTestBase.writeTestData(
+        writeHandler, expectTotalBlockNum, blockSize, 0, expectedData);
+    int total =
+        HadoopShuffleHandlerTestBase.calcExpectedSegmentNum(
+            expectTotalBlockNum, blockSize, readBufferSize);
     Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
-    Roaring64NavigableMap processBlockIds =  Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     expectedData.forEach((id, block) -> expectBlockIds.addLong(id));
-    String fileNamePrefix = ShuffleStorageUtils.getFullShuffleDataFolder(basePath,
-        ShuffleStorageUtils.getShuffleDataPathWithRange("appId",
-            0, 1, 1, 10)) + "/test_0";
+    String fileNamePrefix =
+        ShuffleStorageUtils.getFullShuffleDataFolder(
+                basePath, ShuffleStorageUtils.getShuffleDataPathWithRange("appId", 0, 1, 1, 10))
+            + "/test_0";
     HadoopShuffleReadHandler handler =
-        new HadoopShuffleReadHandler("appId", 0, 1, fileNamePrefix,
-            readBufferSize, expectBlockIds, processBlockIds, conf);
+        new HadoopShuffleReadHandler(
+            "appId", 0, 1, fileNamePrefix, readBufferSize, expectBlockIds, processBlockIds, conf);
 
     Set<Long> actualBlockIds = Sets.newHashSet();
     for (int i = 0; i < total; ++i) {
@@ -90,9 +87,7 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
     }
 
     assertNull(handler.readShuffleData());
-    assertEquals(
-        total,
-        handler.getShuffleDataSegments().size());
+    assertEquals(total, handler.getShuffleDataSegments().size());
     assertEquals(expectTotalBlockNum, totalBlockNum);
     assertEquals(expectedData.keySet(), actualBlockIds);
   }
@@ -107,14 +102,7 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
     String basePath = HDFS_URI + "HdfsShuffleFileReadHandlerTest#testDataInconsistent";
     TestHadoopShuffleWriteHandler writeHandler =
         new TestHadoopShuffleWriteHandler(
-            "appId",
-            0,
-            1,
-            1,
-            basePath,
-            "test",
-            conf,
-            StringUtils.EMPTY);
+            "appId", 0, 1, 1, basePath, "test", conf, StringUtils.EMPTY);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     int totalBlockNum = 0;
@@ -123,31 +111,36 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
     int taskAttemptId = 0;
 
     // write expectTotalBlockNum - 1 complete block
-    HadoopShuffleHandlerTestBase.writeTestData(writeHandler, expectTotalBlockNum - 1,
-        blockSize, taskAttemptId, expectedData);
+    HadoopShuffleHandlerTestBase.writeTestData(
+        writeHandler, expectTotalBlockNum - 1, blockSize, taskAttemptId, expectedData);
 
     // write 1 incomplete block , which only write index file
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList();
     byte[] buf = new byte[blockSize];
     new Random().nextBytes(buf);
-    long blockId = (expectTotalBlockNum
-        << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
-        + taskAttemptId;
-    blocks.add(new ShufflePartitionedBlock(blockSize, blockSize, ChecksumUtils.getCrc32(buf), blockId,
-        taskAttemptId, buf));
+    long blockId =
+        (expectTotalBlockNum
+                << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
+            + taskAttemptId;
+    blocks.add(
+        new ShufflePartitionedBlock(
+            blockSize, blockSize, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, buf));
     writeHandler.writeIndex(blocks);
 
     int readBufferSize = 13;
-    int total = HadoopShuffleHandlerTestBase.calcExpectedSegmentNum(expectTotalBlockNum, blockSize, readBufferSize);
+    int total =
+        HadoopShuffleHandlerTestBase.calcExpectedSegmentNum(
+            expectTotalBlockNum, blockSize, readBufferSize);
     Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
-    Roaring64NavigableMap processBlockIds =  Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     expectedData.forEach((id, block) -> expectBlockIds.addLong(id));
-    String fileNamePrefix = ShuffleStorageUtils.getFullShuffleDataFolder(basePath,
-        ShuffleStorageUtils.getShuffleDataPathWithRange("appId",
-            0, 1, 1, 10)) + "/test_0";
+    String fileNamePrefix =
+        ShuffleStorageUtils.getFullShuffleDataFolder(
+                basePath, ShuffleStorageUtils.getShuffleDataPathWithRange("appId", 0, 1, 1, 10))
+            + "/test_0";
     HadoopShuffleReadHandler handler =
-        new HadoopShuffleReadHandler("appId", 0, 1, fileNamePrefix,
-            readBufferSize, expectBlockIds, processBlockIds, conf);
+        new HadoopShuffleReadHandler(
+            "appId", 0, 1, fileNamePrefix, readBufferSize, expectBlockIds, processBlockIds, conf);
 
     Set<Long> actualBlockIds = Sets.newHashSet();
     for (int i = 0; i < total; ++i) {
@@ -160,9 +153,7 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
     }
 
     assertNull(handler.readShuffleData());
-    assertEquals(
-        total,
-        handler.getShuffleDataSegments().size());
+    assertEquals(total, handler.getShuffleDataSegments().size());
     // The last block cannot be read, only the index is generated
     assertEquals(expectTotalBlockNum - 1, totalBlockNum);
     assertEquals(expectedData.keySet(), actualBlockIds);
@@ -184,31 +175,49 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
         String storageBasePath,
         String fileNamePrefix,
         Configuration hadoopConf,
-        String user) throws Exception {
-      super(appId, shuffleId, startPartition, endPartition, storageBasePath, fileNamePrefix, hadoopConf, user);
+        String user)
+        throws Exception {
+      super(
+          appId,
+          shuffleId,
+          startPartition,
+          endPartition,
+          storageBasePath,
+          fileNamePrefix,
+          hadoopConf,
+          user);
       this.hadoopConf = hadoopConf;
       this.fileNamePrefix = fileNamePrefix;
-      this.basePath = ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePath,
-          ShuffleStorageUtils.getShuffleDataPath(appId, shuffleId, startPartition, endPartition));
+      this.basePath =
+          ShuffleStorageUtils.getFullShuffleDataFolder(
+              storageBasePath,
+              ShuffleStorageUtils.getShuffleDataPath(
+                  appId, shuffleId, startPartition, endPartition));
     }
 
-
     // only write index file
-    public void writeIndex(
-        List<ShufflePartitionedBlock> shuffleBlocks) throws IOException, IllegalStateException {
+    public void writeIndex(List<ShufflePartitionedBlock> shuffleBlocks)
+        throws IOException, IllegalStateException {
       HadoopFileWriter indexWriter = null;
       writeLock.lock();
       try {
         try {
-          String indexFileName = ShuffleStorageUtils.generateIndexFileName(fileNamePrefix + "_" + failTimes);
+          String indexFileName =
+              ShuffleStorageUtils.generateIndexFileName(fileNamePrefix + "_" + failTimes);
           indexWriter = createWriter(indexFileName);
           for (ShufflePartitionedBlock block : shuffleBlocks) {
             long blockId = block.getBlockId();
             long crc = block.getCrc();
             long startOffset = indexWriter.nextOffset();
 
-            FileBasedShuffleSegment segment = new FileBasedShuffleSegment(
-                blockId, startOffset, block.getLength(), block.getUncompressLength(), crc, block.getTaskAttemptId());
+            FileBasedShuffleSegment segment =
+                new FileBasedShuffleSegment(
+                    blockId,
+                    startOffset,
+                    block.getLength(),
+                    block.getUncompressLength(),
+                    crc,
+                    block.getTaskAttemptId());
             indexWriter.writeIndex(segment);
           }
         } catch (Exception e) {

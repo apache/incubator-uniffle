@@ -34,8 +34,13 @@ public class SendShuffleDataRequest extends RequestMessage {
   private Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks;
   private long timestamp;
 
-  public SendShuffleDataRequest(long requestId, String appId, int shuffleId, long requireId,
-      Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks, long timestamp) {
+  public SendShuffleDataRequest(
+      long requestId,
+      String appId,
+      int shuffleId,
+      long requireId,
+      Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks,
+      long timestamp) {
     super(requestId);
     this.appId = appId;
     this.shuffleId = shuffleId;
@@ -52,7 +57,11 @@ public class SendShuffleDataRequest extends RequestMessage {
   @Override
   public int encodedLength() {
     int encodeLength =
-        REQUEST_ID_ENCODE_LENGTH + ByteBufUtils.encodedLength(appId) + Integer.BYTES + Long.BYTES + Integer.BYTES;
+        REQUEST_ID_ENCODE_LENGTH
+            + ByteBufUtils.encodedLength(appId)
+            + Integer.BYTES
+            + Long.BYTES
+            + Integer.BYTES;
     for (Map.Entry<Integer, List<ShuffleBlockInfo>> entry : partitionToBlocks.entrySet()) {
       encodeLength += 2 * Integer.BYTES;
       for (ShuffleBlockInfo sbi : entry.getValue()) {
@@ -94,7 +103,8 @@ public class SendShuffleDataRequest extends RequestMessage {
     long requireId = byteBuf.readLong();
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = decodePartitionData(byteBuf);
     long timestamp = byteBuf.readLong();
-    return new SendShuffleDataRequest(requestId, appId, shuffleId, requireId, partitionToBlocks, timestamp);
+    return new SendShuffleDataRequest(
+        requestId, appId, shuffleId, requireId, partitionToBlocks, timestamp);
   }
 
   private void encodePartitionData(ByteBuf buf) {

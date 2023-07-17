@@ -163,8 +163,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
     WRONG_REDUCE
   }
 
-  @VisibleForTesting
-  static final String SHUFFLE_ERR_GRP_NAME = "Shuffle Errors";
+  @VisibleForTesting static final String SHUFFLE_ERR_GRP_NAME = "Shuffle Errors";
 
   private final AtomicLong shuffleStart = new AtomicLong(0);
 
@@ -178,37 +177,32 @@ class RssShuffleScheduler extends ShuffleScheduler {
   private final BitSet finishedMaps;
   private final int numInputs;
   private int numFetchedSpills;
+  @VisibleForTesting final Map<HostPortPartition, MapHost> mapLocations = new HashMap<>();
+  // TODO Clean this and other maps at some point
   @VisibleForTesting
-  final Map<HostPortPartition, MapHost> mapLocations = new HashMap<>();
-  //TODO Clean this and other maps at some point
-  @VisibleForTesting
-  final ConcurrentMap<PathPartition, InputAttemptIdentifier> pathToIdentifierMap
-          = new ConcurrentHashMap<>();
+  final ConcurrentMap<PathPartition, InputAttemptIdentifier> pathToIdentifierMap =
+      new ConcurrentHashMap<>();
 
   // To track shuffleInfo events when finalMerge is disabled in source or pipelined shuffle is
   // enabled in source.
-  @VisibleForTesting
-  final Map<Integer, ShuffleEventInfo> pipelinedShuffleInfoEventsMap;
+  @VisibleForTesting final Map<Integer, ShuffleEventInfo> pipelinedShuffleInfoEventsMap;
 
-  @VisibleForTesting
-  final Set<MapHost> pendingHosts = new HashSet<>();
+  @VisibleForTesting final Set<MapHost> pendingHosts = new HashSet<>();
   private final Set<InputAttemptIdentifier> obsoleteInputs = new HashSet<>();
 
   private final AtomicBoolean isShutdown = new AtomicBoolean(false);
   private final Random random = new Random(System.currentTimeMillis());
   private final DelayQueue<Penalty> penalties = new DelayQueue<>();
   private final Referee referee;
-  @VisibleForTesting
-  final Map<InputAttemptIdentifier, IntWritable> failureCounts = new HashMap<>();
+  @VisibleForTesting final Map<InputAttemptIdentifier, IntWritable> failureCounts = new HashMap<>();
   final Set<HostPort> uniqueHosts = Sets.newHashSet();
-  private final Map<HostPort,IntWritable> hostFailures = new HashMap<>();
+  private final Map<HostPort, IntWritable> hostFailures = new HashMap<>();
   private final InputContext inputContext;
   private final TezCounter shuffledInputsCounter;
   private final TezCounter skippedInputCounter;
   private final TezCounter reduceShuffleBytes;
   private final TezCounter reduceBytesDecompressed;
-  @VisibleForTesting
-  final TezCounter failedShuffleCounter;
+  @VisibleForTesting final TezCounter failedShuffleCounter;
   private final TezCounter bytesShuffledToDisk;
   private final TezCounter bytesShuffledToDiskDirect;
   private final TezCounter bytesShuffledToMem;
@@ -216,16 +210,14 @@ class RssShuffleScheduler extends ShuffleScheduler {
   private final TezCounter lastEventReceived;
 
   private final String srcNameTrimmed;
-  @VisibleForTesting
-  final AtomicInteger remainingMaps;
+  @VisibleForTesting final AtomicInteger remainingMaps;
   private final long startTime;
-  @VisibleForTesting
-  long lastProgressTime;
-  @VisibleForTesting
-  long failedShufflesSinceLastCompletion;
+  @VisibleForTesting long lastProgressTime;
+  @VisibleForTesting long failedShufflesSinceLastCompletion;
 
   private final int numFetchers;
-  private final Set<RssTezShuffleDataFetcher> rssRunningFetchers = Collections.newSetFromMap(new ConcurrentHashMap<>());
+  private final Set<RssTezShuffleDataFetcher> rssRunningFetchers =
+      Collections.newSetFromMap(new ConcurrentHashMap<>());
 
   private final ListeningExecutorService fetcherExecutor;
 
@@ -245,6 +237,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
   private final int dagId;
   private final boolean asyncHttp;
   private final boolean sslShuffle;
+  private final int shuffleId;
 
   private final TezCounter ioErrsCounter;
   private final TezCounter wrongLengthErrsCounter;
@@ -271,8 +264,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
   private volatile Thread shuffleSchedulerThread = null;
 
   private long totalBytesShuffledTillNow = 0;
-  private final DecimalFormat  mbpsFormat = new DecimalFormat("0.00");
-
+  private final DecimalFormat mbpsFormat = new DecimalFormat("0.00");
 
   // For Rss
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
@@ -281,41 +273,55 @@ class RssShuffleScheduler extends ShuffleScheduler {
   private final Set<Integer> successRssPartitionSet = Sets.newConcurrentHashSet();
   private final Set<Integer> allRssPartition = Sets.newConcurrentHashSet();
 
-  private final Map<Integer, Set<InputAttemptIdentifier>> partitionIdToSuccessMapTaskAttempts = new HashMap<>();
+  private final Map<Integer, Set<InputAttemptIdentifier>> partitionIdToSuccessMapTaskAttempts =
+      new HashMap<>();
   private final String storageType;
-
 
   private final int readBufferSize;
   private final int partitionNumPerRange;
   private String basePath;
   private int indexReadLimit;
 
-  RssShuffleScheduler(InputContext inputContext,
-            Configuration conf,
-            int numberOfInputs,
-            ExceptionReporter exceptionReporter,
-            MergeManager mergeManager,
-            FetchedInputAllocatorOrderedGrouped allocator,
-            long startTime,
-            CompressionCodec codec,
-            boolean ifileReadAhead,
-            int ifileReadAheadLength,
-            String srcNameTrimmed) throws IOException {
-    super(inputContext, conf, numberOfInputs, exceptionReporter, mergeManager, allocator, startTime, codec,
-            ifileReadAhead, ifileReadAheadLength, srcNameTrimmed);
+  RssShuffleScheduler(
+      InputContext inputContext,
+      Configuration conf,
+      int numberOfInputs,
+      ExceptionReporter exceptionReporter,
+      MergeManager mergeManager,
+      FetchedInputAllocatorOrderedGrouped allocator,
+      long startTime,
+      CompressionCodec codec,
+      boolean ifileReadAhead,
+      int ifileReadAheadLength,
+      String srcNameTrimmed,
+      int shuffleId)
+      throws IOException {
+    super(
+        inputContext,
+        conf,
+        numberOfInputs,
+        exceptionReporter,
+        mergeManager,
+        allocator,
+        startTime,
+        codec,
+        ifileReadAhead,
+        ifileReadAheadLength,
+        srcNameTrimmed);
     this.inputContext = inputContext;
     this.conf = conf;
     this.exceptionReporter = exceptionReporter;
     this.allocator = allocator;
     this.mergeManager = mergeManager;
     this.numInputs = numberOfInputs;
-    int abortFailureLimitConf = conf.getInt(TezRuntimeConfiguration
-            .TEZ_RUNTIME_SHUFFLE_SOURCE_ATTEMPT_ABORT_LIMIT, TezRuntimeConfiguration
-            .TEZ_RUNTIME_SHUFFLE_SOURCE_ATTEMPT_ABORT_LIMIT_DEFAULT);
+    int abortFailureLimitConf =
+        conf.getInt(
+            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_SOURCE_ATTEMPT_ABORT_LIMIT,
+            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_SOURCE_ATTEMPT_ABORT_LIMIT_DEFAULT);
     if (abortFailureLimitConf <= -1) {
       abortFailureLimit = Math.max(15, numberOfInputs / 10);
     } else {
-      //No upper cap, as user is setting this intentionally
+      // No upper cap, as user is setting this intentionally
       abortFailureLimit = abortFailureLimitConf;
     }
     remainingMaps = new AtomicInteger(numberOfInputs); // total up-stream task
@@ -324,169 +330,253 @@ class RssShuffleScheduler extends ShuffleScheduler {
     this.ifileReadAhead = ifileReadAhead;
     this.ifileReadAheadLength = ifileReadAheadLength;
     this.srcNameTrimmed = srcNameTrimmed;
+    this.shuffleId = shuffleId;
     this.codec = codec;
     int configuredNumFetchers =
-            conf.getInt(
-                    TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_PARALLEL_COPIES,
-                    TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_PARALLEL_COPIES_DEFAULT);
+        conf.getInt(
+            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_PARALLEL_COPIES,
+            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_PARALLEL_COPIES_DEFAULT);
     numFetchers = Math.min(configuredNumFetchers, numInputs);
 
-    localDiskFetchEnabled = conf.getBoolean(
+    localDiskFetchEnabled =
+        conf.getBoolean(
             TezRuntimeConfiguration.TEZ_RUNTIME_OPTIMIZE_LOCAL_FETCH,
             TezRuntimeConfiguration.TEZ_RUNTIME_OPTIMIZE_LOCAL_FETCH_DEFAULT);
 
-    this.minFailurePerHost = conf.getInt(
+    this.minFailurePerHost =
+        conf.getInt(
             TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MIN_FAILURES_PER_HOST,
             TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MIN_FAILURES_PER_HOST_DEFAULT);
-    Preconditions.checkArgument(minFailurePerHost >= 0,
-            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MIN_FAILURES_PER_HOST
-                    + "=" + minFailurePerHost + " should not be negative");
+    Preconditions.checkArgument(
+        minFailurePerHost >= 0,
+        TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MIN_FAILURES_PER_HOST
+            + "="
+            + minFailurePerHost
+            + " should not be negative");
 
-    this.hostFailureFraction = conf.getFloat(TezRuntimeConfiguration
-                    .TEZ_RUNTIME_SHUFFLE_ACCEPTABLE_HOST_FETCH_FAILURE_FRACTION,
+    this.hostFailureFraction =
+        conf.getFloat(
+            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_ACCEPTABLE_HOST_FETCH_FAILURE_FRACTION,
             TezRuntimeConfiguration
-                    .TEZ_RUNTIME_SHUFFLE_ACCEPTABLE_HOST_FETCH_FAILURE_FRACTION_DEFAULT);
+                .TEZ_RUNTIME_SHUFFLE_ACCEPTABLE_HOST_FETCH_FAILURE_FRACTION_DEFAULT);
 
-    this.maxStallTimeFraction = conf.getFloat(
+    this.maxStallTimeFraction =
+        conf.getFloat(
             TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MAX_STALL_TIME_FRACTION,
             TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MAX_STALL_TIME_FRACTION_DEFAULT);
-    Preconditions.checkArgument(maxStallTimeFraction >= 0,
-            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MAX_STALL_TIME_FRACTION
-                    + "=" + maxStallTimeFraction + " should not be negative");
+    Preconditions.checkArgument(
+        maxStallTimeFraction >= 0,
+        TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MAX_STALL_TIME_FRACTION
+            + "="
+            + maxStallTimeFraction
+            + " should not be negative");
 
-    this.minReqProgressFraction = conf.getFloat(
+    this.minReqProgressFraction =
+        conf.getFloat(
             TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MIN_REQUIRED_PROGRESS_FRACTION,
-            TezRuntimeConfiguration
-                    .TEZ_RUNTIME_SHUFFLE_MIN_REQUIRED_PROGRESS_FRACTION_DEFAULT);
-    Preconditions.checkArgument(minReqProgressFraction >= 0,
-            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MIN_REQUIRED_PROGRESS_FRACTION
-                    + "=" + minReqProgressFraction + " should not be negative");
+            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MIN_REQUIRED_PROGRESS_FRACTION_DEFAULT);
+    Preconditions.checkArgument(
+        minReqProgressFraction >= 0,
+        TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MIN_REQUIRED_PROGRESS_FRACTION
+            + "="
+            + minReqProgressFraction
+            + " should not be negative");
 
-    this.maxAllowedFailedFetchFraction = conf.getFloat(
+    this.maxAllowedFailedFetchFraction =
+        conf.getFloat(
             TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MAX_ALLOWED_FAILED_FETCH_ATTEMPT_FRACTION,
-            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MAX_ALLOWED_FAILED_FETCH_ATTEMPT_FRACTION_DEFAULT);
-    Preconditions.checkArgument(maxAllowedFailedFetchFraction >= 0,
-            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MAX_ALLOWED_FAILED_FETCH_ATTEMPT_FRACTION
-                    + "=" + maxAllowedFailedFetchFraction + " should not be negative");
+            TezRuntimeConfiguration
+                .TEZ_RUNTIME_SHUFFLE_MAX_ALLOWED_FAILED_FETCH_ATTEMPT_FRACTION_DEFAULT);
+    Preconditions.checkArgument(
+        maxAllowedFailedFetchFraction >= 0,
+        TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MAX_ALLOWED_FAILED_FETCH_ATTEMPT_FRACTION
+            + "="
+            + maxAllowedFailedFetchFraction
+            + " should not be negative");
 
-    this.checkFailedFetchSinceLastCompletion = conf.getBoolean(
+    this.checkFailedFetchSinceLastCompletion =
+        conf.getBoolean(
             TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FAILED_CHECK_SINCE_LAST_COMPLETION,
             TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FAILED_CHECK_SINCE_LAST_COMPLETION_DEFAULT);
 
     this.applicationId = IdUtils.getApplicationAttemptId().toString();
     this.dagId = inputContext.getDagIdentifier();
     this.localHostname = inputContext.getExecutionContext().getHostName();
-    String auxiliaryService = conf.get(TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID,
+    String auxiliaryService =
+        conf.get(
+            TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID,
             TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID_DEFAULT);
-    final ByteBuffer shuffleMetadata =
-            inputContext.getServiceProviderMetaData(auxiliaryService);
+    final ByteBuffer shuffleMetadata = inputContext.getServiceProviderMetaData(auxiliaryService);
     this.shufflePort = ShuffleUtils.deserializeShuffleProviderMetaData(shuffleMetadata);
 
     this.referee = new Referee();
     // Counters used by the ShuffleScheduler
-    this.shuffledInputsCounter = inputContext.getCounters().findCounter(TaskCounter.NUM_SHUFFLED_INPUTS);
+    this.shuffledInputsCounter =
+        inputContext.getCounters().findCounter(TaskCounter.NUM_SHUFFLED_INPUTS);
     this.reduceShuffleBytes = inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES);
-    this.reduceBytesDecompressed = inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_DECOMPRESSED);
-    this.failedShuffleCounter = inputContext.getCounters().findCounter(TaskCounter.NUM_FAILED_SHUFFLE_INPUTS);
-    this.bytesShuffledToDisk = inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_TO_DISK);
-    this.bytesShuffledToDiskDirect =  inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_DISK_DIRECT);
-    this.bytesShuffledToMem = inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_TO_MEM);
+    this.reduceBytesDecompressed =
+        inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_DECOMPRESSED);
+    this.failedShuffleCounter =
+        inputContext.getCounters().findCounter(TaskCounter.NUM_FAILED_SHUFFLE_INPUTS);
+    this.bytesShuffledToDisk =
+        inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_TO_DISK);
+    this.bytesShuffledToDiskDirect =
+        inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_DISK_DIRECT);
+    this.bytesShuffledToMem =
+        inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_TO_MEM);
 
     // Counters used by Fetchers
-    ioErrsCounter = inputContext.getCounters().findCounter(SHUFFLE_ERR_GRP_NAME, ShuffleErrors.IO_ERROR.toString());
-    wrongLengthErrsCounter = inputContext.getCounters().findCounter(SHUFFLE_ERR_GRP_NAME,
-            ShuffleErrors.WRONG_LENGTH.toString());
-    badIdErrsCounter = inputContext.getCounters().findCounter(SHUFFLE_ERR_GRP_NAME, ShuffleErrors.BAD_ID.toString());
-    wrongMapErrsCounter = inputContext.getCounters().findCounter(SHUFFLE_ERR_GRP_NAME,
-            ShuffleErrors.WRONG_MAP.toString());
-    connectionErrsCounter = inputContext.getCounters().findCounter(SHUFFLE_ERR_GRP_NAME,
-            ShuffleErrors.CONNECTION.toString());
-    wrongReduceErrsCounter = inputContext.getCounters().findCounter(SHUFFLE_ERR_GRP_NAME,
-            ShuffleErrors.WRONG_REDUCE.toString());
+    ioErrsCounter =
+        inputContext
+            .getCounters()
+            .findCounter(SHUFFLE_ERR_GRP_NAME, ShuffleErrors.IO_ERROR.toString());
+    wrongLengthErrsCounter =
+        inputContext
+            .getCounters()
+            .findCounter(SHUFFLE_ERR_GRP_NAME, ShuffleErrors.WRONG_LENGTH.toString());
+    badIdErrsCounter =
+        inputContext
+            .getCounters()
+            .findCounter(SHUFFLE_ERR_GRP_NAME, ShuffleErrors.BAD_ID.toString());
+    wrongMapErrsCounter =
+        inputContext
+            .getCounters()
+            .findCounter(SHUFFLE_ERR_GRP_NAME, ShuffleErrors.WRONG_MAP.toString());
+    connectionErrsCounter =
+        inputContext
+            .getCounters()
+            .findCounter(SHUFFLE_ERR_GRP_NAME, ShuffleErrors.CONNECTION.toString());
+    wrongReduceErrsCounter =
+        inputContext
+            .getCounters()
+            .findCounter(SHUFFLE_ERR_GRP_NAME, ShuffleErrors.WRONG_REDUCE.toString());
 
     this.startTime = startTime;
     this.lastProgressTime = startTime;
 
-    this.sslShuffle = conf.getBoolean(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_ENABLE_SSL,
+    this.sslShuffle =
+        conf.getBoolean(
+            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_ENABLE_SSL,
             TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_ENABLE_SSL_DEFAULT);
-    this.asyncHttp = conf.getBoolean(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_USE_ASYNC_HTTP, false);
+    this.asyncHttp =
+        conf.getBoolean(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_USE_ASYNC_HTTP, false);
     this.httpConnectionParams = ShuffleUtils.getHttpConnectionParams(conf);
-    SecretKey jobTokenSecret = ShuffleUtils
-            .getJobTokenSecretFromTokenBytes(inputContext
-                    .getServiceConsumerMetaData(auxiliaryService));
+    SecretKey jobTokenSecret =
+        ShuffleUtils.getJobTokenSecretFromTokenBytes(
+            inputContext.getServiceConsumerMetaData(auxiliaryService));
     this.jobTokenSecretManager = new JobTokenSecretManager(jobTokenSecret);
 
     final ExecutorService fetcherRawExecutor;
-    if (conf.getBoolean(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCHER_USE_SHARED_POOL,
-            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCHER_USE_SHARED_POOL_DEFAULT)) {
-      fetcherRawExecutor = inputContext.createTezFrameworkExecutorService(numFetchers,
-              "Fetcher_O {" + srcNameTrimmed + "} #%d");
+    if (conf.getBoolean(
+        TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCHER_USE_SHARED_POOL,
+        TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCHER_USE_SHARED_POOL_DEFAULT)) {
+      fetcherRawExecutor =
+          inputContext.createTezFrameworkExecutorService(
+              numFetchers, "Fetcher_O {" + srcNameTrimmed + "} #%d");
     } else {
-      fetcherRawExecutor = Executors.newFixedThreadPool(numFetchers, new ThreadFactoryBuilder()
-              .setDaemon(true).setNameFormat("Fetcher_O {" + srcNameTrimmed + "} #%d").build());
+      fetcherRawExecutor =
+          Executors.newFixedThreadPool(
+              numFetchers,
+              new ThreadFactoryBuilder()
+                  .setDaemon(true)
+                  .setNameFormat("Fetcher_O {" + srcNameTrimmed + "} #%d")
+                  .build());
     }
     this.fetcherExecutor = MoreExecutors.listeningDecorator(fetcherRawExecutor);
 
     this.maxFailedUniqueFetches = Math.min(numberOfInputs, 5);
     referee.start();
     this.maxFetchFailuresBeforeReporting =
-            conf.getInt(
-                    TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_FAILURES_LIMIT,
-                    TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_FAILURES_LIMIT_DEFAULT);
+        conf.getInt(
+            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_FAILURES_LIMIT,
+            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_FAILURES_LIMIT_DEFAULT);
     this.reportReadErrorImmediately =
-            conf.getBoolean(
-                    TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_NOTIFY_READERROR,
-                    TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_NOTIFY_READERROR_DEFAULT);
-    this.verifyDiskChecksum = conf.getBoolean(
+        conf.getBoolean(
+            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_NOTIFY_READERROR,
+            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_NOTIFY_READERROR_DEFAULT);
+    this.verifyDiskChecksum =
+        conf.getBoolean(
             TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_VERIFY_DISK_CHECKSUM,
             TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_VERIFY_DISK_CHECKSUM_DEFAULT);
 
     /**
-     * Setting to very high val can lead to Http 400 error. Cap it to 75; every attempt id would
-     * be approximately 48 bytes; 48 * 75 = 3600 which should give some room for other info in URL.
+     * Setting to very high val can lead to Http 400 error. Cap it to 75; every attempt id would be
+     * approximately 48 bytes; 48 * 75 = 3600 which should give some room for other info in URL.
      */
-    this.maxTaskOutputAtOnce = Math.max(1, Math.min(75, conf.getInt(
-            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_MAX_TASK_OUTPUT_AT_ONCE,
-            TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_MAX_TASK_OUTPUT_AT_ONCE_DEFAULT)));
+    this.maxTaskOutputAtOnce =
+        Math.max(
+            1,
+            Math.min(
+                75,
+                conf.getInt(
+                    TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCH_MAX_TASK_OUTPUT_AT_ONCE,
+                    TezRuntimeConfiguration
+                        .TEZ_RUNTIME_SHUFFLE_FETCH_MAX_TASK_OUTPUT_AT_ONCE_DEFAULT)));
 
-    this.skippedInputCounter = inputContext.getCounters().findCounter(TaskCounter.NUM_SKIPPED_INPUTS);
-    this.firstEventReceived = inputContext.getCounters().findCounter(TaskCounter.FIRST_EVENT_RECEIVED);
-    this.lastEventReceived = inputContext.getCounters().findCounter(TaskCounter.LAST_EVENT_RECEIVED);
+    this.skippedInputCounter =
+        inputContext.getCounters().findCounter(TaskCounter.NUM_SKIPPED_INPUTS);
+    this.firstEventReceived =
+        inputContext.getCounters().findCounter(TaskCounter.FIRST_EVENT_RECEIVED);
+    this.lastEventReceived =
+        inputContext.getCounters().findCounter(TaskCounter.LAST_EVENT_RECEIVED);
     this.compositeFetch = ShuffleUtils.isTezShuffleHandler(conf);
 
     pipelinedShuffleInfoEventsMap = Maps.newConcurrentMap();
 
-    this.storageType = conf.get(RssTezConfig.RSS_STORAGE_TYPE, RssTezConfig.RSS_STORAGE_TYPE_DEFAULT_VALUE);
-    String readBufferSize = conf.get(RssTezConfig.RSS_CLIENT_READ_BUFFER_SIZE,
-        RssTezConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE);
+    this.storageType =
+        conf.get(RssTezConfig.RSS_STORAGE_TYPE, RssTezConfig.RSS_STORAGE_TYPE_DEFAULT_VALUE);
+    String readBufferSize =
+        conf.get(
+            RssTezConfig.RSS_CLIENT_READ_BUFFER_SIZE,
+            RssTezConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE);
     this.readBufferSize = (int) UnitConverter.byteStringAsBytes(readBufferSize);
-    this.partitionNumPerRange = conf.getInt(RssTezConfig.RSS_PARTITION_NUM_PER_RANGE,
-        RssTezConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
+    this.partitionNumPerRange =
+        conf.getInt(
+            RssTezConfig.RSS_PARTITION_NUM_PER_RANGE,
+            RssTezConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
 
-    LOG.info("RSSShuffleScheduler running for sourceVertex: "
-            + inputContext.getSourceVertexName() + " with configuration: "
-            + "maxFetchFailuresBeforeReporting=" + maxFetchFailuresBeforeReporting
-            + ", reportReadErrorImmediately=" + reportReadErrorImmediately
-            + ", maxFailedUniqueFetches=" + maxFailedUniqueFetches
-            + ", abortFailureLimit=" + abortFailureLimit
-            + ", maxTaskOutputAtOnce=" + maxTaskOutputAtOnce
-            + ", numFetchers=" + numFetchers
-            + ", hostFailureFraction=" + hostFailureFraction
-            + ", minFailurePerHost=" + minFailurePerHost
-            + ", maxAllowedFailedFetchFraction=" + maxAllowedFailedFetchFraction
-            + ", maxStallTimeFraction=" + maxStallTimeFraction
-            + ", minReqProgressFraction=" + minReqProgressFraction
-            + ", checkFailedFetchSinceLastCompletion=" + checkFailedFetchSinceLastCompletion
-            + ", storyType=" + storageType + ", readBufferSize=" + this.readBufferSize
-            + ", partitionNumPerRange=" + partitionNumPerRange);
+    LOG.info(
+        "RSSShuffleScheduler running for sourceVertex: "
+            + inputContext.getSourceVertexName()
+            + " with configuration: "
+            + "maxFetchFailuresBeforeReporting="
+            + maxFetchFailuresBeforeReporting
+            + ", reportReadErrorImmediately="
+            + reportReadErrorImmediately
+            + ", maxFailedUniqueFetches="
+            + maxFailedUniqueFetches
+            + ", abortFailureLimit="
+            + abortFailureLimit
+            + ", maxTaskOutputAtOnce="
+            + maxTaskOutputAtOnce
+            + ", numFetchers="
+            + numFetchers
+            + ", hostFailureFraction="
+            + hostFailureFraction
+            + ", minFailurePerHost="
+            + minFailurePerHost
+            + ", maxAllowedFailedFetchFraction="
+            + maxAllowedFailedFetchFraction
+            + ", maxStallTimeFraction="
+            + maxStallTimeFraction
+            + ", minReqProgressFraction="
+            + minReqProgressFraction
+            + ", checkFailedFetchSinceLastCompletion="
+            + checkFailedFetchSinceLastCompletion
+            + ", storyType="
+            + storageType
+            + ", readBufferSize="
+            + this.readBufferSize
+            + ", partitionNumPerRange="
+            + partitionNumPerRange);
   }
 
   @Override
   public void start() throws Exception {
-    int shuffleId = InputContextUtils.computeShuffleId(this.inputContext);
     TezTaskAttemptID tezTaskAttemptID = InputContextUtils.getTezTaskAttemptID(this.inputContext);
-    this.partitionToServers = UmbilicalUtils.requestShuffleServer(
-        inputContext.getApplicationId(), conf, tezTaskAttemptID, shuffleId);
+    this.partitionToServers =
+        UmbilicalUtils.requestShuffleServer(
+            inputContext.getApplicationId(), conf, tezTaskAttemptID, shuffleId);
 
     shuffleSchedulerThread = Thread.currentThread();
     RssShuffleSchedulerCallable rssShuffleSchedulerCallable = new RssShuffleSchedulerCallable();
@@ -501,8 +591,9 @@ class RssShuffleScheduler extends ShuffleScheduler {
         try {
           logProgress();
         } catch (Exception e) {
-          LOG.warn("Failed log progress while closing, ignoring and continuing shutdown. Message={}",
-                  e.getMessage());
+          LOG.warn(
+              "Failed log progress while closing, ignoring and continuing shutdown. Message={}",
+              e.getMessage());
         }
 
         // Notify and interrupt the waiting scheduler thread
@@ -510,11 +601,14 @@ class RssShuffleScheduler extends ShuffleScheduler {
           notifyAll();
         }
         // Interrupt the ShuffleScheduler thread only if the close is invoked by another thread.
-        // If this is invoked on the same thread, then the shuffleRunner has already complete, and there's
+        // If this is invoked on the same thread, then the shuffleRunner has already complete, and
+        // there's
         // no point interrupting it.
-        // The interrupt is needed to unblock any merges or waits which may be happening, so that the thread can
+        // The interrupt is needed to unblock any merges or waits which may be happening, so that
+        // the thread can
         // exit.
-        if (shuffleSchedulerThread != null && !Thread.currentThread().equals(shuffleSchedulerThread)) {
+        if (shuffleSchedulerThread != null
+            && !Thread.currentThread().equals(shuffleSchedulerThread)) {
           shuffleSchedulerThread.interrupt();
         }
 
@@ -524,8 +618,8 @@ class RssShuffleScheduler extends ShuffleScheduler {
             fetcher.shutDown();
           } catch (Exception e) {
             LOG.warn(
-                    "Error while shutting down fetcher. Ignoring and continuing shutdown. Message={}",
-                    e.getMessage());
+                "Error while shutting down fetcher. Ignoring and continuing shutdown. Message={}",
+                e.getMessage());
           }
         }
 
@@ -534,13 +628,12 @@ class RssShuffleScheduler extends ShuffleScheduler {
           referee.interrupt();
           referee.join();
         } catch (InterruptedException e) {
-          LOG.warn(
-                  "Interrupted while shutting down referee. Ignoring and continuing shutdown");
+          LOG.warn("Interrupted while shutting down referee. Ignoring and continuing shutdown");
           Thread.currentThread().interrupt();
         } catch (Exception e) {
           LOG.warn(
-                  "Error while shutting down referee. Ignoring and continuing shutdown. Message={}",
-                  e.getMessage());
+              "Error while shutting down referee. Ignoring and continuing shutdown. Message={}",
+              e.getMessage());
         }
       }
     } finally {
@@ -550,9 +643,12 @@ class RssShuffleScheduler extends ShuffleScheduler {
         fetcherExecutor.shutdownNow();
       }
       long endTime = System.currentTimeMillis();
-      LOG.info("Shutting down fetchers for input: {}, shutdown timetaken: {} ms, "
-                      + "hasFetcherExecutorStopped: {}", srcNameTrimmed,
-              (endTime - startTime), hasFetcherExecutorStopped());
+      LOG.info(
+          "Shutting down fetchers for input: {}, shutdown timetaken: {} ms, "
+              + "hasFetcherExecutorStopped: {}",
+          srcNameTrimmed,
+          (endTime - startTime),
+          hasFetcherExecutorStopped());
     }
   }
 
@@ -569,7 +665,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
   }
 
   @Override
-  protected synchronized  void updateEventReceivedTime() {
+  protected synchronized void updateEventReceivedTime() {
     long relativeTime = System.currentTimeMillis() - startTime;
     if (firstEventReceived.getValue() == 0) {
       firstEventReceived.setValue(relativeTime);
@@ -585,7 +681,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
    */
   static class ShuffleEventInfo {
     BitSet eventsProcessed;
-    int finalEventId = -1; //0 indexed
+    int finalEventId = -1; // 0 indexed
     int attemptNum;
     String id;
     boolean scheduledForDownload; // whether chunks got scheduled for download (getMapHost)
@@ -598,9 +694,17 @@ class RssShuffleScheduler extends ShuffleScheduler {
 
     void spillProcessed(int spillId) {
       if (finalEventId != -1) {
-        Preconditions.checkState(eventsProcessed.cardinality() <= (finalEventId + 1),
-                "Wrong state. eventsProcessed cardinality=" + eventsProcessed.cardinality() + " "
-                        + "finalEventId=" + finalEventId + ", spillId=" + spillId + ", " + toString());
+        Preconditions.checkState(
+            eventsProcessed.cardinality() <= (finalEventId + 1),
+            "Wrong state. eventsProcessed cardinality="
+                + eventsProcessed.cardinality()
+                + " "
+                + "finalEventId="
+                + finalEventId
+                + ", spillId="
+                + spillId
+                + ", "
+                + toString());
       }
       eventsProcessed.set(spillId);
     }
@@ -615,26 +719,34 @@ class RssShuffleScheduler extends ShuffleScheduler {
 
     @Override
     public String toString() {
-      return "[eventsProcessed=" + eventsProcessed + ", finalEventId=" + finalEventId
-              +  ", id=" + id + ", attemptNum=" + attemptNum
-              + ", scheduledForDownload=" + scheduledForDownload + "]";
+      return "[eventsProcessed="
+          + eventsProcessed
+          + ", finalEventId="
+          + finalEventId
+          + ", id="
+          + id
+          + ", attemptNum="
+          + attemptNum
+          + ", scheduledForDownload="
+          + scheduledForDownload
+          + "]";
     }
   }
 
   @Override
-  public synchronized void copySucceeded(InputAttemptIdentifier srcAttemptIdentifier,
-            MapHost host,
-            long bytesCompressed,
-            long bytesDecompressed,
-            long millis,
-            MapOutput output,
-            boolean isLocalFetch) throws IOException {
+  public synchronized void copySucceeded(
+      InputAttemptIdentifier srcAttemptIdentifier,
+      MapHost host,
+      long bytesCompressed,
+      long bytesDecompressed,
+      long millis,
+      MapOutput output,
+      boolean isLocalFetch)
+      throws IOException {
     inputContext.notifyProgress();
     if (!isInputFinished(srcAttemptIdentifier.getInputIdentifier())) {
       if (!isLocalFetch) {
-        /**
-         * Reset it only when it is a non-local-disk copy.
-         */
+        /** Reset it only when it is a non-local-disk copy. */
         failedShufflesSinceLastCompletion = 0;
       }
       if (output != null) {
@@ -644,8 +756,12 @@ class RssShuffleScheduler extends ShuffleScheduler {
         }
 
         output.commit();
-        fetchStatsLogger.logIndividualFetchComplete(millis, bytesCompressed, bytesDecompressed,
-                output.getType().toString(), srcAttemptIdentifier);
+        fetchStatsLogger.logIndividualFetchComplete(
+            millis,
+            bytesCompressed,
+            bytesDecompressed,
+            output.getType().toString(),
+            srcAttemptIdentifier);
         if (output.getType() == Type.DISK) {
           bytesShuffledToDisk.increment(bytesCompressed);
         } else if (output.getType() == Type.DISK_DIRECT) {
@@ -662,8 +778,8 @@ class RssShuffleScheduler extends ShuffleScheduler {
 
       /**
        * In case of pipelined shuffle, it is quite possible that fetchers pulled the FINAL_UPDATE
-       * spill in advance due to smaller output size.  In such scenarios, we need to wait until
-       * we retrieve all spill details to claim success.
+       * spill in advance due to smaller output size. In such scenarios, we need to wait until we
+       * retrieve all spill details to claim success.
        */
       if (!srcAttemptIdentifier.canRetrieveInputInChunks()) {
         remainingMaps.decrementAndGet();
@@ -671,14 +787,14 @@ class RssShuffleScheduler extends ShuffleScheduler {
         numFetchedSpills++;
       } else {
         int inputIdentifier = srcAttemptIdentifier.getInputIdentifier();
-        //Allow only one task attempt to proceed.
+        // Allow only one task attempt to proceed.
         if (!validateInputAttemptForPipelinedShuffle(srcAttemptIdentifier)) {
           return;
         }
 
         ShuffleEventInfo eventInfo = pipelinedShuffleInfoEventsMap.get(inputIdentifier);
 
-        //Possible that Shuffle event handler invoked this, due to empty partitions
+        // Possible that Shuffle event handler invoked this, due to empty partitions
         if (eventInfo == null && output == null) {
           eventInfo = new ShuffleEventInfo(srcAttemptIdentifier);
           pipelinedShuffleInfoEventsMap.put(inputIdentifier, eventInfo);
@@ -688,17 +804,22 @@ class RssShuffleScheduler extends ShuffleScheduler {
         eventInfo.spillProcessed(srcAttemptIdentifier.getSpillEventId());
         numFetchedSpills++;
 
-        if (srcAttemptIdentifier.getFetchTypeInfo() == InputAttemptIdentifier.SPILL_INFO.FINAL_UPDATE) {
+        if (srcAttemptIdentifier.getFetchTypeInfo()
+            == InputAttemptIdentifier.SPILL_INFO.FINAL_UPDATE) {
           eventInfo.setFinalEventId(srcAttemptIdentifier.getSpillEventId());
         }
 
-        //check if we downloaded all spills pertaining to this InputAttemptIdentifier
+        // check if we downloaded all spills pertaining to this InputAttemptIdentifier
         if (eventInfo.isDone()) {
           remainingMaps.decrementAndGet();
           setInputFinished(inputIdentifier);
           pipelinedShuffleInfoEventsMap.remove(inputIdentifier);
           if (LOG.isTraceEnabled()) {
-            LOG.trace("Removing : " + srcAttemptIdentifier + ", pending: " + pipelinedShuffleInfoEventsMap);
+            LOG.trace(
+                "Removing : "
+                    + srcAttemptIdentifier
+                    + ", pending: "
+                    + pipelinedShuffleInfoEventsMap);
           }
         }
 
@@ -719,10 +840,13 @@ class RssShuffleScheduler extends ShuffleScheduler {
       reduceShuffleBytes.increment(bytesCompressed);
       reduceBytesDecompressed.increment(bytesDecompressed);
       if (LOG.isDebugEnabled()) {
-        LOG.debug("src task: "
+        LOG.debug(
+            "src task: "
                 + TezRuntimeUtils.getTaskAttemptIdentifier(
-                inputContext.getSourceVertexName(), srcAttemptIdentifier.getInputIdentifier(),
-                srcAttemptIdentifier.getAttemptNumber()) + " done");
+                    inputContext.getSourceVertexName(),
+                    srcAttemptIdentifier.getInputIdentifier(),
+                    srcAttemptIdentifier.getAttemptNumber())
+                + " done");
       }
     } else {
       // input is already finished. duplicate fetch.
@@ -734,7 +858,8 @@ class RssShuffleScheduler extends ShuffleScheduler {
         output.abort();
       }
     }
-    // NEWTEZ Should this be releasing the output, if not committed ? Possible memory leak in case of speculation.
+    // NEWTEZ Should this be releasing the output, if not committed ? Possible memory leak in case
+    // of speculation.
   }
 
   private boolean validateInputAttemptForPipelinedShuffle(InputAttemptIdentifier input) {
@@ -751,20 +876,32 @@ class RssShuffleScheduler extends ShuffleScheduler {
          * attempt (e.g LLAP).
          */
         if (eventInfo.scheduledForDownload || !eventInfo.eventsProcessed.isEmpty()) {
-          IOException exception = new IOException("Previous event already got scheduled for "
-                  + input + ". Previous attempt's data could have been already merged "
-                  + "to memory/disk outputs.  Killing (self) this task early."
-                  + " currentAttemptNum=" + eventInfo.attemptNum
-                  + ", eventsProcessed=" + eventInfo.eventsProcessed
-                  + ", scheduledForDownload=" + eventInfo.scheduledForDownload
-                  + ", newAttemptNum=" + input.getAttemptNumber());
+          IOException exception =
+              new IOException(
+                  "Previous event already got scheduled for "
+                      + input
+                      + ". Previous attempt's data could have been already merged "
+                      + "to memory/disk outputs.  Killing (self) this task early."
+                      + " currentAttemptNum="
+                      + eventInfo.attemptNum
+                      + ", eventsProcessed="
+                      + eventInfo.eventsProcessed
+                      + ", scheduledForDownload="
+                      + eventInfo.scheduledForDownload
+                      + ", newAttemptNum="
+                      + input.getAttemptNumber());
           String message = "Killing self as previous attempt data could have been consumed";
           killSelf(exception, message);
           return false;
         }
         if (LOG.isDebugEnabled()) {
-          LOG.debug("Ignoring current attempt=" + eventInfo.attemptNum + " with eventInfo="
-                  + eventInfo.toString() + "and processing new attempt=" + input.getAttemptNumber());
+          LOG.debug(
+              "Ignoring current attempt="
+                  + eventInfo.attemptNum
+                  + " with eventInfo="
+                  + eventInfo.toString()
+                  + "and processing new attempt="
+                  + input.getAttemptNumber());
         }
       }
       if (eventInfo == null) {
@@ -785,54 +922,63 @@ class RssShuffleScheduler extends ShuffleScheduler {
 
   private void logProgress() {
     int inputsDone = numInputs - remainingMaps.get();
-    if (inputsDone > nextProgressLineEventCount.get() || inputsDone == numInputs || isShutdown.get()) {
+    if (inputsDone > nextProgressLineEventCount.get()
+        || inputsDone == numInputs
+        || isShutdown.get()) {
       nextProgressLineEventCount.addAndGet(50);
       double mbs = (double) totalBytesShuffledTillNow / (1024 * 1024);
       long secsSinceStart = (System.currentTimeMillis() - startTime) / 1000 + 1;
 
       double transferRate = mbs / secsSinceStart;
-      LOG.info("copy(" + inputsDone + " (spillsFetched=" + numFetchedSpills + ") of " + numInputs
+      LOG.info(
+          "copy("
+              + inputsDone
+              + " (spillsFetched="
+              + numFetchedSpills
+              + ") of "
+              + numInputs
               + ". Transfer rate (CumulativeDataFetched/TimeSinceInputStarted)) "
-              + mbpsFormat.format(transferRate) + " MB/s)");
+              + mbpsFormat.format(transferRate)
+              + " MB/s)");
     }
   }
 
   @Override
-  public synchronized void copyFailed(InputAttemptIdentifier srcAttempt, MapHost host, boolean readError,
-            boolean connectError, boolean isLocalFetch) {
+  public synchronized void copyFailed(
+      InputAttemptIdentifier srcAttempt,
+      MapHost host,
+      boolean readError,
+      boolean connectError,
+      boolean isLocalFetch) {
     failedShuffleCounter.increment(1);
     inputContext.notifyProgress();
     int failures = incrementAndGetFailureAttempt(srcAttempt);
 
     if (!isLocalFetch) {
       /**
-       * Track the number of failures that has happened since last completion.
-       * This gets reset on a successful copy.
+       * Track the number of failures that has happened since last completion. This gets reset on a
+       * successful copy.
        */
       failedShufflesSinceLastCompletion++;
     }
 
     /**
-     * Inform AM:
-     *    - In case of read/connect error
-     *    - In case attempt failures exceed threshold of
-     *    maxFetchFailuresBeforeReporting (5)
-     * Bail-out if needed:
-     *    - Check whether individual attempt crossed failure threshold limits
-     *    - Check overall shuffle health. Bail out if needed.*
+     * Inform AM: - In case of read/connect error - In case attempt failures exceed threshold of
+     * maxFetchFailuresBeforeReporting (5) Bail-out if needed: - Check whether individual attempt
+     * crossed failure threshold limits - Check overall shuffle health. Bail out if needed.*
      */
 
-    //TEZ-2890
+    // TEZ-2890
     boolean shouldInformAM =
-            (reportReadErrorImmediately && (readError || connectError))
-                    || ((failures % maxFetchFailuresBeforeReporting) == 0);
+        (reportReadErrorImmediately && (readError || connectError))
+            || ((failures % maxFetchFailuresBeforeReporting) == 0);
 
     if (shouldInformAM) {
-      //Inform AM. In case producer needs to be restarted, it is handled at AM.
+      // Inform AM. In case producer needs to be restarted, it is handled at AM.
       informAM(srcAttempt);
     }
 
-    //Restart consumer in case shuffle is not healthy
+    // Restart consumer in case shuffle is not healthy
     if (!isShuffleHealthy(srcAttempt)) {
       return;
     }
@@ -850,11 +996,17 @@ class RssShuffleScheduler extends ShuffleScheduler {
       // fault. If there's enough errors seen on the task, before the AM informs
       // it about source failure, the task considers itself to have failed and
       // allows the AM to re-schedule it.
-      String errorMsg = "Failed " + attemptFailures + " times trying to "
-              + "download from " + TezRuntimeUtils.getTaskAttemptIdentifier(
-              inputContext.getSourceVertexName(),
-              srcAttempt.getInputIdentifier(),
-              srcAttempt.getAttemptNumber()) + ". threshold=" + abortFailureLimit;
+      String errorMsg =
+          "Failed "
+              + attemptFailures
+              + " times trying to "
+              + "download from "
+              + TezRuntimeUtils.getTaskAttemptIdentifier(
+                  inputContext.getSourceVertexName(),
+                  srcAttempt.getInputIdentifier(),
+                  srcAttempt.getAttemptNumber())
+              + ". threshold="
+              + abortFailureLimit;
       IOException ioe = new IOException(errorMsg);
       // Shuffle knows how to deal with failures post shutdown via the onFailure hook
       exceptionReporter.reportException(ioe);
@@ -908,17 +1060,25 @@ class RssShuffleScheduler extends ShuffleScheduler {
   // Notify AM
   private void informAM(InputAttemptIdentifier srcAttempt) {
     LOG.info(
-            srcNameTrimmed + ": " + "Reporting fetch failure for InputIdentifier: "
-                    + srcAttempt + " taskAttemptIdentifier: " + TezRuntimeUtils
-                    .getTaskAttemptIdentifier(inputContext.getSourceVertexName(),
-                            srcAttempt.getInputIdentifier(),
-                            srcAttempt.getAttemptNumber()) + " to AM.");
+        srcNameTrimmed
+            + ": "
+            + "Reporting fetch failure for InputIdentifier: "
+            + srcAttempt
+            + " taskAttemptIdentifier: "
+            + TezRuntimeUtils.getTaskAttemptIdentifier(
+                inputContext.getSourceVertexName(),
+                srcAttempt.getInputIdentifier(),
+                srcAttempt.getAttemptNumber())
+            + " to AM.");
     List<Event> failedEvents = Lists.newArrayListWithCapacity(1);
-    failedEvents.add(InputReadErrorEvent.create(
-            "Fetch failure for " + TezRuntimeUtils
-                    .getTaskAttemptIdentifier(inputContext.getSourceVertexName(),
-                            srcAttempt.getInputIdentifier(),
-                            srcAttempt.getAttemptNumber()) + " to jobtracker.",
+    failedEvents.add(
+        InputReadErrorEvent.create(
+            "Fetch failure for "
+                + TezRuntimeUtils.getTaskAttemptIdentifier(
+                    inputContext.getSourceVertexName(),
+                    srcAttempt.getInputIdentifier(),
+                    srcAttempt.getAttemptNumber())
+                + " to jobtracker.",
             srcAttempt.getInputIdentifier(),
             srcAttempt.getAttemptNumber()));
 
@@ -926,9 +1086,8 @@ class RssShuffleScheduler extends ShuffleScheduler {
   }
 
   /**
-   * To determine if failures happened across nodes or not. This will help in
-   * determining whether this task needs to be restarted or source needs to
-   * be restarted.
+   * To determine if failures happened across nodes or not. This will help in determining whether
+   * this task needs to be restarted or source needs to be restarted.
    *
    * @param logContext context info for logging
    * @return boolean true indicates this task needs to be restarted
@@ -936,8 +1095,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
   private boolean hasFailedAcrossNodes(String logContext) {
     int numUniqueHosts = uniqueHosts.size();
     Preconditions.checkArgument(numUniqueHosts > 0, "No values in unique hosts");
-    int threshold = Math.max(3,
-            (int) Math.ceil(numUniqueHosts * hostFailureFraction));
+    int threshold = Math.max(3, (int) Math.ceil(numUniqueHosts * hostFailureFraction));
     int total = 0;
     boolean failedAcrossNodes = false;
     for (HostPort host : uniqueHosts) {
@@ -951,12 +1109,18 @@ class RssShuffleScheduler extends ShuffleScheduler {
       }
     }
 
-    LOG.info(logContext + ", numUniqueHosts=" + numUniqueHosts
-            + ", hostFailureThreshold=" + threshold
-            + ", hostFailuresCount=" + hostFailures.size()
-            + ", hosts crossing threshold=" + total
-            + ", reducerFetchIssues=" + failedAcrossNodes
-    );
+    LOG.info(
+        logContext
+            + ", numUniqueHosts="
+            + numUniqueHosts
+            + ", hostFailureThreshold="
+            + threshold
+            + ", hostFailuresCount="
+            + hostFailures.size()
+            + ", hosts crossing threshold="
+            + total
+            + ", reducerFetchIssues="
+            + failedAcrossNodes);
 
     return failedAcrossNodes;
   }
@@ -965,7 +1129,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
     if (!pipelinedShuffleInfoEventsMap.isEmpty()) {
       return (pipelinedShuffleInfoEventsMap.size() == numInputs);
     } else {
-      //no pipelining
+      // no pipelining
       return ((pathToIdentifierMap.size() + skippedInputCounter.getValue()) == numInputs);
     }
   }
@@ -975,10 +1139,9 @@ class RssShuffleScheduler extends ShuffleScheduler {
   }
 
   /**
-   * Check if consumer needs to be restarted based on total failures w.r.t
-   * completed outputs and based on number of errors that have happened since
-   * last successful completion. Consider into account whether failures have
-   * been seen across different nodes.
+   * Check if consumer needs to be restarted based on total failures w.r.t completed outputs and
+   * based on number of errors that have happened since last successful completion. Consider into
+   * account whether failures have been seen across different nodes.
    *
    * @return true to indicate fetchers are healthy
    */
@@ -988,51 +1151,54 @@ class RssShuffleScheduler extends ShuffleScheduler {
 
     boolean fetcherHealthy = true;
     if (doneMaps > 0) {
-      fetcherHealthy = (((float) totalFailures / (totalFailures + doneMaps)) < maxAllowedFailedFetchFraction);
+      fetcherHealthy =
+          (((float) totalFailures / (totalFailures + doneMaps)) < maxAllowedFailedFetchFraction);
     }
 
     if (fetcherHealthy) {
-      //Compute this logic only when all events are received
+      // Compute this logic only when all events are received
       if (allEventsReceived()) {
         if (hostFailureFraction > 0) {
           boolean failedAcrossNodes = hasFailedAcrossNodes(logContext);
           if (failedAcrossNodes) {
-            return false; //not healthy
+            return false; // not healthy
           }
         }
 
         if (checkFailedFetchSinceLastCompletion) {
           /**
-           * remainingMaps works better instead of pendingHosts in the
-           * following condition because of the way the fetcher reports failures
+           * remainingMaps works better instead of pendingHosts in the following condition because
+           * of the way the fetcher reports failures
            */
           if (failedShufflesSinceLastCompletion >= remainingMaps.get() * minFailurePerHost) {
             /**
              * Check if lots of errors are seen after last progress time.
              *
-             * E.g totalFailures = 20. doneMaps = 320 - 300;
-             * fetcherHealthy = (20/(20+300)) < 0.5.  So reducer would be marked as healthy.
-             * Assume 20 errors happen when downloading the last 20 attempts. Host failure & individual
-             * attempt failures would keep increasing; but at very slow rate 15 * 180 seconds per
-             * attempt to find out the issue.
+             * <p>E.g totalFailures = 20. doneMaps = 320 - 300; fetcherHealthy = (20/(20+300)) <
+             * 0.5. So reducer would be marked as healthy. Assume 20 errors happen when downloading
+             * the last 20 attempts. Host failure & individual attempt failures would keep
+             * increasing; but at very slow rate 15 * 180 seconds per attempt to find out the issue.
              *
-             * Instead consider the new errors with the pending items to be fetched.
-             * Assume 21 new errors happened after last progress; remainingMaps = (320-300) = 20;
-             * (21 / (21 + 20)) > 0.5
-             * So we reset the reducer to unhealthy here (special case)
+             * <p>Instead consider the new errors with the pending items to be fetched. Assume 21
+             * new errors happened after last progress; remainingMaps = (320-300) = 20; (21 / (21 +
+             * 20)) > 0.5 So we reset the reducer to unhealthy here (special case)
              *
-             * In normal conditions (i.e happy path), this wouldn't even cause any issue as
+             * <p>In normal conditions (i.e happy path), this wouldn't even cause any issue as
              * failedShufflesSinceLastCompletion is reset as soon as we see successful download.
              */
+            fetcherHealthy =
+                (((float) failedShufflesSinceLastCompletion
+                        / (failedShufflesSinceLastCompletion + remainingMaps.get()))
+                    < maxAllowedFailedFetchFraction);
 
-            fetcherHealthy = (((float) failedShufflesSinceLastCompletion
-                / (failedShufflesSinceLastCompletion + remainingMaps.get())) < maxAllowedFailedFetchFraction);
-
-            LOG.info(logContext + ", fetcherHealthy=" + fetcherHealthy
+            LOG.info(
+                logContext
+                    + ", fetcherHealthy="
+                    + fetcherHealthy
                     + ", failedShufflesSinceLastCompletion="
                     + failedShufflesSinceLastCompletion
-                    + ", remainingMaps=" + remainingMaps.get()
-            );
+                    + ", remainingMaps="
+                    + remainingMaps.get());
           }
         }
       }
@@ -1056,28 +1222,40 @@ class RssShuffleScheduler extends ShuffleScheduler {
     boolean fetcherHealthy = isFetcherHealthy(logContext);
 
     // check if the reducer has progressed enough
-    boolean reducerProgressedEnough = (((float)doneMaps / numInputs) >= MIN_REQUIRED_PROGRESS_PERCENT);
+    boolean reducerProgressedEnough =
+        (((float) doneMaps / numInputs) >= MIN_REQUIRED_PROGRESS_PERCENT);
 
     // check if the reducer is stalled for a long time
     // duration for which the reducer is stalled
-    int stallDuration = (int)(System.currentTimeMillis() - lastProgressTime);
+    int stallDuration = (int) (System.currentTimeMillis() - lastProgressTime);
 
     // duration for which the reducer ran with progress
-    int shuffleProgressDuration = (int)(lastProgressTime - startTime);
+    int shuffleProgressDuration = (int) (lastProgressTime - startTime);
 
-    boolean reducerStalled = (shuffleProgressDuration > 0) && (((float)stallDuration / shuffleProgressDuration)
-                    >= MAX_ALLOWED_STALL_TIME_PERCENT);
+    boolean reducerStalled =
+        (shuffleProgressDuration > 0)
+            && (((float) stallDuration / shuffleProgressDuration)
+                >= MAX_ALLOWED_STALL_TIME_PERCENT);
 
     // kill if not healthy and has insufficient progress
-    if ((failureCounts.size() >= maxFailedUniqueFetches || failureCounts.size() == (numInputs - doneMaps))
-            && !fetcherHealthy && (!reducerProgressedEnough || reducerStalled)) {
-      String errorMsg = (srcNameTrimmed + ": "
+    if ((failureCounts.size() >= maxFailedUniqueFetches
+            || failureCounts.size() == (numInputs - doneMaps))
+        && !fetcherHealthy
+        && (!reducerProgressedEnough || reducerStalled)) {
+      String errorMsg =
+          (srcNameTrimmed
+              + ": "
               + "Shuffle failed with too many fetch failures and insufficient progress!"
-              + "failureCounts=" + failureCounts.size()
-              + ", pendingInputs=" + (numInputs - doneMaps)
-              + ", fetcherHealthy=" + fetcherHealthy
-              + ", reducerProgressedEnough=" + reducerProgressedEnough
-              + ", reducerStalled=" + reducerStalled);
+              + "failureCounts="
+              + failureCounts.size()
+              + ", pendingInputs="
+              + (numInputs - doneMaps)
+              + ", fetcherHealthy="
+              + fetcherHealthy
+              + ", reducerProgressedEnough="
+              + reducerProgressedEnough
+              + ", reducerStalled="
+              + reducerStalled);
       LOG.error(errorMsg);
       if (LOG.isDebugEnabled()) {
         LOG.debug("Host failures=" + hostFailures.keySet());
@@ -1090,12 +1268,19 @@ class RssShuffleScheduler extends ShuffleScheduler {
   }
 
   @Override
-  public synchronized void addKnownMapOutput(String inputHostName, int port, int partitionId,
-          CompositeInputAttemptIdentifier srcAttempt) {
+  public synchronized void addKnownMapOutput(
+      String inputHostName, int port, int partitionId, CompositeInputAttemptIdentifier srcAttempt) {
 
-    LOG.info("AddKnownMapOutput thread:{}, obj:{}, RssShuffleScheduler, addKnownMapOutput, inputHostName length:{}, "
+    LOG.info(
+        "AddKnownMapOutput thread:{}, obj:{}, RssShuffleScheduler, addKnownMapOutput, inputHostName length:{}, "
             + "port:{}, partitionId:{}, srcAttempt:{}, inputHostName:{}",
-        Thread.currentThread().getName(), this, inputHostName.length(), port, partitionId, srcAttempt, inputHostName);
+        Thread.currentThread().getName(),
+        this,
+        inputHostName.length(),
+        port,
+        partitionId,
+        srcAttempt,
+        inputHostName);
 
     allRssPartition.add(partitionId);
     if (!partitionIdToSuccessMapTaskAttempts.containsKey(partitionId)) {
@@ -1112,14 +1297,15 @@ class RssShuffleScheduler extends ShuffleScheduler {
       mapLocations.put(identifier, host);
     }
 
-    //Allow only one task attempt to proceed.
+    // Allow only one task attempt to proceed.
     if (!validateInputAttemptForPipelinedShuffle(srcAttempt)) {
       return;
     }
 
     host.addKnownMap(srcAttempt);
     for (int i = 0; i < srcAttempt.getInputIdentifierCount(); i++) {
-      PathPartition pathPartition = new PathPartition(srcAttempt.getPathComponent(), partitionId + i);
+      PathPartition pathPartition =
+          new PathPartition(srcAttempt.getPathComponent(), partitionId + i);
       pathToIdentifierMap.put(pathPartition, srcAttempt.expand(i));
     }
 
@@ -1136,8 +1322,8 @@ class RssShuffleScheduler extends ShuffleScheduler {
     LOG.info(srcNameTrimmed + ": " + "Adding obsolete input: " + srcAttempt);
     ShuffleEventInfo eventInfo = pipelinedShuffleInfoEventsMap.get(srcAttempt.getInputIdentifier());
 
-    //Pipelined shuffle case (where pipelinedShuffleInfoEventsMap gets populated).
-    //Fail fast here.
+    // Pipelined shuffle case (where pipelinedShuffleInfoEventsMap gets populated).
+    // Fail fast here.
     if (eventInfo != null) {
       // In case this we haven't started downloading it, get rid of it.
       if (eventInfo.eventsProcessed.isEmpty() && !eventInfo.scheduledForDownload) {
@@ -1148,10 +1334,15 @@ class RssShuffleScheduler extends ShuffleScheduler {
         }
         return;
       }
-      IOException exception = new IOException(srcAttempt + " is marked as obsoleteInput, but it "
-              + "exists in shuffleInfoEventMap. Some data could have been already merged "
-              + "to memory/disk outputs.  Failing the fetch early. eventInfo:" + eventInfo.toString());
-      String message = "Got obsolete event. Killing self as attempt's data could have been consumed";
+      IOException exception =
+          new IOException(
+              srcAttempt
+                  + " is marked as obsoleteInput, but it "
+                  + "exists in shuffleInfoEventMap. Some data could have been already merged "
+                  + "to memory/disk outputs.  Failing the fetch early. eventInfo:"
+                  + eventInfo.toString());
+      String message =
+          "Got obsolete event. Killing self as attempt's data could have been consumed";
       killSelf(exception, message);
       return;
     }
@@ -1169,9 +1360,13 @@ class RssShuffleScheduler extends ShuffleScheduler {
   public synchronized MapHost getHost() throws InterruptedException {
     while (pendingHosts.isEmpty() && !isAllInputFetched()) {
       if (LOG.isInfoEnabled()) {
-        LOG.info("RssShuffleScheduler getHost, pendingHosts:{}, remainingMaps:{}, all partition:{}, "
-                + "success partition:{}", pendingHosts.size(), remainingMaps.get(),
-                allRssPartition.size(), successRssPartitionSet.size());
+        LOG.info(
+            "RssShuffleScheduler getHost, pendingHosts:{}, remainingMaps:{}, all partition:{}, "
+                + "success partition:{}",
+            pendingHosts.size(),
+            remainingMaps.get(),
+            allRssPartition.size(),
+            successRssPartitionSet.size());
         LOG.info("PendingHosts=" + pendingHosts + ",remainingMaps:" + remainingMaps.get());
       }
       waitAndNotifyProgress();
@@ -1188,8 +1383,15 @@ class RssShuffleScheduler extends ShuffleScheduler {
       pendingHosts.remove(host);
       host.markBusy();
       if (LOG.isDebugEnabled()) {
-        LOG.debug(srcNameTrimmed + ": " + "Assigning " + host + " with " + host.getNumKnownMapOutputs()
-                + " to " + Thread.currentThread().getName());
+        LOG.debug(
+            srcNameTrimmed
+                + ": "
+                + "Assigning "
+                + host
+                + " with "
+                + host.getNumKnownMapOutputs()
+                + " to "
+                + Thread.currentThread().getName());
       }
       shuffleStart.set(System.currentTimeMillis());
       return host;
@@ -1199,17 +1401,17 @@ class RssShuffleScheduler extends ShuffleScheduler {
   }
 
   @Override
-  public InputAttemptIdentifier getIdentifierForFetchedOutput(
-          String path, int reduceId) {
+  public InputAttemptIdentifier getIdentifierForFetchedOutput(String path, int reduceId) {
     return pathToIdentifierMap.get(new PathPartition(path, reduceId));
   }
 
   private synchronized boolean inputShouldBeConsumed(InputAttemptIdentifier id) {
     boolean isInputFinished = false;
     if (id instanceof CompositeInputAttemptIdentifier) {
-      CompositeInputAttemptIdentifier cid = (CompositeInputAttemptIdentifier)id;
-      isInputFinished = isInputFinished(cid.getInputIdentifier(), cid.getInputIdentifier()
-              + cid.getInputIdentifierCount());
+      CompositeInputAttemptIdentifier cid = (CompositeInputAttemptIdentifier) id;
+      isInputFinished =
+          isInputFinished(
+              cid.getInputIdentifier(), cid.getInputIdentifier() + cid.getInputIdentifierCount());
     } else {
       isInputFinished = isInputFinished(id.getInputIdentifier());
     }
@@ -1237,31 +1439,34 @@ class RssShuffleScheduler extends ShuffleScheduler {
           continue;
         }
 
-        //In case of pipelined shuffle, we can have multiple spills. In such cases, we can have
+        // In case of pipelined shuffle, we can have multiple spills. In such cases, we can have
         // more than one item in the oldIdList.
         boolean addIdentifierToList = false;
         Iterator<InputAttemptIdentifier> oldIdIterator = oldIdList.iterator();
         while (oldIdIterator.hasNext()) {
           InputAttemptIdentifier oldId = oldIdIterator.next();
 
-          //no need to add if spill ids are same
+          // no need to add if spill ids are same
           if (id.canRetrieveInputInChunks()) {
             if (oldId.getSpillEventId() == id.getSpillEventId()) {
               // need to handle deterministic spills later.
               addIdentifierToList = false;
               continue;
             } else if (oldId.getAttemptNumber() == id.getAttemptNumber()) {
-              //but with different spill id.
+              // but with different spill id.
               addIdentifierToList = true;
               break;
             }
           }
 
-          //if its from different attempt, take the latest attempt
+          // if its from different attempt, take the latest attempt
           if (oldId.getAttemptNumber() < id.getAttemptNumber()) {
-            //remove existing identifier
+            // remove existing identifier
             oldIdIterator.remove();
-            LOG.warn("Old Src for InputIndex: " + inputNumber + " with attemptNumber: "
+            LOG.warn(
+                "Old Src for InputIndex: "
+                    + inputNumber
+                    + " with attemptNumber: "
                     + oldId.getAttemptNumber()
                     + " was not determined to be invalid. Ignoring it for now in favour of "
                     + id.getAttemptNumber());
@@ -1290,7 +1495,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
         } else {
           if (inputAttemptIdentifier.canRetrieveInputInChunks()) {
             ShuffleEventInfo shuffleEventInfo =
-                    pipelinedShuffleInfoEventsMap.get(inputAttemptIdentifier.getInputIdentifier());
+                pipelinedShuffleInfoEventsMap.get(inputAttemptIdentifier.getInputIdentifier());
             if (shuffleEventInfo != null) {
               shuffleEventInfo.scheduledForDownload = true;
             }
@@ -1300,8 +1505,15 @@ class RssShuffleScheduler extends ShuffleScheduler {
       }
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug("assigned " + includedMaps + " of " + totalSize + " to "
-              + host + " to " + Thread.currentThread().getName());
+      LOG.debug(
+          "assigned "
+              + includedMaps
+              + " of "
+              + totalSize
+              + " to "
+              + host
+              + " to "
+              + Thread.currentThread().getName());
     }
     return result;
   }
@@ -1315,8 +1527,13 @@ class RssShuffleScheduler extends ShuffleScheduler {
       }
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug(host + " freed by " + Thread.currentThread().getName() + " in "
-              + (System.currentTimeMillis() - shuffleStart.get()) + "ms");
+      LOG.debug(
+          host
+              + " freed by "
+              + Thread.currentThread().getName()
+              + " in "
+              + (System.currentTimeMillis() - shuffleStart.get())
+              + "ms");
     }
   }
 
@@ -1330,6 +1547,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
 
   /**
    * Utility method to check if the Shuffle data fetch is complete.
+   *
    * @return true if complete
    */
   @Override
@@ -1337,9 +1555,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
     return remainingMaps.get() == 0;
   }
 
-  /**
-   * A structure that records the penalty for a host.
-   */
+  /** A structure that records the penalty for a host. */
   private static class Penalty implements Delayed {
     MapHost host;
     private long endTime;
@@ -1377,16 +1593,15 @@ class RssShuffleScheduler extends ShuffleScheduler {
       long other = ((Penalty) o).endTime;
       return endTime == other ? 0 : (endTime < other ? -1 : 1);
     }
-
   }
 
-  /**
-   * A thread that takes hosts off of the penalty list when the timer expires.
-   */
+  /** A thread that takes hosts off of the penalty list when the timer expires. */
   private class Referee extends Thread {
     Referee() {
-      setName("ShufflePenaltyReferee {"
-              + TezUtilsInternal.cleanVertexName(inputContext.getSourceVertexName()) + "}");
+      setName(
+          "ShufflePenaltyReferee {"
+              + TezUtilsInternal.cleanVertexName(inputContext.getSourceVertexName())
+              + "}");
       setDaemon(true);
     }
 
@@ -1413,7 +1628,6 @@ class RssShuffleScheduler extends ShuffleScheduler {
     }
   }
 
-
   @Override
   void setInputFinished(int inputIndex) {
     synchronized (finishedMaps) {
@@ -1438,19 +1652,26 @@ class RssShuffleScheduler extends ShuffleScheduler {
   private class RssShuffleSchedulerCallable extends CallableWithNdc<Void> {
 
     @Override
-    protected Void callInternal() throws IOException, InterruptedException, TezException, RssException {
+    protected Void callInternal()
+        throws IOException, InterruptedException, TezException, RssException {
       while (!isShutdown.get() && !isAllInputFetched()) {
         LOG.info("Now allEventsReceived: " + allEventsReceived());
 
         synchronized (RssShuffleScheduler.this) {
           while (!allEventsReceived()
-                  || ((rssRunningFetchers.size() >= numFetchers || pendingHosts.isEmpty()) && !isAllInputFetched())) {
+              || ((rssRunningFetchers.size() >= numFetchers || pendingHosts.isEmpty())
+                  && !isAllInputFetched())) {
             try {
-              LOG.info("RssShuffleSchedulerCallable, wait pending hosts, pendingHosts:{}.", pendingHosts.isEmpty());
+              LOG.info(
+                  "RssShuffleSchedulerCallable, wait pending hosts, pendingHosts:{}.",
+                  pendingHosts.isEmpty());
               waitAndNotifyProgress();
             } catch (InterruptedException e) {
               if (isShutdown.get()) {
-                LOG.info(srcNameTrimmed + ": " + "Interrupted while waiting for fetchers to complete"
+                LOG.info(
+                    srcNameTrimmed
+                        + ": "
+                        + "Interrupted while waiting for fetchers to complete"
                         + "and hasBeenShutdown. Breaking out of ShuffleSchedulerCallable loop");
                 Thread.currentThread().interrupt();
                 break;
@@ -1462,7 +1683,8 @@ class RssShuffleScheduler extends ShuffleScheduler {
         }
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(srcNameTrimmed + ": " + "NumCompletedInputs: {}" + (numInputs - remainingMaps.get()));
+          LOG.debug(
+              srcNameTrimmed + ": " + "NumCompletedInputs: {}" + (numInputs - remainingMaps.get()));
         }
         // Ensure there's memory available before scheduling the next Fetcher.
         try {
@@ -1472,7 +1694,9 @@ class RssShuffleScheduler extends ShuffleScheduler {
           mergeManager.waitForShuffleToMergeMemory();
         } catch (InterruptedException e) {
           if (isShutdown.get()) {
-            LOG.info(srcNameTrimmed + ": Interrupted while waiting for merge to complete and hasBeenShutdown. "
+            LOG.info(
+                srcNameTrimmed
+                    + ": Interrupted while waiting for merge to complete and hasBeenShutdown. "
                     + "Breaking out of ShuffleSchedulerCallable loop");
             Thread.currentThread().interrupt();
             break;
@@ -1488,10 +1712,12 @@ class RssShuffleScheduler extends ShuffleScheduler {
             while (count < numFetchersToRun && !isShutdown.get() && !isAllInputFetched()) {
               MapHost mapHost;
               try {
-                mapHost = getHost();  // Leads to a wait.
+                mapHost = getHost(); // Leads to a wait.
               } catch (InterruptedException e) {
                 if (isShutdown.get()) {
-                  LOG.info(srcNameTrimmed + ": Interrupted while waiting for host and hasBeenShutdown. "
+                  LOG.info(
+                      srcNameTrimmed
+                          + ": Interrupted while waiting for host and hasBeenShutdown. "
                           + "Breaking out of ShuffleSchedulerCallable loop");
                   Thread.currentThread().interrupt();
                   break;
@@ -1509,32 +1735,39 @@ class RssShuffleScheduler extends ShuffleScheduler {
               if (!isShutdown.get()) {
                 count++;
                 if (LOG.isDebugEnabled()) {
-                  LOG.debug(srcNameTrimmed + ": " + "Scheduling fetch for inputHost: {}",
-                          mapHost.getHostIdentifier() + ":" + mapHost.getPartitionId());
+                  LOG.debug(
+                      srcNameTrimmed + ": " + "Scheduling fetch for inputHost: {}",
+                      mapHost.getHostIdentifier() + ":" + mapHost.getPartitionId());
                 }
 
                 if (isFirstRssPartitionFetch(mapHost)) {
                   int partitionId = mapHost.getPartitionId();
-                  RssTezShuffleDataFetcher rssTezShuffleDataFetcher = constructRssFetcherForPartition(mapHost,
-                          partitionToServers.get(partitionId));
+                  RssTezShuffleDataFetcher rssTezShuffleDataFetcher =
+                      constructRssFetcherForPartition(mapHost, partitionToServers.get(partitionId));
 
                   rssRunningFetchers.add(rssTezShuffleDataFetcher);
                   ListenableFuture<Void> future = fetcherExecutor.submit(rssTezShuffleDataFetcher);
-                  Futures.addCallback(future, new FetchFutureCallback(rssTezShuffleDataFetcher),
-                          MoreExecutors.directExecutor());
+                  Futures.addCallback(
+                      future,
+                      new FetchFutureCallback(rssTezShuffleDataFetcher),
+                      MoreExecutors.directExecutor());
                 } else {
                   for (int i = 0; i < mapHost.getAndClearKnownMaps().size(); i++) {
                     remainingMaps.decrementAndGet();
                   }
-                  LOG.info("Partition was fetched, remainingMaps desc, now value:{}", remainingMaps.get());
+                  LOG.info(
+                      "Partition was fetched, remainingMaps desc, now value:{}",
+                      remainingMaps.get());
                 }
               }
             }
           }
         }
       }
-      LOG.info("Shutting down FetchScheduler for input: {}, wasInterrupted={}",
-              srcNameTrimmed, Thread.currentThread().isInterrupted());
+      LOG.info(
+          "Shutting down FetchScheduler for input: {}, wasInterrupted={}",
+          srcNameTrimmed,
+          Thread.currentThread().isInterrupted());
       if (!fetcherExecutor.isShutdown()) {
         fetcherExecutor.shutdownNow();
       }
@@ -1546,7 +1779,8 @@ class RssShuffleScheduler extends ShuffleScheduler {
     Integer partitionId = mapHost.getPartitionId();
     LOG.info("Check isFirstRssPartitionFetch, mapHost:{},partitionId:{}", mapHost, partitionId);
 
-    if (runningRssPartitionMap.containsKey(partitionId) || successRssPartitionSet.contains(partitionId)) {
+    if (runningRssPartitionMap.containsKey(partitionId)
+        || successRssPartitionSet.contains(partitionId)) {
       return false;
     }
     runningRssPartitionMap.put(partitionId, mapHost);
@@ -1562,61 +1796,77 @@ class RssShuffleScheduler extends ShuffleScheduler {
     wait(1000);
   }
 
-
   @VisibleForTesting
-  private RssTezShuffleDataFetcher constructRssFetcherForPartition(MapHost mapHost,
-          List<ShuffleServerInfo> shuffleServerInfoList) throws RssException {
+  private RssTezShuffleDataFetcher constructRssFetcherForPartition(
+      MapHost mapHost, List<ShuffleServerInfo> shuffleServerInfoList) throws RssException {
     Set<ShuffleServerInfo> shuffleServerInfoSet = new HashSet<>(shuffleServerInfoList);
     LOG.info("ConstructRssFetcherForPartition, shuffleServerInfoSet: {}", shuffleServerInfoSet);
 
-    Optional<InputAttemptIdentifier> attempt = partitionIdToSuccessMapTaskAttempts.get(
-            mapHost.getPartitionId()).stream().findFirst();
-    LOG.info("ConstructRssFetcherForPartition, partitionId:{}, take a attempt:{}", mapHost.getPartitionId(), attempt);
+    Optional<InputAttemptIdentifier> attempt =
+        partitionIdToSuccessMapTaskAttempts.get(mapHost.getPartitionId()).stream().findFirst();
+    LOG.info(
+        "ConstructRssFetcherForPartition, partitionId:{}, take a attempt:{}",
+        mapHost.getPartitionId(),
+        attempt);
 
     ShuffleWriteClient writeClient = RssTezUtils.createShuffleClient(conf);
     String clientType = "";
-    int shuffleId = InputContextUtils.computeShuffleId(inputContext);
-    Roaring64NavigableMap blockIdBitmap = writeClient.getShuffleResult(
+    Roaring64NavigableMap blockIdBitmap =
+        writeClient.getShuffleResult(
             clientType, shuffleServerInfoSet, applicationId, shuffleId, mapHost.getPartitionId());
     writeClient.close();
 
     int appAttemptId = IdUtils.getAppAttemptId();
-    Roaring64NavigableMap taskIdBitmap = RssTezUtils.fetchAllRssTaskIds(
-            partitionIdToSuccessMapTaskAttempts.get(mapHost.getPartitionId()), this.numInputs,
+    Roaring64NavigableMap taskIdBitmap =
+        RssTezUtils.fetchAllRssTaskIds(
+            partitionIdToSuccessMapTaskAttempts.get(mapHost.getPartitionId()),
+            this.numInputs,
             appAttemptId);
 
-    LOG.info("In reduce: {}, RSS Tez client has fetched blockIds and taskIds successfully, partitionId:{}.",
-        inputContext.getTaskVertexName(), mapHost.getPartitionId());
+    LOG.info(
+        "In reduce: {}, RSS Tez client has fetched blockIds and taskIds successfully, partitionId:{}.",
+        inputContext.getTaskVertexName(),
+        mapHost.getPartitionId());
 
     // start fetcher to fetch blocks from RSS servers
     if (!taskIdBitmap.isEmpty()) {
-      LOG.info("In reduce: " + inputContext.getTaskVertexName()
+      LOG.info(
+          "In reduce: "
+              + inputContext.getTaskVertexName()
               + ", Rss Tez client starts to fetch blocks from RSS server");
       JobConf readerJobConf = getRemoteConf();
 
       int partitionNum = partitionToServers.size();
       boolean expectedTaskIdsBitmapFilterEnable = shuffleServerInfoSet.size() > 1;
 
-      CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
-          applicationId,
-          shuffleId,
-          mapHost.getPartitionId(),
-          basePath,
-          partitionNumPerRange,
-          partitionNum,
-          blockIdBitmap,
-          taskIdBitmap,
-          shuffleServerInfoList,
-          readerJobConf,
-          new TezIdHelper(),
-          expectedTaskIdsBitmapFilterEnable);
+      CreateShuffleReadClientRequest request =
+          new CreateShuffleReadClientRequest(
+              applicationId,
+              shuffleId,
+              mapHost.getPartitionId(),
+              basePath,
+              partitionNumPerRange,
+              partitionNum,
+              blockIdBitmap,
+              taskIdBitmap,
+              shuffleServerInfoList,
+              readerJobConf,
+              new TezIdHelper(),
+              expectedTaskIdsBitmapFilterEnable,
+              RssTezConfig.toRssConf(conf));
 
-      ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
-      RssTezShuffleDataFetcher fetcher = new RssTezShuffleDataFetcher(
+      ShuffleReadClient shuffleReadClient =
+          ShuffleClientFactory.getInstance().createShuffleReadClient(request);
+      RssTezShuffleDataFetcher fetcher =
+          new RssTezShuffleDataFetcher(
               partitionIdToSuccessMapTaskAttempts.get(mapHost.getPartitionId()).iterator().next(),
               mapHost.getPartitionId(),
-              mergeManager, inputContext.getCounters(), shuffleReadClient, blockIdBitmap.getLongCardinality(),
-              RssTezConfig.toRssConf(conf), exceptionReporter);
+              mergeManager,
+              inputContext.getCounters(),
+              shuffleReadClient,
+              blockIdBitmap.getLongCardinality(),
+              RssTezConfig.toRssConf(conf),
+              exceptionReporter);
       return fetcher;
     }
 
@@ -1626,12 +1876,33 @@ class RssShuffleScheduler extends ShuffleScheduler {
   @VisibleForTesting
   @Override
   FetcherOrderedGrouped constructFetcherForHost(MapHost mapHost) {
-    return new FetcherOrderedGrouped(httpConnectionParams, RssShuffleScheduler.this, allocator,
-            exceptionReporter, jobTokenSecretManager, ifileReadAhead, ifileReadAheadLength,
-            codec, conf, localDiskFetchEnabled, localHostname, shufflePort, srcNameTrimmed, mapHost,
-            ioErrsCounter, wrongLengthErrsCounter, badIdErrsCounter, wrongMapErrsCounter,
-            connectionErrsCounter, wrongReduceErrsCounter, applicationId, dagId, asyncHttp, sslShuffle,
-            verifyDiskChecksum, compositeFetch);
+    return new FetcherOrderedGrouped(
+        httpConnectionParams,
+        RssShuffleScheduler.this,
+        allocator,
+        exceptionReporter,
+        jobTokenSecretManager,
+        ifileReadAhead,
+        ifileReadAheadLength,
+        codec,
+        conf,
+        localDiskFetchEnabled,
+        localHostname,
+        shufflePort,
+        srcNameTrimmed,
+        mapHost,
+        ioErrsCounter,
+        wrongLengthErrsCounter,
+        badIdErrsCounter,
+        wrongMapErrsCounter,
+        connectionErrsCounter,
+        wrongReduceErrsCounter,
+        applicationId,
+        dagId,
+        asyncHttp,
+        sslShuffle,
+        verifyDiskChecksum,
+        compositeFetch);
   }
 
   private class FetchFutureCallback implements FutureCallback<Void> {
@@ -1651,7 +1922,6 @@ class RssShuffleScheduler extends ShuffleScheduler {
       }
     }
 
-
     @Override
     public void onSuccess(Void result) {
       rssFetcherOrderedGrouped.shutDown();
@@ -1667,9 +1937,13 @@ class RssShuffleScheduler extends ShuffleScheduler {
           }
         }
         doBookKeepingForFetcherComplete();
-        LOG.info("FetchFutureCallback onSuccess, result:{}, success partitionId:{}, successRssPartitionSet:{}, "
-                + "remainingMaps now value:{}", result, rssFetcherOrderedGrouped.getPartitionId(),
-                successRssPartitionSet, remainingMaps.get());
+        LOG.info(
+            "FetchFutureCallback onSuccess, result:{}, success partitionId:{}, successRssPartitionSet:{}, "
+                + "remainingMaps now value:{}",
+            result,
+            rssFetcherOrderedGrouped.getPartitionId(),
+            successRssPartitionSet,
+            remainingMaps.get());
       }
     }
 
@@ -1687,4 +1961,3 @@ class RssShuffleScheduler extends ShuffleScheduler {
     }
   }
 }
-

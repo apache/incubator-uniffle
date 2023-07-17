@@ -27,7 +27,9 @@ public class RssSpark3ShuffleUtilsTest {
   @Test
   public void testCreateFetchFailedException() {
     FetchFailedException ffe = RssSparkShuffleUtils.createFetchFailedException(0, -1, 10, null);
-    ffe = RssSparkShuffleUtils.createFetchFailedException(0, -1, 100, new RssFetchFailedException("xx"));
+    ffe =
+        RssSparkShuffleUtils.createFetchFailedException(
+            0, -1, 100, new RssFetchFailedException("xx"));
   }
 
   @Test

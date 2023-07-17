@@ -41,7 +41,9 @@ public class Lz4Codec extends Codec {
 
   @Override
   public void decompress(ByteBuffer src, int uncompressedLen, ByteBuffer dest, int destOffset) {
-    lz4Factory.fastDecompressor().decompress(src, src.position(), dest, destOffset, uncompressedLen);
+    lz4Factory
+        .fastDecompressor()
+        .decompress(src, src.position(), dest, destOffset, uncompressedLen);
   }
 
   @Override

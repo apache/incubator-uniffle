@@ -127,20 +127,28 @@ AccessQuotaChecker is a checker when the number of concurrent tasks submitted by
 |rss.coordinator.quota.default.path|-|A configuration file for the number of apps for a user-defined user.|
 |rss.coordinator.quota.default.app.num|5|Default number of apps at user level.|
 
-### PrometheusPushGatewayMetricReporter settings
-PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, which will allow user pushes metrics to a [Prometheus Pushgateway](https://github.com/prometheus/pushgateway), which can be scraped by Prometheus.
 
-|Property Name|Default| 	Description                                                                                                                                                                                                                                                                                                                          |
-|---|---|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|rss.metrics.reporter.class|org.apache.uniffle.common.metrics.<br/>prometheus.PrometheusPushGatewayMetricReporter|The class of metrics reporter.|
-|rss.metrics.prometheus.pushgateway.addr|-| The PushGateway server host URL including scheme, host name, and port.                                                                                                                                                                                                                                                                |
-|rss.metrics.prometheus.pushgateway.groupingkey|-| Specifies the grouping key which is the group and global labels of all metrics. The label name and value are separated by '=', and labels are separated by ';', e.g., k1=v1;k2=v2. Please ensure that your grouping key meets the [Prometheus requirements](https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels). |
-|rss.metrics.prometheus.pushgateway.jobname|-| The job name under which metrics will be pushed.                                                                                                                                                                                                                                                                                      |
-|rss.metrics.prometheus.pushgateway.report.interval.seconds|10| The interval in seconds for the reporter to report metrics.                                                                                                                                                                                                                                                                                     |
+## RESTful API
 
-## RESTful API(beta)
+### Fetch single shuffle server
 
-### Fetch Shuffle servers
+<details>
+ <summary><code>GET</code> <code><b>/api/server/nodes/{id}</b></code> </summary>
+
+##### Parameters
+
+> |name|type|data type|description|
+> |----|----|---------|-----------|
+> |id|required|string|shuffle server id, eg:127.0.0.1-19999|
+##### Example cURL
+
+> ```bash
+>  curl -X GET http://localhost:19998/api/server/nodes/127.0.0.1-19999
+> ```
+</details>
+
+
+### Fetch shuffle servers
 
 <details>
  <summary><code>GET</code> <code><b>/api/server/nodes</b></code> </summary>
@@ -149,13 +157,13 @@ PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, whi
 
 > |name|type|data type|description|
 > |----|----|---------|-----------|
-> |id|required|string|shuffle server id, eg:127.0.0.1:19999|
 > |status|optional|string|Shuffle server status, eg:ACTIVE, DECOMMISSIONING, DECOMMISSIONED|
 
 ##### Example cURL
 
 > ```bash
 >  curl -X GET http://localhost:19998/api/server/nodes
+>  curl -X GET http://localhost:19998/api/server/nodes?status=ACTIVE
 > ```
 </details>
 
@@ -168,12 +176,31 @@ PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, whi
 
 > |name|type| data type         |description|
 > |----|-------------------|---------|-----------|
-> |serverIds|required| array |Shuffle server array, eg:["127.0.0.1:19999"]|
+> |serverIds|required| array |Shuffle server array, eg:["127.0.0.1-19999"]|
 > 
 ##### Example cURL
 
 > ```bash
 >  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/decommission  -d '{"serverIds:": ["127.0.0.1:19999"]}'
+> ```
+</details>
+
+
+### Decommission single shuffle server
+
+<details>
+ <summary><code>POST</code> <code><b>/api/server/{id}/decommission</b></code> </summary>
+
+##### Parameters
+
+> | name |type| data type | description                          |
+> |------|-------------------|-----------|--------------------------------------|
+> | id   |required| string    | Shuffle server id, eg:127.0.0.1-19999 |
+>
+##### Example cURL
+
+> ```bash
+>  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/127.0.0.1-19999/decommission
 > ```
 </details>
 
@@ -193,5 +220,24 @@ PrometheusPushGatewayMetricReporter is one of the built-in metrics reporter, whi
 
 > ```bash
 >  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/cancelDecommission  -d '{"serverIds:": ["127.0.0.1:19999"]}'
+> ```
+</details>
+
+
+### Cancel decommission single shuffle server
+
+<details>
+ <summary><code>POST</code> <code><b>/api/server/{id}/cancelDecommission</b></code> </summary>
+
+##### Parameters
+
+> |name|type| data type | description                             |
+> |----|-------------------|--------|-----------------------------------------|
+> |serverIds|required| string | Shuffle server id, eg:"127.0.0.1-19999" |
+>
+##### Example cURL
+
+> ```bash
+>  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/127.0.0.1-19999/cancelDecommission
 > ```
 </details>

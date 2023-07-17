@@ -76,11 +76,19 @@ public class ApplicationManager implements Closeable {
     remoteStoragePathRankValue = JavaUtils.newConcurrentMap();
     availableRemoteStorageInfo = JavaUtils.newConcurrentMap();
     if (StrategyName.IO_SAMPLE == storageStrategy) {
-      selectStorageStrategy = new LowestIOSampleCostSelectStorageStrategy(remoteStoragePathRankValue,
-          appIdToRemoteStorageInfo, availableRemoteStorageInfo, conf);
+      selectStorageStrategy =
+          new LowestIOSampleCostSelectStorageStrategy(
+              remoteStoragePathRankValue,
+              appIdToRemoteStorageInfo,
+              availableRemoteStorageInfo,
+              conf);
     } else if (StrategyName.APP_BALANCE == storageStrategy) {
-      selectStorageStrategy = new AppBalanceSelectStorageStrategy(remoteStoragePathRankValue,
-          appIdToRemoteStorageInfo, availableRemoteStorageInfo, conf);
+      selectStorageStrategy =
+          new AppBalanceSelectStorageStrategy(
+              remoteStoragePathRankValue,
+              appIdToRemoteStorageInfo,
+              availableRemoteStorageInfo,
+              conf);
     } else {
       throw new UnsupportedOperationException("Unsupported selected storage strategy.");
     }
@@ -99,16 +107,23 @@ public class ApplicationManager implements Closeable {
     checkAppScheduler.scheduleAtFixedRate(
         this::statusCheck, expired / 2, expired / 2, TimeUnit.MILLISECONDS);
     // the thread for checking if the storage is normal
-    detectStorageScheduler = ThreadUtils.getDaemonSingleThreadScheduledExecutor("detectStoragesScheduler");
+    detectStorageScheduler =
+        ThreadUtils.getDaemonSingleThreadScheduledExecutor("detectStoragesScheduler");
     // should init later than the refreshRemoteStorage init
-    detectStorageScheduler.scheduleAtFixedRate(selectStorageStrategy::detectStorage, 1000,
-        conf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME), TimeUnit.MILLISECONDS);
+    detectStorageScheduler.scheduleAtFixedRate(
+        selectStorageStrategy::detectStorage,
+        1000,
+        conf.getLong(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_SCHEDULE_TIME),
+        TimeUnit.MILLISECONDS);
   }
 
   public void registerApplicationInfo(String appId, String user) {
-    // using computeIfAbsent is just for MR and spark which is used RssShuffleManager as implementation class
-    // in such case by default, there is no currentUserAndApp, so a unified user implementation named "user" is used.
-    Map<String, Long> appAndTime = currentUserAndApp.computeIfAbsent(user, x -> JavaUtils.newConcurrentMap());
+    // using computeIfAbsent is just for MR and spark which is used RssShuffleManager as
+    // implementation class
+    // in such case by default, there is no currentUserAndApp, so a unified user implementation
+    // named "user" is used.
+    Map<String, Long> appAndTime =
+        currentUserAndApp.computeIfAbsent(user, x -> JavaUtils.newConcurrentMap());
     appIdToUser.put(appId, user);
     if (!appAndTime.containsKey(appId)) {
       CoordinatorMetrics.counterTotalAppNum.inc();
@@ -136,19 +151,23 @@ public class ApplicationManager implements Closeable {
     if (!StringUtils.isEmpty(remoteStoragePath)) {
       LOG.info("Refresh remote storage with {} {}", remoteStoragePath, remoteStorageConf);
       Set<String> paths = Sets.newHashSet(remoteStoragePath.split(Constants.COMMA_SPLIT_CHAR));
-      Map<String, Map<String, String>> confKVs = CoordinatorUtils.extractRemoteStorageConf(remoteStorageConf);
+      Map<String, Map<String, String>> confKVs =
+          CoordinatorUtils.extractRemoteStorageConf(remoteStorageConf);
       // add remote path if not exist
       for (String path : paths) {
         if (!availableRemoteStorageInfo.containsKey(path)) {
-          remoteStoragePathRankValue.computeIfAbsent(path, key -> {
-            // refreshRemoteStorage is designed without multiple thread problem
-            // metrics shouldn't be added duplicated
-            addRemoteStorageMetrics(path);
-            return new RankValue(0);
-          });
+          remoteStoragePathRankValue.computeIfAbsent(
+              path,
+              key -> {
+                // refreshRemoteStorage is designed without multiple thread problem
+                // metrics shouldn't be added duplicated
+                addRemoteStorageMetrics(path);
+                return new RankValue(0);
+              });
         }
         String storageHost = getStorageHost(path);
-        RemoteStorageInfo rsInfo = new RemoteStorageInfo(path, confKVs.getOrDefault(storageHost, Maps.newHashMap()));
+        RemoteStorageInfo rsInfo =
+            new RemoteStorageInfo(path, confKVs.getOrDefault(storageHost, Maps.newHashMap()));
         availableRemoteStorageInfo.put(path, rsInfo);
       }
       // remove unused remote path if exist
@@ -192,7 +211,8 @@ public class ApplicationManager implements Closeable {
     } else {
       // it may be happened when assignment remote storage
       // and refresh remote storage at the same time
-      LOG.warn("Remote storage path lost during assignment: {} doesn't exist, reset it to 1",
+      LOG.warn(
+          "Remote storage path lost during assignment: {} doesn't exist, reset it to 1",
           remoteStoragePath);
       remoteStoragePathRankValue.put(remoteStoragePath, new RankValue(1));
     }
@@ -205,8 +225,10 @@ public class ApplicationManager implements Closeable {
       if (atomic != null) {
         double count = atomic.getAppNum().decrementAndGet();
         if (count < 0) {
-          LOG.warn("Unexpected counter for remote storage: {}, which is {}, reset to 0",
-              storagePath, count);
+          LOG.warn(
+              "Unexpected counter for remote storage: {}, which is {}, reset to 0",
+              storagePath,
+              count);
           atomic.getAppNum().set(0);
         }
       } else {
@@ -222,7 +244,8 @@ public class ApplicationManager implements Closeable {
 
   public synchronized void removePathFromCounter(String storagePath) {
     RankValue atomic = remoteStoragePathRankValue.get(storagePath);
-    // The time spent reading and writing cannot be used to determine whether the current path is still used by apps.
+    // The time spent reading and writing cannot be used to determine whether the current path is
+    // still used by apps.
     // Therefore, determine whether the Hadoop FS path is still used by the number of apps
     if (atomic != null && atomic.getAppNum().get() == 0) {
       remoteStoragePathRankValue.remove(storagePath);
@@ -267,8 +290,10 @@ public class ApplicationManager implements Closeable {
   protected void statusCheck() {
     List<Map<String, Long>> appAndNums = Lists.newArrayList(currentUserAndApp.values());
     Map<String, Long> appIds = Maps.newHashMap();
-    // The reason for setting an expired uuid here is that there is a scenario where accessCluster succeeds,
-    // but the registration of shuffle fails, resulting in no normal heartbeat, and no normal update of uuid to appId.
+    // The reason for setting an expired uuid here is that there is a scenario where accessCluster
+    // succeeds,
+    // but the registration of shuffle fails, resulting in no normal heartbeat, and no normal update
+    // of uuid to appId.
     // Therefore, an expiration time is set to automatically remove expired uuids
     Set<String> expiredAppIds = Sets.newHashSet();
     try {
@@ -284,9 +309,9 @@ public class ApplicationManager implements Closeable {
           }
         }
       }
-      LOG.info("Start to check status for " + appIds.size() + " applications");
+      LOG.info("Start to check status for {} applications.", appIds.size());
       for (String appId : expiredAppIds) {
-        LOG.info("Remove expired application:" + appId);
+        LOG.info("Remove expired application : {}.", appId);
         appIds.remove(appId);
         if (appIdToRemoteStorageInfo.containsKey(appId)) {
           decRemoteStorageCounter(appIdToRemoteStorageInfo.get(appId).getPath());
@@ -309,8 +334,8 @@ public class ApplicationManager implements Closeable {
     for (String remoteStoragePath : availableRemoteStorageInfo.keySet()) {
       try {
         String storageHost = getStorageHost(remoteStoragePath);
-        CoordinatorMetrics.updateDynamicGaugeForRemoteStorage(storageHost,
-            remoteStoragePathRankValue.get(remoteStoragePath).getAppNum().get());
+        CoordinatorMetrics.updateDynamicGaugeForRemoteStorage(
+            storageHost, remoteStoragePathRankValue.get(remoteStoragePath).getAppNum().get());
       } catch (Exception e) {
         LOG.warn("Update remote storage metrics for {} failed ", remoteStoragePath);
       }

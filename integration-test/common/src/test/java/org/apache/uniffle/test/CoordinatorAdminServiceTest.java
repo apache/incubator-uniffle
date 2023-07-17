@@ -36,12 +36,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class CoordinatorAdminServiceTest extends IntegrationTestBase {
 
   private static final Integer JETTY_HTTP_PORT = 12345;
-  private static final String accessChecker = "org.apache.uniffle.test.AccessClusterTest$MockedAccessChecker";
+  private static final String accessChecker =
+      "org.apache.uniffle.test.AccessClusterTest$MockedAccessChecker";
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
   protected AdminRestApi adminRestApi;
-
 
   @BeforeAll
   public static void setUp() throws Exception {
@@ -54,7 +54,6 @@ public class CoordinatorAdminServiceTest extends IntegrationTestBase {
     startServers();
   }
 
-
   @BeforeEach
   public void createClient() {
     String hostUrl = String.format("http://%s:%d", LOCALHOST, JETTY_HTTP_PORT);
@@ -64,8 +63,8 @@ public class CoordinatorAdminServiceTest extends IntegrationTestBase {
   @Test
   public void test() throws Exception {
     String content = adminRestApi.refreshAccessChecker();
-    Response<HashMap> response = objectMapper.readValue(content,
-        new TypeReference<Response<HashMap>>() { });
+    Response<HashMap> response =
+        objectMapper.readValue(content, new TypeReference<Response<HashMap>>() {});
     assertEquals(0, response.getCode());
   }
 }

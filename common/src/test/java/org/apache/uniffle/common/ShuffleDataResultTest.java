@@ -39,5 +39,4 @@ public class ShuffleDataResultTest {
     assertTrue(new ShuffleDataResult(new byte[1], Collections.emptyList()).isEmpty());
     assertFalse(new ShuffleDataResult(new byte[1], segments).isEmpty());
   }
-
 }

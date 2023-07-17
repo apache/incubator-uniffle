@@ -33,12 +33,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestUtils {
 
-  private TestUtils() {
+  private TestUtils() {}
 
-  }
-
-  public static void validateResult(ShuffleReadClient readClient,
-                                Map<Long, byte[]> expectedData) {
+  public static void validateResult(ShuffleReadClient readClient, Map<Long, byte[]> expectedData) {
     ByteBuffer data = readClient.readShuffleBlockData().getByteBuffer();
     int blockNum = 0;
     while (data != null) {
@@ -60,9 +57,7 @@ public class TestUtils {
     assertEquals(expectedData.size(), blockNum);
   }
 
-  public static void validateResult(
-      Map<Long, byte[]> expectedData,
-      ShuffleDataResult sdr) {
+  public static void validateResult(Map<Long, byte[]> expectedData, ShuffleDataResult sdr) {
     byte[] buffer = sdr.getData();
     List<BufferSegment> bufferSegments = sdr.getBufferSegments();
     assertEquals(expectedData.size(), bufferSegments.size());

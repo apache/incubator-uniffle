@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
+public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase {
 
   private static File tempDataFile;
   private static int writeDataSize;
@@ -75,16 +75,20 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.setBoolean(ShuffleServerConf.HEALTH_CHECK_ENABLE, true);
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
-    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(data1.getAbsolutePath()));
-    shuffleServerConf.setDouble(ShuffleServerConf.HEALTH_STORAGE_RECOVERY_USAGE_PERCENTAGE, healthUsage);
+    shuffleServerConf.set(
+        ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(data1.getAbsolutePath()));
+    shuffleServerConf.setDouble(
+        ShuffleServerConf.HEALTH_STORAGE_RECOVERY_USAGE_PERCENTAGE, healthUsage);
     shuffleServerConf.setDouble(ShuffleServerConf.HEALTH_STORAGE_MAX_USAGE_PERCENTAGE, maxUsage);
     shuffleServerConf.setLong(ShuffleServerConf.HEALTH_CHECK_INTERVAL, 1000L);
     createShuffleServer(shuffleServerConf);
     shuffleServerConf.setInteger(ShuffleServerConf.RPC_SERVER_PORT, SHUFFLE_SERVER_PORT + 1);
     shuffleServerConf.setInteger(ShuffleServerConf.JETTY_HTTP_PORT, 18081);
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
-    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(data2.getAbsolutePath()));
-    shuffleServerConf.setDouble(ShuffleServerConf.HEALTH_STORAGE_RECOVERY_USAGE_PERCENTAGE, healthUsage);
+    shuffleServerConf.set(
+        ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(data2.getAbsolutePath()));
+    shuffleServerConf.setDouble(
+        ShuffleServerConf.HEALTH_STORAGE_RECOVERY_USAGE_PERCENTAGE, healthUsage);
     shuffleServerConf.setDouble(ShuffleServerConf.HEALTH_STORAGE_MAX_USAGE_PERCENTAGE, maxUsage);
     shuffleServerConf.setLong(ShuffleServerConf.HEALTH_CHECK_INTERVAL, 1000L);
     shuffleServerConf.setBoolean(ShuffleServerConf.HEALTH_CHECK_ENABLE, true);
@@ -96,21 +100,18 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
   public void healthCheckTest() throws Exception {
     Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
     assertEquals(2, coordinatorClient.getShuffleServerList().getServersCount());
-    List<ServerNode> nodes  = coordinators.get(0).getClusterManager()
-        .getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+    List<ServerNode> nodes =
+        coordinators
+            .get(0)
+            .getClusterManager()
+            .getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     assertEquals(2, coordinatorClient.getShuffleServerList().getServersCount());
     assertEquals(2, nodes.size());
 
     RssGetShuffleAssignmentsRequest request =
         new RssGetShuffleAssignmentsRequest(
-          "1",
-          1,
-          1,
-          1,
-          1,
-          Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
-    RssGetShuffleAssignmentsResponse response =
-        coordinatorClient.getShuffleAssignments(request);
+            "1", 1, 1, 1, 1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+    RssGetShuffleAssignmentsResponse response = coordinatorClient.getShuffleAssignments(request);
     assertFalse(response.getPartitionToServers().isEmpty());
     for (ServerNode node : nodes) {
       assertEquals(ServerStatus.ACTIVE, node.getStatus());
@@ -122,12 +123,16 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
     }
     Uninterruptibles.sleepUninterruptibly(10, TimeUnit.SECONDS);
 
-    nodes  = coordinators.get(0).getClusterManager().list();
+    nodes = coordinators.get(0).getClusterManager().list();
     assertEquals(2, nodes.size());
     for (ServerNode node : nodes) {
       assertEquals(ServerStatus.UNHEALTHY, node.getStatus());
     }
-    nodes = coordinators.get(0).getClusterManager().getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+    nodes =
+        coordinators
+            .get(0)
+            .getClusterManager()
+            .getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     assertEquals(0, nodes.size());
     response = coordinatorClient.getShuffleAssignments(request);
     assertEquals(StatusCode.INTERNAL_ERROR, response.getStatusCode());
@@ -136,8 +141,11 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
     int i = 0;
     do {
       Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
-      nodes = coordinators.get(0).getClusterManager()
-          .getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+      nodes =
+          coordinators
+              .get(0)
+              .getClusterManager()
+              .getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
       i++;
       if (i == 10) {
         fail();
@@ -147,8 +155,7 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase  {
       assertEquals(ServerStatus.ACTIVE, node.getStatus());
     }
     assertEquals(2, nodes.size());
-    response =
-        coordinatorClient.getShuffleAssignments(request);
+    response = coordinatorClient.getShuffleAssignments(request);
     assertFalse(response.getPartitionToServers().isEmpty());
   }
 }

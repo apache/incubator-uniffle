@@ -35,7 +35,7 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
   private final Options allOptions;
   private final Option refreshCheckerCli;
   private final Option coordinatorHost;
-  private final Option coordPort;
+  private final Option coordinatorPort;
   private final Option ssl;
 
   private final Option help;
@@ -43,19 +43,32 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
 
   public UniffleAdminCLI(String shortPrefix, String longPrefix) {
     allOptions = new Options();
-    refreshCheckerCli = new Option(shortPrefix + "r", longPrefix + "refreshChecker",
-        false, "This is an admin command that will refresh access checker.");
-    help = new Option(shortPrefix + "h", longPrefix + "help",
-        false, "Help for the Uniffle Admin CLI.");
-    coordinatorHost = new Option(shortPrefix + "s", longPrefix + "coordinatorHost",
-        true, "This is coordinator server host.");
-    coordPort = new Option(shortPrefix + "p", longPrefix + "port",
-        true, "This is coordinator server port.");
-    ssl = new Option(null, longPrefix + "ssl", false, "use SSL");
+    refreshCheckerCli =
+        new Option(
+            shortPrefix + "r",
+            longPrefix + "refreshChecker",
+            false,
+            "This is an admin command that will refresh access checker.");
+    help =
+        new Option(
+            shortPrefix + "h", longPrefix + "help", false, "Help for the Uniffle Admin CLI.");
+    coordinatorHost =
+        new Option(
+            shortPrefix + "s",
+            longPrefix + "coordinatorHost",
+            true,
+            "This is coordinator server host.");
+    coordinatorPort =
+        new Option(
+            shortPrefix + "p",
+            longPrefix + "coordinatorPort",
+            true,
+            "This is coordinator server port.");
+    ssl = new Option(null, longPrefix + "ssl", false, "use SSL.");
 
     allOptions.addOption(refreshCheckerCli);
     allOptions.addOption(coordinatorHost);
-    allOptions.addOption(coordPort);
+    allOptions.addOption(coordinatorPort);
     allOptions.addOption(ssl);
     allOptions.addOption(help);
   }
@@ -68,14 +81,19 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
   public int run(String[] args) throws UniffleCliArgsException {
     final CommandLine cmd = parseCommandLineOptions(args, true);
 
+    if (args != null && args.length < 1) {
+      printUsage();
+      return 1;
+    }
+
     if (cmd.hasOption(help.getOpt())) {
       printUsage();
       return 0;
     }
 
-    if (cmd.hasOption(coordinatorHost.getOpt()) && cmd.hasOption(coordPort.getOpt())) {
+    if (cmd.hasOption(coordinatorHost.getOpt()) && cmd.hasOption(coordinatorPort.getOpt())) {
       String host = cmd.getOptionValue(coordinatorHost.getOpt()).trim();
-      int port = Integer.parseInt(cmd.getOptionValue(coordPort.getOpt()).trim());
+      int port = Integer.parseInt(cmd.getOptionValue(coordinatorPort.getOpt()).trim());
       String hostUrl;
       if (cmd.hasOption(ssl.getOpt())) {
         hostUrl = String.format("https://%s:%d", host, port);
@@ -96,7 +114,8 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
 
   private String refreshAccessChecker() throws UniffleCliArgsException {
     if (client == null) {
-      throw new UniffleCliArgsException("Missing Coordinator host address and grpc port parameters.");
+      throw new UniffleCliArgsException(
+          "Missing Coordinator host address and grpc port parameters.");
     }
     AdminRestApi adminRestApi = new AdminRestApi(client);
     return adminRestApi.refreshAccessChecker();
@@ -106,7 +125,8 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
   public void addRunOptions(Options baseOptions) {
     baseOptions.addOption(refreshCheckerCli);
     baseOptions.addOption(coordinatorHost);
-    baseOptions.addOption(coordPort);
+    baseOptions.addOption(coordinatorPort);
+    baseOptions.addOption(ssl);
   }
 
   @Override

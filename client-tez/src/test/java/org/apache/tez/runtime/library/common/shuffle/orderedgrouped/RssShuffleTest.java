@@ -34,6 +34,10 @@ import org.apache.tez.common.counters.TezCounters;
 import org.apache.tez.common.security.JobTokenIdentifier;
 import org.apache.tez.common.security.JobTokenSecretManager;
 import org.apache.tez.dag.api.TezConfiguration;
+import org.apache.tez.dag.records.TezDAGID;
+import org.apache.tez.dag.records.TezTaskAttemptID;
+import org.apache.tez.dag.records.TezTaskID;
+import org.apache.tez.dag.records.TezVertexID;
 import org.apache.tez.runtime.api.ExecutionContext;
 import org.apache.tez.runtime.api.InputContext;
 import org.apache.tez.runtime.api.TaskFailureType;
@@ -81,12 +85,14 @@ public class RssShuffleTest {
       idUtils.when(IdUtils::getApplicationAttemptId).thenReturn(appAttemptId);
 
       try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-        shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
+        shuffleUtils
+            .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
+            .thenReturn(4);
 
         InputContext inputContext = createTezInputContext();
         TezConfiguration conf = new TezConfiguration();
         conf.setLong(Constants.TEZ_RUNTIME_TASK_MEMORY, 300000L);
-        RssShuffle shuffle = new RssShuffle(inputContext, conf, 1, 3000000L);
+        RssShuffle shuffle = new RssShuffle(inputContext, conf, 1, 3000000L, 0);
         try {
           shuffle.run();
           ShuffleScheduler scheduler = shuffle.rssScheduler;
@@ -122,30 +128,36 @@ public class RssShuffleTest {
       idUtils.when(IdUtils::getApplicationAttemptId).thenReturn(appAttemptId);
 
       try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-        shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
+        shuffleUtils
+            .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
+            .thenReturn(4);
 
         InputContext inputContext = createTezInputContext();
         TezConfiguration conf = new TezConfiguration();
         conf.setLong(Constants.TEZ_RUNTIME_TASK_MEMORY, 300000L);
-        RssShuffle shuffle = new RssShuffle(inputContext, conf, 1, 3000000L);
+        RssShuffle shuffle = new RssShuffle(inputContext, conf, 1, 3000000L, 0);
         try {
           shuffle.run();
           ShuffleScheduler scheduler = shuffle.rssScheduler;
           assertFalse(scheduler.isShutdown());
 
           // killSelf() would invoke close(). Internally Shuffle --> merge.close() --> finalMerge()
-          // gets called. In MergeManager::finalMerge(), it would throw illegal argument exception as
+          // gets called. In MergeManager::finalMerge(), it would throw illegal argument exception
+          // as
           // uniqueIdentifier is not present in inputContext. This is used as means of simulating
           // exception.
           scheduler.killSelf(new Exception(), "due to internal error");
           assertTrue(scheduler.isShutdown());
 
-          //killSelf() should not result in reporting failure to AM
-          ArgumentCaptor<Throwable> throwableArgumentCaptor = ArgumentCaptor.forClass(Throwable.class);
+          // killSelf() should not result in reporting failure to AM
+          ArgumentCaptor<Throwable> throwableArgumentCaptor =
+              ArgumentCaptor.forClass(Throwable.class);
           ArgumentCaptor<String> stringArgumentCaptor = ArgumentCaptor.forClass(String.class);
-          verify(inputContext, times(0)).reportFailure(eq(TaskFailureType.NON_FATAL),
-              throwableArgumentCaptor.capture(),
-              stringArgumentCaptor.capture());
+          verify(inputContext, times(0))
+              .reportFailure(
+                  eq(TaskFailureType.NON_FATAL),
+                  throwableArgumentCaptor.capture(),
+                  stringArgumentCaptor.capture());
         } finally {
           shuffle.shutdown();
         }
@@ -153,21 +165,29 @@ public class RssShuffleTest {
     }
   }
 
-
   private InputContext createTezInputContext() throws IOException {
     ApplicationId applicationId = ApplicationId.newInstance(1, 1);
     InputContext inputContext = mock(InputContext.class);
     doReturn(applicationId).when(inputContext).getApplicationId();
     doReturn("Map 1").when(inputContext).getSourceVertexName();
     doReturn("Reducer 1").when(inputContext).getTaskVertexName();
+    String uniqueId =
+        String.format(
+            "%s_%05d",
+            TezTaskAttemptID.getInstance(
+                TezTaskID.getInstance(
+                    TezVertexID.getInstance(TezDAGID.getInstance(applicationId, 1), 1), 1),
+                1),
+            1);
+    doReturn(uniqueId).when(inputContext).getUniqueIdentifier();
     when(inputContext.getCounters()).thenReturn(new TezCounters());
     ExecutionContext executionContext = new ExecutionContextImpl("localhost");
     doReturn(executionContext).when(inputContext).getExecutionContext();
     ByteBuffer shuffleBuffer = ByteBuffer.allocate(4).putInt(0, 4);
     doReturn(shuffleBuffer).when(inputContext).getServiceProviderMetaData(anyString());
-    Token<JobTokenIdentifier>
-        sessionToken = new Token<JobTokenIdentifier>(new JobTokenIdentifier(new Text("text")),
-            new JobTokenSecretManager());
+    Token<JobTokenIdentifier> sessionToken =
+        new Token<JobTokenIdentifier>(
+            new JobTokenIdentifier(new Text("text")), new JobTokenSecretManager());
     ByteBuffer tokenBuffer = TezCommonUtils.serializeServiceData(sessionToken);
     doReturn(tokenBuffer).when(inputContext).getServiceConsumerMetaData(anyString());
     return inputContext;

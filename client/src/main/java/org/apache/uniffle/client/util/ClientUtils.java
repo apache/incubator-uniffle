@@ -40,19 +40,29 @@ public class ClientUtils {
   // taskAttemptId is rest of 20 bit, max value is 2^20 - 1
   public static Long getBlockId(long partitionId, long taskAttemptId, long atomicInt) {
     if (atomicInt < 0 || atomicInt > Constants.MAX_SEQUENCE_NO) {
-      throw new IllegalArgumentException("Can't support sequence[" + atomicInt
-          + "], the max value should be " + Constants.MAX_SEQUENCE_NO);
+      throw new IllegalArgumentException(
+          "Can't support sequence["
+              + atomicInt
+              + "], the max value should be "
+              + Constants.MAX_SEQUENCE_NO);
     }
     if (partitionId < 0 || partitionId > Constants.MAX_PARTITION_ID) {
-      throw new IllegalArgumentException("Can't support partitionId["
-          + partitionId + "], the max value should be " + Constants.MAX_PARTITION_ID);
+      throw new IllegalArgumentException(
+          "Can't support partitionId["
+              + partitionId
+              + "], the max value should be "
+              + Constants.MAX_PARTITION_ID);
     }
     if (taskAttemptId < 0 || taskAttemptId > Constants.MAX_TASK_ATTEMPT_ID) {
-      throw new IllegalArgumentException("Can't support taskAttemptId["
-          + taskAttemptId + "], the max value should be " + Constants.MAX_TASK_ATTEMPT_ID);
+      throw new IllegalArgumentException(
+          "Can't support taskAttemptId["
+              + taskAttemptId
+              + "], the max value should be "
+              + Constants.MAX_TASK_ATTEMPT_ID);
     }
     return (atomicInt << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
-        + (partitionId << Constants.TASK_ATTEMPT_ID_MAX_LENGTH) + taskAttemptId;
+        + (partitionId << Constants.TASK_ATTEMPT_ID_MAX_LENGTH)
+        + taskAttemptId;
   }
 
   public static RemoteStorageInfo fetchRemoteStorage(
@@ -68,18 +78,21 @@ public class ClientUtils {
         remoteStorage = shuffleWriteClient.fetchRemoteStorage(appId);
       }
       if (remoteStorage.isEmpty()) {
-        throw new IllegalStateException("Can't find remoteStorage: with storageType[" + storageType + "]");
+        throw new IllegalStateException(
+            "Can't find remoteStorage: with storageType[" + storageType + "]");
       }
     }
     return remoteStorage;
   }
 
   @SuppressWarnings("rawtypes")
-  public static boolean waitUntilDoneOrFail(List<CompletableFuture<Boolean>> futures, boolean allowFastFail) {
+  public static boolean waitUntilDoneOrFail(
+      List<CompletableFuture<Boolean>> futures, boolean allowFastFail) {
     int expected = futures.size();
     int failed = 0;
 
-    CompletableFuture allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+    CompletableFuture allFutures =
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 
     List<Future> finished = new ArrayList<>();
     while (true) {
@@ -114,17 +127,21 @@ public class ClientUtils {
   }
 
   public static void validateTestModeConf(boolean testMode, String storageType) {
-    if (!testMode && (StorageType.LOCALFILE.name().equals(storageType)
+    if (!testMode
+        && (StorageType.LOCALFILE.name().equals(storageType)
             || (StorageType.HDFS.name()).equals(storageType))) {
-      throw new IllegalArgumentException("LOCALFILE or HADOOP storage type should be used in test mode only, "
+      throw new IllegalArgumentException(
+          "LOCALFILE or HADOOP storage type should be used in test mode only, "
               + "because of the poor performance of these two types.");
     }
   }
 
   public static void validateClientType(String clientType) {
-    Set<String> types = Arrays.stream(ClientType.values()).map(Enum::name).collect(Collectors.toSet());
+    Set<String> types =
+        Arrays.stream(ClientType.values()).map(Enum::name).collect(Collectors.toSet());
     if (!types.contains(clientType)) {
-      throw new IllegalArgumentException(String.format("The value of %s should be one of %s", clientType, types));
+      throw new IllegalArgumentException(
+          String.format("The value of %s should be one of %s", clientType, types));
     }
   }
 }

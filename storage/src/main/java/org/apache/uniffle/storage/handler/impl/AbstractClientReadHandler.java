@@ -39,8 +39,7 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
   }
 
   @Override
-  public void close() {
-  }
+  public void close() {}
 
   @Override
   public void updateConsumedBlockInfo(BufferSegment bs, boolean isSkippedMetrics) {
@@ -52,15 +51,26 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
 
   @Override
   public void logConsumedBlockInfo() {
-    LOG.info("Client read [" + readHandlerMetric.getReadBlockNum() + " blocks,"
-        + " bytes:" +  readHandlerMetric.getReadLength() + " uncompressed bytes:"
-        + readHandlerMetric.getReadUncompressLength()
-        + "], skipped[" + readHandlerMetric.getSkippedReadBlockNum() + " blocks,"
-        + " bytes:" +  readHandlerMetric.getSkippedReadLength() + " uncompressed bytes:"
-        + readHandlerMetric.getSkippedReadUncompressLength() + "]");
+    LOG.info(
+        "Client read ["
+            + readHandlerMetric.getReadBlockNum()
+            + " blocks,"
+            + " bytes:"
+            + readHandlerMetric.getReadLength()
+            + " uncompressed bytes:"
+            + readHandlerMetric.getReadUncompressLength()
+            + "], skipped["
+            + readHandlerMetric.getSkippedReadBlockNum()
+            + " blocks,"
+            + " bytes:"
+            + readHandlerMetric.getSkippedReadLength()
+            + " uncompressed bytes:"
+            + readHandlerMetric.getSkippedReadUncompressLength()
+            + "]");
   }
 
-  protected void updateBlockMetric(ClientReadHandlerMetric metric, BufferSegment bs, boolean isSkippedMetrics) {
+  protected void updateBlockMetric(
+      ClientReadHandlerMetric metric, BufferSegment bs, boolean isSkippedMetrics) {
     if (isSkippedMetrics) {
       metric.incSkippedReadBlockNum();
       metric.incSkippedReadLength(bs.getLength());
@@ -75,5 +85,4 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
   public ClientReadHandlerMetric getReadHandlerMetric() {
     return readHandlerMetric;
   }
-
 }

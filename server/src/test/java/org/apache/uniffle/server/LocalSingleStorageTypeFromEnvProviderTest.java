@@ -48,22 +48,28 @@ public class LocalSingleStorageTypeFromEnvProviderTest {
   @Test
   public void testJsonSourceParse() throws Exception {
     String emptyJsonSource = "";
-    withEnvironmentVariables(STORAGE_TYPE_ENV_KEY, emptyJsonSource).execute(() -> {
-      // invalid json source should not throw exceptions
-      provider.init(rssConf);
-      assertEquals(StorageMedia.UNKNOWN, provider.getStorageMediaFor("/data01"));
-    });
+    withEnvironmentVariables(STORAGE_TYPE_ENV_KEY, emptyJsonSource)
+        .execute(
+            () -> {
+              // invalid json source should not throw exceptions
+              provider.init(rssConf);
+              assertEquals(StorageMedia.UNKNOWN, provider.getStorageMediaFor("/data01"));
+            });
     emptyJsonSource = "{}";
-    withEnvironmentVariables(STORAGE_TYPE_ENV_KEY, emptyJsonSource).execute(() -> {
-      provider.init(rssConf);
-      assertEquals(StorageMedia.UNKNOWN, provider.getStorageMediaFor("/data01"));
-    });
+    withEnvironmentVariables(STORAGE_TYPE_ENV_KEY, emptyJsonSource)
+        .execute(
+            () -> {
+              provider.init(rssConf);
+              assertEquals(StorageMedia.UNKNOWN, provider.getStorageMediaFor("/data01"));
+            });
 
     String storageTypeJson = "{\"/data01\": \"SSD\"}";
-    withEnvironmentVariables(STORAGE_TYPE_ENV_KEY, storageTypeJson).execute(() -> {
-      provider.init(rssConf);
-      assertEquals(StorageMedia.SSD, provider.getStorageMediaFor("/data01"));
-    });
+    withEnvironmentVariables(STORAGE_TYPE_ENV_KEY, storageTypeJson)
+        .execute(
+            () -> {
+              provider.init(rssConf);
+              assertEquals(StorageMedia.SSD, provider.getStorageMediaFor("/data01"));
+            });
   }
 
   @Test
@@ -79,7 +85,8 @@ public class LocalSingleStorageTypeFromEnvProviderTest {
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
-    withEnvironmentVariables(STORAGE_TYPE_ENV_KEY, jsonSource).execute(() -> provider.init(rssConf));
+    withEnvironmentVariables(STORAGE_TYPE_ENV_KEY, jsonSource)
+        .execute(() -> provider.init(rssConf));
 
     assertEquals(StorageMedia.HDD, provider.getStorageMediaFor("/data02"));
     assertEquals(StorageMedia.SSD, provider.getStorageMediaFor("/data01"));

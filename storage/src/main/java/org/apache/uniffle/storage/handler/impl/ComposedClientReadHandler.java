@@ -38,8 +38,9 @@ import org.apache.uniffle.storage.handler.ClientReadHandlerMetric;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
 
 /**
- * Composed read handler for all storage types and one replicas.
- * The storage types reading order is as follows: HOT -> WARM -> COLD -> FROZEN
+ * Composed read handler for all storage types and one replicas. The storage types reading order is
+ * as follows: HOT -> WARM -> COLD -> FROZEN
+ *
  * @see <a href="https://github.com/apache/incubator-uniffle/pull/276">PR-276</a>
  */
 public class ComposedClientReadHandler extends AbstractClientReadHandler {
@@ -47,7 +48,10 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   private static final Logger LOG = LoggerFactory.getLogger(ComposedClientReadHandler.class);
 
   private enum Tier {
-    HOT, WARM, COLD, FROZEN;
+    HOT,
+    WARM,
+    COLD,
+    FROZEN;
 
     static final Tier[] VALUES = Tier.values();
 
@@ -70,8 +74,11 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   }
 
   public ComposedClientReadHandler(ShuffleServerInfo serverInfo, ClientReadHandler... handlers) {
-    Preconditions.checkArgument(handlers.length <= Tier.VALUES.length,
-        "Too many handlers, got %d, max %d", handlers.length, Tier.VALUES.length);
+    Preconditions.checkArgument(
+        handlers.length <= Tier.VALUES.length,
+        "Too many handlers, got %d, max %d",
+        handlers.length,
+        Tier.VALUES.length);
     this.serverInfo = serverInfo;
     numTiers = handlers.length;
     for (int i = 0; i < numTiers; i++) {
@@ -79,9 +86,13 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
     }
   }
 
-  public ComposedClientReadHandler(ShuffleServerInfo serverInfo, List<Supplier<ClientReadHandler>> suppliers) {
-    Preconditions.checkArgument(suppliers.size() <= Tier.VALUES.length,
-        "Too many suppliers, got %d, max %d", suppliers.size(), Tier.VALUES.length);
+  public ComposedClientReadHandler(
+      ShuffleServerInfo serverInfo, List<Supplier<ClientReadHandler>> suppliers) {
+    Preconditions.checkArgument(
+        suppliers.size() <= Tier.VALUES.length,
+        "Too many suppliers, got %d, max %d",
+        suppliers.size(),
+        Tier.VALUES.length);
     this.serverInfo = serverInfo;
     numTiers = suppliers.size();
     for (int i = 0; i < numTiers; i++) {
@@ -91,8 +102,9 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
 
   @Override
   public ShuffleDataResult readShuffleData() {
-    ClientReadHandler handler = handlerMap.computeIfAbsent(currentTier,
-        key -> supplierMap.getOrDefault(key, () -> null).get());
+    ClientReadHandler handler =
+        handlerMap.computeIfAbsent(
+            currentTier, key -> supplierMap.getOrDefault(key, () -> null).get());
     if (handler == null) {
       throw new RssException("Unexpected null when getting " + currentTier.name() + " handler");
     }
@@ -101,10 +113,15 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
       shuffleDataResult = handler.readShuffleData();
     } catch (RssFetchFailedException e) {
       Throwable cause = e.getCause();
-      String message = "Failed to read shuffle data from " + currentTier.name() + "handler, error: " + e.getMessage();
+      String message =
+          "Failed to read shuffle data from "
+              + currentTier.name()
+              + "handler, error: "
+              + e.getMessage();
       throw new RssFetchFailedException(message, cause);
     } catch (Exception e) {
-      throw new RssFetchFailedException("Failed to read shuffle data from " + currentTier.name() + " handler", e);
+      throw new RssFetchFailedException(
+          "Failed to read shuffle data from " + currentTier.name() + " handler", e);
     }
     // when is no data for current handler, and the upmostLevel is not reached,
     // then try next one if there has
@@ -143,37 +160,54 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
 
   @VisibleForTesting
   public String getReadBlockNumInfo() {
-    return getMetricsInfo("blocks", ClientReadHandlerMetric::getReadBlockNum,
+    return getMetricsInfo(
+        "blocks",
+        ClientReadHandlerMetric::getReadBlockNum,
         ClientReadHandlerMetric::getSkippedReadBlockNum);
   }
 
   @VisibleForTesting
   public String getReadLengthInfo() {
-    return getMetricsInfo("bytes", ClientReadHandlerMetric::getReadLength,
+    return getMetricsInfo(
+        "bytes",
+        ClientReadHandlerMetric::getReadLength,
         ClientReadHandlerMetric::getSkippedReadLength);
   }
 
   @VisibleForTesting
   public String getReadUncompressLengthInfo() {
-    return getMetricsInfo("uncompressed bytes", ClientReadHandlerMetric::getReadUncompressLength,
+    return getMetricsInfo(
+        "uncompressed bytes",
+        ClientReadHandlerMetric::getReadUncompressLength,
         ClientReadHandlerMetric::getSkippedReadUncompressLength);
   }
 
-  private String getMetricsInfo(String name, Function<ClientReadHandlerMetric, Long> consumed,
+  private String getMetricsInfo(
+      String name,
+      Function<ClientReadHandlerMetric, Long> consumed,
       Function<ClientReadHandlerMetric, Long> skipped) {
-    StringBuilder sb = new StringBuilder("Client read ").append(consumed.apply(readHandlerMetric))
-        .append(" ").append(name).append(" from [").append(serverInfo).append("], Consumed[");
+    StringBuilder sb =
+        new StringBuilder("Client read ")
+            .append(consumed.apply(readHandlerMetric))
+            .append(" ")
+            .append(name)
+            .append(" from [")
+            .append(serverInfo)
+            .append("], Consumed[");
     for (Tier tier : Tier.VALUES) {
-      sb.append(" ").append(tier.name().toLowerCase()).append(":")
+      sb.append(" ")
+          .append(tier.name().toLowerCase())
+          .append(":")
           .append(consumed.apply(metricsMap.get(tier)));
     }
     sb.append(" ], Skipped[");
     for (Tier tier : Tier.VALUES) {
-      sb.append(" ").append(tier.name().toLowerCase()).append(":")
+      sb.append(" ")
+          .append(tier.name().toLowerCase())
+          .append(":")
           .append(skipped.apply(metricsMap.get(tier)));
     }
     sb.append(" ]");
     return sb.toString();
   }
-
 }

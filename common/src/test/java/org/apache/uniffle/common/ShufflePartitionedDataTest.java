@@ -27,17 +27,30 @@ public class ShufflePartitionedDataTest {
 
   @Test
   public void testToString() {
-    ShufflePartitionedData data = new ShufflePartitionedData(0, new ShufflePartitionedBlock[]{});
-    assertEquals("ShufflePartitionedData{partitionId=" + data.getPartitionId() + ", blockList="
-        + Arrays.toString(data.getBlockList()) + "}", data.toString());
-    ShufflePartitionedData data1 = new ShufflePartitionedData(1,
-        new ShufflePartitionedBlock[]{new ShufflePartitionedBlock(2, 3, 4, 5, 6, new byte[0])});
-    assertEquals("ShufflePartitionedData{partitionId=" + data1.getPartitionId() + ", blockList="
-        + Arrays.toString(data1.getBlockList()) + "}", data1.toString());
+    ShufflePartitionedData data = new ShufflePartitionedData(0, new ShufflePartitionedBlock[] {});
+    assertEquals(
+        "ShufflePartitionedData{partitionId="
+            + data.getPartitionId()
+            + ", blockList="
+            + Arrays.toString(data.getBlockList())
+            + "}",
+        data.toString());
+    ShufflePartitionedData data1 =
+        new ShufflePartitionedData(
+            1,
+            new ShufflePartitionedBlock[] {
+              new ShufflePartitionedBlock(2, 3, 4, 5, 6, new byte[0])
+            });
+    assertEquals(
+        "ShufflePartitionedData{partitionId="
+            + data1.getPartitionId()
+            + ", blockList="
+            + Arrays.toString(data1.getBlockList())
+            + "}",
+        data1.toString());
     ShufflePartitionedData data2 = new ShufflePartitionedData(0, null);
     assertEquals("ShufflePartitionedData{partitionId=0, blockList=null}", data2.toString());
     data2.setPartitionId(1);
     assertEquals("ShufflePartitionedData{partitionId=1, blockList=null}", data2.toString());
   }
-
 }

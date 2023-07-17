@@ -56,8 +56,7 @@ public class SparkSQLWithMemoryLocalTest extends SparkSQLTest {
   }
 
   @Override
-  public void updateRssStorage(SparkConf sparkConf) {
-  }
+  public void updateRssStorage(SparkConf sparkConf) {}
 
   @Override
   public void checkShuffleData() throws Exception {

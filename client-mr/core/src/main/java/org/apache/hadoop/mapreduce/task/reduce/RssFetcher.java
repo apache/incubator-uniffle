@@ -40,15 +40,19 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ByteUnit;
 
-public class RssFetcher<K,V> {
+public class RssFetcher<K, V> {
 
   private static final Log LOG = LogFactory.getLog(RssFetcher.class);
 
   private final Reporter reporter;
 
   private enum ShuffleErrors {
-    IO_ERROR, WRONG_LENGTH, BAD_ID, WRONG_MAP,
-    CONNECTION, WRONG_REDUCE
+    IO_ERROR,
+    WRONG_LENGTH,
+    BAD_ID,
+    WRONG_MAP,
+    CONNECTION,
+    WRONG_REDUCE
   }
 
   private static final String SHUFFLE_ERR_GRP_NAME = "Shuffle Errors";
@@ -63,7 +67,7 @@ public class RssFetcher<K,V> {
   private final Counters.Counter wrongMapErrs;
   private final Counters.Counter wrongReduceErrs;
   private final TaskStatus status;
-  private final MergeManager<K,V> merger;
+  private final MergeManager<K, V> merger;
   private final Progress progress;
   private final ShuffleClientMetrics metrics;
   private long totalBlockCount;
@@ -76,7 +80,7 @@ public class RssFetcher<K,V> {
   private long decompressTime = 0;
   private long serializeTime = 0;
   private long waitTime = 0;
-  private long copyTime = 0;  // the sum of readTime + decompressTime + serializeTime + waitTime
+  private long copyTime = 0; // the sum of readTime + decompressTime + serializeTime + waitTime
   private long unCompressionLength = 0;
   private final TaskAttemptID reduceId;
   private int uniqueMapId = 0;
@@ -88,11 +92,14 @@ public class RssFetcher<K,V> {
   private RssConf rssConf;
   private Codec codec;
 
-  RssFetcher(JobConf job, TaskAttemptID reduceId,
+  RssFetcher(
+      JobConf job,
+      TaskAttemptID reduceId,
       TaskStatus status,
       MergeManager<K, V> merger,
       Progress progress,
-      Reporter reporter, ShuffleClientMetrics metrics,
+      Reporter reporter,
+      ShuffleClientMetrics metrics,
       ShuffleReadClient shuffleReadClient,
       long totalBlockCount,
       RssConf rssConf) {
@@ -103,18 +110,18 @@ public class RssFetcher<K,V> {
     this.progress = progress;
     this.metrics = metrics;
     this.reduceId = reduceId;
-    ioErrs = reporter.getCounter(SHUFFLE_ERR_GRP_NAME,
-        RssFetcher.ShuffleErrors.IO_ERROR.toString());
-    wrongLengthErrs = reporter.getCounter(SHUFFLE_ERR_GRP_NAME,
-        RssFetcher.ShuffleErrors.WRONG_LENGTH.toString());
-    badIdErrs = reporter.getCounter(SHUFFLE_ERR_GRP_NAME,
-        RssFetcher.ShuffleErrors.BAD_ID.toString());
-    wrongMapErrs = reporter.getCounter(SHUFFLE_ERR_GRP_NAME,
-        RssFetcher.ShuffleErrors.WRONG_MAP.toString());
-    connectionErrs = reporter.getCounter(SHUFFLE_ERR_GRP_NAME,
-        RssFetcher.ShuffleErrors.CONNECTION.toString());
-    wrongReduceErrs = reporter.getCounter(SHUFFLE_ERR_GRP_NAME,
-        RssFetcher.ShuffleErrors.WRONG_REDUCE.toString());
+    ioErrs =
+        reporter.getCounter(SHUFFLE_ERR_GRP_NAME, RssFetcher.ShuffleErrors.IO_ERROR.toString());
+    wrongLengthErrs =
+        reporter.getCounter(SHUFFLE_ERR_GRP_NAME, RssFetcher.ShuffleErrors.WRONG_LENGTH.toString());
+    badIdErrs =
+        reporter.getCounter(SHUFFLE_ERR_GRP_NAME, RssFetcher.ShuffleErrors.BAD_ID.toString());
+    wrongMapErrs =
+        reporter.getCounter(SHUFFLE_ERR_GRP_NAME, RssFetcher.ShuffleErrors.WRONG_MAP.toString());
+    connectionErrs =
+        reporter.getCounter(SHUFFLE_ERR_GRP_NAME, RssFetcher.ShuffleErrors.CONNECTION.toString());
+    wrongReduceErrs =
+        reporter.getCounter(SHUFFLE_ERR_GRP_NAME, RssFetcher.ShuffleErrors.WRONG_REDUCE.toString());
 
     this.shuffleReadClient = shuffleReadClient;
     this.totalBlockCount = totalBlockCount;
@@ -193,10 +200,20 @@ public class RssFetcher<K,V> {
       shuffleReadClient.checkProcessedBlockIds();
       shuffleReadClient.logStatics();
       metrics.inputBytes(unCompressionLength);
-      LOG.info("reduce task " + reduceId.toString() + " cost " + readTime + " ms to fetch and "
-          + decompressTime + " ms to decompress with unCompressionLength["
-          + unCompressionLength + "] and " + serializeTime + " ms to serialize and "
-          + waitTime + " ms to wait resource");
+      LOG.info(
+          "reduce task "
+              + reduceId.toString()
+              + " cost "
+              + readTime
+              + " ms to fetch and "
+              + decompressTime
+              + " ms to decompress with unCompressionLength["
+              + unCompressionLength
+              + "] and "
+              + serializeTime
+              + " ms to serialize and "
+              + waitTime
+              + " ms to wait resource");
       stopFetch();
     }
   }
@@ -232,14 +249,23 @@ public class RssFetcher<K,V> {
       // let the merger knows this block is ready for merging
       mapOutput.commit();
       if (mapOutput instanceof OnDiskMapOutput) {
-        LOG.info("Reduce: " + reduceId + " allocates disk to accept block "
-            + " with byte sizes: " + uncompressedData.length);
+        LOG.info(
+            "Reduce: "
+                + reduceId
+                + " allocates disk to accept block "
+                + " with byte sizes: "
+                + uncompressedData.length);
       }
     } catch (Throwable t) {
       ioErrs.increment(1);
       mapOutput.abort();
-      throw new RssException("Reduce: " + reduceId + " cannot write block to "
-          + mapOutput.getClass().getSimpleName() + " due to: " + t.getClass().getName());
+      throw new RssException(
+          "Reduce: "
+              + reduceId
+              + " cannot write block to "
+              + mapOutput.getClass().getSimpleName()
+              + " due to: "
+              + t.getClass().getName());
     }
     return true;
   }
@@ -264,8 +290,14 @@ public class RssFetcher<K,V> {
     double bytesPerMillis = (double) unCompressionLength / copyTime;
     double transferRate = bytesPerMillis * BYTES_PER_MILLIS_TO_MBS;
 
-    progress.setStatus("copy(" + copyBlockCount + " of " + totalBlockCount + " at "
-        + mbpsFormat.format(transferRate) + " MB/s)");
+    progress.setStatus(
+        "copy("
+            + copyBlockCount
+            + " of "
+            + totalBlockCount
+            + " at "
+            + mbpsFormat.format(transferRate)
+            + " MB/s)");
   }
 
   @VisibleForTesting

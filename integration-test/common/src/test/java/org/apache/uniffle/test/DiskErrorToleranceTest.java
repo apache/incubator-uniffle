@@ -71,8 +71,7 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     shuffleServerConf.set(
         ShuffleServerConf.RSS_STORAGE_BASE_PATH,
-        Arrays.asList(data1.getAbsolutePath(), data2.getAbsolutePath())
-    );
+        Arrays.asList(data1.getAbsolutePath(), data2.getAbsolutePath()));
     shuffleServerConf.setBoolean(ShuffleServerConf.HEALTH_CHECK_ENABLE, true);
     createShuffleServer(shuffleServerConf);
     startServers();
@@ -95,10 +94,10 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Set<Long> expectedBlock1 = Sets.newHashSet();
     Roaring64NavigableMap blockIdBitmap1 = Roaring64NavigableMap.bitmapOf();
-    List<ShuffleBlockInfo> blocks1 = createShuffleBlockList(
-        0, 0, 1,3, 25, blockIdBitmap1, expectedData);
-    RssRegisterShuffleRequest rr1 =  new RssRegisterShuffleRequest(appId, 0,
-        Lists.newArrayList(new PartitionRange(0, 0)), "");
+    List<ShuffleBlockInfo> blocks1 =
+        createShuffleBlockList(0, 0, 1, 3, 25, blockIdBitmap1, expectedData);
+    RssRegisterShuffleRequest rr1 =
+        new RssRegisterShuffleRequest(appId, 0, Lists.newArrayList(new PartitionRange(0, 0)), "");
     shuffleServerClient.registerShuffle(rr1);
     blocks1.forEach(b -> expectedBlock1.add(b.getBlockId()));
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
@@ -111,9 +110,22 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     shuffleServerClient.sendCommit(rc1);
     RssFinishShuffleRequest rf1 = new RssFinishShuffleRequest(appId, 0);
     shuffleServerClient.finishShuffle(rf1);
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(),
-        appId, 0, 0, 100, 1, 10, 1000, null,
-        blockIdBitmap1, Roaring64NavigableMap.bitmapOf(1), shuffleServerInfo, conf, new DefaultIdHelper());
+    ShuffleReadClientImpl readClient =
+        new ShuffleReadClientImpl(
+            StorageType.LOCALFILE.name(),
+            appId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            null,
+            blockIdBitmap1,
+            Roaring64NavigableMap.bitmapOf(1),
+            shuffleServerInfo,
+            conf,
+            new DefaultIdHelper());
     validateResult(readClient, expectedData);
 
     File shuffleData = new File(data2, appId);
@@ -129,8 +141,8 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     shuffleToBlocks.clear();
     Roaring64NavigableMap blockIdBitmap2 = Roaring64NavigableMap.bitmapOf();
     Set<Long> expectedBlock2 = Sets.newHashSet();
-    List<ShuffleBlockInfo> blocks2 = createShuffleBlockList(
-        0, 0, 2, 5, 30, blockIdBitmap2, expectedData);
+    List<ShuffleBlockInfo> blocks2 =
+        createShuffleBlockList(0, 0, 2, 5, 30, blockIdBitmap2, expectedData);
     blocks2.forEach(b -> expectedBlock2.add(b.getBlockId()));
     partitionToBlocks.put(0, blocks2);
     shuffleToBlocks.put(0, partitionToBlocks);
@@ -139,9 +151,22 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     shuffleServerClient.sendCommit(rc1);
     shuffleServerClient.finishShuffle(rf1);
 
-    readClient = new ShuffleReadClientImpl(StorageType.LOCALFILE.name(),
-        appId, 0, 0, 100, 1, 10, 1000, null,
-        blockIdBitmap2, Roaring64NavigableMap.bitmapOf(2), shuffleServerInfo, conf, new DefaultIdHelper());
+    readClient =
+        new ShuffleReadClientImpl(
+            StorageType.LOCALFILE.name(),
+            appId,
+            0,
+            0,
+            100,
+            1,
+            10,
+            1000,
+            null,
+            blockIdBitmap2,
+            Roaring64NavigableMap.bitmapOf(2),
+            shuffleServerInfo,
+            conf,
+            new DefaultIdHelper());
     validateResult(readClient, expectedData);
     shuffleData = new File(data1, appId);
     assertTrue(shuffleData.exists());

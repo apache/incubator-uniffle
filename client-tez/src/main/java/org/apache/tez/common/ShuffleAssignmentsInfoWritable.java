@@ -39,15 +39,11 @@ public class ShuffleAssignmentsInfoWritable implements Writable {
   private ShuffleAssignmentsInfo shuffleAssignmentsInfo;
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleAssignmentsInfoWritable.class);
 
-
-  public ShuffleAssignmentsInfoWritable() {
-
-  }
+  public ShuffleAssignmentsInfoWritable() {}
 
   public ShuffleAssignmentsInfoWritable(ShuffleAssignmentsInfo shuffleAssignmentsInfo) {
     this.shuffleAssignmentsInfo = shuffleAssignmentsInfo;
   }
-
 
   @Override
   public void write(DataOutput dataOutput) throws IOException {
@@ -59,7 +55,8 @@ public class ShuffleAssignmentsInfoWritable implements Writable {
       dataOutput.writeInt(1);
     }
 
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = shuffleAssignmentsInfo.getPartitionToServers();
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers =
+        shuffleAssignmentsInfo.getPartitionToServers();
     if (MapUtils.isEmpty(partitionToServers)) {
       dataOutput.writeInt(-1);
     } else {
@@ -79,13 +76,14 @@ public class ShuffleAssignmentsInfoWritable implements Writable {
       }
     }
 
-    Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges = shuffleAssignmentsInfo
-            .getServerToPartitionRanges();
+    Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
+        shuffleAssignmentsInfo.getServerToPartitionRanges();
     if (MapUtils.isEmpty(serverToPartitionRanges)) {
       dataOutput.writeInt(-1);
     } else {
       dataOutput.writeInt(serverToPartitionRanges.size());
-      for (Map.Entry<ShuffleServerInfo, List<PartitionRange>> entry : serverToPartitionRanges.entrySet()) {
+      for (Map.Entry<ShuffleServerInfo, List<PartitionRange>> entry :
+          serverToPartitionRanges.entrySet()) {
         dataOutput.writeUTF(entry.getKey().getId());
         dataOutput.writeUTF(entry.getKey().getHost());
         dataOutput.writeInt(entry.getKey().getGrpcPort());
@@ -156,7 +154,8 @@ public class ShuffleAssignmentsInfoWritable implements Writable {
       }
     }
 
-    shuffleAssignmentsInfo = new ShuffleAssignmentsInfo(partitionToServers, serverToPartitionRanges);
+    shuffleAssignmentsInfo =
+        new ShuffleAssignmentsInfo(partitionToServers, serverToPartitionRanges);
   }
 
   public ShuffleAssignmentsInfo getShuffleAssignmentsInfo() {

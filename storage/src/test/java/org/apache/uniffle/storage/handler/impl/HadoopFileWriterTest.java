@@ -67,7 +67,8 @@ public class HadoopFileWriterTest extends HadoopTestBase {
     // disable the append support
     conf.setBoolean("dfs.support.append", false);
     assertTrue(fs.isFile(path));
-    Throwable ise = assertThrows(IllegalStateException.class, () -> new HadoopFileWriter(fs, path, conf));
+    Throwable ise =
+        assertThrows(IllegalStateException.class, () -> new HadoopFileWriter(fs, path, conf));
     assertTrue(ise.getMessage().startsWith(path + " exists but append mode is not support!"));
   }
 
@@ -77,7 +78,8 @@ public class HadoopFileWriterTest extends HadoopTestBase {
     Path path = new Path(HDFS_URI, "createStreamDirectory");
     fs.mkdirs(path);
 
-    Throwable ise = assertThrows(IllegalStateException.class, () -> new HadoopFileWriter(fs, path, conf));
+    Throwable ise =
+        assertThrows(IllegalStateException.class, () -> new HadoopFileWriter(fs, path, conf));
     assertTrue(ise.getMessage().startsWith(HDFS_URI + "createStreamDirectory is a directory!"));
   }
 
@@ -117,7 +119,6 @@ public class HadoopFileWriterTest extends HadoopTestBase {
       // EOF exception is expected
       assertThrows(EOFException.class, in::readInt);
     }
-
   }
 
   @Test
@@ -146,8 +147,7 @@ public class HadoopFileWriterTest extends HadoopTestBase {
 
   @Test
   public void writeSegmentTest() throws IOException {
-    FileBasedShuffleSegment segment = new FileBasedShuffleSegment(
-        23, 128, 32, 32, 0xdeadbeef, 0);
+    FileBasedShuffleSegment segment = new FileBasedShuffleSegment(23, 128, 32, 32, 0xdeadbeef, 0);
 
     Path path = new Path(HDFS_URI, "writeSegmentTest");
     try (HadoopFileWriter writer = new HadoopFileWriter(fs, path, conf)) {

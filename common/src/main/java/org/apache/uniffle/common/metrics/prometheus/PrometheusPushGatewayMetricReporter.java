@@ -35,7 +35,8 @@ import org.apache.uniffle.common.metrics.AbstractMetricReporter;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter {
-  private static final Logger LOG = LoggerFactory.getLogger(PrometheusPushGatewayMetricReporter.class);
+  private static final Logger LOG =
+      LoggerFactory.getLogger(PrometheusPushGatewayMetricReporter.class);
   static final String PUSHGATEWAY_ADDR = "rss.metrics.prometheus.pushgateway.addr";
   static final String GROUPING_KEY = "rss.metrics.prometheus.pushgateway.groupingkey";
   static final String JOB_NAME = "rss.metrics.prometheus.pushgateway.jobname";
@@ -43,7 +44,7 @@ public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter 
   private ScheduledExecutorService scheduledExecutorService;
   private PushGateway pushGateway;
 
-  public PrometheusPushGatewayMetricReporter(RssConf conf, String instanceId)  {
+  public PrometheusPushGatewayMetricReporter(RssConf conf, String instanceId) {
     super(conf, instanceId);
   }
 
@@ -65,15 +66,19 @@ public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter 
     int reportInterval = conf.getInteger(REPORT_INTEVAL, 10);
     scheduledExecutorService =
         ThreadUtils.getDaemonSingleThreadScheduledExecutor("PrometheusPushGatewayMetricReporter");
-    scheduledExecutorService.scheduleWithFixedDelay(() -> {
-      for (CollectorRegistry registry : registryList) {
-        try {
-          pushGateway.pushAdd(registry, jobName, groupingKey);
-        } catch (Throwable e) {
-          LOG.error("Failed to send metrics to push gateway.", e);
-        }
-      }
-    }, 0, reportInterval, TimeUnit.SECONDS);
+    scheduledExecutorService.scheduleWithFixedDelay(
+        () -> {
+          for (CollectorRegistry registry : registryList) {
+            try {
+              pushGateway.pushAdd(registry, jobName, groupingKey);
+            } catch (Throwable e) {
+              LOG.error("Failed to send metrics to push gateway.", e);
+            }
+          }
+        },
+        0,
+        reportInterval,
+        TimeUnit.SECONDS);
   }
 
   @Override
@@ -101,8 +106,7 @@ public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter 
 
         String labelKey = kv.substring(0, idx);
         String labelValue = kv.substring(idx + 1);
-        if (StringUtils.isEmpty(labelKey)
-            || StringUtils.isEmpty(labelValue)) {
+        if (StringUtils.isEmpty(labelKey) || StringUtils.isEmpty(labelValue)) {
           LOG.warn(
               "Invalid groupingKey {labelKey:{}, labelValue:{}} must not be empty",
               labelKey,

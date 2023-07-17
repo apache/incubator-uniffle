@@ -22,10 +22,10 @@ import org.apache.uniffle.proto.RssProtos;
 
 public class CoordinatorTestUtils {
 
-  private CoordinatorTestUtils() {
-  }
+  private CoordinatorTestUtils() {}
 
-  public static void waitForRegister(CoordinatorGrpcClient coordinatorClient, int expectedServers) throws Exception {
+  public static void waitForRegister(CoordinatorGrpcClient coordinatorClient, int expectedServers)
+      throws Exception {
     RssProtos.GetShuffleServerListResponse response;
     int count = 0;
     do {

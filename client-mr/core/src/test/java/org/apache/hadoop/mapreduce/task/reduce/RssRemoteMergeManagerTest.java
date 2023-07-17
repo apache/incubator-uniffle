@@ -54,12 +54,9 @@ public class RssRemoteMergeManagerTest {
   String appId = "app1";
   JobID jobId = new JobID(appId, 0);
 
-  TaskAttemptID mapId1 = new TaskAttemptID(
-      new TaskID(jobId, TaskType.MAP, 1), 0);
-  TaskAttemptID mapId2 = new TaskAttemptID(
-      new TaskID(jobId, TaskType.MAP, 2), 0);
-  TaskAttemptID reduceId1 = new TaskAttemptID(
-      new TaskID(jobId, TaskType.REDUCE, 0), 0);
+  TaskAttemptID mapId1 = new TaskAttemptID(new TaskID(jobId, TaskType.MAP, 1), 0);
+  TaskAttemptID mapId2 = new TaskAttemptID(new TaskID(jobId, TaskType.MAP, 2), 0);
+  TaskAttemptID reduceId1 = new TaskAttemptID(new TaskID(jobId, TaskType.REDUCE, 0), 0);
 
   @Test
   public void mergerTest(@TempDir File tmpDir) throws Throwable {
@@ -71,10 +68,27 @@ public class RssRemoteMergeManagerTest {
     jobConf.set("mapreduce.reduce.shuffle.memory.limit.percent", "0.01");
     jobConf.set("mapreduce.reduce.shuffle.merge.percent", "0.1");
 
-    final RssRemoteMergeManagerImpl<Text, Text> mergeManager = new RssRemoteMergeManagerImpl<Text, Text>(
-        appId, reduceId1, jobConf, tmpDir.toString(), 1, 5, fs, lda, Reporter.NULL,
-        null, null, null, null, null,
-        null, null, new Progress(), new MROutputFiles(), new JobConf());
+    final RssRemoteMergeManagerImpl<Text, Text> mergeManager =
+        new RssRemoteMergeManagerImpl<Text, Text>(
+            appId,
+            reduceId1,
+            jobConf,
+            tmpDir.toString(),
+            1,
+            5,
+            fs,
+            lda,
+            Reporter.NULL,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            new Progress(),
+            new MROutputFiles(),
+            new JobConf());
 
     // write map outputs
     Map<String, String> map1 = new TreeMap<String, String>();
@@ -84,19 +98,27 @@ public class RssRemoteMergeManagerTest {
     map2.put("banana", "pretty good");
     byte[] mapOutputBytes1 = writeMapOutput(jobConf, map1);
     byte[] mapOutputBytes2 = writeMapOutput(jobConf, map2);
-    InMemoryMapOutput mapOutput1 = (InMemoryMapOutput)mergeManager.reserve(mapId1, mapOutputBytes1.length, 0);
-    InMemoryMapOutput mapOutput2 = (InMemoryMapOutput)mergeManager.reserve(mapId2, mapOutputBytes2.length, 0);
-    System.arraycopy(mapOutputBytes1, 0, mapOutput1.getMemory(), 0,
-        mapOutputBytes1.length);
-    System.arraycopy(mapOutputBytes2, 0, mapOutput2.getMemory(), 0,
-        mapOutputBytes2.length);
+    InMemoryMapOutput mapOutput1 =
+        (InMemoryMapOutput) mergeManager.reserve(mapId1, mapOutputBytes1.length, 0);
+    InMemoryMapOutput mapOutput2 =
+        (InMemoryMapOutput) mergeManager.reserve(mapId2, mapOutputBytes2.length, 0);
+    System.arraycopy(mapOutputBytes1, 0, mapOutput1.getMemory(), 0, mapOutputBytes1.length);
+    System.arraycopy(mapOutputBytes2, 0, mapOutput2.getMemory(), 0, mapOutputBytes2.length);
     mapOutput1.commit();
     mapOutput2.commit();
 
     RawKeyValueIterator iterator = mergeManager.close();
 
-    File[] mergedFiles = new File(tmpDir + Path.SEPARATOR + appId + Path.SEPARATOR
-      + "spill" + Path.SEPARATOR + "attempt_app1_0000_r_000000_0").listFiles();
+    File[] mergedFiles =
+        new File(
+                tmpDir
+                    + Path.SEPARATOR
+                    + appId
+                    + Path.SEPARATOR
+                    + "spill"
+                    + Path.SEPARATOR
+                    + "attempt_app1_0000_r_000000_0")
+            .listFiles();
 
     assertEquals(mergedFiles.length, 1);
 
@@ -124,8 +146,8 @@ public class RssRemoteMergeManagerTest {
       throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     FSDataOutputStream fsdos = new FSDataOutputStream(baos, null);
-    IFile.Writer<Text, Text> writer = new IFile.Writer<Text, Text>(conf, fsdos,
-        Text.class, Text.class, null, null);
+    IFile.Writer<Text, Text> writer =
+        new IFile.Writer<Text, Text>(conf, fsdos, Text.class, Text.class, null, null);
     for (String key : keysToValues.keySet()) {
       String value = keysToValues.get(key);
       writer.append(new Text(key), new Text(value));
@@ -134,12 +156,13 @@ public class RssRemoteMergeManagerTest {
     return baos.toByteArray();
   }
 
-  private void readOnDiskMapOutput(Configuration conf, FileSystem fs, Path path,
-                                   List<String> keys, List<String> values) throws IOException {
+  private void readOnDiskMapOutput(
+      Configuration conf, FileSystem fs, Path path, List<String> keys, List<String> values)
+      throws IOException {
     FSDataInputStream in = CryptoUtils.wrapIfNecessary(conf, fs.open(path));
 
-    IFile.Reader<Text, Text> reader = new IFile.Reader<Text, Text>(conf, in,
-        fs.getFileStatus(path).getLen(), null, null);
+    IFile.Reader<Text, Text> reader =
+        new IFile.Reader<Text, Text>(conf, in, fs.getFileStatus(path).getLen(), null, null);
     DataInputBuffer keyBuff = new DataInputBuffer();
     DataInputBuffer valueBuff = new DataInputBuffer();
     Text key = new Text();
@@ -152,5 +175,4 @@ public class RssRemoteMergeManagerTest {
       values.add(value.toString());
     }
   }
-
 }

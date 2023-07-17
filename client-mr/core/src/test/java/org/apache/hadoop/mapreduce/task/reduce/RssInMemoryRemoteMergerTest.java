@@ -59,16 +59,30 @@ public class RssInMemoryRemoteMergerTest {
     FileSystem fs = FileSystem.getLocal(jobConf);
     LocalDirAllocator lda = new LocalDirAllocator(MRConfig.LOCAL_DIR);
     JobID jobId = new JobID("a", 0);
-    final TaskAttemptID mapId1 = new TaskAttemptID(
-        new TaskID(jobId, TaskType.MAP, 1), 0);
-    final TaskAttemptID mapId2 = new TaskAttemptID(
-        new TaskID(jobId, TaskType.MAP, 2), 0);
-    TaskAttemptID reduceId1 = new TaskAttemptID(
-        new TaskID(jobId, TaskType.REDUCE, 0), 0);
-    final RssRemoteMergeManagerImpl<Text, Text> mergeManager = new RssRemoteMergeManagerImpl<Text, Text>(
-        "app", reduceId1, jobConf, tmpDir.toString(),  1,5,  fs, lda, Reporter.NULL,
-        null, null, null, null, null,
-        null, null, new Progress(), new MROutputFiles(), new JobConf());
+    final TaskAttemptID mapId1 = new TaskAttemptID(new TaskID(jobId, TaskType.MAP, 1), 0);
+    final TaskAttemptID mapId2 = new TaskAttemptID(new TaskID(jobId, TaskType.MAP, 2), 0);
+    TaskAttemptID reduceId1 = new TaskAttemptID(new TaskID(jobId, TaskType.REDUCE, 0), 0);
+    final RssRemoteMergeManagerImpl<Text, Text> mergeManager =
+        new RssRemoteMergeManagerImpl<Text, Text>(
+            "app",
+            reduceId1,
+            jobConf,
+            tmpDir.toString(),
+            1,
+            5,
+            fs,
+            lda,
+            Reporter.NULL,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            new Progress(),
+            new MROutputFiles(),
+            new JobConf());
 
     // write map outputs
     Map<String, String> map1 = new TreeMap<String, String>();
@@ -78,20 +92,31 @@ public class RssInMemoryRemoteMergerTest {
     map2.put("banana", "pretty good");
     byte[] mapOutputBytes1 = writeMapOutput(jobConf, map1);
     byte[] mapOutputBytes2 = writeMapOutput(jobConf, map2);
-    InMemoryMapOutput<Text, Text> mapOutput1 = new InMemoryMapOutput<Text, Text>(
-        jobConf, mapId1, mergeManager, mapOutputBytes1.length, null, true);
-    InMemoryMapOutput<Text, Text> mapOutput2 = new InMemoryMapOutput<Text, Text>(
-        jobConf, mapId2, mergeManager, mapOutputBytes2.length, null, true);
-    System.arraycopy(mapOutputBytes1, 0, mapOutput1.getMemory(), 0,
-        mapOutputBytes1.length);
-    System.arraycopy(mapOutputBytes2, 0, mapOutput2.getMemory(), 0,
-        mapOutputBytes2.length);
+    InMemoryMapOutput<Text, Text> mapOutput1 =
+        new InMemoryMapOutput<Text, Text>(
+            jobConf, mapId1, mergeManager, mapOutputBytes1.length, null, true);
+    InMemoryMapOutput<Text, Text> mapOutput2 =
+        new InMemoryMapOutput<Text, Text>(
+            jobConf, mapId2, mergeManager, mapOutputBytes2.length, null, true);
+    System.arraycopy(mapOutputBytes1, 0, mapOutput1.getMemory(), 0, mapOutputBytes1.length);
+    System.arraycopy(mapOutputBytes2, 0, mapOutput2.getMemory(), 0, mapOutputBytes2.length);
 
     Path spillPath = new Path("test");
     MergeThread<InMemoryMapOutput<Text, Text>, Text, Text> inMemoryMerger =
-        new RssInMemoryRemoteMerger<Text, Text>(mergeManager, jobConf, fs, spillPath,
-            "test", null, Reporter.NULL, null,
-            null, null, null, null, null);
+        new RssInMemoryRemoteMerger<Text, Text>(
+            mergeManager,
+            jobConf,
+            fs,
+            spillPath,
+            "test",
+            null,
+            Reporter.NULL,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
     List<InMemoryMapOutput<Text, Text>> mapOutputs1 =
         new ArrayList<InMemoryMapOutput<Text, Text>>();
     mapOutputs1.add(mapOutput1);
@@ -117,8 +142,8 @@ public class RssInMemoryRemoteMergerTest {
       throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     FSDataOutputStream fsdos = new FSDataOutputStream(baos, null);
-    IFile.Writer<Text, Text> writer = new IFile.Writer<Text, Text>(conf, fsdos,
-        Text.class, Text.class, null, null);
+    IFile.Writer<Text, Text> writer =
+        new IFile.Writer<Text, Text>(conf, fsdos, Text.class, Text.class, null, null);
     for (String key : keysToValues.keySet()) {
       String value = keysToValues.get(key);
       writer.append(new Text(key), new Text(value));
@@ -127,12 +152,13 @@ public class RssInMemoryRemoteMergerTest {
     return baos.toByteArray();
   }
 
-  private void readOnDiskMapOutput(Configuration conf, FileSystem fs, Path path,
-                                   List<String> keys, List<String> values) throws IOException {
+  private void readOnDiskMapOutput(
+      Configuration conf, FileSystem fs, Path path, List<String> keys, List<String> values)
+      throws IOException {
     FSDataInputStream in = CryptoUtils.wrapIfNecessary(conf, fs.open(path));
 
-    IFile.Reader<Text, Text> reader = new IFile.Reader<Text, Text>(conf, in,
-        fs.getFileStatus(path).getLen(), null, null);
+    IFile.Reader<Text, Text> reader =
+        new IFile.Reader<Text, Text>(conf, in, fs.getFileStatus(path).getLen(), null, null);
     DataInputBuffer keyBuff = new DataInputBuffer();
     DataInputBuffer valueBuff = new DataInputBuffer();
     Text key = new Text();

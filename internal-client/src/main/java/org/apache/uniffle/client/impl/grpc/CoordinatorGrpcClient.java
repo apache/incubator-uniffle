@@ -120,7 +120,12 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       Map<String, StorageInfo> storageInfo,
       int nettyPort) {
     ShuffleServerId serverId =
-        ShuffleServerId.newBuilder().setId(id).setIp(ip).setPort(port).setNettyPort(nettyPort).build();
+        ShuffleServerId.newBuilder()
+            .setId(id)
+            .setIp(ip)
+            .setPort(port)
+            .setNettyPort(nettyPort)
+            .build();
     ShuffleServerHeartBeatRequest request =
         ShuffleServerHeartBeatRequest.newBuilder()
             .setServerId(serverId)
@@ -168,35 +173,37 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       int assignmentShuffleServerNumber,
       int estimateTaskConcurrency) {
 
-    RssProtos.GetShuffleServerRequest getServerRequest = RssProtos.GetShuffleServerRequest.newBuilder()
-        .setApplicationId(appId)
-        .setShuffleId(shuffleId)
-        .setPartitionNum(numMaps)
-        .setPartitionNumPerRange(partitionNumPerRange)
-        .setDataReplica(dataReplica)
-        .addAllRequireTags(requiredTags)
-        .setAssignmentShuffleServerNumber(assignmentShuffleServerNumber)
-        .setEstimateTaskConcurrency(estimateTaskConcurrency)
-        .build();
+    RssProtos.GetShuffleServerRequest getServerRequest =
+        RssProtos.GetShuffleServerRequest.newBuilder()
+            .setApplicationId(appId)
+            .setShuffleId(shuffleId)
+            .setPartitionNum(numMaps)
+            .setPartitionNumPerRange(partitionNumPerRange)
+            .setDataReplica(dataReplica)
+            .addAllRequireTags(requiredTags)
+            .setAssignmentShuffleServerNumber(assignmentShuffleServerNumber)
+            .setEstimateTaskConcurrency(estimateTaskConcurrency)
+            .build();
 
     return blockingStub.getShuffleAssignments(getServerRequest);
   }
 
   @Override
   public RssSendHeartBeatResponse sendHeartBeat(RssSendHeartBeatRequest request) {
-    ShuffleServerHeartBeatResponse rpcResponse = doSendHeartBeat(
-        request.getShuffleServerId(),
-        request.getShuffleServerIp(),
-        request.getShuffleServerPort(),
-        request.getUsedMemory(),
-        request.getPreAllocatedMemory(),
-        request.getAvailableMemory(),
-        request.getEventNumInFlush(),
-        request.getTimeout(),
-        request.getTags(),
-        request.getServerStatus(),
-        request.getStorageInfo(),
-        request.getNettyPort());
+    ShuffleServerHeartBeatResponse rpcResponse =
+        doSendHeartBeat(
+            request.getShuffleServerId(),
+            request.getShuffleServerIp(),
+            request.getShuffleServerPort(),
+            request.getUsedMemory(),
+            request.getPreAllocatedMemory(),
+            request.getAvailableMemory(),
+            request.getEventNumInFlush(),
+            request.getTimeout(),
+            request.getTags(),
+            request.getServerStatus(),
+            request.getStorageInfo(),
+            request.getNettyPort());
 
     RssSendHeartBeatResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
@@ -217,8 +224,10 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
   public RssAppHeartBeatResponse sendAppHeartBeat(RssAppHeartBeatRequest request) {
     RssProtos.AppHeartBeatRequest rpcRequest =
         RssProtos.AppHeartBeatRequest.newBuilder().setAppId(request.getAppId()).build();
-    RssProtos.AppHeartBeatResponse rpcResponse = blockingStub
-        .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS).appHeartbeat(rpcRequest);
+    RssProtos.AppHeartBeatResponse rpcResponse =
+        blockingStub
+            .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS)
+            .appHeartbeat(rpcRequest);
     RssAppHeartBeatResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
     switch (statusCode) {
@@ -234,9 +243,14 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
   @Override
   public RssApplicationInfoResponse registerApplicationInfo(RssApplicationInfoRequest request) {
     ApplicationInfoRequest rpcRequest =
-        ApplicationInfoRequest.newBuilder().setAppId(request.getAppId()).setUser(request.getUser()).build();
-    ApplicationInfoResponse rpcResponse = blockingStub
-        .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS).registerApplicationInfo(rpcRequest);
+        ApplicationInfoRequest.newBuilder()
+            .setAppId(request.getAppId())
+            .setUser(request.getUser())
+            .build();
+    ApplicationInfoResponse rpcResponse =
+        blockingStub
+            .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS)
+            .registerApplicationInfo(rpcRequest);
     RssApplicationInfoResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
     switch (statusCode) {
@@ -250,16 +264,18 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
   }
 
   @Override
-  public RssGetShuffleAssignmentsResponse getShuffleAssignments(RssGetShuffleAssignmentsRequest request) {
-    RssProtos.GetShuffleAssignmentsResponse rpcResponse = doGetShuffleAssignments(
-        request.getAppId(),
-        request.getShuffleId(),
-        request.getPartitionNum(),
-        request.getPartitionNumPerRange(),
-        request.getDataReplica(),
-        request.getRequiredTags(),
-        request.getAssignmentShuffleServerNumber(),
-        request.getEstimateTaskConcurrency());
+  public RssGetShuffleAssignmentsResponse getShuffleAssignments(
+      RssGetShuffleAssignmentsRequest request) {
+    RssProtos.GetShuffleAssignmentsResponse rpcResponse =
+        doGetShuffleAssignments(
+            request.getAppId(),
+            request.getShuffleId(),
+            request.getPartitionNum(),
+            request.getPartitionNumPerRange(),
+            request.getDataReplica(),
+            request.getRequiredTags(),
+            request.getAssignmentShuffleServerNumber(),
+            request.getEstimateTaskConcurrency());
 
     RssGetShuffleAssignmentsResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
@@ -267,8 +283,10 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       case SUCCESS:
         response = new RssGetShuffleAssignmentsResponse(StatusCode.SUCCESS);
         // get all register info according to coordinator's response
-        Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges = getServerToPartitionRanges(rpcResponse);
-        Map<Integer, List<ShuffleServerInfo>> partitionToServers = getPartitionToServers(rpcResponse);
+        Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
+            getServerToPartitionRanges(rpcResponse);
+        Map<Integer, List<ShuffleServerInfo>> partitionToServers =
+            getPartitionToServers(rpcResponse);
         response.setServerToPartitionRanges(serverToPartitionRanges);
         response.setPartitionToServers(partitionToServers);
         break;
@@ -276,7 +294,9 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         response = new RssGetShuffleAssignmentsResponse(StatusCode.TIMEOUT);
         break;
       default:
-        response = new RssGetShuffleAssignmentsResponse(StatusCode.INTERNAL_ERROR, rpcResponse.getRetMsg());
+        response =
+            new RssGetShuffleAssignmentsResponse(
+                StatusCode.INTERNAL_ERROR, rpcResponse.getRetMsg());
     }
 
     return response;
@@ -284,17 +304,19 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
 
   @Override
   public RssAccessClusterResponse accessCluster(RssAccessClusterRequest request) {
-    AccessClusterRequest rpcRequest = AccessClusterRequest
-        .newBuilder()
-        .setAccessId(request.getAccessId())
-        .setUser(request.getUser())
-        .addAllTags(request.getTags())
-        .putAllExtraProperties(request.getExtraProperties())
-        .build();
+    AccessClusterRequest rpcRequest =
+        AccessClusterRequest.newBuilder()
+            .setAccessId(request.getAccessId())
+            .setUser(request.getUser())
+            .addAllTags(request.getTags())
+            .putAllExtraProperties(request.getExtraProperties())
+            .build();
     AccessClusterResponse rpcResponse;
     try {
-      rpcResponse = blockingStub
-          .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS).accessCluster(rpcRequest);
+      rpcResponse =
+          blockingStub
+              .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS)
+              .accessCluster(rpcRequest);
     } catch (Exception e) {
       return new RssAccessClusterResponse(StatusCode.INTERNAL_ERROR, e.getMessage());
     }
@@ -303,11 +325,9 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
     switch (statusCode) {
       case SUCCESS:
-        response = new RssAccessClusterResponse(
-            StatusCode.SUCCESS,
-            rpcResponse.getRetMsg(),
-            rpcResponse.getUuid()
-        );
+        response =
+            new RssAccessClusterResponse(
+                StatusCode.SUCCESS, rpcResponse.getRetMsg(), rpcResponse.getUuid());
         break;
       default:
         response = new RssAccessClusterResponse(StatusCode.ACCESS_DENIED, rpcResponse.getRetMsg());
@@ -320,15 +340,15 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
   public RssFetchClientConfResponse fetchClientConf(RssFetchClientConfRequest request) {
     FetchClientConfResponse rpcResponse;
     try {
-      rpcResponse = blockingStub
-          .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS)
-          .fetchClientConf(Empty.getDefaultInstance());
-      Map<String, String> clientConf = rpcResponse
-          .getClientConfList().stream().collect(Collectors.toMap(ClientConfItem::getKey, ClientConfItem::getValue));
+      rpcResponse =
+          blockingStub
+              .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS)
+              .fetchClientConf(Empty.getDefaultInstance());
+      Map<String, String> clientConf =
+          rpcResponse.getClientConfList().stream()
+              .collect(Collectors.toMap(ClientConfItem::getKey, ClientConfItem::getValue));
       return new RssFetchClientConfResponse(
-          StatusCode.SUCCESS,
-          rpcResponse.getRetMsg(),
-          clientConf);
+          StatusCode.SUCCESS, rpcResponse.getRetMsg(), clientConf);
     } catch (Exception e) {
       LOG.info(e.getMessage(), e);
       return new RssFetchClientConfResponse(StatusCode.INTERNAL_ERROR, e.getMessage());
@@ -342,14 +362,14 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         FetchRemoteStorageRequest.newBuilder().setAppId(request.getAppId()).build();
     try {
       rpcResponse = blockingStub.fetchRemoteStorage(rpcRequest);
-      Map<String, String> remoteStorageConf = rpcResponse
-          .getRemoteStorage()
-          .getRemoteStorageConfList()
-          .stream()
-          .collect(Collectors.toMap(RemoteStorageConfItem::getKey, RemoteStorageConfItem::getValue));
-      RssFetchRemoteStorageResponse tt = new RssFetchRemoteStorageResponse(
-          StatusCode.SUCCESS,
-          new RemoteStorageInfo(rpcResponse.getRemoteStorage().getPath(), remoteStorageConf));
+      Map<String, String> remoteStorageConf =
+          rpcResponse.getRemoteStorage().getRemoteStorageConfList().stream()
+              .collect(
+                  Collectors.toMap(RemoteStorageConfItem::getKey, RemoteStorageConfItem::getValue));
+      RssFetchRemoteStorageResponse tt =
+          new RssFetchRemoteStorageResponse(
+              StatusCode.SUCCESS,
+              new RemoteStorageInfo(rpcResponse.getRemoteStorage().getPath(), remoteStorageConf));
       return tt;
     } catch (Exception e) {
       LOG.info("Failed to fetch remote storage from coordinator, " + e.getMessage(), e);
@@ -367,11 +387,13 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
     for (PartitionRangeAssignment partitionRangeAssignment : assigns) {
       final int startPartition = partitionRangeAssignment.getStartPartition();
       final int endPartition = partitionRangeAssignment.getEndPartition();
-      final List<ShuffleServerInfo> shuffleServerInfos = partitionRangeAssignment
-          .getServerList()
-          .stream()
-          .map(ss -> new ShuffleServerInfo(ss.getId(), ss.getIp(), ss.getPort(), ss.getNettyPort()))
-          .collect(Collectors.toList());
+      final List<ShuffleServerInfo> shuffleServerInfos =
+          partitionRangeAssignment.getServerList().stream()
+              .map(
+                  ss ->
+                      new ShuffleServerInfo(
+                          ss.getId(), ss.getIp(), ss.getPort(), ss.getNettyPort()))
+              .collect(Collectors.toList());
       for (int i = startPartition; i <= endPartition; i++) {
         partitionToServers.put(i, shuffleServerInfos);
       }
@@ -391,7 +413,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
     for (PartitionRangeAssignment assign : assigns) {
       List<ShuffleServerId> shuffleServerIds = assign.getServerList();
       if (shuffleServerIds != null) {
-        PartitionRange partitionRange = new PartitionRange(assign.getStartPartition(), assign.getEndPartition());
+        PartitionRange partitionRange =
+            new PartitionRange(assign.getStartPartition(), assign.getEndPartition());
         for (ShuffleServerId ssi : shuffleServerIds) {
           ShuffleServerInfo shuffleServerInfo =
               new ShuffleServerInfo(ssi.getId(), ssi.getIp(), ssi.getPort(), ssi.getNettyPort());

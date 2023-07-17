@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.config.RssConf;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -52,9 +53,16 @@ public class WriteBufferManagerTest {
     TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
 
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
-    WriteBufferManager wbm = new WriteBufferManager(
-        0, 0, bufferOptions, kryoSerializer,
-        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(), RssSparkConfig.toRssConf(conf));
+    WriteBufferManager wbm =
+        new WriteBufferManager(
+            0,
+            0,
+            bufferOptions,
+            kryoSerializer,
+            Maps.newHashMap(),
+            mockTaskMemoryManager,
+            new ShuffleWriteMetrics(),
+            RssSparkConfig.toRssConf(conf));
     WriteBufferManager spyManager = spy(wbm);
     doReturn(512L).when(spyManager).acquireMemory(anyLong());
     return spyManager;
@@ -182,9 +190,18 @@ public class WriteBufferManagerTest {
     SparkConf conf = getConf();
     TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
-    WriteBufferManager wbm = new WriteBufferManager(
-            0, 0, bufferOptions, null,
-            Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(), RssSparkConfig.toRssConf(conf));
+    RssConf rssConf = RssSparkConfig.toRssConf(conf);
+    rssConf.set(RssSparkConfig.RSS_ROW_BASED, false);
+    WriteBufferManager wbm =
+        new WriteBufferManager(
+            0,
+            0,
+            bufferOptions,
+            null,
+            Maps.newHashMap(),
+            mockTaskMemoryManager,
+            new ShuffleWriteMetrics(),
+            rssConf);
     WriteBufferManager spyManager = spy(wbm);
     doReturn(512L).when(spyManager).acquireMemory(anyLong());
 
@@ -195,6 +212,7 @@ public class WriteBufferManagerTest {
     assertEquals(0, spyManager.getBuffers().size());
     assertEquals(1, shuffleBlockInfos.size());
     assertEquals(128, shuffleBlockInfos.get(0).getUncompressLength());
+    assertEquals(0, spyManager.getShuffleWriteMetrics().recordsWritten());
   }
 
   @Test
@@ -202,7 +220,7 @@ public class WriteBufferManagerTest {
     SparkConf conf = getConf();
     WriteBufferManager wbm = createManager(conf);
     WriterBuffer mockWriterBuffer = mock(WriterBuffer.class);
-    when(mockWriterBuffer.getData()).thenReturn(new byte[]{});
+    when(mockWriterBuffer.getData()).thenReturn(new byte[] {});
     when(mockWriterBuffer.getMemoryUsed()).thenReturn(0);
     ShuffleBlockInfo sbi = wbm.createShuffleBlock(0, mockWriterBuffer);
     // seqNo = 0, partitionId = 0, taskId = 0
@@ -229,9 +247,16 @@ public class WriteBufferManagerTest {
     TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
 
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
-    WriteBufferManager wbm = new WriteBufferManager(
-        0, 0, bufferOptions, new KryoSerializer(conf),
-        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(), RssSparkConfig.toRssConf(conf));
+    WriteBufferManager wbm =
+        new WriteBufferManager(
+            0,
+            0,
+            bufferOptions,
+            new KryoSerializer(conf),
+            Maps.newHashMap(),
+            mockTaskMemoryManager,
+            new ShuffleWriteMetrics(),
+            RssSparkConfig.toRssConf(conf));
 
     // every block: length=4, memoryUsed=12
     ShuffleBlockInfo info1 = new ShuffleBlockInfo(1, 1, 1, 4, 1, new byte[1], null, 1, 12, 1);
@@ -247,17 +272,25 @@ public class WriteBufferManagerTest {
     TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
 
-    Function<AddBlockEvent, CompletableFuture<Long>> spillFunc = event -> {
-      event.getProcessedCallbackChain().stream().forEach(x -> x.run());
-      return CompletableFuture.completedFuture(
-          event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum()
-      );
-    };
+    Function<AddBlockEvent, CompletableFuture<Long>> spillFunc =
+        event -> {
+          event.getProcessedCallbackChain().stream().forEach(x -> x.run());
+          return CompletableFuture.completedFuture(
+              event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum());
+        };
 
-    WriteBufferManager wbm = new WriteBufferManager(
-        0, "taskId_spillTest", 0, bufferOptions, new KryoSerializer(conf),
-        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(),
-        RssSparkConfig.toRssConf(conf), spillFunc);
+    WriteBufferManager wbm =
+        new WriteBufferManager(
+            0,
+            "taskId_spillTest",
+            0,
+            bufferOptions,
+            new KryoSerializer(conf),
+            Maps.newHashMap(),
+            mockTaskMemoryManager,
+            new ShuffleWriteMetrics(),
+            RssSparkConfig.toRssConf(conf),
+            spillFunc);
     WriteBufferManager spyManager = spy(wbm);
     doReturn(512L).when(spyManager).acquireMemory(anyLong());
 
@@ -276,18 +309,23 @@ public class WriteBufferManagerTest {
     spyManager.setSendSizeLimit(30);
     spyManager.addRecord(0, testKey, testValue);
     spyManager.addRecord(1, testKey, testValue);
-    spyManager.setSpillFunc(event -> CompletableFuture.supplyAsync(() -> {
-      int partitionId = event.getShuffleDataInfoList().get(0).getPartitionId();
-      if (partitionId == 1) {
-        try {
-          Thread.sleep(2000);
-        } catch (InterruptedException interruptedException) {
-          // ignore.
-        }
-      }
-      event.getProcessedCallbackChain().stream().forEach(x -> x.run());
-      return event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum();
-    }));
+    spyManager.setSpillFunc(
+        event ->
+            CompletableFuture.supplyAsync(
+                () -> {
+                  int partitionId = event.getShuffleDataInfoList().get(0).getPartitionId();
+                  if (partitionId == 1) {
+                    try {
+                      Thread.sleep(2000);
+                    } catch (InterruptedException interruptedException) {
+                      // ignore.
+                    }
+                  }
+                  event.getProcessedCallbackChain().stream().forEach(x -> x.run());
+                  return event.getShuffleDataInfoList().stream()
+                      .mapToLong(x -> x.getFreeMemory())
+                      .sum();
+                }));
     releasedSize = spyManager.spill(1000, mock(WriteBufferManager.class));
     assertEquals(32, releasedSize);
     assertEquals(32, spyManager.getUsedBytes());

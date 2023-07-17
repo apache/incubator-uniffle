@@ -21,5 +21,4 @@ package org.apache.uniffle.common.util;
 public interface TripleFunction<T, U, E, R> {
 
   R accept(T t, U u, E e);
-
 }

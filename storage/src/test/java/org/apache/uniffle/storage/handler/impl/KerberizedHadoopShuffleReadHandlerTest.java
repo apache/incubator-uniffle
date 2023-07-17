@@ -39,9 +39,6 @@ public class KerberizedHadoopShuffleReadHandlerTest extends KerberizedHadoopBase
   @Test
   public void test() throws Exception {
     HadoopShuffleReadHandlerTest.createAndRunCases(
-        kerberizedHadoop.getSchemeAndAuthorityPrefix(),
-        kerberizedHadoop.getConf(),
-        "alex"
-    );
+        kerberizedHadoop.getSchemeAndAuthorityPrefix(), kerberizedHadoop.getConf(), "alex");
   }
 }

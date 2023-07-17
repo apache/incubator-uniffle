@@ -24,18 +24,16 @@ import java.io.IOException;
 import org.apache.hadoop.io.Writable;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 
-
 public class GetShuffleServerRequest implements Writable {
   private TezTaskAttemptID currentTaskAttemptID;
   private int startIndex;
   private int partitionNum;
   private int shuffleId;
 
-  public GetShuffleServerRequest() {
-  }
+  public GetShuffleServerRequest() {}
 
-  public GetShuffleServerRequest(TezTaskAttemptID currentTaskAttemptID, int startIndex,
-                                 int partitionNum, int shuffleId) {
+  public GetShuffleServerRequest(
+      TezTaskAttemptID currentTaskAttemptID, int startIndex, int partitionNum, int shuffleId) {
     this.currentTaskAttemptID = currentTaskAttemptID;
     this.startIndex = startIndex;
     this.partitionNum = partitionNum;
@@ -70,12 +68,15 @@ public class GetShuffleServerRequest implements Writable {
   @Override
   public String toString() {
     return "GetShuffleServerRequest{"
-            + "currentTaskAttemptID="
-            + currentTaskAttemptID
-            + ", startIndex=" + startIndex
-            + ", partitionNum=" + partitionNum
-            + ", shuffleId=" + shuffleId
-            + '}';
+        + "currentTaskAttemptID="
+        + currentTaskAttemptID
+        + ", startIndex="
+        + startIndex
+        + ", partitionNum="
+        + partitionNum
+        + ", shuffleId="
+        + shuffleId
+        + '}';
   }
 
   public TezTaskAttemptID getCurrentTaskAttemptID() {

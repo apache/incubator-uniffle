@@ -64,24 +64,8 @@ public class AccessQuotaCheckerTest {
   @Test
   public void testAccessInfoRequiredShuffleServers() throws Exception {
     List<ServerNode> nodes = Lists.newArrayList();
-    ServerNode node1 = new ServerNode(
-        "1",
-        "1",
-        0,
-        50,
-        20,
-        1000,
-        0,
-        null);
-    ServerNode node2 = new ServerNode(
-        "1",
-        "1",
-        0,
-        50,
-        20,
-        1000,
-        0,
-        null);
+    ServerNode node1 = new ServerNode("1", "1", 0, 50, 20, 1000, 0, null);
+    ServerNode node2 = new ServerNode("1", "1", 0, 50, 20, 1000, 0, null);
     nodes.add(node1);
     nodes.add(node2);
 
@@ -89,20 +73,20 @@ public class AccessQuotaCheckerTest {
     when(clusterManager.getServerList(any())).thenReturn(nodes);
 
     CoordinatorConf conf = new CoordinatorConf();
-    conf.set(COORDINATOR_ACCESS_CHECKERS,
-        Collections.singletonList(AccessQuotaChecker.class.getName()));
+    conf.set(
+        COORDINATOR_ACCESS_CHECKERS, Collections.singletonList(AccessQuotaChecker.class.getName()));
     conf.set(COORDINATOR_QUOTA_DEFAULT_APP_NUM, 3);
     ApplicationManager applicationManager = new ApplicationManager(conf);
-    AccessManager accessManager = new AccessManager(conf, clusterManager,
-        applicationManager.getQuotaManager(), new Configuration());
+    AccessManager accessManager =
+        new AccessManager(
+            conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
 
     AccessQuotaChecker accessQuotaChecker =
         (AccessQuotaChecker) accessManager.getAccessCheckers().get(0);
 
     /**
-     * case1:
-     * when user set default app num is 5, and commit 6 app which current app num is greater than default app num,
-     * it will reject 1 app and return false.
+     * case1: when user set default app num is 5, and commit 6 app which current app num is greater
+     * than default app num, it will reject 1 app and return false.
      */
     Map<String, String> properties = new HashMap<>();
     AccessInfo accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
@@ -112,28 +96,32 @@ public class AccessQuotaCheckerTest {
     assertFalse(accessQuotaChecker.check(accessInfo).isSuccess());
 
     /**
-     * case2:
-     * when setting the valid required shuffle nodes number of job and available servers greater than
-     * the COORDINATOR_SHUFFLE_NODES_MAX, it should return true
+     * case2: when setting the valid required shuffle nodes number of job and available servers
+     * greater than the COORDINATOR_SHUFFLE_NODES_MAX, it should return true
      */
     conf.set(COORDINATOR_QUOTA_DEFAULT_APP_NUM, 0);
     applicationManager = new ApplicationManager(conf);
-    accessManager = new AccessManager(conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
+    accessManager =
+        new AccessManager(
+            conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
     accessQuotaChecker = (AccessQuotaChecker) accessManager.getAccessCheckers().get(0);
     accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
     assertFalse(accessQuotaChecker.check(accessInfo).isSuccess());
 
     /**
-     * case3:
-     * when setting two checkers and the valid required shuffle nodes number of job and available servers less than
-     * the COORDINATOR_SHUFFLE_NODES_MAX, it should return false
+     * case3: when setting two checkers and the valid required shuffle nodes number of job and
+     * available servers less than the COORDINATOR_SHUFFLE_NODES_MAX, it should return false
      */
     conf.set(COORDINATOR_QUOTA_DEFAULT_APP_NUM, 10);
-    conf.set(COORDINATOR_ACCESS_CHECKERS,
-        Arrays.asList("org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker",
+    conf.set(
+        COORDINATOR_ACCESS_CHECKERS,
+        Arrays.asList(
+            "org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker",
             "org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker"));
     applicationManager = new ApplicationManager(conf);
-    accessManager = new AccessManager(conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
+    accessManager =
+        new AccessManager(
+            conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
     accessQuotaChecker = (AccessQuotaChecker) accessManager.getAccessCheckers().get(0);
     final AccessClusterLoadChecker accessClusterLoadChecker =
         (AccessClusterLoadChecker) accessManager.getAccessCheckers().get(1);
