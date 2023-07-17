@@ -129,6 +129,12 @@ public class RssBaseConf extends RssConf {
           .defaultValue(ClientType.GRPC)
           .withDescription("client type for rss");
 
+  public static final ConfigOption<Long> RSS_CLIENT_GRPC_TIME_OUT =
+      ConfigOptions.key("rss.rpc.client.grpc.timeout")
+          .longType()
+          .defaultValue(60 * 1000L)
+          .withDescription("timeout value of grpc client");
+
   public static final ConfigOption<String> RSS_STORAGE_TYPE =
       ConfigOptions.key("rss.storage.type")
           .stringType()
