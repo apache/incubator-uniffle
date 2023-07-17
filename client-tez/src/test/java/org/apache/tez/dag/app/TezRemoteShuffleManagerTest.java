@@ -36,6 +36,7 @@ import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.tez.common.GetShuffleServerRequest;
 import org.apache.tez.common.GetShuffleServerResponse;
+import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.TezRemoteShuffleUmbilicalProtocol;
 import org.apache.tez.common.security.JobTokenIdentifier;
 import org.apache.tez.common.security.JobTokenSecretManager;
@@ -50,6 +51,7 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -105,6 +107,8 @@ public class TezRemoteShuffleManagerTest {
       ApplicationId appId = ApplicationId.newInstance(9999, 72);
 
       Configuration conf = new Configuration();
+      conf.set(RssTezConfig.RSS_TEST_MODE_ENABLE, "true");
+      conf.set(RssTezConfig.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
       JobTokenIdentifier identifier = new JobTokenIdentifier(new Text(appId.toString()));
       JobTokenSecretManager secretManager = new JobTokenSecretManager();
       String tokenIdentifier = appId.toString();
@@ -209,6 +213,8 @@ public class TezRemoteShuffleManagerTest {
 
       Configuration conf = new Configuration();
       conf.set("hadoop.security.authentication", "kerberos");
+      conf.set(RssTezConfig.RSS_TEST_MODE_ENABLE, "true");
+      conf.set(RssTezConfig.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
       JobTokenIdentifier identifier = new JobTokenIdentifier(new Text(appId.toString()));
       JobTokenSecretManager secretManager = new JobTokenSecretManager();
       String tokenIdentifier = appId.toString();
