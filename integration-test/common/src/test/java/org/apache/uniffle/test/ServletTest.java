@@ -59,11 +59,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServletTest extends IntegrationTestBase {
   private static final String URL_PREFIX = "http://127.0.0.1:12345/api/";
+  private static final String SINGLE_NODE_URL = URL_PREFIX + "server/nodes/%s";
   private static final String NODES_URL = URL_PREFIX + "server/nodes";
   private static final String LOSTNODES_URL = URL_PREFIX + "server/nodes?status=LOST";
   private static final String UNHEALTHYNODES_URL = URL_PREFIX + "server/nodes?status=UNHEALTHY";
   private static final String DECOMMISSION_URL = URL_PREFIX + "server/decommission";
   private static final String CANCEL_DECOMMISSION_URL = URL_PREFIX + "server/cancelDecommission";
+  private static final String DECOMMISSION_SINGLENODE_URL = URL_PREFIX + "server/%s/decommission";
+  private static final String CANCEL_DECOMMISSION_SINGLENODE_URL =
+      URL_PREFIX + "server/%s/cancelDecommission";
   private static CoordinatorServer coordinatorServer;
   private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -113,6 +117,18 @@ public class ServletTest extends IntegrationTestBase {
   }
 
   @Test
+  public void testGetSingleNode() throws Exception {
+    ShuffleServer shuffleServer = shuffleServers.get(0);
+    String content = TestUtils.httpGet(String.format(SINGLE_NODE_URL, shuffleServer.getId()));
+    Response<HashMap<String, Object>> response =
+        objectMapper.readValue(content, new TypeReference<Response<HashMap<String, Object>>>() {});
+    HashMap<String, Object> server = response.getData();
+    assertEquals(0, response.getCode());
+    assertEquals(SHUFFLE_SERVER_PORT, Integer.parseInt(server.get("grpcPort").toString()));
+    assertEquals(ServerStatus.ACTIVE.toString(), server.get("status"));
+  }
+
+  @Test
   public void testNodesServlet() throws Exception {
     String content = TestUtils.httpGet(NODES_URL);
     Response<List<HashMap<String, Object>>> response =
@@ -127,16 +143,6 @@ public class ServletTest extends IntegrationTestBase {
     assertEquals(
         SHUFFLE_SERVER_PORT + 1, Integer.parseInt(serverList.get(1).get("grpcPort").toString()));
     assertEquals(ServerStatus.ACTIVE.toString(), serverList.get(1).get("status"));
-
-    // Only fetch one server.
-    ShuffleServer shuffleServer = shuffleServers.get(0);
-    content = TestUtils.httpGet(NODES_URL + "?id=" + shuffleServer.getId());
-    response =
-        objectMapper.readValue(
-            content, new TypeReference<Response<List<HashMap<String, Object>>>>() {});
-    serverList = response.getData();
-    assertEquals(1, serverList.size());
-    assertEquals(shuffleServer.getId(), serverList.get(0).get("id"));
   }
 
   @Test
@@ -198,7 +204,7 @@ public class ServletTest extends IntegrationTestBase {
     String content =
         TestUtils.httpPost(
             CANCEL_DECOMMISSION_URL, objectMapper.writeValueAsString(decommissionRequest));
-    Response<Object> response = objectMapper.readValue(content, Response.class);
+    Response<?> response = objectMapper.readValue(content, Response.class);
     assertEquals(-1, response.getCode());
     assertNotNull(response.getErrMsg());
     CancelDecommissionRequest cancelDecommissionRequest = new CancelDecommissionRequest();
@@ -236,6 +242,51 @@ public class ServletTest extends IntegrationTestBase {
     content =
         TestUtils.httpPost(
             CANCEL_DECOMMISSION_URL, objectMapper.writeValueAsString(cancelDecommissionRequest));
+    response = objectMapper.readValue(content, Response.class);
+    assertEquals(0, response.getCode());
+    assertEquals(ServerStatus.ACTIVE, shuffleServer.getServerStatus());
+  }
+
+  @Test
+  public void testDecommissionSingleNode() throws Exception {
+    ShuffleServer shuffleServer = shuffleServers.get(0);
+    assertEquals(ServerStatus.ACTIVE, shuffleServer.getServerStatus());
+    String content =
+        TestUtils.httpPost(String.format(CANCEL_DECOMMISSION_SINGLENODE_URL, "not_exist_serverId"));
+    Response<?> response = objectMapper.readValue(content, Response.class);
+    assertEquals(-1, response.getCode());
+    assertNotNull(response.getErrMsg());
+    content =
+        TestUtils.httpPost(
+            String.format(CANCEL_DECOMMISSION_SINGLENODE_URL, shuffleServer.getId()));
+    response = objectMapper.readValue(content, Response.class);
+    assertEquals(0, response.getCode());
+
+    // Register shuffle, avoid server exiting immediately.
+    ShuffleServerGrpcClient shuffleServerClient =
+        new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
+    shuffleServerClient.registerShuffle(
+        new RssRegisterShuffleRequest(
+            "testDecommissionServlet_appId", 0, Lists.newArrayList(new PartitionRange(0, 1)), ""));
+    content = TestUtils.httpPost(String.format(DECOMMISSION_SINGLENODE_URL, shuffleServer.getId()));
+    response = objectMapper.readValue(content, Response.class);
+    assertEquals(0, response.getCode());
+    assertEquals(ServerStatus.DECOMMISSIONING, shuffleServer.getServerStatus());
+
+    // Wait until shuffle server send heartbeat to coordinator.
+    Awaitility.await()
+        .timeout(10, TimeUnit.SECONDS)
+        .until(
+            () ->
+                ServerStatus.DECOMMISSIONING.equals(
+                    coordinatorServer
+                        .getClusterManager()
+                        .getServerNodeById(shuffleServer.getId())
+                        .getStatus()));
+    // Cancel decommission.
+    content =
+        TestUtils.httpPost(
+            String.format(CANCEL_DECOMMISSION_SINGLENODE_URL, shuffleServer.getId()));
     response = objectMapper.readValue(content, Response.class);
     assertEquals(0, response.getCode());
     assertEquals(ServerStatus.ACTIVE, shuffleServer.getServerStatus());
