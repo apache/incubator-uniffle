@@ -115,7 +115,8 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
     this.taskVertexName = outputContext.getTaskVertexName();
     this.destinationVertexName = outputContext.getDestinationVertexName();
     this.applicationAttemptId =
-        ApplicationAttemptId.newInstance(outputContext.getApplicationId(), outputContext.getDAGAttemptNumber());
+        ApplicationAttemptId.newInstance(
+            outputContext.getApplicationId(), outputContext.getDAGAttemptNumber());
     LOG.info("taskAttemptId is {}", taskAttemptId.toString());
     LOG.info("taskVertexName is {}", taskVertexName);
     LOG.info("destinationVertexName is {}", destinationVertexName);

@@ -169,7 +169,8 @@ public class RssUnorderedPartitionedKVOutput extends AbstractLogicalOutput {
     this.shuffleId =
         RssTezUtils.computeShuffleId(tezDAGID.getId(), sourceVertexId, destinationVertexId);
     this.applicationAttemptId =
-        ApplicationAttemptId.newInstance(outputContext.getApplicationId(), outputContext.getDAGAttemptNumber());
+        ApplicationAttemptId.newInstance(
+            outputContext.getApplicationId(), outputContext.getDAGAttemptNumber());
     GetShuffleServerRequest request =
         new GetShuffleServerRequest(
             this.taskAttemptId, this.mapNum, this.numOutputs, this.shuffleId);

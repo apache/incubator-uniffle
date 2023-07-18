@@ -84,7 +84,8 @@ import static org.mockito.Mockito.when;
 
 public class RssShuffleManagerTest {
   public static final ApplicationId APP_ID = ApplicationId.newInstance(9999, 72);
-  public static final ApplicationAttemptId APPATTEMPT_ID = ApplicationAttemptId.newInstance(APP_ID, 1);
+  public static final ApplicationAttemptId APPATTEMPT_ID =
+      ApplicationAttemptId.newInstance(APP_ID, 1);
   private static final String FETCHER_HOST = "localhost";
   private static final int PORT = 8080;
   private static final String PATH_COMPONENT = "attempttmp";

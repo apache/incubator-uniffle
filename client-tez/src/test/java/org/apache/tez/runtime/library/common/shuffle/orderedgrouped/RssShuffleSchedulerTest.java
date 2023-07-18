@@ -89,9 +89,7 @@ public class RssShuffleSchedulerTest {
   @Timeout(value = 60000, unit = TimeUnit.MILLISECONDS)
   public void testReducerHealth1() throws IOException {
     try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-      shuffleUtils
-          .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
-          .thenReturn(4);
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
 
       Configuration conf = new TezConfiguration();
       testReducerHealth1(conf);
@@ -177,9 +175,7 @@ public class RssShuffleSchedulerTest {
   @Timeout(value = 60000, unit = TimeUnit.MILLISECONDS)
   public void testReducerHealth2() throws IOException, InterruptedException {
     try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-      shuffleUtils
-          .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
-          .thenReturn(4);
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
 
       long startTime = System.currentTimeMillis() - 500000;
       Shuffle shuffle = mock(Shuffle.class);
@@ -338,9 +334,7 @@ public class RssShuffleSchedulerTest {
   @Timeout(value = 60000, unit = TimeUnit.MILLISECONDS)
   public void testReducerHealth3() throws IOException {
     try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-      shuffleUtils
-          .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
-          .thenReturn(4);
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
 
       long startTime = System.currentTimeMillis() - 500000;
       Shuffle shuffle = mock(Shuffle.class);
@@ -427,9 +421,7 @@ public class RssShuffleSchedulerTest {
   @Timeout(value = 60000, unit = TimeUnit.MILLISECONDS)
   public void testReducerHealth4() throws IOException {
     try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-      shuffleUtils
-          .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
-          .thenReturn(4);
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
 
       long startTime = System.currentTimeMillis() - 500000;
       Shuffle shuffle = mock(Shuffle.class);
@@ -570,9 +562,7 @@ public class RssShuffleSchedulerTest {
   @Timeout(value = 60000, unit = TimeUnit.MILLISECONDS)
   public void testReducerHealth5() throws IOException {
     try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-      shuffleUtils
-          .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
-          .thenReturn(4);
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
 
       long startTime = System.currentTimeMillis() - 500000;
       Shuffle shuffle = mock(Shuffle.class);
@@ -656,9 +646,7 @@ public class RssShuffleSchedulerTest {
   @Timeout(value = 60000, unit = TimeUnit.MILLISECONDS)
   public void testReducerHealth6() throws IOException {
     try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-      shuffleUtils
-          .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
-          .thenReturn(4);
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
 
       Configuration conf = new TezConfiguration();
       conf.setBoolean(
@@ -759,9 +747,7 @@ public class RssShuffleSchedulerTest {
   @Timeout(value = 60000, unit = TimeUnit.MILLISECONDS)
   public void testReducerHealth7() throws IOException {
     try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-      shuffleUtils
-          .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
-          .thenReturn(4);
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
 
       long startTime = System.currentTimeMillis() - 500000;
       Shuffle shuffle = mock(Shuffle.class);
@@ -861,9 +847,7 @@ public class RssShuffleSchedulerTest {
   @Timeout(value = 60000, unit = TimeUnit.MILLISECONDS)
   public void testPenalty() throws IOException, InterruptedException {
     try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-      shuffleUtils
-          .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
-          .thenReturn(4);
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
 
       long startTime = System.currentTimeMillis();
       Shuffle shuffle = mock(Shuffle.class);
@@ -899,9 +883,7 @@ public class RssShuffleSchedulerTest {
   @Timeout(value = 20000, unit = TimeUnit.MILLISECONDS)
   public void testProgressDuringGetHostWait() throws IOException, InterruptedException {
     try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-      shuffleUtils
-          .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
-          .thenReturn(4);
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
 
       long startTime = System.currentTimeMillis();
       Configuration conf = new TezConfiguration();
@@ -930,9 +912,7 @@ public class RssShuffleSchedulerTest {
   @Timeout(value = 30000, unit = TimeUnit.MILLISECONDS)
   public void testShutdownWithInterrupt() throws Exception {
     try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-      shuffleUtils
-          .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
-          .thenReturn(4);
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
 
       InputContext inputContext = createTezInputContext();
       Configuration conf = new TezConfiguration();

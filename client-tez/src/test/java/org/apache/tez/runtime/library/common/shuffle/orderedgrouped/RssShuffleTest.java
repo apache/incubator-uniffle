@@ -80,9 +80,7 @@ public class RssShuffleTest {
   @Timeout(value = 10000, unit = TimeUnit.MILLISECONDS)
   public void testSchedulerTerminatesOnException() throws IOException, InterruptedException {
     try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-      shuffleUtils
-          .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
-          .thenReturn(4);
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
 
       InputContext inputContext = createTezInputContext();
       TezConfiguration conf = new TezConfiguration();
@@ -117,9 +115,7 @@ public class RssShuffleTest {
   @Timeout(value = 10000, unit = TimeUnit.MILLISECONDS)
   public void testKillSelf() throws IOException, InterruptedException {
     try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-      shuffleUtils
-          .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
-          .thenReturn(4);
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
 
       InputContext inputContext = createTezInputContext();
       TezConfiguration conf = new TezConfiguration();

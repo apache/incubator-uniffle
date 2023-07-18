@@ -1814,7 +1814,11 @@ class RssShuffleScheduler extends ShuffleScheduler {
     String clientType = "";
     Roaring64NavigableMap blockIdBitmap =
         writeClient.getShuffleResult(
-            clientType, shuffleServerInfoSet, applicationAttemptId.toString(), shuffleId, mapHost.getPartitionId());
+            clientType,
+            shuffleServerInfoSet,
+            applicationAttemptId.toString(),
+            shuffleId,
+            mapHost.getPartitionId());
     writeClient.close();
 
     int appAttemptId = applicationAttemptId.getAttemptId();

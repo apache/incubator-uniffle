@@ -55,15 +55,14 @@ import static org.mockito.Mockito.when;
 public class RssOrderedGroupedKVInputTest {
 
   private static final ApplicationId APPID = ApplicationId.newInstance(9999, 72);
-  private static final ApplicationAttemptId APPATTEMPT_ID = ApplicationAttemptId.newInstance(APPID, 1);
+  private static final ApplicationAttemptId APPATTEMPT_ID =
+      ApplicationAttemptId.newInstance(APPID, 1);
 
   @Test
   @Timeout(value = 10000, unit = TimeUnit.MILLISECONDS)
   public void testInterruptWhileAwaitingInput() throws IOException {
     try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-      shuffleUtils
-          .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
-          .thenReturn(4);
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
       InputContext inputContext = createMockInputContext();
       RssOrderedGroupedKVInput kvInput = new OrderedGroupedKVInputForTest(inputContext, 10);
       kvInput.initialize();

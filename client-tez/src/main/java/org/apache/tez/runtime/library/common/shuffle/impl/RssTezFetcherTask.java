@@ -146,7 +146,8 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
         shuffleId,
         partition);
     Roaring64NavigableMap blockIdBitmap =
-        writeClient.getShuffleResult(clientType, serverInfoSet, applicationAttemptId.toString(), shuffleId, partition);
+        writeClient.getShuffleResult(
+            clientType, serverInfoSet, applicationAttemptId.toString(), shuffleId, partition);
     writeClient.close();
     rssAllBlockIdBitmapMap.put(partition, blockIdBitmap);
 
@@ -235,7 +236,12 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
 
   @Override
   public int hashCode() {
-    return Objects.hash(partition, numPhysicalInputs, dagIdentifier, vertexIndex, reduceId,
+    return Objects.hash(
+        partition,
+        numPhysicalInputs,
+        dagIdentifier,
+        vertexIndex,
+        reduceId,
         applicationAttemptId.toString());
   }
 }

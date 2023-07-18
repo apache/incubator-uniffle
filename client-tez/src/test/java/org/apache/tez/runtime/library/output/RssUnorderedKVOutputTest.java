@@ -135,8 +135,7 @@ public class RssUnorderedKVOutputTest {
           new ShuffleAssignmentsInfoWritable(shuffleAssignmentsInfo));
       doReturn(response).when(protocol).getShuffleAssignments(any());
       rpc.when(() -> RPC.getProxy(any(), anyLong(), any(), any())).thenReturn(protocol);
-      try (MockedStatic<ConverterUtils> converterUtils =
-               Mockito.mockStatic(ConverterUtils.class)) {
+      try (MockedStatic<ConverterUtils> converterUtils = Mockito.mockStatic(ConverterUtils.class)) {
         ContainerId containerId = ContainerId.newContainerId(OutputTestHelpers.APP_ATTEMPT_ID, 1);
         converterUtils.when(() -> ConverterUtils.toContainerId(null)).thenReturn(containerId);
         converterUtils

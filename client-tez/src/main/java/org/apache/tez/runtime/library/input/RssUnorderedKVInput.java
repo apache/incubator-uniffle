@@ -135,7 +135,8 @@ public class RssUnorderedKVInput extends AbstractLogicalInput {
     this.shuffleId =
         RssTezUtils.computeShuffleId(tezDAGID.getId(), sourceVertexId, destinationVertexId);
     this.applicationAttemptId =
-        ApplicationAttemptId.newInstance(getContext().getApplicationId(), getContext().getDAGAttemptNumber());
+        ApplicationAttemptId.newInstance(
+            getContext().getApplicationId(), getContext().getDAGAttemptNumber());
     return Collections.emptyList();
   }
 
