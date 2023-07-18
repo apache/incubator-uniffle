@@ -102,10 +102,6 @@ public class WriteBufferManagerTest {
 
     Configuration conf = new Configuration();
     FileSystem localFs = FileSystem.getLocal(conf);
-//    Path workingDir = new Path(System.getProperty("test.build.data",
-//        System.getProperty("java.io.tmpdir", "/tmp")),
-//        RssOrderedPartitionedKVOutputTest.class.getName()).makeQualified(
-//        localFs.getUri(), localFs.getWorkingDirectory());
     Path workingDir = new Path(System.getProperty("test.build.data",
         System.getProperty("java.io.tmpdir", tmpDir.toString())),
         RssOrderedPartitionedKVOutputTest.class.getName()).makeQualified(
@@ -301,10 +297,6 @@ public class WriteBufferManagerTest {
 
     Configuration conf = new Configuration();
     FileSystem localFs = FileSystem.getLocal(conf);
-//    Path workingDir = new Path(System.getProperty("test.build.data",
-//        System.getProperty("java.io.tmpdir", "/tmp")),
-//        RssOrderedPartitionedKVOutputTest.class.getName()).makeQualified(
-//        localFs.getUri(), localFs.getWorkingDirectory());
     Path workingDir = new Path(System.getProperty("test.build.data",
         System.getProperty("java.io.tmpdir", tmpDir.toString())),
         RssOrderedPartitionedKVOutputTest.class.getName()).makeQualified(
