@@ -107,7 +107,7 @@ public class ServerResource {
   }
 
   @POST
-  @Path("/application")
+  @Path("/applications")
   @Produces({ MediaType.APPLICATION_JSON })
   public Response<Object> application(ApplicationRequest params) {
     Set<String> filterApplications = new HashSet<>();

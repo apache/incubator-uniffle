@@ -49,10 +49,7 @@ public class AdminRestApi {
 
   public List<Application> getApplications(String applications) throws JsonProcessingException {
     List<Application> results = new ArrayList<>();
-    Map<String, Object> params = new HashMap<>();
-    String[] applicationArrays = applications.split(",");
-    params.put("applications", applicationArrays);
-    String postJson = this.getClient().post("/api/server/applications",  params, null);
+    String postJson = getApplicationsJson(applications);
     if (StringUtils.isNotBlank(postJson)) {
       ObjectMapper objectMapper = new ObjectMapper();
       ApplicationResponse response = objectMapper.readValue(postJson,  new TypeReference<ApplicationResponse>() {});
@@ -61,6 +58,13 @@ public class AdminRestApi {
       }
     }
     return results;
+  }
+
+  public String getApplicationsJson(String applications) {
+    Map<String, Object> params = new HashMap<>();
+    String[] applicationArrays = applications.split(",");
+    params.put("applications", applicationArrays);
+    return this.getClient().post("/api/server/applications",  params, null);
   }
 
   private RestClient getClient() {
