@@ -72,7 +72,7 @@ public class ClientUtils {
       String storageType,
       ShuffleWriteClient shuffleWriteClient) {
     RemoteStorageInfo remoteStorage = defaultRemoteStorage;
-    if (StorageType.withRemoteStorage(StorageType.valueOf(storageType))) {
+    if (storageType != null && StorageType.withRemoteStorage(StorageType.valueOf(storageType))) {
       if (remoteStorage.isEmpty() && dynamicConfEnabled) {
         // fallback to dynamic conf on coordinator
         remoteStorage = shuffleWriteClient.fetchRemoteStorage(appId);
