@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
-import org.apache.tez.common.IdUtils;
 import org.apache.tez.common.TezUtils;
 import org.apache.tez.common.counters.TezCounters;
 import org.apache.tez.dag.api.TezConfiguration;
@@ -55,27 +54,25 @@ import static org.mockito.Mockito.when;
 
 public class RssOrderedGroupedKVInputTest {
 
+  private static final ApplicationId APPID = ApplicationId.newInstance(9999, 72);
+  private static final ApplicationAttemptId APPATTEMPT_ID = ApplicationAttemptId.newInstance(APPID, 1);
+
   @Test
   @Timeout(value = 10000, unit = TimeUnit.MILLISECONDS)
   public void testInterruptWhileAwaitingInput() throws IOException {
-    try (MockedStatic<IdUtils> idUtils = Mockito.mockStatic(IdUtils.class)) {
-      ApplicationId appId = ApplicationId.newInstance(9999, 72);
-      ApplicationAttemptId appAttemptId = ApplicationAttemptId.newInstance(appId, 1);
-      idUtils.when(IdUtils::getApplicationAttemptId).thenReturn(appAttemptId);
-      try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-        shuffleUtils
-            .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
-            .thenReturn(4);
-        InputContext inputContext = createMockInputContext();
-        RssOrderedGroupedKVInput kvInput = new OrderedGroupedKVInputForTest(inputContext, 10);
-        kvInput.initialize();
-        kvInput.start();
-        try {
-          kvInput.getReader();
-          fail("getReader should not return since underlying inputs are not ready");
-        } catch (Exception e) {
-          assertTrue(e instanceof RssShuffle.RssShuffleError);
-        }
+    try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
+      shuffleUtils
+          .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
+          .thenReturn(4);
+      InputContext inputContext = createMockInputContext();
+      RssOrderedGroupedKVInput kvInput = new OrderedGroupedKVInputForTest(inputContext, 10);
+      kvInput.initialize();
+      kvInput.start();
+      try {
+        kvInput.getReader();
+        fail("getReader should not return since underlying inputs are not ready");
+      } catch (Exception e) {
+        assertTrue(e instanceof RssShuffle.RssShuffleError);
       }
     }
   }
@@ -123,6 +120,8 @@ public class RssOrderedGroupedKVInputTest {
             })
         .when(inputContext)
         .requestInitialMemory(any(long.class), any(MemoryUpdateCallbackHandler.class));
+    doReturn(APPID).when(inputContext).getApplicationId();
+    doReturn(APPATTEMPT_ID.getAttemptId()).when(inputContext).getDAGAttemptNumber();
     return inputContext;
   }
 

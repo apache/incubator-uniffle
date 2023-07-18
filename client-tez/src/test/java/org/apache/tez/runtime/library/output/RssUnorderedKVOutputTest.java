@@ -34,7 +34,6 @@ import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.tez.common.GetShuffleServerResponse;
-import org.apache.tez.common.IdUtils;
 import org.apache.tez.common.ShuffleAssignmentsInfoWritable;
 import org.apache.tez.common.TezCommonUtils;
 import org.apache.tez.common.TezRemoteShuffleUmbilicalProtocol;
@@ -136,28 +135,20 @@ public class RssUnorderedKVOutputTest {
           new ShuffleAssignmentsInfoWritable(shuffleAssignmentsInfo));
       doReturn(response).when(protocol).getShuffleAssignments(any());
       rpc.when(() -> RPC.getProxy(any(), anyLong(), any(), any())).thenReturn(protocol);
-      try (MockedStatic<IdUtils> idUtils = Mockito.mockStatic(IdUtils.class)) {
-        idUtils
-            .when(() -> IdUtils.getApplicationAttemptId())
-            .thenReturn(OutputTestHelpers.APP_ATTEMPT_ID);
-        idUtils
-            .when(() -> IdUtils.getAppAttemptId())
-            .thenReturn(OutputTestHelpers.APP_ATTEMPT_ID.getAttemptId());
-        try (MockedStatic<ConverterUtils> converterUtils =
-            Mockito.mockStatic(ConverterUtils.class)) {
-          ContainerId containerId = ContainerId.newContainerId(OutputTestHelpers.APP_ATTEMPT_ID, 1);
-          converterUtils.when(() -> ConverterUtils.toContainerId(null)).thenReturn(containerId);
-          converterUtils
-              .when(() -> ConverterUtils.toContainerId(anyString()))
-              .thenReturn(containerId);
-          OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
-          int numPartitions = 1;
-          RssUnorderedKVOutput output = new RssUnorderedKVOutput(outputContext, numPartitions);
-          output.initialize();
-          output.start();
-          Assertions.assertNotNull(output.getWriter());
-          output.close();
-        }
+      try (MockedStatic<ConverterUtils> converterUtils =
+               Mockito.mockStatic(ConverterUtils.class)) {
+        ContainerId containerId = ContainerId.newContainerId(OutputTestHelpers.APP_ATTEMPT_ID, 1);
+        converterUtils.when(() -> ConverterUtils.toContainerId(null)).thenReturn(containerId);
+        converterUtils
+            .when(() -> ConverterUtils.toContainerId(anyString()))
+            .thenReturn(containerId);
+        OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
+        int numPartitions = 1;
+        RssUnorderedKVOutput output = new RssUnorderedKVOutput(outputContext, numPartitions);
+        output.initialize();
+        output.start();
+        Assertions.assertNotNull(output.getWriter());
+        output.close();
       }
     }
   }

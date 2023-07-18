@@ -26,8 +26,8 @@ import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.CallableWithNdc;
-import org.apache.tez.common.IdUtils;
 import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.runtime.api.InputContext;
@@ -62,7 +62,6 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
   Map<Integer, Roaring64NavigableMap> rssSuccessBlockIdBitmapMap;
   private String clientType = null;
   private final int numPhysicalInputs;
-  private final String appId;
   private final int dagIdentifier;
   private final int vertexIndex;
   private final int reduceId;
@@ -73,6 +72,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
   private final int partitionNumPerRange;
   private final int partitionNum;
   private final int shuffleId;
+  private final ApplicationAttemptId applicationAttemptId;
 
   public RssTezFetcherTask(
       FetcherCallback fetcherCallback,
@@ -81,6 +81,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
       FetchedInputAllocator inputManager,
       int partition,
       int shuffleId,
+      ApplicationAttemptId applicationAttemptId,
       List<InputAttemptIdentifier> inputs,
       Set<ShuffleServerInfo> serverInfoList,
       Map<Integer, Roaring64NavigableMap> rssAllBlockIdBitmapMap,
@@ -95,6 +96,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
     this.partition = partition; // partition id to fetch
     this.inputs = inputs;
     this.shuffleId = shuffleId;
+    this.applicationAttemptId = applicationAttemptId;
 
     this.serverInfoSet = serverInfoList;
     this.rssAllBlockIdBitmapMap = rssAllBlockIdBitmapMap;
@@ -102,7 +104,6 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
     this.numPhysicalInputs = numPhysicalInputs;
     this.partitionNum = partitionNum;
 
-    this.appId = IdUtils.getApplicationAttemptId().toString();
     this.dagIdentifier = this.inputContext.getDagIdentifier();
     this.vertexIndex = this.inputContext.getTaskVertexIndex();
 
@@ -141,17 +142,17 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
         "WriteClient getShuffleResult, clientType:{}, serverInfoSet:{}, appId:{}, shuffleId:{}, partition:{}",
         clientType,
         serverInfoSet,
-        appId,
+        applicationAttemptId.toString(),
         shuffleId,
         partition);
     Roaring64NavigableMap blockIdBitmap =
-        writeClient.getShuffleResult(clientType, serverInfoSet, appId, shuffleId, partition);
+        writeClient.getShuffleResult(clientType, serverInfoSet, applicationAttemptId.toString(), shuffleId, partition);
     writeClient.close();
     rssAllBlockIdBitmapMap.put(partition, blockIdBitmap);
 
     // get map-completion events to generate RSS taskIDs
     // final RssEventFetcher eventFetcher = new RssEventFetcher(inputs, numPhysicalInputs);
-    int appAttemptId = IdUtils.getAppAttemptId();
+    int appAttemptId = applicationAttemptId.getAttemptId();
     Roaring64NavigableMap taskIdBitmap =
         RssTezUtils.fetchAllRssTaskIds(new HashSet<>(inputs), numPhysicalInputs, appAttemptId);
     LOG.info(
@@ -174,7 +175,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
       boolean expectedTaskIdsBitmapFilterEnable = serverInfoSet.size() > 1;
       CreateShuffleReadClientRequest request =
           new CreateShuffleReadClientRequest(
-              appId,
+              applicationAttemptId.toString(),
               shuffleId,
               partition,
               basePath,
@@ -229,11 +230,12 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
         && dagIdentifier == that.dagIdentifier
         && vertexIndex == that.vertexIndex
         && reduceId == that.reduceId
-        && Objects.equals(appId, that.appId);
+        && Objects.equals(applicationAttemptId.toString(), that.applicationAttemptId.toString());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(partition, numPhysicalInputs, dagIdentifier, vertexIndex, reduceId, appId);
+    return Objects.hash(partition, numPhysicalInputs, dagIdentifier, vertexIndex, reduceId,
+        applicationAttemptId.toString());
   }
 }
