@@ -35,7 +35,7 @@ public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManag
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleManagerGrpcClient.class);
   private static RssBaseConf rssConf = new RssBaseConf();
-  private long rpcTimeout = rssConf.getLong(RssBaseConf.RSS_CLIENT_TYPE_GRPC_TIMEOUT);
+  private long rpcTimeout = rssConf.getLong(RssBaseConf.RSS_CLIENT_TYPE_GRPC_TIMEOUT_MS);
   private ShuffleManagerGrpc.ShuffleManagerBlockingStub blockingStub;
 
   public ShuffleManagerGrpcClient(String host, int port) {
