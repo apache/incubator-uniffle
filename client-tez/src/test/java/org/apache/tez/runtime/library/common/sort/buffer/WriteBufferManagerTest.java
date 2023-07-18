@@ -102,17 +102,20 @@ public class WriteBufferManagerTest {
 
     Configuration conf = new Configuration();
     FileSystem localFs = FileSystem.getLocal(conf);
-    Path workingDir = new Path(System.getProperty("test.build.data",
-        System.getProperty("java.io.tmpdir", tmpDir.toString())),
-        RssOrderedPartitionedKVOutputTest.class.getName()).makeQualified(
-        localFs.getUri(), localFs.getWorkingDirectory());
+    Path workingDir =
+        new Path(
+                System.getProperty(
+                    "test.build.data", System.getProperty("java.io.tmpdir", tmpDir.toString())),
+                RssOrderedPartitionedKVOutputTest.class.getName())
+            .makeQualified(localFs.getUri(), localFs.getWorkingDirectory());
     conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_KEY_CLASS, Text.class.getName());
     conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_VALUE_CLASS, Text.class.getName());
-    conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_PARTITIONER_CLASS,
-        HashPartitioner.class.getName());
+    conf.set(
+        TezRuntimeConfiguration.TEZ_RUNTIME_PARTITIONER_CLASS, HashPartitioner.class.getName());
     conf.setStrings(TezRuntimeFrameworkConfigs.LOCAL_DIRS, workingDir.toString());
     OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
-    TezCounter mapOutputByteCounter = outputContext.getCounters().findCounter(TaskCounter.OUTPUT_BYTES);
+    TezCounter mapOutputByteCounter =
+        outputContext.getCounters().findCounter(TaskCounter.OUTPUT_BYTES);
 
     WriteBufferManager<BytesWritable, BytesWritable> bufferManager =
         new WriteBufferManager(
@@ -195,17 +198,20 @@ public class WriteBufferManagerTest {
 
     Configuration conf = new Configuration();
     FileSystem localFs = FileSystem.getLocal(conf);
-    Path workingDir = new Path(System.getProperty("test.build.data",
-        System.getProperty("java.io.tmpdir", tmpDir.toString())),
-        RssOrderedPartitionedKVOutputTest.class.getName()).makeQualified(
-        localFs.getUri(), localFs.getWorkingDirectory());
+    Path workingDir =
+        new Path(
+                System.getProperty(
+                    "test.build.data", System.getProperty("java.io.tmpdir", tmpDir.toString())),
+                RssOrderedPartitionedKVOutputTest.class.getName())
+            .makeQualified(localFs.getUri(), localFs.getWorkingDirectory());
     conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_KEY_CLASS, Text.class.getName());
     conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_VALUE_CLASS, Text.class.getName());
-    conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_PARTITIONER_CLASS,
-        HashPartitioner.class.getName());
+    conf.set(
+        TezRuntimeConfiguration.TEZ_RUNTIME_PARTITIONER_CLASS, HashPartitioner.class.getName());
     conf.setStrings(TezRuntimeFrameworkConfigs.LOCAL_DIRS, workingDir.toString());
     OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
-    TezCounter mapOutputByteCounter = outputContext.getCounters().findCounter(TaskCounter.OUTPUT_BYTES);
+    TezCounter mapOutputByteCounter =
+        outputContext.getCounters().findCounter(TaskCounter.OUTPUT_BYTES);
 
     WriteBufferManager<BytesWritable, BytesWritable> bufferManager =
         new WriteBufferManager(
@@ -266,7 +272,8 @@ public class WriteBufferManagerTest {
   }
 
   @Test
-  public void testCommitBlocksWhenMemoryShuffleDisabled(@TempDir File tmpDir) throws IOException, InterruptedException {
+  public void testCommitBlocksWhenMemoryShuffleDisabled(@TempDir File tmpDir)
+      throws IOException, InterruptedException {
     TezTaskAttemptID tezTaskAttemptID =
         TezTaskAttemptID.fromString("attempt_1681717153064_3770270_1_00_000000_0");
     final long maxMemSize = 10240;
@@ -297,17 +304,20 @@ public class WriteBufferManagerTest {
 
     Configuration conf = new Configuration();
     FileSystem localFs = FileSystem.getLocal(conf);
-    Path workingDir = new Path(System.getProperty("test.build.data",
-        System.getProperty("java.io.tmpdir", tmpDir.toString())),
-        RssOrderedPartitionedKVOutputTest.class.getName()).makeQualified(
-        localFs.getUri(), localFs.getWorkingDirectory());
+    Path workingDir =
+        new Path(
+                System.getProperty(
+                    "test.build.data", System.getProperty("java.io.tmpdir", tmpDir.toString())),
+                RssOrderedPartitionedKVOutputTest.class.getName())
+            .makeQualified(localFs.getUri(), localFs.getWorkingDirectory());
     conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_KEY_CLASS, Text.class.getName());
     conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_VALUE_CLASS, Text.class.getName());
-    conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_PARTITIONER_CLASS,
-        HashPartitioner.class.getName());
+    conf.set(
+        TezRuntimeConfiguration.TEZ_RUNTIME_PARTITIONER_CLASS, HashPartitioner.class.getName());
     conf.setStrings(TezRuntimeFrameworkConfigs.LOCAL_DIRS, workingDir.toString());
     OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
-    TezCounter mapOutputByteCounter = outputContext.getCounters().findCounter(TaskCounter.OUTPUT_BYTES);
+    TezCounter mapOutputByteCounter =
+        outputContext.getCounters().findCounter(TaskCounter.OUTPUT_BYTES);
 
     WriteBufferManager<BytesWritable, BytesWritable> bufferManager =
         new WriteBufferManager(
