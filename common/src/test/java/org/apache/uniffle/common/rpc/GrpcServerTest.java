@@ -42,6 +42,8 @@ public class GrpcServerTest {
 
   @Test
   public void testGrpcExecutorPool() throws Exception {
+    // Explicitly setting the synchroinizing variable as false
+    GrpcServer.setExecuted(false); 
     GRPCMetrics grpcMetrics = GRPCMetrics.getEmptyGRPCMetrics();
     grpcMetrics.register(new CollectorRegistry(true));
     GrpcServer.GrpcThreadPoolExecutor executor =

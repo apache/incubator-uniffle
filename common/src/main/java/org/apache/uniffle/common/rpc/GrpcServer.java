@@ -49,7 +49,7 @@ public class GrpcServer implements ServerInterface {
 
   private static final Logger LOG = LoggerFactory.getLogger(GrpcServer.class);
 
-  private static volatile boolean hasExecuted = false;
+  private static volatile boolean hasExecuted;
   private Server server;
   private final int port;
   private int listenPort;
@@ -79,9 +79,14 @@ public class GrpcServer implements ServerInterface {
             grpcMetrics);
   }
   
-  //This method is only used for testing
+  //This method is only used for the sake of synchronizing one test
   public static boolean getExecuted() {
     return hasExecuted;
+  }
+
+  //This method is only used for the sake of synchronizing one test
+  public static void setExecuted(boolean status) {
+    hasExecuted = status;
   }
 
   private Server buildGrpcServer(int serverPort) {
