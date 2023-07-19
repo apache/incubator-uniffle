@@ -69,6 +69,7 @@ public class GrpcServerTest {
           });
     }
 
+    while(org.apache.uniffle.common.rpc.GrpcServer.testVarCount < 1) { Thread.yield(); }
     Thread.sleep(120);
     double activeThreads =
         grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY).get();

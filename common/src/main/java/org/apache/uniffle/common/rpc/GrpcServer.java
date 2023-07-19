@@ -49,6 +49,7 @@ public class GrpcServer implements ServerInterface {
 
   private static final Logger LOG = LoggerFactory.getLogger(GrpcServer.class);
 
+  public static int testVarCount=0;
   private Server server;
   private final int port;
   private int listenPort;
@@ -157,6 +158,7 @@ public class GrpcServer implements ServerInterface {
       grpcMetrics.incGauge(GRPCMetrics.GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY);
       grpcMetrics.setGauge(
           GRPCMetrics.GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY, getQueue().size());
+      testVarCount=1;
       super.beforeExecute(t, r);
     }
 
