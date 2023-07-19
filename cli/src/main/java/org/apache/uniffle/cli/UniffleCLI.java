@@ -48,25 +48,40 @@ public class UniffleCLI extends AbstractCustomCommandLine {
   private final Option uniffleOutPutJson;
   private final Option help;
 
-  private static final List<String> APPLICATIONS_HEADER = Arrays.asList(
-      "ApplicationId", "User", "Last HeartBeatTime", "RemoteStoragePath");
+  private static final List<String> APPLICATIONS_HEADER =
+      Arrays.asList("ApplicationId", "User", "Last HeartBeatTime", "RemoteStoragePath");
 
   public UniffleCLI(String shortPrefix, String longPrefix) {
     allOptions = new Options();
-    
-    uniffleClientCli = new Option(shortPrefix + "c", longPrefix + "cli",
-        true, "This is an client cli command that will print args.");
-    uniffleAdminCli = new Option(shortPrefix + "a", longPrefix + "admin",
-        true, "This is an admin command that will print args.");
-    uniffleApplicationCli = new Option(shortPrefix + "apps", longPrefix + "applications",
-        true, "The command will be used to print a list of applications. \n"
-         + "We usually use the command like this: \n"
-         + "uniffle -apps|--applications application_167671938823_0001,application_167671938823_0002");
-    uniffleOutPutJson = new Option(shortPrefix + "o", longPrefix + "output-json",
-        true, "We can use the -o|--output-json option to "
-         + " output application information to a json file");
-    help = new Option(shortPrefix + "h", longPrefix + "help",
-        false, "Help for the Uniffle CLI.");
+
+    uniffleClientCli =
+        new Option(
+            shortPrefix + "c",
+            longPrefix + "cli",
+            true,
+            "This is an client cli command that will print args.");
+    uniffleAdminCli =
+        new Option(
+            shortPrefix + "a",
+            longPrefix + "admin",
+            true,
+            "This is an admin command that will print args.");
+    uniffleApplicationCli =
+        new Option(
+            shortPrefix + "apps",
+            longPrefix + "applications",
+            true,
+            "The command will be used to print a list of applications. \n"
+                + "We usually use the command like this: \n"
+                + "uniffle -apps|--applications application_167671938823_0001,application_167671938823_0002");
+    uniffleOutPutJson =
+        new Option(
+            shortPrefix + "o",
+            longPrefix + "output-json",
+            true,
+            "We can use the -o|--output-json option to "
+                + " output application information to a json file");
+    help = new Option(shortPrefix + "h", longPrefix + "help", false, "Help for the Uniffle CLI.");
 
     allOptions.addOption(uniffleClientCli);
     allOptions.addOption(uniffleAdminCli);
@@ -117,20 +132,28 @@ public class UniffleCLI extends AbstractCustomCommandLine {
         try (FileOutputStream fos = new FileOutputStream(outPutPath);
             OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
           osw.write(json);
-          System.out.println("applications json data has been written to the file("
-              + outPutPath + ").");
+          System.out.println(
+              "applications json data has been written to the file(" + outPutPath + ").");
         } catch (IOException e) {
-          System.out.println("An error occurred while writing the applications json data to the file("
-              + outPutPath + ").");
+          System.out.println(
+              "An error occurred while writing the applications json data to the file("
+                  + outPutPath
+                  + ").");
         }
       }
-      try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8))) {
-        FormattingCLIUtils formattingCLIUtils = new FormattingCLIUtils("Uniflle Applications")
-            .addHeaders(APPLICATIONS_HEADER);
+      try (PrintWriter writer =
+          new PrintWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8))) {
+        FormattingCLIUtils formattingCLIUtils =
+            new FormattingCLIUtils("Uniflle Applications").addHeaders(APPLICATIONS_HEADER);
         List<Application> applications = getApplications(cmd);
         if (applications != null) {
-          applications.forEach(app -> formattingCLIUtils.addLine(app.getApplicationId(),
-              app.getUser(), app.getLastHeartBeatTime(), app.getRemoteStoragePath()));
+          applications.forEach(
+              app ->
+                  formattingCLIUtils.addLine(
+                      app.getApplicationId(),
+                      app.getUser(),
+                      app.getLastHeartBeatTime(),
+                      app.getRemoteStoragePath()));
         }
         writer.print(formattingCLIUtils.render());
         writer.flush();
@@ -160,14 +183,15 @@ public class UniffleCLI extends AbstractCustomCommandLine {
    * @param cmd command.
    * @return application list.
    * @throws UniffleCliArgsException an exception that indicates an error or issue related to
-   * command-line arguments in the Uniffle program.
+   *     command-line arguments in the Uniffle program.
    * @throws JsonProcessingException Intermediate base class for all problems encountered when
-   * processing (parsing, generating) JSON content that are not pure I/O problems.
+   *     processing (parsing, generating) JSON content that are not pure I/O problems.
    */
   private List<Application> getApplications(CommandLine cmd)
       throws UniffleCliArgsException, JsonProcessingException {
     if (client == null) {
-      throw new UniffleCliArgsException("Missing Coordinator host address and grpc port parameters.");
+      throw new UniffleCliArgsException(
+          "Missing Coordinator host address and grpc port parameters.");
     }
     AdminRestApi adminRestApi = new AdminRestApi(client);
     String applications = cmd.getOptionValue(uniffleApplicationCli.getOpt()).trim();
@@ -180,14 +204,15 @@ public class UniffleCLI extends AbstractCustomCommandLine {
    * @param cmd command.
    * @return application Json.
    * @throws UniffleCliArgsException an exception that indicates an error or issue related to
-   * command-line arguments in the Uniffle program.
+   *     command-line arguments in the Uniffle program.
    * @throws JsonProcessingException Intermediate base class for all problems encountered when
-   * processing (parsing, generating) JSON content that are not pure I/O problems.
+   *     processing (parsing, generating) JSON content that are not pure I/O problems.
    */
   private String getApplicationsJson(CommandLine cmd)
       throws UniffleCliArgsException, JsonProcessingException {
     if (client == null) {
-      throw new UniffleCliArgsException("Missing Coordinator host address and grpc port parameters.");
+      throw new UniffleCliArgsException(
+          "Missing Coordinator host address and grpc port parameters.");
     }
     AdminRestApi adminRestApi = new AdminRestApi(client);
     String applications = cmd.getOptionValue(uniffleApplicationCli.getOpt()).trim();

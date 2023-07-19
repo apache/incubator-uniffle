@@ -38,12 +38,17 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
 
   public UniffleAdminCLI(String shortPrefix, String longPrefix) {
     allOptions = new Options();
-    
-    refreshCheckerCli = new Option(shortPrefix + "r", longPrefix + "refreshChecker",
-        false, "This is an admin command that will refresh access checker.");
-    help = new Option(shortPrefix + "h", longPrefix + "help",
-        false, "Help for the Uniffle Admin CLI.");
-    
+
+    refreshCheckerCli =
+        new Option(
+            shortPrefix + "r",
+            longPrefix + "refreshChecker",
+            false,
+            "This is an admin command that will refresh access checker.");
+    help =
+        new Option(
+            shortPrefix + "h", longPrefix + "help", false, "Help for the Uniffle Admin CLI.");
+
     allOptions.addOption(refreshCheckerCli);
     allOptions.addOption(help);
   }

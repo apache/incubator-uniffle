@@ -128,7 +128,7 @@ public class ServerResource extends BaseResource {
 
   @POST
   @Path("/applications")
-  @Produces({ MediaType.APPLICATION_JSON })
+  @Produces({MediaType.APPLICATION_JSON})
   public Response<Object> application(ApplicationRequest params) {
     Set<String> filterApplications = new HashSet<>();
     if (params != null && CollectionUtils.isNotEmpty(params.getApplications())) {
@@ -148,7 +148,7 @@ public class ServerResource extends BaseResource {
   }
 
   private ApplicationManager getApplicationManager() {
-    return (ApplicationManager) servletContext.getAttribute(
-        ApplicationManager.class.getCanonicalName());
+    return (ApplicationManager)
+        servletContext.getAttribute(ApplicationManager.class.getCanonicalName());
   }
 }

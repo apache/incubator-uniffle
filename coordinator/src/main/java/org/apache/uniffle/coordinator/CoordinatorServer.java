@@ -193,7 +193,8 @@ public class CoordinatorServer extends ReconfigurableBase {
     jettyServer.registerInstance(ClusterManager.class, clusterManager);
     jettyServer.registerInstance(AccessManager.class, accessManager);
     jettyServer.registerInstance(ApplicationManager.class, applicationManager);
-    jettyServer.registerInstance(CollectorRegistry.class.getCanonicalName() + "#server",
+    jettyServer.registerInstance(
+        CollectorRegistry.class.getCanonicalName() + "#server",
         CoordinatorMetrics.getCollectorRegistry());
     jettyServer.registerInstance(
         CollectorRegistry.class.getCanonicalName() + "#grpc", grpcMetrics.getCollectorRegistry());

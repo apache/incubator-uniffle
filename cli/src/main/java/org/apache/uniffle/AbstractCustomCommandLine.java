@@ -30,11 +30,11 @@ import org.apache.uniffle.client.UniffleRestClient;
 
 public abstract class AbstractCustomCommandLine implements CustomCommandLine {
 
-  protected final Option coordinatorHost = new Option("host", "coordinatorHost",
-      true, "This is coordinator server host.");
-  protected final Option coordinatorPort = new Option("port", "coordinatorPort",
-      true, "This is coordinator server port.");
-  protected final Option ssl = new Option("s",  "ssl", false, "use SSL");
+  protected final Option coordinatorHost =
+      new Option("host", "coordinatorHost", true, "This is coordinator server host.");
+  protected final Option coordinatorPort =
+      new Option("port", "coordinatorPort", true, "This is coordinator server port.");
+  protected final Option ssl = new Option("s", "ssl", false, "use SSL");
 
   protected UniffleRestClient client;
 

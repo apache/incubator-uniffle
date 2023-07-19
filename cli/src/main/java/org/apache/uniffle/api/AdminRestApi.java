@@ -51,7 +51,8 @@ public class AdminRestApi {
     String postJson = getApplicationsJson(applications);
     if (StringUtils.isNotBlank(postJson)) {
       ObjectMapper objectMapper = new ObjectMapper();
-      ApplicationResponse response = objectMapper.readValue(postJson,  new TypeReference<ApplicationResponse>() {});
+      ApplicationResponse response =
+          objectMapper.readValue(postJson, new TypeReference<ApplicationResponse>() {});
       if (response != null && response.getData() != null) {
         results.addAll(response.getData());
       }
@@ -63,7 +64,7 @@ public class AdminRestApi {
     Map<String, Object> params = new HashMap<>();
     String[] applicationArrays = applications.split(",");
     params.put("applications", applicationArrays);
-    return this.getClient().post("/api/server/applications",  params, null);
+    return this.getClient().post("/api/server/applications", params, null);
   }
 
   private RestClient getClient() {

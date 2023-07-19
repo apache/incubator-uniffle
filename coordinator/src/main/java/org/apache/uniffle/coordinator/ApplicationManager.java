@@ -367,8 +367,7 @@ public class ApplicationManager implements Closeable {
   }
 
   /**
-   * Get Applications,
-   * The list contains applicationId, user, lastHeartBeatTime, remoteStoragePath.
+   * Get Applications, The list contains applicationId, user, lastHeartBeatTime, remoteStoragePath.
    *
    * @param appIds Application List
    * @return Applications.
@@ -378,17 +377,21 @@ public class ApplicationManager implements Closeable {
     for (Map.Entry<String, Map<String, Long>> entry : currentUserAndApp.entrySet()) {
       String user = entry.getKey();
       Map<String, Long> apps = entry.getValue();
-      apps.forEach((appId, heartBeatTime) -> {
-        if (appIds.size() == 0 || appIds.contains(appId)) {
-          RemoteStorageInfo remoteStorageInfo = appIdToRemoteStorageInfo.getOrDefault(appId, null);
-          Application application = new Application.Builder()
-              .applicationId(appId)
-              .user(user)
-              .lastHeartBeatTime(heartBeatTime)
-              .remoteStoragePath(remoteStorageInfo).build();
-          applications.add(application);
-        }
-      });
+      apps.forEach(
+          (appId, heartBeatTime) -> {
+            if (appIds.size() == 0 || appIds.contains(appId)) {
+              RemoteStorageInfo remoteStorageInfo =
+                  appIdToRemoteStorageInfo.getOrDefault(appId, null);
+              Application application =
+                  new Application.Builder()
+                      .applicationId(appId)
+                      .user(user)
+                      .lastHeartBeatTime(heartBeatTime)
+                      .remoteStoragePath(remoteStorageInfo)
+                      .build();
+              applications.add(application);
+            }
+          });
     }
     LOG.info("getApplications >> appIds = {}", applications);
     return applications;

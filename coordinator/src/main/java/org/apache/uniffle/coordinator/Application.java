@@ -31,9 +31,7 @@ public class Application {
   private String lastHeartBeatTime;
   private String remoteStoragePath;
 
-  public Application() {
-
-  }
+  public Application() {}
 
   public Application(Builder builder) {
     this.applicationId = builder.applicationId;
@@ -48,8 +46,7 @@ public class Application {
     private String lastHeartBeatTime;
     private String remoteStoragePath;
 
-    public Builder() {
-    }
+    public Builder() {}
 
     public Builder applicationId(String applicationId) {
       this.applicationId = applicationId;
@@ -137,10 +134,18 @@ public class Application {
   @Override
   public String toString() {
     return "Application{"
-        + "applicationId='" + applicationId + '\''
-        + ", user='" + user + '\''
-        + ", lastHeartBeatTime='" + lastHeartBeatTime + '\''
-        + ", remoteStoragePath='" + remoteStoragePath + '\''
+        + "applicationId='"
+        + applicationId
+        + '\''
+        + ", user='"
+        + user
+        + '\''
+        + ", lastHeartBeatTime='"
+        + lastHeartBeatTime
+        + '\''
+        + ", remoteStoragePath='"
+        + remoteStoragePath
+        + '\''
         + '}';
   }
 }

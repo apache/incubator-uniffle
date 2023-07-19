@@ -1,13 +1,12 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,9 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * The main core class that generates the ASCII TABLE.
- */
+/** The main core class that generates the ASCII TABLE. */
 public final class FormattingCLIUtils {
   /** Table title. */
   private String title;
@@ -40,6 +37,7 @@ public final class FormattingCLIUtils {
 
   /**
    * Contains the title constructor.
+   *
    * @param title titleName
    */
   public FormattingCLIUtils(String title) {
@@ -47,9 +45,7 @@ public final class FormattingCLIUtils {
     this.title = title;
   }
 
-  /**
-   * Initialize the data.
-   */
+  /** Initialize the data. */
   private void init() {
     this.join = new StringBuilder();
     this.tableRows = new ArrayList<>();
@@ -58,6 +54,7 @@ public final class FormattingCLIUtils {
 
   /**
    * Adds elements from the collection to the header data in the table.
+   *
    * @param headers Header data
    * @return FormattingCLIUtils object
    */
@@ -67,6 +64,7 @@ public final class FormattingCLIUtils {
 
   /**
    * Adds a row of normal data to the table.
+   *
    * @param objects Common row data
    * @return FormattingCLIUtils object
    */
@@ -76,6 +74,7 @@ public final class FormattingCLIUtils {
 
   /**
    * Adds the middle row of data to the table.
+   *
    * @param tableRowType TableRowType
    * @param objects Table row data
    * @return FormattingCLIUtils object
@@ -84,8 +83,9 @@ public final class FormattingCLIUtils {
     if (objects != null && objects.length > 0) {
       int len = objects.length;
       if (this.maxColMap.size() > len) {
-        throw new IllegalArgumentException("The number of columns that inserted a row "
-            + "of data into the table is different from the number of previous columns, check!");
+        throw new IllegalArgumentException(
+            "The number of columns that inserted a row "
+                + "of data into the table is different from the number of previous columns, check!");
       }
       List<String> lines = new ArrayList<>();
       for (int i = 0; i < len; i++) {
@@ -106,9 +106,7 @@ public final class FormattingCLIUtils {
     return this;
   }
 
-  /**
-   * Builds the string for the row of the table title.
-   */
+  /** Builds the string for the row of the table title. */
   private void buildTitle() {
     if (this.title != null) {
       int maxTitleSize = 0;
@@ -123,7 +121,8 @@ public final class FormattingCLIUtils {
       for (int i = 0; i < maxTitleSize + 2; i++) {
         this.join.append("-");
       }
-      this.join.append("+\n")
+      this.join
+          .append("+\n")
           .append("|")
           .append(StrUtils.center(this.title, maxTitleSize + 2, ' '))
           .append("|\n");
@@ -131,9 +130,7 @@ public final class FormattingCLIUtils {
     }
   }
 
-  /**
-   * Build the table, first build the title, and then walk through each row of data to build.
-   */
+  /** Build the table, first build the title, and then walk through each row of data to build. */
   private void buildTable() {
     this.buildTitle();
     for (int i = 0, len = this.tableRows.size(); i < len; i++) {
@@ -160,6 +157,7 @@ public final class FormattingCLIUtils {
 
   /**
    * Method to build a border row.
+   *
    * @param data dataLine
    */
   private void buildRowBorder(List<String> data) {
@@ -175,19 +173,20 @@ public final class FormattingCLIUtils {
 
   /**
    * A way to build rows of data.
+   *
    * @param data dataLine
    */
   private void buildRowLine(List<String> data) {
     this.join.append("|");
     for (int i = 0, len = data.size(); i < len; i++) {
-      this.join.append(StrUtils.center(data.get(i), this.maxColMap.get(i) + 2, ' '))
-          .append("|");
+      this.join.append(StrUtils.center(data.get(i), this.maxColMap.get(i) + 2, ' ')).append("|");
     }
     this.join.append("\n");
   }
 
   /**
    * Rendering is born as a result.
+   *
    * @return ASCII string of Table
    */
   public String render() {
@@ -195,9 +194,7 @@ public final class FormattingCLIUtils {
     return this.join.toString();
   }
 
-  /**
-   * The type of each table row and the entity class of the data.
-   */
+  /** The type of each table row and the entity class of the data. */
   private static class TableRow {
     private TableRowType tableRowType;
     private List<String> data;
@@ -208,19 +205,18 @@ public final class FormattingCLIUtils {
     }
   }
 
-  /**
-   * An enumeration class that distinguishes between table headers and normal table data.
-   */
+  /** An enumeration class that distinguishes between table headers and normal table data. */
   private enum TableRowType {
-    TITLE, HEADER, LINE
+    TITLE,
+    HEADER,
+    LINE
   }
 
-  /**
-   * String utility class.
-   */
+  /** String utility class. */
   private static final class StrUtils {
     /**
      * Puts a string in the middle of a given size.
+     *
      * @param str Character string
      * @param size Total size
      * @param padChar Fill character
@@ -240,6 +236,7 @@ public final class FormattingCLIUtils {
 
     /**
      * Left-fill the given string and size.
+     *
      * @param str String
      * @param size totalSize
      * @param padChar Fill character
@@ -252,6 +249,7 @@ public final class FormattingCLIUtils {
 
     /**
      * Right-fill the given string and size.
+     *
      * @param str String
      * @param size totalSize
      * @param padChar Fill character
@@ -264,6 +262,7 @@ public final class FormattingCLIUtils {
 
     /**
      * Re-fill characters as strings.
+     *
      * @param ch String
      * @param repeat Number of repeats
      * @return String
