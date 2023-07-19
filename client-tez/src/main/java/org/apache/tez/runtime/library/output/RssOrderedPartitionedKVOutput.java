@@ -39,6 +39,7 @@ import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
+import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.tez.common.GetShuffleServerRequest;
 import org.apache.tez.common.GetShuffleServerResponse;
@@ -99,6 +100,7 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
   private String taskVertexName;
   private String destinationVertexName;
   private int shuffleId;
+  private ApplicationAttemptId applicationAttemptId;
 
   public RssOrderedPartitionedKVOutput(OutputContext outputContext, int numPhysicalOutputs) {
     super(outputContext, numPhysicalOutputs);
@@ -112,6 +114,9 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
             RssTezUtils.uniqueIdentifierToAttemptId(outputContext.getUniqueIdentifier()));
     this.taskVertexName = outputContext.getTaskVertexName();
     this.destinationVertexName = outputContext.getDestinationVertexName();
+    this.applicationAttemptId =
+        ApplicationAttemptId.newInstance(
+            outputContext.getApplicationId(), outputContext.getDAGAttemptNumber());
     LOG.info("taskAttemptId is {}", taskAttemptId.toString());
     LOG.info("taskVertexName is {}", taskVertexName);
     LOG.info("destinationVertexName is {}", destinationVertexName);
@@ -216,6 +221,7 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
               numOutputs,
               memoryUpdateCallbackHandler.getMemoryAssigned(),
               shuffleId,
+              applicationAttemptId,
               partitionToServers);
       LOG.info("Initialized RssSorter.");
       isStarted.set(true);

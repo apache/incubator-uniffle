@@ -24,9 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.security.token.Token;
-import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
-import org.apache.tez.common.IdUtils;
 import org.apache.tez.common.TezCommonUtils;
 import org.apache.tez.common.TezExecutors;
 import org.apache.tez.common.TezSharedExecutor;
@@ -51,6 +49,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+import static org.apache.tez.runtime.library.common.shuffle.impl.RssShuffleManagerTest.APPATTEMPT_ID;
+import static org.apache.tez.runtime.library.common.shuffle.impl.RssShuffleManagerTest.APP_ID;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -79,42 +79,34 @@ public class RssShuffleTest {
   @Test
   @Timeout(value = 10000, unit = TimeUnit.MILLISECONDS)
   public void testSchedulerTerminatesOnException() throws IOException, InterruptedException {
-    try (MockedStatic<IdUtils> idUtils = Mockito.mockStatic(IdUtils.class)) {
-      ApplicationId appId = ApplicationId.newInstance(9999, 72);
-      ApplicationAttemptId appAttemptId = ApplicationAttemptId.newInstance(appId, 1);
-      idUtils.when(IdUtils::getApplicationAttemptId).thenReturn(appAttemptId);
+    try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
 
-      try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-        shuffleUtils
-            .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
-            .thenReturn(4);
+      InputContext inputContext = createTezInputContext();
+      TezConfiguration conf = new TezConfiguration();
+      conf.setLong(Constants.TEZ_RUNTIME_TASK_MEMORY, 300000L);
+      RssShuffle shuffle = new RssShuffle(inputContext, conf, 1, 3000000L, 0, APPATTEMPT_ID);
+      try {
+        shuffle.run();
+        ShuffleScheduler scheduler = shuffle.rssScheduler;
+        MergeManager mergeManager = shuffle.merger;
+        assertFalse(scheduler.isShutdown());
+        assertFalse(mergeManager.isShutdown());
 
-        InputContext inputContext = createTezInputContext();
-        TezConfiguration conf = new TezConfiguration();
-        conf.setLong(Constants.TEZ_RUNTIME_TASK_MEMORY, 300000L);
-        RssShuffle shuffle = new RssShuffle(inputContext, conf, 1, 3000000L, 0);
-        try {
-          shuffle.run();
-          ShuffleScheduler scheduler = shuffle.rssScheduler;
-          MergeManager mergeManager = shuffle.merger;
-          assertFalse(scheduler.isShutdown());
-          assertFalse(mergeManager.isShutdown());
+        String exceptionMessage = "Simulating fetch failure";
+        shuffle.reportException(new IOException(exceptionMessage));
 
-          String exceptionMessage = "Simulating fetch failure";
-          shuffle.reportException(new IOException(exceptionMessage));
-
-          while (!scheduler.isShutdown()) {
-            Thread.sleep(100L);
-          }
-          assertTrue(scheduler.isShutdown());
-
-          while (!mergeManager.isShutdown()) {
-            Thread.sleep(100L);
-          }
-          assertTrue(mergeManager.isShutdown());
-        } finally {
-          shuffle.shutdown();
+        while (!scheduler.isShutdown()) {
+          Thread.sleep(100L);
         }
+        assertTrue(scheduler.isShutdown());
+
+        while (!mergeManager.isShutdown()) {
+          Thread.sleep(100L);
+        }
+        assertTrue(mergeManager.isShutdown());
+      } finally {
+        shuffle.shutdown();
       }
     }
   }
@@ -122,45 +114,37 @@ public class RssShuffleTest {
   @Test
   @Timeout(value = 10000, unit = TimeUnit.MILLISECONDS)
   public void testKillSelf() throws IOException, InterruptedException {
-    try (MockedStatic<IdUtils> idUtils = Mockito.mockStatic(IdUtils.class)) {
-      ApplicationId appId = ApplicationId.newInstance(9999, 72);
-      ApplicationAttemptId appAttemptId = ApplicationAttemptId.newInstance(appId, 1);
-      idUtils.when(IdUtils::getApplicationAttemptId).thenReturn(appAttemptId);
+    try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
+      shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
 
-      try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
-        shuffleUtils
-            .when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any()))
-            .thenReturn(4);
+      InputContext inputContext = createTezInputContext();
+      TezConfiguration conf = new TezConfiguration();
+      conf.setLong(Constants.TEZ_RUNTIME_TASK_MEMORY, 300000L);
+      RssShuffle shuffle = new RssShuffle(inputContext, conf, 1, 3000000L, 0, APPATTEMPT_ID);
+      try {
+        shuffle.run();
+        ShuffleScheduler scheduler = shuffle.rssScheduler;
+        assertFalse(scheduler.isShutdown());
 
-        InputContext inputContext = createTezInputContext();
-        TezConfiguration conf = new TezConfiguration();
-        conf.setLong(Constants.TEZ_RUNTIME_TASK_MEMORY, 300000L);
-        RssShuffle shuffle = new RssShuffle(inputContext, conf, 1, 3000000L, 0);
-        try {
-          shuffle.run();
-          ShuffleScheduler scheduler = shuffle.rssScheduler;
-          assertFalse(scheduler.isShutdown());
+        // killSelf() would invoke close(). Internally Shuffle --> merge.close() --> finalMerge()
+        // gets called. In MergeManager::finalMerge(), it would throw illegal argument exception
+        // as
+        // uniqueIdentifier is not present in inputContext. This is used as means of simulating
+        // exception.
+        scheduler.killSelf(new Exception(), "due to internal error");
+        assertTrue(scheduler.isShutdown());
 
-          // killSelf() would invoke close(). Internally Shuffle --> merge.close() --> finalMerge()
-          // gets called. In MergeManager::finalMerge(), it would throw illegal argument exception
-          // as
-          // uniqueIdentifier is not present in inputContext. This is used as means of simulating
-          // exception.
-          scheduler.killSelf(new Exception(), "due to internal error");
-          assertTrue(scheduler.isShutdown());
-
-          // killSelf() should not result in reporting failure to AM
-          ArgumentCaptor<Throwable> throwableArgumentCaptor =
-              ArgumentCaptor.forClass(Throwable.class);
-          ArgumentCaptor<String> stringArgumentCaptor = ArgumentCaptor.forClass(String.class);
-          verify(inputContext, times(0))
-              .reportFailure(
-                  eq(TaskFailureType.NON_FATAL),
-                  throwableArgumentCaptor.capture(),
-                  stringArgumentCaptor.capture());
-        } finally {
-          shuffle.shutdown();
-        }
+        // killSelf() should not result in reporting failure to AM
+        ArgumentCaptor<Throwable> throwableArgumentCaptor =
+            ArgumentCaptor.forClass(Throwable.class);
+        ArgumentCaptor<String> stringArgumentCaptor = ArgumentCaptor.forClass(String.class);
+        verify(inputContext, times(0))
+            .reportFailure(
+                eq(TaskFailureType.NON_FATAL),
+                throwableArgumentCaptor.capture(),
+                stringArgumentCaptor.capture());
+      } finally {
+        shuffle.shutdown();
       }
     }
   }
@@ -190,6 +174,8 @@ public class RssShuffleTest {
             new JobTokenIdentifier(new Text("text")), new JobTokenSecretManager());
     ByteBuffer tokenBuffer = TezCommonUtils.serializeServiceData(sessionToken);
     doReturn(tokenBuffer).when(inputContext).getServiceConsumerMetaData(anyString());
+    doReturn(APP_ID).when(inputContext).getApplicationId();
+    doReturn(APPATTEMPT_ID.getAttemptId()).when(inputContext).getDAGAttemptNumber();
     return inputContext;
   }
 }

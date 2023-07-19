@@ -43,6 +43,7 @@ import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.hadoop.util.ReflectionUtils;
+import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.CallableWithNdc;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.common.TezUtilsInternal;
@@ -104,7 +105,8 @@ public class RssShuffle implements ExceptionReporter {
       Configuration conf,
       int numInputs,
       long initialMemoryAvailable,
-      int shuffleId)
+      int shuffleId,
+      ApplicationAttemptId applicationAttemptId)
       throws IOException {
     this.inputContext = inputContext;
     this.conf = conf;
@@ -188,7 +190,8 @@ public class RssShuffle implements ExceptionReporter {
             ifileReadAhead,
             ifileReadAheadLength,
             srcNameTrimmed,
-            shuffleId);
+            shuffleId,
+            applicationAttemptId);
 
     this.mergePhaseTime = inputContext.getCounters().findCounter(TaskCounter.MERGE_PHASE_TIME);
     this.shufflePhaseTime = inputContext.getCounters().findCounter(TaskCounter.SHUFFLE_PHASE_TIME);
