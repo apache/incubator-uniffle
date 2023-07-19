@@ -29,6 +29,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +46,8 @@ public class UniffleCLI extends AbstractCustomCommandLine {
   private final Option uniffleClientCli;
   private final Option uniffleAdminCli;
   private final Option uniffleApplicationCli;
-  private final Option uniffleOutPutJson;
+  private final Option uniffleOutPutFormatJson;
+  private final Option uniffleOutPutFile;
   private final Option help;
 
   private static final List<String> APPLICATIONS_HEADER =
@@ -68,19 +70,24 @@ public class UniffleCLI extends AbstractCustomCommandLine {
             "This is an admin command that will print args.");
     uniffleApplicationCli =
         new Option(
-            shortPrefix + "apps",
+            null,
             longPrefix + "applications",
             true,
             "The command will be used to print a list of applications. \n"
                 + "We usually use the command like this: \n"
-                + "uniffle -apps|--applications application_167671938823_0001,application_167671938823_0002");
-    uniffleOutPutJson =
+                + "uniffle --applications application_167671938823_0001,application_167671938823_0002.");
+    uniffleOutPutFormatJson =
         new Option(
             shortPrefix + "o",
-            longPrefix + "output-json",
+            longPrefix + "output-format",
             true,
-            "We can use the -o|--output-json option to "
-                + " output application information to a json file");
+            "We can use the -o|--output json option to output application information to json.");
+    uniffleOutPutFile =
+        new Option(
+            shortPrefix + "f",
+            longPrefix + "file",
+            true,
+            "We can use the -f|--file to output information to file");
     help = new Option(shortPrefix + "h", longPrefix + "help", false, "Help for the Uniffle CLI.");
 
     allOptions.addOption(uniffleClientCli);
@@ -88,7 +95,8 @@ public class UniffleCLI extends AbstractCustomCommandLine {
     allOptions.addOption(uniffleApplicationCli);
     allOptions.addOption(coordinatorHost);
     allOptions.addOption(coordinatorPort);
-    allOptions.addOption(uniffleOutPutJson);
+    allOptions.addOption(uniffleOutPutFormatJson);
+    allOptions.addOption(uniffleOutPutFile);
     allOptions.addOption(ssl);
     allOptions.addOption(help);
   }
@@ -125,26 +133,47 @@ public class UniffleCLI extends AbstractCustomCommandLine {
     // If we use application-cli
     if (cmd.hasOption(uniffleApplicationCli.getOpt())) {
       LOG.info("uniffle-client-cli : get applications");
+
       // If we want to output json file
-      if (cmd.hasOption(uniffleOutPutJson.getOpt())) {
-        String outPutPath = cmd.getOptionValue(uniffleOutPutJson.getOpt()).trim();
-        String json = getApplicationsJson(cmd);
-        try (FileOutputStream fos = new FileOutputStream(outPutPath);
-            OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
-          osw.write(json);
-          System.out.println(
-              "applications json data has been written to the file(" + outPutPath + ").");
-        } catch (IOException e) {
-          System.out.println(
-              "An error occurred while writing the applications json data to the file("
-                  + outPutPath
-                  + ").");
+      if (cmd.hasOption(uniffleOutPutFormatJson.getOpt())) {
+        String outPutFormat = cmd.getOptionValue(uniffleOutPutFormatJson.getOpt()).trim();
+        if (StringUtils.isBlank(outPutFormat)) {
+          System.out.println("output format is not null.");
+          return 1;
         }
+
+        if (!StringUtils.equals(outPutFormat, "json")) {
+          System.out.println("The output currently supports only JSON format.");
+          return 1;
+        }
+
+        String json = getApplicationsJson(cmd);
+        System.out.println("application: " + json);
+
+        if (cmd.hasOption(uniffleOutPutFile.getOpt())) {
+          String uniffleOutPutFile = cmd.getOptionValue(uniffleOutPutFormatJson.getOpt()).trim();
+          if (StringUtils.isBlank(uniffleOutPutFile)) {
+            System.out.println("The output file cannot be empty.");
+          }
+          try (FileOutputStream fos = new FileOutputStream(uniffleOutPutFile);
+             OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
+            osw.write(json);
+            System.out.println(
+                "applications json data has been written to the file(" + uniffleOutPutFile + ").");
+          } catch (IOException e) {
+            System.out.println(
+                "An error occurred while writing the applications json data to the file("
+                + uniffleOutPutFile + ").");
+          }
+        }
+
+        return 0;
       }
+
       try (PrintWriter writer =
           new PrintWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8))) {
         FormattingCLIUtils formattingCLIUtils =
-            new FormattingCLIUtils("Uniflle Applications").addHeaders(APPLICATIONS_HEADER);
+            new FormattingCLIUtils("Uniffle Applications").addHeaders(APPLICATIONS_HEADER);
         List<Application> applications = getApplications(cmd);
         if (applications != null) {
           applications.forEach(
