@@ -70,7 +70,7 @@ function uniffle_cmd_case
 
       JAVA11_EXTRA_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
           -Xlog:gc:tags,time,uptime,level"
-      UNIFFLE_OPTS=$UNIFFLE_OPTS $JVM_ARGS $JAVA11_EXTRA_ARGS
+      UNIFFLE_OPTS="$UNIFFLE_OPTS $JVM_ARGS $JAVA11_EXTRA_ARGS"
 
       UNIFFLE_SUBCMD_SUPPORT_DAEMONIZATION="true"
       RSS_CONF_FILE="${RSS_CONF_DIR}/server.conf"
@@ -95,9 +95,8 @@ function uniffle_cmd_case
 
       JAVA11_EXTRA_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
           -Xlog:gc:tags,time,uptime,level"
+      UNIFFLE_OPTS="$UNIFFLE_OPTS $JVM_ARGS $JAVA11_EXTRA_ARGS"
 
-      UNIFFLE_OPTS=$UNIFFLE_OPTS $JVM_ARGS $JAVA11_EXTRA_ARGS
-      echo UNIFFLE_OPTS
       UNIFFLE_SUBCMD_SUPPORT_DAEMONIZATION="true"
       RSS_CONF_FILE="${RSS_CONF_DIR}/coordinator.conf"
       uniffle_add_classpath "${RSS_HOME}/jars/coordinator/*"
