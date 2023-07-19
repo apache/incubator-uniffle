@@ -78,7 +78,7 @@ public class GrpcServer implements ServerInterface {
             ThreadUtils.getThreadFactory("Grpc"),
             grpcMetrics);
   }
-  
+
   // This method is only used for the sake of synchronizing one test
   static boolean isPoolExecutorHasExecuted() {
     return poolExecutorHasExecuted;
