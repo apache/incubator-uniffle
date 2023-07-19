@@ -17,5 +17,4 @@
 
 package org.apache.uniffle.client.request;
 
-public class RssDecommissionRequest {
-}
+public class RssDecommissionRequest {}

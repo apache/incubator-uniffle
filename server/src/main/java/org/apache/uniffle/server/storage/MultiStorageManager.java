@@ -53,49 +53,47 @@ public class MultiStorageManager implements StorageManager {
     coldStorageManager = new HadoopStorageManager(conf);
 
     try {
-      AbstractStorageManagerFallbackStrategy storageManagerFallbackStrategy = loadFallbackStrategy(conf);
-      this.storageManagerSelector = loadManagerSelector(
-          conf,
-          storageManagerFallbackStrategy,
-          warmStorageManager,
-          coldStorageManager
-      );
+      AbstractStorageManagerFallbackStrategy storageManagerFallbackStrategy =
+          loadFallbackStrategy(conf);
+      this.storageManagerSelector =
+          loadManagerSelector(
+              conf, storageManagerFallbackStrategy, warmStorageManager, coldStorageManager);
     } catch (Exception e) {
       throw new RssException("Errors on loading selector manager.", e);
     }
 
     long cacheTimeout = conf.getLong(ShuffleServerConf.STORAGEMANAGER_CACHE_TIMEOUT);
-    eventOfUnderStorageManagers = CacheBuilder.newBuilder()
-        .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)
-        .build();
+    eventOfUnderStorageManagers =
+        CacheBuilder.newBuilder().expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS).build();
   }
 
   private StorageManagerSelector loadManagerSelector(
       ShuffleServerConf conf,
       AbstractStorageManagerFallbackStrategy storageManagerFallbackStrategy,
       StorageManager warmStorageManager,
-      StorageManager coldStorageManager) throws Exception {
+      StorageManager coldStorageManager)
+      throws Exception {
     String name = conf.get(ShuffleServerConf.MULTISTORAGE_MANAGER_SELECTOR_CLASS);
     Class<?> klass = Class.forName(name);
-    Constructor<?> constructor = klass.getConstructor(
-        StorageManager.class,
-        StorageManager.class,
-        AbstractStorageManagerFallbackStrategy.class,
-        conf.getClass()
-    );
-    StorageManagerSelector instance = (StorageManagerSelector) constructor.newInstance(
-        warmStorageManager,
-        coldStorageManager,
-        storageManagerFallbackStrategy,
-        conf
-    );
+    Constructor<?> constructor =
+        klass.getConstructor(
+            StorageManager.class,
+            StorageManager.class,
+            AbstractStorageManagerFallbackStrategy.class,
+            conf.getClass());
+    StorageManagerSelector instance =
+        (StorageManagerSelector)
+            constructor.newInstance(
+                warmStorageManager, coldStorageManager, storageManagerFallbackStrategy, conf);
     return instance;
   }
 
-  public static AbstractStorageManagerFallbackStrategy loadFallbackStrategy(
-      ShuffleServerConf conf) throws Exception {
-    String name = conf.getString(ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
-        HadoopStorageManagerFallbackStrategy.class.getCanonicalName());
+  public static AbstractStorageManagerFallbackStrategy loadFallbackStrategy(ShuffleServerConf conf)
+      throws Exception {
+    String name =
+        conf.getString(
+            ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
+            HadoopStorageManagerFallbackStrategy.class.getCanonicalName());
     Class<?> klass = Class.forName(name);
     Constructor<?> constructor;
     AbstractStorageManagerFallbackStrategy instance;
@@ -145,11 +143,9 @@ public class MultiStorageManager implements StorageManager {
     return underStorageManager.write(storage, handler, event);
   }
 
-  public void start() {
-  }
+  public void start() {}
 
-  public void stop() {
-  }
+  public void stop() {}
 
   @Override
   public Checker getStorageChecker() {

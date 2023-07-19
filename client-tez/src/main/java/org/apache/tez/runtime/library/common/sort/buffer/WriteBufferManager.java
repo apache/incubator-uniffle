@@ -38,6 +38,7 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.serializer.Serializer;
 import org.apache.tez.common.RssTezUtils;
+import org.apache.tez.common.counters.TezCounter;
 import org.apache.tez.dag.records.TezDAGID;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 import org.apache.tez.dag.records.TezVertexID;
@@ -54,8 +55,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
-
-public class WriteBufferManager<K,V> {
+public class WriteBufferManager<K, V> {
   private static final Logger LOG = LoggerFactory.getLogger(WriteBufferManager.class);
   private long copyTime = 0;
   private long sortTime = 0;
@@ -96,10 +96,9 @@ public class WriteBufferManager<K,V> {
   private final RssConf rssConf;
   private final int shuffleId;
   private final boolean isNeedSorted;
+  private final TezCounter mapOutputByteCounter;
 
-  /**
-   * WriteBufferManager
-   */
+  /** WriteBufferManager */
   public WriteBufferManager(
       TezTaskAttemptID tezTaskAttemptID,
       long maxMemSize,
@@ -124,7 +123,8 @@ public class WriteBufferManager<K,V> {
       long sendCheckTimeout,
       int bitmapSplitNum,
       int shuffleId,
-      boolean isNeedSorted) {
+      boolean isNeedSorted,
+      TezCounter mapOutputByteCounter) {
     this.tezTaskAttemptID = tezTaskAttemptID;
     this.maxMemSize = maxMemSize;
     this.appId = appId;
@@ -150,20 +150,21 @@ public class WriteBufferManager<K,V> {
     this.rssConf = rssConf;
     this.shuffleId = shuffleId;
     this.isNeedSorted = isNeedSorted;
-    this.sendExecutorService = Executors.newFixedThreadPool(
-            1,
-            ThreadUtils.getThreadFactory("send-thread"));
+    this.mapOutputByteCounter = mapOutputByteCounter;
+    this.sendExecutorService =
+        Executors.newFixedThreadPool(1, ThreadUtils.getThreadFactory("send-thread"));
   }
 
-  /**
-   * add record
-   */
+  /** add record */
   public void addRecord(int partitionId, K key, V value) throws InterruptedException, IOException {
     memoryLock.lock();
     try {
       while (memoryUsedSize.get() > maxMemSize) {
-        LOG.warn("memoryUsedSize {} is more than {}, inSendListBytes {}",
-            memoryUsedSize, maxMemSize, inSendListBytes);
+        LOG.warn(
+            "memoryUsedSize {} is more than {}, inSendListBytes {}",
+            memoryUsedSize,
+            maxMemSize,
+            inSendListBytes);
         full.await();
       }
     } finally {
@@ -171,8 +172,9 @@ public class WriteBufferManager<K,V> {
     }
 
     if (!buffers.containsKey(partitionId)) {
-      WriteBuffer<K, V> sortWriterBuffer = new WriteBuffer(
-          isNeedSorted, partitionId, comparator, maxSegmentSize, keySerializer, valSerializer);
+      WriteBuffer<K, V> sortWriterBuffer =
+          new WriteBuffer(
+              isNeedSorted, partitionId, comparator, maxSegmentSize, keySerializer, valSerializer);
       buffers.putIfAbsent(partitionId, sortWriterBuffer);
       waitSendBuffers.add(sortWriterBuffer);
     }
@@ -194,6 +196,7 @@ public class WriteBufferManager<K,V> {
         && inSendListBytes.get() <= maxMemSize * sendThreshold) {
       sendBuffersToServers();
     }
+    mapOutputByteCounter.increment(length);
   }
 
   private void sendBufferToServers(WriteBuffer<K, V> buffer) {
@@ -203,12 +206,13 @@ public class WriteBufferManager<K,V> {
   }
 
   void sendBuffersToServers() {
-    waitSendBuffers.sort(new Comparator<WriteBuffer<K, V>>() {
-      @Override
-      public int compare(WriteBuffer<K, V> o1, WriteBuffer<K, V> o2) {
-        return o2.getDataLength() - o1.getDataLength();
-      }
-    });
+    waitSendBuffers.sort(
+        new Comparator<WriteBuffer<K, V>>() {
+          @Override
+          public int compare(WriteBuffer<K, V> o1, WriteBuffer<K, V> o2) {
+            return o2.getDataLength() - o1.getDataLength();
+          }
+        });
 
     int sendSize = batch;
     if (batch > waitSendBuffers.size()) {
@@ -240,37 +244,37 @@ public class WriteBufferManager<K,V> {
   }
 
   private void sendShuffleBlocks(List<ShuffleBlockInfo> shuffleBlocks) {
-    sendExecutorService.submit(new Runnable() {
-      @Override
-      public void run() {
-        long size = 0;
-        try {
-          for (ShuffleBlockInfo block : shuffleBlocks) {
-            size += block.getFreeMemory();
+    sendExecutorService.submit(
+        new Runnable() {
+          @Override
+          public void run() {
+            long size = 0;
+            try {
+              for (ShuffleBlockInfo block : shuffleBlocks) {
+                size += block.getFreeMemory();
+              }
+              SendShuffleDataResult result =
+                  shuffleWriteClient.sendShuffleData(appId, shuffleBlocks, () -> false);
+              successBlockIds.addAll(result.getSuccessBlockIds());
+              failedBlockIds.addAll(result.getFailedBlockIds());
+            } catch (Throwable t) {
+              LOG.warn("send shuffle data exception ", t);
+            } finally {
+              try {
+                memoryLock.lock();
+                LOG.debug("memoryUsedSize {} decrease {}", memoryUsedSize, size);
+                memoryUsedSize.addAndGet(-size);
+                inSendListBytes.addAndGet(-size);
+                full.signalAll();
+              } finally {
+                memoryLock.unlock();
+              }
+            }
           }
-          SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(appId, shuffleBlocks, () -> false);
-          successBlockIds.addAll(result.getSuccessBlockIds());
-          failedBlockIds.addAll(result.getFailedBlockIds());
-        } catch (Throwable t) {
-          LOG.warn("send shuffle data exception ", t);
-        } finally {
-          try {
-            memoryLock.lock();
-            LOG.debug("memoryUsedSize {} decrease {}", memoryUsedSize, size);
-            memoryUsedSize.addAndGet(-size);
-            inSendListBytes.addAndGet(-size);
-            full.signalAll();
-          } finally {
-            memoryLock.unlock();
-          }
-        }
-      }
-    });
+        });
   }
 
-  /**
-   * wait send finished
-   */
+  /** wait send finished */
   public void waitSendFinished() {
     while (!waitSendBuffers.isEmpty()) {
       sendBuffersToServers();
@@ -278,8 +282,10 @@ public class WriteBufferManager<K,V> {
     long start = System.currentTimeMillis();
     while (true) {
       if (failedBlockIds.size() > 0) {
-        String errorMsg = "Send failed: failed because " + failedBlockIds.size()
-            + " blocks can't be sent to shuffle server.";
+        String errorMsg =
+            "Send failed: failed because "
+                + failedBlockIds.size()
+                + " blocks can't be sent to shuffle server.";
         LOG.error(errorMsg);
         throw new RssException(errorMsg);
       }
@@ -290,8 +296,12 @@ public class WriteBufferManager<K,V> {
       LOG.info("Wait " + allBlockIds.size() + " blocks sent to shuffle server");
       Uninterruptibles.sleepUninterruptibly(sendCheckInterval, TimeUnit.MILLISECONDS);
       if (System.currentTimeMillis() - start > sendCheckTimeout) {
-        String errorMsg = "Timeout: failed because " + allBlockIds.size()
-            + " blocks can't be sent to shuffle server in " + sendCheckTimeout + " ms.";
+        String errorMsg =
+            "Timeout: failed because "
+                + allBlockIds.size()
+                + " blocks can't be sent to shuffle server in "
+                + sendCheckTimeout
+                + " ms.";
         LOG.error(errorMsg);
         throw new RssException(errorMsg);
       }
@@ -305,14 +315,23 @@ public class WriteBufferManager<K,V> {
     start = System.currentTimeMillis();
     TezVertexID tezVertexID = tezTaskAttemptID.getTaskID().getVertexID();
     TezDAGID tezDAGID = tezVertexID.getDAGId();
-    LOG.info("tezVertexID is {}, tezDAGID is {}, shuffleId is {}", tezVertexID, tezDAGID, shuffleId);
-    shuffleWriteClient.reportShuffleResult(partitionToServers, appId, shuffleId,
-            taskAttemptId, partitionToBlocks, bitmapSplitNum);
-    LOG.info("Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
-            taskAttemptId, bitmapSplitNum, (System.currentTimeMillis() - start));
-    LOG.info("Task uncompressed data length {} compress time cost {} ms, commit time cost {} ms,"
-                  + " copy time cost {} ms, sort time cost {} ms",
-            uncompressedDataLen, compressTime, commitDuration, copyTime, sortTime);
+    LOG.info(
+        "tezVertexID is {}, tezDAGID is {}, shuffleId is {}", tezVertexID, tezDAGID, shuffleId);
+    shuffleWriteClient.reportShuffleResult(
+        partitionToServers, appId, shuffleId, taskAttemptId, partitionToBlocks, bitmapSplitNum);
+    LOG.info(
+        "Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
+        taskAttemptId,
+        bitmapSplitNum,
+        (System.currentTimeMillis() - start));
+    LOG.info(
+        "Task uncompressed data length {} compress time cost {} ms, commit time cost {} ms,"
+            + " copy time cost {} ms, sort time cost {} ms",
+        uncompressedDataLen,
+        compressTime,
+        commitDuration,
+        copyTime,
+        sortTime);
   }
 
   ShuffleBlockInfo createShuffleBlock(WriteBuffer wb) {
@@ -326,7 +345,8 @@ public class WriteBufferManager<K,V> {
     final byte[] compressed = codec.compress(data);
     final long crc32 = ChecksumUtils.getCrc32(compressed);
     compressTime += System.currentTimeMillis() - start;
-    final long blockId = RssTezUtils.getBlockId((long)partitionId, taskAttemptId, getNextSeqNo(partitionId));
+    final long blockId =
+        RssTezUtils.getBlockId((long) partitionId, taskAttemptId, getNextSeqNo(partitionId));
     LOG.info("blockId is {}", blockId);
     uncompressedDataLen += data.length;
     // add memory to indicate bytes which will be sent to shuffle server
@@ -334,10 +354,19 @@ public class WriteBufferManager<K,V> {
 
     TezVertexID tezVertexID = tezTaskAttemptID.getTaskID().getVertexID();
     TezDAGID tezDAGID = tezVertexID.getDAGId();
-    LOG.info("tezVertexID is {}, tezDAGID is {}, shuffleId is {}", tezVertexID, tezDAGID, shuffleId);
-    return new ShuffleBlockInfo(shuffleId, partitionId, blockId, compressed.length, crc32,
-          compressed, partitionToServers.get(partitionId),
-          uncompressLength, wb.getDataLength(), taskAttemptId);
+    LOG.info(
+        "tezVertexID is {}, tezDAGID is {}, shuffleId is {}", tezVertexID, tezDAGID, shuffleId);
+    return new ShuffleBlockInfo(
+        shuffleId,
+        partitionId,
+        blockId,
+        compressed.length,
+        crc32,
+        compressed,
+        partitionToServers.get(partitionId),
+        uncompressLength,
+        wb.getDataLength(),
+        taskAttemptId);
   }
 
   protected void sendCommit() {
@@ -349,14 +378,19 @@ public class WriteBufferManager<K,V> {
       }
     }
     LOG.info("sendCommit  shuffle id is {}", shuffleId);
-    Future<Boolean> future = executor.submit(
-          () -> shuffleWriteClient.sendCommit(serverInfos, appId, shuffleId, numMaps));
+    Future<Boolean> future =
+        executor.submit(
+            () -> shuffleWriteClient.sendCommit(serverInfos, appId, shuffleId, numMaps));
     long start = System.currentTimeMillis();
     int currentWait = 200;
     int maxWait = 5000;
     while (!future.isDone()) {
-      LOG.info("Wait commit to shuffle server for task[" + taskAttemptId + "] cost "
-            + (System.currentTimeMillis() - start) + " ms");
+      LOG.info(
+          "Wait commit to shuffle server for task["
+              + taskAttemptId
+              + "] cost "
+              + (System.currentTimeMillis() - start)
+              + " ms");
       Uninterruptibles.sleepUninterruptibly(currentWait, TimeUnit.MILLISECONDS);
       currentWait = Math.min(currentWait * 2, maxWait);
     }
@@ -373,7 +407,7 @@ public class WriteBufferManager<K,V> {
     }
   }
 
-  List<WriteBuffer<K,V>> getWaitSendBuffers() {
+  List<WriteBuffer<K, V>> getWaitSendBuffers() {
     return waitSendBuffers;
   }
 
@@ -387,6 +421,4 @@ public class WriteBufferManager<K,V> {
   public void freeAllResources() {
     sendExecutorService.shutdownNow();
   }
-
 }
-

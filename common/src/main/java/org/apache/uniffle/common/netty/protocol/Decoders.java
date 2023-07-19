@@ -53,8 +53,17 @@ public class Decoders {
     }
     int uncompressLength = byteBuf.readInt();
     long freeMemory = byteBuf.readLong();
-    return new ShuffleBlockInfo(shuffleId, partId, blockId,
-        length, crc, data, serverInfos, uncompressLength, freeMemory, taskAttemptId);
+    return new ShuffleBlockInfo(
+        shuffleId,
+        partId,
+        blockId,
+        length,
+        crc,
+        data,
+        serverInfos,
+        uncompressLength,
+        freeMemory,
+        taskAttemptId);
   }
 
   public static Map<Integer, List<Long>> decodePartitionToBlockIds(ByteBuf byteBuf) {
@@ -82,10 +91,10 @@ public class Decoders {
       int uncompressLength = byteBuf.readInt();
       long crc = byteBuf.readLong();
       long taskAttemptId = byteBuf.readLong();
-      BufferSegment bufferSegment = new BufferSegment(blockId, offset, length, uncompressLength, crc, taskAttemptId);
+      BufferSegment bufferSegment =
+          new BufferSegment(blockId, offset, length, uncompressLength, crc, taskAttemptId);
       bufferSegments.add(bufferSegment);
     }
     return bufferSegments;
   }
-
 }

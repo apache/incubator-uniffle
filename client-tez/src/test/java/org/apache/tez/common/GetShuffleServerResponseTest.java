@@ -71,7 +71,8 @@ public class GetShuffleServerResponseTest {
     serverToPartitionRanges.put(work3, Arrays.asList(range0, range1, range2, range3));
     serverToPartitionRanges.put(work4, Arrays.asList(range0, range1, range3, range4));
 
-    ShuffleAssignmentsInfo info = new ShuffleAssignmentsInfo(partitionToServers, serverToPartitionRanges);
+    ShuffleAssignmentsInfo info =
+        new ShuffleAssignmentsInfo(partitionToServers, serverToPartitionRanges);
 
     int status = 0;
     String retMsg = "none";
@@ -94,10 +95,14 @@ public class GetShuffleServerResponseTest {
     assertEquals(response.getStatus(), deSerResponse.getStatus());
     assertEquals(response.getRetMsg(), deSerResponse.getRetMsg());
     {
-      Map<Integer, List<ShuffleServerInfo>> base = response.getShuffleAssignmentsInfoWritable()
+      Map<Integer, List<ShuffleServerInfo>> base =
+          response
+              .getShuffleAssignmentsInfoWritable()
               .getShuffleAssignmentsInfo()
               .getPartitionToServers();
-      Map<Integer, List<ShuffleServerInfo>> deSer = deSerResponse.getShuffleAssignmentsInfoWritable()
+      Map<Integer, List<ShuffleServerInfo>> deSer =
+          deSerResponse
+              .getShuffleAssignmentsInfoWritable()
               .getShuffleAssignmentsInfo()
               .getPartitionToServers();
 
@@ -107,10 +112,14 @@ public class GetShuffleServerResponseTest {
       }
     }
     {
-      Map<ShuffleServerInfo, List<PartitionRange>> base = response.getShuffleAssignmentsInfoWritable()
+      Map<ShuffleServerInfo, List<PartitionRange>> base =
+          response
+              .getShuffleAssignmentsInfoWritable()
               .getShuffleAssignmentsInfo()
               .getServerToPartitionRanges();
-      Map<ShuffleServerInfo, List<PartitionRange>> deSer = deSerResponse.getShuffleAssignmentsInfoWritable()
+      Map<ShuffleServerInfo, List<PartitionRange>> deSer =
+          deSerResponse
+              .getShuffleAssignmentsInfoWritable()
               .getShuffleAssignmentsInfo()
               .getServerToPartitionRanges();
 

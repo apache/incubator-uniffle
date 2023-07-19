@@ -29,11 +29,10 @@ import org.apache.uniffle.common.netty.protocol.Message;
 import org.apache.uniffle.common.netty.protocol.Transferable;
 
 /**
- * Encoder used by the server side to encode server-to-client responses.
- * This encoder is stateless so it is safe to be shared by multiple threads.
- * The content of encode consists of two parts, header and message body.
- * The encoded binary stream contains encodeLength (4 bytes), messageType (1 byte)
- * and messageBody (encodeLength bytes).
+ * Encoder used by the server side to encode server-to-client responses. This encoder is stateless
+ * so it is safe to be shared by multiple threads. The content of encode consists of two parts,
+ * header and message body. The encoded binary stream contains encodeLength (4 bytes), messageType
+ * (1 byte) and messageBody (encodeLength bytes).
  */
 @ChannelHandler.Sharable
 public class MessageEncoder extends ChannelOutboundHandlerAdapter {
@@ -42,8 +41,7 @@ public class MessageEncoder extends ChannelOutboundHandlerAdapter {
 
   public static final MessageEncoder INSTANCE = new MessageEncoder();
 
-  private MessageEncoder() {
-  }
+  private MessageEncoder() {}
 
   @Override
   public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {

@@ -19,9 +19,7 @@ package org.apache.uniffle.client;
 
 import java.util.Map;
 
-/**
- * A underlying http client interface for common rest request.
- */
+/** A underlying http client interface for common rest request. */
 public interface RestClient extends AutoCloseable, Cloneable {
 
   String get(String path, Map<String, Object> params, String authHeader);

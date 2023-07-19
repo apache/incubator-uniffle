@@ -28,8 +28,12 @@ public class RssReportShuffleResultRequest {
   private int bitmapNum;
   private Map<Integer, List<Long>> partitionToBlockIds;
 
-  public RssReportShuffleResultRequest(String appId, int shuffleId, long taskAttemptId,
-      Map<Integer, List<Long>> partitionToBlockIds, int bitmapNum) {
+  public RssReportShuffleResultRequest(
+      String appId,
+      int shuffleId,
+      long taskAttemptId,
+      Map<Integer, List<Long>> partitionToBlockIds,
+      int bitmapNum) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.taskAttemptId = taskAttemptId;

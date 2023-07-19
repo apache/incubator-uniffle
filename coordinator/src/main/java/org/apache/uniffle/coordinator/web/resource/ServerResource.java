@@ -29,6 +29,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.hbase.thirdparty.javax.ws.rs.GET;
 import org.apache.hbase.thirdparty.javax.ws.rs.POST;
 import org.apache.hbase.thirdparty.javax.ws.rs.Path;
+import org.apache.hbase.thirdparty.javax.ws.rs.PathParam;
 import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
 import org.apache.hbase.thirdparty.javax.ws.rs.QueryParam;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
@@ -44,14 +45,19 @@ import org.apache.uniffle.coordinator.web.request.ApplicationRequest;
 import org.apache.uniffle.coordinator.web.request.CancelDecommissionRequest;
 import org.apache.uniffle.coordinator.web.request.DecommissionRequest;
 
-@Produces({ MediaType.APPLICATION_JSON })
-public class ServerResource {
-  @Context
-  protected ServletContext servletContext;
+@Produces({MediaType.APPLICATION_JSON})
+public class ServerResource extends BaseResource {
+  @Context protected ServletContext servletContext;
+
+  @GET
+  @Path("/nodes/{id}")
+  public Response<ServerNode> node(@PathParam("id") String id) {
+    return execute(() -> getClusterManager().getServerNodeById(id));
+  }
 
   @GET
   @Path("/nodes")
-  public Response<List<ServerNode>> nodes(@QueryParam("id") String id, @QueryParam("status") String status) {
+  public Response<List<ServerNode>> nodes(@QueryParam("status") String status) {
     ClusterManager clusterManager = getClusterManager();
     List<ServerNode> serverList;
     if (ServerStatus.UNHEALTHY.name().equalsIgnoreCase(status)) {
@@ -61,49 +67,63 @@ public class ServerResource {
     } else {
       serverList = clusterManager.getServerList(Collections.emptySet());
     }
-    serverList = serverList.stream().filter(server -> {
-      if (id != null && !id.equals(server.getId())) {
-        return false;
-      }
-      if (status != null && !server.getStatus().toString().equals(status)) {
-        return false;
-      }
-      return true;
-    }).collect(Collectors.toList());
+    serverList =
+        serverList.stream()
+            .filter(
+                server -> {
+                  if (status != null && !server.getStatus().toString().equals(status)) {
+                    return false;
+                  }
+                  return true;
+                })
+            .collect(Collectors.toList());
     serverList.sort(Comparator.comparing(ServerNode::getId));
     return Response.success(serverList);
   }
 
   @POST
   @Path("/cancelDecommission")
-  @Produces({ MediaType.APPLICATION_JSON })
   public Response<Object> cancelDecommission(CancelDecommissionRequest params) {
-    if (CollectionUtils.isEmpty(params.getServerIds())) {
-      return Response.fail("Parameter[serverIds] should not be null!");
-    }
-    ClusterManager clusterManager = getClusterManager();
-    try {
-      params.getServerIds().forEach(clusterManager::cancelDecommission);
-    } catch (Exception e) {
-      return Response.fail(e.getMessage());
-    }
-    return Response.success(null);
+    return execute(
+        () -> {
+          assert CollectionUtils.isNotEmpty(params.getServerIds())
+              : "Parameter[serverIds] should not be null!";
+          params.getServerIds().forEach(getClusterManager()::cancelDecommission);
+          return null;
+        });
+  }
+
+  @POST
+  @Path("/{id}/cancelDecommission")
+  public Response<Object> cancelDecommission(@PathParam("id") String serverId) {
+    return execute(
+        () -> {
+          getClusterManager().cancelDecommission(serverId);
+          return null;
+        });
   }
 
   @POST
   @Path("/decommission")
-  @Produces({ MediaType.APPLICATION_JSON })
   public Response<Object> decommission(DecommissionRequest params) {
-    if (CollectionUtils.isEmpty(params.getServerIds())) {
-      return Response.fail("Parameter[serverIds] should not be null!");
-    }
-    ClusterManager clusterManager = getClusterManager();
-    try {
-      params.getServerIds().forEach(clusterManager::decommission);
-    } catch (Exception e) {
-      return Response.fail(e.getMessage());
-    }
-    return Response.success(null);
+    return execute(
+        () -> {
+          assert CollectionUtils.isNotEmpty(params.getServerIds())
+              : "Parameter[serverIds] should not be null!";
+          params.getServerIds().forEach(getClusterManager()::decommission);
+          return null;
+        });
+  }
+
+  @POST
+  @Path("/{id}/decommission")
+  @Produces({MediaType.APPLICATION_JSON})
+  public Response<Object> decommission(@PathParam("id") String serverId) {
+    return execute(
+        () -> {
+          getClusterManager().decommission(serverId);
+          return null;
+        });
   }
 
   @POST
@@ -124,8 +144,7 @@ public class ServerResource {
   }
 
   private ClusterManager getClusterManager() {
-    return (ClusterManager) servletContext.getAttribute(
-            ClusterManager.class.getCanonicalName());
+    return (ClusterManager) servletContext.getAttribute(ClusterManager.class.getCanonicalName());
   }
 
   private ApplicationManager getApplicationManager() {

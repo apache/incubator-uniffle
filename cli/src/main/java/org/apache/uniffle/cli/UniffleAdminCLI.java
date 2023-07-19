@@ -38,6 +38,7 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
 
   public UniffleAdminCLI(String shortPrefix, String longPrefix) {
     allOptions = new Options();
+    
     refreshCheckerCli = new Option(shortPrefix + "r", longPrefix + "refreshChecker",
         false, "This is an admin command that will refresh access checker.");
     help = new Option(shortPrefix + "h", longPrefix + "help",
@@ -79,7 +80,8 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
 
   private String refreshAccessChecker() throws UniffleCliArgsException {
     if (client == null) {
-      throw new UniffleCliArgsException("Missing Coordinator host address and grpc port parameters.");
+      throw new UniffleCliArgsException(
+          "Missing Coordinator host address and grpc port parameters.");
     }
     AdminRestApi adminRestApi = new AdminRestApi(client);
     return adminRestApi.refreshAccessChecker();

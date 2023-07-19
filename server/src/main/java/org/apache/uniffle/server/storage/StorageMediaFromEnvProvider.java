@@ -39,7 +39,8 @@ public class StorageMediaFromEnvProvider implements StorageMediaProvider {
    * Returns current storage type for baseDir.
    *
    * @param baseDir the storage dir to check for
-   * @return LocalStorageType if valid or queryable. Unknown would be returned if it cannot be determined.
+   * @return LocalStorageType if valid or queryable. Unknown would be returned if it cannot be
+   *     determined.
    */
   @Override
   public StorageMedia getStorageMediaFor(String baseDir) {

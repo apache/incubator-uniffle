@@ -47,15 +47,13 @@ public class PartitionRangeAssignment {
       final int start = entry.getKey().getStart();
       final int end = entry.getKey().getEnd();
       final RssProtos.PartitionRangeAssignment partitionRangeAssignment =
-          RssProtos.PartitionRangeAssignment
-              .newBuilder()
+          RssProtos.PartitionRangeAssignment.newBuilder()
               .setStartPartition(start)
               .setEndPartition(end)
-              .addAllServer(entry
-                  .getValue()
-                  .stream()
-                  .map(ServerNode::convertToGrpcProto)
-                  .collect(Collectors.toList()))
+              .addAllServer(
+                  entry.getValue().stream()
+                      .map(ServerNode::convertToGrpcProto)
+                      .collect(Collectors.toList()))
               .build();
       praList.add(partitionRangeAssignment);
     }

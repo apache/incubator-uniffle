@@ -31,7 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class RssTezBypassWriterTest {
   @Test
   public void testWrite() {
-    byte[] data = new byte[]{1, 2, -1, 1, 2, -1, -1};;
+    byte[] data = new byte[] {1, 2, -1, 1, 2, -1, -1};
+    ;
     MapOutput mapOutput = MapOutput.createMemoryMapOutput(null, null, 7, true);
     RssTezBypassWriter.write(mapOutput, data);
     byte[] r = mapOutput.getMemory();
@@ -44,8 +45,8 @@ public class RssTezBypassWriterTest {
 
   @Test
   public void testCalcChecksum() throws IOException {
-    byte[] data = new byte[]{1, 2, -1, 1, 2, -1, -1};
-    byte[] result = new byte[]{-71, -87, 19, -71};
-    assertTrue(Arrays.equals(Ints.toByteArray((int)ChecksumUtils.getCrc32(data)), result));
+    byte[] data = new byte[] {1, 2, -1, 1, 2, -1, -1};
+    byte[] result = new byte[] {-71, -87, 19, -71};
+    assertTrue(Arrays.equals(Ints.toByteArray((int) ChecksumUtils.getCrc32(data)), result));
   }
 }

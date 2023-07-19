@@ -34,5 +34,4 @@ public class RssAppHeartBeatRequest {
   public long getTimeoutMs() {
     return timeoutMs;
   }
-
 }

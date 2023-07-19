@@ -34,11 +34,7 @@ public class StorageInfo {
   private StorageStatus status;
 
   public StorageInfo(
-      String mountPoint,
-      StorageMedia type,
-      long capacity,
-      long usedBytes,
-      StorageStatus status) {
+      String mountPoint, StorageMedia type, long capacity, long usedBytes, StorageStatus status) {
     this.mountPoint = mountPoint;
     this.type = type;
     this.capacity = capacity;
@@ -71,14 +67,14 @@ public class StorageInfo {
     this.status = status;
   }
 
-
   public RssProtos.StorageInfo toProto() {
-    RssProtos.StorageInfo.Builder builder = RssProtos.StorageInfo.newBuilder()
-        .setMountPoint(mountPoint)
-        .setStorageMedia(type.toProto())
-        .setCapacity(capacity)
-        .setUsedBytes(usedBytes)
-        .setStatus(status.toProto());
+    RssProtos.StorageInfo.Builder builder =
+        RssProtos.StorageInfo.newBuilder()
+            .setMountPoint(mountPoint)
+            .setStorageMedia(type.toProto())
+            .setCapacity(capacity)
+            .setUsedBytes(usedBytes)
+            .setStatus(status.toProto());
     if (writingSpeed1M >= 0) {
       builder.setWritingSpeed1M(writingSpeed1M);
       builder.setWritingSpeed5M(writingSpeed5M);
@@ -109,7 +105,8 @@ public class StorageInfo {
       return false;
     }
     StorageInfo that = (StorageInfo) o;
-    return Objects.equals(mountPoint, that.mountPoint) && type == that.type
+    return Objects.equals(mountPoint, that.mountPoint)
+        && type == that.type
         && capacity == that.capacity
         && usedBytes == that.usedBytes
         && writingSpeed1M == that.writingSpeed1M
@@ -117,7 +114,6 @@ public class StorageInfo {
         && writingSpeed1H == that.writingSpeed1H
         && numberOfWritingFailures == that.numberOfWritingFailures
         && status == that.status;
-
   }
 
   @Override

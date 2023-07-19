@@ -29,11 +29,9 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
 /**
- * Class for holding,
- * 1. partition ID -> shuffle servers mapping.
- * 2. remote storage info
+ * Class for holding, 1. partition ID -> shuffle servers mapping. 2. remote storage info
  *
- * It's to be broadcast to executors and referenced by shuffle tasks.
+ * <p>It's to be broadcast to executors and referenced by shuffle tasks.
  */
 public class ShuffleHandleInfo implements Serializable {
 
@@ -45,11 +43,13 @@ public class ShuffleHandleInfo implements Serializable {
   // remoteStorage used for this job
   private RemoteStorageInfo remoteStorage;
 
-  public static final ShuffleHandleInfo EMPTY_HANDLE_INFO = new ShuffleHandleInfo(-1, Collections.EMPTY_MAP,
-      RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+  public static final ShuffleHandleInfo EMPTY_HANDLE_INFO =
+      new ShuffleHandleInfo(-1, Collections.EMPTY_MAP, RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
 
-  public ShuffleHandleInfo(int shuffleId, Map<Integer, List<ShuffleServerInfo>> partitionToServers,
-                           RemoteStorageInfo storageInfo) {
+  public ShuffleHandleInfo(
+      int shuffleId,
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+      RemoteStorageInfo storageInfo) {
     this.shuffleId = shuffleId;
     this.partitionToServers = partitionToServers;
     this.shuffleServersForData = Sets.newHashSet();

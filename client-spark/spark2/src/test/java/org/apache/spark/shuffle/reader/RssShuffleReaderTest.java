@@ -60,8 +60,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     Map<String, String> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
-    writeTestData(writeHandler, 2, 5, expectedData,
-        blockIdBitmap, "key", KRYO_SERIALIZER, 0);
+    writeTestData(writeHandler, 2, 5, expectedData, blockIdBitmap, "key", KRYO_SERIALIZER, 0);
 
     RssShuffleHandle<String, String, String> handleMock = mock(RssShuffleHandle.class);
     ShuffleDependency<String, String, String> dependencyMock = mock(ShuffleDependency.class);
@@ -86,8 +85,20 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     rssConf.set(RssClientConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     rssConf.set(RssClientConf.RSS_INDEX_READ_LIMIT, 1000);
     rssConf.set(RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE, "1000");
-    RssShuffleReader<String, String> rssShuffleReaderSpy = spy(new RssShuffleReader<>(0, 1, contextMock,
-        handleMock, basePath, conf, 2, 10, blockIdBitmap, taskIdBitmap, rssConf));
+    RssShuffleReader<String, String> rssShuffleReaderSpy =
+        spy(
+            new RssShuffleReader<>(
+                0,
+                1,
+                contextMock,
+                handleMock,
+                basePath,
+                conf,
+                2,
+                10,
+                blockIdBitmap,
+                taskIdBitmap,
+                rssConf));
 
     validateResult(rssShuffleReaderSpy.read(), expectedData, 10);
   }

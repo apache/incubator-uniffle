@@ -88,5 +88,4 @@ public class ShuffleServerOnRandomPortTest extends CoordinatorTestBase {
     assertTrue(ss.getGrpcPort() > actualPort && actualPort <= actualPort + maxRetries);
     ss.stopServer();
   }
-
 }

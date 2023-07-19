@@ -55,5 +55,4 @@ public class ShuffleServerFactory {
   public ShuffleServerConf getConf() {
     return conf;
   }
-
 }

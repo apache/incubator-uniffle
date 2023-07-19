@@ -39,9 +39,7 @@ public class SecurityContextFactoryTest extends KerberizedHadoopBase {
     SecurityContextFactory.get().init(null);
   }
 
-  /**
-   * It should return the {@link NoOpSecurityContext} when not initializing securityContext
-   */
+  /** It should return the {@link NoOpSecurityContext} when not initializing securityContext */
   @Test
   public void testDefaultSecurityContext() throws Exception {
     SecurityContext securityContext = SecurityContextFactory.get().getSecurityContext();
@@ -56,10 +54,7 @@ public class SecurityContextFactoryTest extends KerberizedHadoopBase {
   @Test
   public void testCreateHadoopSecurityContext() throws Exception {
     // case1: lack some config, should throw exception
-    final SecurityConfig securityConfig = SecurityConfig
-        .newBuilder()
-        .keytabFilePath("")
-        .build();
+    final SecurityConfig securityConfig = SecurityConfig.newBuilder().keytabFilePath("").build();
     try {
       SecurityContextFactory.get().init(securityConfig);
       fail();
@@ -68,12 +63,12 @@ public class SecurityContextFactoryTest extends KerberizedHadoopBase {
     }
 
     // case2: create the correct hadoop security context
-    final SecurityConfig correctConfig = SecurityConfig
-        .newBuilder()
-        .keytabFilePath(kerberizedHadoop.getHdfsKeytab())
-        .principal(kerberizedHadoop.getHdfsPrincipal())
-        .reloginIntervalSec(60)
-        .build();
+    final SecurityConfig correctConfig =
+        SecurityConfig.newBuilder()
+            .keytabFilePath(kerberizedHadoop.getHdfsKeytab())
+            .principal(kerberizedHadoop.getHdfsPrincipal())
+            .reloginIntervalSec(60)
+            .build();
     SecurityContextFactory.get().init(correctConfig);
     SecurityContext securityContext = SecurityContextFactory.get().getSecurityContext();
     assertEquals(HadoopSecurityContext.class, securityContext.getClass());

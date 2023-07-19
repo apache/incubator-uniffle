@@ -36,8 +36,15 @@ public class GetMemoryShuffleDataRequest extends RequestMessage {
   private long timestamp;
   private Roaring64NavigableMap expectedTaskIdsBitmap;
 
-  public GetMemoryShuffleDataRequest(long requestId, String appId, int shuffleId, int partitionId, long lastBlockId,
-      int readBufferSize, long timestamp, Roaring64NavigableMap expectedTaskIdsBitmap) {
+  public GetMemoryShuffleDataRequest(
+      long requestId,
+      String appId,
+      int shuffleId,
+      int partitionId,
+      long lastBlockId,
+      int readBufferSize,
+      long timestamp,
+      Roaring64NavigableMap expectedTaskIdsBitmap) {
     super(requestId);
     this.appId = appId;
     this.shuffleId = shuffleId;
@@ -55,8 +62,12 @@ public class GetMemoryShuffleDataRequest extends RequestMessage {
 
   @Override
   public int encodedLength() {
-    return (int) (REQUEST_ID_ENCODE_LENGTH + ByteBufUtils.encodedLength(appId) + 4 * Integer.BYTES
-                      + 2 * Long.BYTES + expectedTaskIdsBitmap.serializedSizeInBytes());
+    return (int)
+        (REQUEST_ID_ENCODE_LENGTH
+            + ByteBufUtils.encodedLength(appId)
+            + 4 * Integer.BYTES
+            + 2 * Long.BYTES
+            + expectedTaskIdsBitmap.serializedSizeInBytes());
   }
 
   @Override
@@ -72,7 +83,8 @@ public class GetMemoryShuffleDataRequest extends RequestMessage {
     try {
       buf.writeBytes(RssUtils.serializeBitMap(expectedTaskIdsBitmap));
     } catch (IOException ioException) {
-      throw new EncodeException("serializeBitMap failed while encode GetMemoryShuffleDataRequest!", ioException);
+      throw new EncodeException(
+          "serializeBitMap failed while encode GetMemoryShuffleDataRequest!", ioException);
     }
   }
 
@@ -89,10 +101,18 @@ public class GetMemoryShuffleDataRequest extends RequestMessage {
     try {
       expectedTaskIdsBitmap = RssUtils.deserializeBitMap(bytes);
     } catch (IOException ioException) {
-      throw new DecodeException("serializeBitMap failed while decode GetMemoryShuffleDataRequest!", ioException);
+      throw new DecodeException(
+          "serializeBitMap failed while decode GetMemoryShuffleDataRequest!", ioException);
     }
-    return new GetMemoryShuffleDataRequest(requestId, appId, shuffleId, partitionId, lastBlockId, readBufferSize,
-        timestamp, expectedTaskIdsBitmap);
+    return new GetMemoryShuffleDataRequest(
+        requestId,
+        appId,
+        shuffleId,
+        partitionId,
+        lastBlockId,
+        readBufferSize,
+        timestamp,
+        expectedTaskIdsBitmap);
   }
 
   public String getAppId() {

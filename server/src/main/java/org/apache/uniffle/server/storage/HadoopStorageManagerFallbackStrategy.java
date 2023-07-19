@@ -24,10 +24,10 @@ import com.google.common.collect.Sets;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 
-
 public class HadoopStorageManagerFallbackStrategy extends AbstractStorageManagerFallbackStrategy {
   private final Long fallBackTimes;
-  private Set<Class<? extends StorageManager>> excludeTypes = Sets.newHashSet(HadoopStorageManager.class);
+  private Set<Class<? extends StorageManager>> excludeTypes =
+      Sets.newHashSet(HadoopStorageManager.class);
 
   public HadoopStorageManagerFallbackStrategy(ShuffleServerConf conf) {
     super(conf);
@@ -35,7 +35,8 @@ public class HadoopStorageManagerFallbackStrategy extends AbstractStorageManager
   }
 
   @Override
-  public StorageManager tryFallback(StorageManager current, ShuffleDataFlushEvent event, StorageManager... candidates) {
+  public StorageManager tryFallback(
+      StorageManager current, ShuffleDataFlushEvent event, StorageManager... candidates) {
     if (event.getRetryTimes() > fallBackTimes) {
       return findNextStorageManager(current, excludeTypes, event, candidates);
     }

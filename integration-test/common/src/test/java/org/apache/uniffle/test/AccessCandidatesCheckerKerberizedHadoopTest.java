@@ -47,12 +47,12 @@ public class AccessCandidatesCheckerKerberizedHadoopTest extends KerberizedHadoo
 
   @Test
   public void test() throws Exception {
-    String candidatesFile =  kerberizedHadoop.getSchemeAndAuthorityPrefix() + "/test/access_checker_candidates";
+    String candidatesFile =
+        kerberizedHadoop.getSchemeAndAuthorityPrefix() + "/test/access_checker_candidates";
     AccessCandidatesCheckerHadoopTest.createAndRunCases(
         kerberizedHadoop.getSchemeAndAuthorityPrefix(),
         candidatesFile,
         kerberizedHadoop.getFileSystem(),
-        kerberizedHadoop.getConf()
-    );
+        kerberizedHadoop.getConf());
   }
 }

@@ -23,10 +23,8 @@ import com.google.common.collect.Maps;
 
 import org.apache.uniffle.proto.RssProtos;
 
-
 public class StorageInfoUtils {
-  public static Map<String, RssProtos.StorageInfo> toProto(
-      Map<String, StorageInfo> info) {
+  public static Map<String, RssProtos.StorageInfo> toProto(Map<String, StorageInfo> info) {
     Map<String, RssProtos.StorageInfo> result = Maps.newHashMapWithExpectedSize(info.size());
     info.forEach((k, v) -> result.put(k, v.toProto()));
     return result;
@@ -37,12 +35,13 @@ public class StorageInfoUtils {
     for (Map.Entry<String, RssProtos.StorageInfo> entry : info.entrySet()) {
       String key = entry.getKey();
       RssProtos.StorageInfo val = entry.getValue();
-      StorageInfo storageInfo = new StorageInfo(
-          val.getMountPoint(),
-          StorageMedia.fromProto(val.getStorageMedia()),
-          val.getCapacity(),
-          val.getUsedBytes(),
-          StorageStatus.fromProto(val.getStatus()));
+      StorageInfo storageInfo =
+          new StorageInfo(
+              val.getMountPoint(),
+              StorageMedia.fromProto(val.getStorageMedia()),
+              val.getCapacity(),
+              val.getUsedBytes(),
+              StorageStatus.fromProto(val.getStatus()));
       result.put(key, storageInfo);
     }
     return result;

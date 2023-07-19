@@ -45,8 +45,7 @@ public class ShuffleStorageUtils {
   static final String HADOOP_DIRNAME_SEPARATOR = "-";
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleStorageUtils.class);
 
-  private ShuffleStorageUtils() {
-  }
+  private ShuffleStorageUtils() {}
 
   public static String generateDataFileName(String fileNamePrefix) {
     return fileNamePrefix + Constants.SHUFFLE_DATA_FILE_SUFFIX;
@@ -62,11 +61,17 @@ public class ShuffleStorageUtils {
     if (segments != null && !segments.isEmpty()) {
       if (segments.size() == 1) {
         List<BufferSegment> bufferSegments = Lists.newArrayList();
-        bufferSegments.add(new BufferSegment(segments.get(0).getBlockId(), 0,
-            segments.get(0).getLength(), segments.get(0).getUncompressLength(), segments.get(0).getCrc(),
-            segments.get(0).getTaskAttemptId()));
-        dataFileSegments.add(new DataFileSegment(
-            path, segments.get(0).getOffset(), segments.get(0).getLength(), bufferSegments));
+        bufferSegments.add(
+            new BufferSegment(
+                segments.get(0).getBlockId(),
+                0,
+                segments.get(0).getLength(),
+                segments.get(0).getUncompressLength(),
+                segments.get(0).getCrc(),
+                segments.get(0).getTaskAttemptId()));
+        dataFileSegments.add(
+            new DataFileSegment(
+                path, segments.get(0).getOffset(), segments.get(0).getLength(), bufferSegments));
       } else {
         Collections.sort(segments);
         long start = -1;
@@ -75,10 +80,11 @@ public class ShuffleStorageUtils {
         long lastPosition = Long.MAX_VALUE;
         List<BufferSegment> bufferSegments = Lists.newArrayList();
         for (FileBasedShuffleSegment segment : segments) {
-          // check if there has expected skip range, eg, [20, 100], [1000, 1001] and the skip range is [101, 999]
+          // check if there has expected skip range, eg, [20, 100], [1000, 1001] and the skip range
+          // is [101, 999]
           if (start > -1 && segment.getOffset() - lastPosition > skipThreshold) {
-            dataFileSegments.add(new DataFileSegment(
-                path, start, (int) (lastPosition - start), bufferSegments));
+            dataFileSegments.add(
+                new DataFileSegment(path, start, (int) (lastPosition - start), bufferSegments));
             start = -1;
           }
           // previous FileBasedShuffleSegment are merged, start new merge process
@@ -87,18 +93,24 @@ public class ShuffleStorageUtils {
             start = segment.getOffset();
           }
           latestPosition = segment.getOffset() + segment.getLength();
-          bufferSegments.add(new BufferSegment(segment.getBlockId(),
-              segment.getOffset() - start, segment.getLength(),
-              segment.getUncompressLength(), segment.getCrc(), segment.getTaskAttemptId()));
+          bufferSegments.add(
+              new BufferSegment(
+                  segment.getBlockId(),
+                  segment.getOffset() - start,
+                  segment.getLength(),
+                  segment.getUncompressLength(),
+                  segment.getCrc(),
+                  segment.getTaskAttemptId()));
           if (latestPosition - start >= readBufferSize) {
-            dataFileSegments.add(new DataFileSegment(
-                path, start, (int) (latestPosition - start), bufferSegments));
+            dataFileSegments.add(
+                new DataFileSegment(path, start, (int) (latestPosition - start), bufferSegments));
             start = -1;
           }
           lastPosition = latestPosition;
         }
         if (start > -1) {
-          dataFileSegments.add(new DataFileSegment(path, start, (int) (lastPosition - start), bufferSegments));
+          dataFileSegments.add(
+              new DataFileSegment(path, start, (int) (lastPosition - start), bufferSegments));
         }
       }
     }
@@ -106,26 +118,19 @@ public class ShuffleStorageUtils {
   }
 
   public static String getShuffleDataPath(String appId, int shuffleId) {
-    return String.join(
-            HADOOP_PATH_SEPARATOR,
-        appId,
-        String.valueOf(shuffleId));
+    return String.join(HADOOP_PATH_SEPARATOR, appId, String.valueOf(shuffleId));
   }
 
   public static String getShuffleDataPath(String appId, int shuffleId, int start, int end) {
     return String.join(
-            HADOOP_PATH_SEPARATOR,
+        HADOOP_PATH_SEPARATOR,
         appId,
         String.valueOf(shuffleId),
         String.join(HADOOP_DIRNAME_SEPARATOR, String.valueOf(start), String.valueOf(end)));
   }
 
   public static String getCombineDataPath(String appId, int shuffleId) {
-    return String.join(
-            HADOOP_PATH_SEPARATOR,
-        appId,
-        String.valueOf(shuffleId),
-        "combine");
+    return String.join(HADOOP_PATH_SEPARATOR, appId, String.valueOf(shuffleId), "combine");
   }
 
   public static String getFullShuffleDataFolder(String basePath, String subPath) {
@@ -133,10 +138,11 @@ public class ShuffleStorageUtils {
   }
 
   public static String getShuffleDataPathWithRange(
-      String appId, int shuffleId, int partitionId,
-      int partitionNumPerRange, int partitionNum) {
-    int prNum = partitionNum % partitionNumPerRange == 0
-        ? partitionNum / partitionNumPerRange : partitionNum / partitionNumPerRange + 1;
+      String appId, int shuffleId, int partitionId, int partitionNumPerRange, int partitionNum) {
+    int prNum =
+        partitionNum % partitionNumPerRange == 0
+            ? partitionNum / partitionNumPerRange
+            : partitionNum / partitionNumPerRange + 1;
     for (int i = 0; i < prNum; i++) {
       int start = i * partitionNumPerRange;
       int end = (i + 1) * partitionNumPerRange - 1;
@@ -144,19 +150,32 @@ public class ShuffleStorageUtils {
         return getShuffleDataPath(appId, shuffleId, start, end);
       }
     }
-    throw new RssException("Can't generate ShuffleData Path for appId[" + appId + "], shuffleId["
-        + shuffleId + "], partitionId[" + partitionId + "], partitionNumPerRange[" + partitionNumPerRange
-        + "], partitionNum[" + partitionNum + "]");
+    throw new RssException(
+        "Can't generate ShuffleData Path for appId["
+            + appId
+            + "], shuffleId["
+            + shuffleId
+            + "], partitionId["
+            + partitionId
+            + "], partitionNumPerRange["
+            + partitionNumPerRange
+            + "], partitionNum["
+            + partitionNum
+            + "]");
   }
 
-  public static int[] getPartitionRange(int partitionId, int partitionNumPerRange, int partitionNum) {
+  public static int[] getPartitionRange(
+      int partitionId, int partitionNumPerRange, int partitionNum) {
     int[] range = null;
     int prNum = partitionId / partitionNumPerRange;
     if (partitionId < 0 || partitionId >= partitionNum) {
-      LOG.warn("Invalid partitionId. partitionId:{} ,partitionNumPerRange: {}, partitionNum: {}",
-              partitionId, partitionNumPerRange, partitionNum);
+      LOG.warn(
+          "Invalid partitionId. partitionId:{} ,partitionNumPerRange: {}, partitionNum: {}",
+          partitionId,
+          partitionNumPerRange,
+          partitionNum);
     } else {
-      range = new int[]{partitionNumPerRange * prNum, partitionNumPerRange * (prNum + 1) - 1};
+      range = new int[] {partitionNumPerRange * prNum, partitionNumPerRange * (prNum + 1) - 1};
     }
     return range;
   }
@@ -170,7 +189,8 @@ public class ShuffleStorageUtils {
     return index;
   }
 
-  public static void createDirIfNotExist(FileSystem fileSystem, String pathString) throws IOException {
+  public static void createDirIfNotExist(FileSystem fileSystem, String pathString)
+      throws IOException {
     Path path = new Path(pathString);
     try {
       if (!fileSystem.exists(path)) {
@@ -179,14 +199,15 @@ public class ShuffleStorageUtils {
     } catch (IOException ioe) {
       // if folder exist, ignore the exception
       if (!fileSystem.exists(path)) {
-        LOG.error("Can't create shuffle folder {}, {}", pathString, ExceptionUtils.getStackTrace(ioe));
+        LOG.error(
+            "Can't create shuffle folder {}, {}", pathString, ExceptionUtils.getStackTrace(ioe));
         throw ioe;
       }
     }
   }
 
-
-  public static long uploadFile(File file, HadoopFileWriter writer, int bufferSize) throws IOException {
+  public static long uploadFile(File file, HadoopFileWriter writer, int bufferSize)
+      throws IOException {
     try (FileInputStream inputStream = new FileInputStream(file)) {
       return writer.copy(inputStream, bufferSize);
     } catch (IOException e) {

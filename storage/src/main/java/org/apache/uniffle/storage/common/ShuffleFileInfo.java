@@ -88,8 +88,6 @@ public class ShuffleFileInfo {
     return partitions;
   }
 
-
-
   public long getSize() {
     return size;
   }
@@ -105,5 +103,4 @@ public class ShuffleFileInfo {
   public String getKey() {
     return key;
   }
-
 }

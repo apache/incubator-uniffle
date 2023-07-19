@@ -98,7 +98,14 @@ public class RssMRAppMaster extends MRAppMaster {
       int nmPort,
       int nmHttpPort,
       long appSubmitTime) {
-    super(applicationAttemptId, containerId, nmHost, nmPort, nmHttpPort, new SystemClock(), appSubmitTime);
+    super(
+        applicationAttemptId,
+        containerId,
+        nmHost,
+        nmPort,
+        nmHttpPort,
+        new SystemClock(),
+        appSubmitTime);
     rssNmHost = nmHost;
     rssNmPort = nmPort;
     rssNmHttpPort = nmHttpPort;
@@ -134,106 +141,133 @@ public class RssMRAppMaster extends MRAppMaster {
       ClientUtils.validateClientType(clientType);
       assignmentTags.add(clientType);
 
-      final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-          new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-              Thread t = Executors.defaultThreadFactory().newThread(r);
-              t.setDaemon(true);
-              return t;
-            }
-          }
-      );
+      final ScheduledExecutorService scheduledExecutorService =
+          Executors.newSingleThreadScheduledExecutor(
+              new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable r) {
+                  Thread t = Executors.defaultThreadFactory().newThread(r);
+                  t.setDaemon(true);
+                  return t;
+                }
+              });
 
       JobConf extraConf = new JobConf();
       extraConf.clear();
 
       // get remote storage from coordinator if necessary
-      boolean dynamicConfEnabled = conf.getBoolean(RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
-          RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
+      boolean dynamicConfEnabled =
+          conf.getBoolean(
+              RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
+              RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
 
       // fetch client conf and apply them if necessary
       if (dynamicConfEnabled) {
-        Map<String, String> clusterClientConf = client.fetchClientConf(
-            conf.getInt(RssMRConfig.RSS_ACCESS_TIMEOUT_MS,
-                RssMRConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
+        Map<String, String> clusterClientConf =
+            client.fetchClientConf(
+                conf.getInt(
+                    RssMRConfig.RSS_ACCESS_TIMEOUT_MS,
+                    RssMRConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
         RssMRUtils.applyDynamicClientConf(extraConf, clusterClientConf);
       }
 
       String storageType = RssMRUtils.getString(extraConf, conf, RssMRConfig.RSS_STORAGE_TYPE);
-      boolean testMode = RssMRUtils.getBoolean(extraConf, conf, RssMRConfig.RSS_TEST_MODE_ENABLE, false);
+      boolean testMode =
+          RssMRUtils.getBoolean(extraConf, conf, RssMRConfig.RSS_TEST_MODE_ENABLE, false);
       ClientUtils.validateTestModeConf(testMode, storageType);
       ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
       String appId = applicationAttemptId.toString();
       RemoteStorageInfo defaultRemoteStorage =
           new RemoteStorageInfo(conf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH, ""));
-      RemoteStorageInfo remoteStorage = ClientUtils.fetchRemoteStorage(
-          appId, defaultRemoteStorage, dynamicConfEnabled, storageType, client);
+      RemoteStorageInfo remoteStorage =
+          ClientUtils.fetchRemoteStorage(
+              appId, defaultRemoteStorage, dynamicConfEnabled, storageType, client);
       // set the remote storage with actual value
       extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_PATH, remoteStorage.getPath());
       extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_CONF, remoteStorage.getConfString());
       RssMRUtils.validateRssClientConf(extraConf, conf);
       // When containers have disk with very limited space, reduce is allowed to spill data to hdfs
-      if (conf.getBoolean(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
+      if (conf.getBoolean(
+          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
           RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT)) {
 
         if (remoteStorage.isEmpty()) {
-          throw new IllegalArgumentException("Remote spill only supports "
-            + StorageType.MEMORY_LOCALFILE_HDFS.name() + " mode with " + remoteStorage);
+          throw new IllegalArgumentException(
+              "Remote spill only supports "
+                  + StorageType.MEMORY_LOCALFILE_HDFS.name()
+                  + " mode with "
+                  + remoteStorage);
         }
 
         // When remote spill is enabled, reduce task is more easy to crash.
         // We allow more attempts to avoid recomputing job.
         int originalAttempts = conf.getInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, 4);
-        int inc = conf.getInt(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC,
-            RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC_DEFAULT);
+        int inc =
+            conf.getInt(
+                RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC,
+                RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC_DEFAULT);
         if (inc < 0) {
-          throw new IllegalArgumentException(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC
-              + " cannot be negative");
+          throw new IllegalArgumentException(
+              RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC + " cannot be negative");
         }
         conf.setInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, originalAttempts + inc);
       }
-      
+
       int requiredAssignmentShuffleServersNum = RssMRUtils.getRequiredShuffleServerNumber(conf);
-      // retryInterval must bigger than `rss.server.heartbeat.interval`, or maybe it will return the same result
-      long retryInterval = conf.getLong(RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL,
+      // retryInterval must bigger than `rss.server.heartbeat.interval`, or maybe it will return the
+      // same result
+      long retryInterval =
+          conf.getLong(
+              RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL,
               RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE);
-      int retryTimes = conf.getInt(RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES,
+      int retryTimes =
+          conf.getInt(
+              RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES,
               RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE);
       ShuffleAssignmentsInfo response;
       try {
-        response = RetryUtils.retry(() -> {
-          ShuffleAssignmentsInfo shuffleAssignments =
-                  client.getShuffleAssignments(
+        response =
+            RetryUtils.retry(
+                () -> {
+                  ShuffleAssignmentsInfo shuffleAssignments =
+                      client.getShuffleAssignments(
                           appId,
                           0,
                           numReduceTasks,
                           1,
                           Sets.newHashSet(assignmentTags),
                           requiredAssignmentShuffleServersNum,
-                          -1
-                  );
+                          -1);
 
-          Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
-              shuffleAssignments.getServerToPartitionRanges();
+                  Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
+                      shuffleAssignments.getServerToPartitionRanges();
 
-          if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
-            return null;
-          }
-          LOG.info("Start to register shuffle");
-          long start = System.currentTimeMillis();
-          serverToPartitionRanges.entrySet().forEach(entry -> client.registerShuffle(
-              entry.getKey(),
-              appId,
-              0,
-              entry.getValue(),
-              remoteStorage,
-              ShuffleDataDistributionType.NORMAL,
-              RssMRConfig.toRssConf(conf).get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE)
-          ));
-          LOG.info("Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
-          return shuffleAssignments;
-        }, retryInterval, retryTimes);
+                  if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
+                    return null;
+                  }
+                  LOG.info("Start to register shuffle");
+                  long start = System.currentTimeMillis();
+                  serverToPartitionRanges
+                      .entrySet()
+                      .forEach(
+                          entry ->
+                              client.registerShuffle(
+                                  entry.getKey(),
+                                  appId,
+                                  0,
+                                  entry.getValue(),
+                                  remoteStorage,
+                                  ShuffleDataDistributionType.NORMAL,
+                                  RssMRConfig.toRssConf(conf)
+                                      .get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE)));
+                  LOG.info(
+                      "Finish register shuffle with "
+                          + (System.currentTimeMillis() - start)
+                          + " ms");
+                  return shuffleAssignments;
+                },
+                retryInterval,
+                retryTimes);
       } catch (Throwable throwable) {
         throw new RssException("registerShuffle failed!", throwable);
       }
@@ -241,9 +275,11 @@ public class RssMRAppMaster extends MRAppMaster {
       if (response == null) {
         return;
       }
-      long heartbeatInterval = conf.getLong(RssMRConfig.RSS_HEARTBEAT_INTERVAL,
-          RssMRConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
-      long heartbeatTimeout = conf.getLong(RssMRConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
+      long heartbeatInterval =
+          conf.getLong(
+              RssMRConfig.RSS_HEARTBEAT_INTERVAL, RssMRConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
+      long heartbeatTimeout =
+          conf.getLong(RssMRConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
       client.registerApplicationInfo(appId, heartbeatTimeout, "user");
       scheduledExecutorService.scheduleAtFixedRate(
           () -> {
@@ -263,17 +299,28 @@ public class RssMRAppMaster extends MRAppMaster {
       // mapreduce.rss.assignment.partition.1:server1,server2
       // mapreduce.rss.assignment.partition.2:server3,server4
       // ...
-      response.getPartitionToServers().entrySet().forEach(entry -> {
-        List<String> servers = Lists.newArrayList();
-        for (ShuffleServerInfo server : entry.getValue()) {
-          if (server.getNettyPort() > 0) {
-            servers.add(server.getHost() + ":" + server.getGrpcPort() + ":" + server.getNettyPort());
-          } else {
-            servers.add(server.getHost() + ":" + server.getGrpcPort());
-          }
-        }
-        extraConf.set(RssMRConfig.RSS_ASSIGNMENT_PREFIX + entry.getKey(), StringUtils.join(servers, ","));
-      });
+      response
+          .getPartitionToServers()
+          .entrySet()
+          .forEach(
+              entry -> {
+                List<String> servers = Lists.newArrayList();
+                for (ShuffleServerInfo server : entry.getValue()) {
+                  if (server.getNettyPort() > 0) {
+                    servers.add(
+                        server.getHost()
+                            + ":"
+                            + server.getGrpcPort()
+                            + ":"
+                            + server.getNettyPort());
+                  } else {
+                    servers.add(server.getHost() + ":" + server.getGrpcPort());
+                  }
+                }
+                extraConf.set(
+                    RssMRConfig.RSS_ASSIGNMENT_PREFIX + entry.getKey(),
+                    StringUtils.join(servers, ","));
+              });
 
       writeExtraConf(conf, extraConf);
 
@@ -281,7 +328,8 @@ public class RssMRAppMaster extends MRAppMaster {
       conf.setFloat(MRJobConfig.COMPLETED_MAPS_FOR_REDUCE_SLOWSTART, 1.0f);
       LOG.warn("close slow start, because RSS does not support it yet");
 
-      // MapReduce don't set setKeepContainersAcrossApplicationAttempts in AppContext, there will be no container
+      // MapReduce don't set setKeepContainersAcrossApplicationAttempts in AppContext, there will be
+      // no container
       // to be shared between attempts. Rss don't support shared container between attempts.
       conf.setBoolean(MRJobConfig.MR_AM_JOB_RECOVERY_ENABLE, false);
       LOG.warn("close recovery enable, because RSS doesn't support it yet");
@@ -300,21 +348,27 @@ public class RssMRAppMaster extends MRAppMaster {
       validateInputParam(nodeHostString, ApplicationConstants.Environment.NM_HOST.name());
       String nodePortString = System.getenv(ApplicationConstants.Environment.NM_PORT.name());
       validateInputParam(nodePortString, ApplicationConstants.Environment.NM_PORT.name());
-      String nodeHttpPortString = System.getenv(ApplicationConstants.Environment.NM_HTTP_PORT.name());
+      String nodeHttpPortString =
+          System.getenv(ApplicationConstants.Environment.NM_HTTP_PORT.name());
       validateInputParam(nodeHttpPortString, ApplicationConstants.Environment.NM_HTTP_PORT.name());
       String appSubmitTimeStr = System.getenv("APP_SUBMIT_TIME_ENV");
       validateInputParam(appSubmitTimeStr, "APP_SUBMIT_TIME_ENV");
       ContainerId containerId = ContainerId.fromString(containerIdStr);
       ApplicationAttemptId applicationAttemptId = containerId.getApplicationAttemptId();
       if (applicationAttemptId != null) {
-        CallerContext.setCurrent((
-            new CallerContext.Builder("mr_appmaster_" + applicationAttemptId.toString())).build());
+        CallerContext.setCurrent(
+            (new CallerContext.Builder("mr_appmaster_" + applicationAttemptId.toString())).build());
       }
 
       long appSubmitTime = Long.parseLong(appSubmitTimeStr);
-      RssMRAppMaster appMaster = new RssMRAppMaster(
-          applicationAttemptId, containerId, nodeHostString, Integer.parseInt(nodePortString),
-          Integer.parseInt(nodeHttpPortString), appSubmitTime);
+      RssMRAppMaster appMaster =
+          new RssMRAppMaster(
+              applicationAttemptId,
+              containerId,
+              nodeHostString,
+              Integer.parseInt(nodePortString),
+              Integer.parseInt(nodeHttpPortString),
+              appSubmitTime);
       ShutdownHookManager.get().addShutdownHook(new RssMRAppMasterShutdownHook(appMaster), 30);
       MRWebAppUtil.initialize(conf);
       String systemPropsToLog = MRApps.getSystemPropertiesToLog(conf);
@@ -337,7 +391,8 @@ public class RssMRAppMaster extends MRAppMaster {
     field.setAccessible(false);
   }
 
-  protected ContainerAllocator createContainerAllocator(ClientService clientService, AppContext context) {
+  protected ContainerAllocator createContainerAllocator(
+      ClientService clientService, AppContext context) {
     rssContainerAllocator = new RssContainerAllocatorRouter(clientService, context);
     return rssContainerAllocator;
   }
@@ -357,8 +412,8 @@ public class RssMRAppMaster extends MRAppMaster {
       Path assignmentFile = new Path(jobDirStr, RssMRConfig.RSS_CONF_FILE);
 
       try (FSDataOutputStream out =
-               FileSystem.create(fs, assignmentFile,
-                   new FsPermission(JobSubmissionFiles.JOB_FILE_PERMISSION))) {
+          FileSystem.create(
+              fs, assignmentFile, new FsPermission(JobSubmissionFiles.JOB_FILE_PERMISSION))) {
         extraConf.writeXml(out);
       }
       FileStatus status = fs.getFileStatus(assignmentFile);
@@ -367,21 +422,23 @@ public class RssMRAppMaster extends MRAppMaster {
       String files = conf.get(MRJobConfig.CACHE_FILES);
       conf.set(MRJobConfig.CACHE_FILES, files == null ? uri : uri + "," + files);
       String ts = conf.get(MRJobConfig.CACHE_FILE_TIMESTAMPS);
-      conf.set(MRJobConfig.CACHE_FILE_TIMESTAMPS,
+      conf.set(
+          MRJobConfig.CACHE_FILE_TIMESTAMPS,
           ts == null ? String.valueOf(currentTs) : currentTs + "," + ts);
       String vis = conf.get(MRJobConfig.CACHE_FILE_VISIBILITIES);
       conf.set(MRJobConfig.CACHE_FILE_VISIBILITIES, vis == null ? "false" : "false" + "," + vis);
       long size = status.getLen();
       String sizes = conf.get(MRJobConfig.CACHE_FILES_SIZES);
-      conf.set(MRJobConfig.CACHE_FILES_SIZES, sizes == null ? String.valueOf(size) : size + "," + sizes);
+      conf.set(
+          MRJobConfig.CACHE_FILES_SIZES, sizes == null ? String.valueOf(size) : size + "," + sizes);
     } catch (InterruptedException | IOException e) {
       LOG.error("Upload extra conf exception", e);
       throw new RssException("Upload extra conf exception ", e);
     }
   }
 
-  private final class RssContainerAllocatorRouter
-      extends AbstractService implements ContainerAllocator, RMHeartbeatHandler {
+  private final class RssContainerAllocatorRouter extends AbstractService
+      implements ContainerAllocator, RMHeartbeatHandler {
     private final ClientService clientService;
     private final AppContext context;
     private ContainerAllocator containerAllocator;
@@ -395,24 +452,26 @@ public class RssMRAppMaster extends MRAppMaster {
     protected void serviceStart() throws Exception {
       if (RssMRAppMaster.this.getJob().isUber()) {
         MRApps.setupDistributedCacheLocal(this.getConfig());
-        this.containerAllocator = new LocalContainerAllocator(
-            this.clientService,
-            this.context,
-            RssMRAppMaster.this.rssNmHost,
-            RssMRAppMaster.this.rssNmPort,
-            RssMRAppMaster.this.rssNmHttpPort,
-            RssMRAppMaster.this.rssContainerID);
+        this.containerAllocator =
+            new LocalContainerAllocator(
+                this.clientService,
+                this.context,
+                RssMRAppMaster.this.rssNmHost,
+                RssMRAppMaster.this.rssNmPort,
+                RssMRAppMaster.this.rssNmHttpPort,
+                RssMRAppMaster.this.rssContainerID);
       } else {
-        this.containerAllocator = HadoopShimImpl.createRMContainerAllocator(this.clientService, this.context);
+        this.containerAllocator =
+            HadoopShimImpl.createRMContainerAllocator(this.clientService, this.context);
       }
 
-      ((Service)this.containerAllocator).init(this.getConfig());
-      ((Service)this.containerAllocator).start();
+      ((Service) this.containerAllocator).init(this.getConfig());
+      ((Service) this.containerAllocator).start();
       super.serviceStart();
     }
 
     protected void serviceStop() throws Exception {
-      ServiceOperations.stop((Service)this.containerAllocator);
+      ServiceOperations.stop((Service) this.containerAllocator);
       super.serviceStop();
     }
 
@@ -421,19 +480,19 @@ public class RssMRAppMaster extends MRAppMaster {
     }
 
     public void setSignalled(boolean isSignalled) {
-      ((RMCommunicator)this.containerAllocator).setSignalled(isSignalled);
+      ((RMCommunicator) this.containerAllocator).setSignalled(isSignalled);
     }
 
     public void setShouldUnregister(boolean shouldUnregister) {
-      ((RMCommunicator)this.containerAllocator).setShouldUnregister(shouldUnregister);
+      ((RMCommunicator) this.containerAllocator).setShouldUnregister(shouldUnregister);
     }
 
     public long getLastHeartbeatTime() {
-      return ((RMCommunicator)this.containerAllocator).getLastHeartbeatTime();
+      return ((RMCommunicator) this.containerAllocator).getLastHeartbeatTime();
     }
 
     public void runOnNextHeartbeat(Runnable callback) {
-      ((RMCommunicator)this.containerAllocator).runOnNextHeartbeat(callback);
+      ((RMCommunicator) this.containerAllocator).runOnNextHeartbeat(callback);
     }
   }
 
@@ -454,7 +513,8 @@ public class RssMRAppMaster extends MRAppMaster {
     }
 
     public void run() {
-      RssMRAppMaster.LOG.info("MRAppMaster received a signal. Signaling RMCommunicator and JobHistoryEventHandler.");
+      RssMRAppMaster.LOG.info(
+          "MRAppMaster received a signal. Signaling RMCommunicator and JobHistoryEventHandler.");
       RssContainerAllocatorRouter allocatorRouter = this.appMaster.rssContainerAllocator;
       if (allocatorRouter != null) {
         allocatorRouter.setSignalled(true);
@@ -468,7 +528,7 @@ public class RssMRAppMaster extends MRAppMaster {
     try {
       Field field = RssMRAppMaster.class.getSuperclass().getDeclaredField("job");
       field.setAccessible(true);
-      JobImpl job = (JobImpl)field.get(this);
+      JobImpl job = (JobImpl) field.get(this);
       field.setAccessible(false);
       return job;
     } catch (Exception e) {

@@ -48,12 +48,14 @@ public abstract class SparkSQLTest extends SparkIntegrationTestBase {
   public Map runTest(SparkSession spark, String fileName) {
     Dataset<Row> df = spark.read().schema("name STRING, age INT").csv(fileName);
     df.createOrReplaceTempView("people");
-    Dataset<Row> queryResult = spark.sql("SELECT name, count(age) FROM people group by name order by name");
+    Dataset<Row> queryResult =
+        spark.sql("SELECT name, count(age) FROM people group by name order by name");
     Map<String, Long> result = Maps.newHashMap();
-    queryResult.javaRDD().collect().stream().forEach(row -> {
-          result.put(row.getString(0), row.getLong(1));
-        }
-    );
+    queryResult.javaRDD().collect().stream()
+        .forEach(
+            row -> {
+              result.put(row.getString(0), row.getLong(1));
+            });
     return result;
   }
 

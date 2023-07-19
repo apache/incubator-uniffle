@@ -51,23 +51,29 @@ public class LocalFileHandlerTestBase {
       byte[] buf = new byte[length];
       new Random().nextBytes(buf);
       long blockId = ATOMIC_LONG.incrementAndGet();
-      blocks.add(new ShufflePartitionedBlock(length, length, ChecksumUtils.getCrc32(buf), blockId, 100,
-          buf));
+      blocks.add(
+          new ShufflePartitionedBlock(
+              length, length, ChecksumUtils.getCrc32(buf), blockId, 100, buf));
     }
     return blocks;
   }
 
-  public static void writeTestData(List<ShufflePartitionedBlock> blocks, ShuffleWriteHandler handler,
-      Map<Long, byte[]> expectedData, Set<Long> expectedBlockIds) throws Exception {
+  public static void writeTestData(
+      List<ShufflePartitionedBlock> blocks,
+      ShuffleWriteHandler handler,
+      Map<Long, byte[]> expectedData,
+      Set<Long> expectedBlockIds)
+      throws Exception {
     blocks.forEach(block -> block.getData().retain());
     handler.write(blocks);
     blocks.forEach(block -> expectedBlockIds.add(block.getBlockId()));
-    blocks.forEach(block -> expectedData.put(block.getBlockId(), ByteBufUtils.readBytes(block.getData())));
+    blocks.forEach(
+        block -> expectedData.put(block.getBlockId(), ByteBufUtils.readBytes(block.getData())));
     blocks.forEach(block -> block.getData().release());
   }
 
-  public static void validateResult(ServerReadHandler readHandler, Set<Long> expectedBlockIds,
-      Map<Long, byte[]> expectedData) {
+  public static void validateResult(
+      ServerReadHandler readHandler, Set<Long> expectedBlockIds, Map<Long, byte[]> expectedData) {
     List<ShuffleDataResult> shuffleDataResults = readAll(readHandler);
     Set<Long> actualBlockIds = Sets.newHashSet();
     for (ShuffleDataResult sdr : shuffleDataResults) {
@@ -95,25 +101,31 @@ public class LocalFileHandlerTestBase {
     return shuffleIndexResult;
   }
 
-  public static List<ShuffleDataResult> readData(ServerReadHandler readHandler, ShuffleIndexResult shuffleIndexResult) {
+  public static List<ShuffleDataResult> readData(
+      ServerReadHandler readHandler, ShuffleIndexResult shuffleIndexResult) {
     List<ShuffleDataResult> shuffleDataResults = Lists.newLinkedList();
     if (shuffleIndexResult == null || shuffleIndexResult.isEmpty()) {
       return shuffleDataResults;
     }
 
-    List<ShuffleDataSegment> shuffleDataSegments = new FixedSizeSegmentSplitter(32).split(shuffleIndexResult);
+    List<ShuffleDataSegment> shuffleDataSegments =
+        new FixedSizeSegmentSplitter(32).split(shuffleIndexResult);
 
     for (ShuffleDataSegment shuffleDataSegment : shuffleDataSegments) {
       byte[] shuffleData =
-          readHandler.getShuffleData(shuffleDataSegment.getOffset(), shuffleDataSegment.getLength()).getData();
-      ShuffleDataResult sdr = new ShuffleDataResult(shuffleData, shuffleDataSegment.getBufferSegments());
+          readHandler
+              .getShuffleData(shuffleDataSegment.getOffset(), shuffleDataSegment.getLength())
+              .getData();
+      ShuffleDataResult sdr =
+          new ShuffleDataResult(shuffleData, shuffleDataSegment.getBufferSegments());
       shuffleDataResults.add(sdr);
     }
 
     return shuffleDataResults;
   }
 
-  public static void checkData(ShuffleDataResult shuffleDataResult, Map<Long, byte[]> expectedData) {
+  public static void checkData(
+      ShuffleDataResult shuffleDataResult, Map<Long, byte[]> expectedData) {
     byte[] buffer = shuffleDataResult.getData();
     List<BufferSegment> bufferSegments = shuffleDataResult.getBufferSegments();
 
@@ -134,8 +146,8 @@ public class LocalFileHandlerTestBase {
     byteBuffer.putLong(segment.getTaskAttemptId());
   }
 
-  public static List<byte[]> calcSegmentBytes(Map<Long, byte[]> blockIdToData,
-      int bytesPerSegment, List<Long> blockIds) {
+  public static List<byte[]> calcSegmentBytes(
+      Map<Long, byte[]> blockIdToData, int bytesPerSegment, List<Long> blockIds) {
     List<byte[]> res = Lists.newArrayList();
     int curSize = 0;
     ByteBuffer byteBuffer = ByteBuffer.allocate(2 * bytesPerSegment);

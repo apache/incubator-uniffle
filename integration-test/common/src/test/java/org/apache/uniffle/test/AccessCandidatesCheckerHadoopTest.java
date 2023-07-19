@@ -61,15 +61,14 @@ public class AccessCandidatesCheckerHadoopTest extends HadoopTestBase {
   }
 
   public static void createAndRunCases(
-      String clusterPrefix,
-      String candidatesFile,
-      FileSystem fs,
-      Configuration hadoopConf) throws Exception {
+      String clusterPrefix, String candidatesFile, FileSystem fs, Configuration hadoopConf)
+      throws Exception {
 
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC, 1);
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, clusterPrefix);
-    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
+    conf.setString(
+        CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
         "org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker");
     ApplicationManager applicationManager = new ApplicationManager(conf);
     // file load checking at startup
@@ -80,8 +79,11 @@ public class AccessCandidatesCheckerHadoopTest extends HadoopTestBase {
       expectedException = e;
     }
     assertNotNull(expectedException);
-    assertTrue(expectedException.getMessage().contains(
-        "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
+    assertTrue(
+        expectedException
+            .getMessage()
+            .contains(
+                "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, candidatesFile);
     expectedException = null;
     try {
@@ -90,8 +92,11 @@ public class AccessCandidatesCheckerHadoopTest extends HadoopTestBase {
       expectedException = e;
     }
     assertNotNull(expectedException);
-    assertTrue(expectedException.getMessage().contains(
-        "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
+    assertTrue(
+        expectedException
+            .getMessage()
+            .contains(
+                "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
 
     Path path = new Path(candidatesFile);
     FSDataOutputStream out = fs.create(path);
@@ -102,9 +107,10 @@ public class AccessCandidatesCheckerHadoopTest extends HadoopTestBase {
     printWriter.println("2 ");
     printWriter.flush();
     printWriter.close();
-    AccessManager accessManager = new AccessManager(conf, null,
-        applicationManager.getQuotaManager(), hadoopConf);
-    AccessCandidatesChecker checker = (AccessCandidatesChecker) accessManager.getAccessCheckers().get(0);
+    AccessManager accessManager =
+        new AccessManager(conf, null, applicationManager.getQuotaManager(), hadoopConf);
+    AccessCandidatesChecker checker =
+        (AccessCandidatesChecker) accessManager.getAccessCheckers().get(0);
     // load the config at the beginning
     sleep(1200);
     assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());

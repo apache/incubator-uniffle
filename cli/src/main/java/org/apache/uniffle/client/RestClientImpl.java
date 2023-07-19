@@ -45,7 +45,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.exception.UniffleRestException;
 
-
 public class RestClientImpl implements RestClient {
   private static final Logger LOG = LoggerFactory.getLogger(RestClientImpl.class);
   private CloseableHttpClient httpclient;
@@ -125,7 +124,6 @@ public class RestClientImpl implements RestClient {
 
     return response;
   }
-
 
   private URI buildURI(String path, Map<String, Object> params) {
     URI uri;

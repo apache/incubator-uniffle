@@ -37,28 +37,22 @@ import org.apache.uniffle.coordinator.ServerNode;
 
 /**
  * PartitionBalanceAssignmentStrategy will consider allocating partitions from two aspects
- * (available memory and partitionAssignment).The strategy will sequentially process requests,
- * not concurrently. Because we don't want multiple requests to compete the same shuffle server.
- * We choose the shuffle server which give partitions the most available memory to allocate partitions;
- * For example:
- * There is three shuffle servers:
- * Initial Status:
- * S1 (2G, 0) S2 (5G, 0) S3(1G, 0)
- * First round, we request one partition, then
- * S1 (2G, 0) S2 (5G, 1) S3(1G, 0)
- * Second round, we request one partition, then
- * S1 (2G, 0) S2 (5G, 2) s3(1G, 0), we request one partition, then
- * Third round, we request one partition, then
- * S1 (2G, 1) S2 (5G, 2) s3(1G, 0)
- * ....
- **/
-
+ * (available memory and partitionAssignment).The strategy will sequentially process requests, not
+ * concurrently. Because we don't want multiple requests to compete the same shuffle server. We
+ * choose the shuffle server which give partitions the most available memory to allocate partitions;
+ * For example: There is three shuffle servers: Initial Status: S1 (2G, 0) S2 (5G, 0) S3(1G, 0)
+ * First round, we request one partition, then S1 (2G, 0) S2 (5G, 1) S3(1G, 0) Second round, we
+ * request one partition, then S1 (2G, 0) S2 (5G, 2) s3(1G, 0), we request one partition, then Third
+ * round, we request one partition, then S1 (2G, 1) S2 (5G, 2) s3(1G, 0) ....
+ */
 public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrategy {
 
-  private static final Logger LOG = LoggerFactory.getLogger(PartitionBalanceAssignmentStrategy.class);
+  private static final Logger LOG =
+      LoggerFactory.getLogger(PartitionBalanceAssignmentStrategy.class);
 
   private ClusterManager clusterManager;
-  private Map<ServerNode, PartitionAssignmentInfo> serverToPartitions = JavaUtils.newConcurrentMap();
+  private Map<ServerNode, PartitionAssignmentInfo> serverToPartitions =
+      JavaUtils.newConcurrentMap();
 
   public PartitionBalanceAssignmentStrategy(ClusterManager clusterManager, CoordinatorConf conf) {
     super(conf);
@@ -83,33 +77,42 @@ public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrate
       List<ServerNode> nodes = clusterManager.getServerList(requiredTags);
       Map<ServerNode, PartitionAssignmentInfo> newPartitionInfos = JavaUtils.newConcurrentMap();
       for (ServerNode node : nodes) {
-        newPartitionInfos.computeIfAbsent(node, key -> {
-          PartitionAssignmentInfo partitionInfo;
-          if (serverToPartitions.containsKey(node)) {
-            partitionInfo = serverToPartitions.get(node);
-            if (partitionInfo.getTimestamp() < node.getTimestamp()) {
-              partitionInfo.resetPartitionNum();
-              partitionInfo.setTimestamp(node.getTimestamp());
-            }
-          } else {
-            partitionInfo = new PartitionAssignmentInfo();
-          }
-          return partitionInfo;
-        });
+        newPartitionInfos.computeIfAbsent(
+            node,
+            key -> {
+              PartitionAssignmentInfo partitionInfo;
+              if (serverToPartitions.containsKey(node)) {
+                partitionInfo = serverToPartitions.get(node);
+                if (partitionInfo.getTimestamp() < node.getTimestamp()) {
+                  partitionInfo.resetPartitionNum();
+                  partitionInfo.setTimestamp(node.getTimestamp());
+                }
+              } else {
+                partitionInfo = new PartitionAssignmentInfo();
+              }
+              return partitionInfo;
+            });
       }
       serverToPartitions = newPartitionInfos;
       int averagePartitions = totalPartitionNum * replica / clusterManager.getShuffleNodesMax();
       int assignPartitions = Math.max(averagePartitions, 1);
-      nodes.sort(new Comparator<ServerNode>() {
-        @Override
-        public int compare(ServerNode o1, ServerNode o2) {
-          PartitionAssignmentInfo partitionInfo1 = serverToPartitions.get(o1);
-          PartitionAssignmentInfo partitionInfo2 = serverToPartitions.get(o2);
-          double v1 = o1.getAvailableMemory() * 1.0 / (partitionInfo1.getPartitionNum() + assignPartitions);
-          double v2 = o2.getAvailableMemory() * 1.0 / (partitionInfo2.getPartitionNum() + assignPartitions);
-          return Double.compare(v2, v1);
-        }
-      });
+      nodes.sort(
+          new Comparator<ServerNode>() {
+            @Override
+            public int compare(ServerNode o1, ServerNode o2) {
+              PartitionAssignmentInfo partitionInfo1 = serverToPartitions.get(o1);
+              PartitionAssignmentInfo partitionInfo2 = serverToPartitions.get(o2);
+              double v1 =
+                  o1.getAvailableMemory()
+                      * 1.0
+                      / (partitionInfo1.getPartitionNum() + assignPartitions);
+              double v2 =
+                  o2.getAvailableMemory()
+                      * 1.0
+                      / (partitionInfo2.getPartitionNum() + assignPartitions);
+              return Double.compare(v2, v1);
+            }
+          });
 
       if (nodes.isEmpty() || nodes.size() < replica) {
         throw new RssException("There isn't enough shuffle servers");
@@ -127,9 +130,15 @@ public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrate
       }
 
       List<ServerNode> candidatesNodes = getCandidateNodes(nodes, expectNum);
-      assignments = getPartitionAssignment(totalPartitionNum, partitionNumPerRange, replica,
-          candidatesNodes, estimateTaskConcurrency);
-      assignments.values().stream().flatMap(Collection::stream)
+      assignments =
+          getPartitionAssignment(
+              totalPartitionNum,
+              partitionNumPerRange,
+              replica,
+              candidatesNodes,
+              estimateTaskConcurrency);
+      assignments.values().stream()
+          .flatMap(Collection::stream)
           .forEach(server -> serverToPartitions.get(server).incrementPartitionNum());
     }
     return new PartitionRangeAssignment(assignments);

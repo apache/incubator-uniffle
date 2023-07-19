@@ -22,7 +22,8 @@ import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.storage.AbstractStorageManagerFallbackStrategy;
 import org.apache.uniffle.server.storage.StorageManager;
 
-public class HugePartitionSensitiveStorageManagerSelector extends FallbackBasedStorageManagerSelector {
+public class HugePartitionSensitiveStorageManagerSelector
+    extends FallbackBasedStorageManagerSelector {
 
   public HugePartitionSensitiveStorageManagerSelector(
       StorageManager warmStorageManager,

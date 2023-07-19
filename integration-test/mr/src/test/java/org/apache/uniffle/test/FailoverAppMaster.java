@@ -24,7 +24,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 public class FailoverAppMaster {
   public static void main(String[] args) {
     ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
-    if (applicationAttemptId.getAttemptId() == 1)  {
+    if (applicationAttemptId.getAttemptId() == 1) {
       System.exit(1);
     }
     RssMRAppMaster.main(args);

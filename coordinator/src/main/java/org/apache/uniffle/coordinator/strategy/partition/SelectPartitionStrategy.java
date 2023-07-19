@@ -25,8 +25,13 @@ import org.apache.uniffle.coordinator.ServerNode;
 
 public interface SelectPartitionStrategy {
   /**
-   * Partition allocation strategy, which defines how to assign several partitions to several servers
+   * Partition allocation strategy, which defines how to assign several partitions to several
+   * servers
    */
-  SortedMap<PartitionRange, List<ServerNode>> assign(int totalPartitionNum,
-      int replica, int partitionNumPerRange, List<ServerNode> candidatesNodes, int estimateTaskConcurrency);
+  SortedMap<PartitionRange, List<ServerNode>> assign(
+      int totalPartitionNum,
+      int replica,
+      int partitionNumPerRange,
+      List<ServerNode> candidatesNodes,
+      int estimateTaskConcurrency);
 }

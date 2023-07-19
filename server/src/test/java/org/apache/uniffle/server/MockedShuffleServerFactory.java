@@ -36,11 +36,10 @@ public class MockedShuffleServerFactory extends ShuffleServerFactory {
     ShuffleServer shuffleServer = getShuffleServer();
     ServerType type = conf.get(ShuffleServerConf.RPC_SERVER_TYPE);
     if (type == ServerType.GRPC) {
-      return new MockedGrpcServer(conf, new MockedShuffleServerGrpcService(shuffleServer),
-        shuffleServer.getGrpcMetrics());
+      return new MockedGrpcServer(
+          conf, new MockedShuffleServerGrpcService(shuffleServer), shuffleServer.getGrpcMetrics());
     } else {
       throw new UnsupportedOperationException("Unsupported server type " + type);
     }
   }
-
 }

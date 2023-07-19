@@ -91,12 +91,14 @@ public class RssDAGAppMasterTest {
   public void testHookAfterDagInited() throws Exception {
     // 1 Init and mock some basic module
     AppContext appContext = mock(AppContext.class);
-    ApplicationAttemptId appAttemptId = ApplicationAttemptId.newInstance(ApplicationId.newInstance(1, 1), 1);
+    ApplicationAttemptId appAttemptId =
+        ApplicationAttemptId.newInstance(ApplicationId.newInstance(1, 1), 1);
     HadoopShim defaultShim = new DefaultHadoopShim();
     when(appContext.getHadoopShim()).thenReturn(defaultShim);
     when(appContext.getApplicationID()).thenReturn(appAttemptId.getApplicationId());
     ClusterInfo clusterInfo = new ClusterInfo();
-    clusterInfo.setMaxContainerCapability(Resource.newInstance(Integer.MAX_VALUE, Integer.MAX_VALUE));
+    clusterInfo.setMaxContainerCapability(
+        Resource.newInstance(Integer.MAX_VALUE, Integer.MAX_VALUE));
     when(appContext.getClusterInfo()).thenReturn(clusterInfo);
     HistoryEventHandler historyEventHandler = mock(HistoryEventHandler.class);
     doReturn(historyEventHandler).when(appContext).getHistoryHandler();
@@ -125,20 +127,31 @@ public class RssDAGAppMasterTest {
     DAG dag = createDAG("test", conf);
     TezDAGID dagId = TezDAGID.getInstance(appAttemptId.getApplicationId(), 1);
     DAGProtos.DAGPlan dagPlan = dag.createDag(conf, null, null, null, false, null, null);
-    DAGImpl dagImpl = new DAGImpl(dagId, conf, dagPlan, dispatcher.getEventHandler(), null, new Credentials(),
-        new SystemClock(), "user", null, appContext);
+    DAGImpl dagImpl =
+        new DAGImpl(
+            dagId,
+            conf,
+            dagPlan,
+            dispatcher.getEventHandler(),
+            null,
+            new Credentials(),
+            new SystemClock(),
+            "user",
+            null,
+            appContext);
     when(appContext.getCurrentDAG()).thenReturn(dagImpl);
 
     // 4 register call back function
     RssDAGAppMaster.registerStateEnteredCallback(dagImpl, appMaster);
 
     // 5 register DAGEvent, init and start dispatcher
-    EventHandler<DAGEvent> dagEventDispatcher = new EventHandler<DAGEvent>() {
-      @Override
-      public void handle(DAGEvent event) {
-        dagImpl.handle(event);
-      }
-    };
+    EventHandler<DAGEvent> dagEventDispatcher =
+        new EventHandler<DAGEvent>() {
+          @Override
+          public void handle(DAGEvent event) {
+            dagImpl.handle(event);
+          }
+        };
     dispatcher.register(DAGEventType.class, dagEventDispatcher);
     dispatcher.init(conf);
     dispatcher.start();
@@ -158,13 +171,19 @@ public class RssDAGAppMasterTest {
     verfiyInput(dagImpl, "vertex4", RssUnorderedKVInput.class.getName(), 2, 3);
   }
 
-  public static void verfiyInput(DAGImpl dag, String name, String expectedInputClassName,
-                                 int expectedSourceVertexId, int expectedDestinationVertexId) throws Exception {
+  public static void verfiyInput(
+      DAGImpl dag,
+      String name,
+      String expectedInputClassName,
+      int expectedSourceVertexId,
+      int expectedDestinationVertexId)
+      throws Exception {
     // 1 verfiy rename rss io class name
     List<InputSpec> inputSpecs = dag.getVertex(name).getInputSpecList(0);
     Assertions.assertEquals(1, inputSpecs.size());
-    Assertions.assertEquals(expectedInputClassName, inputSpecs.get(0).getInputDescriptor().getClassName());
-    // 2 verfiy the address and port of shuffle manager 
+    Assertions.assertEquals(
+        expectedInputClassName, inputSpecs.get(0).getInputDescriptor().getClassName());
+    // 2 verfiy the address and port of shuffle manager
     UserPayload payload = inputSpecs.get(0).getInputDescriptor().getUserPayload();
     Configuration conf = TezUtils.createConfFromUserPayload(payload);
     Assertions.assertEquals("host", conf.get(RSS_AM_SHUFFLE_MANAGER_ADDRESS));
@@ -174,22 +193,31 @@ public class RssDAGAppMasterTest {
     Assertions.assertEquals("value1", conf.get("tez.config1"));
     Assertions.assertEquals("value3", conf.get("tez.config3"));
     Assertions.assertNull(conf.get("tez.config2"));
-    // TEZ_RUNTIME_IFILE_READAHEAD_BYTES is in getConfigurationKeySet, so the config from client should deliver
-    // to Input/Output. But tez.config.from.client is not in getConfigurationKeySet, so the config from client
+    // TEZ_RUNTIME_IFILE_READAHEAD_BYTES is in getConfigurationKeySet, so the config from client
+    // should deliver
+    // to Input/Output. But tez.config.from.client is not in getConfigurationKeySet, so the config
+    // from client
     // should not deliver to Input/Output.
     Assertions.assertEquals(12345, conf.getInt(TEZ_RUNTIME_IFILE_READAHEAD_BYTES, -1));
     Assertions.assertNull(conf.get("tez.config.from.client"));
     // 4 verfiy vertex id
     Assertions.assertEquals(expectedSourceVertexId, conf.getInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, -1));
-    Assertions.assertEquals(expectedDestinationVertexId, conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1));
+    Assertions.assertEquals(
+        expectedDestinationVertexId, conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1));
   }
 
-  public static void verfiyOutput(DAGImpl dag, String name, String expectedOutputClassName,
-                                  int expectedSourceVertexId, int expectedDestinationVertexId) throws Exception {
+  public static void verfiyOutput(
+      DAGImpl dag,
+      String name,
+      String expectedOutputClassName,
+      int expectedSourceVertexId,
+      int expectedDestinationVertexId)
+      throws Exception {
     // 1 verfiy rename rss io class name
     List<OutputSpec> outputSpecs = dag.getVertex(name).getOutputSpecList(0);
     Assertions.assertEquals(1, outputSpecs.size());
-    Assertions.assertEquals(expectedOutputClassName, outputSpecs.get(0).getOutputDescriptor().getClassName());
+    Assertions.assertEquals(
+        expectedOutputClassName, outputSpecs.get(0).getOutputDescriptor().getClassName());
     // 2 verfiy the address and port of shuffle manager
     UserPayload payload = outputSpecs.get(0).getOutputDescriptor().getUserPayload();
     Configuration conf = TezUtils.createConfFromUserPayload(payload);
@@ -202,15 +230,17 @@ public class RssDAGAppMasterTest {
     Assertions.assertNull(conf.get("tez.config2"));
     // 4 verfiy vertex id
     Assertions.assertEquals(expectedSourceVertexId, conf.getInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, -1));
-    Assertions.assertEquals(expectedDestinationVertexId, conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1));
+    Assertions.assertEquals(
+        expectedDestinationVertexId, conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1));
   }
 
   private static DAG createDAG(String dageName, Configuration conf) {
     conf.setInt(TEZ_RUNTIME_IFILE_READAHEAD_BYTES, 12345);
     conf.set("tez.config.from.client", "value.from.client");
 
-    DataSourceDescriptor dummyInput = DataSourceDescriptor.create(
-        InputDescriptor.create("dummyclass"), InputInitializerDescriptor.create(""), null);
+    DataSourceDescriptor dummyInput =
+        DataSourceDescriptor.create(
+            InputDescriptor.create("dummyclass"), InputInitializerDescriptor.create(""), null);
 
     EdgeManagerPluginDescriptor cpEdgeManager =
         EdgeManagerPluginDescriptor.create(DummyProductEdgeManager.class.getName());
@@ -222,23 +252,38 @@ public class RssDAGAppMasterTest {
 
     vertex1.addDataSource("dummyInput", dummyInput);
     OrderedPartitionedKVEdgeConfig edgeConf12 =
-        OrderedPartitionedKVEdgeConfig.newBuilder(NullWritable.class.getName(), NullWritable.class.getName(),
-            HashPartitioner.class.getName()).setFromConfiguration(conf).build();
+        OrderedPartitionedKVEdgeConfig.newBuilder(
+                NullWritable.class.getName(),
+                NullWritable.class.getName(),
+                HashPartitioner.class.getName())
+            .setFromConfiguration(conf)
+            .build();
     UnorderedKVEdgeConfig edgeConf23 =
         UnorderedKVEdgeConfig.newBuilder(NullWritable.class.getName(), NullWritable.class.getName())
-            .setFromConfiguration(conf).build();
+            .setFromConfiguration(conf)
+            .build();
     UnorderedPartitionedKVEdgeConfig edgeConf34 =
-        UnorderedPartitionedKVEdgeConfig.newBuilder(NullWritable.class.getName(), NullWritable.class.getName(),
-            HashPartitioner.class.getName()).setFromConfiguration(conf).build();
+        UnorderedPartitionedKVEdgeConfig.newBuilder(
+                NullWritable.class.getName(),
+                NullWritable.class.getName(),
+                HashPartitioner.class.getName())
+            .setFromConfiguration(conf)
+            .build();
 
     DAG dag = DAG.create(dageName);
     dag.addVertex(vertex1)
         .addVertex(vertex2)
         .addVertex(vertex3)
         .addVertex(vertex4)
-        .addEdge(Edge.create(vertex1, vertex2, edgeConf12.createDefaultCustomEdgeProperty(cpEdgeManager)))
-        .addEdge(Edge.create(vertex2, vertex3, edgeConf23.createDefaultCustomEdgeProperty(cpEdgeManager)))
-        .addEdge(Edge.create(vertex3, vertex4, edgeConf34.createDefaultCustomEdgeProperty(cpEdgeManager)));
+        .addEdge(
+            Edge.create(
+                vertex1, vertex2, edgeConf12.createDefaultCustomEdgeProperty(cpEdgeManager)))
+        .addEdge(
+            Edge.create(
+                vertex2, vertex3, edgeConf23.createDefaultCustomEdgeProperty(cpEdgeManager)))
+        .addEdge(
+            Edge.create(
+                vertex3, vertex4, edgeConf34.createDefaultCustomEdgeProperty(cpEdgeManager)));
     return dag;
   }
 
@@ -249,8 +294,7 @@ public class RssDAGAppMasterTest {
     }
 
     @Override
-    public void run() {
-    }
+    public void run() {}
   }
 
   public static class DummyProductEdgeManager extends EdgeManagerPluginOnDemand {
@@ -260,12 +304,10 @@ public class RssDAGAppMasterTest {
     }
 
     @Override
-    public void initialize() throws Exception {
-    }
+    public void initialize() throws Exception {}
 
     @Override
-    public void prepareForRouting() throws Exception {
-    }
+    public void prepareForRouting() throws Exception {}
 
     @Override
     public int getNumDestinationTaskPhysicalInputs(int destinationTaskIndex) throws Exception {
@@ -283,29 +325,26 @@ public class RssDAGAppMasterTest {
     }
 
     @Override
-    public int routeInputErrorEventToSource(int destinationTaskIndex, int destinationFailedInputIndex)
-        throws Exception {
+    public int routeInputErrorEventToSource(
+        int destinationTaskIndex, int destinationFailedInputIndex) throws Exception {
       return 1;
     }
 
-    @Nullable
-    @Override
-    public EventRouteMetadata routeDataMovementEventToDestination(int sourceTaskIndex, int sourceOutputIndex,
-        int destinationTaskIndex) throws Exception {
+    @Nullable @Override
+    public EventRouteMetadata routeDataMovementEventToDestination(
+        int sourceTaskIndex, int sourceOutputIndex, int destinationTaskIndex) throws Exception {
       return null;
     }
 
-    @Nullable
-    @Override
-    public CompositeEventRouteMetadata routeCompositeDataMovementEventToDestination(int sourceTaskIndex,
-        int destinationTaskIndex) throws Exception {
+    @Nullable @Override
+    public CompositeEventRouteMetadata routeCompositeDataMovementEventToDestination(
+        int sourceTaskIndex, int destinationTaskIndex) throws Exception {
       return null;
     }
 
-    @Nullable
-    @Override
-    public EventRouteMetadata routeInputSourceTaskFailedEventToDestination(int sourceTaskIndex, 
-        int destinationTaskIndex) throws Exception {
+    @Nullable @Override
+    public EventRouteMetadata routeInputSourceTaskFailedEventToDestination(
+        int sourceTaskIndex, int destinationTaskIndex) throws Exception {
       return null;
     }
   }

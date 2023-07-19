@@ -35,8 +35,7 @@ import org.apache.uniffle.entity.ApplicationResponse;
 public class AdminRestApi {
   private UniffleRestClient client;
 
-  private AdminRestApi() {
-  }
+  private AdminRestApi() {}
 
   public AdminRestApi(UniffleRestClient client) {
     this.client = client;
@@ -44,7 +43,7 @@ public class AdminRestApi {
 
   public String refreshAccessChecker() {
     Map<String, Object> params = new HashMap<>();
-    return this.getClient().get("/api/admin/refreshChecker",  params, null);
+    return this.getClient().get("/api/admin/refreshChecker", params, null);
   }
 
   public List<Application> getApplications(String applications) throws JsonProcessingException {

@@ -81,16 +81,34 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       RssConf rssConf) {
     final int indexReadLimit = rssConf.get(RssClientConf.RSS_INDEX_READ_LIMIT);
     final String storageType = rssConf.get(RssClientConf.RSS_STORAGE_TYPE);
-    long readBufferSize = rssConf.getSizeAsBytes(RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key(),
-        RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.defaultValue());
+    long readBufferSize =
+        rssConf.getSizeAsBytes(
+            RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key(),
+            RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.defaultValue());
     if (readBufferSize > Integer.MAX_VALUE) {
       LOG.warn(RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key() + " can support 2g as max");
       readBufferSize = Integer.MAX_VALUE;
     }
     boolean offHeapEnabled = rssConf.get(RssClientConf.OFF_HEAP_MEMORY_ENABLE);
-    init(storageType, appId, shuffleId, partitionId, indexReadLimit, partitionNumPerRange, partitionNum,
-        (int) readBufferSize, storageBasePath, blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf,
-        idHelper, dataDistributionType, expectedTaskIdsBitmapFilterEnable, offHeapEnabled, rssConf);
+    init(
+        storageType,
+        appId,
+        shuffleId,
+        partitionId,
+        indexReadLimit,
+        partitionNumPerRange,
+        partitionNum,
+        (int) readBufferSize,
+        storageBasePath,
+        blockIdBitmap,
+        taskIdBitmap,
+        shuffleServerInfoList,
+        hadoopConf,
+        idHelper,
+        dataDistributionType,
+        expectedTaskIdsBitmapFilterEnable,
+        offHeapEnabled,
+        rssConf);
   }
 
   public ShuffleReadClientImpl(
@@ -106,13 +124,25 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       Configuration hadoopConf,
       IdHelper idHelper,
       RssConf rssConf) {
-    this(appId, shuffleId, partitionId, partitionNumPerRange,
-        partitionNum, storageBasePath, blockIdBitmap, taskIdBitmap,
-        shuffleServerInfoList, hadoopConf, idHelper,
-        ShuffleDataDistributionType.NORMAL, false, rssConf);
+    this(
+        appId,
+        shuffleId,
+        partitionId,
+        partitionNumPerRange,
+        partitionNum,
+        storageBasePath,
+        blockIdBitmap,
+        taskIdBitmap,
+        shuffleServerInfoList,
+        hadoopConf,
+        idHelper,
+        ShuffleDataDistributionType.NORMAL,
+        false,
+        rssConf);
   }
 
-  private void init(String storageType,
+  private void init(
+      String storageType,
       String appId,
       int shuffleId,
       int partitionId,
@@ -163,11 +193,12 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     }
 
     List<Long> removeBlockIds = Lists.newArrayList();
-    blockIdBitmap.forEach(bid -> {
-      if (!taskIdBitmap.contains(idHelper.getTaskAttemptId(bid))) {
-        removeBlockIds.add(bid);
-      }
-    });
+    blockIdBitmap.forEach(
+        bid -> {
+          if (!taskIdBitmap.contains(idHelper.getTaskAttemptId(bid))) {
+            removeBlockIds.add(bid);
+          }
+        });
 
     for (long rid : removeBlockIds) {
       blockIdBitmap.removeLong(rid);
@@ -198,10 +229,25 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     rssConf.set(RssClientConf.RSS_STORAGE_TYPE, storageType);
     rssConf.set(RssClientConf.RSS_INDEX_READ_LIMIT, indexReadLimit);
     rssConf.set(RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE, String.valueOf(readBufferSize));
-    init(storageType, appId, shuffleId, partitionId, indexReadLimit,
-        partitionNumPerRange, partitionNum, readBufferSize, storageBasePath,
-        blockIdBitmap, taskIdBitmap, shuffleServerInfoList, hadoopConf,
-        idHelper, ShuffleDataDistributionType.NORMAL, false, false, rssConf);
+    init(
+        storageType,
+        appId,
+        shuffleId,
+        partitionId,
+        indexReadLimit,
+        partitionNumPerRange,
+        partitionNum,
+        readBufferSize,
+        storageBasePath,
+        blockIdBitmap,
+        taskIdBitmap,
+        shuffleServerInfoList,
+        hadoopConf,
+        idHelper,
+        ShuffleDataDistributionType.NORMAL,
+        false,
+        false,
+        rssConf);
   }
 
   @Override
@@ -251,10 +297,15 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
         }
 
         if (expectedCrc != actualCrc) {
-          String errMsg = "Unexpected crc value for blockId[" + bs.getBlockId()
-              + "], expected:" + expectedCrc + ", actual:" + actualCrc;
-          //If some blocks of one replica are corrupted,but maybe other replicas are not corrupted,
-          //so exception should not be thrown here if blocks have multiple replicas
+          String errMsg =
+              "Unexpected crc value for blockId["
+                  + bs.getBlockId()
+                  + "], expected:"
+                  + expectedCrc
+                  + ", actual:"
+                  + actualCrc;
+          // If some blocks of one replica are corrupted,but maybe other replicas are not corrupted,
+          // so exception should not be thrown here if blocks have multiple replicas
           if (shuffleServerInfoList.size() > 1) {
             LOG.warn(errMsg);
             clientReadHandler.updateConsumedBlockInfo(bs, true);
@@ -327,9 +378,19 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   @Override
   public void logStatics() {
-    LOG.info("Metrics for shuffleId[" + shuffleId + "], partitionId[" + partitionId + "]"
-        + ", read data cost " + readDataTime + " ms, copy data cost " + copyTime
-        + " ms, crc check cost " + crcCheckTime + " ms");
+    LOG.info(
+        "Metrics for shuffleId["
+            + shuffleId
+            + "], partitionId["
+            + partitionId
+            + "]"
+            + ", read data cost "
+            + readDataTime
+            + " ms, copy data cost "
+            + copyTime
+            + " ms, crc check cost "
+            + crcCheckTime
+            + " ms");
     clientReadHandler.logConsumedBlockInfo();
   }
 }

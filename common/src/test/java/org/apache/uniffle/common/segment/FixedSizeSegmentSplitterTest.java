@@ -39,14 +39,10 @@ public class FixedSizeSegmentSplitterTest {
   @ValueSource(ints = {48, 49, 57})
   public void testAvoidEOFException(int dataLength) {
     SegmentSplitter splitter = new FixedSizeSegmentSplitter(1000);
-    byte[] data = generateData(
-        Pair.of(32, 0),
-        Pair.of(16, 0),
-        Pair.of(10, 0)
-    );
+    byte[] data = generateData(Pair.of(32, 0), Pair.of(16, 0), Pair.of(10, 0));
 
-    List<ShuffleDataSegment> shuffleDataSegments = splitter.split(new ShuffleIndexResult(
-        ByteBuffer.wrap(data), dataLength));
+    List<ShuffleDataSegment> shuffleDataSegments =
+        splitter.split(new ShuffleIndexResult(ByteBuffer.wrap(data), dataLength));
     assertEquals(1, shuffleDataSegments.size());
     assertEquals(0, shuffleDataSegments.get(0).getOffset());
     assertEquals(48, shuffleDataSegments.get(0).getLength());
@@ -64,13 +60,8 @@ public class FixedSizeSegmentSplitterTest {
 
     // those 5 segment's data length are [32, 16, 10, 32, 6] so the index should be
     // split into 3 ShuffleDataSegment, which are [32, 16 + 10 + 32, 6]
-    byte[] data = generateData(
-        Pair.of(32, 0),
-        Pair.of(16, 0),
-        Pair.of(10, 0),
-        Pair.of(32, 6),
-        Pair.of(6, 0)
-    );
+    byte[] data =
+        generateData(Pair.of(32, 0), Pair.of(16, 0), Pair.of(10, 0), Pair.of(32, 6), Pair.of(6, 0));
     shuffleDataSegments = splitter.split(new ShuffleIndexResult(ByteBuffer.wrap(data), -1));
     assertEquals(3, shuffleDataSegments.size());
 
@@ -80,7 +71,7 @@ public class FixedSizeSegmentSplitterTest {
 
     assertEquals(32, shuffleDataSegments.get(1).getOffset());
     assertEquals(58, shuffleDataSegments.get(1).getLength());
-    assertEquals(3,shuffleDataSegments.get(1).getBufferSegments().size());
+    assertEquals(3, shuffleDataSegments.get(1).getBufferSegments().size());
 
     assertEquals(90, shuffleDataSegments.get(2).getOffset());
     assertEquals(6, shuffleDataSegments.get(2).getLength());
