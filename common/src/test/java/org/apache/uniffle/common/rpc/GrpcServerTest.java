@@ -69,7 +69,7 @@ public class GrpcServerTest {
           });
     }
 
-    while (org.apache.uniffle.common.rpc.GrpcServer.testVarCount < 1) { 
+    while (!GrpcServer.getExecuted()) { 
       Thread.yield(); 
     }
     Thread.sleep(120);
