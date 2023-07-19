@@ -132,7 +132,8 @@ public class RssBaseConf extends RssConf {
   public static final ConfigOption<Long> RSS_CLIENT_TYPE_GRPC_TIMEOUT_MS =
       ConfigOptions.key("rss.rpc.client.type.grpc.timeout")
           .longType()
-          .checkValue(ConfigUtils.POSITIVE_INTEGER_VALIDATOR, "The value must be positive integer")
+          .checkValue(
+              ConfigUtils.POSITIVE_LONG_VALIDATOR, "The grpc timeout must be positive integer")
           .defaultValue(60 * 1000L)
           .withDescription("Remote shuffle service client type grpc timeout (ms)");
 
