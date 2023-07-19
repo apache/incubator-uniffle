@@ -49,7 +49,7 @@ public class GrpcServer implements ServerInterface {
 
   private static final Logger LOG = LoggerFactory.getLogger(GrpcServer.class);
 
-  private static volatile boolean hasExecuted;
+  private static volatile boolean poolExecutorHasExecuted;
   private Server server;
   private final int port;
   private int listenPort;
@@ -79,14 +79,14 @@ public class GrpcServer implements ServerInterface {
             grpcMetrics);
   }
   
-  //This method is only used for the sake of synchronizing one test
-  public static boolean getExecuted() {
-    return hasExecuted;
+  // This method is only used for the sake of synchronizing one test
+  static boolean isPoolExecutorHasExecuted() {
+    return poolExecutorHasExecuted;
   }
 
-  //This method is only used for the sake of synchronizing one test
-  public static void setExecuted(boolean status) {
-    hasExecuted = status;
+  // This method is only used for the sake of synchronizing one test
+  static void reset() {
+    poolExecutorHasExecuted = false;
   }
 
   private Server buildGrpcServer(int serverPort) {
@@ -168,7 +168,7 @@ public class GrpcServer implements ServerInterface {
       grpcMetrics.incGauge(GRPCMetrics.GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY);
       grpcMetrics.setGauge(
           GRPCMetrics.GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY, getQueue().size());
-      hasExecuted = true;
+      poolExecutorHasExecuted = true;
       super.beforeExecute(t, r);
     }
 
