@@ -370,6 +370,9 @@ function uniffle_validate_classname
   return 0
 }
 
+#---
+# uniffle_basic_init: Initialize some basic environment variables for Uniffle.
+#---
 function uniffle_basic_init
 {
   CLASSPATH=""
@@ -390,6 +393,9 @@ function uniffle_basic_init
   uniffle_debug "UNIFFLE_STOP_TIMEOUT: "$UNIFFLE_STOP_TIMEOUT
 }
 
+#---
+# uniffle_parse_args: Initialize some basic environment variables for Uniffle.
+#---
 function uniffle_parse_args
 {
   UNIFFLE_DAEMON_MODE="default"
@@ -415,9 +421,12 @@ function uniffle_parse_args
     esac
   done
 
-  uniffle_debug "uniffle_parse: asking caller to skip ${UNIFFLE_PARSE_COUNTER}"
+  uniffle_debug "uniffle_parse: requesting the caller to skip ${UNIFFLE_PARSE_COUNTER}"
 }
 
+#---
+# uniffle_add_classpath: add jars or path to the classpath.
+#---
 function uniffle_add_classpath
 {
   if [[ $1 =~ ^.*\*$ ]]; then
@@ -427,9 +436,6 @@ function uniffle_add_classpath
       uniffle_debug "Rejected CLASSPATH: $1 (not a dir)"
       return 1
     fi
-
-    # no wildcard in the middle, so check existence
-    # (doesn't matter *what* it is)
   elif [[ ! $1 =~ ^.*\*.*$ ]] && [[ ! -e "$1" ]]; then
     uniffle_debug "Rejected CLASSPATH: $1 (does not exist)"
     return 1
@@ -451,6 +457,9 @@ function uniffle_add_classpath
   return 0
 }
 
+#---
+# uniffle_start_daemon: Start the daemon process.
+#---
 function uniffle_start_daemon
 {
   local command=$1
@@ -474,6 +483,9 @@ function uniffle_start_daemon
   exec "${JAVA}" "-Dproc_${command}" ${UNIFFLE_OPTS} "${class}" "$@"
 }
 
+#---
+# uniffle_rotate_log: rotate uniffle log.
+#---
 function uniffle_rotate_log
 {
   local log=$1;
@@ -491,6 +503,9 @@ function uniffle_rotate_log
   fi
 }
 
+#---
+# uniffle_start_daemon_wrapper: start uniffle daemon wrapper.
+#---
 function uniffle_start_daemon_wrapper
 {
   local daemonname=$1
@@ -528,6 +543,13 @@ function uniffle_start_daemon_wrapper
   return 0
 }
 
+#---
+# uniffle_start_daemon: check daemon status.
+# @param        pidfile
+# @return  0, The uniffle process has started and running
+#          1, The uniffle process has started but dead
+#          3, The uniffle process not running
+#---
 function uniffle_status_daemon
 {
   local pidfile=$1
@@ -548,6 +570,14 @@ function uniffle_status_daemon
   return 3
 }
 
+#---
+# uniffle_daemon_handler: handling daemon requests for uniffle.
+# @param daemonmode [start|stop|status|default]
+# @param daemonname [coordinator|shuffle-server]
+# @param class The main function that needs to be started.
+# @param daemonpidfile
+# @param daemonoutfile
+#---
 function uniffle_daemon_handler
 {
   set +e
@@ -610,6 +640,12 @@ function uniffle_daemon_handler
   set -e
 }
 
+#---
+# uniffle_start_daemon: Start the Uniffle service.
+# @param command [coordinator|shuffle-server]
+# @param class The main function that needs to be started.
+# @param pidfile pid file.
+#---
 function uniffle_start_daemon
 {
   local command=$1
@@ -633,6 +669,11 @@ function uniffle_start_daemon
   exec "${JAVA}" "-Dproc_${command}" ${UNIFFLE_OPTS} "${class}" --conf "$RSS_CONF_FILE" "$@"
 }
 
+#---
+# uniffle_stop_daemon: Stop the Uniffle service.
+# @param command [coordinator|shuffle-server]
+# @param pidfile pid file.
+#---
 function uniffle_stop_daemon
 {
   local cmd=$1
@@ -667,6 +708,11 @@ function uniffle_stop_daemon
   fi
 }
 
+#---
+# wait_process_to_die_or_timeout: Wait for the program to terminate or timeout.
+# @param pid process pid.
+# @param timeout timeout duration.
+#---
 function wait_process_to_die_or_timeout
 {
   local pid=$1
@@ -687,6 +733,9 @@ function wait_process_to_die_or_timeout
   done
 }
 
+#---
+# uniffle_verify_piddir: verify pid folder.
+#---
 function uniffle_verify_piddir
 {
   uniffle_debug "uniffle_verify_piddir: "${UNIFFLE_PID_DIR}
@@ -703,6 +752,9 @@ function uniffle_verify_piddir
   rm "${UNIFFLE_PID_DIR}/$$" >/dev/null 2>&1
 }
 
+#---
+# uniffle_verify_piddir: verify log folder.
+#---
 function uniffle_verify_logdir
 {
   uniffle_debug "uniffle_verify_logdir: "${UNIFFLE_LOG_DIR}
@@ -719,6 +771,9 @@ function uniffle_verify_logdir
   rm "${UNIFFLE_LOG_DIR}/$$" >/dev/null 2>&1
 }
 
+#---
+# uniffle_mkdir: uniffle mkdir.
+#---
 function uniffle_mkdir
 {
   local dir=$1
@@ -732,6 +787,9 @@ function uniffle_mkdir
   fi
 }
 
+#---
+# uniffle_finalize_uniffle_opts: Finish configuring Uniffle specific system properties.
+#---
 function uniffle_finalize_uniffle_opts
 {
   set +u
@@ -742,6 +800,9 @@ function uniffle_finalize_uniffle_opts
   set -u
 }
 
+#---
+# uniffle_add_param: Append command line arguments.
+#---
 function uniffle_add_param
 {
   if [[ ! ${!1} =~ $2 ]] ; then
@@ -755,6 +816,9 @@ function uniffle_add_param
   fi
 }
 
+#---
+# uniffle_generic_java_subcmd_handler: Execute java common commands.
+#---
 function uniffle_generic_java_subcmd_handler
 {
   declare priv_outfile
