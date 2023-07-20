@@ -65,6 +65,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.GrpcServer;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
@@ -477,12 +478,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       Map<Integer, List<ShuffleServerInfo>> partitionToServers =
           rssShuffleHandle.getPartitionToServers();
       Roaring64NavigableMap blockIdBitmap =
-          shuffleWriteClient.getShuffleResult(
+          getShuffleResult(
               clientType,
               Sets.newHashSet(partitionToServers.get(startPartition)),
               rssShuffleHandle.getAppId(),
               shuffleId,
-              startPartition);
+              startPartition,
+              context.stageAttemptNumber());
       LOG.info(
           "Get shuffle blockId cost "
               + (System.currentTimeMillis() - start)
@@ -686,5 +688,16 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   @Override
   public int getNumMaps(int shuffleId) {
     return shuffleIdToNumMapTasks.getOrDefault(shuffleId, 0);
+  }
+
+  private Roaring64NavigableMap getShuffleResult(String clientType, Set<ShuffleServerInfo> shuffleServerInfoSet,
+      String appId, int shuffleId, int partitionId, int stageAttemptId) {
+    try {
+      return shuffleWriteClient.getShuffleResult(
+          clientType, shuffleServerInfoSet, appId, shuffleId, partitionId);
+    } catch (RssFetchFailedException e) {
+      throw RssSparkShuffleUtils.reportRssFetchFailedException(e, sparkConf, appId, shuffleId,
+          stageAttemptId, Sets.newHashSet(partitionId));
+    }
   }
 }
