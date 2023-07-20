@@ -75,9 +75,7 @@ public class RssOrderedPartitionedKVOutputTest {
   private FileSystem localFs;
   private Path workingDir;
 
-  /**
-   * set up
-   */
+  /** set up */
   @BeforeEach
   public void setup() throws IOException {
     conf = new Configuration();
@@ -150,7 +148,8 @@ public class RssOrderedPartitionedKVOutputTest {
             .thenReturn(containerId);
         OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
         int numPartitions = 1;
-        RssOrderedPartitionedKVOutput output = new RssOrderedPartitionedKVOutput(outputContext, numPartitions);
+        RssOrderedPartitionedKVOutput output =
+            new RssOrderedPartitionedKVOutput(outputContext, numPartitions);
         output.initialize();
         output.start();
         Assertions.assertNotNull(output.getWriter());
