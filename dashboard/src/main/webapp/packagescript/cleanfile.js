@@ -15,32 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.web.resource;
+const fs = require('fs')
+const p = require('path')
 
-import org.apache.hbase.thirdparty.javax.ws.rs.Path;
-import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
-import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
+const nodeModulesPath = p.join(__dirname, '../node_modules')
+const lockJsonPath = p.join(__dirname, '../package-lock.json')
 
-@Path("api")
-@Produces({MediaType.APPLICATION_JSON})
-public class APIResource {
-  @Path("server")
-  public Class<ServerResource> getServerResource() {
-    return ServerResource.class;
-  }
+if (fs.existsSync(nodeModulesPath)) {
+    const fileUtil = require('./fileutils')
 
-  @Path("admin")
-  public Class<AdminResource> getAdminResource() {
-    return AdminResource.class;
-  }
+    //fileUtil.deleteFolderByRimraf(nodeModulesPath)
+    fileUtil.deleteFolder(nodeModulesPath)
+    console.log('Deleted node_modules successfully!')
 
-  @Path("coordinator")
-  public Class<CoordinatorServerResource> getCoordinatorServerResource() {
-    return CoordinatorServerResource.class;
-  }
-
-  @Path("app")
-  public Class<ApplicationResource> getApplicationResource() {
-    return ApplicationResource.class;
-  }
+    fileUtil.deleteFile(lockJsonPath)
+    console.log('Delete package-lock.json successfully!')
 }

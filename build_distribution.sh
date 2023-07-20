@@ -176,6 +176,13 @@ echo "copy $CLI_JAR to ${CLI_JAR_DIR}"
 cp $CLI_JAR ${CLI_JAR_DIR}
 cp "${RSS_HOME}"/cli/target/jars/* ${CLI_JAR_DIR}
 
+DASHBOARD_JAR_DIR="${DISTDIR}/jars/dashboard"
+mkdir -p $DASHBOARD_JAR_DIR
+DASHBOARD_JAR="${RSS_HOME}/dashboard/target/dashboard-${VERSION}.jar"
+echo "copy $DASHBOARD_JAR to ${DASHBOARD_JAR_DIR}"
+cp $DASHBOARD_JAR $DASHBOARD_JAR_DIR
+cp "${RSS_HOME}"/dashboard/target/jars/* ${DASHBOARD_JAR_DIR}
+
 CLIENT_JAR_DIR="${DISTDIR}/jars/client"
 mkdir -p $CLIENT_JAR_DIR
 

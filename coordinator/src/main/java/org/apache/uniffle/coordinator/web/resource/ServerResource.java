@@ -17,19 +17,22 @@
 
 package org.apache.uniffle.coordinator.web.resource;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.Set;
 import javax.servlet.ServletContext;
 
+import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hbase.thirdparty.javax.ws.rs.GET;
 import org.apache.hbase.thirdparty.javax.ws.rs.POST;
 import org.apache.hbase.thirdparty.javax.ws.rs.Path;
 import org.apache.hbase.thirdparty.javax.ws.rs.PathParam;
 import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
-import org.apache.hbase.thirdparty.javax.ws.rs.QueryParam;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
@@ -45,33 +48,41 @@ public class ServerResource extends BaseResource {
   @Context protected ServletContext servletContext;
 
   @GET
-  @Path("/nodes/{id}")
+  @Path("/{id}")
   public Response<ServerNode> node(@PathParam("id") String id) {
     return execute(() -> getClusterManager().getServerNodeById(id));
   }
 
   @GET
   @Path("/nodes")
-  public Response<List<ServerNode>> nodes(@QueryParam("status") String status) {
+  public Response<List<ServerNode>> nodes() {
+    return nodes(null);
+  }
+
+  @GET
+  @Path("/nodes/{status}")
+  public Response<List<ServerNode>> nodes(
+      @PathParam("status") String status) {
     ClusterManager clusterManager = getClusterManager();
-    List<ServerNode> serverList;
+    List<ServerNode> serverList = null;
     if (ServerStatus.UNHEALTHY.name().equalsIgnoreCase(status)) {
       serverList = clusterManager.getUnhealthyServerList();
     } else if (ServerStatus.LOST.name().equalsIgnoreCase(status)) {
       serverList = clusterManager.getLostServerList();
+    } else if ("excluded".equalsIgnoreCase(status)) {
+      serverList = new ArrayList<>();
+      Set<String> excludeNodes = clusterManager.getExcludeNodes();
+      for (String excludeNode : excludeNodes) {
+        serverList.add(new ServerNode("",excludeNode, 0, 0,
+            0,0,0, Sets.newConcurrentHashSet()));
+      }
+    } else if (ServerStatus.DECOMMISSIONING.name().equalsIgnoreCase(status)) {
+      serverList = clusterManager.getDecommissioningServerList();
+    } else if (ServerStatus.DECOMMISSIONED.name().equalsIgnoreCase(status)) {
+      serverList = clusterManager.getDecommissionedServerList();
     } else {
       serverList = clusterManager.getServerList(Collections.emptySet());
     }
-    serverList =
-        serverList.stream()
-            .filter(
-                server -> {
-                  if (status != null && !server.getStatus().toString().equals(status)) {
-                    return false;
-                  }
-                  return true;
-                })
-            .collect(Collectors.toList());
     serverList.sort(Comparator.comparing(ServerNode::getId));
     return Response.success(serverList);
   }
@@ -119,6 +130,22 @@ public class ServerResource extends BaseResource {
           getClusterManager().decommission(serverId);
           return null;
         });
+  }
+
+  @GET
+  @Path("/nodestatustotal")
+  public Response<Map<String, Integer>> getNodeStatusTotal() {
+    return execute(() -> {
+      ClusterManager clusterManager = getClusterManager();
+      Map<String, Integer> stringIntegerHash = new HashMap();
+      stringIntegerHash.put("activeNode", clusterManager.getServerList(Sets.newConcurrentHashSet()).size());
+      stringIntegerHash.put("decommissioningNode", clusterManager.getDecommissioningServerList().size());
+      stringIntegerHash.put("decommissionedNode", clusterManager.getDecommissionedServerList().size());
+      stringIntegerHash.put("lostNode", clusterManager.getLostServerList().size());
+      stringIntegerHash.put("unhealthyNode", clusterManager.getUnhealthyServerList().size());
+      stringIntegerHash.put("excludesNode", clusterManager.getExcludeNodes().size());
+      return stringIntegerHash;
+    });
   }
 
   private ClusterManager getClusterManager() {

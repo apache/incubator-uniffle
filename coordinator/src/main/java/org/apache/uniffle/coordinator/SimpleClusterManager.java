@@ -275,6 +275,28 @@ public class SimpleClusterManager implements ClusterManager {
   }
 
   @Override
+  public List<ServerNode> getDecommissioningServerList() {
+    List<ServerNode> decommissioningNodes = Lists.newArrayList();
+    for (ServerNode node : servers.values()) {
+      if (ServerStatus.DECOMMISSIONING.equals(node.getStatus())) {
+        decommissioningNodes.add(node);
+      }
+    }
+    return decommissioningNodes;
+  }
+
+  @Override
+  public List<ServerNode> getDecommissionedServerList() {
+    List<ServerNode> decommissionedNodes = Lists.newArrayList();
+    for (ServerNode node : servers.values()) {
+      if (ServerStatus.DECOMMISSIONED.equals(node.getStatus())) {
+        decommissionedNodes.add(node);
+      }
+    }
+    return decommissionedNodes;
+  }
+
+  @Override
   public int getNodesNum() {
     return servers.size();
   }

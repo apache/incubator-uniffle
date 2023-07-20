@@ -15,32 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.web.resource;
+const fileUtil = require('./fileutils')
 
-import org.apache.hbase.thirdparty.javax.ws.rs.Path;
-import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
-import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
-
-@Path("api")
-@Produces({MediaType.APPLICATION_JSON})
-public class APIResource {
-  @Path("server")
-  public Class<ServerResource> getServerResource() {
-    return ServerResource.class;
-  }
-
-  @Path("admin")
-  public Class<AdminResource> getAdminResource() {
-    return AdminResource.class;
-  }
-
-  @Path("coordinator")
-  public Class<CoordinatorServerResource> getCoordinatorServerResource() {
-    return CoordinatorServerResource.class;
-  }
-
-  @Path("app")
-  public Class<ApplicationResource> getApplicationResource() {
-    return ApplicationResource.class;
-  }
-}
+// Destination folder
+const staticDirectory = '../resources/static'
+// Delete
+fileUtil.deleteFolder(staticDirectory)
+// Copy
+fileUtil.copyFolder('./dist', staticDirectory)
+console.log('File copy successful!')

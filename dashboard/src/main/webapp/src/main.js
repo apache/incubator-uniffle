@@ -15,32 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.web.resource;
-
-import org.apache.hbase.thirdparty.javax.ws.rs.Path;
-import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
-import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
-
-@Path("api")
-@Produces({MediaType.APPLICATION_JSON})
-public class APIResource {
-  @Path("server")
-  public Class<ServerResource> getServerResource() {
-    return ServerResource.class;
-  }
-
-  @Path("admin")
-  public Class<AdminResource> getAdminResource() {
-    return AdminResource.class;
-  }
-
-  @Path("coordinator")
-  public Class<CoordinatorServerResource> getCoordinatorServerResource() {
-    return CoordinatorServerResource.class;
-  }
-
-  @Path("app")
-  public Class<ApplicationResource> getApplicationResource() {
-    return ApplicationResource.class;
-  }
-}
+import {createApp} from 'vue';
+import App from './App.vue'
+import ElementPlus from 'element-plus'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import 'element-plus/dist/index.css'
+import router from "@/router";
+const app = createApp(App)
+Object.keys(ElementPlusIconsVue).forEach(key => {
+    app.component(key, ElementPlusIconsVue[key])
+})
+app.use(router).use(ElementPlus).mount('#app')

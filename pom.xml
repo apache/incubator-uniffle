@@ -121,6 +121,7 @@
     <module>client</module>
     <module>integration-test/common</module>
     <module>cli</module>
+    <module>dashboard</module>
   </modules>
 
   <dependencies>

@@ -54,6 +54,20 @@ public interface ClusterManager extends Closeable, Reconfigurable {
    */
   List<ServerNode> getUnhealthyServerList();
 
+  /**
+   * Get decommissioning nodes from the cluster
+   *
+   * @return list of decommissioning nodes
+   */
+  List<ServerNode> getDecommissioningServerList();
+
+  /**
+   * Get decommissioned nodes from the cluster
+   *
+   * @return list of decommissioned nodes
+   */
+  List<ServerNode> getDecommissionedServerList();
+
   /** @return number of server nodes in the cluster */
   int getNodesNum();
 
@@ -70,4 +84,6 @@ public interface ClusterManager extends Closeable, Reconfigurable {
   void decommission(String serverId);
 
   void cancelDecommission(String serverId);
+
+  Set<String> getExcludeNodes();
 }

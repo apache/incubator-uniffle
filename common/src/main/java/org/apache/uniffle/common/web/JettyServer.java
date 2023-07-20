@@ -23,11 +23,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import javax.servlet.DispatcherType;
 
 import org.apache.hbase.thirdparty.org.glassfish.jersey.server.ServerProperties;
 import org.apache.hbase.thirdparty.org.glassfish.jersey.servlet.ServletContainer;
@@ -49,6 +51,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.common.web.filter.CrossFilter;
 
 public class JettyServer {
 
@@ -143,6 +146,7 @@ public class JettyServer {
     servletContextHandler.setContextPath("/");
     server.setHandler(servletContextHandler);
     servletHolder = servletContextHandler.addServlet(ServletContainer.class, "/*");
+    servletContextHandler.addFilter(CrossFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
   }
 
   public void addResourcePackages(String... packages) {

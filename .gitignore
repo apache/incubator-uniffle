@@ -46,3 +46,8 @@ build/
 deploy/kubernetes/integration-test/e2e/rss.yaml
 deploy/kubernetes/integration-test/e2e/rss-controller.yaml
 deploy/kubernetes/integration-test/e2e/rss-webhook.yaml
+dashboard/src/main/webapp/node_modules/
+dashboard/src/main/webapp/node/
+dashboard/src/main/webapp/dist/
+dashboard/src/main/resources/static/
+dashboard/src/main/webapp/package-lock.json

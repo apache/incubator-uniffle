@@ -15,32 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.web.resource;
+import axios from 'axios'
 
-import org.apache.hbase.thirdparty.javax.ws.rs.Path;
-import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
-import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
+const axiosInstance = axios.create({
+    baseURL: 'http://localhost:8080/api',
+    timeout: 10000,
+    headers: {}
+})
 
-@Path("api")
-@Produces({MediaType.APPLICATION_JSON})
-public class APIResource {
-  @Path("server")
-  public Class<ServerResource> getServerResource() {
-    return ServerResource.class;
-  }
+axiosInstance.interceptors.request.use(config => {
+    config.headers['Content-type'] = 'application/json';
+    config.headers['Accept'] = 'application/json';
+    return config;
+})
 
-  @Path("admin")
-  public Class<AdminResource> getAdminResource() {
-    return AdminResource.class;
-  }
-
-  @Path("coordinator")
-  public Class<CoordinatorServerResource> getCoordinatorServerResource() {
-    return CoordinatorServerResource.class;
-  }
-
-  @Path("app")
-  public Class<ApplicationResource> getApplicationResource() {
-    return ApplicationResource.class;
-  }
-}
+axiosInstance.interceptors.response.use(response => {
+    return response;
+}, error => {
+    return error;
+})
+export default axiosInstance;

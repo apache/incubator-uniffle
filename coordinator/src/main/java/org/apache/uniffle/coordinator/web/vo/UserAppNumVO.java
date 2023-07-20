@@ -15,32 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.web.resource;
+package org.apache.uniffle.coordinator.web.vo;
 
-import org.apache.hbase.thirdparty.javax.ws.rs.Path;
-import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
-import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
+public class UserAppNumVO {
 
-@Path("api")
-@Produces({MediaType.APPLICATION_JSON})
-public class APIResource {
-  @Path("server")
-  public Class<ServerResource> getServerResource() {
-    return ServerResource.class;
+  private String userName;
+  private Integer appNum;
+
+  public UserAppNumVO(String userName, Integer appNum) {
+    this.userName = userName;
+    this.appNum = appNum;
   }
 
-  @Path("admin")
-  public Class<AdminResource> getAdminResource() {
-    return AdminResource.class;
+  public String getUserName() {
+    return userName;
   }
 
-  @Path("coordinator")
-  public Class<CoordinatorServerResource> getCoordinatorServerResource() {
-    return CoordinatorServerResource.class;
+  public void setUserName(String userName) {
+    this.userName = userName;
   }
 
-  @Path("app")
-  public Class<ApplicationResource> getApplicationResource() {
-    return ApplicationResource.class;
+  public Integer getAppNum() {
+    return appNum;
+  }
+
+  public void setAppNum(Integer appNum) {
+    this.appNum = appNum;
   }
 }

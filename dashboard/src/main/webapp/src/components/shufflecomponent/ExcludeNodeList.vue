@@ -1,4 +1,4 @@
-/*
+<!--
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -13,34 +13,37 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+-->
 
-package org.apache.uniffle.coordinator.web.resource;
+<template>
+  <div>
+    <el-table :data="pageData.tableData" height="550" style="width: 100%">
+      <el-table-column prop="excludeNodeId" label="ExcludeNodeId" min-width="180"/>
+    </el-table>
+  </div>
+</template>
+<script>
+import {onMounted, reactive} from 'vue'
+import { getShuffleExcludeNodes } from "@/api/api";
 
-import org.apache.hbase.thirdparty.javax.ws.rs.Path;
-import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
-import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
+export default {
+  setup() {
+    const pageData = reactive({
+      tableData: [
+        {
+          excludeNodeId:""
+        }
+      ]
+    })
+    async function getShuffleExcludeNodesPage() {
+      const res = await getShuffleExcludeNodes();
+      pageData.tableData = res.data.data
+    }
 
-@Path("api")
-@Produces({MediaType.APPLICATION_JSON})
-public class APIResource {
-  @Path("server")
-  public Class<ServerResource> getServerResource() {
-    return ServerResource.class;
-  }
-
-  @Path("admin")
-  public Class<AdminResource> getAdminResource() {
-    return AdminResource.class;
-  }
-
-  @Path("coordinator")
-  public Class<CoordinatorServerResource> getCoordinatorServerResource() {
-    return CoordinatorServerResource.class;
-  }
-
-  @Path("app")
-  public Class<ApplicationResource> getApplicationResource() {
-    return ApplicationResource.class;
+    onMounted(() => {
+      getShuffleExcludeNodesPage();
+    })
+    return {pageData}
   }
 }
+</script>

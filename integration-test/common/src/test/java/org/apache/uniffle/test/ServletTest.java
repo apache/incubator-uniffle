@@ -61,8 +61,8 @@ public class ServletTest extends IntegrationTestBase {
   private static final String URL_PREFIX = "http://127.0.0.1:12345/api/";
   private static final String SINGLE_NODE_URL = URL_PREFIX + "server/nodes/%s";
   private static final String NODES_URL = URL_PREFIX + "server/nodes";
-  private static final String LOSTNODES_URL = URL_PREFIX + "server/nodes?status=LOST";
-  private static final String UNHEALTHYNODES_URL = URL_PREFIX + "server/nodes?status=UNHEALTHY";
+  private static final String LOSTNODES_URL = URL_PREFIX + "server/nodes/LOST";
+  private static final String UNHEALTHYNODES_URL = URL_PREFIX + "server/nodes/UNHEALTHY";
   private static final String DECOMMISSION_URL = URL_PREFIX + "server/decommission";
   private static final String CANCEL_DECOMMISSION_URL = URL_PREFIX + "server/cancelDecommission";
   private static final String DECOMMISSION_SINGLENODE_URL = URL_PREFIX + "server/%s/decommission";

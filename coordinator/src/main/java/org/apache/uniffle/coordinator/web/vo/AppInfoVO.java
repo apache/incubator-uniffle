@@ -15,32 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.web.resource;
+package org.apache.uniffle.coordinator.web.vo;
 
-import org.apache.hbase.thirdparty.javax.ws.rs.Path;
-import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
-import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
+public class AppInfoVO {
+  private String userName;
+  private String appId;
+  private String updateTime;
 
-@Path("api")
-@Produces({MediaType.APPLICATION_JSON})
-public class APIResource {
-  @Path("server")
-  public Class<ServerResource> getServerResource() {
-    return ServerResource.class;
+  public AppInfoVO(String userName, String appId, String updateTime) {
+    this.userName = userName;
+    this.appId = appId;
+    this.updateTime = updateTime;
   }
 
-  @Path("admin")
-  public Class<AdminResource> getAdminResource() {
-    return AdminResource.class;
+  public String getUserName() {
+    return userName;
   }
 
-  @Path("coordinator")
-  public Class<CoordinatorServerResource> getCoordinatorServerResource() {
-    return CoordinatorServerResource.class;
+  public void setUserName(String userName) {
+    this.userName = userName;
   }
 
-  @Path("app")
-  public Class<ApplicationResource> getApplicationResource() {
-    return ApplicationResource.class;
+  public String getAppId() {
+    return appId;
+  }
+
+  public void setAppId(String appId) {
+    this.appId = appId;
+  }
+
+  public String getUpdateTime() {
+    return updateTime;
+  }
+
+  public void setUpdateTime(String updateTime) {
+    this.updateTime = updateTime;
   }
 }

@@ -15,32 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.web.resource;
-
-import org.apache.hbase.thirdparty.javax.ws.rs.Path;
-import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
-import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
-
-@Path("api")
-@Produces({MediaType.APPLICATION_JSON})
-public class APIResource {
-  @Path("server")
-  public Class<ServerResource> getServerResource() {
-    return ServerResource.class;
-  }
-
-  @Path("admin")
-  public Class<AdminResource> getAdminResource() {
-    return AdminResource.class;
-  }
-
-  @Path("coordinator")
-  public Class<CoordinatorServerResource> getCoordinatorServerResource() {
-    return CoordinatorServerResource.class;
-  }
-
-  @Path("app")
-  public Class<ApplicationResource> getApplicationResource() {
-    return ApplicationResource.class;
-  }
+import request from "@/utils/request";
+const http = {
+    get(url, params, headers) {
+        const config = {
+            method: 'GET',
+            url: url,
+            params: params,
+            headers: headers
+        }
+        return request(config);
+    },
+    post(url, data, headers) {
+        const config = {
+            method: 'POST',
+            url: url,
+            data: data,
+            headers: headers
+        }
+        return request(config);
+    }
 }
+export default http
