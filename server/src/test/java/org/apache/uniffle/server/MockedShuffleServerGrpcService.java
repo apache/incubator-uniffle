@@ -103,8 +103,10 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
     if (numOfFailedReadRequest > 0) {
       int currentFailedReadRequest = failedReadRequest.getAndIncrement();
       if (currentFailedReadRequest < numOfFailedReadRequest) {
-        LOG.info("This request is failed as mocked failure, current/firstN: {}/{}",
-            currentFailedReadRequest, numOfFailedReadRequest);
+        LOG.info(
+            "This request is failed as mocked failure, current/firstN: {}/{}",
+            currentFailedReadRequest,
+            numOfFailedReadRequest);
         throw new RuntimeException("This request is failed as mocked failure");
       }
     }
@@ -123,9 +125,9 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
       int currentFailedReadRequest = failedReadRequest.getAndIncrement();
       if (currentFailedReadRequest < numOfFailedReadRequest) {
         LOG.info(
-                "This request is failed as mocked failure, current/firstN: {}/{}",
-                currentFailedReadRequest,
-                numOfFailedReadRequest);
+            "This request is failed as mocked failure, current/firstN: {}/{}",
+            currentFailedReadRequest,
+            numOfFailedReadRequest);
         throw new RuntimeException("This request is failed as mocked failure");
       }
     }
