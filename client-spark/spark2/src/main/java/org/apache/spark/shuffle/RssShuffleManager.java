@@ -690,14 +690,19 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     return shuffleIdToNumMapTasks.getOrDefault(shuffleId, 0);
   }
 
-  private Roaring64NavigableMap getShuffleResult(String clientType, Set<ShuffleServerInfo> shuffleServerInfoSet,
-      String appId, int shuffleId, int partitionId, int stageAttemptId) {
+  private Roaring64NavigableMap getShuffleResult(
+      String clientType,
+      Set<ShuffleServerInfo> shuffleServerInfoSet,
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int stageAttemptId) {
     try {
       return shuffleWriteClient.getShuffleResult(
           clientType, shuffleServerInfoSet, appId, shuffleId, partitionId);
     } catch (RssFetchFailedException e) {
-      throw RssSparkShuffleUtils.reportRssFetchFailedException(e, sparkConf, appId, shuffleId,
-          stageAttemptId, Sets.newHashSet(partitionId));
+      throw RssSparkShuffleUtils.reportRssFetchFailedException(
+          e, sparkConf, appId, shuffleId, stageAttemptId, Sets.newHashSet(partitionId));
     }
   }
 }

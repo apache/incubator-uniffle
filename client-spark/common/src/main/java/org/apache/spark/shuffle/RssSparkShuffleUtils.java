@@ -340,24 +340,37 @@ public class RssSparkShuffleUtils {
         || (SparkVersionUtils.isSpark2() && SparkVersionUtils.MINOR_VERSION >= 3);
   }
 
-  public static RssException reportRssFetchFailedException(RssFetchFailedException rssFetchFailedException,
-                                                           SparkConf sparkConf, String appId, int shuffleId, int stageAttemptId, Set<Integer> failedPartitions) {
+  public static RssException reportRssFetchFailedException(
+      RssFetchFailedException rssFetchFailedException,
+      SparkConf sparkConf,
+      String appId,
+      int shuffleId,
+      int stageAttemptId,
+      Set<Integer> failedPartitions) {
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     if (rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
-            && RssSparkShuffleUtils.isStageResubmitSupported()) {
+        && RssSparkShuffleUtils.isStageResubmitSupported()) {
       String driver = rssConf.getString(DRIVER_HOST, "");
       int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
-      try (ShuffleManagerClient client = ShuffleManagerClientFactory
-              .getInstance().createShuffleManagerClient(ClientType.GRPC, driver, port)) {
+      try (ShuffleManagerClient client =
+          ShuffleManagerClientFactory.getInstance()
+              .createShuffleManagerClient(ClientType.GRPC, driver, port)) {
         // todo: Create a new rpc interface to report failures in batch.
         for (int partitionId : failedPartitions) {
-          RssReportShuffleFetchFailureRequest req = new RssReportShuffleFetchFailureRequest(
-                  appId, shuffleId, stageAttemptId, partitionId, rssFetchFailedException.getMessage());
+          RssReportShuffleFetchFailureRequest req =
+              new RssReportShuffleFetchFailureRequest(
+                  appId,
+                  shuffleId,
+                  stageAttemptId,
+                  partitionId,
+                  rssFetchFailedException.getMessage());
           RssReportShuffleFetchFailureResponse response = client.reportShuffleFetchFailure(req);
           if (response.getReSubmitWholeStage()) {
-            // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1 is provided.
-            FetchFailedException ffe = RssSparkShuffleUtils
-                    .createFetchFailedException(shuffleId, -1, partitionId, rssFetchFailedException);
+            // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1
+            // is provided.
+            FetchFailedException ffe =
+                RssSparkShuffleUtils.createFetchFailedException(
+                    shuffleId, -1, partitionId, rssFetchFailedException);
             return new RssException(ffe);
           }
         }

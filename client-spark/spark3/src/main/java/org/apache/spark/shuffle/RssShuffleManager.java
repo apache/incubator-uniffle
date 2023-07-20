@@ -985,15 +985,19 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     return !failedTaskIds.contains(taskId);
   }
 
-  private Roaring64NavigableMap getShuffleResultForMultiPart(String clientType,
-      Map<ShuffleServerInfo, Set<Integer>> serverToPartitions, String appId, int shuffleId, int stageAttemptId) {
+  private Roaring64NavigableMap getShuffleResultForMultiPart(
+      String clientType,
+      Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
+      String appId,
+      int shuffleId,
+      int stageAttemptId) {
     Set<Integer> failedPartitions = Sets.newHashSet();
     try {
       return shuffleWriteClient.getShuffleResultForMultiPart(
           clientType, serverToPartitions, appId, shuffleId, failedPartitions);
     } catch (RssFetchFailedException e) {
-      throw RssSparkShuffleUtils.reportRssFetchFailedException(e, sparkConf, appId, shuffleId,
-          stageAttemptId, failedPartitions);
+      throw RssSparkShuffleUtils.reportRssFetchFailedException(
+          e, sparkConf, appId, shuffleId, stageAttemptId, failedPartitions);
     }
   }
 }
