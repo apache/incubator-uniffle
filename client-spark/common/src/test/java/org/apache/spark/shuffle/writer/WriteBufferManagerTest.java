@@ -17,6 +17,8 @@
 
 package org.apache.spark.shuffle.writer;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -27,6 +29,8 @@ import com.google.common.collect.Maps;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.executor.ShuffleWriteMetrics;
+import org.apache.spark.memory.MemoryConsumer;
+import org.apache.spark.memory.MemoryManager;
 import org.apache.spark.memory.TaskMemoryManager;
 import org.apache.spark.serializer.KryoSerializer;
 import org.apache.spark.serializer.Serializer;
@@ -34,6 +38,8 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.config.RssConf;
@@ -266,31 +272,54 @@ public class WriteBufferManagerTest {
     assertEquals(3, events.size());
   }
 
-  public void spillTest() {
+  @Test
+  public void spillByOthersTest() {
     SparkConf conf = getConf();
-    conf.set("spark.rss.client.send.size.limit", "1000");
+    conf.set("spark.rss.client.memory.spill.enabled", "true");
     TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
 
-    Function<AddBlockEvent, CompletableFuture<Long>> spillFunc =
-        event -> {
-          event.getProcessedCallbackChain().stream().forEach(x -> x.run());
-          return CompletableFuture.completedFuture(
-              event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum());
-        };
+    WriteBufferManager wbm = new WriteBufferManager(
+        0, "taskId_spillByOthersTest", 0, bufferOptions, new KryoSerializer(conf),
+        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(),
+        RssSparkConfig.toRssConf(conf), null);
 
-    WriteBufferManager wbm =
-        new WriteBufferManager(
-            0,
-            "taskId_spillTest",
-            0,
-            bufferOptions,
-            new KryoSerializer(conf),
-            Maps.newHashMap(),
-            mockTaskMemoryManager,
-            new ShuffleWriteMetrics(),
-            RssSparkConfig.toRssConf(conf),
-            spillFunc);
+    WriteBufferManager spyManager = spy(wbm);
+    doReturn(512L).when(spyManager).acquireMemory(anyLong());
+
+    String testKey = "Key";
+    String testValue = "Value";
+    spyManager.addRecord(0, testKey, testValue);
+    spyManager.addRecord(1, testKey, testValue);
+
+    // case1. if one thread wants to spill other consumers data, it will return 0
+    assertEquals(0, spyManager.spill(1000, mock(WriteBufferManager.class)));
+  }
+
+  @Test
+  public void spillByOwnTest() {
+    SparkConf conf = getConf();
+    conf.set("spark.rss.client.send.size.limit", "1000");
+    conf.set("spark.rss.client.memory.spill.enabled", "true");
+    TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
+    BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
+
+    WriteBufferManager wbm = new WriteBufferManager(
+        0, "taskId_spillTest", 0, bufferOptions, new KryoSerializer(conf),
+        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(),
+        RssSparkConfig.toRssConf(conf), null);
+
+    Function<List<ShuffleBlockInfo>, List<CompletableFuture<Long>>> spillFunc = blocks -> {
+      long sum = 0L;
+      List<AddBlockEvent> events = wbm.buildBlockEvents(blocks);
+      for (AddBlockEvent event : events) {
+        event.getProcessedCallbackChain().stream().forEach(x -> x.run());
+        sum += event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum();
+      }
+      return Arrays.asList(CompletableFuture.completedFuture(sum));
+    };
+    wbm.setSpillFunc(spillFunc);
+
     WriteBufferManager spyManager = spy(wbm);
     doReturn(512L).when(spyManager).acquireMemory(anyLong());
 
@@ -300,8 +329,9 @@ public class WriteBufferManagerTest {
     spyManager.addRecord(1, testKey, testValue);
 
     // case1. all events are flushed within normal time.
-    long releasedSize = spyManager.spill(1000, mock(WriteBufferManager.class));
+    long releasedSize = spyManager.spill(1000, spyManager);
     assertEquals(64, releasedSize);
+    assertEquals(0, spyManager.getUsedBytes());
 
     // case2. partial events are not flushed within normal time.
     // when calling spill func, 2 events should be spilled. But
@@ -309,26 +339,116 @@ public class WriteBufferManagerTest {
     spyManager.setSendSizeLimit(30);
     spyManager.addRecord(0, testKey, testValue);
     spyManager.addRecord(1, testKey, testValue);
-    spyManager.setSpillFunc(
-        event ->
-            CompletableFuture.supplyAsync(
-                () -> {
-                  int partitionId = event.getShuffleDataInfoList().get(0).getPartitionId();
-                  if (partitionId == 1) {
-                    try {
-                      Thread.sleep(2000);
-                    } catch (InterruptedException interruptedException) {
-                      // ignore.
-                    }
-                  }
-                  event.getProcessedCallbackChain().stream().forEach(x -> x.run());
-                  return event.getShuffleDataInfoList().stream()
-                      .mapToLong(x -> x.getFreeMemory())
-                      .sum();
-                }));
-    releasedSize = spyManager.spill(1000, mock(WriteBufferManager.class));
-    assertEquals(32, releasedSize);
-    assertEquals(32, spyManager.getUsedBytes());
-    Awaitility.await().timeout(3, TimeUnit.SECONDS).until(() -> spyManager.getUsedBytes() == 0);
+    spillFunc = shuffleBlockInfos -> Arrays.asList(CompletableFuture.supplyAsync(() -> {
+      List<AddBlockEvent> events = spyManager.buildBlockEvents(shuffleBlockInfos);
+      long sum = 0L;
+      for (AddBlockEvent event : events) {
+        int partitionId = event.getShuffleDataInfoList().get(0).getPartitionId();
+        if (partitionId == 1) {
+          try {
+            Thread.sleep(2000);
+          } catch (InterruptedException interruptedException) {
+            // ignore.
+          }
+        }
+        event.getProcessedCallbackChain().stream().forEach(x -> x.run());
+        sum += event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum();
+      }
+      return sum;
+    }));
+    spyManager.setSpillFunc(spillFunc);
+    releasedSize = spyManager.spill(1000, spyManager);
+    assertEquals(0, releasedSize);
+    Awaitility.await().timeout(5, TimeUnit.SECONDS).until(() -> spyManager.getUsedBytes() == 0);
+  }
+
+  public static class FakedTaskMemoryManager extends TaskMemoryManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FakedTaskMemoryManager.class);
+    private int invokedCnt = 0;
+    private int spilledCnt = 0;
+    private int bytesReturnFirstTime = 32;
+
+    public FakedTaskMemoryManager() {
+      super(mock(MemoryManager.class), 1);
+    }
+
+    public FakedTaskMemoryManager(int bytesReturnFirstTime) {
+      this();
+      this.bytesReturnFirstTime = bytesReturnFirstTime;
+    }
+
+    public long acquireExecutionMemory(long required, MemoryConsumer consumer) {
+      if (invokedCnt++ == 0) {
+        LOGGER.info("Return existing memory: {}", bytesReturnFirstTime);
+        return bytesReturnFirstTime;
+      }
+      try {
+        spilledCnt++;
+        long size = consumer.spill(required, consumer);
+        LOGGER.info("Return spilled memory: {}", size);
+        return size;
+      } catch (IOException e) {
+        return 0L;
+      }
+    }
+
+    public int getInvokedCnt() {
+      return invokedCnt;
+    }
+
+    public int getSpilledCnt() {
+      return spilledCnt;
+    }
+  }
+
+  @Test
+  public void spillByOwnWithSparkTaskMemoryManagerTest() {
+    SparkConf conf = getConf();
+    conf.set(RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE.key(), "32");
+    conf.set("spark.rss.client.send.size.limit", "1000");
+    conf.set("spark.rss.client.memory.spill.enabled", "true");
+    FakedTaskMemoryManager fakedTaskMemoryManager = new FakedTaskMemoryManager();
+    BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
+
+    WriteBufferManager wbm = new WriteBufferManager(
+        0, "taskId_spillTest", 0, bufferOptions, new KryoSerializer(conf),
+        Maps.newHashMap(), fakedTaskMemoryManager, new ShuffleWriteMetrics(),
+        RssSparkConfig.toRssConf(conf), null);
+
+    List<ShuffleBlockInfo> blockList = new ArrayList<>();
+
+    Function<List<ShuffleBlockInfo>, List<CompletableFuture<Long>>> spillFunc = blocks -> {
+      blockList.addAll(blocks);
+      long sum = 0L;
+      List<AddBlockEvent> events = wbm.buildBlockEvents(blocks);
+      for (AddBlockEvent event : events) {
+        event.getProcessedCallbackChain().stream().forEach(x -> x.run());
+        sum += event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum();
+      }
+      return Arrays.asList(CompletableFuture.completedFuture(sum));
+    };
+    wbm.setSpillFunc(spillFunc);
+
+    WriteBufferManager spyManager = spy(wbm);
+
+    String testKey = "Key";
+    String testValue = "Value";
+
+    // First time, it request 32 bytes and then insert the record. It will not flush buffer.
+    spyManager.addRecord(0, testKey, testValue);
+    assertEquals(0, blockList.size());
+
+    // Second time, the memory manager trigger the spill, so it will flush buffer and then insert the record
+    spyManager.addRecord(1, testKey, testValue);
+    assertEquals(1, blockList.size());
+    assertEquals(32, blockList.stream().mapToLong(x -> x.getFreeMemory()).sum());
+
+    // Third time, it will still do above.
+    spyManager.addRecord(2, testKey, testValue);
+    assertEquals(2, blockList.size());
+    assertEquals(64, blockList.stream().mapToLong(x -> x.getFreeMemory()).sum());
+
+    assertEquals(3, fakedTaskMemoryManager.getInvokedCnt());
+    assertEquals(2, fakedTaskMemoryManager.getSpilledCnt());
   }
 }

@@ -27,7 +27,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import scala.Tuple2;
@@ -50,10 +49,8 @@ import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.shuffle.reader.RssShuffleReader;
 import org.apache.spark.shuffle.writer.AddBlockEvent;
-import org.apache.spark.shuffle.writer.BufferManagerOptions;
 import org.apache.spark.shuffle.writer.DataPusher;
 import org.apache.spark.shuffle.writer.RssShuffleWriter;
-import org.apache.spark.shuffle.writer.WriteBufferManager;
 import org.apache.spark.sql.internal.SQLConf;
 import org.apache.spark.storage.BlockId;
 import org.apache.spark.storage.BlockManagerId;
@@ -448,38 +445,17 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     setPusherAppId(rssHandle);
     int shuffleId = rssHandle.getShuffleId();
     String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
-    BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
+
     ShuffleWriteMetrics writeMetrics;
     if (metrics != null) {
       writeMetrics = new WriteMetrics(metrics);
     } else {
       writeMetrics = context.taskMetrics().shuffleWriteMetrics();
     }
-    WriteBufferManager bufferManager =
-        new WriteBufferManager(
-            shuffleId,
-            taskId,
-            context.taskAttemptId(),
-            bufferOptions,
-            rssHandle.getDependency().serializer(),
-            rssHandle.getPartitionToServers(),
-            context.taskMemoryManager(),
-            writeMetrics,
-            RssSparkConfig.toRssConf(sparkConf),
-            this::sendData);
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
-    return new RssShuffleWriter<>(
-        rssHandle.getAppId(),
-        shuffleId,
-        taskId,
-        context.taskAttemptId(),
-        bufferManager,
-        writeMetrics,
-        this,
-        sparkConf,
-        shuffleWriteClient,
-        rssHandle,
-        (Function<String, Boolean>) this::markFailedTask);
+    return new RssShuffleWriter<>(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(),
+        writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle,
+        this::markFailedTask, context);
   }
 
   public void setPusherAppId(RssShuffleHandle rssShuffleHandle) {
