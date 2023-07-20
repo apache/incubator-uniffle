@@ -32,6 +32,7 @@ function exit_with_usage() {
 
 REGISTRY="docker.io/library"
 HADOOP_VERSION=2.8.5
+HADOOP_SHORT_VERSION=$(echo $HADOOP_VERSION | awk -F "." '{print $1"."$2}')
 AUTHOR=$(whoami)
 # If you are based in China, you could pass --apache-mirror <a_mirror_url> when building this.
 APACHE_MIRROR="https://dlcdn.apache.org"
@@ -109,7 +110,7 @@ fi
 RSS_DIR=../../..
 cd $RSS_DIR || exit
 RSS_VERSION=$(mvn help:evaluate -Dexpression=project.version 2>/dev/null | grep -v "INFO" | grep -v "WARNING" | tail -n 1)
-RSS_FILE=rss-${RSS_VERSION}.tgz
+RSS_FILE=rss-${RSS_VERSION}-hadoop${HADOOP_SHORT_VERSION}.tgz
 echo "RSS_VERSION: $RSS_VERSION"
 echo "RSS_FILE: $RSS_FILE"
 if [ ! -e "$RSS_FILE" ]; \
@@ -127,6 +128,7 @@ echo "building image: $IMAGE"
 docker build --network=host -t "$IMAGE" \
              --build-arg RSS_VERSION="$RSS_VERSION" \
              --build-arg HADOOP_VERSION="$HADOOP_VERSION" \
+             --build-arg HADOOP_SHORT_VERSION="$HADOOP_SHORT_VERSION" \
              --build-arg AUTHOR="$AUTHOR" \
              --build-arg GIT_COMMIT="$GIT_COMMIT" \
              --build-arg GIT_BRANCH="$GIT_BRANCH" \
