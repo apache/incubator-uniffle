@@ -550,7 +550,8 @@ public class FetcherTest {
         String clientType,
         Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
         String appId,
-        int shuffleId) {
+        int shuffleId,
+        Set<Integer> failedPartitions) {
       return null;
     }
 

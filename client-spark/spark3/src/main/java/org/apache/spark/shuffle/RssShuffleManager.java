@@ -73,6 +73,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.GrpcServer;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
@@ -597,8 +598,12 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         RssUtils.generateServerToPartitions(requirePartitionToServers);
     long start = System.currentTimeMillis();
     Roaring64NavigableMap blockIdBitmap =
-        shuffleWriteClient.getShuffleResultForMultiPart(
-            clientType, serverToPartitions, rssShuffleHandle.getAppId(), shuffleId);
+        getShuffleResultForMultiPart(
+            clientType,
+            serverToPartitions,
+            rssShuffleHandle.getAppId(),
+            shuffleId,
+            context.stageAttemptNumber());
     LOG.info(
         "Get shuffle blockId cost "
             + (System.currentTimeMillis() - start)
@@ -978,5 +983,21 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
   public boolean isValidTask(String taskId) {
     return !failedTaskIds.contains(taskId);
+  }
+
+  private Roaring64NavigableMap getShuffleResultForMultiPart(
+      String clientType,
+      Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
+      String appId,
+      int shuffleId,
+      int stageAttemptId) {
+    Set<Integer> failedPartitions = Sets.newHashSet();
+    try {
+      return shuffleWriteClient.getShuffleResultForMultiPart(
+          clientType, serverToPartitions, appId, shuffleId, failedPartitions);
+    } catch (RssFetchFailedException e) {
+      throw RssSparkShuffleUtils.reportRssFetchFailedException(
+          e, sparkConf, appId, shuffleId, stageAttemptId, failedPartitions);
+    }
   }
 }
