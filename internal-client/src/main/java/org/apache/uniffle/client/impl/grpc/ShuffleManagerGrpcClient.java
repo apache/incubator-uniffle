@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.proto.RssProtos.ReportShuffleFetchFailureRequest;
 import org.apache.uniffle.proto.RssProtos.ReportShuffleFetchFailureResponse;
@@ -33,8 +34,8 @@ import org.apache.uniffle.proto.ShuffleManagerGrpc;
 public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManagerClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleManagerGrpcClient.class);
-  private static final long RPC_TIMEOUT_DEFAULT_MS = 60000;
-  private long rpcTimeout = RPC_TIMEOUT_DEFAULT_MS;
+  private static RssBaseConf rssConf = new RssBaseConf();
+  private long rpcTimeout = rssConf.getLong(RssBaseConf.RSS_CLIENT_TYPE_GRPC_TIMEOUT_MS);
   private ShuffleManagerGrpc.ShuffleManagerBlockingStub blockingStub;
 
   public ShuffleManagerGrpcClient(String host, int port) {
