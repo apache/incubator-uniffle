@@ -116,8 +116,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         sparkConf,
         shuffleWriteClient,
         rssHandle,
-        (tid) -> true
-    );
+        (tid) -> true);
     this.bufferManager = bufferManager;
   }
 
@@ -179,21 +178,20 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         sparkConf,
         shuffleWriteClient,
         rssHandle,
-        taskFailureCallback
-    );
+        taskFailureCallback);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
-    final WriteBufferManager bufferManager = new WriteBufferManager(
-        shuffleId,
-        taskId,
-        taskAttemptId,
-        bufferOptions,
-        rssHandle.getDependency().serializer(),
-        rssHandle.getPartitionToServers(),
-        context.taskMemoryManager(),
-        shuffleWriteMetrics,
-        RssSparkConfig.toRssConf(sparkConf),
-        this::processShuffleBlockInfos
-    );
+    final WriteBufferManager bufferManager =
+        new WriteBufferManager(
+            shuffleId,
+            taskId,
+            taskAttemptId,
+            bufferOptions,
+            rssHandle.getDependency().serializer(),
+            rssHandle.getPartitionToServers(),
+            context.taskMemoryManager(),
+            shuffleWriteMetrics,
+            RssSparkConfig.toRssConf(sparkConf),
+            this::processShuffleBlockInfos);
     this.bufferManager = bufferManager;
   }
 
@@ -273,23 +271,26 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   }
 
   @VisibleForTesting
-  protected List<CompletableFuture<Long>> processShuffleBlockInfos(List<ShuffleBlockInfo> shuffleBlockInfoList) {
+  protected List<CompletableFuture<Long>> processShuffleBlockInfos(
+      List<ShuffleBlockInfo> shuffleBlockInfoList) {
     if (shuffleBlockInfoList != null && !shuffleBlockInfoList.isEmpty()) {
-      shuffleBlockInfoList.forEach(sbi -> {
-        long blockId = sbi.getBlockId();
-        // add blockId to set, check if it is sent later
-        blockIds.add(blockId);
-        // update [partition, blockIds], it will be sent to shuffle server
-        int partitionId = sbi.getPartitionId();
-        partitionToBlockIds.computeIfAbsent(partitionId, k -> Sets.newHashSet()).add(blockId);
-        partitionLengths[partitionId] += sbi.getLength();
-      });
+      shuffleBlockInfoList.forEach(
+          sbi -> {
+            long blockId = sbi.getBlockId();
+            // add blockId to set, check if it is sent later
+            blockIds.add(blockId);
+            // update [partition, blockIds], it will be sent to shuffle server
+            int partitionId = sbi.getPartitionId();
+            partitionToBlockIds.computeIfAbsent(partitionId, k -> Sets.newHashSet()).add(blockId);
+            partitionLengths[partitionId] += sbi.getLength();
+          });
       return postBlockEvent(shuffleBlockInfoList);
     }
     return Collections.emptyList();
   }
 
-  protected List<CompletableFuture<Long>> postBlockEvent(List<ShuffleBlockInfo> shuffleBlockInfoList) {
+  protected List<CompletableFuture<Long>> postBlockEvent(
+      List<ShuffleBlockInfo> shuffleBlockInfoList) {
     List<CompletableFuture<Long>> futures = new ArrayList<>();
     for (AddBlockEvent event : bufferManager.buildBlockEvents(shuffleBlockInfoList)) {
       futures.add(shuffleManager.sendData(event));

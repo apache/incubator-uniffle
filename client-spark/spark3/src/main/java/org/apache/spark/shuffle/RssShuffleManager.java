@@ -453,9 +453,18 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       writeMetrics = context.taskMetrics().shuffleWriteMetrics();
     }
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
-    return new RssShuffleWriter<>(rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(),
-        writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle,
-        this::markFailedTask, context);
+    return new RssShuffleWriter<>(
+        rssHandle.getAppId(),
+        shuffleId,
+        taskId,
+        context.taskAttemptId(),
+        writeMetrics,
+        this,
+        sparkConf,
+        shuffleWriteClient,
+        rssHandle,
+        this::markFailedTask,
+        context);
   }
 
   public void setPusherAppId(RssShuffleHandle rssShuffleHandle) {

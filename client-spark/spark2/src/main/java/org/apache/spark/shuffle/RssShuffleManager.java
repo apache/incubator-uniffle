@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import scala.Option;
 import scala.Tuple2;
@@ -418,9 +417,17 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
       ShuffleWriteMetrics writeMetrics = context.taskMetrics().shuffleWriteMetrics();
       return new RssShuffleWriter<>(
-          rssHandle.getAppId(), shuffleId, taskId, context.taskAttemptId(),
-          writeMetrics, this, sparkConf, shuffleWriteClient, rssHandle,
-          this::markFailedTask, context);
+          rssHandle.getAppId(),
+          shuffleId,
+          taskId,
+          context.taskAttemptId(),
+          writeMetrics,
+          this,
+          sparkConf,
+          shuffleWriteClient,
+          rssHandle,
+          this::markFailedTask,
+          context);
     } else {
       throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }

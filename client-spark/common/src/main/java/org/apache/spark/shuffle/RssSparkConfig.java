@@ -57,11 +57,12 @@ public class RssSparkConfig {
           .defaultValue(true)
           .withDescription("indicates row based shuffle, set false when use in columnar shuffle");
 
-  public static final ConfigOption<Boolean> RSS_MEMORY_SPILL_ENABLED = ConfigOptions
-      .key("rss.client.memory.spill.enabled")
-      .booleanType()
-      .defaultValue(false)
-      .withDescription("The memory spill switch triggered by Spark TaskMemoryManager, default value is false.");
+  public static final ConfigOption<Boolean> RSS_MEMORY_SPILL_ENABLED =
+      ConfigOptions.key("rss.client.memory.spill.enabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription(
+              "The memory spill switch triggered by Spark TaskMemoryManager, default value is false.");
 
   public static final String SPARK_RSS_CONFIG_PREFIX = "spark.";
 

@@ -169,7 +169,8 @@ public class WriteBufferManager extends MemoryConsumer {
 
   public List<ShuffleBlockInfo> addPartitionData(
       int partitionId, byte[] serializedData, int serializedDataLength, long start) {
-    List<ShuffleBlockInfo> candidateSendingBlocks = insertIntoBuffer(partitionId, serializedData, serializedDataLength);
+    List<ShuffleBlockInfo> candidateSendingBlocks =
+        insertIntoBuffer(partitionId, serializedData, serializedDataLength);
 
     // check buffer size > spill threshold
     if (usedBytes.get() - inSendListBytes.get() > spillSize) {
@@ -182,14 +183,15 @@ public class WriteBufferManager extends MemoryConsumer {
   /**
    * Before inserting a record into its corresponding buffer, the system should check if there is
    * sufficient buffer memory available. If there isn't enough memory, it will request additional
-   * memory from the {@link TaskMemoryManager}. In the event that the JVM is low on memory,
-   * a spill operation will be triggered. If any memory consumer managed by the {@link TaskMemoryManager}
+   * memory from the {@link TaskMemoryManager}. In the event that the JVM is low on memory, a spill
+   * operation will be triggered. If any memory consumer managed by the {@link TaskMemoryManager}
    * fails to meet its memory requirements, it will also be triggered one by one.
    *
-   * If the current buffer manager requests memory and triggers a spill operation,
-   * the buffer that is currently being held should be dropped, and then re-inserted.
+   * <p>If the current buffer manager requests memory and triggers a spill operation, the buffer
+   * that is currently being held should be dropped, and then re-inserted.
    */
-  private List<ShuffleBlockInfo> insertIntoBuffer(int partitionId, byte[] serializedData, int serializedDataLength) {
+  private List<ShuffleBlockInfo> insertIntoBuffer(
+      int partitionId, byte[] serializedData, int serializedDataLength) {
     List<ShuffleBlockInfo> sentBlocks = new ArrayList<>();
     long required = Math.max(bufferSegmentSize, serializedDataLength);
     // Asking memory from task memory manager for the existing writer buffer,
@@ -214,9 +216,16 @@ public class WriteBufferManager extends MemoryConsumer {
         sentBlocks.add(createShuffleBlock(partitionId, wb));
         copyTime += wb.getCopyTime();
         buffers.remove(partitionId);
-        LOG.debug("Single buffer is full for shuffleId[" + shuffleId
-            + "] partition[" + partitionId + "] with memoryUsed[" + wb.getMemoryUsed()
-            + "], dataLength[" + wb.getDataLength() + "]");
+        LOG.debug(
+            "Single buffer is full for shuffleId["
+                + shuffleId
+                + "] partition["
+                + partitionId
+                + "] with memoryUsed["
+                + wb.getMemoryUsed()
+                + "], dataLength["
+                + wb.getDataLength()
+                + "]");
       }
     } else {
       // The true of hasRequested means the former partitioned buffer has been flushed, that is
@@ -440,15 +449,20 @@ public class WriteBufferManager extends MemoryConsumer {
       // A best effort strategy to wait.
       // If timeout exception occurs, the underlying tasks won't be cancelled.
     } finally {
-      long releasedSize = futures.stream().filter(x -> x.isDone()).mapToLong(x -> {
-        try {
-          return x.get();
-        } catch (Exception e) {
-          return 0;
-        }
-      }).sum();
-      LOG.info("[taskId: {}] Spill triggered by own, released memory size: {}",
-          taskId, releasedSize);
+      long releasedSize =
+          futures.stream()
+              .filter(x -> x.isDone())
+              .mapToLong(
+                  x -> {
+                    try {
+                      return x.get();
+                    } catch (Exception e) {
+                      return 0;
+                    }
+                  })
+              .sum();
+      LOG.info(
+          "[taskId: {}] Spill triggered by own, released memory size: {}", taskId, releasedSize);
       return releasedSize;
     }
   }
@@ -525,7 +539,8 @@ public class WriteBufferManager extends MemoryConsumer {
   }
 
   @VisibleForTesting
-  public void setSpillFunc(Function<List<ShuffleBlockInfo>, List<CompletableFuture<Long>>> spillFunc) {
+  public void setSpillFunc(
+      Function<List<ShuffleBlockInfo>, List<CompletableFuture<Long>>> spillFunc) {
     this.spillFunc = spillFunc;
   }
 

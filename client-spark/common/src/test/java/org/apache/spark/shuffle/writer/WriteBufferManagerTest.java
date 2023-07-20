@@ -279,10 +279,18 @@ public class WriteBufferManagerTest {
     TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
 
-    WriteBufferManager wbm = new WriteBufferManager(
-        0, "taskId_spillByOthersTest", 0, bufferOptions, new KryoSerializer(conf),
-        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(),
-        RssSparkConfig.toRssConf(conf), null);
+    WriteBufferManager wbm =
+        new WriteBufferManager(
+            0,
+            "taskId_spillByOthersTest",
+            0,
+            bufferOptions,
+            new KryoSerializer(conf),
+            Maps.newHashMap(),
+            mockTaskMemoryManager,
+            new ShuffleWriteMetrics(),
+            RssSparkConfig.toRssConf(conf),
+            null);
 
     WriteBufferManager spyManager = spy(wbm);
     doReturn(512L).when(spyManager).acquireMemory(anyLong());
@@ -304,20 +312,29 @@ public class WriteBufferManagerTest {
     TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
 
-    WriteBufferManager wbm = new WriteBufferManager(
-        0, "taskId_spillTest", 0, bufferOptions, new KryoSerializer(conf),
-        Maps.newHashMap(), mockTaskMemoryManager, new ShuffleWriteMetrics(),
-        RssSparkConfig.toRssConf(conf), null);
+    WriteBufferManager wbm =
+        new WriteBufferManager(
+            0,
+            "taskId_spillTest",
+            0,
+            bufferOptions,
+            new KryoSerializer(conf),
+            Maps.newHashMap(),
+            mockTaskMemoryManager,
+            new ShuffleWriteMetrics(),
+            RssSparkConfig.toRssConf(conf),
+            null);
 
-    Function<List<ShuffleBlockInfo>, List<CompletableFuture<Long>>> spillFunc = blocks -> {
-      long sum = 0L;
-      List<AddBlockEvent> events = wbm.buildBlockEvents(blocks);
-      for (AddBlockEvent event : events) {
-        event.getProcessedCallbackChain().stream().forEach(x -> x.run());
-        sum += event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum();
-      }
-      return Arrays.asList(CompletableFuture.completedFuture(sum));
-    };
+    Function<List<ShuffleBlockInfo>, List<CompletableFuture<Long>>> spillFunc =
+        blocks -> {
+          long sum = 0L;
+          List<AddBlockEvent> events = wbm.buildBlockEvents(blocks);
+          for (AddBlockEvent event : events) {
+            event.getProcessedCallbackChain().stream().forEach(x -> x.run());
+            sum += event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum();
+          }
+          return Arrays.asList(CompletableFuture.completedFuture(sum));
+        };
     wbm.setSpillFunc(spillFunc);
 
     WriteBufferManager spyManager = spy(wbm);
@@ -339,23 +356,30 @@ public class WriteBufferManagerTest {
     spyManager.setSendSizeLimit(30);
     spyManager.addRecord(0, testKey, testValue);
     spyManager.addRecord(1, testKey, testValue);
-    spillFunc = shuffleBlockInfos -> Arrays.asList(CompletableFuture.supplyAsync(() -> {
-      List<AddBlockEvent> events = spyManager.buildBlockEvents(shuffleBlockInfos);
-      long sum = 0L;
-      for (AddBlockEvent event : events) {
-        int partitionId = event.getShuffleDataInfoList().get(0).getPartitionId();
-        if (partitionId == 1) {
-          try {
-            Thread.sleep(2000);
-          } catch (InterruptedException interruptedException) {
-            // ignore.
-          }
-        }
-        event.getProcessedCallbackChain().stream().forEach(x -> x.run());
-        sum += event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum();
-      }
-      return sum;
-    }));
+    spillFunc =
+        shuffleBlockInfos ->
+            Arrays.asList(
+                CompletableFuture.supplyAsync(
+                    () -> {
+                      List<AddBlockEvent> events = spyManager.buildBlockEvents(shuffleBlockInfos);
+                      long sum = 0L;
+                      for (AddBlockEvent event : events) {
+                        int partitionId = event.getShuffleDataInfoList().get(0).getPartitionId();
+                        if (partitionId == 1) {
+                          try {
+                            Thread.sleep(2000);
+                          } catch (InterruptedException interruptedException) {
+                            // ignore.
+                          }
+                        }
+                        event.getProcessedCallbackChain().stream().forEach(x -> x.run());
+                        sum +=
+                            event.getShuffleDataInfoList().stream()
+                                .mapToLong(x -> x.getFreeMemory())
+                                .sum();
+                      }
+                      return sum;
+                    }));
     spyManager.setSpillFunc(spillFunc);
     releasedSize = spyManager.spill(1000, spyManager);
     assertEquals(0, releasedSize);
@@ -410,23 +434,32 @@ public class WriteBufferManagerTest {
     FakedTaskMemoryManager fakedTaskMemoryManager = new FakedTaskMemoryManager();
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
 
-    WriteBufferManager wbm = new WriteBufferManager(
-        0, "taskId_spillTest", 0, bufferOptions, new KryoSerializer(conf),
-        Maps.newHashMap(), fakedTaskMemoryManager, new ShuffleWriteMetrics(),
-        RssSparkConfig.toRssConf(conf), null);
+    WriteBufferManager wbm =
+        new WriteBufferManager(
+            0,
+            "taskId_spillTest",
+            0,
+            bufferOptions,
+            new KryoSerializer(conf),
+            Maps.newHashMap(),
+            fakedTaskMemoryManager,
+            new ShuffleWriteMetrics(),
+            RssSparkConfig.toRssConf(conf),
+            null);
 
     List<ShuffleBlockInfo> blockList = new ArrayList<>();
 
-    Function<List<ShuffleBlockInfo>, List<CompletableFuture<Long>>> spillFunc = blocks -> {
-      blockList.addAll(blocks);
-      long sum = 0L;
-      List<AddBlockEvent> events = wbm.buildBlockEvents(blocks);
-      for (AddBlockEvent event : events) {
-        event.getProcessedCallbackChain().stream().forEach(x -> x.run());
-        sum += event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum();
-      }
-      return Arrays.asList(CompletableFuture.completedFuture(sum));
-    };
+    Function<List<ShuffleBlockInfo>, List<CompletableFuture<Long>>> spillFunc =
+        blocks -> {
+          blockList.addAll(blocks);
+          long sum = 0L;
+          List<AddBlockEvent> events = wbm.buildBlockEvents(blocks);
+          for (AddBlockEvent event : events) {
+            event.getProcessedCallbackChain().stream().forEach(x -> x.run());
+            sum += event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum();
+          }
+          return Arrays.asList(CompletableFuture.completedFuture(sum));
+        };
     wbm.setSpillFunc(spillFunc);
 
     WriteBufferManager spyManager = spy(wbm);
@@ -438,7 +471,8 @@ public class WriteBufferManagerTest {
     spyManager.addRecord(0, testKey, testValue);
     assertEquals(0, blockList.size());
 
-    // Second time, the memory manager trigger the spill, so it will flush buffer and then insert the record
+    // Second time, the memory manager trigger the spill, so it will flush buffer and then insert
+    // the record
     spyManager.addRecord(1, testKey, testValue);
     assertEquals(1, blockList.size());
     assertEquals(32, blockList.stream().mapToLong(x -> x.getFreeMemory()).sum());
