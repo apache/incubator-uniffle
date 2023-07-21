@@ -43,7 +43,7 @@ public class Encoders {
     byteBuf.writeLong(shuffleBlockInfo.getCrc());
     byteBuf.writeLong(shuffleBlockInfo.getTaskAttemptId());
     // todo: avoid copy
-    ByteBufUtils.copyByteBuf(shuffleBlockInfo.getData(), byteBuf);
+    shuffleBlockInfo.copyDataTo(byteBuf);
     shuffleBlockInfo.getData().release();
     List<ShuffleServerInfo> shuffleServerInfoList = shuffleBlockInfo.getShuffleServerInfos();
     byteBuf.writeInt(shuffleServerInfoList.size());
@@ -64,7 +64,8 @@ public class Encoders {
     int encodeLength =
         4 * Long.BYTES
             + 4 * Integer.BYTES
-            + ByteBufUtils.encodedLength(shuffleBlockInfo.getData())
+            + Integer.BYTES
+            + shuffleBlockInfo.getLength()
             + Integer.BYTES;
     for (ShuffleServerInfo shuffleServerInfo : shuffleBlockInfo.getShuffleServerInfos()) {
       encodeLength += encodeLengthOfShuffleServerInfo(shuffleServerInfo);

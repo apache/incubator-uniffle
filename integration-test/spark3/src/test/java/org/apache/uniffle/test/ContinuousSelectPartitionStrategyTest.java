@@ -79,6 +79,7 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
       ShuffleServerConf serverConf = new ShuffleServerConf();
       dataFolder.deleteOnExit();
       serverConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + i);
+      serverConf.setInteger("rss.server.netty.port", NETTY_PORT + i);
       serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
       serverConf.setString("rss.storage.basePath", dataFolder.getAbsolutePath());
       serverConf.setString("rss.server.buffer.capacity", String.valueOf(671088640 - i));

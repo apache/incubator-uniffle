@@ -55,6 +55,7 @@ public class MessageEncoder extends ChannelOutboundHandlerAdapter {
     } catch (Exception e) {
       LOG.error("Unexpected exception during process encode!", e);
       byteBuf.release();
+      throw e;
     }
     ctx.writeAndFlush(byteBuf);
     // do transferTo send data after encode buffer send.

@@ -105,9 +105,8 @@ public class ShuffleUnregisterWithLocalfileTest extends SparkIntegrationTestBase
       map = javaPairRDD.collectAsMap();
       shufflePath = appPath + "/1";
       assertTrue(new File(shufflePath).exists());
-    } else {
-      runCounter++;
     }
+    runCounter++;
     return map;
   }
 }

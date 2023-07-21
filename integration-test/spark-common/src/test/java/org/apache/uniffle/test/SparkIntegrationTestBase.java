@@ -58,15 +58,23 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
     updateSparkConfCustomer(sparkConf);
     start = System.currentTimeMillis();
     Map resultWithRss = runSparkApp(sparkConf, fileName);
-    long durationWithRss = System.currentTimeMillis() - start;
+    final long durationWithRss = System.currentTimeMillis() - start;
 
+    updateSparkConfWithRssNetty(sparkConf);
+    start = System.currentTimeMillis();
+    Map resultWithRssNetty = runSparkApp(sparkConf, fileName);
+    final long durationWithRssNetty = System.currentTimeMillis() - start;
     verifyTestResult(resultWithoutRss, resultWithRss);
+    verifyTestResult(resultWithoutRss, resultWithRssNetty);
 
     LOG.info(
         "Test: durationWithoutRss["
             + durationWithoutRss
             + "], durationWithRss["
             + durationWithRss
+            + "]"
+            + "], durationWithRssNetty["
+            + durationWithRssNetty
             + "]");
   }
 
@@ -100,14 +108,17 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
     sparkConf.set(RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE.key(), "128k");
     sparkConf.set(RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE.key(), "256k");
     sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
-    sparkConf.set(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(), "30000");
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(), "600000");
     sparkConf.set(RssSparkConfig.RSS_CLIENT_RETRY_MAX.key(), "10");
     sparkConf.set(RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key(), "1000");
     sparkConf.set(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.key(), "1000");
     sparkConf.set(RssSparkConfig.RSS_INDEX_READ_LIMIT.key(), "100");
     sparkConf.set(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key(), "1m");
     sparkConf.set(RssSparkConfig.RSS_HEARTBEAT_INTERVAL.key(), "2000");
-    sparkConf.set(RssSparkConfig.RSS_TEST_MODE_ENABLE.key(), "true");
+  }
+
+  public void updateSparkConfWithRssNetty(SparkConf sparkConf) {
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_TYPE, "GRPC_NETTY");
   }
 
   protected void verifyTestResult(Map expected, Map actual) {
