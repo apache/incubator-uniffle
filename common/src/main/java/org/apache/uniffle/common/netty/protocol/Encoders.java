@@ -44,7 +44,6 @@ public class Encoders {
     byteBuf.writeLong(shuffleBlockInfo.getTaskAttemptId());
     // todo: avoid copy
     shuffleBlockInfo.copyDataTo(byteBuf);
-    shuffleBlockInfo.getData().release();
     List<ShuffleServerInfo> shuffleServerInfoList = shuffleBlockInfo.getShuffleServerInfos();
     byteBuf.writeInt(shuffleServerInfoList.size());
     for (ShuffleServerInfo shuffleServerInfo : shuffleServerInfoList) {

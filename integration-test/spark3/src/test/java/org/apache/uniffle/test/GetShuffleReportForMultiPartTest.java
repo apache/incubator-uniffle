@@ -99,6 +99,7 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
       serverConf.setString("rss.server.hadoop.dfs.replication", "2");
       serverConf.setLong("rss.server.disk.capacity", 10L * 1024L * 1024L * 1024L);
       serverConf.setBoolean("rss.server.health.check.enable", false);
+      serverConf.setString("rss.server.tags", "GRPC,GRPC_NETTY");
       createMockedShuffleServer(serverConf);
     }
     enableRecordGetShuffleResult();
