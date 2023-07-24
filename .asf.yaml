@@ -57,5 +57,5 @@ github:
 
 notifications:
   commits: commits@uniffle.apache.org
-  issues: dev@uniffle.apache.org
+  issues: issues@uniffle.apache.org
   pullrequests: issues@uniffle.apache.org
