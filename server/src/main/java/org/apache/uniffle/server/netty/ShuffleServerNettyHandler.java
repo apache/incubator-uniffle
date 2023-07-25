@@ -133,7 +133,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         responseMessage = errorMsg;
         rpcResponse =
             new RpcResponse(req.getRequestId(), StatusCode.INTERNAL_ERROR, responseMessage);
-        client.sendRpcSync(rpcResponse, RPC_TIMEOUT);
+        client.getChannel().writeAndFlush(rpcResponse);
         return;
       }
       final long start = System.currentTimeMillis();
@@ -209,7 +209,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           new RpcResponse(req.getRequestId(), StatusCode.INTERNAL_ERROR, "No data in request");
     }
 
-    client.sendRpcSync(rpcResponse, RPC_TIMEOUT);
+    client.getChannel().writeAndFlush(rpcResponse);
   }
 
   public void handleGetMemoryShuffleDataRequest(
@@ -292,7 +292,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           new GetMemoryShuffleDataResponse(
               req.getRequestId(), status, msg, Lists.newArrayList(), Unpooled.EMPTY_BUFFER);
     }
-    client.sendRpcSync(response, RPC_TIMEOUT);
+    client.getChannel().writeAndFlush(response);
   }
 
   public void handleGetLocalShuffleIndexRequest(
@@ -374,7 +374,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           new GetLocalShuffleIndexResponse(
               req.getRequestId(), status, msg, Unpooled.EMPTY_BUFFER, 0L);
     }
-    client.sendRpcSync(response, RPC_TIMEOUT);
+    client.getChannel().writeAndFlush(response);
   }
 
   public void handleGetLocalShuffleData(TransportClient client, GetLocalShuffleDataRequest req) {
@@ -471,7 +471,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           new GetLocalShuffleDataResponse(
               req.getRequestId(), status, msg, new NettyManagedBuffer(Unpooled.EMPTY_BUFFER));
     }
-    client.sendRpcSync(response, RPC_TIMEOUT);
+    client.getChannel().writeAndFlush(response);
   }
 
   private List<ShufflePartitionedData> toPartitionedData(SendShuffleDataRequest req) {

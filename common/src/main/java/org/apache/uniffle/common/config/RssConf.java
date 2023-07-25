@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 
 import org.apache.uniffle.common.util.UnitConverter;
@@ -664,5 +665,10 @@ public class RssConf implements Cloneable {
 
   public String getEnv(String key) {
     return System.getenv(key);
+  }
+
+  @VisibleForTesting
+  public void remove(String key) {
+    this.settings.remove(key);
   }
 }

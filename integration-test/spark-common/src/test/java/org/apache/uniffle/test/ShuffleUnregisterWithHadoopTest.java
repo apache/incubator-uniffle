@@ -99,9 +99,8 @@ public class ShuffleUnregisterWithHadoopTest extends SparkIntegrationTestBase {
       map = javaPairRDD.collectAsMap();
       shufflePath = appPath + "/1";
       assertTrue(fs.exists(new Path(shufflePath)));
-    } else {
-      runCounter++;
     }
+    runCounter++;
     return map;
   }
 }
