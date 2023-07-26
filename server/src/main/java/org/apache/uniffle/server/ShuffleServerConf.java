@@ -339,14 +339,14 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Boolean> SINGLE_BUFFER_FLUSH_ENABLED =
       ConfigOptions.key("rss.server.single.buffer.flush.enabled")
           .booleanType()
-          .defaultValue(false)
+          .defaultValue(true)
           .withDescription(
               "Whether single buffer flush when size exceeded rss.server.single.buffer.flush.threshold");
 
   public static final ConfigOption<Long> SINGLE_BUFFER_FLUSH_THRESHOLD =
       ConfigOptions.key("rss.server.single.buffer.flush.threshold")
           .longType()
-          .defaultValue(64 * 1024 * 1024L)
+          .defaultValue(128 * 1024 * 1024L)
           .withDescription("The threshold of single shuffle buffer flush");
 
   public static final ConfigOption<Long> STORAGEMANAGER_CACHE_TIMEOUT =
