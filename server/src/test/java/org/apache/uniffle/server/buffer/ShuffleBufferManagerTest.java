@@ -446,6 +446,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 200L);
     shuffleConf.set(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO, 0.1);
     shuffleConf.set(ShuffleServerConf.HUGE_PARTITION_SIZE_THRESHOLD, 100L);
+    shuffleConf.set(ShuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED, false);
     shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD, 64L);
 
     ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
