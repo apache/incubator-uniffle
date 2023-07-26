@@ -29,10 +29,12 @@ public class ShuffleServerNettyMetrics extends NettyMetrics {
   private static final String _PROCESS_LATENCY = "_process_latency";
   private static final String _TOTAL = "_total";
   private static final String NETTY_SEND_SHUFFLE_DATA_REQUEST = "netty_send_shuffle_data_request";
-  private static final String NETTY_GET_SHUFFLE_DATA_REQUEST = "netty_get_local_shuffle_data_request";
-  private static final String NETTY_GET_SHUFFLE_INDEX_REQUEST = "netty_get_local_shuffle_index_request";
-  private static final String NETTY_GET_MEMORY_SHUFFLE_DATA_REQUEST = "netty_get_memory_shuffle_data_request";
-
+  private static final String NETTY_GET_SHUFFLE_DATA_REQUEST =
+      "netty_get_local_shuffle_data_request";
+  private static final String NETTY_GET_SHUFFLE_INDEX_REQUEST =
+      "netty_get_local_shuffle_index_request";
+  private static final String NETTY_GET_MEMORY_SHUFFLE_DATA_REQUEST =
+      "netty_get_memory_shuffle_data_request";
 
   public ShuffleServerNettyMetrics(String tags) {
     super(tags);
@@ -40,40 +42,57 @@ public class ShuffleServerNettyMetrics extends NettyMetrics {
 
   @Override
   public void registerMetrics() {
-    gaugeMap.putIfAbsent(SendShuffleDataRequest.class.getName(),
+    gaugeMap.putIfAbsent(
+        SendShuffleDataRequest.class.getName(),
         metricsManager.addLabeledGauge(NETTY_SEND_SHUFFLE_DATA_REQUEST));
-    gaugeMap.putIfAbsent(GetLocalShuffleDataRequest.class.getName(),
+    gaugeMap.putIfAbsent(
+        GetLocalShuffleDataRequest.class.getName(),
         metricsManager.addLabeledGauge(NETTY_GET_SHUFFLE_DATA_REQUEST));
-    gaugeMap.putIfAbsent(GetLocalShuffleIndexRequest.class.getName(),
+    gaugeMap.putIfAbsent(
+        GetLocalShuffleIndexRequest.class.getName(),
         metricsManager.addLabeledGauge(NETTY_GET_SHUFFLE_INDEX_REQUEST));
-    gaugeMap.putIfAbsent(GetMemoryShuffleDataRequest.class.getName(),
+    gaugeMap.putIfAbsent(
+        GetMemoryShuffleDataRequest.class.getName(),
         metricsManager.addLabeledGauge(NETTY_GET_MEMORY_SHUFFLE_DATA_REQUEST));
 
-    counterMap.putIfAbsent(SendShuffleDataRequest.class.getName(),
+    counterMap.putIfAbsent(
+        SendShuffleDataRequest.class.getName(),
         metricsManager.addLabeledCounter(NETTY_SEND_SHUFFLE_DATA_REQUEST + _TOTAL));
-    counterMap.putIfAbsent(GetLocalShuffleDataRequest.class.getName(),
+    counterMap.putIfAbsent(
+        GetLocalShuffleDataRequest.class.getName(),
         metricsManager.addLabeledCounter(NETTY_GET_SHUFFLE_DATA_REQUEST + _TOTAL));
-    counterMap.putIfAbsent(GetLocalShuffleIndexRequest.class.getName(),
+    counterMap.putIfAbsent(
+        GetLocalShuffleIndexRequest.class.getName(),
         metricsManager.addLabeledCounter(NETTY_GET_SHUFFLE_INDEX_REQUEST + _TOTAL));
-    counterMap.putIfAbsent(GetMemoryShuffleDataRequest.class.getName(),
+    counterMap.putIfAbsent(
+        GetMemoryShuffleDataRequest.class.getName(),
         metricsManager.addLabeledCounter(NETTY_GET_MEMORY_SHUFFLE_DATA_REQUEST + _TOTAL));
 
-    transportTimeSummaryMap.putIfAbsent(SendShuffleDataRequest.class.getName(),
+    transportTimeSummaryMap.putIfAbsent(
+        SendShuffleDataRequest.class.getName(),
         metricsManager.addLabeledSummary(NETTY_SEND_SHUFFLE_DATA_REQUEST + _TRANSPORT_LATENCY));
-    transportTimeSummaryMap.putIfAbsent(GetLocalShuffleDataRequest.class.getName(),
+    transportTimeSummaryMap.putIfAbsent(
+        GetLocalShuffleDataRequest.class.getName(),
         metricsManager.addLabeledSummary(NETTY_GET_SHUFFLE_DATA_REQUEST + _TRANSPORT_LATENCY));
-    transportTimeSummaryMap.putIfAbsent(GetLocalShuffleIndexRequest.class.getName(),
+    transportTimeSummaryMap.putIfAbsent(
+        GetLocalShuffleIndexRequest.class.getName(),
         metricsManager.addLabeledSummary(NETTY_GET_SHUFFLE_INDEX_REQUEST + _TRANSPORT_LATENCY));
-    transportTimeSummaryMap.putIfAbsent(GetMemoryShuffleDataRequest.class.getName(),
-        metricsManager.addLabeledSummary(NETTY_GET_MEMORY_SHUFFLE_DATA_REQUEST + _TRANSPORT_LATENCY));
+    transportTimeSummaryMap.putIfAbsent(
+        GetMemoryShuffleDataRequest.class.getName(),
+        metricsManager.addLabeledSummary(
+            NETTY_GET_MEMORY_SHUFFLE_DATA_REQUEST + _TRANSPORT_LATENCY));
 
-    processTimeSummaryMap.putIfAbsent(SendShuffleDataRequest.class.getName(),
+    processTimeSummaryMap.putIfAbsent(
+        SendShuffleDataRequest.class.getName(),
         metricsManager.addLabeledSummary(NETTY_SEND_SHUFFLE_DATA_REQUEST + _PROCESS_LATENCY));
-    processTimeSummaryMap.putIfAbsent(GetLocalShuffleDataRequest.class.getName(),
+    processTimeSummaryMap.putIfAbsent(
+        GetLocalShuffleDataRequest.class.getName(),
         metricsManager.addLabeledSummary(NETTY_GET_SHUFFLE_DATA_REQUEST + _PROCESS_LATENCY));
-    processTimeSummaryMap.putIfAbsent(GetLocalShuffleIndexRequest.class.getName(),
+    processTimeSummaryMap.putIfAbsent(
+        GetLocalShuffleIndexRequest.class.getName(),
         metricsManager.addLabeledSummary(NETTY_GET_SHUFFLE_INDEX_REQUEST + _PROCESS_LATENCY));
-    processTimeSummaryMap.putIfAbsent(GetMemoryShuffleDataRequest.class.getName(),
+    processTimeSummaryMap.putIfAbsent(
+        GetMemoryShuffleDataRequest.class.getName(),
         metricsManager.addLabeledSummary(NETTY_GET_MEMORY_SHUFFLE_DATA_REQUEST + _PROCESS_LATENCY));
   }
 }

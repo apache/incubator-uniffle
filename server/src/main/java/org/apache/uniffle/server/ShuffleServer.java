@@ -228,7 +228,6 @@ public class ShuffleServer {
             nettyMetrics.getCollectorRegistry(),
             JvmMetrics.getCollectorRegistry()));
 
-
     SecurityConfig securityConfig = null;
     if (shuffleServerConf.getBoolean(RSS_SECURITY_HADOOP_KERBEROS_ENABLE)) {
       securityConfig =

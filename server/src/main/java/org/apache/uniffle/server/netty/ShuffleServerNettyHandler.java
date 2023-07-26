@@ -227,8 +227,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       if (transportTime > 0) {
         shuffleServer
             .getNettyMetrics()
-            .recordTransportTime(
-                GetMemoryShuffleDataRequest.class.getName(), transportTime);
+            .recordTransportTime(GetMemoryShuffleDataRequest.class.getName(), transportTime);
       }
     }
     long start = System.currentTimeMillis();
