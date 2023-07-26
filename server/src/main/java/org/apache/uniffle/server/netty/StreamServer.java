@@ -93,6 +93,7 @@ public class StreamServer implements ServerInterface {
               @Override
               public void initChannel(final SocketChannel ch) {
                 transportContext.initializePipeline(ch, new TransportFrameDecoder());
+                ch.pipeline().addLast("metricHandler", new StreamServerMetricHandler(shuffleServer.getNettyMetrics()));
               }
             })
         .option(ChannelOption.SO_BACKLOG, backlogSize)
