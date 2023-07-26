@@ -45,7 +45,7 @@ This document will introduce how to deploy Uniffle shuffle servers.
      # it's better to config thread num according to local disk num
      rss.server.flush.thread.alive 5
      rss.server.flush.localfile.threadPool.size 10
-     rss.server.flush.hadoop.threadPool.size 50
+     rss.server.flush.hadoop.threadPool.size 60
      rss.server.buffer.capacity 40g
      rss.server.read.buffer.capacity 20g
      rss.server.heartbeat.interval 10000
@@ -78,7 +78,7 @@ This document will introduce how to deploy Uniffle shuffle servers.
 | rss.server.read.buffer.capacity.ratio                   | 0.4     | when `rss.server.read.buffer.capacity`=-1, then read buffer capacity is JVM heap size * ratio                                                                                                                                                                                                                                                                                                |
 | rss.server.heartbeat.interval                           | 10000   | Heartbeat interval to Coordinator (ms)                                                                                                                                                                                                                                                                                                                                                       |
 | rss.server.flush.localfile.threadPool.size              | 10      | Thread pool for flush data to local file                                                                                                                                                                                                                                                                                                                                                     |
-| rss.server.flush.hadoop.threadPool.size                 | 50      | Thread pool for flush data to hadoop storage                                                                                                                                                                                                                                                                                                                                                 |
+| rss.server.flush.hadoop.threadPool.size                 | 60      | Thread pool for flush data to hadoop storage                                                                                                                                                                                                                                                                                                                                                 |
 | rss.server.commit.timeout                               | 600000  | Timeout when commit shuffle data (ms)                                                                                                                                                                                                                                                                                                                                                        |
 | rss.storage.type                                        | -       | Supports MEMORY_LOCALFILE, MEMORY_HDFS, MEMORY_LOCALFILE_HDFS                                                                                                                                                                                                                                                                                                                                |
 | rss.server.flush.cold.storage.threshold.size            | 64M     | The threshold of data size for LOACALFILE and HADOOP if MEMORY_LOCALFILE_HDFS is used                                                                                                                                                                                                                                                                                                        |
@@ -141,7 +141,7 @@ rss.server.app.expired.withoutHeartbeat 120000
 
 # For huge partitions
 rss.server.flush.localfile.threadPool.size 20
-rss.server.flush.hadoop.threadPool.size 50
+rss.server.flush.hadoop.threadPool.size 60
 rss.server.flush.cold.storage.threshold.size 128m
 rss.server.single.buffer.flush.threshold 129m
 rss.server.max.concurrency.of.per-partition.write 30

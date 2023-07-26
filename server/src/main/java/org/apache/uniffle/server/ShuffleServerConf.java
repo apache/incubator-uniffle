@@ -86,7 +86,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Integer> SERVER_FLUSH_HADOOP_THREAD_POOL_SIZE =
       ConfigOptions.key("rss.server.flush.hadoop.threadPool.size")
           .intType()
-          .defaultValue(50)
+          .defaultValue(60)
           .withDescription("thread pool for flush data to hadoop storage");
 
   public static final ConfigOption<Integer> SERVER_FLUSH_THREAD_POOL_QUEUE_SIZE =
