@@ -364,7 +364,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Integer> SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION =
       ConfigOptions.key("rss.server.max.concurrency.of.per-partition.write")
           .intType()
-          .defaultValue(1)
+          .defaultValue(30)
           .withDescription(
               "The max concurrency of single partition writer, the data partition file number is "
                   + "equal to this value. Default value is 1.")
