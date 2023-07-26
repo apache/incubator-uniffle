@@ -137,7 +137,7 @@ public class RssMRAppMaster extends MRAppMaster {
         assignmentTags.addAll(Arrays.asList(rawTags.split(",")));
       }
       assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
-      String clientType = conf.get(RssMRConfig.RSS_CLIENT_TYPE);
+      String clientType = conf.get(RssMRConfig.RSS_CLIENT_TYPE, RssMRConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
       ClientUtils.validateClientType(clientType);
       assignmentTags.add(clientType);
 
