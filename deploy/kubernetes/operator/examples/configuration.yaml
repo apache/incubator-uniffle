@@ -59,7 +59,7 @@ data:
     rss.server.flush.cold.storage.threshold.size 128m
     rss.server.flush.thread.alive 6
     rss.server.flush.localfile.threadPool.size 12
-    rss.server.flush.hadoop.threadPool.size 12
+    rss.server.flush.hadoop.threadPool.size 50
     rss.server.hadoop.dfs.client.socket-timeout 15000
     rss.server.hadoop.dfs.replication 2
     rss.server.hdfs.base.path hdfs://${your-hdfs-path}
